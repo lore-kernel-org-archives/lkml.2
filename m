@@ -1,220 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab1HIFZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 01:25:52 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:43769 "EHLO
+	id S1751827Ab1HIF2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 01:28:03 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:43869 "EHLO
 	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750866Ab1HIFZv (ORCPT
+	by vger.kernel.org with ESMTP id S1750779Ab1HIF2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 01:25:51 -0400
+	Tue, 9 Aug 2011 01:28:01 -0400
 Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (PLAIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=869cbtyjxWwA:10 a=FvignuLujMYA:10 a=ozIaqLvjkoIA:10 a=8nJEP1OIZ-IA:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=YORvzBCaAAAA:8 a=25BmBtgtBz-B4cJdUwMA:9 a=KOLmSzaFiPA_HFRUbdgA:7 a=wPNLvfGTeEIA:10 a=VV2__AUApEoA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
+X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=869cbtyjxWwA:10 a=tTkG0KIlqOwA:10 a=ozIaqLvjkoIA:10 a=8nJEP1OIZ-IA:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=YORvzBCaAAAA:8 a=UHKsD0qE2k1SaReNTx0A:9 a=sHpB3k9SW1IwlJQgPhoA:7 a=wPNLvfGTeEIA:10 a=VV2__AUApEoA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 24.153.165.185
-Message-ID: <4E40C4DD.90109@systemfabricworks.com>
-Date: Tue, 09 Aug 2011 00:25:49 -0500
+Message-ID: <4E40C55F.8070703@systemfabricworks.com>
+Date: Tue, 09 Aug 2011 00:27:59 -0500
 From: Bob Pearson <rpearson@systemfabricworks.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org, linux@horizon.com,
         joakim.tjernlund@transmode.se, fzago@systemfabricworks.com,
         rpearson@systemfabricworks.com, akpm@linux-foundation.org
-Subject: [patch v3 5/7] crc32: add-real-8-bit.diff
+Subject: [patch v3 6/7] crc32: add-slicing-by-8.diff
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crc32.c encodes an algorithm that processes 32 bits at a time
-with the value BITS = 8 and leaves out the most common 8 bit algorithm
-for computing the crc. This patch reencodes the 32 bit algorithm
-with the value 32 and adds back the 'standard' 8 bit algorithm.
+add slicing-by-8 algorithm to the existing
+slicing-by-4 algorithm. This consists of:
+
+	- extend largest BITS size from 32 to 64
+	- extend table from tab[4][256] to tab[8][256]
+	- change algorithm to align on 8 byte boundary
+	  (it was noted that all that is really required
+	  is that the inner loop must comsume 8 bytes.
+	  As written it can start on even or odd 4 byte
+	  boundary.)
+	- Add code for inner loop.
 
 Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
 
 ---
- lib/crc32.c          |   17 ++++++++++++++---
- lib/crc32defs.h      |   18 ++++++++++--------
- lib/gen_crc32table.c |   27 ++++++++++++++++++---------
- 3 files changed, 42 insertions(+), 20 deletions(-)
+ lib/crc32.c          |   58 ++++++++++++++++++++++++++++++++++++++++++---------
+ lib/crc32defs.h      |   14 ++++++------
+ lib/gen_crc32table.c |   40 +++++++++++++++++++++--------------
+ 3 files changed, 79 insertions(+), 33 deletions(-)
 
 Index: infiniband/lib/crc32.c
 ===================================================================
 --- infiniband.orig/lib/crc32.c
 +++ infiniband/lib/crc32.c
-@@ -25,13 +25,13 @@
- #include <linux/types.h>
- #include "crc32defs.h"
+@@ -45,6 +45,7 @@ MODULE_LICENSE("GPL");
 
--#if CRC_LE_BITS == 8
-+#if CRC_LE_BITS > 8
- # define tole(x) (__force u32) __constant_cpu_to_le32(x)
- #else
- # define tole(x) (x)
- #endif
+ #if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
 
--#if CRC_BE_BITS == 8
-+#if CRC_BE_BITS > 8
- # define tobe(x) (__force u32) __constant_cpu_to_be32(x)
- #else
- # define tobe(x) (x)
-@@ -43,7 +43,7 @@ MODULE_AUTHOR("Matt Domsch <Matt_Domsch@
- MODULE_DESCRIPTION("Ethernet CRC32 calculations");
- MODULE_LICENSE("GPL");
-
--#if CRC_LE_BITS == 8 || CRC_BE_BITS == 8
-+#if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
-
++/* implements slicing-by-4 or slicing-by-8 algorithm */
  static inline u32
  crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
-@@ -123,6 +123,12 @@ u32 __pure crc32_le(u32 crc, unsigned ch
- 		crc = (crc >> 4) ^ crc32table_le[0][crc & 15];
- 	}
- # elif CRC_LE_BITS == 8
-+	/* aka Sarwate algorithm */
-+	while (len--) {
-+		crc ^= *p++;
-+		crc = (crc >> 8) ^ crc32table_le[0][crc & 255];
-+	}
+ {
+@@ -54,41 +55,78 @@ crc32_body(u32 crc, unsigned char const
+ 		tab[2][(crc >> 8) & 255] ^ \
+ 		tab[1][(crc >> 16) & 255] ^ \
+ 		tab[0][(crc >> 24) & 255]
++#  define DO_CRC8a (tab[7][(q) & 255] ^ \
++		tab[6][(q >> 8) & 255] ^ \
++		tab[5][(q >> 16) & 255] ^ \
++		tab[4][(q >> 24) & 255])
++#  define DO_CRC8b (tab[3][(q) & 255] ^ \
++		tab[2][(q >> 8) & 255] ^ \
++		tab[1][(q >> 16) & 255] ^ \
++		tab[0][(q >> 24) & 255])
+ # else
+ #  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+ #  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
+ 		tab[1][(crc >> 8) & 255] ^ \
+ 		tab[2][(crc >> 16) & 255] ^ \
+ 		tab[3][(crc >> 24) & 255]
++#  define DO_CRC8a (tab[4][(q) & 255] ^ \
++		tab[5][(q >> 8) & 255] ^ \
++		tab[6][(q >> 16) & 255] ^ \
++		tab[8][(q >> 24) & 255])
++#  define DO_CRC8b (tab[0][(q) & 255] ^ \
++		tab[1][(q >> 8) & 255] ^ \
++		tab[2][(q >> 16) & 255] ^ \
++		tab[3][(q >> 24) & 255])
+ # endif
+ 	const u32 *b;
+-	size_t    rem_len;
++	size_t init_len;
++	size_t middle_len;
++	size_t rem_len;
++
++	/* break buf into init_len bytes before and
++	 * rem_len bytes after a middle section with
++	 * middle_len properly aligned words */
++# if CRC_LE_BITS == 32
++	init_len = min((-((uintptr_t)buf)) & 3, len);
++	middle_len = (len - init_len) >> 2;
++	rem_len = (len - init_len) & 3;
 +# else
- 	const u32      (*tab)[] = crc32table_le;
++	init_len = min((-((uintptr_t)buf)) & 7, len);
++	middle_len = (len - init_len) >> 3;
++	rem_len = (len - init_len) & 7;
++# endif
 
- 	crc = (__force u32) __cpu_to_le32(crc);
-@@ -166,6 +172,11 @@ u32 __pure crc32_be(u32 crc, unsigned ch
- 		crc = (crc << 4) ^ crc32table_be[0][crc >> 28];
+ 	/* Align it */
+-	if (unlikely((long)buf & 3 && len)) {
++	if (unlikely(init_len)) {
+ 		do {
+ 			DO_CRC(*buf++);
+-		} while ((--len) && ((long)buf)&3);
++		} while (--init_len);
  	}
- # elif CRC_BE_BITS == 8
-+	while (len--) {
-+		crc ^= *p++ << 24;
-+		crc = (crc << 8) ^ crc32table_be[0][crc >> 24];
-+	}
+-	rem_len = len & 3;
+-	/* load data 32 bits wide, xor data 32 bits wide. */
+-	len = len >> 2;
+ 	b = (const u32 *)buf;
+-	for (--b; len; --len) {
++	for (--b; middle_len; --middle_len) {
++# if CRC_LE_BITS == 32
+ 		crc ^= *++b; /* use pre increment for speed */
+ 		DO_CRC4;
 +# else
- 	const u32      (*tab)[] = crc32table_be;
++		u32 q;
++		q = crc ^ *++b;
++		crc = DO_CRC8a;
++		q = *++b;
++		crc ^= DO_CRC8b;
++# endif
+ 	}
+-	len = rem_len;
+ 	/* And the last few bytes */
+-	if (len) {
++	if (rem_len) {
+ 		u8 *p = (u8 *)(b + 1) - 1;
+ 		do {
+ 			DO_CRC(*++p); /* use pre increment for speed */
+-		} while (--len);
++		} while (--rem_len);
+ 	}
+ 	return crc;
+ #undef DO_CRC
+ #undef DO_CRC4
++#undef DO_CRC8a
++#undef DO_CRC8b
+ }
+ #endif
 
- 	crc = (__force u32) __cpu_to_be32(crc);
 Index: infiniband/lib/crc32defs.h
 ===================================================================
 --- infiniband.orig/lib/crc32defs.h
 +++ infiniband/lib/crc32defs.h
-@@ -6,27 +6,29 @@
+@@ -6,29 +6,29 @@
  #define CRCPOLY_LE 0xedb88320
  #define CRCPOLY_BE 0x04c11db7
 
--/* How many bits at a time to use.  Requires a table of 4<<CRC_xx_BITS bytes. */
--/* For less performance-sensitive, use 4 */
-+/* How many bits at a time to use.  Valid values are 1, 2, 4, 8, and 32. */
-+/* For less performance-sensitive, use 4 or 8 */
+-/* How many bits at a time to use.  Valid values are 1, 2, 4, 8, and 32. */
++/* How many bits at a time to use.  Valid values are 1, 2, 4, 8, 32 and 64. */
+ /* For less performance-sensitive, use 4 or 8 */
  #ifndef CRC_LE_BITS
--# define CRC_LE_BITS 8
-+# define CRC_LE_BITS 32
+-# define CRC_LE_BITS 32
++# define CRC_LE_BITS 64
  #endif
  #ifndef CRC_BE_BITS
--# define CRC_BE_BITS 8
-+# define CRC_BE_BITS 32
+-# define CRC_BE_BITS 32
++# define CRC_BE_BITS 64
  #endif
 
  /*
   * Little-endian CRC computation.  Used with serial bit streams sent
   * lsbit-first.  Be sure to use cpu_to_le32() to append the computed CRC.
   */
--#if CRC_LE_BITS > 8 || CRC_LE_BITS < 1 || CRC_LE_BITS & CRC_LE_BITS-1
--# error CRC_LE_BITS must be a power of 2 between 1 and 8
-+#if CRC_LE_BITS > 32 || CRC_LE_BITS < 1 || CRC_LE_BITS == 16 || \
-+	CRC_LE_BITS & CRC_LE_BITS-1
-+# error "CRC_LE_BITS must be one of {1, 2, 4, 8, 32}"
+-#if CRC_LE_BITS > 32 || CRC_LE_BITS < 1 || CRC_LE_BITS == 16 || \
++#if CRC_LE_BITS > 64 || CRC_LE_BITS < 1 || CRC_LE_BITS == 16 || \
+ 	CRC_LE_BITS & CRC_LE_BITS-1
+-# error "CRC_LE_BITS must be one of {1, 2, 4, 8, 32}"
++# error "CRC_LE_BITS must be one of {1, 2, 4, 8, 64}"
  #endif
 
  /*
   * Big-endian CRC computation.  Used with serial bit streams sent
   * msbit-first.  Be sure to use cpu_to_be32() to append the computed CRC.
   */
--#if CRC_BE_BITS > 8 || CRC_BE_BITS < 1 || CRC_BE_BITS & CRC_BE_BITS-1
--# error CRC_BE_BITS must be a power of 2 between 1 and 8
-+#if CRC_BE_BITS > 32 || CRC_BE_BITS < 1 || CRC_BE_BITS == 16 || \
-+	CRC_BE_BITS & CRC_BE_BITS-1
-+# error "CRC_BE_BITS must be one of {1, 2, 4, 8, 32}"
+-#if CRC_BE_BITS > 32 || CRC_BE_BITS < 1 || CRC_BE_BITS == 16 || \
++#if CRC_BE_BITS > 64 || CRC_BE_BITS < 1 || CRC_BE_BITS == 16 || \
+ 	CRC_BE_BITS & CRC_BE_BITS-1
+-# error "CRC_BE_BITS must be one of {1, 2, 4, 8, 32}"
++# error "CRC_BE_BITS must be one of {1, 2, 4, 8, 64}"
  #endif
 Index: infiniband/lib/gen_crc32table.c
 ===================================================================
 --- infiniband.orig/lib/gen_crc32table.c
 +++ infiniband/lib/gen_crc32table.c
-@@ -4,11 +4,20 @@
+@@ -4,20 +4,24 @@
 
  #define ENTRIES_PER_LINE 4
 
-+#if CRC_LE_BITS <= 8
- #define LE_TABLE_SIZE (1 << CRC_LE_BITS)
-+#else
-+#define LE_TABLE_SIZE 256
-+#endif
-+
-+#if CRC_BE_BITS <= 8
- #define BE_TABLE_SIZE (1 << CRC_BE_BITS)
-+#else
-+#define BE_TABLE_SIZE 256
-+#endif
+-#if CRC_LE_BITS <= 8
+-#define LE_TABLE_SIZE (1 << CRC_LE_BITS)
++#if CRC_LE_BITS > 8
++# define LE_TABLE_ROWS (CRC_LE_BITS/8)
++# define LE_TABLE_SIZE 256
+ #else
+-#define LE_TABLE_SIZE 256
++# define LE_TABLE_ROWS 1
++# define LE_TABLE_SIZE (1 << CRC_LE_BITS)
+ #endif
 
--static uint32_t crc32table_le[4][LE_TABLE_SIZE];
--static uint32_t crc32table_be[4][BE_TABLE_SIZE];
-+static uint32_t crc32table_le[8][256];
-+static uint32_t crc32table_be[8][256];
+-#if CRC_BE_BITS <= 8
+-#define BE_TABLE_SIZE (1 << CRC_BE_BITS)
++#if CRC_BE_BITS > 8
++# define BE_TABLE_ROWS (CRC_BE_BITS/8)
++# define BE_TABLE_SIZE 256
+ #else
+-#define BE_TABLE_SIZE 256
++# define BE_TABLE_ROWS 1
++# define BE_TABLE_SIZE (1 << CRC_BE_BITS)
+ #endif
+
+-static uint32_t crc32table_le[8][256];
+-static uint32_t crc32table_be[8][256];
++static uint32_t crc32table_le[LE_TABLE_ROWS][256];
++static uint32_t crc32table_be[BE_TABLE_ROWS][256];
 
  /**
   * crc32init_le() - allocate and initialize LE table data
-@@ -24,14 +33,14 @@ static void crc32init_le(void)
-
- 	crc32table_le[0][0] = 0;
-
--	for (i = 1 << (CRC_LE_BITS - 1); i; i >>= 1) {
-+	for (i = LE_TABLE_SIZE >> 1; i; i >>= 1) {
- 		crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
- 		for (j = 0; j < LE_TABLE_SIZE; j += 2 * i)
- 			crc32table_le[0][i + j] = crc ^ crc32table_le[0][j];
+@@ -40,7 +44,7 @@ static void crc32init_le(void)
  	}
  	for (i = 0; i < LE_TABLE_SIZE; i++) {
  		crc = crc32table_le[0][i];
--		for (j = 1; j < 4; j++) {
-+		for (j = 1; j < 8; j++) {
+-		for (j = 1; j < 8; j++) {
++		for (j = 1; j < LE_TABLE_ROWS; j++) {
  			crc = crc32table_le[0][crc & 0xff] ^ (crc >> 8);
  			crc32table_le[j][i] = crc;
  		}
-@@ -55,18 +64,18 @@ static void crc32init_be(void)
+@@ -64,18 +68,18 @@ static void crc32init_be(void)
  	}
  	for (i = 0; i < BE_TABLE_SIZE; i++) {
  		crc = crc32table_be[0][i];
--		for (j = 1; j < 4; j++) {
-+		for (j = 1; j < 8; j++) {
+-		for (j = 1; j < 8; j++) {
++		for (j = 1; j < BE_TABLE_ROWS; j++) {
  			crc = crc32table_be[0][(crc >> 24) & 0xff] ^ (crc << 8);
  			crc32table_be[j][i] = crc;
  		}
  	}
  }
 
--static void output_table(uint32_t table[4][256], int len, char *trans)
-+static void output_table(uint32_t table[8][256], int len, char *trans)
+-static void output_table(uint32_t table[8][256], int len, char *trans)
++static void output_table(uint32_t (*table)[256], int rows, int len, char *trans)
  {
  	int i, j;
 
--	for (j = 0 ; j < 4; j++) {
-+	for (j = 0 ; j < 8; j++) {
+-	for (j = 0 ; j < 8; j++) {
++	for (j = 0 ; j < rows; j++) {
  		printf("{");
  		for (i = 0; i < len - 1; i++) {
  			if (i % ENTRIES_PER_LINE == 0)
-@@ -83,14 +92,14 @@ int main(int argc, char** argv)
+@@ -92,15 +96,19 @@ int main(int argc, char** argv)
 
  	if (CRC_LE_BITS > 1) {
  		crc32init_le();
--		printf("static const u32 crc32table_le[4][256] = {");
-+		printf("static const u32 crc32table_le[8][256] = {");
- 		output_table(crc32table_le, LE_TABLE_SIZE, "tole");
+-		printf("static const u32 crc32table_le[8][256] = {");
+-		output_table(crc32table_le, LE_TABLE_SIZE, "tole");
++		printf("static const u32 crc32table_le[%d][%d] = {",
++		       LE_TABLE_ROWS, LE_TABLE_SIZE);
++		output_table(crc32table_le, LE_TABLE_ROWS,
++			     LE_TABLE_SIZE, "tole");
  		printf("};\n");
  	}
 
  	if (CRC_BE_BITS > 1) {
  		crc32init_be();
--		printf("static const u32 crc32table_be[4][256] = {");
-+		printf("static const u32 crc32table_be[8][256] = {");
- 		output_table(crc32table_be, BE_TABLE_SIZE, "tobe");
+-		printf("static const u32 crc32table_be[8][256] = {");
+-		output_table(crc32table_be, BE_TABLE_SIZE, "tobe");
++		printf("static const u32 crc32table_be[%d][%d] = {",
++		       BE_TABLE_ROWS, BE_TABLE_SIZE);
++		output_table(crc32table_be, LE_TABLE_ROWS,
++			     BE_TABLE_SIZE, "tobe");
  		printf("};\n");
  	}
+
