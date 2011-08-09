@@ -1,67 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1HILE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 07:04:27 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:43023 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753122Ab1HILE0 (ORCPT
+	id S1753019Ab1HILI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 07:08:27 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:26564 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab1HILI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 07:04:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArkDAJ8SQU55LbABgWdsb2JhbABCpzcVAQEWJiWBQAEBBTocIxAIAxguFCUDIRPEQA6GOASkAg
-Date: Tue, 9 Aug 2011 21:04:21 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 2/2] dentry: move to per-sb LRU locks
-Message-ID: <20110809110420.GT3162@dastard>
-References: <1312787021-11324-1-git-send-email-david@fromorbit.com>
- <1312787021-11324-3-git-send-email-david@fromorbit.com>
- <1312808544.10488.31.camel@twins>
+	Tue, 9 Aug 2011 07:08:26 -0400
+X-IronPort-AV: E=Sophos;i="4.67,342,1309737600"; 
+   d="scan'208";a="7174826"
+Subject: Re: [PATCH] xen: modify kernel mappings corresponding to granted
+ pages
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>
+CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Jeremy Fitzhardinge" <Jeremy.Fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 9 Aug 2011 12:08:24 +0100
+Message-ID: <1312888104.26263.99.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312808544.10488.31.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 03:02:24PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-08 at 17:03 +1000, Dave Chinner wrote:
-> > +       /* s_dentry_lru_lock protects s_dentry_lru, s_nr_dentry_unused */
-> > +       spinlock_t              s_dentry_lru_lock ____cacheline_aligned_in_smp;
-> >         struct list_head        s_dentry_lru;   /* unused dentry lru */ 
+On Tue, 2011-07-26 at 17:55 +0100, stefano.stabellini@eu.citrix.com
+wrote:
+> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> Wouldn't it make sense to have both those on the same cacheline?
+> If we want to use granted pages for AIO, changing the mappings of a user
+> vma and the corresponding p2m is not enough, we also need to update the
+> kernel mappings accordingly.
+> On x86_64 it is easy, we can issue another HYPERVISOR_grant_table_op
+> right away in m2p_add_override. We can remove the mappings using another
+> HYPERVISOR_grant_table_op in m2p_remove_override.
+> On x86_32 it is more difficult because the pages are highmem pages and
+> therefore we need to catch the set_pte that tries to map a granted page
+> and issue an HYPERVISOR_grant_table_op instead.
+> Same thing for unmapping them: we need to catch the pte clear or the
+> set_pte that try to unmap a granted page and issue an
+> HYPERVISOR_grant_table_op.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/include/asm/xen/page.h |    5 ++-
+>  arch/x86/xen/mmu.c              |   68 +++++++++++++++++++++++++++++++++++++++
+>  arch/x86/xen/p2m.c              |   47 ++++++++++++++++++++------
+>  drivers/xen/gntdev.c            |   27 +++++++++++++++-
+>  drivers/xen/grant-table.c       |    4 +-
+>  include/xen/grant_table.h       |    1 +
+>  6 files changed, 137 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> index 64a619d..ec7bbfb 100644
+> --- a/arch/x86/include/asm/xen/page.h
+> +++ b/arch/x86/include/asm/xen/page.h
+> @@ -12,6 +12,7 @@
+>  #include <asm/pgtable.h>
+>  
+>  #include <xen/interface/xen.h>
+> +#include <xen/grant_table.h>
+>  #include <xen/features.h>
+>  
+>  /* Xen machine address */
+> @@ -31,8 +32,10 @@ typedef struct xpaddr {
+>  #define INVALID_P2M_ENTRY	(~0UL)
+>  #define FOREIGN_FRAME_BIT	(1UL<<(BITS_PER_LONG-1))
+>  #define IDENTITY_FRAME_BIT	(1UL<<(BITS_PER_LONG-2))
+> +#define GRANT_FRAME_BIT	(1UL<<(BITS_PER_LONG-3))
 
-Um, they are, aren't they? The annotation moves s_dentry_lru_lock to
-the start of a new cacheline, and everything packs in after that?
+We need to be a bit careful about stealing more bits from the top of the
+MFN space, especially on 32 bit. Stealing the top three bits of a 32 bit
+MFN leaves a total (host) address space of 2^(29+12) == 2TB, which seems
+large today but... To be honest even the current stealing the top 2 bits
+(==8TB) seems a bit shaky for the not too distant future...
 
-$ pahole fs/dcache.o
-....
-        /* --- cacheline 8 boundary (512 bytes) --- */
-        spinlock_t                 s_dentry_lru_lock;    /*   512    72 */
-        /* --- cacheline 9 boundary (576 bytes) was 8 bytes ago --- */
-        struct list_head           s_dentry_lru;         /*   584    16 */
-        int                        s_nr_dentry_unused;   /*   600     4 */
+I'm not sure what the alternatives are though. Perhaps we can switch
+FOREIGN_FRAME_BIT to SOMETHING_SPECIAL_BIT (with a better name ;-)) and
+do a secondary lookup based on that? That might be too heavy weight for
+FOREIGN and IDENTITY lookups? But for the grant frame bits we are
+already manipulating a hashtable too aren't we?
 
-Oh, bloody hell. When did that change? (let me guess - gcc changed
-the implementation of attribute __aligned__ to affect the size of 
-variables for packing as well as alignment at some point?)
+The secondary lookup could be PFN indexed so wouldn't necessarily need
+to scale to TB sizes, probably a bitmap would do?
 
-Ok, so how do I it move the lock to the start of the next cache line
-and have the following variables pack tightly against it so they are
-all on the same cache line? And on a different cacheline to the
-s_inode_lru* variables that also have the same
-____cacheline_aligned_in_smp annotations....
+Alternatively perhaps we can reuse the other 31 bits when the
+SOMETHING_SPECIAL_BIT is set to indicate what kind of special? e.g.
+FOREIGN == 0x80000000, IDENTITY == 0x80000001, GRANT == 0x80000002 etc?
+Might interact strangely with the save/restore protocol (ISTR Konrad
+investigated that when he added IDENTITY_FRAME_BIT but don't recall the
+result).
 
-/me sees a patch to other XFS structures in the not-to-distant future
+Ian.
 
-Cheers,
+>  #define FOREIGN_FRAME(m)	((m) | FOREIGN_FRAME_BIT)
+>  #define IDENTITY_FRAME(m)	((m) | IDENTITY_FRAME_BIT)
+> +#define GRANT_FRAME(m)	((m) | GRANT_FRAME_BIT)
+>  
+>  /* Maximum amount of memory we can handle in a domain in pages */
+>  #define MAX_DOMAIN_PAGES						\
+> @@ -48,7 +51,7 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+>  					     unsigned long pfn_e);
+>  
+>  extern int m2p_add_override(unsigned long mfn, struct page *page,
+> -			    bool clear_pte);
+> +			    struct gnttab_map_grant_ref *kmap_op);
+>  extern int m2p_remove_override(struct page *page, bool clear_pte);
+>  extern struct page *m2p_find_override(unsigned long mfn);
+>  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 4e37a7c0..13f20d8 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -282,8 +282,70 @@ static bool xen_batched_set_pte(pte_t *ptep, pte_t pteval)
+>  	return true;
+>  }
+>  
+> +#ifdef CONFIG_HIGHMEM
+> +static int xen_unmap_granted_page(pte_t *ptep)
+> +{
+> +	unsigned long mfn;
+> +	struct page *page;
+> +
+> +	if (pte_flags(*ptep) & _PAGE_USER)
+> +		return 1;
+> +	mfn = (ptep->pte & PTE_PFN_MASK) >> PAGE_SHIFT;
+> +	page = m2p_find_override(mfn);
+> +	if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
+> +		int ret;
+> +		struct gnttab_unmap_grant_ref kunmap_op;
+> +		struct gnttab_map_grant_ref *kmap_op =
+> +			(struct gnttab_map_grant_ref *) page->index;
+> +		kunmap_op.host_addr = kmap_op->host_addr;
+> +		kunmap_op.handle = kmap_op->handle;
+> +		kunmap_op.dev_bus_addr = 0;
+> +		ret = HYPERVISOR_grant_table_op(
+> +				GNTTABOP_unmap_grant_ref, &kunmap_op, 1);
+> +		WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, failed to "
+> +			"modify kernel mappings", page_to_pfn(page), mfn);
+> +		return ret;
+> +	}
+> +	return 1;
+> +}
+> +#endif
+> +
+>  static void xen_set_pte(pte_t *ptep, pte_t pteval)
+>  {
+> +#ifdef CONFIG_HIGHMEM
+> +	if (!(pte_flags(pteval) & _PAGE_USER)) {
+> +		int ret;
+> +		struct page *page;
+> +		unsigned long mfn = (pteval.pte & PTE_PFN_MASK) >> PAGE_SHIFT;
+> +		page = m2p_find_override(mfn);
+> +		/*
+> +		 * if this is a granted page we need to use a grant table
+> +		 * hypercall to map it instead
+> +		 */
+> +		if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
+> +			struct gnttab_map_grant_ref *kmap_op =
+> +				(struct gnttab_map_grant_ref *) page->index;
+> +			unsigned long old_mfn = kmap_op->dev_bus_addr;
+> +			kmap_op->host_addr =
+> +				arbitrary_virt_to_machine(ptep).maddr;
+> +			kmap_op->dev_bus_addr = 0;
+> +			ret = HYPERVISOR_grant_table_op(
+> +					GNTTABOP_map_grant_ref, kmap_op, 1);
+> +			WARN(ret, "xen_set_pte: pfn %lx mfn %lx, failed to "
+> +				"modify kernel mappings",
+> +				page_to_pfn(page), mfn);
+> +			kmap_op->dev_bus_addr = old_mfn;
+> +			return;
+> +		}
+> +		/*
+> +		 * even if it is not a granted page, the old page we are about
+> +		 * to overwrite could be a granted page and in that case we need
+> +		 * to unmap it using a grant table hypercall
+> +		 */
+> +		xen_unmap_granted_page(ptep);
+> +	}
+> +#endif
+> +
+>  	if (!xen_batched_set_pte(ptep, pteval))
+>  		native_set_pte(ptep, pteval);
+>  }
+> @@ -548,6 +610,12 @@ static void xen_set_pte_atomic(pte_t *ptep, pte_t pte)
+>  
+>  static void xen_pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
+>  {
+> +	/*
+> +	 * check if this is a granted page and unmap it using a grant table
+> +	 * hypercall in that case
+> +	 */
+> +	if (!xen_unmap_granted_page(ptep))
+> +		return;
+>  	if (!xen_batched_set_pte(ptep, native_make_pte(0)))
+>  		native_pte_clear(mm, addr, ptep);
+>  }
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 58efeb9..1c4d2b5 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -161,6 +161,7 @@
+>  #include <asm/xen/page.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/hypervisor.h>
+> +#include <xen/grant_table.h>
+>  
+>  #include "xen-ops.h"
+>  
+> @@ -676,7 +677,8 @@ static unsigned long mfn_hash(unsigned long mfn)
+>  }
+>  
+>  /* Add an MFN override for a particular page */
+> -int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
+> +int m2p_add_override(unsigned long mfn, struct page *page,
+> +		struct gnttab_map_grant_ref *kmap_op)
+>  {
+>  	unsigned long flags;
+>  	unsigned long pfn;
+> @@ -699,9 +701,18 @@ int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
+>  	if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+>  		return -ENOMEM;
+>  
+> -	if (clear_pte && !PageHighMem(page))
+> -		/* Just zap old mapping for now */
+> -		pte_clear(&init_mm, address, ptep);
+> +	if (kmap_op != NULL) {
+> +		if (!PageHighMem(page)) {
+> +			int ret = HYPERVISOR_grant_table_op(
+> +					GNTTABOP_map_grant_ref, kmap_op, 1);
+> +			WARN(ret, "m2p_add_override: pfn %lx mfn %lx, "
+> +				"failed to modify kernel mappings", pfn, mfn);
+> +		}
+> +		page->private |= GRANT_FRAME_BIT;
+> +		/* let's use dev_bus_addr to record the old mfn instead */
+> +		kmap_op->dev_bus_addr = page->index;
+> +		page->index = (unsigned long) kmap_op;
+> +	}
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> @@ -735,13 +746,27 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  	list_del(&page->lru);
+>  	spin_unlock_irqrestore(&m2p_override_lock, flags);
+> -	set_phys_to_machine(pfn, page->index);
+>  
+> -	if (clear_pte && !PageHighMem(page))
+> -		set_pte_at(&init_mm, address, ptep,
+> -				pfn_pte(pfn, PAGE_KERNEL));
+> -		/* No tlb flush necessary because the caller already
+> -		 * left the pte unmapped. */
+> +	if (clear_pte) {
+> +		struct gnttab_map_grant_ref *map_op =
+> +			(struct gnttab_map_grant_ref *) page->index;
+> +		set_phys_to_machine(pfn, map_op->dev_bus_addr);
+> +		if (!PageHighMem(page)) {
+> +			int ret;
+> +			struct gnttab_unmap_grant_ref unmap_op;
+> +			unmap_op.host_addr = map_op->host_addr;
+> +			unmap_op.handle = map_op->handle;
+> +			unmap_op.dev_bus_addr = 0;
+> +			ret = HYPERVISOR_grant_table_op(
+> +					GNTTABOP_unmap_grant_ref, &unmap_op, 1);
+> +			WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, "
+> +				"failed to modify kernel mappings", pfn, mfn);
+> +			set_pte_at(&init_mm, address, ptep,
+> +					pfn_pte(pfn, PAGE_KERNEL));
+> +			__flush_tlb_single(address);
+> +		}
+> +	} else
+> +		set_phys_to_machine(pfn, page->index);
+>  
+>  	return 0;
+>  }
+> @@ -758,7 +783,7 @@ struct page *m2p_find_override(unsigned long mfn)
+>  	spin_lock_irqsave(&m2p_override_lock, flags);
+>  
+>  	list_for_each_entry(p, bucket, lru) {
+> -		if (p->private == mfn) {
+> +		if ((p->private & (~GRANT_FRAME_BIT)) == mfn) {
+>  			ret = p;
+>  			break;
+>  		}
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index f914b26..ca41772 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -83,6 +83,7 @@ struct grant_map {
+>  	struct ioctl_gntdev_grant_ref *grants;
+>  	struct gnttab_map_grant_ref   *map_ops;
+>  	struct gnttab_unmap_grant_ref *unmap_ops;
+> +	struct gnttab_map_grant_ref   *kmap_ops;
+>  	struct page **pages;
+>  };
+>  
+> @@ -116,10 +117,12 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
+>  	add->grants    = kzalloc(sizeof(add->grants[0])    * count, GFP_KERNEL);
+>  	add->map_ops   = kzalloc(sizeof(add->map_ops[0])   * count, GFP_KERNEL);
+>  	add->unmap_ops = kzalloc(sizeof(add->unmap_ops[0]) * count, GFP_KERNEL);
+> +	add->kmap_ops  = kzalloc(sizeof(add->kmap_ops[0])  * count, GFP_KERNEL);
+>  	add->pages     = kzalloc(sizeof(add->pages[0])     * count, GFP_KERNEL);
+>  	if (NULL == add->grants    ||
+>  	    NULL == add->map_ops   ||
+>  	    NULL == add->unmap_ops ||
+> +	    NULL == add->kmap_ops  ||
+>  	    NULL == add->pages)
+>  		goto err;
+>  
+> @@ -129,6 +132,7 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
+>  	for (i = 0; i < count; i++) {
+>  		add->map_ops[i].handle = -1;
+>  		add->unmap_ops[i].handle = -1;
+> +		add->kmap_ops[i].handle = -1;
+>  	}
+>  
+>  	add->index = 0;
+> @@ -142,6 +146,7 @@ err:
+>  	kfree(add->grants);
+>  	kfree(add->map_ops);
+>  	kfree(add->unmap_ops);
+> +	kfree(add->kmap_ops);
+>  	kfree(add);
+>  	return NULL;
+>  }
+> @@ -243,10 +248,30 @@ static int map_grant_pages(struct grant_map *map)
+>  			gnttab_set_unmap_op(&map->unmap_ops[i], addr,
+>  				map->flags, -1 /* handle */);
+>  		}
+> +	} else {
+> +		for (i = 0; i < map->count; i++) {
+> +			unsigned level;
+> +			unsigned long address = (unsigned long)
+> +				pfn_to_kaddr(page_to_pfn(map->pages[i]));
+> +			pte_t *ptep;
+> +			u64 pte_maddr = 0;
+> +			if (!PageHighMem(map->pages[i])) {
+> +				ptep = lookup_address(address, &level);
+> +				pte_maddr =
+> +					arbitrary_virt_to_machine(ptep).maddr;
+> +			}
+> +			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+> +				map->flags |
+> +				GNTMAP_host_map |
+> +				GNTMAP_contains_pte,
+> +				map->grants[i].ref,
+> +				map->grants[i].domid);
+> +		}
+>  	}
+>  
+>  	pr_debug("map %d+%d\n", map->index, map->count);
+> -	err = gnttab_map_refs(map->map_ops, map->pages, map->count);
+> +	err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+> +			map->pages, map->count);
+>  	if (err)
+>  		return err;
+>  
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index fd725cd..1e8669a 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -448,6 +448,7 @@ unsigned int gnttab_max_grant_frames(void)
+>  EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +			struct gnttab_map_grant_ref *kmap_ops,
+>  		    struct page **pages, unsigned int count)
+>  {
+>  	int i, ret;
+> @@ -488,8 +489,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+>  			 */
+>  			return -EOPNOTSUPP;
+>  		}
+> -		ret = m2p_add_override(mfn, pages[i],
+> -				       map_ops[i].flags & GNTMAP_contains_pte);
+> +		ret = m2p_add_override(mfn, pages[i], &kmap_ops[i]);
+>  		if (ret)
+>  			return ret;
+>  	}
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index b1fab6b..6b99bfb 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -156,6 +156,7 @@ unsigned int gnttab_max_grant_frames(void);
+>  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+>  
+>  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> +			struct gnttab_map_grant_ref *kmap_ops,
+>  		    struct page **pages, unsigned int count);
+>  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+>  		      struct page **pages, unsigned int count);
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
