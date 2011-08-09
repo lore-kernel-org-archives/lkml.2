@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1HIQIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 12:08:44 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:45774 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752880Ab1HIQIn (ORCPT
+	id S1753568Ab1HIQNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 12:13:40 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42024 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab1HIQNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 12:08:43 -0400
-Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-From: Joe Perches <joe@perches.com>
-To: stufever@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        Sandeep.Kumar@freescale.com, Wang Shaoyan <wangshaoyan.pt@taobao.com>
-In-Reply-To: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
-References: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 09:08:38 -0700
-Message-ID: <1312906118.11924.8.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Aug 2011 12:13:39 -0400
+Date: Tue, 9 Aug 2011 18:13:34 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+        Mike Snitzer <msnitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [patch] block: properly handle flush/fua requests in
+ blk_insert_cloned_request
+Message-ID: <20110809161334.GC23842@htj.dyndns.org>
+References: <x49y5z2eibl.fsf@segfault.boston.devel.redhat.com>
+ <20110809153826.GB23842@htj.dyndns.org>
+ <x49liv2eg34.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49liv2eg34.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-09 at 23:45 +0800, stufever@gmail.com wrote:
-> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
->   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
-[]
-> diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-[]
-> @@ -686,10 +686,26 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
->  {
->  	unsigned int last_rule_idx = priv->cur_filer_idx;
->  	unsigned int cmp_rqfpr;
-> -	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
-> -	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
-> +	unsigned int *local_rqfpr;
-> +	unsigned int *local_rqfcr;
->  	int i = 0x0, k = 0x0;
->  	int j = MAX_FILER_IDX, l = 0x0;
-> +	int ret = 1;
-> +
-> +	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-> +		GFP_KERNEL);
-> +	if (!local_rqfpr) {
-> +		pr_err("Out of memory\n");
-> +		ret = 0;
-> +		got err;
-> +	}
-> +	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-> +		GFP_KERNEL);
-> +	if (!local_rqfcr) {
-> +		pr_err("Out of memory\n");
-> +		ret = 0;
-> +		goto err1;
-> +	}
+Hello,
 
-Perhaps it'd be clearer to use:
+On Tue, Aug 09, 2011 at 11:53:51AM -0400, Jeff Moyer wrote:
+> Tejun Heo <tj@kernel.org> writes:
+> > I'm a bit confused.  We still need ELEVATOR_INSERT_FLUSH fix for
+> > insertion paths, right?  Or is blk_insert_cloned_request() supposed to
+> > used only by request based dm which lives under the elevator?  If so,
+> > it would be great to make that explicit in the comment.  Maybe just
+> > renaming it to blk_insert_dm_cloned_request() would be better as it
+> > wouldn't be safe for other cases anyway.
+> 
+> request-based dm is the only caller at present.  I'm not a fan of
+> renaming the function, but I'm more than willing to comment it.
 
-	local_rqfpr = kmalloc(...)
-	local_rqfcr = kmalloc(...)
-	if (!local_rqfpr || !local_rqfcr) {
-		pr_err(...)
-		ret = -ENOMEM;
-		goto err;
-	}
+I'm still confused and don't think the patch is correct (you can't
+turn off REQ_FUA without decomposing it to data + post flush).
 
-[...]
+Going through flush machinery twice is okay and I think is the right
+thing to do.  At the upper queue, the request is decomposed to member
+requests.  After decomposition, it's either REQ_FLUSH w/o data or data
+request w/ or w/o REQ_FUA.  When the decomposed request reaches lower
+queue, the lower queue will then either short-circuit it, execute
+as-is or decompose data w/ REQ_FUA into data + REQ_FLUSH sequence.
 
-err:
-	kfree(local_rqfpr);
-	kfree(local_rqfcr);
-	return ret;
+AFAICS, the breakages are...
 
-Is the "local_" prefix useful?
-It seems like visual noise to me.
+* ELEVATOR_INSERT_FLUSH not used properly from insert paths.
 
+* Short circuit not kicking in for the dm requests. (the above and the
+  policy patch should solve this, right?)
+
+* BUG(!rq->bio || ...) in blk_insert_flush().  I think we can lift
+  this restriction for empty REQ_FLUSH but also dm can just send down
+  requests with empty bio.
+
+Thanks.
+
+-- 
+tejun
