@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1HIO21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:28:27 -0400
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:56630 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752018Ab1HIO2Z (ORCPT
+	id S1752606Ab1HIO2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:28:31 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:46700 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752499Ab1HIO22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:28:25 -0400
-X-AuditID: 12074423-b7b31ae000000a3c-be-4e41440b5530
+	Tue, 9 Aug 2011 10:28:28 -0400
+X-AuditID: 1209190e-b7c22ae000000a2c-df-4e41439f58fc
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org
 Cc: Andy Lutomirski <luto@MIT.EDU>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,55 +16,66 @@ Cc: Andy Lutomirski <luto@MIT.EDU>, "H. Peter Anvin" <hpa@zytor.com>,
         kimwooyoung@gmail.com, Ingo Molnar <mingo@elte.hu>,
         Borislav Petkov <bp@alien8.de>,
         Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH 3/4] x86-64: Wire up getcpu syscall
-Date: Tue,  9 Aug 2011 10:27:49 -0400
-Message-Id: <6d3b65b43153f765fd995a848a6913991d507172.1312899174.git.luto@mit.edu>
+Subject: [PATCH 4/4] Add vsyscalls to feature-removal-schedule.txt
+Date: Tue,  9 Aug 2011 10:27:50 -0400
+Message-Id: <066852f3f344c1733e0db9a2427981ea1815db7d.1312899174.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1312899174.git.luto@mit.edu>
 References: <cover.1312899174.git.luto@mit.edu>
 In-Reply-To: <cover.1312899174.git.luto@mit.edu>
 References: <cover.1312899174.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsUixG6nosvt4uhnMPuXiEXflaPsFkeufWe3
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsUixG6nrjvf2dHPYHubhEXflaPsFkeufWe3
 	+LzhH5vFtI3iFq/+lFtc3jWHzWLF+U5Wiy2Xmlkt/jXdYrF41PeW3eLHhsesDtwe31v7WDxu
 	tf1h9pi/8yOjx85Zd9k9Fu95yeSxaVUnm8eJGb9ZPD5vkvOYNeswk8eJli+sAVxRXDYpqTmZ
-	ZalF+nYJXBl/9j9nLuhir9g+fRJ7A+N31i5GDg4JAROJ3c+Nuhg5gUwxiQv31rOB2EIC+xgl
-	OleWdzFyAdnrGSUWLWhkhHCeMklc2P+QBaSKTUBFomPpAyaQQSICQhJL79aB1DCD1DTP2c0M
-	UiMsYCxxZtI7dpAaFgFViebbTCBhXoEgiYtHutggFstJHLn8HCzOKWAg8ePzXSaII/Ql1p+4
-	iFN8AqPAAkaGVYyyKblVurmJmTnFqcm6xcmJeXmpRbpmermZJXqpKaWbGMER4KK8g/HPQaVD
-	jAIcjEo8vJz8Dn5CrIllxZW5hxglOZiURHnNnB39hPiS8lMqMxKLM+KLSnNSiw8xSnAwK4nw
-	pmsA5XhTEiurUovyYVLSHCxK4rwyO4EmCaQnlqRmp6YWpBbBZGU4OJQkeP1AhgoWpaanVqRl
-	5pQgpJk4OEGG8wANr3ICGV5ckJhbnJkOkT/FqCglzhsF0iwAksgozYPrhSWoV4ziQK8I8+qD
-	VPEAkxtc9yugwUxAg+vvOIAMLklESEk1MDL3KLRt+BnMtUWL7f7CumVx9ur336/MfdSwRsta
-	cXV7L8/BnF/s4veKQ1duzZrl91Tl1XWGqxcX9T7Y4qG6LMfOKqlnv/TGd1tvxZSE5lbqBC0o
-	3H1WY1fz/JvaE/Yt5WFbXbL5kpEto6WIkZLB9eOl3jbixlMOznd5rlKrOOdtANvjH0u32yux
-	FGckGmoxFxUnAgCuaNR0KwMAAA==
+	ZalF+nYJXBkPVl1gLVjNXdH17QNLA+Nmzi5GTg4JAROJgz072SFsMYkL99azdTFycQgJ7GOU
+	uNFwmQnCWc8o8XLuN0aQKiGBp0wSDaf1QWw2ARWJjqUPgIo4OEQEhCSW3q0DqWcGKWmes5sZ
+	pEZYwEmid+1ssF4WAVWJ6V0r2UDqeQWCJE6vNYJYLCdx5PJzJhCbU8BA4sfnu0wQq/Ql1p+4
+	iFN8AqPAAkaGVYyyKblVurmJmTnFqcm6xcmJeXmpRbrGermZJXqpKaWbGEExwCnJt4Px60Gl
+	Q4wCHIxKPLyc/A5+QqyJZcWVuYcYJTmYlER5i4ARJMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmE
+	N10DKMebklhZlVqUD5OS5mBREuddvQNokkB6YklqdmpqQWoRTFaGg0NJgrcPZKhgUWp6akVa
+	Zk4JQpqJgxNkOA/Q8ConkOHFBYm5xZnpEPlTjIpS4rxRIM0CIImM0jy4XliKesUoDvSKMG8W
+	SBUPML3Bdb8CGswENLj+jgPI4JJEhJRUA6Pl4smXTGZJT+12un8onsM1zmjTBeb+uN/zoy+Z
+	X3xq9FNG7DqjzSS+ovi0d0sr6058CPM6O1ct7YwG33l+i6kJf7aYd8WunFmk3tb/e3nUuXva
+	/22Ke3OYv9wX2WvqtYjrvcj+X4ZL0pgtjz7TX1qkOLdDisU9xfFN3JVrB3xW9TglxMm4zlJi
+	Kc5INNRiLipOBADJnsT1LAMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-getcpu is available as a vdso entry and an emulated vsyscall.
-Programs that for some reason don't want to use the vdso should
-still be able to call getcpu without relying on the slow emulated
-vsyscall.  It costs almost nothing to expose it as a real syscall.
+In a couple years, we'll see how well we've done at eradicating vsyscall-using
+binaries.  Hopefully we can then disable them by default.  We will probably
+have to leave the option to enable them around forever.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
 ---
- arch/x86/include/asm/unistd_64.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ Documentation/feature-removal-schedule.txt |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 705bf13..d92641c 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -681,6 +681,8 @@ __SYSCALL(__NR_syncfs, sys_syncfs)
- __SYSCALL(__NR_sendmmsg, sys_sendmmsg)
- #define __NR_setns				308
- __SYSCALL(__NR_setns, sys_setns)
-+#define __NR_getcpu				309
-+__SYSCALL(__NR_getcpu, sys_getcpu)
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 43f4809..981562f 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -575,6 +575,20 @@ Who:	Hans Verkuil <hans.verkuil@cisco.com>
  
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
+ ----------------------------
+ 
++What:	vsyscalls may go away by default
++When:	3.6
++Why:	All vsyscall functionality is available as regular syscalls and through
++	the vDSO.  Vsyscalls are currently emulated and are slower than normal
++	syscalls.  Userspace exploits can still use the emulated vsyscall traps
++	as a form of 'ret' instruction.
++	
++	In the mean time, do *not* rely on the semantics of int 0x40, int 0x41,
++	and int 0x42.  They may change or go away completely with no notice.
++	Any attempt to use them will result in a warning in the kernel log.
++Who:	Andy Lutomirski <luto@mit.edu>
++
++----------------------------
++
+ What:	g_file_storage driver
+ When:	3.8
+ Why:	This driver has been superseded by g_mass_storage.
 -- 
 1.7.6
 
