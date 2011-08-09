@@ -1,74 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1HIPMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:12:43 -0400
-Received: from emh05.mail.saunalahti.fi ([62.142.5.111]:46450 "EHLO
-	emh05.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab1HIPMl (ORCPT
+	id S1753306Ab1HIPNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:13:04 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41784 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab1HIPNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:12:41 -0400
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 11:12:41 EDT
-Message-ID: <4E414C55.5040903@kolumbus.fi>
-Date: Tue, 09 Aug 2011 18:03:49 +0300
-From: Marko Ristola <marko.ristola@kolumbus.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Tue, 9 Aug 2011 11:13:01 -0400
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-References: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org>
+In-Reply-To: <20110809150035.GE28228@elte.hu>
+References: <cover.1312630712.git.luto@mit.edu> <9a8f28ccbe44cd323a01e9a23b531cb869185a21.1312630712.git.luto@mit.edu>
+ <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
+ <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
+ <493994B35A117E4F832F97C4719C4C040132C5FBE0@orsmsx505.amr.corp.intel.com> <20110809150035.GE28228@elte.hu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 9 Aug 2011 11:12:38 -0400
+X-Google-Sender-Auth: K-MGHHAPTlXt2C_US4EXKLUibq0
+Message-ID: <CAObL_7GA4BDvVfERqdK3XnTnwRdG+Zdp9EjZPtEQjWFvnSSO5Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Antivirus: VAMS
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 9, 2011 at 11:00 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Yu, Fenghua <fenghua.yu@intel.com> wrote:
+>
+>> > -----Original Message-----
+>> > From: amluto@gmail.com [mailto:amluto@gmail.com] On Behalf Of Andrew
+>> > Lutomirski
+>> > Sent: Saturday, August 06, 2011 4:32 PM
+>> > To: Yu, Fenghua
+>> > Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Matthew Garrett; Len
+>> > Brown; linux-acpi@vger.kernel.org; Ingo Molnar
+>> > Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+>> > hasn't already
+>> >
+>> > On Sat, Aug 6, 2011 at 3:33 PM, Yu, Fenghua <fenghua.yu@intel.com>
+>> > wrote:
+>> > >> -----Original Message-----
+>> > >> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+>> > >> Sent: Saturday, August 06, 2011 4:43 AM
+>> > >> To: x86@kernel.org; linux-kernel@vger.kernel.org
+>> > >> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+>> > >> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+>> > >> Subject: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+>> > >> hasn't already
+>> > >>
+>> > >> Intel SDM volume 3A, 8.4.2 says:
+>> > >>
+>> > >>   Software can disable fast-string operation by clearing the
+>> > >>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>> > >>   However, Intel recomments that system software always enable
+>> > >>   fast-string operation.
+>> > >>
+>> > >> The Intel DQ67SW board (with latest BIOS) disables fast string
+>> > >> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+>> > >> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+>> > >> this.
+>> > >>
+>> > >> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>> > >> ---
+>> > >>  arch/x86/kernel/cpu/intel.c |   25 ++++++++++++++++++++++---
+>> > >>  1 files changed, 22 insertions(+), 3 deletions(-)
+>> > >>
+>> > >> diff --git a/arch/x86/kernel/cpu/intel.c
+>> > b/arch/x86/kernel/cpu/intel.c
+>> > >> index ed6086e..c80ab41 100644
+>> > >> --- a/arch/x86/kernel/cpu/intel.c
+>> > >> +++ b/arch/x86/kernel/cpu/intel.c
+>> > >> @@ -30,6 +30,7 @@
+>> > >>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+>> > >>  {
+>> > >>       u64 misc_enable;
+>> > >> +     bool allow_fast_string = true;
+>> > >>
+>> > >>       /* Unmask CPUID levels if masked: */
+>> > >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+>> > >> @@ -118,8 +119,9 @@ static void __cpuinit early_init_intel(struct
+>> > >> cpuinfo_x86 *c)
+>> > >>        * (model 2) with the same problem.
+>> > >>        */
+>> > >>       if (c->x86 == 15) {
+>> > >> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> > >> +             allow_fast_string = false;
+>> > >>
+>> > >> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> > >>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
+>> > >>                       printk(KERN_INFO "kmemcheck: Disabling fast
+>> > string
+>> > >> operations\n");
+>> > >>
+>> > >> @@ -130,11 +132,28 @@ static void __cpuinit early_init_intel(struct
+>> > >> cpuinfo_x86 *c)
+>> > >>  #endif
+>> > >>
+>> > >>       /*
+>> > >> -      * If fast string is not enabled in IA32_MISC_ENABLE for any
+>> > >> reason,
+>> > >> -      * clear the fast string and enhanced fast string CPU
+>> > >> capabilities.
+>> > >> +      * If BIOS didn't enable fast string operation, try to enable
+>> > >> +      * it ourselves.  If that fails, then clear the fast string
+>> > >> +      * and enhanced fast string CPU capabilities.
+>> > >>        */
+>> > >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+>> > >>               rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> > >> +
+>> > >> +             if (allow_fast_string &&
+>> > >> +                 !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING))
+>> > {
+>> > >> +                     misc_enable |=
+>> > MSR_IA32_MISC_ENABLE_FAST_STRING;
+>> > >> +                     wrmsr_safe(MSR_IA32_MISC_ENABLE,
+>> > (u32)misc_enable,
+>> > >> +                                (u32)(misc_enable >> 32));
+>> > >> +
+>> > >> +                     /* Re-read to make sure it stuck. */
+>> > >> +                     rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> > >> +
+>> > >> +                     if (misc_enable &
+>> > MSR_IA32_MISC_ENABLE_FAST_STRING)
+>> > >> +                             printk(KERN_WARNING FW_WARN "CPU #%d:
+>> > "
+>> > >> +
+>> >  "IA32_MISC_ENABLE.FAST_STRING_ENABLE "
+>> > >> +                                    "was not set", c->cpu_index);
+>> > > This printk is redundant because the same info is dumped in the below
+>> > printk. Plus it's not firmware's issue if we can not set fast string
+>> > bit 0 in MISC_ENABLE register. So I don't think FW_WARN is right.
+>> >
+>> > Huh?  This is the success path -- the patch prints the warning if
+>> > flipping the bit worked...
+>>
+>> Ok. I see.
+>>
+>> Still I would suggest to remove this printk. This info will be
+>> printed on every single CPU if BIOS doesn't enable fast string.
+>
+> just do printk_once(). We want to inform the user that something's
+> going on.
 
-Hi
+Already there in v3.
 
-I've been thinking about the Kernel driver side.
-Mauro and others emailed requirements on Jun or July.
+--Andy
 
-I'm sorry for this spam: maybe you have thought this already.
-
-A linked list of read/write locks as the solution for these protections could be
-a base for the general solution. Locks could be accessed either by name "string name"
-or by an integer identifier.
-
-The bridge driver would be the container of the lock list.
-Lock take / release handles would be changeable by Bridge driver at driver init.
-This way bridge could tune the lock taking actions. Sub devices would not have
-to know the details of the bridge device.
-
-When implemented as a library ".ko" module, this could be
-used by all related kernel drivers. The locking code would be very general.
-Maybe adding a lock list into each PCI bus device would solve the device export problem to KVM too.
-
-If some module wouldn't handle the proper locking yet,
-it would not deliver the protection, but it would work as before: no regressions.
-
-The library could also be called so that a driver would ask three locks at the same time.
-If the driver would get all three locks, it would return success.
-If the driver would not get all three locks, it would not lock any of them (with _trylock case).
-
-I don't have time to implement this feature.
-
-Happy meeting for all of you,
-Marko Ristola
+>
+> Thanks,
+>
+>        Ingo
+>
