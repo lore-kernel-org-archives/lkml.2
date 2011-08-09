@@ -1,116 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab1HICCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 22:02:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab1HICCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 22:02:02 -0400
-Date: Mon, 8 Aug 2011 22:01:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
-Message-ID: <20110809020127.GA3700@redhat.com>
-References: <20110806084447.388624428@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110806084447.388624428@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751538Ab1HICGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 22:06:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6106 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab1HICGr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 22:06:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 08 Aug 2011 19:06:47 -0700
+From: dilee@nvidia.com
+To: rpurdie@rpsys.net, lethal@linux-sh.org, akpm@linux-foundation.org,
+        arun.murthy@stericsson.com, rmorell@nvidia.com,
+        linus.walleij@stericsson.com
+Cc: jnien@nvidia.com, swarren@nvidia.com, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Dilan Lee <dilee@nvidia.com>
+Subject: [PATCH] video: Add a callback 'notify_after' for backlight control
+Date: Tue,  9 Aug 2011 10:05:25 +0800
+Message-Id: <1312855525-21464-1-git-send-email-dilee@nvidia.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 04:44:47PM +0800, Wu Fengguang wrote:
-> Hi all,
-> 
-> The _core_ bits of the IO-less balance_dirty_pages().
-> Heavily simplified and re-commented to make it easier to review.
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v8
-> 
-> Only the bare minimal algorithms are presented, so you will find some rough
-> edges in the graphs below. But it's usable :)
-> 
-> 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/
-> 
-> And an introduction to the (more complete) algorithms:
-> 
-> 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/smooth-dirty-throttling.pdf
-> 
-> Questions and reviews are highly appreciated!
+From: Dilan Lee <dilee@nvidia.com>
 
-Hi Wu,
+We need a callback to do some things after pwm_enable, pwm_disable
+and pwm_config.
 
-I am going through the slide number 39 where you talk about it being
-future proof and it can be used for IO control purposes. You have listed
-following merits of this approach.
+This may be necessary to properly sequence timing on
+certain devices.
 
-* per-bdi nature, works on NFS and Software RAID
-* no delayed response (working at the right layer)
-* no page tracking, hence decoupled from memcg
-* no interactions with FS and CFQ
-* get proportional IO controller for free
-* reuse/inherit all the base facilities/functions
+For example, GPIO backlight_en has to be risen after pwm has been enabled
+to meet panel power on sequence defined in panel specification.
 
-I would say that it will also be a good idea to list the demerits of
-this approach in current form and that is that it only deals with
-controlling buffered write IO and nothing else. So on the same
-block device, other direct writes might be going on from same group
-and in this scheme a user will not have any control. Another disadvantage
-is that throttling at page cache level does not take care of IO
-spikes at device level.
+Signed-off-by: Dilan Lee <dilee@nvidia.com>
+---
+ drivers/video/backlight/pwm_bl.c |   11 ++++++++++-
+ include/linux/pwm_backlight.h    |    1 +
+ 2 files changed, 11 insertions(+), 1 deletions(-)
 
-Now I think one could probably come up with more sophisticated scheme
-where throttling is done at bdi level but is also accounted at device
-level at IO controller. (Something similar I had done in the past but
-Dave Chinner did not like it).
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index b8f38ec..e92e6e0 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -27,7 +27,9 @@ struct pwm_bl_data {
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	int			(*notify)(struct device *,
+-					  int brightness);
++					int brightness);
++	void			(*notify_after)(struct device *,
++					int brightness);
+ 	int			(*check_fb)(struct device *, struct fb_info *);
+ };
+ 
+@@ -55,6 +57,10 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 		pwm_config(pb->pwm, brightness, pb->period);
+ 		pwm_enable(pb->pwm);
+ 	}
++
++	if (pb->notify_after)
++		pb->notify_after(pb->dev, brightness);
++
+ 	return 0;
+ }
+ 
+@@ -105,6 +111,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 
+ 	pb->period = data->pwm_period_ns;
+ 	pb->notify = data->notify;
++	pb->notify_after = data->notify_after;
+ 	pb->check_fb = data->check_fb;
+ 	pb->lth_brightness = data->lth_brightness *
+ 		(data->pwm_period_ns / data->max_brightness);
+@@ -172,6 +179,8 @@ static int pwm_backlight_suspend(struct platform_device *pdev,
+ 		pb->notify(pb->dev, 0);
+ 	pwm_config(pb->pwm, 0, pb->period);
+ 	pwm_disable(pb->pwm);
++	if (pb->notify_after)
++		pb->notify_after(pb->dev, 0);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+index 5e3e25a..63d2df4 100644
+--- a/include/linux/pwm_backlight.h
++++ b/include/linux/pwm_backlight.h
+@@ -14,6 +14,7 @@ struct platform_pwm_backlight_data {
+ 	unsigned int pwm_period_ns;
+ 	int (*init)(struct device *dev);
+ 	int (*notify)(struct device *dev, int brightness);
++	void (*notify_after)(struct device *dev, int brightness);
+ 	void (*exit)(struct device *dev);
+ 	int (*check_fb)(struct device *dev, struct fb_info *info);
+ };
+-- 
+1.7.6
 
-Anyway, keeping track of per cgroup rate and throttling accordingly
-can definitely help implement an algorithm for per cgroup IO control.
-We probably just need to find a reasonable way to account all this
-IO to end device so that we have control of all kind of IO of a cgroup.
-
-How do you implement proportional control here? From overall bdi bandwidth
-vary per cgroup bandwidth regularly based on cgroup weight? Again the
-issue here is that it controls only buffered WRITES and nothing else and
-in this case co-ordinating with CFQ will probably be hard. So I guess
-usage of proportional IO just for buffered WRITES will have limited
-usage.
-
-Thanks
-Vivek
-
-
-
-
-> 
-> shortlog:
-> 
-> 	Wu Fengguang (5):
-> 	      writeback: account per-bdi accumulated dirtied pages
-> 	      writeback: dirty position control
-> 	      writeback: dirty rate control
-> 	      writeback: per task dirty rate limit
-> 	      writeback: IO-less balance_dirty_pages()
-> 
-> 	The last 4 patches are one single logical change, but splitted here to
-> 	make it easier to review the different parts of the algorithm.
-> 
-> diffstat:
-> 
-> 	 include/linux/backing-dev.h      |    8 +
-> 	 include/linux/sched.h            |    7 +
-> 	 include/trace/events/writeback.h |   24 --
-> 	 mm/backing-dev.c                 |    3 +
-> 	 mm/memory_hotplug.c              |    3 -
-> 	 mm/page-writeback.c              |  459 ++++++++++++++++++++++----------------
-> 	 6 files changed, 290 insertions(+), 214 deletions(-)
-> 
-> Thanks,
-> Fengguang
