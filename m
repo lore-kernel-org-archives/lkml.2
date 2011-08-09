@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1HISQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:16:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1HISQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:16:37 -0400
-Date: Tue, 9 Aug 2011 14:15:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
-Message-ID: <20110809181543.GG6482@redhat.com>
-References: <20110806084447.388624428@intel.com>
- <20110806094527.136636891@intel.com>
+	id S1752006Ab1HISW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:22:56 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41512 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab1HISWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 14:22:55 -0400
+Message-ID: <4E417AF8.7090202@gmail.com>
+Date: Tue, 09 Aug 2011 23:52:48 +0530
+From: Mayank Rungta <mr.mynk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110806094527.136636891@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        yakui.zhao@intel.com, ajax@redhat.com, airlied@redhat.com,
+        airlied@linux.ie
+CC: "A.R Karthick" <a.r.karthick@gmail.com>, karthick.linuxdreamer@gmail.com,
+        Self <mr.mynk@gmail.com>
+Subject: [PATCH 2.6.38-10-generic] device driver: fix oops in radeon driver
+ due to incorrect value from hardware
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 04:44:52PM +0800, Wu Fengguang wrote:
+Added a check for the radeon ring buffer write index in r600.c which 
+reads 0xffffffff on resume. This results in an Oops during 
+radeon_ring_write. Masking the value averts this.
 
-[..]
-> -		trace_balance_dirty_start(bdi);
-> -		if (bdi_nr_reclaimable > task_bdi_thresh) {
-> -			pages_written += writeback_inodes_wb(&bdi->wb,
-> -							     write_chunk);
-> -			trace_balance_dirty_written(bdi, pages_written);
-> -			if (pages_written >= write_chunk)
-> -				break;		/* We've done our duty */
-> +		if (unlikely(!writeback_in_progress(bdi)))
-> +			bdi_start_background_writeback(bdi);
-> +
-> +		base_bw = bdi->dirty_ratelimit;
-> +		bw = bdi_position_ratio(bdi, dirty_thresh, nr_dirty,
-> +					bdi_thresh, bdi_dirty);
+This problem is not seen to be fixed in 3.0 r600.c as well.
 
-For the sake of consistency of usage of varibale naming how about using
+Detailed analysis of the problem can be found at -
 
-pos_ratio = bdi_position_ratio()?
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/820746/
 
-> +		if (unlikely(bw == 0)) {
-> +			pause = MAX_PAUSE;
-> +			goto pause;
->  		}
-> +		bw = (u64)base_bw * bw >> BANDWIDTH_CALC_SHIFT;
+---
 
-So far bw had pos_ratio as value now it will be replaced with actual
-bandwidth as value. It makes code confusing. So using pos_ratio will
-help.
+BUG: unable to handle kernel paging request at fa501ffc - Oops at 
+r600_cp_start+0x48/0x380 in r600_cp_resume+0x345/0x580 [radeon]
 
-		bw = (u64)base_bw * pos_ratio >> BANDWIDTH_CALC_SHIFT;
+drivers/gpu/drm/radeon/r600.c
 
-Thanks
-Vivek
+
+
+--- linux-2.6.38/drivers/gpu/drm/radeon/r600.c.orig    2011-08-05 
+15:39:40.824612700 +0530
++++ linux-2.6.38/drivers/gpu/drm/radeon/r600.c    2011-08-08 
+05:29:21.744417857 +0530
+@@ -2218,6 +2218,8 @@ int r600_cp_resume(struct radeon_device
+
+      rdev->cp.rptr = RREG32(CP_RB_RPTR);
+      rdev->cp.wptr = RREG32(CP_RB_WPTR);
++    /* protect against crazy HW on resume */
++    rdev->cp.wptr &= rdev->cp.ptr_mask;
+
+      r600_cp_start(rdev);
+      rdev->cp.ready = true;
+
+
+         Developer's Certificate of Origin 1.1
+
+         By making a contribution to this project, I certify that:
+
+         (a) The contribution was created in whole or in part by me and I
+             have the right to submit it under the open source license
+             indicated in the file; or
+
+         (b) The contribution is based upon previous work that, to the best
+             of my knowledge, is covered under an appropriate open source
+             license and I have the right under that license to submit that
+             work with modifications, whether created in whole or in part
+             by me, under the same open source license (unless I am
+             permitted to submit under a different license), as indicated
+             in the file; or
+
+         (c) The contribution was provided directly to me by some other
+             person who certified (a), (b) or (c) and I have not modified
+             it.
+
+     (d) I understand and agree that this project and the contribution
+         are public and that a record of the contribution (including all
+         personal information I submit with it, including my sign-off) is
+         maintained indefinitely and may be redistributed consistent with
+         this project or the open source license(s) involved.
+
+
+     Signed-off-by: A R Karthick <a.r.karthick@gmail.com>
+
+     Reported-by: Mayank Rungta <mr.mynk@gmail.com>
+
+     Tested-by: Mayank Rungta <mr.mynk@gmail.com>
