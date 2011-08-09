@@ -1,64 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab1HICQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 22:16:33 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:2257
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750953Ab1HICQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 22:16:32 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Gang <b34182@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <akpm@linux-foundation.org>, <linuxppc-dev@ozlabs.org>,
-        <mporter@kernel.crashing.org>, <r58472@freescale.com>,
-        <B11780@freescale.com>, <r61911@freescale.com>,
-        Liu Gang <b34182@freescale.com>, Liu Gang <Gang.Liu@freescale.com>
-Subject: [PATCH] rio: Use discovered bit to test if enumeration is complete
-Date: Tue, 9 Aug 2011 10:17:06 +0800
-Message-ID: <1312856226-3695-1-git-send-email-b34182@freescale.com>
-X-Mailer: git-send-email 1.7.3.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.net
+	id S1752009Ab1HICQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 22:16:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51046 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751909Ab1HICQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 22:16:48 -0400
+Date: Tue, 9 Aug 2011 12:16:32 +1000
+From: NeilBrown <neilb@suse.de>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v3 -resend] move RLIMIT_NPROC check from set_user() to
+ do_execve_common()
+Message-ID: <20110809121632.18aef937@notabene.brown>
+In-Reply-To: <20110808150204.GA4252@albatros>
+References: <20110808150204.GA4252@albatros>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The discovered bit in PGCCSR register indicates if the device has
-been discovered by system host. In Rapidio system, some agent devices
-can also be master devices. They can issue requests into the system.
+On Mon, 8 Aug 2011 19:02:04 +0400 Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
----
- drivers/rapidio/rio-scan.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> The patch http://lkml.org/lkml/2003/7/13/226 introduced an RLIMIT_NPROC
+> check in set_user() to check for NPROC exceeding via setuid() and
+> similar functions.  Before the check there was a possibility to greatly
+> exceed the allowed number of processes by an unprivileged user if the
+> program relied on rlimit only.  But the check created new security
+> threat: many poorly written programs simply don't check setuid() return
+> code and believe it cannot fail if executed with root privileges.  So,
+> the check is removed in this patch because of too often privilege
+> escalations related to buggy programs.
+> 
+> The NPROC can still be enforced in the common code flow of daemons
+> spawning user processes.  Most of daemons do fork()+setuid()+execve().
+> The check introduced in execve() (1) enforces the same limit as in
+> setuid() and (2) doesn't create similar security issues.
+> 
+> Neil Brown suggested to track what specific process has exceeded the
+> limit by setting PF_NPROC_EXCEEDED process flag.  With the change only
+> this process would fail on execve(), and other processes' execve()
+> behaviour is not changed.
+> 
+> Solar Designer suggested to re-check whether NPROC limit is still
+> exceeded at the moment of execve().  If the process was sleeping for
+> days between set*uid() and execve(), and the NPROC counter step down
+> under the limit, the defered execve() failure because NPROC limit was
+> exceeded days ago would be unexpected.  If the limit is not exceeded
+> anymore, we clear the flag on successful calls to execve() and fork().
+> 
+> The flag is also cleared on successful calls to set_user() as the limit
+> was exceeded for the previous user, not the current one.
+> 
+> Similar check was introduced in -ow patches (without the process flag).
+> 
+> v3 - clear PF_NPROC_EXCEEDED on successful calls to set_user().
+> 
+> Reviewed-by: James Morris <jmorris@namei.org>
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-diff --git a/drivers/rapidio/rio-scan.c b/drivers/rapidio/rio-scan.c
-index ee89358..2dac1f0 100644
---- a/drivers/rapidio/rio-scan.c
-+++ b/drivers/rapidio/rio-scan.c
-@@ -924,7 +924,7 @@ static int __devinit rio_enum_peer(struct rio_net *net, struct rio_mport *port,
-  * rio_enum_complete- Tests if enumeration of a network is complete
-  * @port: Master port to send transaction
-  *
-- * Tests the Component Tag CSR for non-zero value (enumeration
-+ * Tests the PGCCSR discovered bit for non-zero value (enumeration
-  * complete flag). Return %1 if enumeration is complete or %0 if
-  * enumeration is incomplete.
-  */
-@@ -934,7 +934,7 @@ static int rio_enum_complete(struct rio_mport *port)
- 
- 	rio_local_read_config_32(port, port->phys_efptr + RIO_PORT_GEN_CTL_CSR,
- 				 &regval);
--	return (regval & RIO_PORT_GEN_MASTER) ? 1 : 0;
-+	return (regval & RIO_PORT_GEN_DISCOVERED) ? 1 : 0;
- }
- 
- /**
--- 
-1.7.3.1
+Acked-by: NeilBrown <neilb@suse.de>
 
+I'm not 100% happy with this for reasons that have been mentioned, but there
+is a real problem, and this is a real fix, and I think it is as good as we
+are likely to be able to achieve.
+
+Thanks for persisting.
+
+NeilBrown
+
+
+
+> ---
+>  fs/exec.c             |   17 +++++++++++++++++
+>  include/linux/sched.h |    1 +
+>  kernel/cred.c         |    6 ++----
+>  kernel/fork.c         |    1 +
+>  kernel/sys.c          |   15 +++++++++++----
+>  5 files changed, 32 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index da80612..25dcbe5 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1459,6 +1459,23 @@ static int do_execve_common(const char *filename,
+>  	struct files_struct *displaced;
+>  	bool clear_in_exec;
+>  	int retval;
+> +	const struct cred *cred = current_cred();
+> +
+> +	/*
+> +	 * We move the actual failure in case of RLIMIT_NPROC excess from
+> +	 * set*uid() to execve() because too many poorly written programs
+> +	 * don't check setuid() return code.  Here we additionally recheck
+> +	 * whether NPROC limit is still exceeded.
+> +	 */
+> +	if ((current->flags & PF_NPROC_EXCEEDED) &&
+> +	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
+> +		retval = -EAGAIN;
+> +		goto out_ret;
+> +	}
+> +
+> +	/* We're below the limit (still or again), so we don't want to make
+> +	 * further execve() calls fail. */
+> +	current->flags &= ~PF_NPROC_EXCEEDED;
+>  
+>  	retval = unshare_files(&displaced);
+>  	if (retval)
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 20b03bf..4ac2c05 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1767,6 +1767,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>  #define PF_DUMPCORE	0x00000200	/* dumped core */
+>  #define PF_SIGNALED	0x00000400	/* killed by a signal */
+>  #define PF_MEMALLOC	0x00000800	/* Allocating memory */
+> +#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
+>  #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
+>  #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
+>  #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
+> diff --git a/kernel/cred.c b/kernel/cred.c
+> index 174fa84..8ef31f5 100644
+> --- a/kernel/cred.c
+> +++ b/kernel/cred.c
+> @@ -508,10 +508,8 @@ int commit_creds(struct cred *new)
+>  		key_fsgid_changed(task);
+>  
+>  	/* do it
+> -	 * - What if a process setreuid()'s and this brings the
+> -	 *   new uid over his NPROC rlimit?  We can check this now
+> -	 *   cheaply with the new uid cache, so if it matters
+> -	 *   we should be checking for it.  -DaveM
+> +	 * RLIMIT_NPROC limits on user->processes have already been checked
+> +	 * in set_user().
+>  	 */
+>  	alter_cred_subscribers(new, 2);
+>  	if (new->user != old->user)
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index e7ceaca..8e6b6f4 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1111,6 +1111,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  		    p->real_cred->user != INIT_USER)
+>  			goto bad_fork_free;
+>  	}
+> +	current->flags &= ~PF_NPROC_EXCEEDED;
+>  
+>  	retval = copy_creds(p, clone_flags);
+>  	if (retval < 0)
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index a101ba3..dd948a1 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -621,11 +621,18 @@ static int set_user(struct cred *new)
+>  	if (!new_user)
+>  		return -EAGAIN;
+>  
+> +	/*
+> +	 * We don't fail in case of NPROC limit excess here because too many
+> +	 * poorly written programs don't check set*uid() return code, assuming
+> +	 * it never fails if called by root.  We may still enforce NPROC limit
+> +	 * for programs doing set*uid()+execve() by harmlessly deferring the
+> +	 * failure to the execve() stage.
+> +	 */
+>  	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
+> -			new_user != INIT_USER) {
+> -		free_uid(new_user);
+> -		return -EAGAIN;
+> -	}
+> +			new_user != INIT_USER)
+> +		current->flags |= PF_NPROC_EXCEEDED;
+> +	else
+> +		current->flags &= ~PF_NPROC_EXCEEDED;
+>  
+>  	free_uid(new->user);
+>  	new->user = new_user;
 
