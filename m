@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab1HIOxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:53:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47788 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750773Ab1HIOxC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:53:02 -0400
-Date: Tue, 9 Aug 2011 23:52:53 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-Cc: "sameo@openedhand.com" <sameo@openedhand.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Subject: Re: [PATCH v3 01/11] MFD: DA9052 MFD core module
-Message-ID: <20110809145252.GC15861@opensource.wolfsonmicro.com>
-References: <1312552424.5572.145.camel@L-0532.kpit.com>
- <20110806133829.GA28267@opensource.wolfsonmicro.com>
- <C3AE124F08223B42BC95AEB82F0F6CEDC805@KCHJEXMB02.kpit.com>
+	id S1751922Ab1HIOzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:55:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883Ab1HIOzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 10:55:06 -0400
+Date: Tue, 9 Aug 2011 10:54:38 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: dirty rate control
+Message-ID: <20110809145438.GC6482@redhat.com>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.878435971@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CEDC805@KCHJEXMB02.kpit.com>
-X-Cookie: Be careful!  UGLY strikes 9 out of 10!
+In-Reply-To: <20110806094526.878435971@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 08:45:47AM +0000, Ashish Jangam wrote:
+On Sat, Aug 06, 2011 at 04:44:50PM +0800, Wu Fengguang wrote:
+> It's all about bdi->dirty_ratelimit, which aims to be (write_bw / N)
+> when there are N dd tasks.
+> 
+> On write() syscall, use bdi->dirty_ratelimit
+> ============================================
+> 
+>     balance_dirty_pages(pages_dirtied)
+>     {
+>         pos_bw = bdi->dirty_ratelimit * bdi_position_ratio();
+>         pause = pages_dirtied / pos_bw;
+>         sleep(pause);
+>     }
+> 
+> On every 200ms, update bdi->dirty_ratelimit
+> ===========================================
+> 
+>     bdi_update_dirty_ratelimit()
+>     {
+>         bw = bdi->dirty_ratelimit;
+>         ref_bw = bw * bdi_position_ratio() * write_bw / dirty_bw;
+>         if (dirty pages unbalanced)
+>              bdi->dirty_ratelimit = (bw * 3 + ref_bw) / 4;
+>     }
+> 
+> Estimation of balanced bdi->dirty_ratelimit
+> ===========================================
+> 
+> When started N dd, throttle each dd at
+> 
+>          task_ratelimit = pos_bw (any non-zero initial value is OK)
+> 
+> After 200ms, we got
+> 
+>          dirty_bw = # of pages dirtied by app / 200ms
+>          write_bw = # of pages written to disk / 200ms
+> 
+> For aggressive dirtiers, the equality holds
+> 
+>          dirty_bw == N * task_ratelimit
+>                   == N * pos_bw                      	(1)
+> 
+> The balanced throttle bandwidth can be estimated by
+> 
+>          ref_bw = pos_bw * write_bw / dirty_bw       	(2)
+> 
+> >From (1) and (2), we get equality
+> 
+>          ref_bw == write_bw / N                      	(3)
+> 
+> If the N dd's are all throttled at ref_bw, the dirty/writeback rates
+> will match. So ref_bw is the balanced dirty rate.
 
-> > Could do with blank lines between blocks.  Though looking at the code
-> > here I don't understand why these are compile options at all, or if they
-> > need to be compile options for some reason why they're not independantly
-> > selectable?
+Hi Fengguang,
 
-> DA9052 PMIC chip id may get OTP therefore chip id cannot be used as 
-> a distinguishing factor. Hence these compile time options were introduced.
-> DA9053 is a higher version of DA9052 therefore not independently selectable.
-> This means that there can be either DA9052 or DA9053 on system. I need to correct
-> this Kconfig to take care of this. 
+So how much work it is to extend all this to handle the case of cgroups?
+IOW, I would imagine that you shall have to keep track of per cgroup/per
+bdi state of many of the variables. For example, write_bw will become
+per cgroup/per bdi entity instead of per bdi entity only. Same should
+be true for position ratio, dirty_bw etc?
 
-No, this is not acceptable in the kernel.  One kernel can support many
-different boards so you need to be able to compile support for all chips
-in simultaneously.  If you can't identify based on the hardware you need
-to rely on the device being registered correctly by the user.
+I am assuming that if some cgroup is low weight on end device, then
+WRITE bandwidth of that cgroup should go down and that should be
+accounted for at per bdi state and task throttling should happen
+accordingly so that a lower weight cgroup tasks get throttled more
+as compared to higher weight cgroup tasks?
 
-> > This should be runtime detected based on the device name, either from
-> > the device registration or by reading back chip identification.
-
-> As said above getting chip info will not work in DA9053/53 case. Also DA9052 code 
-> works for DA9053 except for few minor changes in MFD and regulator module.
-> In this case registering different device will also require a preprocessor directive
-> Or separate DA9053 file therefore this option was not opt. 
-
-No, this is not acceptable.  One kernel build should be able to support
-many different boards.  Like I said in my quote above you need to either
-use the device registration or chip registers - if chip registers are
-not suitable I guess that means you need to use the device registration.
-There are a large number of examples of this in the kernel.
-
-I know the Linaro guys have offered to help you out with this stuff, can
-you please work with them?  You are obviously experiencing a lot of
-difficulties with understanding the requirements and standards for
-getting your code into the standard kernel, they really know what
-they're doing.
+Thanks
+Vivek
