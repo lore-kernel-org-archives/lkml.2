@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab1HIXn5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 19:43:57 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46037 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab1HIXn4 convert rfc822-to-8bit (ORCPT
+	id S1752065Ab1HJAB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:01:56 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59107 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1HJABz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 19:43:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E4181E4.3090704@kernel.dk>
-References: <20110809034724.GA22257@july>
-	<4E4181E4.3090704@kernel.dk>
-Date: Wed, 10 Aug 2011 08:43:55 +0900
-X-Google-Sender-Auth: ryGTEqB3_txEzZfKYOVCtbG0P1U
-Message-ID: <CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-From: Kyungmin Park <kmpark@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Aug 2011 20:01:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 10 Aug 2011 08:54:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] memcg: fix drain_all_stock crash
+Message-Id: <20110810085437.ed023651.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110809114642.GG7463@tiehlicka.suse.cz>
+References: <20110808184738.GA7749@redhat.com>
+	<20110808214704.GA4396@tiehlicka.suse.cz>
+	<20110808231912.GA29002@redhat.com>
+	<20110809072615.GA7463@tiehlicka.suse.cz>
+	<20110809093150.GC7463@tiehlicka.suse.cz>
+	<20110809183216.97daf2b0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809094503.GD7463@tiehlicka.suse.cz>
+	<20110809185313.dc784d70.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809100944.GE7463@tiehlicka.suse.cz>
+	<20110809190725.96309c88.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809114642.GG7463@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2011-08-09 05:47, Kyungmin Park wrote:
->> Hi Jens
->>
->> Now eMMC device requires the upper layer information to improve the data
->> performance and reliability.
->>
->> . Context ID
->> Using the context information, it can sort out the data internally and improve the performance.
->> The main problem is that it's needed to define "What's the context".
->> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
->>
->> . Data Tag
->> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
->> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
->>
->> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
->>
->> Can you give your opinions and does it proper fields at requests?
->
-> You need this to work on all IO schedulers, not just cfq.
-Of course if the concept is acceptable, I'll add the other IO schedulers also.
+On Tue, 9 Aug 2011 13:46:42 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-> And since that's the case, there's no need to add this field since you can just
-> retrieve it if the driver asks for it. For CFQ, it could look like this:
->
-> static int cfq_foo(struct request *rq)
-> {
->        struct cfq_queue *cfqq = rq->elevator_private[1];
->
->        if (cfqq)
->                return cfqq->pid;
->
->        return -1;
-> }
+> On Tue 09-08-11 19:07:25, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 9 Aug 2011 12:09:44 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Tue 09-08-11 18:53:13, KAMEZAWA Hiroyuki wrote:
+> > > > On Tue, 9 Aug 2011 11:45:03 +0200
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > 
+> > > > > On Tue 09-08-11 18:32:16, KAMEZAWA Hiroyuki wrote:
+> > > > > > On Tue, 9 Aug 2011 11:31:50 +0200
+> > > > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > > > 
+> > > > > > > What do you think about the half backed patch bellow? I didn't manage to
+> > > > > > > test it yet but I guess it should help. I hate asymmetry of drain_lock
+> > > > > > > locking (it is acquired somewhere else than it is released which is
+> > > > > > > not). I will think about a nicer way how to do it.
+> > > > > > > Maybe I should also split the rcu part in a separate patch.
+> > > > > > > 
+> > > > > > > What do you think?
+> > > > > > 
+> > > > > > 
+> > > > > > I'd like to revert 8521fc50 first and consider total design change
+> > > > > > rather than ad-hoc fix.
+> > > > > 
+> > > > > Agreed. Revert should go into 3.0 stable as well. Although the global
+> > > > > mutex is buggy we have that behavior for a long time without any reports.
+> > > > > We should address it but it can wait for 3.2.
+> > > 
+> > > I will send the revert request to Linus.
+> > > 
+> > > > What "buggy" means here ? "problematic" or "cause OOps ?"
+> > > 
+> > > I have described that in an earlier email. Consider pathological case
+> > > when CPU0 wants to async. drain a memcg which has a lot of cached charges while
+> > > CPU1 is already draining so it holds the mutex. CPU0 backs off so it has
+> > > to reclaim although we could prevent from it by getting rid of cached
+> > > charges. This is not critical though.
+> > > 
+> > 
+> > That problem should be fixed by background reclaim.
+> 
+> How? Do you plan to rework locking or the charge caching completely?
+> 
 
-The actual user of these information is device driver. e.g.,
-drivers/mmc/card/block.c
-So it's not good to use cfq data structure at D/D. some time later
-these are also used at scsi device drivers.
->
-> As to the hot part, I think that would be better as just a request flag
-> like eg the meta flag.
-Yes it can use the JBD_flags at cfq. but same reason it's not proper
-reference at device drivers. that's reason to make a filed at request.
+>From your description, the problem is not the lock itself but a task
+may go into _unnecessary_ direct-reclaim even if there are remaining
+chages on per-cpu stocks, which cause latency.
 
-Device driver should or must see the request data structure and don't
-refer the upper layer data structures.
+In (all) my automatic background reclaim tests, no direct reclaim happens
+if background reclaim is enabled. And as I said before, we may be able to
+add a flag not to cache more. It's set by some condition ....as usage is
+near to the limit.
 
-Thank you,
-Kyungmin Park
+Thanks,
+-Kame
+
+
+
+
+
+
+
