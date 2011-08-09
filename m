@@ -1,93 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750993Ab1HICay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 22:30:54 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1067 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab1HICax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 22:30:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 08 Aug 2011 19:30:52 -0700
-From: dilee@nvidia.com
-To: rpurdie@rpsys.net, lethal@linux-sh.org, akpm@linux-foundation.org,
-        arun.murthy@stericsson.com, rmorell@nvidia.com,
-        linus.walleij@stericsson.com
-Cc: jnien@nvidia.com, swarren@nvidia.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>
-Subject: [PATCH] video: Add a callback 'notify_after' for backlight control
-Date: Tue,  9 Aug 2011 10:29:56 +0800
-Message-Id: <1312856996-22452-1-git-send-email-dilee@nvidia.com>
-X-Mailer: git-send-email 1.7.6
+	id S1751548Ab1HICbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 22:31:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17749 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114Ab1HICbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 22:31:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,340,1309762800"; 
+   d="scan'208";a="36606082"
+From: Huang Ying <ying.huang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com
+Subject: [RFC] irq_work, Use llist in irq_work
+Date: Tue,  9 Aug 2011 10:30:57 +0800
+Message-Id: <1312857057-3243-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dilan Lee <dilee@nvidia.com>
+Use llist in irq_work instead of the lock-less linked list
+implementation in irq_work to avoid the code duplication.
 
-We need a callback to do some things after pwm_enable, pwm_disable
-and pwm_config.
-
-Signed-off-by: Dilan Lee <dilee@nvidia.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- drivers/video/backlight/pwm_bl.c |    9 +++++++++
- include/linux/pwm_backlight.h    |    1 +
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ include/linux/irq_work.h |   15 ++++---
+ init/Kconfig             |    1 
+ kernel/irq_work.c        |   92 ++++++++++++++++++-----------------------------
+ 3 files changed, 47 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index b8f38ec..8b5b2a4 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -28,6 +28,8 @@ struct pwm_bl_data {
- 	unsigned int		lth_brightness;
- 	int			(*notify)(struct device *,
- 					  int brightness);
-+	void			(*notify_after)(struct device *,
-+					int brightness);
- 	int			(*check_fb)(struct device *, struct fb_info *);
+--- a/include/linux/irq_work.h
++++ b/include/linux/irq_work.h
+@@ -1,20 +1,23 @@
+ #ifndef _LINUX_IRQ_WORK_H
+ #define _LINUX_IRQ_WORK_H
+ 
++#include <linux/llist.h>
++
+ struct irq_work {
+-	struct irq_work *next;
++	unsigned long flags;
++	struct llist_node llnode;
+ 	void (*func)(struct irq_work *);
  };
  
-@@ -55,6 +57,10 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 		pwm_config(pb->pwm, brightness, pb->period);
- 		pwm_enable(pb->pwm);
+ static inline
+-void init_irq_work(struct irq_work *entry, void (*func)(struct irq_work *))
++void init_irq_work(struct irq_work *work, void (*func)(struct irq_work *))
+ {
+-	entry->next = NULL;
+-	entry->func = func;
++	work->flags = 0;
++	work->func = func;
+ }
+ 
+-bool irq_work_queue(struct irq_work *entry);
++bool irq_work_queue(struct irq_work *work);
+ void irq_work_run(void);
+-void irq_work_sync(struct irq_work *entry);
++void irq_work_sync(struct irq_work *work);
+ 
+ #endif /* _LINUX_IRQ_WORK_H */
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -26,6 +26,7 @@ config HAVE_IRQ_WORK
+ config IRQ_WORK
+ 	bool
+ 	depends on HAVE_IRQ_WORK
++	select LLIST
+ 
+ menu "General setup"
+ 
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -17,49 +17,34 @@
+  * claimed   NULL, 3 -> {pending}       : claimed to be enqueued
+  * pending   next, 3 -> {busy}          : queued, pending callback
+  * busy      NULL, 2 -> {free, claimed} : callback in progress, can be claimed
+- *
+- * We use the lower two bits of the next pointer to keep PENDING and BUSY
+- * flags.
+  */
+ 
+ #define IRQ_WORK_PENDING	1UL
+ #define IRQ_WORK_BUSY		2UL
+ #define IRQ_WORK_FLAGS		3UL
+ 
+-static inline bool irq_work_is_set(struct irq_work *entry, int flags)
+-{
+-	return (unsigned long)entry->next & flags;
+-}
+-
+-static inline struct irq_work *irq_work_next(struct irq_work *entry)
+-{
+-	unsigned long next = (unsigned long)entry->next;
+-	next &= ~IRQ_WORK_FLAGS;
+-	return (struct irq_work *)next;
+-}
++#define LIST_NONEMPTY_BIT	0
+ 
+-static inline struct irq_work *next_flags(struct irq_work *entry, int flags)
+-{
+-	unsigned long next = (unsigned long)entry;
+-	next |= flags;
+-	return (struct irq_work *)next;
+-}
++struct irq_work_list {
++	unsigned long flags;
++	struct llist_head llist;
++};
+ 
+-static DEFINE_PER_CPU(struct irq_work *, irq_work_list);
++static DEFINE_PER_CPU(struct irq_work_list, irq_work_lists);
+ 
+ /*
+  * Claim the entry so that no one else will poke at it.
+  */
+-static bool irq_work_claim(struct irq_work *entry)
++static bool irq_work_claim(struct irq_work *work)
+ {
+-	struct irq_work *next, *nflags;
++	unsigned long flags, nflags;
+ 
+ 	do {
+-		next = entry->next;
+-		if ((unsigned long)next & IRQ_WORK_PENDING)
++		flags = work->flags;
++		if (flags & IRQ_WORK_PENDING)
+ 			return false;
+-		nflags = next_flags(next, IRQ_WORK_FLAGS);
+-	} while (cmpxchg(&entry->next, next, nflags) != next);
++		nflags = flags | IRQ_WORK_FLAGS;
++	} while (cmpxchg(&work->flags, flags, nflags) != flags);
+ 
+ 	return true;
+ }
+@@ -75,23 +60,19 @@ void __weak arch_irq_work_raise(void)
+ /*
+  * Queue the entry and raise the IPI if needed.
+  */
+-static void __irq_work_queue(struct irq_work *entry)
++static void __irq_work_queue(struct irq_work *work)
+ {
+-	struct irq_work *next;
++	struct irq_work_list *irq_work_list;
+ 
+-	preempt_disable();
++	irq_work_list = &get_cpu_var(irq_work_lists);
+ 
+-	do {
+-		next = __this_cpu_read(irq_work_list);
+-		/* Can assign non-atomic because we keep the flags set. */
+-		entry->next = next_flags(next, IRQ_WORK_FLAGS);
+-	} while (this_cpu_cmpxchg(irq_work_list, next, entry) != next);
++	llist_add(&work->llnode, &irq_work_list->llist);
+ 
+ 	/* The list was empty, raise self-interrupt to start processing. */
+-	if (!irq_work_next(entry))
++	if (!test_and_set_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags))
+ 		arch_irq_work_raise();
+ 
+-	preempt_enable();
++	put_cpu_var(irq_work_list);
+ }
+ 
+ /*
+@@ -100,16 +81,16 @@ static void __irq_work_queue(struct irq_
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
+-bool irq_work_queue(struct irq_work *entry)
++bool irq_work_queue(struct irq_work *work)
+ {
+-	if (!irq_work_claim(entry)) {
++	if (!irq_work_claim(work)) {
+ 		/*
+ 		 * Already enqueued, can't do!
+ 		 */
+ 		return false;
  	}
-+
-+	if (pb->notify_after)
-+		pb->notify_after(pb->dev, brightness);
-+
- 	return 0;
+ 
+-	__irq_work_queue(entry);
++	__irq_work_queue(work);
+ 	return true;
  }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+@@ -120,34 +101,35 @@ EXPORT_SYMBOL_GPL(irq_work_queue);
+  */
+ void irq_work_run(void)
+ {
+-	struct irq_work *list;
++	struct irq_work *work;
++	struct irq_work_list *irq_work_list;
++	struct llist_node *llnode;
  
-@@ -105,6 +111,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+-	if (this_cpu_read(irq_work_list) == NULL)
++	irq_work_list = &__get_cpu_var(irq_work_lists);
++	if (llist_empty(&irq_work_list->llist))
+ 		return;
  
- 	pb->period = data->pwm_period_ns;
- 	pb->notify = data->notify;
-+	pb->notify_after = data->notify_after;
- 	pb->check_fb = data->check_fb;
- 	pb->lth_brightness = data->lth_brightness *
- 		(data->pwm_period_ns / data->max_brightness);
-@@ -172,6 +179,8 @@ static int pwm_backlight_suspend(struct platform_device *pdev,
- 		pb->notify(pb->dev, 0);
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
-+	if (pb->notify_after)
-+		pb->notify_after(pb->dev, 0);
- 	return 0;
+ 	BUG_ON(!in_irq());
+ 	BUG_ON(!irqs_disabled());
+ 
+-	list = this_cpu_xchg(irq_work_list, NULL);
+-
+-	while (list != NULL) {
+-		struct irq_work *entry = list;
++	clear_bit(LIST_NONEMPTY_BIT, &irq_work_list->flags);
++	llnode = llist_del_all(&irq_work_list->llist);
++	while (llnode != NULL) {
++		work = llist_entry(llnode, struct irq_work, llnode);
+ 
+-		list = irq_work_next(list);
++		llnode = llnode->next;
+ 
+ 		/*
+-		 * Clear the PENDING bit, after this point the @entry
++		 * Clear the PENDING bit, after this point the @work
+ 		 * can be re-used.
+ 		 */
+-		entry->next = next_flags(NULL, IRQ_WORK_BUSY);
+-		entry->func(entry);
++		work->flags = IRQ_WORK_BUSY;
++		work->func(work);
+ 		/*
+ 		 * Clear the BUSY bit and return to the free state if
+ 		 * no-one else claimed it meanwhile.
+ 		 */
+-		(void)cmpxchg(&entry->next,
+-			      next_flags(NULL, IRQ_WORK_BUSY),
+-			      NULL);
++		(void)cmpxchg(&work->flags, IRQ_WORK_BUSY, 0);
+ 	}
  }
+ EXPORT_SYMBOL_GPL(irq_work_run);
+@@ -156,11 +138,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
+  * Synchronize against the irq_work @entry, ensures the entry is not
+  * currently in use.
+  */
+-void irq_work_sync(struct irq_work *entry)
++void irq_work_sync(struct irq_work *work)
+ {
+ 	WARN_ON_ONCE(irqs_disabled());
  
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 5e3e25a..63d2df4 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -14,6 +14,7 @@ struct platform_pwm_backlight_data {
- 	unsigned int pwm_period_ns;
- 	int (*init)(struct device *dev);
- 	int (*notify)(struct device *dev, int brightness);
-+	void (*notify_after)(struct device *dev, int brightness);
- 	void (*exit)(struct device *dev);
- 	int (*check_fb)(struct device *dev, struct fb_info *info);
- };
--- 
-1.7.6
-
+-	while (irq_work_is_set(entry, IRQ_WORK_BUSY))
++	while (work->flags & IRQ_WORK_BUSY)
+ 		cpu_relax();
+ }
+ EXPORT_SYMBOL_GPL(irq_work_sync);
