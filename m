@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab1HIPHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:07:25 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55708 "EHLO mx2.mail.elte.hu"
+	id S1753120Ab1HIPIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:08:07 -0400
+Received: from gateway.hbm.com ([213.157.30.2]:54418 "EHLO hbmntx5.hbm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1HIPHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:07:23 -0400
-Date: Tue, 9 Aug 2011 17:06:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Jack Steiner <steiner@sgi.com>, tglx@linutronix.de, davej@redhat.com,
-        yinghan@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu
- startup
-Message-ID: <20110809150624.GG28228@elte.hu>
-References: <20110727135730.GA17717@sgi.com>
- <20110727140523.GA24206@redhat.com>
- <20110727141527.GA8453@sgi.com>
- <20110727155200.GA25381@redhat.com>
- <20110801184542.GA3939@sgi.com>
- <20110805104635.GB13055@elte.hu>
- <20110805131638.GA27779@sgi.com>
- <20110805213836.GB21114@elte.hu>
- <20110807003642.GA4442@srcf.ucam.org>
+	id S1750779Ab1HIPIG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:08:06 -0400
+Thread-Index: AcxWpiMof+JyVU/iS6epDU+EVETgAg==
+Thread-Topic: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-class: urn:content-classes:message
+Importance: normal
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
+Date: Tue, 9 Aug 2011 17:07:49 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
+Cc: "Peter Zijlstra" <peterz@infradead.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <1312465990.16729.22.camel@twins> <201108091548.06875.tim.sander@hbm.com> <20110809140923.GA11398@pengutronix.de>
+In-Reply-To: <20110809140923.GA11398@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110807003642.GA4442@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -1.9
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.1 AWL                    AWL: From: address is in the auto white-list
+Content-Type: text/Plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201108091707.49832.tim.sander@hbm.com>
+X-OriginalArrivalTime: 09 Aug 2011 15:08:03.0977 (UTC) FILETIME=[2310DF90:01CC56A6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Uwe
 
-* Matthew Garrett <mjg@redhat.com> wrote:
-
-> On Fri, Aug 05, 2011 at 11:38:36PM +0200, Ingo Molnar wrote:
+I just double checked.
+> The config doesn't look like a 3.0-rt7 one. There is neither
 > 
-> > Well, it still uses heuristics: it assumes frequency is the same 
-> > when the cpuid data tells us that two CPUs are on the same 
-> > socket, right?
+> 	PREEMPT_RTB=y
 > 
-> If we only assume that when we have a constant TSC then it's a 
-> pretty safe assumption - the delay loop will be calibrated against 
-> the TSC, and the TSC will be constant across the package regardless 
-> of what frequency the cores are actually running at.
+> nor
+> 
+> 	# PREEMPT_RTB is not set
+If i switch the configs with "Kernel Feature"-> "Preemption Model" -
+>"(Preemtible Kernel) Low-Latency Desktop"
+there are no such config options visible even with a -rt7 kernel.
+(My workflow in ptxdist is
+comment (in/out) rtpatch in patches/linux-3.0/series
+ptxdist clean kernel && ptxdist targetinstall kernel
+deploy.sh
 
-The delay loop might be calibrated against the TSC, but the amount of 
-real delay we get when we loop 100,000 times will be frequency 
-dependent.
+Otherwise ptxdist would cheat on me and at 
+$(PROJECT_DIR)/configs/$(PLATFORM)/kernelconfig would be out of sync.)
 
-What we probably want is the most conservative udelay calibration: 
-have a lpj value measured on the highest possible frequency - this 
-way hardware components can never be overclocked by a driver.
+Best regards
+Tim
 
-Or does udelay() scale with the current frequency of the CPU?
 
-Thanks,
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
 
-	Ingo
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+
