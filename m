@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab1HJShR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:37:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61111 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab1HJShP convert rfc822-to-8bit (ORCPT
+	id S1754642Ab1HJSk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:40:26 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51733 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab1HJSkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:37:15 -0400
+	Wed, 10 Aug 2011 14:40:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <87wrel5gp8.fsf@skywalker.in.ibm.com>
-References: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
- <877h6l7hoj.fsf@skywalker.in.ibm.com> <CAFkjPT=y4jJTNEFrJLr=i9UVHfixqqGmYbVZf0B4AHk-AmOJdA@mail.gmail.com>
- <87wrel5gp8.fsf@skywalker.in.ibm.com>
-From: Eric Van Hensbergen <ericvh@gmail.com>
-Date: Wed, 10 Aug 2011 13:36:52 -0500
-Message-ID: <CAFkjPT=ePtKi0Z-AjBm_W38VPTV3HbT6hWSMHOHezytoqAbNvQ@mail.gmail.com>
-Subject: Re: [PATCH] 9p: remove CONFIG_NET_9P_DEBUG option
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Alex Ray <alexjray.ncsu@gmail.com>, v9fs-developer@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Ray <ajray@ncsu.edu>
+In-Reply-To: <1312999168.2989.61.camel@i7.infradead.org>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<1312067670.22074.61.camel@i7.infradead.org>
+	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	<4E34998D.8060806@zytor.com>
+	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	<4E4140B3.7090802@suse.cz>
+	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
+	<4E4280BA.9050109@suse.cz>
+	<1312981658.2989.39.camel@i7.infradead.org>
+	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
+	<1312985888.2989.46.camel@i7.infradead.org>
+	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+	<1312993987.2989.53.camel@i7.infradead.org>
+	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
+	<1312999168.2989.61.camel@i7.infradead.org>
+Date: Wed, 10 Aug 2011 14:40:24 -0400
+Message-ID: <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 12:17 PM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> On Wed, 10 Aug 2011 07:24:56 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
->> On Wed, Aug 10, 2011 at 4:13 AM, Aneesh Kumar K.V
->> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> > On Mon,  1 Aug 2011 07:14:44 -0500, Alex Ray <alexjray.ncsu@gmail.com> wrote:
->> >> Remove the CONFIG_NET_9P_DEBUG option, used to completely remove logging
->> >> functionality from v9fs.  Logging is (already) controlled with the
->> >> run-time debug= option, this gets rid of the compile-time option (which
->> >> was being misunderstood and misused).
->> >>
->> >> Signed-off-by: Alex Ray <ajray@ncsu.edu>
->> >
->> > I see this merged to for-next.  Do we know whether enabling debug always have a
->> > performance impact ?.
->> >
->>
->> No clue, but without any debug it makes it impossible for user's to
->> generate reasonable bug reports.  If I understand the tracepoint
->> collection facility correctly, it incurs exactly the same overhead as
->> a DPRINT when the debug mount option is set to 0 (although tracepoints
->> are much lower overhead when actually collecting).
+Hi,
+
+On Wed, Aug 10, 2011 at 1:59 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Wed, 2011-08-10 at 13:44 -0400, Arnaud Lacombe wrote:
+>> Exactly my point, you just successfully created an half-backed config
+>> which is different than what Aunt Tillie wanted you to generate. This
+>> should be an hard error, same for "all*.config", not to mention that
+>> the error message is far from being helpful.
 >
-> I was worried about overhead when we are not collecting any debug info.
+> You are whining about something that has been true of the kernel config
+> system for at least the last 16 years that I've been working on it,
 >
+s/16/6/; the all.config logic has been added in:
 
-I understand that.  But the overhead when not collecting is the
-conditional branch.
-According to Documentation/trace/tracepoints.txt this is the same for the
-tracepoints:
+commit 90389160efc2864501ced6e662f9419eb7a3e6c8
+Author: Roman Zippel <zippel@linux-m68k.org>
+Date:   Tue Nov 8 21:34:49 2005 -0800
 
-"When a tracepoint is "off" it has no effect, except for adding a tiny
-time penalty
-(checking a condition for a branch) and space penalty (adding a few
-bytes for the function call at the end of the instrumented function
-and adds a data structure in a separate section)."
+    [PATCH] kconfig: preset config during all*config
 
-So, since DPRINT is essentially if(p9_debug_level & level) == level)
-it should roughly amount to the same overhead, no?  I suppose we could
-get fancy and and prefix it with an unlikely.
+so, at best, this buggy behavior is ~ 6 years old. Before that, I'd
+assume that the internal namespace was not accessible by any other
+mean than the front-ends.
 
-> I actually converted protocol dump to tracepoints. Other advantages
-> of switching to tracepoints is the ability to get stack trace,
-> filtering debug output per mount points, integration with perf tool.
+> You're *right*, of course, but you're getting on my tits by whining
+> about it only *now*, in this context.
+well... sorry for your tits, 'hope you're enjoying it ;-)
 
-tracepoints definitely seem to be a win with the extra information, but
-I worry about the average user being able to actually use the facility
-to provide reasonable bug reports.  Are tracepoints going to be enabled
-in all stock kernels and their tools available by default in a distribution,
-or is this something we are going to have to step people through?
+> At least I have offered *an* error
+> message reporting that the request was not honoured, which is a whole
+> lot better that we've been used to.
+>
+s/error/warning/, but indeed, that's a step forward.
 
-The middle ground may be to include DPRINT's for the absolute
-minimum info for identifying bugs (maybe just P9_DEBUG_ERROR,
-P9_DEBUG_9P and/or P9_DEBUG_VFS class messages) and convert
-everything else to tracepoints and maybe prune a bit as well.
+> Please, if this offends you then by all means go and fix it. A sane way
+> of handling dependencies would give a way to say "do what you need to do
+> in order to enable CONFIG_SATA_MV", and should remove the abomination of
+> 'select', which was introduced purely to work around that lack.
+>
+> But none of that is directly relevant in *this* thread.
+>
+to paraphrase you, I'd say, this might looks "cute but might give
+behavior that people will come to depend on in their scripts and then
+we take it away again", "that's why I'd kind of like to see it done
+*once*, *properly*".
 
-So, to demonstrate that I'm not just a lazy maintainer, I actually ran
-a sniff test using both TCP and Virtio before/after the debug flag
-patch and saw no statistically relevant difference between the two runs
-when running the Bonnie benchmark suite. (any variation was so low
-as to be attributable to noise as measured by having several successive
-runs with each version).
+ - Arnaud
 
-       -eric
+> --
+> dwmw2
+>
+>
