@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1HJQuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 12:50:10 -0400
-Received: from claw.goop.org ([74.207.240.146]:59726 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab1HJQuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 12:50:08 -0400
-Message-ID: <4E42B6B7.6090709@goop.org>
-Date: Wed, 10 Aug 2011 09:49:59 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1754061Ab1HJQwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:52:25 -0400
+Received: from smtp23.services.sfr.fr ([93.17.128.21]:11241 "EHLO
+	smtp23.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab1HJQwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 12:52:24 -0400
+X-SFR-UUID: 20110810165221224.36AEF7000149@msfrf2312.sfr.fr
+Message-ID: <4E42B940.6070904@efixo.com>
+Date: Wed, 10 Aug 2011 19:00:48 +0200
+From: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+Reply-To: emmanuel.deloget@efixo.com
+Organization: Efixo
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
-References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>  <20110725144629.b752bf14.rdunlap@xenotime.net>  <20110804193534.GB12729@elte.hu> <20110804195539.GA11198@dumpdata.com>  <20110804131516.c4da6595.rdunlap@xenotime.net>  <20110804223259.GB4370@dumpdata.com> <20110804224020.GA21492@dumpdata.com>  <4E3B3117.5050308@xenotime.net> <20110805080531.GA8052@elte.hu>  <20110805211423.GA9765@elte.hu> <20110806015815.GA26833@dumpdata.com>  <4E3D8657.7000704@goop.org> <1312808467.18583.223.camel@gandalf.stny.rr.com>
-In-Reply-To: <1312808467.18583.223.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+References: <1312067499.22074.59.camel@i7.infradead.org>	 <1312067670.22074.61.camel@i7.infradead.org>	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>	 <4E34998D.8060806@zytor.com>	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>	 <4E4140B3.7090802@suse.cz>	 <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>	 <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>	 <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>	 <1312985888.2989.46.camel@i7.infradead.org>	 <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com> <1312993987.2989.53.camel@i7.infradead.org>
+In-Reply-To: <1312993987.2989.53.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2011 06:01 AM, Steven Rostedt wrote:
-> On Sat, 2011-08-06 at 11:22 -0700, Jeremy Fitzhardinge wrote:
->> On 08/05/2011 06:58 PM, Konrad Rzeszutek Wilk wrote:
->>> On Fri, Aug 05, 2011 at 11:14:23PM +0200, Ingo Molnar wrote:
->>>> * Ingo Molnar <mingo@elte.hu> wrote:
->>>>
->>>>> * Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>>>
->>>>>> On 08/04/11 15:40, Konrad Rzeszutek Wilk wrote:
->>>>>>> On Thu, Aug 04, 2011 at 06:32:59PM -0400, Konrad Rzeszutek Wilk wrote:
->>>>>>>>>>> These build failures are still triggering upstream:
->>>>>>>>>>>
->>>>>>>>>>>  arch/x86/xen/trace.c:44:2: error: array index in initializer not of integer type
->>>>>>>>>>>  arch/x86/xen/trace.c:44:2: error: (near initialization for ‘xen_hypercall_names’)
->>>>>>>>>>>  arch/x86/xen/trace.c:45:1: error: ‘__HYPERVISOR_arch_4’ undeclared here (not in a function)
->>>>>>>>>>>  arch/x86/xen/trace.c:45:2: error: array index in initializer not of integer type
->>>>>>>>>>>  arch/x86/xen/trace.c:45:2: error: (near initialization for ‘xen_hypercall_names’)
->>>>>>>>>> Oh, that I haven't seen. Can you send me the .config for that please.
->>>>>>>>> You can't be trying very hard then.  I see lots of these (but no,
->>>>>>>> Ah, I am getting it now. Thanks for reporting it.
->>>>>>> This should do the trick:
->>>>>> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
->>>>> That patch did the trick here too:
->>>>>
->>>>> Acked-by: Ingo Molnar <mingo@elte.hu>
->>>> Except that i'm still seeing the occasional build failure - see the 
->>>> error log below. Config attached.
->>> Much appreciate for the report. I believe this fix (which I think hit
->>> linux-next yesterday?) should do that:
->>>
->>> commit 1e9ea2656b656edd3c8de98675bbc0340211b5bd
->>> Author: Jeremy Fitzhardinge <jeremy@goop.org>
->>> Date:   Wed Aug 3 09:43:44 2011 -0700
->>>
->>>      xen/tracing: it looks like we wanted CONFIG_FTRACE
->>>     
->>>     Apparently we wanted CONFIG_FTRACE rather the CONFIG_FUNCTION_TRACER.
->>>     
->>>     Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
->>>     Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
->>>     Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>>     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>>
->>> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
->>> index 45e94ac..3326204 100644
->>> --- a/arch/x86/xen/Makefile
->>> +++ b/arch/x86/xen/Makefile
->>> @@ -15,7 +15,7 @@ obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
->>>  			grant-table.o suspend.o platform-pci-unplug.o \
->>>  			p2m.o
->>>  
->>> -obj-$(CONFIG_FUNCTION_TRACER) += trace.o
->>> +obj-$(CONFIG_FTRACE) += trace.o
->>>  
->> I'm not sure this is correct either.  Maybe it should be
->> CONFIG_TRACEPOINTS?  Steven?
-> Actually, I believe the correct answer is:
+On 08/10/2011 06:33 PM, David Woodhouse wrote:
+> On Wed, 2011-08-10 at 10:34 -0400, Arnaud Lacombe wrote:
+>> your point being ? I might as well tell you that I find the current
+>> behavior of 'all*.config' just as broken wrt. to dependency
+>> management.
+> You might indeed. And I would find that commentary just as irrelevant
+> and unhelpful.
 >
-> CONFIG_EVENT_TRACING
+>>> If you have nothing relevant to say, just don't say anything.
+>>>
+>> maybe you can come with a detailed description of your proposal's
+>> behavior, including how to manage case like this, instead of just
+>> throwing patch around ?
+> How's this for a definition:
+>
+> "The behaviour for unsettable (or unclearable) options shall be exactly
+> like it already is if you put them in all*.config, or if you manually
+> edit the .config file and run 'make oldconfig', as people have been
+> doing for years. There is nothing new to see here."
+>
+>> If I do:
+>>
+>> # make CONFIG_WIRELESS_EXT=y allnoconfig
+>>
+>> I expect either a success or an error, not a silent discard. And
+>> *yes*, the problem already exists with "all*.config".
+> [dwmw2@i7 linux-2.6]$ make CONFIG_WIRELESS_EXT=y allnoconfig
+> scripts/kconfig/conf --allnoconfig Kconfig
+> #
+> # Could not set CONFIG_WIRELESS_EXT=y; perhaps it has unmet dependencies?
+> #
+> #
+> # configuration written to .config
+> #
+>
 
-OK, thanks.
+I understand that my question is indeed neither wanted nor clever, but 
+what's the point of trying to support "make CONFIG_FOO=y"?
 
-    J
+Will we be expected to type a 42 meters long command line to compile the 
+kernel instead of doing a menuconfig in the foreseable future? (and 
+between typos, unmet dependencies and the myriad of other possible 
+errors, I'm not sure I'll get more free time).
+
+I don't get it. If the goal is to help the kernel hackers and if it 
+really helps them it might be a thing to do - it might prove useful for 
+very simple CONFIG_ options but I'm not sure this will stay true for the 
+general case.
+
+Best regards,
+
+-- Emmanuel
+
