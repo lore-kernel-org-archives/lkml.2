@@ -1,133 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab1HJBd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 21:33:29 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34893 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab1HJBd2 convert rfc822-to-8bit (ORCPT
+	id S1752656Ab1HJBey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 21:34:54 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:34940 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750991Ab1HJBew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 21:33:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E41D3FB.9080802@gmail.com>
-References: <CAME+iufMQT-pWzxgc79NyZq-hW-6QU9FAJd1SV_UR+zR2erPOQ@mail.gmail.com>
-	<4E41D3FB.9080802@gmail.com>
-Date: Wed, 10 Aug 2011 10:33:28 +0900
-Message-ID: <CAME+iuf=mNy=s16y6LFZ7MpFWFg26UxjTF64o6smtC3=WgERkw@mail.gmail.com>
-Subject: Re: kernel panic with simple driver
-From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Aug 2011 21:34:52 -0400
+From: Mike Turquette <mturquette@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Mike Turquette <mturquette@ti.com>
+Subject: [PATCH 1/2] cpumask: introduce cpumask for hotpluggable CPUs
+Date: Tue,  9 Aug 2011 18:33:26 -0700
+Message-Id: <1312940007-26069-2-git-send-email-mturquette@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1312940007-26069-1-git-send-email-mturquette@ti.com>
+References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 9:42 AM, Ryan Mallon <rmallon@gmail.com> wrote:
-> On 10/08/11 10:16, Murali K. Vemuri wrote:
->>
->> Hello there,
->>
->> I have a small driver code with which I am randomly receiving kernel
->> panic. Can someone help me what is the mistake here?
->> The kernel panic is exactly caught to be at "add_timer (&my_timer) ".
->> I am able to get the print "Kicking off the timer" when the panic
->> happens.
->
-> It helps to post the panic message. Its hard to debug problems without them.
->
-> Where in add_timer is the panic occurring? It's only two lines, and one of
-> those is a BUG_ON. Are you hitting that? The other line is a call to
-> mod_timer and dereferences the timer pointer. Is the timer_list struct you
-> are passing to add_timer sane?
->
+On some platforms it is possible to have some CPUs which support CPU
+hotplug and some which do not.  Currently the prescence of an 'online'
+sysfs entry in userspace is adequate for applications to know that a CPU
+supports hotplug, but there is no convenient way to make the same
+determination in the kernel.
 
-Okay, have not been able to reproduce the panic yet after reading your
-reply. More so, due to the "random" nature of the panic.
-Nevertheless, the last time I observed the panic the LR was at
-mod_timer() not on BUG_ON.
-I will also add a sanity check for the timer_struct.
+To better model this relationship this patch introduces a new cpumask to
+track CPUs that support CPU hotplug operations.
 
->> Also, I could not observe any specific pattern in which the panic
->> occurs. But it is purely random. So far I was able to reproduce the
->> panic thrice out of 100+ attempts.
->
-> Do you have any concurrent access to the timer? If so you may be racing on
-> the between the test of timer_pending and the call to timer_add. In general,
-> I think you should call mod_timer rather than add_timer (see the
-> documentation in kernel/timer.c).
->
+This new cpumask is populated at boot-time and remains static for the
+life of the machine.  Bits set in the mask indicate a CPU which supports
+hotplug, but make no guarantees about whether that CPU is currently
+online or not.  Likewise a cleared bit in the mask indicates either a
+CPU which cannot hotplug or a lack of a populated CPU.
 
-There is no concurrent access to the timer. The design is that:
-1.Driver provides an IOCTL for start / stop
-2. when the driver receives START IOCTL, it toggles some GPIOs to ON / OFF.
-3. the GPIOs will be ON for 500 MSec and OFF for 500 MSec.
-4. Two successive START IOCTLs will not be honored.
-5. There is only one application that uses these IOCTLs
-6. When I receive a STOP IOCTL, I am doing :
-if (timer_pending (&my_timer))
-del_timer(&my_timer);
+The purpose of this new cpumask is to aid kernel code which uses CPU to
+take CPUs online and offline.  Possible uses are as a thermal event
+mitigation technique or as a power capping mechanism.
 
-Once I capture the panic dump, I will share that too.
+Signed-off-by: Mike Turquette <mturquette@ti.com>
+---
+ include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
+ kernel/cpu.c            |   18 ++++++++++++++++++
+ 2 files changed, 40 insertions(+), 5 deletions(-)
 
-Thanks
-Murali
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index b24ac56..9eed444 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -39,10 +39,11 @@ extern int nr_cpu_ids;
+  * The following particular system cpumasks and operations manage
+  * possible, present, active and online cpus.
+  *
+- *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+- *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
+- *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
+- *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
++ *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
++ *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
++ *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
++ *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
++ *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
+  *
+  *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
+  *
+@@ -51,7 +52,11 @@ extern int nr_cpu_ids;
+  *  life of that system boot.  The cpu_present_mask is dynamic(*),
+  *  representing which CPUs are currently plugged in.  And
+  *  cpu_online_mask is the dynamic subset of cpu_present_mask,
+- *  indicating those CPUs available for scheduling.
++ *  indicating those CPUs available for scheduling.  The
++ *  cpu_hotpluggable_mask is also fixed at boot time, as the set of CPU
++ *  id's which are possible AND can hotplug.  Cleared bits in this mask
++ *  mean that either the CPU is not possible, or it is possible but does
++ *  not support CPU hotplug operations.
+  *
+  *  If HOTPLUG is enabled, then cpu_possible_mask is forced to have
+  *  all NR_CPUS bits set, otherwise it is just the set of CPUs that
+@@ -61,6 +66,9 @@ extern int nr_cpu_ids;
+  *  depending on what ACPI reports as currently plugged in, otherwise
+  *  cpu_present_mask is just a copy of cpu_possible_mask.
+  *
++ *  If CONFIG_HOTPLUG_CPU is enabled, then cpu_hotpluggable_mask matches
++ *  the description above, otherwise it is the empty set.
++ *
+  *  (*) Well, cpu_present_mask is dynamic in the hotplug case.  If not
+  *      hotplug, it's a copy of cpu_possible_mask, hence fixed at boot.
+  *
+@@ -76,6 +84,7 @@ extern int nr_cpu_ids;
+  */
+ 
+ extern const struct cpumask *const cpu_possible_mask;
++extern const struct cpumask *const cpu_hotpluggable_mask;
+ extern const struct cpumask *const cpu_online_mask;
+ extern const struct cpumask *const cpu_present_mask;
+ extern const struct cpumask *const cpu_active_mask;
+@@ -85,19 +94,23 @@ extern const struct cpumask *const cpu_active_mask;
+ #define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
+ #define num_present_cpus()	cpumask_weight(cpu_present_mask)
+ #define num_active_cpus()	cpumask_weight(cpu_active_mask)
++#define num_hotpluggable_cpus()	cpumask_weight(cpu_hotpluggable_mask)
+ #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
+ #define cpu_possible(cpu)	cpumask_test_cpu((cpu), cpu_possible_mask)
+ #define cpu_present(cpu)	cpumask_test_cpu((cpu), cpu_present_mask)
+ #define cpu_active(cpu)		cpumask_test_cpu((cpu), cpu_active_mask)
++#define cpu_hotpluggable(cpu)	cpumask_test_cpu((cpu, cpu_hotpluggable_mask)
+ #else
+ #define num_online_cpus()	1U
+ #define num_possible_cpus()	1U
+ #define num_present_cpus()	1U
+ #define num_active_cpus()	1U
++#define num_hotpluggable_cpus()	0
+ #define cpu_online(cpu)		((cpu) == 0)
+ #define cpu_possible(cpu)	((cpu) == 0)
+ #define cpu_present(cpu)	((cpu) == 0)
+ #define cpu_active(cpu)		((cpu) == 0)
++#define cpu_hotpluggable(cpu)	0
+ #endif
+ 
+ /* verify cpu argument to cpumask_* operators */
+@@ -678,16 +691,20 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
+ #define cpu_none_mask to_cpumask(cpu_bit_bitmap[0])
+ 
+ #define for_each_possible_cpu(cpu) for_each_cpu((cpu), cpu_possible_mask)
++#define for_each_hotpluggable_cpu(cpu) \
++				   for_each_cpu((cpu), cpu_hotpluggable_mask)
+ #define for_each_online_cpu(cpu)   for_each_cpu((cpu), cpu_online_mask)
+ #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
+ 
+ /* Wrappers for arch boot code to manipulate normally-constant masks */
+ void set_cpu_possible(unsigned int cpu, bool possible);
++void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable);
+ void set_cpu_present(unsigned int cpu, bool present);
+ void set_cpu_online(unsigned int cpu, bool online);
+ void set_cpu_active(unsigned int cpu, bool active);
+ void init_cpu_present(const struct cpumask *src);
+ void init_cpu_possible(const struct cpumask *src);
++void init_cpu_hotpluggable(const struct cpumask *src);
+ void init_cpu_online(const struct cpumask *src);
+ 
+ /**
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..8c397c9 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -536,6 +536,11 @@ static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
+ const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
+ EXPORT_SYMBOL(cpu_possible_mask);
+ 
++static DECLARE_BITMAP(cpu_hotpluggable_bits, CONFIG_NR_CPUS) __read_mostly;
++const struct cpumask *const cpu_hotpluggable_mask =
++					to_cpumask(cpu_hotpluggable_bits);
++EXPORT_SYMBOL(cpu_hotpluggable_mask);
++
+ static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
+ const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
+ EXPORT_SYMBOL(cpu_online_mask);
+@@ -556,6 +561,14 @@ void set_cpu_possible(unsigned int cpu, bool possible)
+ 		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
+ }
+ 
++void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable)
++{
++	if (hotpluggable)
++		cpumask_set_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
++	else
++		cpumask_clear_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
++}
++
+ void set_cpu_present(unsigned int cpu, bool present)
+ {
+ 	if (present)
+@@ -590,6 +603,11 @@ void init_cpu_possible(const struct cpumask *src)
+ 	cpumask_copy(to_cpumask(cpu_possible_bits), src);
+ }
+ 
++void init_cpu_hotpluggable(const struct cpumask *src)
++{
++	cpumask_copy(to_cpumask(cpu_hotpluggable_bits), src);
++}
++
+ void init_cpu_online(const struct cpumask *src)
+ {
+ 	cpumask_copy(to_cpumask(cpu_online_bits), src);
+-- 
+1.7.4.1
 
-> ~Ryan
->
->> In all other attempts, my_dev_ioctl is called correctly and works
->> correctly.
->>
->> struct timer_list my_timer;
->>
->> static int my_dev_ioctl(struct inode *inode, struct file *file,
->>                 unsigned int cmd, unsigned long arg)
->> {
->>     switch(cmd)
->>     {
->>         case MATCH_CASE:
->>             if (timer_pending (&my_timer))
->>             {
->>                 printk(KERN_ERR "Timer currently pending, not adding
->> any more\n");
->>             }
->>             else
->>             {
->>                 printk(KERN_ERR "Kicking off the timer\n");
->>                 add_timer(&my_timer);
->>             }
->>             break;
->>         default:
->>             break;
->>     }
->>     return 0;
->> }
->>
->> static struct miscdevice my_dummy_dev =
->> {
->>     .minor = MISC_DYNAMIC_MINOR,
->>     .name = "dummy_dev",
->>     .fops =&my_dev_fops,
->> };
->>
->> static int __init my_dev_init(void)
->> {
->>     /*initialize some GPIOs */
->>     init_timer (&my_timer);
->>     my_timer.data = 0;
->>     my_timer.expires = jiffies + msecs_to_jiffies(500);
->>     my_timer.function = ring_led_detect_timer;
->>     misc_register(&mbi5025_dev);
->> }
->> module_init(my_dev_init);
->>
->>
->> Thanks in advance
->> Murali
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
