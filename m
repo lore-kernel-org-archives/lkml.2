@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618Ab1HJF1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 01:27:16 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40429 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab1HJF1P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 01:27:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312948364-2587-3-git-send-email-lars@metafoo.de>
-References: <1312948364-2587-1-git-send-email-lars@metafoo.de>
-	<1312948364-2587-3-git-send-email-lars@metafoo.de>
-Date: Wed, 10 Aug 2011 13:27:14 +0800
-Message-ID: <CAHG8p1CuiJws=wSKrfAiY9E=rne=taPP-semYZQJWuHn19398w@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 3/4] ASoC: Blackfin: ADAU1373 eval board support
-From: Scott Jiang <scott.jiang.linux@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Mike Frysinger <vapier.adi@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751574Ab1HJF2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 01:28:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39443 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033Ab1HJF2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 01:28:07 -0400
+Subject: Re: [ANNOUNCE] 3.0-rt1
+From: Mike Galbraith <mgalbraith@suse.de>
+To: pmorreale@novell.com
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1312953290.5395.39.camel@marge.simson.net>
+References: <alpine.LFD.2.02.1107222203400.2702@ionos>
+	 <4E2A1E75.4070709@gmail.com> <1311428078.2502.0.camel@hermosa.morreale.net>
+	 <1312953290.5395.39.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Aug 2011 07:28:03 +0200
+Message-ID: <1312954083.5395.41.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +config SND_SOC_BFIN_EVAL_ADAU1373
-> +       tristate "Support for the EVAL-ADAU1373 board on Blackfin eval boards"
-> +       depends on SND_BF5XX_I2S
-> +       select SND_BF5XX_SOC_I2S
-> +       select SND_SOC_ADAU1373
-> +       select I2C
+On Wed, 2011-08-10 at 07:14 +0200, Mike Galbraith wrote:
+> On Sat, 2011-07-23 at 07:34 -0600, Peter W. Morreale wrote:
+> > On Sat, 2011-07-23 at 03:05 +0200, Maarten Lankhorst wrote:
+> 
+> > > Only the nvidia driver fails to build because of rtmutex and migrate enable/disable being GPL only, you might want to reconsider the GPL only status of them.
+> > > 
+> > > ~Maarten
+> > 
+> > Or, alternatively, please ask Nvidia to GPL their driver.
+> 
+> I know a couple folks for whom this will eventually become a problem.
 
-Is it better to use depends on I2C?
+(maybe one of them will buy nvidia, and GPL the driver.. right:)
 
-> +       help
-> +         Say Y if you want to add support for the Analog Devices EVAL-ADAU1373
-> +         board connected to one of the Blackfin evaluation boards like the
-> +         BF5XX-STAMP or BF5XX-EZKIT.
