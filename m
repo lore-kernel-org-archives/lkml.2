@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1HJUqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 16:46:21 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:39904 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754022Ab1HJUqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 16:46:20 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: dilinger@queued.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] olpc_battery: add wakeup support
-Message-Id: <20110810204602.B294F9D401C@zog.reactivated.net>
-Date: Wed, 10 Aug 2011 21:46:02 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=7A8QoG2UdyIA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=In_Hgl4hAAAA:8 a=8DgI5CuxNwjYZL_WLIcA:9 a=RCjYsmLM1clj9jXFthgA:7 a=d4CUUju0HPYA:10 a=ro211Ng2IWAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1754608Ab1HJUtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 16:49:43 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:55798 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754022Ab1HJUtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 16:49:42 -0400
+Message-ID: <4E42EEE3.9050608@free.fr>
+Date: Wed, 10 Aug 2011 22:49:39 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LXC Development <Lxc-devel@lists.sourceforge.net>,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC] catching sys_reboot syscall
+References: <4E4051A0.8030009@free.fr> <20110810221028.2e0c8590@neptune.home>
+In-Reply-To: <20110810221028.2e0c8590@neptune.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Battery and AC events can now be used to wake up the system from suspend.
+On 08/10/2011 10:10 PM, Bruno Prémont wrote:
+> Hi Daniel,
+>
+> [I'm adding containers ml as we had a discussion there some time ago
+>  for this feature]
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Acked-by: Andres Salomon <dilinger@queued.net>
----
- drivers/power/olpc_battery.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+[ ... ]
 
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 9972268..46a2f07 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -533,6 +533,24 @@ void olpc_battery_trigger_uevent(unsigned long cause)
- 		kobject_uevent(&olpc_bat.dev->kobj, KOBJ_CHANGE);
- }
- 
-+static int olpc_battery_suspend(struct platform_device *pdev,
-+				pm_message_t state)
-+{
-+	if (device_may_wakeup(olpc_ac.dev))
-+		olpc_ec_wakeup_set(EC_SCI_SRC_ACPWR);
-+	else
-+		olpc_ec_wakeup_clear(EC_SCI_SRC_ACPWR);
-+
-+	if (device_may_wakeup(olpc_bat.dev))
-+		olpc_ec_wakeup_set(EC_SCI_SRC_BATTERY | EC_SCI_SRC_BATSOC
-+				   | EC_SCI_SRC_BATERR);
-+	else
-+		olpc_ec_wakeup_clear(EC_SCI_SRC_BATTERY | EC_SCI_SRC_BATSOC
-+				     | EC_SCI_SRC_BATERR);
-+
-+	return 0;
-+}
-+
- static int __devinit olpc_battery_probe(struct platform_device *pdev)
- {
- 	int ret;
-@@ -578,6 +596,11 @@ static int __devinit olpc_battery_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto error_failed;
- 
-+	if (olpc_ec_wakeup_available()) {
-+		device_set_wakeup_capable(olpc_ac.dev, true);
-+		device_set_wakeup_capable(olpc_bat.dev, true);
-+	}
-+
- 	return 0;
- 
- error_failed:
-@@ -612,6 +635,7 @@ static struct platform_driver olpc_battery_drv = {
- 	},
- 	.probe = olpc_battery_probe,
- 	.remove = __devexit_p(olpc_battery_remove),
-+	.suspend = olpc_battery_suspend,
- };
- 
- static int __init olpc_bat_init(void)
--- 
-1.7.6
+>> +    if (cmd == LINUX_REBOOT_CMD_RESTART2)
+>> +        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0)
+>> +            return -EFAULT;
+>> +
+>> +    /* If we are not in the initial pid namespace, we send a signal
+>> +     * to the parent of this init pid namespace, notifying a shutdown
+>> +     * occured */
+>> +    if (pid_ns != &init_pid_ns)
+>> +        pid_namespace_reboot(pid_ns, cmd, buffer);
+> Should there be a return here?
+> Or does pid_namespace_reboot() never return by submitting signal to
+> parent?
 
+Yes, it does not return a value, like 'do_notify_parent_cldstop'
+
+Thanks
+   -- Daniel
