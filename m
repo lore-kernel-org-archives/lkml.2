@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab1HJNgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:36:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34829 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1HJNgu convert rfc822-to-8bit (ORCPT
+	id S1751404Ab1HJNkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:40:46 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:51726 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750741Ab1HJNkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:36:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAgF-Bf=K8M9Qp8EwFTuUY06H4SPNY5cW2Ct3K9FecMLvBHmuA@mail.gmail.com>
-References: <1312898301-7229-1-git-send-email-padma.v@samsung.com>
-	<CABb+yY1Be3q+5QVaLYnonOUq1VtjyCZMKp0S1yryjF2HRyqoSw@mail.gmail.com>
-	<CAAgF-Bf=K8M9Qp8EwFTuUY06H4SPNY5cW2Ct3K9FecMLvBHmuA@mail.gmail.com>
-Date: Wed, 10 Aug 2011 19:06:48 +0530
-Message-ID: <CABb+yY1tCBK3Hywi_7TuBCc830BP7+C2GRoQxeKWU5OHXenjRA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/2] spi: s3c64xx: Use clkdev for bus clock lookup
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: padma venkat <padma.kvr@gmail.com>
-Cc: Padmavathi Venna <padma.v@samsung.com>, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Aug 2011 09:40:45 -0400
+Subject: Re: [PATCH v2] pch ieee1588 driver for Intel EG20T PCH
+From: Joe Perches <joe@perches.com>
+To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Cc: richard.cochran@omicron.at, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        tomoya-linux@dsn.okisemi.com
+In-Reply-To: <1312956783-11460-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
+References: <1312956783-11460-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Aug 2011 06:40:43 -0700
+Message-ID: <1312983643.11924.84.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 5:33 PM, padma venkat <padma.kvr@gmail.com> wrote:
-> Hi Jassi,
->
-> On Tue, Aug 9, 2011 at 6:13 PM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->> On Tue, Aug 9, 2011 at 7:28 PM, Padmavathi Venna <padma.v@samsung.com> wrote:
->>> SPI driver is modified to lookup the bus clock using the
->>> alias name instead of getting clock name and clock
->>> number from platform data.
->> Cool.
->>
->>> Driver is modified to get the best source clock among the
->>> available source clocks for the required frequency.
->> I am not sure if this driver should be deciding which clock is 'best' for it.
->> Because ...
->> 1) Usually it's the board designer who decides which clock to run at
->>  what speed based upon target device. So ideally, based upon use-case
->> the driver should simply get the 'best' clock from board via platform in a
->> format that is compliant to the 'generic clock api'.
-> As per your comment I modified the code for board designer to supply the
-> required list of source clocks. If this list is NULL then it  uses the
-> all available
-> clock sources. I will resubmit this patch.
-No dear. Not a list of clocks (that is property of the platform - not a board).
-But get just one 'generic clock api' compliant clock from the board and use
-it.
-That will keep the driver simple for sure and IIUIC, in future anyways DT would
-specify source clock for each peripheral. Grant ?
+On Wed, 2011-08-10 at 15:13 +0900, Toshiharu Okada wrote:
+> This patch is for IEEE1588 driver of Intel EG20T PCH.
+> EG20T PCH is the platform controller hub that is used in Intel's
+> general embedded platform.
+> This driver adds support for using the EG20T PCH as a PTP clock.
+
+> Would you review this patch, although this driver has not been tested yet?
+
+Just trivia...
+
+> diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
+[]
+> +/**
+> + * struct ch_1588_params_ - 1588 module paramter
+
+parameter
+
+> + */
+> +struct pch_params_ {
+> +	u8 station[STATION_ADDR_LEN];
+> +};
+ 
+names for struct types ending in _ are pretty unusual.
+
+[]
+
+> +/**
+> + * get_decimal() - Returns the decimal value of the passed hexadecimal value
+> + * @ch:	The hexadecimal value that has to be converted.
+> + */
+> +static s32 get_decimal(u8 ch)
+> +{
+> +	s32 ret;
+> +
+> +	if ((ch >= '0') && (ch <= '9'))
+> +		ret = ch - '0';
+> +	else if ((ch >= 'A') && (ch <= 'F'))
+> +		ret = 10 + ch - 'A';
+> +	else if ((ch >= 'a') && (ch <= 'f'))
+> +		ret = 10 + ch - 'a';
+> +	else
+> +		return -1;
+> +
+> +	return ret;
+> +}
+
+hex_to_bin
+
+> +pch_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+[]
+> +	if (ret != 0) {
+> +		dev_err(&pdev->dev,
+> +			"%s:could not enable the pci device\n", __func__);
+> +		goto err_pci_en;
+> +	}
+
+It seems all of the dev_<level> logging messages include __func__.
+I think these __func__ uses are not particularly valuable and could
+be removed.
+
+> +	/* retreive the available length of the IO memory space */
+
+retrieve
+
+> +	if (!request_mem_region(chip->mem_base, chip->mem_size, "1588_regs")) {
+> +		dev_err(&pdev->dev, "%s: could not allocate register memory "
+> +			"space\n", __func__);
+
+Please don't split format strings.
+
+		dev_err(&pdev->dev, "could not allocate register memory space\n");
+or if you must
+		dev_err(&pdev->dev, "%s: could not allocate register memory space\n",
+			__func__);
+[]
+> +	if (strcmp(pch_param.station, "00:00:00:00:00:00") != 0) {
+> +		if (pch_set_station_address(pch_param.station, pdev) != 0) {
+> +			dev_err(&pdev->dev,
+> +				"%s: Invalid station address parameter\n"
+> +				"Module loaded; But, station address not set "
+> +				"correctly\n", __func__);
+
+			dev_err(&pdev->dev,
+				"%s: Invalid station address parameter\n"
+				"Module loaded but station address not set correctly\n",
+				__func__);
+
+
