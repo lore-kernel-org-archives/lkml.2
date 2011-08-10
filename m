@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1HJJGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:06:24 -0400
-Received: from [95.166.99.235] ([95.166.99.235]:46444 "EHLO kernel.dk"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1HJJGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:06:23 -0400
-Message-ID: <4E424A0A.6090300@kernel.dk>
-Date: Wed, 10 Aug 2011 11:06:18 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1752667Ab1HJJGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:06:48 -0400
+Received: from smtp2.uniroma3.it ([62.241.4.211]:35680 "EHLO smtp2.uniroma3.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607Ab1HJJGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:06:47 -0400
+Message-ID: <4E2E11AD001A3FD9@smtp2.uniroma3.it> (added by postmaster@poste.it)
+Reply-To: <claimsgroup222@hotmail.co.uk>
+From: "COCA COLA PLC" <zennaro@uniroma3.it>
+Subject: 
+Date: Wed, 10 Aug 2011 14:36:18 -0700
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: Kyungmin Park <kmpark@infradead.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, jh80.chung@samsung.com, linux-mmc@vger.kernel.org
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-References: <20110809034724.GA22257@july> <4E4181E4.3090704@kernel.dk> <CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com> <4E423C83.9090209@kernel.dk> <CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com> <CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
-In-Reply-To: <CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0042_01C2A9A6.10ADC5B2"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-10 10:47, Shaohua Li wrote:
-> 2011/8/10 Kyungmin Park <kmpark@infradead.org>:
->> On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>> On 2011-08-10 01:43, Kyungmin Park wrote:
->>>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>> On 2011-08-09 05:47, Kyungmin Park wrote:
->>>>>> Hi Jens
->>>>>>
->>>>>> Now eMMC device requires the upper layer information to improve the data
->>>>>> performance and reliability.
->>>>>>
->>>>>> . Context ID
->>>>>> Using the context information, it can sort out the data internally and improve the performance.
->>>>>> The main problem is that it's needed to define "What's the context".
->>>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
->>>>>>
->>>>>> . Data Tag
->>>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
->>>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
->>>>>>
->>>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
->>>>>>
->>>>>> Can you give your opinions and does it proper fields at requests?
->>>>>
->>>>> You need this to work on all IO schedulers, not just cfq.
->>>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
->>>>
->>>>> And since that's the case, there's no need to add this field since you can just
->>>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
->>>>>
->>>>> static int cfq_foo(struct request *rq)
->>>>> {
->>>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
->>>>>
->>>>>        if (cfqq)
->>>>>                return cfqq->pid;
->>>>>
->>>>>        return -1;
->>>>> }
->>>>
->>>> The actual user of these information is device driver. e.g.,
->>>> drivers/mmc/card/block.c
->>>> So it's not good to use cfq data structure at D/D. some time later
->>>> these are also used at scsi device drivers.
->>>
->>> No, what I'm suggesting above is the CFQ implementation. You would need
->>> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
->>> If you notice, the above function does not take or output anything
->>> related to CFQ in particular, it'll just return you the unique key you
->>> need.
->>>
->>> It's either the above, or a field in the request that the schedulers
->>> fill out. However, it'd be somewhat annoying to grow struct request for
->>> something that has a narrow scope of use. Hence the suggestion to add a
->>> strategy helper for this.
->> Okay, I'll add new elevator function one for getting context or more hints.
->> BTW, does it okay to call elevator function call at D/D?
->>
->> The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
->>
->>                struct elevator_queue *e = md->queue.queue->elevator;
->>                int context = -1;
->>
->>                if (e->ops->elevator_get_req_hint_fn && req) {
->>                        context = e->ops->elevator_get_req_hint_fn(req);
-> I'm wondering how the driver deal with elevator switch. A context id from
-> one elevator might just be garbage for another elevator.
+This is a multi-part message in MIME format.
 
-Any request with sched private data is drained prior to switching over.
-This problem isn't unique to this context id, we have other per-request
-IO scheduler data structures associated with the request, too.
+------=_NextPart_000_0042_01C2A9A6.10ADC5B2
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
--- 
-Jens Axboe
+PLS FIND ATTACHMENT
 
+------=_NextPart_000_0042_01C2A9A6.10ADC5B2
+Content-Type: application/octet-stream;
+	name="COCA COLA NOTIFICATION.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="COCA COLA NOTIFICATION.txt"
+
+QXR0ZW50aW9uIFdpbm5lcg0KDQpUaGlzIGVtYWlsIGlzIHRvIG5vdGlmeSB5
+b3UgdGhhdCB5b3VyIGVtYWlsIGFkZHJlc3Mgd2FzDQpyYW5kb21seSBzZWxl
+Y3RlZCBhbmQgZW50ZXJlZCBpbnRvIG91ciBmcmVlIFRoaXJkIENhdGVnb3J5
+DQpkcmF3cy5Zb3UgaGF2ZSBzdWJzZXF1ZW50bHkgZW1lcmdlZCBhIHdpbm5l
+ciBhbmQgdGhlcmVmb3JlDQplbnRpdGxlZCB0byBhIHN1YnN0YW50aWFsIGFt
+b3VudCBvZiAxLDAwMCwwMDAuMDAgR3JlYXQgQnJpdGlzaA0KUG91bmRzLmtp
+bmRseSBjb25maXJtIHJlY2VpcHQgb2YgdGhpcyBlbWFpbCwgYnkgZm9yd2Fy
+ZGluZw0KWW91ciBEZXRhaWxzIHRvIHRoZSBjbGFpbXMgZGVwYXJ0bWVudC4N
+Cg0KTmFtZTogVG9tbXkgUm9nZXINCkVtYWlsOmNsYWltc2dyb3VwOTE5QGhv
+dG1haWwuY28udWsNCg0KSU1QT1JUQU5UIEZJTEwgT1VUIFRISVMgV0lOTkVS
+UyBWRVJJRklDQVRJT04gRk9STSBCRUxPVzoNCg0KRlVMTCBOQU1FUy0tLS0t
+LS0tLS0NCkRBVEUgT0YgQklSVEgtLS0tLS0tLS0NClNFWC4tLS0tLS0tLS0t
+LS0tLS0tDQpDT05UQUNUIEFERFJFU1MtLS0tLS0tLS0tDQpDT1VOVFJZLS0t
+LS0tLS0tLS0tLS0tLS0tLS0NCk1PQklMRSBOVU1CRVItLS0tLS0tLS0tLS0t
+LQ0KT0NDVVBBVElPTi0tLS0tLS0tLS0NCkUtTUFJTCBJLkQtLS0tLS0tLS0t
+LS0tLS0tLQ0KDQpDb25ncmF0dWxhdGlvbnMgb25jZSBhZ2Fpbi4NCkRyLiBJ
+YW4gSGlsbC4NCk9ubGluZSBDby1jb29yZGluYXRvcg==
+
+------=_NextPart_000_0042_01C2A9A6.10ADC5B2--
