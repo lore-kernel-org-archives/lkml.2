@@ -1,132 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab1HJFd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 01:33:58 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:46200 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963Ab1HJFd5 (ORCPT
+	id S1751720Ab1HJFgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 01:36:04 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:19247 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750963Ab1HJFgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 01:33:57 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk() issue in das6402.c
-Date: Wed, 10 Aug 2011 11:03:40 +0530
-Message-Id: <1312954420-3470-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: comedi:fix printk() issue in das6402.c>
-References: <[PATCH]Staging: comedi:fix printk() issue in das6402.c>
+	Wed, 10 Aug 2011 01:36:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtgDAMEWQk55LbABgWdsb2JhbABBp0QVAQEWJiWBQAEBBTocIxAIAxguFCUDIRPFUQ6GOASkCA
+Date: Wed, 10 Aug 2011 15:35:56 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 2/2] dentry: move to per-sb LRU locks
+Message-ID: <20110810053556.GY3162@dastard>
+References: <1312787021-11324-1-git-send-email-david@fromorbit.com>
+ <1312787021-11324-3-git-send-email-david@fromorbit.com>
+ <1312808544.10488.31.camel@twins>
+ <20110809110420.GT3162@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809110420.GT3162@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tue, Aug 09, 2011 at 09:04:21PM +1000, Dave Chinner wrote:
+> On Mon, Aug 08, 2011 at 03:02:24PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2011-08-08 at 17:03 +1000, Dave Chinner wrote:
+> > > +       /* s_dentry_lru_lock protects s_dentry_lru, s_nr_dentry_unused */
+> > > +       spinlock_t              s_dentry_lru_lock ____cacheline_aligned_in_smp;
+> > >         struct list_head        s_dentry_lru;   /* unused dentry lru */ 
+> > 
+> > Wouldn't it make sense to have both those on the same cacheline?
+> 
+> Um, they are, aren't they? The annotation moves s_dentry_lru_lock to
+> the start of a new cacheline, and everything packs in after that?
+> 
+> $ pahole fs/dcache.o
+> ....
+>         /* --- cacheline 8 boundary (512 bytes) --- */
+>         spinlock_t                 s_dentry_lru_lock;    /*   512    72 */
+>         /* --- cacheline 9 boundary (576 bytes) was 8 bytes ago --- */
+>         struct list_head           s_dentry_lru;         /*   584    16 */
+>         int                        s_nr_dentry_unused;   /*   600     4 */
+> 
+> Oh, bloody hell. When did that change?
 
-This is a patch to the das6402.c file that fixes up a printk() warning found by the checkpatch.pl tool
+Actually, it hasn't. The problem here is that when you build with
+lockdep and all the associated checking, a spinlock grows from 4
+bytes to 72 bytes, pushing anything after it onto the next
+cacheline. I didn't notice that until I just did a build with a
+non-lockdep kernel and saw the structure change size significantly.
+So the struct superblock looks like this without lockdep:
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- Added define pr_fmt(fmt) KBUILD_MODNAME ": " fmt.
- Converted printks to dev_versions.		
- drivers/staging/comedi/drivers/das6402.c |   36 +++++++++++++----------------
- 1 files changed, 16 insertions(+), 20 deletions(-)
+....
+        struct list_head *         s_files;              /*   216     8 */
 
-diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
-index 6328f52..8b16f8c 100644
---- a/drivers/staging/comedi/drivers/das6402.c
-+++ b/drivers/staging/comedi/drivers/das6402.c
-@@ -38,6 +38,8 @@ Devices: [Keithley Metrabyte] DAS6402 (das6402)
- This driver has suffered bitrot.
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/interrupt.h>
- #include "../comedidev.h"
- 
-@@ -171,24 +173,21 @@ static irqreturn_t intr_handler(int irq, void *d)
- 	struct comedi_subdevice *s = dev->subdevices;
- 
- 	if (!dev->attached || devpriv->das6402_ignoreirq) {
--		printk("das6402: BUG: spurious interrupt\n");
-+		dev_warn(dev->hw_dev, "das6402: BUG: spurious interrupt\n");
- 		return IRQ_HANDLED;
- 	}
--#ifdef DEBUG
--	printk("das6402: interrupt! das6402_irqcount=%i\n",
--	       devpriv->das6402_irqcount);
--	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
--#endif
-+
-+	dev_dbg(dev->hw_dev, "das6402: interrupt! das6402_irqcount=%i\n",
-+			devpriv->das6402_irqcount);
-+	dev_dbg(dev->hw_dev, "das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
- 
- 	das6402_ai_fifo_dregs(dev, s);
- 
- 	if (s->async->buf_write_count >= devpriv->ai_bytes_to_read) {
- 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
- 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
--#ifdef DEBUG
--		printk("das6402: Got %i samples\n\n",
--		       devpriv->das6402_wordsread - diff);
--#endif
-+		dev_dbg(dev->hw_dev, "das6402: Got %i samples\n\n",
-+				devpriv->das6402_wordsread - diff);
- 		s->async->events |= COMEDI_CB_EOA;
- 		comedi_event(dev, s);
- 	}
-@@ -228,9 +227,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
- 	 */
- 
- 	devpriv->das6402_ignoreirq = 1;
--#ifdef DEBUG
--	printk("das6402: Stopping acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "das6402: Stopping acquisition\n");
- 	devpriv->das6402_ignoreirq = 1;
- 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
-@@ -247,9 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
- {
- 	devpriv->das6402_ignoreirq = 1;
- 
--#ifdef DEBUG
--	printk("das6402: Starting acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "das6402: Starting acquisition\n");
- 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
- 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
-@@ -329,10 +324,11 @@ static int das6402_attach(struct comedi_device *dev,
- 	if (iobase == 0)
- 		iobase = 0x300;
- 
--	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
-+	dev_printk(KERN_INFO, dev->hw_dev,
-+			"comedi%d: das6402: 0x%04lx", dev->minor, iobase);
- 
- 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
--		printk(" I/O port conflict\n");
-+		dev_printk(KERN_CONT, dev->hw_dev, " I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -340,10 +336,10 @@ static int das6402_attach(struct comedi_device *dev,
- 	/* should do a probe here */
- 
- 	irq = it->options[0];
--	printk(" ( irq = %u )", irq);
-+	dev_printk(KERN_CONT, dev->hw_dev, " ( irq = %u )", irq);
- 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
- 	if (ret < 0) {
--		printk("irq conflict\n");
-+		dev_printk(KERN_CONT, dev->hw_dev, "irq conflict\n");
- 		return ret;
- 	}
- 	dev->irq = irq;
+        /* XXX 32 bytes hole, try to pack */
+
+        /* --- cacheline 4 boundary (256 bytes) --- */
+        spinlock_t                 s_dentry_lru_lock;    /*   256     4 */
+
+        /* XXX 4 bytes hole, try to pack */
+
+        struct list_head           s_dentry_lru;         /*   264    16 */
+        int                        s_nr_dentry_unused;   /*   280     4 */
+
+        /* XXX 36 bytes hole, try to pack */
+
+        /* --- cacheline 5 boundary (320 bytes) --- */
+        spinlock_t                 s_inode_lru_lock;     /*   320     4 */
+
+        /* XXX 4 bytes hole, try to pack */
+
+        struct list_head           s_inode_lru;          /*   328    16 */
+        int                        s_nr_inodes_unused;   /*   344     4 */
+
+        /* XXX 4 bytes hole, try to pack */
+
+        struct block_device *      s_bdev;               /*   352     8 */
+        struct backing_dev_info *  s_bdi;                /*   360     8 */
+        struct mtd_info *          s_mtd;                /*   368     8 */
+        struct list_head           s_instances;          /*   376    16 */
+        /* --- cacheline 6 boundary (384 bytes) was 8 bytes ago --- */
+        struct quota_info          s_dquot;              /*   392   280 */
+....
+
+So we see the dentry LRU lock, list and counter on it's own cache
+line, and the inode LRU lock, list and counter on the next cache
+line.
+
+But what is does point out is that we should actually also add a
+____cacheline_aligned_in_smp annotation to the variable -after- the
+variables we want on their own cacheline so that they don't get
+packed tightly into the cacheline we want for the LRU variables.
+That's not something I'm going to fix in this patch...
+
+Cheers,
+
+Dave.
 -- 
-1.6.5.2
-
+Dave Chinner
+david@fromorbit.com
