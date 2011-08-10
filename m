@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab1HJNLj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:11:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61974 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1HJNLi (ORCPT
+	id S1751347Ab1HJNMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:12:23 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:52531 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750963Ab1HJNMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:11:38 -0400
-Subject: [PATCH] rtc: ep93xx: Fix 'rtc' may be used uninitialized warning
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+	Wed, 10 Aug 2011 09:12:22 -0400
+Subject: Re: [PATCH 2/6] staging: vme: make [alloc|free]_consistent bridge
+ specific
+From: Joe Perches <joe@perches.com>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: martyn.welch@ge.com, gregkh@suse.de, cota@braap.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>
+References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
+	 <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Aug 2011 21:11:26 +0800
-Message-ID: <1312981886.21916.2.camel@phoenix>
+Date: Wed, 10 Aug 2011 06:12:20 -0700
+Message-ID: <1312981940.11924.68.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -23,90 +26,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 92d921c5d "rtc: ep93xx: Initialize drvdata before registering device"
-ensures the drvdata is initialized prior to registering the rtc device.
-But it set the drvdata to an uninitialized pointer.
-Thus calling platform_get_drvdata in ep93xx_rtc_remove does not get correct address.
+On Wed, 2011-08-10 at 11:33 +0200, Manohar Vanga wrote:
+> Make PCI dependent functions ([alloc|free]_consistent() in
+> 'vme.c') bridge specific. By removing the dependency of the
+> VME bridge framework on PCI, this patch allows for addition of
+> non-PCI based VME bridges.
+[]
+> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+[]
+> +void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
+> +	dma_addr_t *dma)
+> +{
+> +	struct pci_dev *pdev;
+> +
+> +	/* Find pci_dev container of dev */
+> +	pdev = container_of(parent, struct pci_dev, dev);
+> +
+> +	return pci_alloc_consistent(pdev, size, dma);
+> +}
+> +
+> +void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
+> +	dma_addr_t dma)
+> +{
+> +	struct pci_dev *pdev;
+> +
+> +	/* Find pci_dev container of dev */
+> +	pdev = container_of(parent, struct pci_dev, dev);
+> +
+> +	pci_free_consistent(pdev, size, vaddr, dma);
+> +}
+[]
+> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+[]
+> @@ -2122,6 +2122,28 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
+>  	return (int)slot;
+>  }
+>  
+> +void *tsi148_alloc_consistent(struct device *parent, size_t size,
+> +	dma_addr_t *dma)
+> +{
+> +	struct pci_dev *pdev;
+> +
+> +	/* Find pci_dev container of dev */
+> +	pdev = container_of(parent, struct pci_dev, dev);
+> +
+> +	return pci_alloc_consistent(pdev, size, dma);
+> +}
+> +
+> +void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
+> +	dma_addr_t dma)
+> +{
+> +	struct pci_dev *pdev;
+> +
+> +	/* Find pci_dev container of dev */
+> +	pdev = container_of(parent, struct pci_dev, dev);
+> +
+> +	pci_free_consistent(pdev, size, vaddr, dma);
+> +}
+> +
+>  static int __init tsi148_init(void)
+>  {
+>  	return pci_register_driver(&tsi148_driver);
 
-This patch fixes below warning by adding struct rtc_device *rtc to struct ep93xx_rtc.
-Then set platform drvdata to ep93xx_rtc instead of rtc.
+Except for the name, those 2 blocks are identical.
+Maybe create a non-pci generic version instead?
 
-  CC      drivers/rtc/rtc-ep93xx.o
-drivers/rtc/rtc-ep93xx.c: In function 'ep93xx_rtc_probe':
-drivers/rtc/rtc-ep93xx.c:154: warning: 'rtc' may be used uninitialized in this function
+> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+[]
+> @@ -104,28 +100,29 @@ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
+>  		return NULL;
+>  	}
+>  
+> -	/* Find pci_dev container of dev */
+>  	if (bridge->parent == NULL) {
+> -		printk(KERN_ERR "Dev entry NULL\n");
+> +		printk(KERN_ERR "Dev entry NULL for"
+> +			" bridge %s\n", bridge->name);
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-hi,
-I don't have this hardware handy, I appreciate someone can test this patch.
-Thanks,
-Axel
+Please don't split formats like this.
+Use unsplit format strings even if they exceed 80 cols.
+This one doesn't.
 
- drivers/rtc/rtc-ep93xx.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+		printk(KERN_ERR "Dev entry NULL for bridge %s\n", bridge->name);
+or
+		pr_err("Dev entry NULL for bridge %s\n", bridge->name);
 
-diff --git a/drivers/rtc/rtc-ep93xx.c b/drivers/rtc/rtc-ep93xx.c
-index 335551d..14a42a1 100644
---- a/drivers/rtc/rtc-ep93xx.c
-+++ b/drivers/rtc/rtc-ep93xx.c
-@@ -36,6 +36,7 @@
-  */
- struct ep93xx_rtc {
- 	void __iomem	*mmio_base;
-+	struct rtc_device *rtc;
- };
- 
- static int ep93xx_rtc_get_swcomp(struct device *dev, unsigned short *preload,
-@@ -130,7 +131,6 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
- {
- 	struct ep93xx_rtc *ep93xx_rtc;
- 	struct resource *res;
--	struct rtc_device *rtc;
- 	int err;
- 
- 	ep93xx_rtc = devm_kzalloc(&pdev->dev, sizeof(*ep93xx_rtc), GFP_KERNEL);
-@@ -151,12 +151,12 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
- 		return -ENXIO;
- 
- 	pdev->dev.platform_data = ep93xx_rtc;
--	platform_set_drvdata(pdev, rtc);
-+	platform_set_drvdata(pdev, ep93xx_rtc);
- 
--	rtc = rtc_device_register(pdev->name,
-+	ep93xx_rtc->rtc = rtc_device_register(pdev->name,
- 				&pdev->dev, &ep93xx_rtc_ops, THIS_MODULE);
--	if (IS_ERR(rtc)) {
--		err = PTR_ERR(rtc);
-+	if (IS_ERR(ep93xx_rtc->rtc)) {
-+		err = PTR_ERR(ep93xx_rtc->rtc);
- 		goto exit;
- 	}
- 
-@@ -167,7 +167,7 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
- 	return 0;
- 
- fail:
--	rtc_device_unregister(rtc);
-+	rtc_device_unregister(ep93xx_rtc->rtc);
- exit:
- 	platform_set_drvdata(pdev, NULL);
- 	pdev->dev.platform_data = NULL;
-@@ -176,11 +176,11 @@ exit:
- 
- static int __exit ep93xx_rtc_remove(struct platform_device *pdev)
- {
--	struct rtc_device *rtc = platform_get_drvdata(pdev);
-+	struct ep93xx_rtc *ep93xx_rtc = platform_get_drvdata(pdev);
- 
- 	sysfs_remove_group(&pdev->dev.kobj, &ep93xx_rtc_sysfs_files);
- 	platform_set_drvdata(pdev, NULL);
--	rtc_device_unregister(rtc);
-+	rtc_device_unregister(ep93xx_rtc->rtc);
- 	pdev->dev.platform_data = NULL;
- 
- 	return 0;
--- 
-1.7.4.1
+> +		return NULL;
+> +	}
+> +
+> +	if (bridge->alloc_consistent == NULL) {
+> +		printk(KERN_ERR "alloc_consistent not supported by"
+> +			" bridge %s\n", bridge->name);
 
+		printk(KERN_ERR "alloc_consistent not supported by bridge %s\n",
+		       bridge->name);
+
+> @@ -138,10 +135,19 @@ void vme_free_consistent(struct vme_resource *resource, size_t size,
+>  		return;
+>  	}
+>  
+> -	/* Find pci_dev container of dev */
+> -	pdev = container_of(bridge->parent, struct pci_dev, dev);
+> +	if (bridge->parent == NULL) {
+> +		printk(KERN_ERR "Dev entry NULL for"
+> +			" bridge %s\n", bridge->name);
+
+etc.
 
 
