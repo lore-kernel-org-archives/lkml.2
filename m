@@ -1,209 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab1HJRiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 13:38:08 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:60051 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709Ab1HJRiG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 13:38:06 -0400
+	id S1754381Ab1HJRlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 13:41:07 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:38844 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753585Ab1HJRlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 13:41:05 -0400
+Date: Wed, 10 Aug 2011 13:41:01 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de
+Subject: [RFC PATCH][3.0] Tracepoint: dissociate from module mutex
+Message-ID: <20110810174101.GA6523@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <20110810084248.GB7673@matterhorn1>
-References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
- <1312940007-26069-2-git-send-email-mturquette@ti.com> <20110810084248.GB7673@matterhorn1>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Wed, 10 Aug 2011 10:25:12 -0700
-Message-ID: <CAJOA=zMxrpukWKWLy-mNcM0OsV==yZbRLusmVuqN5H5QU-Q_mA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpumask: introduce cpumask for hotpluggable CPUs
-To: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:35:50 up 259 days, 22:38,  3 users,  load average: 0.00, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 1:42 AM, Amit Kucheria <amit.kucheria@linaro.org> wrote:
-> On 11 Aug 09, Mike Turquette wrote:
->> On some platforms it is possible to have some CPUs which support CPU
->> hotplug and some which do not.  Currently the prescence of an 'online'
->> sysfs entry in userspace is adequate for applications to know that a CPU
->> supports hotplug, but there is no convenient way to make the same
->> determination in the kernel.
->>
->> To better model this relationship this patch introduces a new cpumask to
->> track CPUs that support CPU hotplug operations.
->>
->> This new cpumask is populated at boot-time and remains static for the
->> life of the machine.  Bits set in the mask indicate a CPU which supports
->> hotplug, but make no guarantees about whether that CPU is currently
->> online or not.  Likewise a cleared bit in the mask indicates either a
->> CPU which cannot hotplug or a lack of a populated CPU.
->>
->> The purpose of this new cpumask is to aid kernel code which uses CPU to
->> take CPUs online and offline.  Possible uses are as a thermal event
->> mitigation technique or as a power capping mechanism.
->>
->> Signed-off-by: Mike Turquette <mturquette@ti.com>
->> ---
->>  include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
->>  kernel/cpu.c            |   18 ++++++++++++++++++
->>  2 files changed, 40 insertions(+), 5 deletions(-)
->>
->> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
->> index b24ac56..9eed444 100644
->> --- a/include/linux/cpumask.h
->> +++ b/include/linux/cpumask.h
->> @@ -39,10 +39,11 @@ extern int nr_cpu_ids;
->>   * The following particular system cpumasks and operations manage
->>   * possible, present, active and online cpus.
->>   *
->> - *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
->> - *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
->> - *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
->> - *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
->> + *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
->> + *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
->> + *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
->> + *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
->> + *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
->>   *
->>   *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
->>   *
->> @@ -51,7 +52,11 @@ extern int nr_cpu_ids;
->>   *  life of that system boot.  The cpu_present_mask is dynamic(*),
->>   *  representing which CPUs are currently plugged in.  And
->>   *  cpu_online_mask is the dynamic subset of cpu_present_mask,
->> - *  indicating those CPUs available for scheduling.
->> + *  indicating those CPUs available for scheduling.  The
->> + *  cpu_hotpluggable_mask is also fixed at boot time, as the set of CPU
->> + *  id's which are possible AND can hotplug.  Cleared bits in this mask
->> + *  mean that either the CPU is not possible, or it is possible but does
->> + *  not support CPU hotplug operations.
->>   *
->>   *  If HOTPLUG is enabled, then cpu_possible_mask is forced to have
->>   *  all NR_CPUS bits set, otherwise it is just the set of CPUs that
->> @@ -61,6 +66,9 @@ extern int nr_cpu_ids;
->>   *  depending on what ACPI reports as currently plugged in, otherwise
->>   *  cpu_present_mask is just a copy of cpu_possible_mask.
->>   *
->> + *  If CONFIG_HOTPLUG_CPU is enabled, then cpu_hotpluggable_mask matches
->> + *  the description above, otherwise it is the empty set.
->> + *
->>   *  (*) Well, cpu_present_mask is dynamic in the hotplug case.  If not
->>   *      hotplug, it's a copy of cpu_possible_mask, hence fixed at boot.
->>   *
->> @@ -76,6 +84,7 @@ extern int nr_cpu_ids;
->>   */
->>
->>  extern const struct cpumask *const cpu_possible_mask;
->> +extern const struct cpumask *const cpu_hotpluggable_mask;
->>  extern const struct cpumask *const cpu_online_mask;
->>  extern const struct cpumask *const cpu_present_mask;
->>  extern const struct cpumask *const cpu_active_mask;
->> @@ -85,19 +94,23 @@ extern const struct cpumask *const cpu_active_mask;
->>  #define num_possible_cpus()  cpumask_weight(cpu_possible_mask)
->>  #define num_present_cpus()   cpumask_weight(cpu_present_mask)
->>  #define num_active_cpus()    cpumask_weight(cpu_active_mask)
->> +#define num_hotpluggable_cpus()      cpumask_weight(cpu_hotpluggable_mask)
->>  #define cpu_online(cpu)              cpumask_test_cpu((cpu), cpu_online_mask)
->>  #define cpu_possible(cpu)    cpumask_test_cpu((cpu), cpu_possible_mask)
->>  #define cpu_present(cpu)     cpumask_test_cpu((cpu), cpu_present_mask)
->>  #define cpu_active(cpu)              cpumask_test_cpu((cpu), cpu_active_mask)
->> +#define cpu_hotpluggable(cpu)        cpumask_test_cpu((cpu, cpu_hotpluggable_mask)
->
->                                 missing closing bracket? ^^^^
+Copy the information needed from struct module into a local module list
+held within tracepoint.c from within the module coming/going notifier.
 
-Oops.  Will fix in V2.
+This vastly simplifies locking of tracepoint registration /
+unregistration, because we don't have to take the module mutex to
+register and unregister tracepoints anymore. Steven Rostedt ran into
+dependency problems related to modules mutex vs kprobes mutex vs ftrace
+mutex vs tracepoint mutex that seems to be hard to fix without removing
+this dependency between tracepoint and module mutex. (note: it should be
+investigated whether kprobes could benefit of being dissociated from the
+modules mutex too.)
 
-Thanks,
-Mike
+This also fixes module handling of tracepoint list iterators, because it
+was expecting the list to be sorted by pointer address. Given we have
+control on our own list now, it's OK to sort this list which has
+tracepoints as its only purpose. The reason why this sorting is required
+is to handle the fact that seq files (and any read() operation from
+user-space) cannot hold the tracepoint mutex across multiple calls, so
+list entries may vanish between calls. With sorting, the tracepoint
+iterator becomes usable even if the list don't contain the exact item
+pointed to by the iterator anymore.
 
->>  #else
->>  #define num_online_cpus()    1U
->>  #define num_possible_cpus()  1U
->>  #define num_present_cpus()   1U
->>  #define num_active_cpus()    1U
->> +#define num_hotpluggable_cpus()      0
->>  #define cpu_online(cpu)              ((cpu) == 0)
->>  #define cpu_possible(cpu)    ((cpu) == 0)
->>  #define cpu_present(cpu)     ((cpu) == 0)
->>  #define cpu_active(cpu)              ((cpu) == 0)
->> +#define cpu_hotpluggable(cpu)        0
->>  #endif
->>
->>  /* verify cpu argument to cpumask_* operators */
->> @@ -678,16 +691,20 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
->>  #define cpu_none_mask to_cpumask(cpu_bit_bitmap[0])
->>
->>  #define for_each_possible_cpu(cpu) for_each_cpu((cpu), cpu_possible_mask)
->> +#define for_each_hotpluggable_cpu(cpu) \
->> +                                for_each_cpu((cpu), cpu_hotpluggable_mask)
->>  #define for_each_online_cpu(cpu)   for_each_cpu((cpu), cpu_online_mask)
->>  #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
->>
->>  /* Wrappers for arch boot code to manipulate normally-constant masks */
->>  void set_cpu_possible(unsigned int cpu, bool possible);
->> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable);
->>  void set_cpu_present(unsigned int cpu, bool present);
->>  void set_cpu_online(unsigned int cpu, bool online);
->>  void set_cpu_active(unsigned int cpu, bool active);
->>  void init_cpu_present(const struct cpumask *src);
->>  void init_cpu_possible(const struct cpumask *src);
->> +void init_cpu_hotpluggable(const struct cpumask *src);
->>  void init_cpu_online(const struct cpumask *src);
->>
->>  /**
->> diff --git a/kernel/cpu.c b/kernel/cpu.c
->> index 12b7458..8c397c9 100644
->> --- a/kernel/cpu.c
->> +++ b/kernel/cpu.c
->> @@ -536,6 +536,11 @@ static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
->>  const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
->>  EXPORT_SYMBOL(cpu_possible_mask);
->>
->> +static DECLARE_BITMAP(cpu_hotpluggable_bits, CONFIG_NR_CPUS) __read_mostly;
->> +const struct cpumask *const cpu_hotpluggable_mask =
->> +                                     to_cpumask(cpu_hotpluggable_bits);
->> +EXPORT_SYMBOL(cpu_hotpluggable_mask);
->> +
->>  static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
->>  const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
->>  EXPORT_SYMBOL(cpu_online_mask);
->> @@ -556,6 +561,14 @@ void set_cpu_possible(unsigned int cpu, bool possible)
->>               cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
->>  }
->>
->> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable)
->> +{
->> +     if (hotpluggable)
->> +             cpumask_set_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
->> +     else
->> +             cpumask_clear_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
->> +}
->> +
->>  void set_cpu_present(unsigned int cpu, bool present)
->>  {
->>       if (present)
->> @@ -590,6 +603,11 @@ void init_cpu_possible(const struct cpumask *src)
->>       cpumask_copy(to_cpumask(cpu_possible_bits), src);
->>  }
->>
->> +void init_cpu_hotpluggable(const struct cpumask *src)
->> +{
->> +     cpumask_copy(to_cpumask(cpu_hotpluggable_bits), src);
->> +}
->> +
->>  void init_cpu_online(const struct cpumask *src)
->>  {
->>       cpumask_copy(to_cpumask(cpu_online_bits), src);
->> --
->> 1.7.4.1
->>
->>
->> _______________________________________________
->> linaro-dev mailing list
->> linaro-dev@lists.linaro.org
->> http://lists.linaro.org/mailman/listinfo/linaro-dev
->
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de
+---
+ include/linux/module.h     |   12 ---
+ include/linux/tracepoint.h |   25 +++---
+ kernel/module.c            |   47 ------------
+ kernel/tracepoint.c        |  165 +++++++++++++++++++++++++++++++++++++++------
+ 4 files changed, 156 insertions(+), 93 deletions(-)
+
+Index: linux-2.6-lttng/include/linux/tracepoint.h
+===================================================================
+--- linux-2.6-lttng.orig/include/linux/tracepoint.h
++++ linux-2.6-lttng/include/linux/tracepoint.h
+@@ -54,8 +54,18 @@ extern int tracepoint_probe_unregister_n
+ 						void *data);
+ extern void tracepoint_probe_update_all(void);
+ 
++#ifdef CONFIG_MODULES
++struct tp_module {
++	struct list_head list;
++	unsigned int num_tracepoints;
++	struct tracepoint * const *tracepoints_ptrs;
++};
++#endif /* CONFIG_MODULES */
++
+ struct tracepoint_iter {
+-	struct module *module;
++#ifdef CONFIG_MODULES
++	struct tp_module *module;
++#endif /* CONFIG_MODULES */
+ 	struct tracepoint * const *tracepoint;
+ };
+ 
+@@ -63,8 +73,6 @@ extern void tracepoint_iter_start(struct
+ extern void tracepoint_iter_next(struct tracepoint_iter *iter);
+ extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
+ extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
+-extern int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+-	struct tracepoint * const *begin, struct tracepoint * const *end);
+ 
+ /*
+  * tracepoint_synchronize_unregister must be called between the last tracepoint
+@@ -78,17 +86,6 @@ static inline void tracepoint_synchroniz
+ 
+ #define PARAMS(args...) args
+ 
+-#ifdef CONFIG_TRACEPOINTS
+-extern
+-void tracepoint_update_probe_range(struct tracepoint * const *begin,
+-	struct tracepoint * const *end);
+-#else
+-static inline
+-void tracepoint_update_probe_range(struct tracepoint * const *begin,
+-	struct tracepoint * const *end)
+-{ }
+-#endif /* CONFIG_TRACEPOINTS */
+-
+ #endif /* _LINUX_TRACEPOINT_H */
+ 
+ /*
+Index: linux-2.6-lttng/kernel/module.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/module.c
++++ linux-2.6-lttng/kernel/module.c
+@@ -3421,50 +3421,3 @@ void module_layout(struct module *mod,
+ }
+ EXPORT_SYMBOL(module_layout);
+ #endif
+-
+-#ifdef CONFIG_TRACEPOINTS
+-void module_update_tracepoints(void)
+-{
+-	struct module *mod;
+-
+-	mutex_lock(&module_mutex);
+-	list_for_each_entry(mod, &modules, list)
+-		if (!mod->taints)
+-			tracepoint_update_probe_range(mod->tracepoints_ptrs,
+-				mod->tracepoints_ptrs + mod->num_tracepoints);
+-	mutex_unlock(&module_mutex);
+-}
+-
+-/*
+- * Returns 0 if current not found.
+- * Returns 1 if current found.
+- */
+-int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+-{
+-	struct module *iter_mod;
+-	int found = 0;
+-
+-	mutex_lock(&module_mutex);
+-	list_for_each_entry(iter_mod, &modules, list) {
+-		if (!iter_mod->taints) {
+-			/*
+-			 * Sorted module list
+-			 */
+-			if (iter_mod < iter->module)
+-				continue;
+-			else if (iter_mod > iter->module)
+-				iter->tracepoint = NULL;
+-			found = tracepoint_get_iter_range(&iter->tracepoint,
+-				iter_mod->tracepoints_ptrs,
+-				iter_mod->tracepoints_ptrs
+-					+ iter_mod->num_tracepoints);
+-			if (found) {
+-				iter->module = iter_mod;
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&module_mutex);
+-	return found;
+-}
+-#endif
+Index: linux-2.6-lttng/kernel/tracepoint.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/tracepoint.c
++++ linux-2.6-lttng/kernel/tracepoint.c
+@@ -34,11 +34,16 @@ extern struct tracepoint * const __stop_
+ static const int tracepoint_debug;
+ 
+ /*
+- * tracepoints_mutex nests inside module_mutex. Tracepoints mutex protects the
+- * builtin and module tracepoints and the hash table.
++ * Tracepoints mutex protects the builtin and module tracepoints and the hash
++ * table, as well as the local module list.
+  */
+ static DEFINE_MUTEX(tracepoints_mutex);
+ 
++#ifdef CONFIG_MODULES
++/* Local list of struct module */
++static LIST_HEAD(tracepoint_module_list);
++#endif /* CONFIG_MODULES */
++
+ /*
+  * Tracepoint hash table, containing the active tracepoints.
+  * Protected by tracepoints_mutex.
+@@ -292,6 +297,7 @@ static void disable_tracepoint(struct tr
+  * @end: end of the range
+  *
+  * Updates the probe callback corresponding to a range of tracepoints.
++ * Called with tracepoints_mutex held.
+  */
+ void tracepoint_update_probe_range(struct tracepoint * const *begin,
+ 				   struct tracepoint * const *end)
+@@ -302,7 +308,6 @@ void tracepoint_update_probe_range(struc
+ 	if (!begin)
+ 		return;
+ 
+-	mutex_lock(&tracepoints_mutex);
+ 	for (iter = begin; iter < end; iter++) {
+ 		mark_entry = get_tracepoint((*iter)->name);
+ 		if (mark_entry) {
+@@ -312,11 +317,27 @@ void tracepoint_update_probe_range(struc
+ 			disable_tracepoint(*iter);
+ 		}
+ 	}
+-	mutex_unlock(&tracepoints_mutex);
+ }
+ 
++#ifdef CONFIG_MODULES
++void module_update_tracepoints(void)
++{
++	struct tp_module *tp_mod;
++
++	list_for_each_entry(tp_mod, &tracepoint_module_list, list)
++		tracepoint_update_probe_range(tp_mod->tracepoints_ptrs,
++			tp_mod->tracepoints_ptrs + tp_mod->num_tracepoints);
++}
++#else /* CONFIG_MODULES */
++void module_update_tracepoints(void)
++{
++}
++#endif /* CONFIG_MODULES */
++
++
+ /*
+  * Update probes, removing the faulty probes.
++ * Called with tracepoints_mutex held.
+  */
+ static void tracepoint_update_probes(void)
+ {
+@@ -359,11 +380,12 @@ int tracepoint_probe_register(const char
+ 
+ 	mutex_lock(&tracepoints_mutex);
+ 	old = tracepoint_add_probe(name, probe, data);
+-	mutex_unlock(&tracepoints_mutex);
+-	if (IS_ERR(old))
++	if (IS_ERR(old)) {
++		mutex_unlock(&tracepoints_mutex);
+ 		return PTR_ERR(old);
+-
++	}
+ 	tracepoint_update_probes();		/* may update entry */
++	mutex_unlock(&tracepoints_mutex);
+ 	release_probes(old);
+ 	return 0;
+ }
+@@ -402,11 +424,12 @@ int tracepoint_probe_unregister(const ch
+ 
+ 	mutex_lock(&tracepoints_mutex);
+ 	old = tracepoint_remove_probe(name, probe, data);
+-	mutex_unlock(&tracepoints_mutex);
+-	if (IS_ERR(old))
++	if (IS_ERR(old)) {
++		mutex_unlock(&tracepoints_mutex);
+ 		return PTR_ERR(old);
+-
++	}
+ 	tracepoint_update_probes();		/* may update entry */
++	mutex_unlock(&tracepoints_mutex);
+ 	release_probes(old);
+ 	return 0;
+ }
+@@ -489,9 +512,8 @@ void tracepoint_probe_update_all(void)
+ 	if (!list_empty(&old_probes))
+ 		list_replace_init(&old_probes, &release_probes);
+ 	need_update = 0;
+-	mutex_unlock(&tracepoints_mutex);
+-
+ 	tracepoint_update_probes();
++	mutex_unlock(&tracepoints_mutex);
+ 	list_for_each_entry_safe(pos, next, &release_probes, u.list) {
+ 		list_del(&pos->u.list);
+ 		call_rcu_sched(&pos->u.rcu, rcu_free_old_probes);
+@@ -509,7 +531,7 @@ EXPORT_SYMBOL_GPL(tracepoint_probe_updat
+  * Will return the first tracepoint in the range if the input tracepoint is
+  * NULL.
+  */
+-int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
++static int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+ 	struct tracepoint * const *begin, struct tracepoint * const *end)
+ {
+ 	if (!*tracepoint && begin != end) {
+@@ -520,11 +542,12 @@ int tracepoint_get_iter_range(struct tra
+ 		return 1;
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(tracepoint_get_iter_range);
+ 
++#ifdef CONFIG_MODULES
+ static void tracepoint_get_iter(struct tracepoint_iter *iter)
+ {
+ 	int found = 0;
++	struct tp_module *iter_mod;
+ 
+ 	/* Core kernel tracepoints */
+ 	if (!iter->module) {
+@@ -534,12 +557,43 @@ static void tracepoint_get_iter(struct t
+ 		if (found)
+ 			goto end;
+ 	}
+-	/* tracepoints in modules. */
+-	found = module_get_iter_tracepoints(iter);
++	/* Tracepoints in modules */
++	mutex_lock(&tracepoints_mutex);
++	list_for_each_entry(iter_mod, &tracepoint_module_list, list) {
++		/*
++		 * Sorted module list
++		 */
++		if (iter_mod < iter->module)
++			continue;
++		else if (iter_mod > iter->module)
++			iter->tracepoint = NULL;
++		found = tracepoint_get_iter_range(&iter->tracepoint,
++			iter_mod->tracepoints_ptrs,
++			iter_mod->tracepoints_ptrs
++				+ iter_mod->num_tracepoints);
++		if (found) {
++			iter->module = iter_mod;
++			break;
++		}
++	}
++	mutex_unlock(&tracepoints_mutex);
+ end:
+ 	if (!found)
+ 		tracepoint_iter_reset(iter);
+ }
++#else /* CONFIG_MODULES */
++static void tracepoint_get_iter(struct tracepoint_iter *iter)
++{
++	int found = 0;
++
++	/* Core kernel tracepoints */
++	found = tracepoint_get_iter_range(&iter->tracepoint,
++			__start___tracepoints_ptrs,
++			__stop___tracepoints_ptrs);
++	if (!found)
++		tracepoint_iter_reset(iter);
++}
++#endif /* CONFIG_MODULES */
+ 
+ void tracepoint_iter_start(struct tracepoint_iter *iter)
+ {
+@@ -566,26 +620,98 @@ EXPORT_SYMBOL_GPL(tracepoint_iter_stop);
+ 
+ void tracepoint_iter_reset(struct tracepoint_iter *iter)
+ {
++#ifdef CONFIG_MODULES
+ 	iter->module = NULL;
++#endif /* CONFIG_MODULES */
+ 	iter->tracepoint = NULL;
+ }
+ EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+ 
+ #ifdef CONFIG_MODULES
++static int tracepoint_module_coming(struct module *mod)
++{
++	struct tp_module *tp_mod, *iter;
++	int ret = 0;
++
++	/*
++	 * We skip modules that tain the kernel, especially those with different
++	 * module header (for forced load), to make sure we don't cause a crash.
++	 */
++	if (mod->taints)
++		return 0;
++	mutex_lock(&tracepoints_mutex);
++	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
++	if (!tp_mod) {
++		ret = -ENOMEM;
++		goto end;
++	}
++	tp_mod->num_tracepoints = mod->num_tracepoints;
++	tp_mod->tracepoints_ptrs = mod->tracepoints_ptrs;
++
++	/*
++	 * tracepoint_module_list is kept sorted by struct module pointer
++	 * address for iteration on tracepoints from a seq_file that can release
++	 * the mutex between calls.
++	 */
++	list_for_each_entry_reverse(iter, &tracepoint_module_list, list) {
++		BUG_ON(iter == tp_mod);	/* Should never be in the list twice */
++		if (iter < tp_mod) {
++			/* We belong to the location right after iter. */
++			list_add(&tp_mod->list, &iter->list);
++			goto module_added;
++		}
++	}
++	/* We belong to the beginning of the list */
++	list_add(&tp_mod->list, &tracepoint_module_list);
++module_added:
++	tracepoint_update_probe_range(mod->tracepoints_ptrs,
++		mod->tracepoints_ptrs + mod->num_tracepoints);
++end:
++	mutex_unlock(&tracepoints_mutex);
++	return ret;
++}
++
++static int tracepoint_module_going(struct module *mod)
++{
++	struct tp_module *pos;
++
++	mutex_lock(&tracepoints_mutex);
++	tracepoint_update_probe_range(mod->tracepoints_ptrs,
++		mod->tracepoints_ptrs + mod->num_tracepoints);
++	list_for_each_entry(pos, &tracepoint_module_list, list) {
++		if (pos->tracepoints_ptrs == mod->tracepoints_ptrs) {
++			list_del(&pos->list);
++			kfree(pos);
++			break;
++		}
++	}
++	/*
++	 * In the case of modules that were tainted at "coming", we'll simply
++	 * walk through the list without finding it. We cannot use the "tainted"
++	 * flag on "going", in case a module taints the kernel only after being
++	 * loaded.
++	 */
++	mutex_unlock(&tracepoints_mutex);
++	return 0;
++}
+ 
+ int tracepoint_module_notify(struct notifier_block *self,
+ 			     unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
++	int ret = 0;
+ 
+ 	switch (val) {
+ 	case MODULE_STATE_COMING:
++		ret = tracepoint_module_coming(mod);
++		break;
++	case MODULE_STATE_LIVE:
++		break;
+ 	case MODULE_STATE_GOING:
+-		tracepoint_update_probe_range(mod->tracepoints_ptrs,
+-			mod->tracepoints_ptrs + mod->num_tracepoints);
++		ret = tracepoint_module_going(mod);
+ 		break;
+ 	}
+-	return 0;
++	return ret;
+ }
+ 
+ struct notifier_block tracepoint_module_nb = {
+@@ -598,7 +724,6 @@ static int init_tracepoints(void)
+ 	return register_module_notifier(&tracepoint_module_nb);
+ }
+ __initcall(init_tracepoints);
+-
+ #endif /* CONFIG_MODULES */
+ 
+ #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
+Index: linux-2.6-lttng/include/linux/module.h
+===================================================================
+--- linux-2.6-lttng.orig/include/linux/module.h
++++ linux-2.6-lttng/include/linux/module.h
+@@ -578,9 +578,6 @@ int unregister_module_notifier(struct no
+ 
+ extern void print_modules(void);
+ 
+-extern void module_update_tracepoints(void);
+-extern int module_get_iter_tracepoints(struct tracepoint_iter *iter);
+-
+ #else /* !CONFIG_MODULES... */
+ #define EXPORT_SYMBOL(sym)
+ #define EXPORT_SYMBOL_GPL(sym)
+@@ -696,15 +693,6 @@ static inline int unregister_module_noti
+ static inline void print_modules(void)
+ {
+ }
+-
+-static inline void module_update_tracepoints(void)
+-{
+-}
+-
+-static inline int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+-{
+-	return 0;
+-}
+ #endif /* CONFIG_MODULES */
+ 
+ #ifdef CONFIG_SYSFS
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
