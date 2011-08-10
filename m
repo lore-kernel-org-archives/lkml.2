@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab1HJA5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 20:57:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42749 "EHLO mail.zytor.com"
+	id S1752943Ab1HJA6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:58:43 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20266 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab1HJA5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 20:57:44 -0400
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com> <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org> <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org> <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com> <20110809150424.GO5782@one.firstfloor.org> <CAObL_7HL7SwCfXsD3dPesE4cU-nmoMCRVCP6u2Mn8efo7EG5Zg@mail.gmail.com> <4E416716.1040904@zytor.com> <CAObL_7FzTisOGJLP7wGUKDCO6qJ20-kaMFWdjm0a+dKpNWBe3g@mail.gmail.com> <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com> <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com> <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: New vsyscall emulation breaks JITs
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 09 Aug 2011 19:56:47 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>
-CC: Greg Lueck <lueckintel@yahoo.com>, Andi Kleen <andi@firstfloor.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
-Message-ID: <e4ce8567-22f5-4906-8dce-418e1afd60ff@email.android.com>
+	id S1752536Ab1HJA6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 20:58:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,347,1309762800"; 
+   d="scan'208";a="36870729"
+Subject: Re: [PATCH ] printk: add module parameter console_suspend to
+ control console_suspend_enabled
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <CABqxG0dGePQYLdcJKcSjoH+=tV89oyb95TFWCKdhb3kCM-T6sQ@mail.gmail.com>
+References: <1312859345.1743.9.camel@ymzhang>
+	 <CABqxG0dMcZUw9PVdfpz=V6d05=o+UcWKD_0PyoKir+4i08S+sA@mail.gmail.com>
+	 <1312880109.1743.26.camel@ymzhang>
+	 <CABqxG0dGePQYLdcJKcSjoH+=tV89oyb95TFWCKdhb3kCM-T6sQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: UMG
+Date: Wed, 10 Aug 2011 08:57:45 +0800
+Message-ID: <1312937865.1743.29.camel@ymzhang>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Tue, 2011-08-09 at 17:59 +0800, Dave Young wrote:
+> Hi,
+> 
+> On Tue, Aug 9, 2011 at 4:55 PM, Yanmin Zhang
+> <yanmin_zhang@linux.intel.com> wrote:
+> > On Tue, 2011-08-09 at 16:01 +0800, Dave Young wrote:
+> >> On Tue, Aug 9, 2011 at 11:09 AM, Yanmin Zhang
+> >> <yanmin_zhang@linux.intel.com> wrote:
+> >> > We are enabling some power features on medfield. To test suspend-2-RAM
+> >> > conveniently, we need turn on/off console_suspend_enabled frequently.
+> >> >
+> >> > Below patch adds a module parameter, so users could change it by:
+> >> > /sys/module/printk/parameters/console_suspend_enabled
+> >>
+> >> What about change name to no_console_suspend? Or it will be weird if
+> >> boot kernel with both no_console_suspend and
+> >> printk.console_suspend_enabled set.
+> > Thanks for the comments. How about changing the name to console_suspend?
+> > If changing it to no_console_suspend, we can't map the input to console_suspend_enabled
+> > directly.
+> 
+> How about use module_param_cb instead of module_param_named?
+Thanks for the pointer. Indeed, we could use module_param_cb to support the
+input/output parsing. Is it too complicated to use it here? It's better
+to keep simple. The new name console_suspend is clearer than old name.
 
->On Tue, Aug 9, 2011 at 2:04 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>
->> Here's a different proposal, then:
->>
->> What if the kernel had the sequence:
->>
->> mov $__NR_whatever,%eax
->> syscall
->> ret
->>
->> in the vsyscall page but marked the vsyscall page NX.
->
->This sounds like a sound idea. And then the difference between "fast
->and native" and "slow and trapping" ends up literally being just the
->NX bit.
->
->                        Linus
+> 
+> >
+> > Below is the new patch.
+> >
+> > ---
+> >
+> > We are enabling some power features on medfield. To test suspend-2-RAM
+> > conveniently, we need turn on/off console_suspend_enabled frequently.
+> >
+> > Below patch adds a module parameter, so users could change it by:
+> > /sys/module/printk/parameters/console_suspend
+> >
+> > Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> >
+> > ---
+> >  kernel/printk.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/kernel/printk.c b/kernel/printk.c
+> > index 37dff34..1decef6 100644
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -1106,6 +1106,8 @@ static int __init console_suspend_disable(char *str)
+> >        return 1;
+> >  }
+> >  __setup("no_console_suspend", console_suspend_disable);
+> > +module_param_named(console_suspend, console_suspend_enabled,
+> > +               bool, S_IRUGO | S_IWUSR);
+> >
+> >  /**
+> >  * suspend_console - suspend the console subsystem
+> > --
 
-Very promising idea indeed.
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+
