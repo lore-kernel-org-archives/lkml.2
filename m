@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab1HJJQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:16:06 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:43615 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab1HJJQE (ORCPT
+	id S1752717Ab1HJJRn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:17:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64360 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab1HJJRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:16:04 -0400
-Date: Wed, 10 Aug 2011 05:15:50 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110810091550.GA383@flamenco.cs.columbia.edu>
-References: <20110805174728.GA1741@flamenco.cs.columbia.edu>
- <4E3F97EA.2020600@ge.com>
- <20110808091432.GA19570@flamenco.cs.columbia.edu>
- <4E3FABDA.8080204@ge.com>
- <20110808101140.GA21300@flamenco.cs.columbia.edu>
- <4E3FC33D.2080202@ge.com>
- <20110808172216.GA2311@flamenco.cs.columbia.edu>
- <4E40F719.1020100@ge.com>
- <20110809191915.GB28746@flamenco.cs.columbia.edu>
- <4E42359B.2050105@ge.com>
+	Wed, 10 Aug 2011 05:17:41 -0400
+Message-ID: <4E424CAF.1090207@kernel.org>
+Date: Wed, 10 Aug 2011 12:17:35 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E42359B.2050105@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        levinsasha928@gmail.com, penberg@kernel.org, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:tools/kvm] kvm tools: Use correct size for VESA memory BAR
+References: <tip-c6062b72dd6b451c36fb99a450a9bb9a27c0c36b@git.kernel.org>
+In-Reply-To: <tip-c6062b72dd6b451c36fb99a450a9bb9a27c0c36b@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 08:39:07 +0100, Martyn Welch wrote:
-> And I think you need to go and do a grep of the code and find out where those
-> functions are actually used, rather than blindly relying on the comment.
-(snip)
-> Go grep the code.
+On 8/10/11 11:31 AM, tip-bot for Sasha Levin wrote:
+> Commit-ID:  c6062b72dd6b451c36fb99a450a9bb9a27c0c36b
+> Gitweb:     http://git.kernel.org/tip/c6062b72dd6b451c36fb99a450a9bb9a27c0c36b
+> Author:     Sasha Levin<levinsasha928@gmail.com>
+> AuthorDate: Tue, 9 Aug 2011 18:21:02 +0300
+> Committer:  Pekka Enberg<penberg@kernel.org>
+> CommitDate: Tue, 9 Aug 2011 18:36:31 +0300
+>
+> kvm tools: Use correct size for VESA memory BAR
+>
+> This patch makes BAR 1 16k, instead of BAR0 - which is the PIO bar.
+>
+> Signed-off-by: Sasha Levin<levinsasha928@gmail.com>
+> Signed-off-by: Pekka Enberg<penberg@kernel.org>
+>
 
-/me greps once again..
+I nuked this with "git push -f" pretty much immediately so the commit is 
+not in my tree. Sorry about that.
 
-RapidIO: there are no rapidIO drivers upstream, only switches
-and rionet, which does not manage RapidIO devices (it just sends
-Ethernet packets on top of RapidIO's messaging).  So obviously
-there aren't any callers.
-
-PCI: pci_dev_get() referenced in 60 files.  Another way of
-explicitly incrementing the refcount of a pci device is with
-pci_get_device(), which searches in the device list for a
-particular one by its vendor/device ID.  This function is
-referenced in 127 files.
-
-USB: usb_get_dev() referenced in 75 files.
-
-There are also lots of direct calls to get_device() from .probe
-methods of devices not tied to a particular bus.
-
-Guess that was enough grepping.
-
-> Suitable bug fixes are welcome.
-
-I sent a fix (as part of an admittedly large patchset) in
-Nov 2010[1], ie 9 months ago, you were sick at the time and
-told me you'd have a look at the changes later[2], which
-unfortunately never happened, even after pinging you off-list.
-
-Anyway let's forget that, Manohar's patches are what matters now.
-
-		Emilio
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1054034
-[2] http://thread.gmane.org/gmane.linux.kernel/1054034/focus=9819
-
+                         Pekka
