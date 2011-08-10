@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab1HJJ7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:59:12 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:47024 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab1HJJ7J convert rfc822-to-8bit (ORCPT
+	id S1753771Ab1HJJ7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:59:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48912 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab1HJJ7w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:59:09 -0400
+	Wed, 10 Aug 2011 05:59:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110605062702.GA2034@cynthia.pants.nu>
-References: <alpine.DEB.2.00.1105282010370.16617@ayla.of.borg>
-	<alpine.OSX.2.00.1106011300550.199@ibook.intranet>
-	<20110605062702.GA2034@cynthia.pants.nu>
-Date: Wed, 10 Aug 2011 11:59:08 +0200
-X-Google-Sender-Auth: GRbxXk-5oAF_oat_bCylhmtoUkg
-Message-ID: <CAMuHMdXVt5+nCaCSH3+z0fsL+vhOOTgbKsOAses8OudT-1OZGQ@mail.gmail.com>
-Subject: Re: m68k: Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Brad Boyer <flar@allandria.com>
-Cc: Finn Thain <fthain@telegraphics.com.au>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110810090014.GB1909@minipsycho.brq.redhat.com>
+References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
+	<20110810090014.GB1909@minipsycho.brq.redhat.com>
+Date: Wed, 10 Aug 2011 11:59:50 +0200
+Message-ID: <CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
+Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
+ 3.0-rc1 Bridge not forwarding unicast packages)
+From: Michael Guntsche <mguntsche@gmail.com>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 5, 2011 at 08:27, Brad Boyer <flar@allandria.com> wrote:
-> If we could really map all the interrupt controllers, we could probably
-> cut down on the largest interrupt number. Most Macs really only have
-> 20 or 30 actual interrupt sources. The problem is the two or three
-> layers of cascaded mess. None of them have just a single layer. Just
-> getting rid of the fixed global mapping could take us down to 64 since
-> nothing has both Baboon and PSC, but we have unique numbers for them.
-> We have 3 whole blocks of 8 just for PSC, even though that's just in
-> two models. We don't even know what most of those do, if anything.
+On Wed, Aug 10, 2011 at 11:00 AM, Jiri Pirko <jpirko@redhat.com> wrote:
+> Wed, Aug 10, 2011 at 02:50:20AM CEST, mguntsche@gmail.com wrote:
+>>Good evening/morning,
+>>
+>>> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
+>>> testing. On a first look everything seemed to work fine, but when I
+>>> tried to connect via openvpn to my internal network (tap0 being bridged
+>>> with the internal network) I noticed that I was not able to access the
+>>> server on my internal network. I could access the bridge (which is
+>>> acting as the openvpn server as well) just fine though.
+>>> To debug this I ran tcpdump on the openvpn client and started a ping to the
+>>> internal network. I could see the ARP requests being answered.....
+>><snip>
+>>
+>>After much digging and testing I found the commit that causes the
+>>problem for me here.
+>>
+>>87c288c6e gianfar: do vlan cleanup
+>>
+>>Before this commit my bridge works fine. I simplified the test case
+>>and just tried to access the server from a local wireless device with
+>>gets also bridged via
+>>a gianfar nic to the wired lan. Before commit 87c288c6e I can ping the
+>>device from the internal network afterwards it stops.
+>>For testing purposes I reverted this commit (plus some others to make
+>>the code compile) and it started working again.
+>>The hardware is a routerboard with three onboard nics two of em gianfar.
+>>The gianfar nics do not support any kind of offloading,
+>>
+>>Offload parameters for lan_wire:
+>>rx-checksumming: off
+>>tx-checksumming: off
+>>scatter-gather: off
+>>tcp-segmentation-offload: off
+>>udp-fragmentation-offload: off
+>>generic-segmentation-offload: off
+>>generic-receive-offload: on
+>>large-receive-offload: off
+>>rx-vlan-offload: off
+>>tx-vlan-offload: off
+>>ntuple-filters: off
+>>receive-hashing: off
+>>
+>>The Bridge device on the other hand....
+>>
+>>Offload parameters for lan:
+>>rx-checksumming: on
+>>tx-checksumming: on
+>>scatter-gather: off
+>>tcp-segmentation-offload: off
+>>udp-fragmentation-offload: off
+>>generic-segmentation-offload: off
+>>generic-receive-offload: on
+>>large-receive-offload: off
+>>rx-vlan-offload: off
+>>tx-vlan-offload: on
+> �^^^^^^^^^^^^^^^^^^^ is this gfar?
+No the "Lan" nic is the bridge itself. The gfar in question is lan_wire.
 
-While looking into optimizing interrupts using chain handlers (which cannot
-be shared), I noticed several of these cascades are hung on the same interrupt.
-Hence we cannot use the optimization of chain handlers for them.
-
-Knowing which are mutually exclusive helps a lot, but my Mac knowledge is
-very limited.
-
-I derived from the code this list of cascade handlers and the
-interrupts they use:
-
-baboon_irq
-    IRQ_NUBUS_C
-
-oss_irq
-    OSS_IRQLEV_SCSI = IRQ_AUTO_2                conflict: via2_irq
-    OSS_IRQLEV_SOUND = IRQ_AUTO_5               conflict: psc_irq
-
-oss_nubus_irq
-    OSS_IRQLEV_NUBUS = IRQ_AUTO_3               conflict: psc_irq
-
-psc_irq
-    IRQ_AUTO_3                                  conflict: oss_nubus_irq
-    IRQ_AUTO_4
-    IRQ_AUTO_5                                  conflict: oss_irq
-    IRQ_AUTO_6                                  conflict: via1_irq
-
-via1_irq
-    OSS_IRQLEV_VIA1 = IRQ_AUTO_6 (on oss)       conflict: psc_irq
-
-    IRQ_AUTO_1                                  conflict: iop_ism_irq
-    IRQ_AUTO_6 (if via_alt_mapping)             conflict: psc_irq
-
-via2_irq
-    IRQ_AUTO_2                                  conflict: oss_irq
-
-via_nubus_irq
-    IRQ_MAC_NUBUS = IRQ_VIA2_1
-
-These are other interrupts using in the Mac core code, which may use the same
-interrupts as some of the cascades above:
-
-iop_ism_irq
-    OSS_IRQLEV_IOPISM = 1 = IRQ_AUTO_1 (on oss) conflict: via1_irq
-    IRQ_VIA2_0 (on !oss)
-
-mac_nmi_handler
-    IRQ_AUTO_7
-
-timer handler
-    IRQ_MAC_TIMER_1 = IRQ_VIA1_6
-
-So baboon and PSC are mutually exclusive? But they don't conflict w.r.t. to
-interrupt lines anyway, so they're not an issue.
-
->From the code, OSS and VIA are also mutually exclusive (except for via1_irq)?
-
-But PSC can coexist with OSS? That's where most of the conflicts are.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+/Michael
