@@ -1,54 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab1HJQ3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 12:29:08 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:47793 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab1HJQ3G (ORCPT
+	id S1753375Ab1HJQ3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:29:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:60494 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab1HJQ3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 12:29:06 -0400
-X-IronPort-AV: E=Sophos;i="4.67,351,1309737600"; 
-   d="scan'208";a="7216218"
-Subject: [PATCH 0/2 v2] minor cleanups to EFLAGS initialisation in
- ret_from_fork
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>,
+	Wed, 10 Aug 2011 12:29:32 -0400
+X-IronPort-AV: E=Sophos;i="4.67,351,1309752000"; 
+   d="scan'208";a="158356276"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Brian Gerst <brgerst@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "x86@kernel.org" <x86@kernel.org>,
-        LinusTorvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Wed, 10 Aug 2011 17:29:03 +0100
-Message-ID: <1312993743.26263.268.camel@zakaz.uk.xensource.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: [PATCH 1/2] x86: drop unnecessary kernel_eflags variable from 64 bit.
+Date: Wed, 10 Aug 2011 17:29:21 +0100
+Message-ID: <1312993762-22774-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1312993743.26263.268.camel@zakaz.uk.xensource.com>
+References: <1312993743.26263.268.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series removes the use of a global kernel_eflags variable
-from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
-64 bit version of that code path.
+On 64 bit x86 we save the current eflags in cpu_init for use in ret_from_fork.
+Strictly speaking reserved bits in EFLAGS should be read as written but in
+practise it is unlikely that EFLAGS could ever be extended in this way and the
+kernel alread clears any undefined flags early on.
 
-kernel_eflags could be made a __read_mostly but actually there is no
-reason to prefer the value at cpu_init() time to a compile time constant
-value for the initial eflags after a fork.
+The equivalent 32 bit code simply hard codes 0x0202 as the new EFLAGS.
 
-Test booted on 32 and 64 bit.
+This change makes 64 bit use the same mechanism to setup the initial EFLAGS on
+fork. Note that 64 bit resets EFLAGS before calling schedule_tail() as opposed
+to 32 bit which calls schedule_tail() first. Therefore the correct value for
+EFLAGS has opposite IF bit. This will be fixed in a subsequent patch.
 
-changes since v1:
-      * rebased onto tip/master
-      * make 32 bit look like 64 bit instead of vice versa since the
-        behaviour of resetting eflags with interrupts disabled before
-        calling schedule_tail seems more obviously safe than resetting
-        eflags with interrupts enabled afterwards (although I think both
-        are actually correct).
-      * As a consequence of the above patch 3/3 (use symbolic names for
-        bits in eflags) goes away since we only use the MBO bit 1 now,
-        which doesn't have a name.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: x86@kernel.org
+---
+ arch/x86/include/asm/processor.h |    1 -
+ arch/x86/kernel/cpu/common.c     |    4 ----
+ arch/x86/kernel/entry_64.S       |    2 +-
+ 3 files changed, 1 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 0d1171c..3065557 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -398,7 +398,6 @@ DECLARE_INIT_PER_CPU(irq_stack_union);
+ 
+ DECLARE_PER_CPU(char *, irq_stack_ptr);
+ DECLARE_PER_CPU(unsigned int, irq_count);
+-extern unsigned long kernel_eflags;
+ extern asmlinkage void ignore_sysret(void);
+ #else	/* X86_64 */
+ #ifdef CONFIG_CC_STACKPROTECTOR
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index aa003b1..1a11da2 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1082,8 +1082,6 @@ void syscall_init(void)
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|X86_EFLAGS_IOPL);
+ }
+ 
+-unsigned long kernel_eflags;
+-
+ /*
+  * Copies of the original ist values from the tss are only accessed during
+  * debugging, no special alignment required.
+@@ -1236,8 +1234,6 @@ void __cpuinit cpu_init(void)
+ 	fpu_init();
+ 	xsave_init();
+ 
+-	raw_local_save_flags(kernel_eflags);
+-
+ 	if (is_uv_system())
+ 		uv_cpu_init();
+ }
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index e13329d..b50d142 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -396,7 +396,7 @@ ENTRY(ret_from_fork)
+ 
+ 	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+ 
+-	pushq_cfi kernel_eflags(%rip)
++	pushq_cfi $0x0002
+ 	popfq_cfi				# reset kernel eflags
+ 
+ 	call schedule_tail			# rdi: 'prev' task parameter
+-- 
+1.7.2.5
 
