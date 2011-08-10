@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab1HJTBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 15:01:32 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:58521
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754680Ab1HJTBb (ORCPT
+	id S1754745Ab1HJTJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 15:09:25 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:43172 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab1HJTJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 15:01:31 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zz1418M1432N98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPVD:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 10 Aug 2011 15:01:20 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sam wang <linux.swang@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch] perf: ARMv7 wrong "branches" generalized instruction
-In-Reply-To: <20110810183306.GA32695@e102144-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.00.1108101452510.25186@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108101328440.22769@cl320.eecs.utk.edu> <20110810183306.GA32695@e102144-lin.cambridge.arm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 10 Aug 2011 15:09:24 -0400
+Date: Wed, 10 Aug 2011 15:09:19 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Ike Panhc <ike.pan@canonical.com>, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, platform-driver-x86@vger.kernel.org
+Subject: Re: [RESEND][PATCH 0/5] Support for the TS-5500 board
+Message-ID: <20110810150919.39519e62@v0nbox>
+In-Reply-To: <1312986047.2989.47.camel@i7.infradead.org>
+References: <1311887450-22235-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+ <20110809233208.1a71122e@lenov0n>
+ <4E421CD8.3090606@canonical.com>
+ <CAHR064hamS0gHqQR5a5UAanN89CzzW94sjW6SB3=8MAcf6pkMg@mail.gmail.com>
+ <20110810100629.715c3bb7@v0nbox>
+ <1312986047.2989.47.camel@i7.infradead.org>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011, Will Deacon wrote:
+On Wed, 10 Aug 2011 15:20:46 +0100,
+David Woodhouse <dwmw2@infradead.org> wrote:
+> Just expose these devices in the device-tree. You shouldn't *need* a
+> new MTD device driver; physmap_of should be just fine.
 
-> > It turns out the branches event used (ARMV7_PERFCTR_PC_WRITE) only seems
-> > to count taken branches.
->
-> It also counts exceptions and instructions that write to the PC.
+I didn't write a new MTD device driver, but just moved the already
+existing one to the ts5500 platform directory. The point is that my
+TS-5500 doesn't have this flash, so I couldn't try. The fifth patch
+from this set could just be ignored.
 
-are those more common than not-taken branches?  I'd think branch predictor 
-statistics will be a bit off if only taken instructions are measured.
+> If your bootloader doesn't pass one, your platform-specific code
+> should just register its own device-tree blob during early boot. And
+> your device drivers should just match against the devices therein.
 
-> > ARMV7_PERFCTR_PC_IMM_BRANCH seems to do a better job of counting both 
-> > taken and not-taken.  So I've attached a patch to change the definition
-> > for Cotex A9.
->
-> Well, it also only considers immediate branches so whilst it might 
-> satisy your test, I think that overall it's a less meaningful number.
+I'm a bit confused with what should be done for the support for an
+embedded platform (X86-based) like this TS-5500. Is the actual code
+hierarchy OK? What is the impact of adding a device-tree to this code?
 
-I guess there isn't more info available about which branches exactly are 
-counted by all the events?  I've gone through the trouble of writing such 
-tests to find out experimentally what various counters count for x86, it 
-would be sad to have to do it again for ARM.
-
-> (b) start replacing our generalised events with HW_OP_UNSUPPORTED and force
->     the user to use raw events. I agree this isn't very friendly, but it's
->     better than giving them crazy results [for example, we currently report
->     more cache misses than cache references on A9 iirc].
-> 
-> Personally, I'm favour of (b) and getting userspace to provide the user with
-> a CPU-specific event listing and then translate this to raw events using
-> something like libpfm.
-
-I agree 100%, but it's an unpopular opinion on linux-kernel.  (Note that 
-I'm the one who contributed ARM Cortex A8/A9 support to both libpfm4 and 
-PAPI).
-
-Since the generalized events are there and ABI though, people are going to 
-use them.  That's why I've been writing tests that check them to see 
-exactly what they are measuring.
-
-It's still an important issue to know what "branches" measures, just it 
-probably shouldn't be a kernel issue like it's become.
-
-Vince
-vweaver1@eecs.utk.edu
-
+Thanks,
+Vivien.
