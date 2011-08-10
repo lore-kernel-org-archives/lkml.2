@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1HJOrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:47:37 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51474 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab1HJOrg (ORCPT
+	id S1753004Ab1HJOuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:50:00 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:54181 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab1HJOt6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:47:36 -0400
-Date: Wed, 10 Aug 2011 10:47:28 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
- within an entry (v2)
-Message-ID: <20110810144727.GA4363@hmsreliant.think-freely.org>
-References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
- <20110808191354.GA22117@hmsreliant.think-freely.org>
- <20110810133158.GB7598@amd.com>
+	Wed, 10 Aug 2011 10:49:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110810133158.GB7598@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: 0.2 (/)
+In-Reply-To: <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
+References: <cover.1312893572.git.luto@mit.edu> <d9f3056c77b6cd44a2f4c90278ce483a011dda12.1312893572.git.luto@mit.edu>
+ <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 10 Aug 2011 10:49:38 -0400
+X-Google-Sender-Auth: VJXN3cFqJjE8aZDAmBPQQ2yEFmU
+Message-ID: <CAObL_7EozFSbcqJiwV=PNH-3sN0M1QfaTu3i4A_OKsZ0Ue5g7A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Anvin, H Peter" <h.peter.anvin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 03:31:59PM +0200, Roedel, Joerg wrote:
-> On Mon, Aug 08, 2011 at 03:13:54PM -0400, Neil Horman wrote:
-> > dma-debug: hash_bucket_find needs to allow for offsets within an entry (v2)
-> > 
-> > Summary:
-> > Users of the pci_dma_sync_single_* api allow users to sync address ranges within
-> > the range of a mapped entry (i.e. you can dma map address X to dma_addr_t A and
-> > then pci_dma_sync_single on dma_addr_t A+1.  The dma-debug library however
-> > assume dma syncs will always occur using the base address of a mapped region,
-> > and uses that assumption to find entries in its hash table.  Since thats often
-> > (but not always the case), the dma debug library can give us false errors about
-> > missing entries, which are reported as syncing of memory not allocated by the
-> > driver.  This was noted in the cxgb3 driver as this error:
-> 
-> Hi Neil,
-> 
-> thanks for your patch. Im out-of-office this week and traveling next
-> week. So it may take a couple of days until I can take an in-depth look
-> at it. But I get to it as soon as I can :-)
-> 
-> Regards,
-> 
-> 	Joerg
-> 
-No worries, don't rush.  Thank you for letting me know.
-Regards
-Neil
+On Tue, Aug 9, 2011 at 11:40 AM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
+>> -----Original Message-----
+>> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+>> Sent: Tuesday, August 09, 2011 5:41 AM
+>> To: x86@kernel.org; linux-kernel@vger.kernel.org
+>> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+>> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+>> Subject: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
+>> hasn't already
+>>
+>> Intel SDM volume 3A, 8.4.2 says:
+>>
+>>   Software can disable fast-string operation by clearing the
+>>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>>   However, Intel recomments that system software always enable
+>>   fast-string operation.
+>>
+>> The Intel DQ67SW board (with latest BIOS) disables fast string
+>> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+>> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+>> this.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>> ---
+>>  arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
+>>  1 files changed, 23 insertions(+), 5 deletions(-)
+>
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+>
+>
 
-> -- 
-> AMD Operating System Research Center
-> 
-> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-> General Managers: Alberto Bozzo, Andrew Bowd
-> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-> 
-> 
+Please don't apply.  This patch breaks !CONFIG_SMP.  I'll send a fixed
+patch later on.
+
+--Andy
