@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab1HJPuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:50:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab1HJPuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:50:06 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        dm-devel@redhat.com
-Subject: Re: block: properly handle flush/fua requests in blk_insert_cloned_request
-References: <x49y5z2eibl.fsf@segfault.boston.devel.redhat.com>
-	<20110809153826.GB23842@htj.dyndns.org>
-	<x49liv2eg34.fsf@segfault.boston.devel.redhat.com>
-	<20110809161334.GC23842@htj.dyndns.org>
-	<20110809174347.GA13293@redhat.com> <20110809175237.GA978@redhat.com>
-	<20110809185531.GC13293@redhat.com>
-	<20110809190509.GA31927@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 10 Aug 2011 11:49:56 -0400
-In-Reply-To: <20110809190509.GA31927@redhat.com> (Vivek Goyal's message of
-	"Tue, 9 Aug 2011 15:05:09 -0400")
-Message-ID: <x49pqkdqna3.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1752682Ab1HJQJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:09:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53080 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752449Ab1HJQJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 12:09:12 -0400
+Date: Wed, 10 Aug 2011 12:09:11 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
+cc: Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <alpine.LNX.2.00.1108100951590.24873@banach.math.auburn.edu>
+Message-ID: <Pine.LNX.4.44L0.1108101156350.1917-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Wed, 10 Aug 2011, Theodore Kilgore wrote:
 
-> On Tue, Aug 09, 2011 at 02:55:31PM -0400, Mike Snitzer wrote:
->
-> [..]
->> > > +	/*
->> > > +	 * All FLUSH/FUA requests are expected to have gone through the
->> > > +	 * flush machinary.  If a request's cmd_flags doesn't match the
->> > > +	 * flush_flags of the underlying request_queue it is a bug.
->> > > +	 */
->> > > +	BUG_ON((rq->cmd_flags & REQ_FLUSH) && !(q->flush_flags & REQ_FLUSH));
->> > > +	BUG_ON((rq->cmd_flags & REQ_FUA) && !(q->flush_flags & REQ_FUA));
->> > > +
->> > 
->> > Actually this makes sense and is simple. :-) Is BUG_ON() too harsh, how
->> > about WARN_ONCE() variants? To me system continues to work so warning 
->> > is probably good enough.
->> 
->> Sure, WARN_ONCE() is fine by me.
->> 
->> Seems Tejun wants a more involved fix though.
->
-> Fixing it properly doesn't hurt. Makes it more future proof. In fact I am
-> thinking what happens to blk_execute_rq() variants where one can prepare a
-> request and send it down. What if caller sets FLUSH/FUA flags there.
+> > Okay, I didn't realize that the different cameras used different webcam 
+> > drivers as well as different stillcam drivers.
+> 
+> Oh, yes. They are Proprietary devices. And that means what it says. :-)
+> And all different from each other, too.
+>  
+> > As far as I can see, there's nothing to stop anybody from adding the 
+> > stillcam functionality into the webcam drivers right now.  If some 
+> > common code can be abstracted out into a shared source file, so much 
+> > the better.
+> > 
+> > That would solve the problem, right?
+> 
+> I think everyone involved believes that it would solve the problem. 
+> 
+> The question has been all along whether or not there is any other way 
+> which would work. Also the question of what, exactly, "belongs" in the 
+> kernel and what does not. For, if something has been historically 
+> supported in userspace (stillcam support, in this case) and has worked 
+> well there, I would think it is kind of too bad to have to move said 
+> support into the kernel just because the same hardware requires kernel 
+> support for another functionality and the two sides clash. I mean, the 
+> kernel is already big enough, no? But the logic that Hans has set forth 
+> seems rather compelling. 
 
-Callers of blk_execute_rq are special.  Those aren't REQ_TYPE_FS
-requests, and so the callers are responsible for doing their own
-sequencing.
+The alternative seems to be to define a device-sharing protocol for USB
+drivers.  Kernel drivers would implement a new callback (asking them to
+give up control of the device), and usbfs would implement new ioctls by
+which a program could ask for and relinquish control of a device.  The
+amount of rewriting needed would be relatively small.
 
-Cheers,
-Jeff
+A few loose ends would remain, such as how to handle suspends, resumes,
+resets, and disconnects.  Assuming usbfs is the only driver that will
+want to share a device in this way, we could handle them.
+
+Hans, what do you think?
+
+Alan Stern
+
