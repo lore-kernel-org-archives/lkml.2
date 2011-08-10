@@ -1,146 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1HJI1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 04:27:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50590 "EHLO hera.kernel.org"
+	id S1752034Ab1HJIc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 04:32:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40057 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab1HJI11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 04:27:27 -0400
-Date: Wed, 10 Aug 2011 08:27:08 GMT
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-9941c96ad869d10f7e34e03990ce450ab8fcb83d@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110722113307.GA1931@jolsa.brq.redhat.com>
-References: <20110722113307.GA1931@jolsa.brq.redhat.com>
+	id S1751528Ab1HJIc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 04:32:26 -0400
+Date: Wed, 10 Aug 2011 08:32:08 GMT
+From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
+Message-ID: <tip-5cdd174feab1b4a74afc494c447906274aed4a20@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        mingo@elte.hu, borislav.petkov@amd.com, paul.gortmaker@windriver.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        paul.gortmaker@windriver.com, mingo@elte.hu, borislav.petkov@amd.com
+In-Reply-To: <20110810114956.238d66772883636e3040d29f@canb.auug.org.au>
+References: <20110810114956.238d66772883636e3040d29f@canb.auug.org.au>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Add support to install perf python extension
-Git-Commit-ID: 9941c96ad869d10f7e34e03990ce450ab8fcb83d
+Subject: [tip:x86/cpu] x86, amd: Include elf.h explicitly, prepare the code for the module.h split
+Git-Commit-ID: 5cdd174feab1b4a74afc494c447906274aed4a20
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 10 Aug 2011 08:27:09 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 10 Aug 2011 08:32:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9941c96ad869d10f7e34e03990ce450ab8fcb83d
-Gitweb:     http://git.kernel.org/tip/9941c96ad869d10f7e34e03990ce450ab8fcb83d
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 22 Jul 2011 13:33:07 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 8 Aug 2011 12:54:26 -0300
+Commit-ID:  5cdd174feab1b4a74afc494c447906274aed4a20
+Gitweb:     http://git.kernel.org/tip/5cdd174feab1b4a74afc494c447906274aed4a20
+Author:     Stephen Rothwell <sfr@canb.auug.org.au>
+AuthorDate: Wed, 10 Aug 2011 11:49:56 +1000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 10 Aug 2011 10:14:09 +0200
 
-perf tools: Add support to install perf python extension
+x86, amd: Include elf.h explicitly, prepare the code for the module.h split
 
-Adding install-python_ext target to install python extension related
-files.  Installation directory is governed by python distutils package
-and follows the DESTDIR variable settings.
+When the moduleu.h splitting tree is merged to the latest
+tip:x86/cpu tree, the x86_64 allmodconfig build fails like this:
 
-Also moving python extension build output into '$(O)python_ext_build'
-directory and making it configurable via PYTHON_EXTBUILD variable.
+ arch/x86/kernel/cpu/amd.c: In function 'bsp_init_amd':
+ arch/x86/kernel/cpu/amd.c:437:3: error: 'va_align' undeclared (first use in this function)
+ arch/x86/kernel/cpu/amd.c:438:23: error: 'ALIGN_VA_32' undeclared (first use in this function)
+ arch/x86/kernel/cpu/amd.c:438:37: error: 'ALIGN_VA_64' undeclared (first use in this function)
 
-Keeping the '$(O)python/perf.so' file, so it could be used for testing
-as of until now.
+This is caused by the module.h split up intreacting with commit
+dfb09f9b7ab0 ("x86, amd: Avoid cache aliasing penalties on AMD
+family 15h") from the tip:x86/cpu tree.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110722113307.GA1931@jolsa.brq.redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+I have added the following patch for today (this, or something
+similar, could be applied to the tip tree directly - the
+export.h include below was added by the module.h splitup).
+
+So include elf.h to use va_align and remove this implicit
+dependency on module.h doing it for us.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Link: http://lkml.kernel.org/r/20110810114956.238d66772883636e3040d29f@canb.auug.org.au
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/Makefile      |   19 +++++++++++++------
- tools/perf/util/setup.py |   21 ++++++++++++++++++++-
- 2 files changed, 33 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/amd.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5bf48fc..822f967 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -178,9 +178,9 @@ strip-libs = $(filter-out -l%,$(1))
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b6e3e87..13c6ec8 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -1,5 +1,6 @@
+ #include <linux/init.h>
+ #include <linux/bitops.h>
++#include <linux/elf.h>
+ #include <linux/mm.h>
  
- $(OUTPUT)python/perf.so: $(PYRF_OBJS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
--	  --quiet build_ext \
--	  --build-lib='$(OUTPUT)python' \
--	  --build-temp='$(OUTPUT)python/temp'
-+	  --quiet build_ext; \
-+	mkdir -p $(OUTPUT)python && \
-+	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
- #
- # No Perl scripts right now:
- #
-@@ -506,9 +506,13 @@ else
- 
-   PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
--  python-clean := $(PYTHON_WORD) util/setup.py clean \
--    --build-lib='$(OUTPUT)python' \
--    --build-temp='$(OUTPUT)python/temp'
-+  # python extension build directories
-+  PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
-+  PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
-+  PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
-+  export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
-+
-+  python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
- 
-   ifdef NO_LIBPYTHON
-     $(call disable-python)
-@@ -865,6 +869,9 @@ install: all
- 	$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'
- 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
- 
-+install-python_ext:
-+	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
-+
- install-doc:
- 	$(MAKE) -C Documentation install
- 
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index bbc982f..95d3700 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -3,9 +3,27 @@
- from distutils.core import setup, Extension
- from os import getenv
- 
-+from distutils.command.build_ext   import build_ext   as _build_ext
-+from distutils.command.install_lib import install_lib as _install_lib
-+
-+class build_ext(_build_ext):
-+    def finalize_options(self):
-+        _build_ext.finalize_options(self)
-+        self.build_lib  = build_lib
-+        self.build_temp = build_tmp
-+
-+class install_lib(_install_lib):
-+    def finalize_options(self):
-+        _install_lib.finalize_options(self)
-+        self.build_dir = build_lib
-+
-+
- cflags = ['-fno-strict-aliasing', '-Wno-write-strings']
- cflags += getenv('CFLAGS', '').split()
- 
-+build_lib = getenv('PYTHON_EXTBUILD_LIB')
-+build_tmp = getenv('PYTHON_EXTBUILD_TMP')
-+
- perf = Extension('perf',
- 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
- 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
-@@ -21,4 +39,5 @@ setup(name='perf',
-       author_email='acme@redhat.com',
-       license='GPLv2',
-       url='http://perf.wiki.kernel.org',
--      ext_modules=[perf])
-+      ext_modules=[perf],
-+      cmdclass={'build_ext': build_ext, 'install_lib': install_lib})
+ #include <linux/io.h>
