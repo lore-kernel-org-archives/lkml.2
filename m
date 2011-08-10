@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab1HJPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:04:25 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:42205 "HELO
+	id S1753295Ab1HJPEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:04:05 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:41709 "HELO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753356Ab1HJPEO (ORCPT
+	with SMTP id S1753250Ab1HJPEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:04:14 -0400
+	Wed, 10 Aug 2011 11:04:02 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v7 15/16] ARM: LPAE: add support for ATAG_MEM64
-Date: Wed, 10 Aug 2011 16:03:38 +0100
-Message-Id: <1312988619-16804-16-git-send-email-catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: [PATCH v7 06/16] ARM: LPAE: Use a mask for physical addresses in page table entries
+Date: Wed, 10 Aug 2011 16:03:29 +0100
+Message-Id: <1312988619-16804-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
 References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 10 Aug 2011 15:03:55.0554 (UTC) FILETIME=[B9684820:01CC576E]
-X-MC-Unique: 111081016041200301
+X-OriginalArrivalTime: 10 Aug 2011 15:03:52.0257 (UTC) FILETIME=[B7713310:01CC576E]
+X-MC-Unique: 111081016040001701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p7AF4ksT003927
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p7AF4gPN003912
 
-From: Will Deacon <will.deacon@arm.com>
+With LPAE, the physical address mask is 40-bit while the page table
+entry is 64-bit. This patch introduces PHYS_MASK for the 2-level page
+table format, defined as ~0UL.
 
-LPAE provides support for memory banks with physical addresses of up
-to 40 bits.
-
-This patch adds a new atag, ATAG_MEM64, so that the Kernel can be
-informed about memory that exists above the 4GB boundary.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/setup.h |    8 ++++++++
- arch/arm/kernel/setup.c      |   10 ++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ arch/arm/include/asm/pgtable-2level-hwdef.h |    2 ++
+ arch/arm/include/asm/pgtable.h              |    6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 915696d..a3ca303 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -43,6 +43,13 @@ struct tag_mem32 {
- 	__u32	start;	/* physical start address */
- };
+diff --git a/arch/arm/include/asm/pgtable-2level-hwdef.h b/arch/arm/include/asm/pgtable-2level-hwdef.h
+index 2b52c40..5cfba15 100644
+--- a/arch/arm/include/asm/pgtable-2level-hwdef.h
++++ b/arch/arm/include/asm/pgtable-2level-hwdef.h
+@@ -88,4 +88,6 @@
+ #define PTE_SMALL_AP_URO_SRW	(_AT(pteval_t, 0xaa) << 4)
+ #define PTE_SMALL_AP_URW_SRW	(_AT(pteval_t, 0xff) << 4)
  
-+#define ATAG_MEM64	0x54420002
++#define PHYS_MASK		(~0UL)
 +
-+struct tag_mem64 {
-+	__u64	size;
-+	__u64	start;	/* physical start address */
-+};
-+
- /* VGA text type displays */
- #define ATAG_VIDEOTEXT	0x54410003
+ #endif
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 9618052..8f9e1dd 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -199,10 +199,10 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
  
-@@ -148,6 +155,7 @@ struct tag {
- 	union {
- 		struct tag_core		core;
- 		struct tag_mem32	mem;
-+		struct tag_mem64	mem64;
- 		struct tag_videotext	videotext;
- 		struct tag_ramdisk	ramdisk;
- 		struct tag_initrd	initrd;
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 70bca64..a126558 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -608,6 +608,16 @@ static int __init parse_tag_mem32(const struct tag *tag)
+ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ {
+-	return __va(pmd_val(pmd) & PAGE_MASK);
++	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
+ }
  
- __tagtable(ATAG_MEM, parse_tag_mem32);
+-#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd)))
++#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
  
-+#ifdef CONFIG_PHYS_ADDR_T_64BIT
-+static int __init parse_tag_mem64(const struct tag *tag)
-+{
-+	/* We only use 32-bits for the size. */
-+	return arm_add_memory(tag->u.mem64.start, (unsigned long)tag->u.mem64.size);
-+}
-+
-+__tagtable(ATAG_MEM64, parse_tag_mem64);
-+#endif /* CONFIG_PHYS_ADDR_T_64BIT */
-+
- #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
- struct screen_info screen_info = {
-  .orig_video_lines	= 30,
+ /* we don't need complex calculations here as the pmd is folded into the pgd */
+ #define pmd_addr_end(addr,end)	(end)
+@@ -223,7 +223,7 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ #define pte_offset_map(pmd,addr)	(__pte_map(pmd) + pte_index(addr))
+ #define pte_unmap(pte)			__pte_unmap(pte)
+ 
+-#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
++#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
+ #define pfn_pte(pfn,prot)	__pte(__pfn_to_phys(pfn) | pgprot_val(prot))
+ 
+ #define pte_page(pte)		pfn_to_page(pte_pfn(pte))
 
