@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1HJOxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:53:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37777 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab1HJOxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:53:47 -0400
-Date: Wed, 10 Aug 2011 16:53:41 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110810145338.GB569@somewhere.redhat.com>
-References: <20110805065646.GC13065@linux.vnet.ibm.com>
- <20110805142245.GP2096@zod.bos.redhat.com>
- <20110805170805.GB22164@somewhere>
- <20110805222641.GB2245@linux.vnet.ibm.com>
- <20110805231216.GE22164@somewhere>
- <20110808020914.GC2385@linux.vnet.ibm.com>
- <20110808025505.GF29058@somewhere>
- <20110808031014.GE2385@linux.vnet.ibm.com>
- <20110809113514.GA27301@somewhere.redhat.com>
- <20110810124528.GC2566@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753075Ab1HJOye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:54:34 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:1284 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab1HJOyd convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:8:1>);
+	Wed, 10 Aug 2011 10:54:33 -0400
+Message-Id: <4E42B8000200007800050992@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 10 Aug 2011 15:55:28 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ingo Molnar" <mingo@elte.hu>, <mjg@redhat.com>
+Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        "Matt Fleming" <matt@console-pimps.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <hpa@linux.intel.com>,
+        "Avi Kivity" <avi@redhat.com>, "Marcelo Tosatti" <mtosatti@redhat.com>,
+        "johnstultz" <johnstul@us.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
+ <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
+ <4E4009A50200007800050258@nat28.tlf.novell.com>
+ <20110810090330.GF26762@elte.hu>
+ <4E426D4702000078000508B5@nat28.tlf.novell.com>
+ <20110810095140.GB21059@elte.hu> 
+In-Reply-To: 
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110810124528.GC2566@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 08:45:29AM -0400, Josh Boyer wrote:
-> On Tue, Aug 09, 2011 at 01:35:18PM +0200, Frederic Weisbecker wrote:
-> > > But setting rdp->qs_pending to 1 in rcu_init_percpu_data() has no effect
-> > > until a grace period starts.  So, if grace periods are prevented from
+>>> On 10.08.11 at 15:12, Jan Beulich wrote:
+> >>> On 10.08.11 at 11:51, Ingo Molnar <mingo@elte.hu> wrote:
+> > * Jan Beulich <JBeulich@novell.com> wrote:
+> >> But then again I don't seem to be able to boot 3.0.1 with both 
+> >> patches applied on my only EFI box, so there must be something else 
+> >> that broke, and hence maybe I really did test it (on 3.0-rc7) and 
+> >> it worked then. Debugging...
+> > 
+> > Ok, once you figure it out we can merge all fixes upstream ASAP.
 > 
-> Er... really?  Because it gets set and __rcu_pending looks at it
-> unconditionally in the case that is calling set_need_resched.  It
-> doesn't check if there is anything about a grace period going on or not.
+> So this is a combination of two recent events: In my patch set, I
+> recently removed efi.c's X86_32 conditional around setting
+> x86_platform.[gs]et_wallclock. Without that removal, the deadlock
+> wouldn't occur (because mach_get_cmos_time() would get called
+> instead) on 64-bits, which is the only thing I run.
+> 
+> With that conditional removed, Matthew's NX consolidation patch
+> gets into the way: For the physical call path it is simply wrong
+> (correct only for the phys_efi_set_virtual_address_map() call, as
+> there the memory map got virtual addresses assigned already) -
+> it switches from early_runtime_code_mapping_set_exec()'s using
+> of md->phys_addr to efi_set_executable() using md->virt_addr.
+> But the latter isn't set at that point yet. And it's unclear to me why
+> this works on 32-bit.
 
-You mean this?
+Worse - even the original code would not have worked afaict. Calling
+set_memory_{,n}x() this early cannot work without a small adjustment
+to the CPA logic, as all of the flushing functions have
+BUG_ON(irqs_disabled()) at their beginning.
 
-	if (rdp->qs_pending && !rdp->passed_quiesc) {
+Jan
 
-		/*
-		 * If force_quiescent_state() coming soon and this CPU
-		 * needs a quiescent state, and this is either RCU-sched
-		 * or RCU-bh, force a local reschedule.
-		 */
-		rdp->n_rp_qs_pending++;
-		if (!rdp->preemptible &&
-		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-				 jiffies))
-			set_need_resched();
-	}
-
-On boot, if we don't start a grace period, we don't schedule a grace period forcing,
-so rsp->jiffies_force_qs is 0.
-
-With ULONG_CMP_LT taking care of (-1 < jiffies) to be valid even with
-ulong, then we are fine I guess.
