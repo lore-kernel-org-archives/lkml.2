@@ -1,120 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab1HJUPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 16:15:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39750 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1HJUPG (ORCPT
+	id S1752504Ab1HJURb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 16:17:31 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:57170 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab1HJUR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 16:15:06 -0400
-Message-ID: <4E42E68D.6040501@infradead.org>
-Date: Wed, 10 Aug 2011 17:14:05 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-References: <Pine.LNX.4.44L0.1108101156350.1917-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1108101300500.25084@banach.math.auburn.edu>
-In-Reply-To: <alpine.LNX.2.00.1108101300500.25084@banach.math.auburn.edu>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Aug 2011 16:17:29 -0400
+X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 16:17:29 EDT
+Date: Wed, 10 Aug 2011 22:10:28 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LXC Development <Lxc-devel@lists.sourceforge.net>,
+        containers@lists.linux-foundation.org
+Subject: Re: [RFC] catching sys_reboot syscall
+Message-ID: <20110810221028.2e0c8590@neptune.home>
+In-Reply-To: <4E4051A0.8030009@free.fr>
+References: <4E4051A0.8030009@free.fr>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 10-08-2011 15:33, Theodore Kilgore escreveu:
+Hi Daniel,
 
-> Hans seems to have argued cogently for doing all of this in the kernel and 
-> for abandoning the usbfs-based drivers for these particular drivers for 
-> dual-mode cameras and, I would conjecture, for drivers for dual-mode 
-> hardware in general. Therefore, I anticipate that he won't like that very 
-> much.
+[I'm adding containers ml as we had a discussion there some time ago
+ for this feature]
+
+One comment below:
+
+On Mon, 08 August 2011 Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+> Hi all,
 > 
-> My position:
+> I am trying to solve one of the problems the linux container community
+> is facing :
 > 
-> I do not have preconceptions about how the problem gets handled, and at 
-> this point I remain agnostic and believe that all approaches ought to be 
-> carefully analysed. I can imagine, abstractly, that things like this 
-> could be handled by
+>    How to catch when a process called the 'reboot' syscall in a container ?
 > 
-> -- moving all basic functionality to the kernel, and fixing the 
-> relevant libgphoto2 drivers to look to the kernel instead of to libusb. 
-> (What Hans argues for, and I am not opposed if his arguments convince 
-> other concerned parties)
-
-Not looking on the amount of work to be done, I think that this would
-give better results, IMO.
-
-> -- doing some kind of patch job to make current arrangement somehow to 
-> work better (this seems to be the position of Adam Baker; I do share
-> the skepticism Hans has expressed about how well this could all be 
-> pasted together)
-
-Adam Baker's proposal of a locking between usbfs and the kernel driver seems
-to be interesting, but, as he pointed, there are some side effects to consider,
-like suspend/resume, PM, etc.
-
-> -- doing something like the previous, but also figuring out how to bring 
-> udev rules into play, which would make it all work better (just tossing 
-> this one in, for laughs, but who knows someone might like it)
-
-I don't think this is a good alternative.
-
-> -- moving the kernel webcam drivers out of the kernel and doing with these 
-> cameras _everything_ including webcam function through libusb. I myself do 
-> not have the imagination to be able to figure out how this could be done 
-> without a rather humongous amount of work (for example, which streaming 
-> apps that are currently available would be able to live with this?) but 
-> unless I misunderstand what he was saying, Greg K-H seems to think that 
-> this would be the best thing to do.
-
-I also don't think that this a good alternative. As Hans V. pointed, one of
-our long term targets is to create per-sensor I2C drivers that are independent
-from the bridges. Also, moving it to userspace would require lots of work
-with the duplication of V4L and gspca core into userspace for the devices
-that would be moved, and may have some performance impacts.
-
-> Which one of these possibile approaches gets adopted is a policy issue 
-> which I would consider is ultimately way above my pay grade.
+> In the case of a VPS, when we shutdown/halt/reboot the container, the
+> reboot utility will invoke the sys_reboot syscall which has the bad
+> effect to reboot the host. The way to fix that is to drop the
+> CAP_SYS_REBOOT capability in the container.
 > 
-> My main motivation for bringing up the issue was to get it to the front 
-> burner so that _something_ gets done. It is a matter which has been left 
-> alone for too long. Therefore, I am very glad that the matter is being 
-> addressed.
+> In this case, the container shutdowns correctly but, at the end, the
+> init process is waiting indefinitely and we have the containers stuck
+> with one process (the init process).
 > 
-> Let me add to this that I have gotten permission for time off and for a 
-> expense money which might possibly cover my air fare. I hope to arrive in 
-> Vancouver by sometime on Monday and intend to attend the mini-summit. I 
-> suggest that we get all intersted parties together and figure out what is 
-> the best way to go.
+> In order to fix that, we used a hypervisor process, parent of the
+> container's init process, watching for the container's utmp file and
+> detecting when the runlevel changes. When this runlevel change is
+> detected we wait for the container to have one process left and then we
+> kill the container's init.
 > 
-> I hope everyone who is actively concerned can meet in Vancouver, and if 
-> all goes well then on Monday as well as Tuesday. I can hang around for 
-> another day or two after Tuesday, but I do not expect to register for 
-> LinuxCon or be involved in it.
-
-It will be great to have you there for those discussions.
-
-> When I leave Vancouver I will probably go 
-> to Seattle and spend a couple of days with my oldest son, the musician, 
-> before coming home on the next weekend.
+> That works well if we modify the distro configuration files, we make
+> /var/run to not be a tmpfs and we remove all the files inside this
+> directory when the container boots. *But* as soon as we upgrade the
+> container distro, all the tweaks are lost. So this method works but at
+> the cost of tweaking the containers configuration files again and again,
+> each time there is an update, which is not tolerable in a production
+> environment.
 > 
-> Theodore Kilgore
+> This problem is easy to solve with a small hack in the kernel:
+> 
+> diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+> index 942d30b..61f3d02 100644
+> --- a/include/asm-generic/siginfo.h
+> +++ b/include/asm-generic/siginfo.h
+> @@ -218,7 +218,8 @@ typedef struct siginfo {
+>  #define CLD_TRAPPED    (__SI_CHLD|4)    /* traced child has trapped */
+>  #define CLD_STOPPED    (__SI_CHLD|5)    /* child has stopped */
+>  #define CLD_CONTINUED    (__SI_CHLD|6)    /* stopped child has continued */
+> -#define NSIGCHLD    6
+> +#define CLD_REBOOTED    (__SI_CHLD|7)   /* process was killed by a
+> reboot */
+> +#define NSIGCHLD    7
+>  
+>  /*
+>   * SIGPOLL si_codes
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 67f5688..41e0889 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2103,6 +2103,7 @@ extern int kill_pgrp(struct pid *pid, int sig, int
+> priv);
+>  extern int kill_pid(struct pid *pid, int sig, int priv);
+>  extern int kill_proc_info(int, struct siginfo *, pid_t);
+>  extern int do_notify_parent(struct task_struct *, int);
+> +extern void do_notify_parent_cldreboot(struct task_struct *, int, char *);
+>  extern void __wake_up_parent(struct task_struct *p, struct task_struct
+> *parent);
+>  extern void force_sig(int, struct task_struct *);
+>  extern int send_sig(int, struct task_struct *, int);
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 4e3cff1..09fc254 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -1522,6 +1522,46 @@ int do_notify_parent(struct task_struct *tsk, int
+> sig)
+>      return ret;
+>  }
+>  
+> +void do_notify_parent_cldreboot(struct task_struct *tsk, int why, char
+> *buffer)
+> +{
+> +    struct siginfo info = { };
+> +    struct task_struct *parent;
+> +    struct sighand_struct *sighand;
+> +    unsigned long flags;
+> +
+> +    if (task_ptrace(tsk))
+> +        parent = tsk->parent;
+> +    else {
+> +        tsk = tsk->group_leader;
+> +        parent = tsk->real_parent;
+> +    }
+> +
+> +    info.si_signo = SIGCHLD;
+> +    info.si_errno = 0;
+> +    info.si_status = why;
+> +
+> +    rcu_read_lock();
+> +    info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
+> +    info.si_uid = __task_cred(tsk)->uid;
+> +    rcu_read_unlock();
+> +
+> +    info.si_utime = cputime_to_clock_t(tsk->utime);
+> +    info.si_stime = cputime_to_clock_t(tsk->stime);
+> +
+> +    info.si_code = CLD_REBOOTED;
+> +
+> +    sighand = parent->sighand;
+> +    spin_lock_irqsave(&sighand->siglock, flags);
+> +    if (sighand->action[SIGCHLD-1].sa.sa_handler != SIG_IGN &&
+> +        sighand->action[SIGCHLD-1].sa.sa_flags & SA_CLDREBOOT)
+> +        __group_send_sig_info(SIGCHLD, &info, parent);
+> +    /*
+> +     * Even if SIGCHLD is not generated, we must wake up wait4 calls.
+> +     */
+> +    __wake_up_parent(tsk, parent);
+> +    spin_unlock_irqrestore(&sighand->siglock, flags);
+> +}
+> +
+>  static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
+>  {
+>      struct siginfo info;
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 18da702..b50449c 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -361,6 +361,13 @@ void kernel_power_off(void)
+>  }
+>  EXPORT_SYMBOL_GPL(kernel_power_off);
+>  
+> +static void pid_namespace_reboot(struct pid_namespace *pid_ns,
+> +                int cmd, char *buffer)
+> +{
+> +    struct task_struct *tsk = pid_ns->child_reaper;
+> +    do_notify_parent_cldreboot(tsk, cmd, buffer);
+> +}
+> +
+>  static DEFINE_MUTEX(reboot_mutex);
+>  
+>  /*
+> @@ -374,13 +381,10 @@ static DEFINE_MUTEX(reboot_mutex);
+>  SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>          void __user *, arg)
+>  {
+> -    char buffer[256];
+> +    struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
+> +    char buffer[256] = { 0 };
+>      int ret = 0;
+>  
+> -    /* We only trust the superuser with rebooting the system. */
+> -    if (!capable(CAP_SYS_BOOT))
+> -        return -EPERM;
+> -
+>      /* For safety, we require "magic" arguments. */
+>      if (magic1 != LINUX_REBOOT_MAGIC1 ||
+>          (magic2 != LINUX_REBOOT_MAGIC2 &&
+> @@ -395,12 +399,45 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+> unsigned int, cmd,
+>      if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
+>          cmd = LINUX_REBOOT_CMD_HALT;
+>  
+> +    /* check the cmd parameter */
+> +    if (cmd != LINUX_REBOOT_CMD_RESTART &&
+> +#ifdef CONFIG_KEXEC
+> +        cmd != LINUX_REBOOT_CMD_KEXEC &&
+> +#endif
+> +#ifdef CONFIG_HIBERNATION
+> +        cmd != LINUX_REBOOT_CMD_SW_SUSPEND &&
+> +#endif
+> +        cmd != LINUX_REBOOT_CMD_CAD_ON &&
+> +        cmd != LINUX_REBOOT_CMD_CAD_OFF &&
+> +        cmd != LINUX_REBOOT_CMD_HALT &&
+> +        cmd != LINUX_REBOOT_CMD_POWER_OFF &&
+> +        cmd != LINUX_REBOOT_CMD_RESTART2)
+> +        return -EINVAL;
+> +
+> +    if (cmd == LINUX_REBOOT_CMD_RESTART2)
+> +        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0)
+> +            return -EFAULT;
+> +
+> +    /* If we are not in the initial pid namespace, we send a signal
+> +     * to the parent of this init pid namespace, notifying a shutdown
+> +     * occured */
+> +    if (pid_ns != &init_pid_ns)
+> +        pid_namespace_reboot(pid_ns, cmd, buffer);
 
+Should there be a return here?
+Or does pid_namespace_reboot() never return by submitting signal to
+parent?
+
+Thanks,
+Bruno
+
+
+
+> +
+> +    /* We only trust the superuser with rebooting the system. */
+> +    if (!capable(CAP_SYS_BOOT))
+> +        return -EPERM;
+> +
+>      mutex_lock(&reboot_mutex);
+>      switch (cmd) {
+>      case LINUX_REBOOT_CMD_RESTART:
+>          kernel_restart(NULL);
+>          break;
+>  
+> +    case LINUX_REBOOT_CMD_RESTART2:
+> +        kernel_restart(buffer);
+> +        break;
+> +
+>      case LINUX_REBOOT_CMD_CAD_ON:
+>          C_A_D = 1;
+>          break;
+> @@ -419,16 +456,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+> unsigned int, cmd,
+>          do_exit(0);
+>          break;
+>  
+> -    case LINUX_REBOOT_CMD_RESTART2:
+> -        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+> -            ret = -EFAULT;
+> -            break;
+> -        }
+> -        buffer[sizeof(buffer) - 1] = '\0';
+> -
+> -        kernel_restart(buffer);
+> -        break;
+> -
+>  #ifdef CONFIG_KEXEC
+>      case LINUX_REBOOT_CMD_KEXEC:
+>          ret = kernel_kexec();
+> @@ -440,10 +467,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+> unsigned int, cmd,
+>          ret = hibernate();
+>          break;
+>  #endif
+> -
+> -    default:
+> -        ret = -EINVAL;
+> -        break;
+>      }
+>      mutex_unlock(&reboot_mutex);
+>      return ret;
+> 
+> 
+> With this patch, the container's init parent will receive a SIGCHLD,
+> with ssi_code set with the sys_reboot parameter value, when one of the
+> process in the container invoke sys_reboot. This solution works very
+> well and solves the problem but is it acceptable ? I don't see any
+> alternative usable for other use cases. It is probable nobody cares
+> about sys_reboot was called because there is nothing to do as the system
+> will halt a few microseconds after :)
+> 
+> Does anyone have an idea ?
+> 
+> Thanks in advance
+>   -- Daniel
