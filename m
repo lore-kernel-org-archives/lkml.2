@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab1HJLtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:49:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43213 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab1HJLtH (ORCPT
+	id S1753440Ab1HJLv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:51:27 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30962 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752826Ab1HJLv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:49:07 -0400
-Date: Wed, 10 Aug 2011 19:48:50 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sergey.senozhatsky@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] lockdep: Fix wrong assumption in
- match_held_lock
-Message-ID: <20110810114850.GA3885@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1312547787.28695.2.camel@twins>
- <tip-80e0401e35410a69bfae05b454db8a7187edd6b8@git.kernel.org>
- <20110810025845.GA5640@zhy>
- <1312970470.23660.3.camel@twins>
- <20110810114550.GA3811@zhy>
+	Wed, 10 Aug 2011 07:51:26 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18h415qlIrUJgsNThVOewcP
+Date: Wed, 10 Aug 2011 04:51:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Hemant Pedanekar <hemantp@ti.com>
+Cc: linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] omap: timer: Set dmtimer used as clocksource in
+ autoreload mode
+Message-ID: <20110810115122.GH1939@atomide.com>
+References: <1312948323-22823-1-git-send-email-hemantp@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110810114550.GA3811@zhy>
+In-Reply-To: <1312948323-22823-1-git-send-email-hemantp@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 07:45:50PM +0800, Yong Zhang wrote:
-> On Wed, Aug 10, 2011 at 12:01:10PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2011-08-10 at 10:58 +0800, Yong Zhang wrote:
-> > 
-> > > > Link: http://lkml.kernel.org/r/1312547787.28695.2.camel@twins
-> > > 
-> > > BTW, I can't open this link.
-> > 
-> > Gah! I did mess that up, but I've no idea how though, I usually
-> > copy/paste or let my script do it, in case of copy/paste one would
-> > assume I picked the wrong msg, but a grep through my sent folder doesn't
-> > find any email with that msgid.. and my script isn't imaginative enough
-> > to  just make one up like that. Anyway:
-> > 
-> >   lkml.kernel.org/r/1312969382.23148.1.camel@twins
-> > 
-> > should be the actual link, however that doesn't appear to work either,
-> > included the relevant headers of the actual email:
-> > 
-> > ---
-> > 
-> > Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
-> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>, 
-> >  Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-> >  KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-> > Date: Fri, 05 Aug 2011 14:36:20 +0200
-> > In-Reply-To: <20110804155347.GB3562@swordfish.minsk.epam.com>
-> > References: <20110804141306.GA3536@swordfish.minsk.epam.com>
-> >          <1312470358.16729.25.camel@twins>
-> >          <20110804153752.GA3562@swordfish.minsk.epam.com>
-> >          <1312472867.16729.38.camel@twins>
-> >          <20110804155347.GB3562@swordfish.minsk.epam.com>
-> > 
-> > Message-ID: <1312969382.23148.1.camel@twins>
+* Hemant Pedanekar <hemantp@ti.com> [110809 20:46]:
+> If CONFIG_OMAP_32K_TIMER is not selected and dmtimer is used as clocksource, the
+> timer stops counting once overflow occurs as it was not set in autoreload mode.
+> This results into timekeeping failure: for example, 'sleep 1' at the shell after
+> the timer counter overflow would hang.
 > 
-> The actual one showed in maillist is like below:
-
-Hmm, you have mentioned it :)
-
+> This patch sets up autoreload when starting the clocksource timer which fixes
+> the above issue.
+> 
+> Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
 > ---
-> Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
->  match_held_lock
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
->         Andrew Morton <akpm@linux-foundation.org>,
->         linux-kernel@vger.kernel.org,
->         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
->         linux-mm@kvack.org
-> Date: Fri, 05 Aug 2011 14:36:20 +0200
-> In-Reply-To: <20110804155347.GB3562@swordfish.minsk.epam.com>
-> References: <20110804141306.GA3536@swordfish.minsk.epam.com>
->          <1312470358.16729.25.camel@twins>
->          <20110804153752.GA3562@swordfish.minsk.epam.com>
->          <1312472867.16729.38.camel@twins>
->          <20110804155347.GB3562@swordfish.minsk.epam.com>
-> Content-Type: text/plain; charset="UTF-8"
-> Content-Transfer-Encoding: 8BIT
-> X-Mailer: Evolution 3.0.2- 
-> Message-ID: <1312547780.28695.1.camel@twins>
-> ---
+>  arch/arm/mach-omap2/timer.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Not sure how the difference happens.
-> 
-> Thanks,
-> Yong
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index e964072..796b935 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -293,7 +293,7 @@ static void __init omap2_gp_clocksource_init(int gptimer_id,
+>  	pr_info("OMAP clocksource: GPTIMER%d at %lu Hz\n",
+>  		gptimer_id, clksrc.rate);
+>  
+> -	__omap_dm_timer_load_start(clksrc.io_base, OMAP_TIMER_CTRL_ST, 0, 1);
+> +	omap_dm_timer_set_load_start(&clksrc, 1, 0);
+>  	init_sched_clock(&cd, dmtimer_update_sched_clock, 32, clksrc.rate);
+>  
+>  	if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
+
+You should be able to just set the autoreload mode by changing to use
+OMAP_TIMER_CTRL_POSTED | OMAP_TIMER_CTRL_AR in the __omap_dm_timer_load_start
+above.
+
+This avoids calling something that might be a loadable module eventually.
+
+Regards,
+
+Tony
