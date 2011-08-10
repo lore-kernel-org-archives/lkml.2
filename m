@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1HJQc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 12:32:58 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:47205 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643Ab1HJQcy (ORCPT
+	id S1753859Ab1HJQdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:33:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46379 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab1HJQdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 12:32:54 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:references:
-	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
-	b=nrHGiUDl8oF1r0TAEl3Ad1W65ZjUOcdG4D/Fo5DY8tTVi9Xlhx6l3qLTIso/obLLK
-	1w+zvUSLVVoGTIEyDo4Xw==
-Date: Wed, 10 Aug 2011 09:31:42 -0700
-From: Todd Poynor <toddpoynor@google.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        khilman@ti.com, b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Subject: Re: [PATCH 5/5 v4] mfd: omap: usb: Runtime PM support
-Message-ID: <20110810163142.GA10156@google.com>
-References: <1312899309-24067-1-git-send-email-keshava_mgowda@ti.com>
- <1312899309-24067-2-git-send-email-keshava_mgowda@ti.com>
- <1312899309-24067-3-git-send-email-keshava_mgowda@ti.com>
- <1312899309-24067-4-git-send-email-keshava_mgowda@ti.com>
- <1312899309-24067-5-git-send-email-keshava_mgowda@ti.com>
- <1312899309-24067-6-git-send-email-keshava_mgowda@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312899309-24067-6-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+	Wed, 10 Aug 2011 12:33:11 -0400
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Date: Wed, 10 Aug 2011 17:33:05 +0100
+In-Reply-To: <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	 <1312067670.22074.61.camel@i7.infradead.org>
+	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	 <4E34998D.8060806@zytor.com>
+	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	 <4E4140B3.7090802@suse.cz>
+	 <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
+	 <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>
+	 <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
+	 <1312985888.2989.46.camel@i7.infradead.org>
+	 <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312993987.2989.53.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 07:45:09PM +0530, Keshava Munegowda wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Wed, 2011-08-10 at 10:34 -0400, Arnaud Lacombe wrote:
+> your point being ? I might as well tell you that I find the current
+> behavior of 'all*.config' just as broken wrt. to dependency
+> management.
+
+You might indeed. And I would find that commentary just as irrelevant
+and unhelpful.
+
+> > If you have nothing relevant to say, just don't say anything.
+> >
+> maybe you can come with a detailed description of your proposal's
+> behavior, including how to manage case like this, instead of just
+> throwing patch around ?
+
+How's this for a definition:
+
+"The behaviour for unsettable (or unclearable) options shall be exactly
+like it already is if you put them in all*.config, or if you manually
+edit the .config file and run 'make oldconfig', as people have been
+doing for years. There is nothing new to see here."
+ 
+> If I do:
 > 
-> The usbhs core driver does not enable/disable the intefrace and
-
-
-typo: interface
-
-> fucntional clocks; These clocks are handled by hwmod and runtime pm,
-
-
-typo: functional
-
-> hence insted of the clock enable/disable, the runtime pm APIS are
-> used. however,the port clocks are handled by the usbhs core.
+> # make CONFIG_WIRELESS_EXT=y allnoconfig
 > 
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+> I expect either a success or an error, not a silent discard. And
+> *yes*, the problem already exists with "all*.config".
 
-...
-> @@ -913,12 +598,15 @@ static int usbhs_enable(struct device *dev)
->  				(pdata->ehci_data->reset_gpio_port[1], 1);
->  	}
->  
-> -end_count:
-> -	omap->count++;
-> +	pm_runtime_put_sync(dev);
->  	spin_unlock_irqrestore(&omap->lock, flags);
+[dwmw2@i7 linux-2.6]$ make CONFIG_WIRELESS_EXT=y allnoconfig
+scripts/kconfig/conf --allnoconfig Kconfig
+#
+# Could not set CONFIG_WIRELESS_EXT=y; perhaps it has unmet dependencies?
+#
+#
+# configuration written to .config
+#
 
-Is pm_runtime_irq_safe() needed (else I think runtime PM callbacks may
-re-enable IRQs... or there's the new *_suspend runtime PM calls that
-may avoid this)?
+-- 
+dwmw2
 
-...
-> @@ -266,10 +261,12 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
->  	struct usb_hcd *hcd	= dev_get_drvdata(dev);
->  
->  	usb_remove_hcd(hcd);
-> -	omap_usbhs_disable(dev);
->  	disable_put_regulator(dev->platform_data);
-> -	iounmap(hcd->regs);
->  	usb_put_hcd(hcd);
-> +	iounmap(hcd->regs);
-
-
-usb_put_hcd may release the hcd, needs to be after the deref for
-iounmap.
-
-> +	pm_runtime_put_sync(dev);
-> +	pm_runtime_disable(dev);
-
-
-Todd
