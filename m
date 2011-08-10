@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1HJOeW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:34:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59329 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab1HJOeV convert rfc822-to-8bit (ORCPT
+	id S1752824Ab1HJOgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:36:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40710 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab1HJOgj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:34:21 -0400
+	Wed, 10 Aug 2011 10:36:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1312985888.2989.46.camel@i7.infradead.org>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	<4E34998D.8060806@zytor.com>
-	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	<4E4140B3.7090802@suse.cz>
-	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	<4E4280BA.9050109@suse.cz>
-	<1312981658.2989.39.camel@i7.infradead.org>
-	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	<1312985888.2989.46.camel@i7.infradead.org>
-Date: Wed, 10 Aug 2011 10:34:19 -0400
-Message-ID: <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1312978689-18539-1-git-send-email-linus.walleij@stericsson.com>
+References: <1312978689-18539-1-git-send-email-linus.walleij@stericsson.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 10 Aug 2011 22:36:19 +0800
+Message-ID: <CAMPhdO9qsP4UrpkFzCy2jLey8ZxioMjuLbJAzT29y+RsBpGd-w@mail.gmail.com>
+Subject: Re: [PATCH 14/19] plat-pxa: move PXA GPIO driver to GPIO subsystem
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 10:17 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2011-08-10 at 10:15 -0400, Arnaud Lacombe wrote:
->>
->> hum, let's take a real life example: user foo wants his config to
->> enable CONFIG_WIRELESS_EXT, so with what you propose, he would do:
->>
->> # make CONFIG_WIRELESS_EXT=y allmodconfig
->>
->> currently, this would _never_ work, unless one of the symbol selected
->> by `allmodconfig' selects it, as WIRELESS_EXT is defined the
->> following:
->>
->> config WIRELESS_EXT
->> � � bool
->>
->> I suspect there also an implicit dependency to WIRELESS.
+On Wed, Aug 10, 2011 at 8:18 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 >
-> This is a complete red herring. It's *always* been like that, and works
-> *just* like this for the 'all.config' file etc.
+> As per example from the other ARM boards, push the PXA
+> GPIO driver down to the GPIO subsystem so it can be consolidated.
 >
-your point being ? I might as well tell you that I find the current
-behavior of 'all*.config' just as broken wrt. to dependency
-management.
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-> If you have nothing relevant to say, just don't say anything.
+This one looks OK.
+
+> ---
+>  arch/arm/plat-pxa/Makefile                         |    1 -
+>  drivers/gpio/Makefile                              |    1 +
+>  .../arm/plat-pxa/gpio.c => drivers/gpio/gpio-pxa.c |    0
+>  3 files changed, 1 insertions(+), 1 deletions(-)
+>  rename arch/arm/plat-pxa/gpio.c => drivers/gpio/gpio-pxa.c (100%)
 >
-maybe you can come with a detailed description of your proposal's
-behavior, including how to manage case like this, instead of just
-throwing patch around ?
-
-If I do:
-
-# make CONFIG_WIRELESS_EXT=y allnoconfig
-
-I expect either a success or an error, not a silent discard. And
-*yes*, the problem already exists with "all*.config".
-
-Thanks,
- - Arnaud
+> diff --git a/arch/arm/plat-pxa/Makefile b/arch/arm/plat-pxa/Makefile
+> index 3aca5ba..f302d04 100644
+> --- a/arch/arm/plat-pxa/Makefile
+> +++ b/arch/arm/plat-pxa/Makefile
+> @@ -4,7 +4,6 @@
+>
+>  obj-y  := dma.o
+>
+> -obj-$(CONFIG_GENERIC_GPIO)     += gpio.o
+>  obj-$(CONFIG_PXA3xx)           += mfp.o
+>  obj-$(CONFIG_PXA95x)           += mfp.o
+>  obj-$(CONFIG_ARCH_MMP)         += mfp.o
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 33e095bd..6640e1d 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -40,6 +40,7 @@ obj-$(CONFIG_GPIO_PCA953X)    += gpio-pca953x.o
+>  obj-$(CONFIG_GPIO_PCF857X)     += gpio-pcf857x.o
+>  obj-$(CONFIG_GPIO_PCH)         += gpio-pch.o
+>  obj-$(CONFIG_GPIO_PL061)       += gpio-pl061.o
+> +obj-$(CONFIG_PLAT_PXA)         += gpio-pxa.o
+>  obj-$(CONFIG_GPIO_RDC321X)     += gpio-rdc321x.o
+>
+>  obj-$(CONFIG_GPIO_PLAT_SAMSUNG)        += gpio-plat-samsung.o
+> diff --git a/arch/arm/plat-pxa/gpio.c b/drivers/gpio/gpio-pxa.c
+> similarity index 100%
+> rename from arch/arm/plat-pxa/gpio.c
+> rename to drivers/gpio/gpio-pxa.c
+> --
+> 1.7.3.2
+>
+>
