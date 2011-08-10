@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab1HJOuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:50:00 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:54181 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab1HJOt6 convert rfc822-to-8bit (ORCPT
+	id S1753041Ab1HJOxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:53:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37777 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab1HJOxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:49:58 -0400
+	Wed, 10 Aug 2011 10:53:47 -0400
+Date: Wed, 10 Aug 2011 16:53:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110810145338.GB569@somewhere.redhat.com>
+References: <20110805065646.GC13065@linux.vnet.ibm.com>
+ <20110805142245.GP2096@zod.bos.redhat.com>
+ <20110805170805.GB22164@somewhere>
+ <20110805222641.GB2245@linux.vnet.ibm.com>
+ <20110805231216.GE22164@somewhere>
+ <20110808020914.GC2385@linux.vnet.ibm.com>
+ <20110808025505.GF29058@somewhere>
+ <20110808031014.GE2385@linux.vnet.ibm.com>
+ <20110809113514.GA27301@somewhere.redhat.com>
+ <20110810124528.GC2566@zod.bos.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
-References: <cover.1312893572.git.luto@mit.edu> <d9f3056c77b6cd44a2f4c90278ce483a011dda12.1312893572.git.luto@mit.edu>
- <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 10 Aug 2011 10:49:38 -0400
-X-Google-Sender-Auth: VJXN3cFqJjE8aZDAmBPQQ2yEFmU
-Message-ID: <CAObL_7EozFSbcqJiwV=PNH-3sN0M1QfaTu3i4A_OKsZ0Ue5g7A@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Anvin, H Peter" <h.peter.anvin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110810124528.GC2566@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 11:40 AM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->> -----Original Message-----
->> From: Andy Lutomirski [mailto:luto@MIT.EDU]
->> Sent: Tuesday, August 09, 2011 5:41 AM
->> To: x86@kernel.org; linux-kernel@vger.kernel.org
->> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
->> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
->> Subject: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
->> hasn't already
->>
->> Intel SDM volume 3A, 8.4.2 says:
->>
->>   Software can disable fast-string operation by clearing the
->>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
->>   However, Intel recomments that system software always enable
->>   fast-string operation.
->>
->> The Intel DQ67SW board (with latest BIOS) disables fast string
->> operations if TXT is enabled.  A Lenovo X220 disables it regardless
->> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
->> this.
->>
->> Signed-off-by: Andy Lutomirski <luto@mit.edu>
->> ---
->>  arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
->>  1 files changed, 23 insertions(+), 5 deletions(-)
->
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
->
->
+On Wed, Aug 10, 2011 at 08:45:29AM -0400, Josh Boyer wrote:
+> On Tue, Aug 09, 2011 at 01:35:18PM +0200, Frederic Weisbecker wrote:
+> > > But setting rdp->qs_pending to 1 in rcu_init_percpu_data() has no effect
+> > > until a grace period starts.  So, if grace periods are prevented from
+> 
+> Er... really?  Because it gets set and __rcu_pending looks at it
+> unconditionally in the case that is calling set_need_resched.  It
+> doesn't check if there is anything about a grace period going on or not.
 
-Please don't apply.  This patch breaks !CONFIG_SMP.  I'll send a fixed
-patch later on.
+You mean this?
 
---Andy
+	if (rdp->qs_pending && !rdp->passed_quiesc) {
+
+		/*
+		 * If force_quiescent_state() coming soon and this CPU
+		 * needs a quiescent state, and this is either RCU-sched
+		 * or RCU-bh, force a local reschedule.
+		 */
+		rdp->n_rp_qs_pending++;
+		if (!rdp->preemptible &&
+		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+				 jiffies))
+			set_need_resched();
+	}
+
+On boot, if we don't start a grace period, we don't schedule a grace period forcing,
+so rsp->jiffies_force_qs is 0.
+
+With ULONG_CMP_LT taking care of (-1 < jiffies) to be valid even with
+ulong, then we are fine I guess.
