@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab1HJSIl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:08:41 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:29561 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab1HJSIk (ORCPT
+	id S1753267Ab1HJSKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:10:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45784 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab1HJSKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:08:40 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 14:08:40 EDT
-Message-Id: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 10 Aug 2011 13:56:28 -0400
-Subject: [PATCH] nfs: fix a couple of minor portability issues
-To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 10 Aug 2011 18:03:07.0197 (UTC) FILETIME=[C1E2CED0:01CC5787]
+	Wed, 10 Aug 2011 14:10:38 -0400
+Message-ID: <4E42C998.1050208@gmail.com>
+Date: Wed, 10 Aug 2011 20:10:32 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110729 Thunderbird/6.0
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
+References: <1310646915-3032-1-git-send-email-jslaby@suse.cz> <20110719003503.GA4138@amos.fritz.box> <4E3FE2D2.5020801@gmail.com> <20110810010933.GA4733@amos.fritz.box> <4E429907.6080000@gmail.com> <20110810180754.GB13832@bombe-desk.opditex>
+In-Reply-To: <20110810180754.GB13832@bombe-desk.opditex>
+X-Enigmail-Version: 1.3a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building on tilepro revealed two minor portability issues: the
-blocklayout.c file used prefetchw() without #include <linux/prefetch.h>,
-and the nfs4filelayout.c file used do_div() on an s64 not a u64.
-This change fixes those two issues so the NFS code builds on tilepro.
+On 08/10/2011 08:07 PM, Andreas Bombe wrote:
+> On Wed, Aug 10, 2011 at 04:43:19PM +0200, Jiri Slaby wrote:
+>> On 08/10/2011 03:09 AM, Andreas Bombe wrote:
+>>> I did my simple test on ttyS0 again: "stty -F /dev/ttyS0 crtscts" then
+>>> "echo >/dev/ttyS0". I attached the gzipped sysrq-t list in case you need
+>>> the complete output. This is just the process while it is trying to
+>>> close the device (bash's internal echo):
+>>
+>> Hmm, perhaps obvious question. What is the port connected with? And with
+>> what cable? Is it null modem cable? Or at least with DTR-CTS connected?
+> 
+> Nothing is connected. After all, the whole point of this exercise is to
+> give the driver data to send which it can't get out so I can see whether
+> it blocks all tty operations system wide while trying to do the flush on
+> close.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- fs/nfs/blocklayout/blocklayout.c |    1 +
- fs/nfs/nfs4filelayout.c          |    6 +++---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+But according to the trace, it waits only in its queue...
 
-diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
-index e56564d..9561c8f 100644
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -36,6 +36,7 @@
- #include <linux/namei.h>
- #include <linux/bio.h>		/* struct bio */
- #include <linux/buffer_head.h>	/* various write calls */
-+#include <linux/prefetch.h>
- 
- #include "blocklayout.h"
- 
-diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
-index e8915d4..6976a72 100644
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -48,13 +48,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
- 			    loff_t offset)
- {
- 	u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
--	u64 tmp;
-+	u64 tmp, uoff;
- 
- 	offset -= flseg->pattern_offset;
--	tmp = offset;
-+	tmp = uoff = offset;
- 	do_div(tmp, stripe_width);
- 
--	return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
-+	return tmp * flseg->stripe_unit + do_div(uoff, flseg->stripe_unit);
- }
- 
- /* This function is used by the layout driver to calculate the
+Well, could you turn on lockdep and dump sysrq-d when your echo is
+closing the port?
+
+thanks,
 -- 
-1.6.5.2
-
+js
