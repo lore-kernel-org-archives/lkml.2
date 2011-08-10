@@ -1,175 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1HJKGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 06:06:48 -0400
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:35763 "EHLO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1HJKGr (ORCPT
+	id S1752459Ab1HJKHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 06:07:09 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:64715 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab1HJKHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 06:06:47 -0400
-Message-ID: <4E425833.6020907@ge.com>
-Date: Wed, 10 Aug 2011 11:06:43 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] staging: vme: keep track of registered buses
-References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch> <1312968830-13377-4-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1312968830-13377-4-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2011 10:06:44.0968 (UTC) FILETIME=[358CC680:01CC5745]
+	Wed, 10 Aug 2011 06:07:07 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH v2] Staging: comedi: fix printk() issue in das6402.c
+Date: Wed, 10 Aug 2011 15:36:50 +0530
+Message-Id: <1312970810-3307-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH]Staging: comedi:fix printk() issue in das6402.c>
+References: <[PATCH]Staging: comedi:fix printk() issue in das6402.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/11 10:33, Manohar Vanga wrote:
-> This patch adds a list which keeps track of all registered VME
-> buses. This is required for adding refcounting later to bridge
-> modules, something that is not currently implemented.
-> 
-> This is based on the changes introduced by Emilio G. Cota in the
-> patch:
-> 
->     https://lkml.org/lkml/2010/10/25/486
-> 
-> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Looks OK:
+This is a patch to the das6402.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ v2 Earlier i used dev_printk for KERN_CONT instead of that now i am using pr_<levels>. 	
+ drivers/staging/comedi/drivers/das6402.c |   36 +++++++++++++----------------
+ 1 files changed, 16 insertions(+), 20 deletions(-)
 
-> ---
->  drivers/staging/vme/vme.c        |   46 ++++++++++++++++++++-----------------
->  drivers/staging/vme/vme_bridge.h |    1 +
->  2 files changed, 26 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> index 15a6161..f811d07 100644
-> --- a/drivers/staging/vme/vme.c
-> +++ b/drivers/staging/vme/vme.c
-> @@ -34,9 +34,10 @@
->  #include "vme.h"
->  #include "vme_bridge.h"
->  
-> -/* Bitmask and mutex to keep track of bridge numbers */
-> +/* Bitmask and list of registered buses both protected by common mutex */
->  static unsigned int vme_bus_numbers;
-> -static DEFINE_MUTEX(vme_bus_num_mtx);
-> +static LIST_HEAD(vme_bus_list);
-> +static DEFINE_MUTEX(vme_buses_lock);
->  
->  static void __exit vme_exit(void);
->  static int __init vme_init(void);
-> @@ -1309,11 +1310,12 @@ EXPORT_SYMBOL(vme_slot_get);
->  
->  /* - Bridge Registration --------------------------------------------------- */
->  
-> -/* call with vme_bus_num_mtx held */
-> -static int __vme_alloc_bus_num(int bus_num)
-> +/* call with vme_buses_lock held */
-> +static int __vme_add_bus(struct vme_bridge *bridge)
->  {
->  	int num;
->  	int i;
-> +	int bus_num = bridge->num;
->  
->  	if (bus_num == -1) {
->  		/* try to find a free bus number */
-> @@ -1335,25 +1337,29 @@ static int __vme_alloc_bus_num(int bus_num)
->  		}
->  		num = bus_num;
->  	}
-> +	bridge->num = num;
-> +	list_add_tail(&bridge->bus_list, &vme_bus_list);
->  	vme_bus_numbers |= 1 << num;
-> -	return num;
-> +	return 0;
->  }
->  
-> -static int vme_alloc_bus_num(int bus_num)
-> +static int vme_add_bus(struct vme_bridge *bridge)
->  {
-> -	int num;
-> +	int ret;
->  
-> -	mutex_lock(&vme_bus_num_mtx);
-> -	num = __vme_alloc_bus_num(bus_num);
-> -	mutex_unlock(&vme_bus_num_mtx);
-> -	return num;
-> +	mutex_lock(&vme_buses_lock);
-> +	ret = __vme_add_bus(bridge);
-> +	mutex_unlock(&vme_buses_lock);
-> +
-> +	return ret;
->  }
->  
-> -static void vme_free_bus_num(int bus)
-> +static void vme_remove_bus(struct vme_bridge *bridge)
->  {
-> -	mutex_lock(&vme_bus_num_mtx);
-> -	vme_bus_numbers &= ~(0x1 << bus);
-> -	mutex_unlock(&vme_bus_num_mtx);
-> +	mutex_lock(&vme_buses_lock);
-> +	vme_bus_numbers &= ~(1 << bridge->num);
-> +	list_del(&bridge->bus_list);
-> +	mutex_unlock(&vme_buses_lock);
->  }
->  
->  int vme_register_bridge(struct vme_bridge *bridge)
-> @@ -1362,12 +1368,10 @@ int vme_register_bridge(struct vme_bridge *bridge)
->  	int retval;
->  	int i;
->  
-> -	retval = vme_alloc_bus_num(bridge->num);
-> -	if (retval < 0)
-> +	retval = vme_add_bus(bridge);
-> +	if (retval)
->  		return retval;
->  
-> -	bridge->num = retval;
-> -
->  	/* This creates 32 vme "slot" devices. This equates to a slot for each
->  	 * ID available in a system conforming to the ANSI/VITA 1-1994
->  	 * specification.
-> @@ -1398,7 +1402,7 @@ err_reg:
->  		dev = &bridge->dev[i];
->  		device_unregister(dev);
->  	}
-> -	vme_free_bus_num(bridge->num);
-> +	vme_remove_bus(bridge);
->  	return retval;
->  }
->  EXPORT_SYMBOL(vme_register_bridge);
-> @@ -1413,7 +1417,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
->  		dev = &bridge->dev[i];
->  		device_unregister(dev);
->  	}
-> -	vme_free_bus_num(bridge->num);
-> +	vme_remove_bus(bridge);
->  }
->  EXPORT_SYMBOL(vme_unregister_bridge);
->  
-> diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-> index a9084f0..8959670 100644
-> --- a/drivers/staging/vme/vme_bridge.h
-> +++ b/drivers/staging/vme/vme_bridge.h
-> @@ -112,6 +112,7 @@ struct vme_bridge {
->  	/* Bridge Info - XXX Move to private structure? */
->  	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
->  	void *driver_priv;	/* Private pointer for the bridge driver */
-> +	struct list_head bus_list; /* list of VME buses */
->  
->  	struct device dev[VME_SLOTS_MAX];	/* Device registered with
->  						 * device model on VME bus
-
-
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index 6328f52..8b16f8c 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -38,6 +38,8 @@ Devices: [Keithley Metrabyte] DAS6402 (das6402)
+ This driver has suffered bitrot.
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/interrupt.h>
+ #include "../comedidev.h"
+ 
+@@ -171,24 +173,21 @@ static irqreturn_t intr_handler(int irq, void *d)
+ 	struct comedi_subdevice *s = dev->subdevices;
+ 
+ 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+-		printk("das6402: BUG: spurious interrupt\n");
++		dev_warn(dev->hw_dev, "das6402: BUG: spurious interrupt\n");
+ 		return IRQ_HANDLED;
+ 	}
+-#ifdef DEBUG
+-	printk("das6402: interrupt! das6402_irqcount=%i\n",
+-	       devpriv->das6402_irqcount);
+-	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
+-#endif
++
++	dev_dbg(dev->hw_dev, "das6402: interrupt! das6402_irqcount=%i\n",
++			devpriv->das6402_irqcount);
++	dev_dbg(dev->hw_dev, "das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
+ 
+ 	das6402_ai_fifo_dregs(dev, s);
+ 
+ 	if (s->async->buf_write_count >= devpriv->ai_bytes_to_read) {
+ 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
+ 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
+-#ifdef DEBUG
+-		printk("das6402: Got %i samples\n\n",
+-		       devpriv->das6402_wordsread - diff);
+-#endif
++		dev_dbg(dev->hw_dev, "das6402: Got %i samples\n\n",
++				devpriv->das6402_wordsread - diff);
+ 		s->async->events |= COMEDI_CB_EOA;
+ 		comedi_event(dev, s);
+ 	}
+@@ -228,9 +227,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
+ 	 */
+ 
+ 	devpriv->das6402_ignoreirq = 1;
+-#ifdef DEBUG
+-	printk("das6402: Stopping acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "das6402: Stopping acquisition\n");
+ 	devpriv->das6402_ignoreirq = 1;
+ 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+@@ -247,9 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
+ {
+ 	devpriv->das6402_ignoreirq = 1;
+ 
+-#ifdef DEBUG
+-	printk("das6402: Starting acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "das6402: Starting acquisition\n");
+ 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+ 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
+@@ -329,10 +324,11 @@ static int das6402_attach(struct comedi_device *dev,
+ 	if (iobase == 0)
+ 		iobase = 0x300;
+ 
+-	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
++	pr_info("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+ 
+ 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+-		printk(" I/O port conflict\n");
++		pr_cont(" I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -340,10 +336,10 @@ static int das6402_attach(struct comedi_device *dev,
+ 	/* should do a probe here */
+ 
+ 	irq = it->options[0];
+-	printk(" ( irq = %u )", irq);
++	pr_cont(" ( irq = %u )", irq);
+ 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
+ 	if (ret < 0) {
+-		printk("irq conflict\n");
++		pr_cont("irq conflict\n");
+ 		return ret;
+ 	}
+ 	dev->irq = irq;
 -- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+1.6.5.2
+
