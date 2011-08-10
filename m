@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1HJBtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 21:49:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58780 "EHLO mail.zytor.com"
+	id S1752873Ab1HJBuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 21:50:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46080 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075Ab1HJBtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 21:49:49 -0400
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com> <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org> <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org> <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com> <20110809150424.GO5782@one.firstfloor.org> <CAObL_7HL7SwCfXsD3dPesE4cU-nmoMCRVCP6u2Mn8efo7EG5Zg@mail.gmail.com> <4E416716.1040904@zytor.com> <CAObL_7FzTisOGJLP7wGUKDCO6qJ20-kaMFWdjm0a+dKpNWBe3g@mail.gmail.com> <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com> <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com> <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com> <1312934493.45753.YahooMailNeo@web120015.mail.ne1.yahoo.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1312934493.45753.YahooMailNeo@web120015.mail.ne1.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: New vsyscall emulation breaks JITs
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 09 Aug 2011 20:49:16 -0500
-To: Greg Lueck <lueckintel@yahoo.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>
-CC: Andi Kleen <andi@firstfloor.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
-Message-ID: <c3bb5412-8600-40e2-aa7f-a844457c24ba@email.android.com>
+	id S1752671Ab1HJBuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 21:50:07 -0400
+Date: Wed, 10 Aug 2011 11:49:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: build failure after merge of the moduleh tree
+Message-Id: <20110810114956.238d66772883636e3040d29f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Lueck <lueckintel@yahoo.com> wrote:
+Hi Paul,
 
->Yes, this sounds like a cleaner solution.  What happens, though, if the
->system call is interrupted by a signal or by ptrace(ATTACH)?  Does RIP
->point at the target of the RET instruction?  Is it moved back to the
->entry of the vsyscall page?  Does it point immediately after the
->SYSCALL instruction?  GDB might also care about these details.
->
->> That's a fun corner case.  Is the problem that you might receive a
->> signal while single-stepping?
->
->
->Actually, the situation is more difficult.  The application may have
->received a signal while inside the gate, sometime before the SYSENTER
->trap.  The signal context frame on the application's stack now has RIP
->pointing someplace inside the gate.  At this point, Pin attaches to the
->native process, and it has no reasonable way to know about the saved
->context with this RIP value.  Later, the application (running under
->Pin) will return from its handler and resume execution in the middle of
->the gate code.  What can Pin do here?  It' s too late to execute
->natively at the start of the gate.  If Pin executes natively at the
->signal return point, Pin will lose control of the application and it
->will execute natively from that point forward.
->
->-- Greg
->
->
->
->
->________________________________
->From: Linus Torvalds <torvalds@linux-foundation.org>
->To: Andrew Lutomirski <luto@mit.edu>
->Cc: Greg Lueck <lueckintel@yahoo.com>; H. Peter Anvin <hpa@zytor.com>;
->Andi Kleen <andi@firstfloor.org>; "x86@kernel.org" <x86@kernel.org>;
->"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>;
->"kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
->Sent: Tuesday, August 9, 2011 6:36 PM
->Subject: Re: New vsyscall emulation breaks JITs
->
->On Tue, Aug 9, 2011 at 2:04 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->>
->> Here's a different proposal, then:
->>
->> What if the kernel had the sequence:
->>
->> mov $__NR_whatever,%eax
->> syscall
->> ret
->>
->> in the vsyscall page but marked the vsyscall page NX.
->
->This sounds like a sound idea. And then the difference between "fast
->and native" and "slow and trapping" ends up literally being just the
->NX bit.
->
->                        Linus
+After merging the moduleh tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-The logical answer is that rip will point to the entry to the vsyscall page.
+arch/x86/kernel/cpu/amd.c: In function 'bsp_init_amd':
+arch/x86/kernel/cpu/amd.c:437:3: error: 'va_align' undeclared (first use in this function)
+arch/x86/kernel/cpu/amd.c:438:23: error: 'ALIGN_VA_32' undeclared (first use in this function)
+arch/x86/kernel/cpu/amd.c:438:37: error: 'ALIGN_VA_64' undeclared (first use in this function)
+
+Caused by the module.h split up intreacting with commit dfb09f9b7ab0
+("x86, amd: Avoid cache aliasing penalties on AMD family 15h") from the
+tip tree.
+
+I have added the following patch for today (this, or something similar,
+could be applied to the tip tree directly - the export.h include below
+was added by the module.h splitup).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 10 Aug 2011 11:45:44 +1000
+Subject: [PATCH] x86, amd: using va_align requires includeing elf.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/x86/kernel/cpu/amd.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index c17a8c4..a19a209 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -2,6 +2,7 @@
+ #include <linux/bitops.h>
+ #include <linux/export.h>
+ #include <linux/mm.h>
++#include <linux/elf.h>
+ 
+ #include <linux/io.h>
+ #include <asm/processor.h>
 -- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+1.7.5.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
