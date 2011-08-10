@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab1HJScz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:32:55 -0400
-Received: from smtp1.uniroma3.it ([62.241.4.210]:43709 "EHLO smtp1.uniroma3.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980Ab1HJScy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:32:54 -0400
-Message-ID: <4E3BCEEA001CAC72@smtp1.uniroma3.it> (added by postmaster@poste.it)
-Reply-To: <claimsgroup999@hotmail.co.uk>
-From: "COCA COLA PLC" <zennaro@uniroma3.it>
-Subject: 
-Date: Thu, 11 Aug 2011 00:01:52 -0700
+	id S1754617Ab1HJSd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:33:27 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48575 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab1HJSdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 14:33:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0017_01C2A9A6.6EE0181E"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <alpine.LFD.2.02.1108101418540.16220@x980>
+References: <cover.1312893572.git.luto@mit.edu> <20110809135050.79eed316@lxorguk.ukuu.org.uk>
+ <CAObL_7G5j-8dmQDc2Q+matB8nHk7421CWnBHqQs9-T2fjVecng@mail.gmail.com> <alpine.LFD.2.02.1108101418540.16220@x980>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 10 Aug 2011 14:33:05 -0400
+X-Google-Sender-Auth: YsPqEMFNUY7AcXkOFDFZqNqkzVY
+Message-ID: <CAObL_7ECQwEerFcs+y15NaryLa7QgXSnxktctfnfYttG2bquoA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] Forcibly enable some MISC_ENABLE features on Intel
+To: Len Brown <lenb@kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Wed, Aug 10, 2011 at 2:21 PM, Len Brown <lenb@kernel.org> wrote:
+> Andrew,
+>
+> FWIW,
+> Intel's internal bug database claims this issue on your board
+> is fixed in the next BIOS update.
 
-------=_NextPart_000_0017_01C2A9A6.6EE0181E
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Yay for fixes.  But the FW_WARN might get these things noticed and fixed sooner.
 
-CHECK ATTACHMENT FOR DETAILS OF MAIL
+Also, the fast string issue is present in Lenovo machines, too, so
+Intel can't fix them all.
 
-------=_NextPart_000_0017_01C2A9A6.6EE0181E
-Content-Type: application/octet-stream;
-	name="COCA COLA NOTIFICATION.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="COCA COLA NOTIFICATION.txt"
-
-QXR0ZW50aW9uIFdpbm5lcg0KDQpUaGlzIGVtYWlsIGlzIHRvIG5vdGlmeSB5
-b3UgdGhhdCB5b3VyIGVtYWlsIGFkZHJlc3Mgd2FzDQpyYW5kb21seSBzZWxl
-Y3RlZCBhbmQgZW50ZXJlZCBpbnRvIG91ciBmcmVlIFRoaXJkIENhdGVnb3J5
-DQpkcmF3cy5Zb3UgaGF2ZSBzdWJzZXF1ZW50bHkgZW1lcmdlZCBhIHdpbm5l
-ciBhbmQgdGhlcmVmb3JlDQplbnRpdGxlZCB0byBhIHN1YnN0YW50aWFsIGFt
-b3VudCBvZiAxLDAwMCwwMDAuMDAgR3JlYXQgQnJpdGlzaA0KUG91bmRzLmtp
-bmRseSBjb25maXJtIHJlY2VpcHQgb2YgdGhpcyBlbWFpbCwgYnkgZm9yd2Fy
-ZGluZw0KWW91ciBEZXRhaWxzIHRvIHRoZSBjbGFpbXMgZGVwYXJ0bWVudC4N
-Cg0KTmFtZTogVG9tbXkgUm9nZXINCkVtYWlsOmNsYWltc2dyb3VwOTk5QGhv
-dG1haWwuY28udWsNCg0KSU1QT1JUQU5UIEZJTEwgT1VUIFRISVMgV0lOTkVS
-UyBWRVJJRklDQVRJT04gRk9STSBCRUxPVzoNCg0KRlVMTCBOQU1FUy0tLS0t
-LS0tLS0NCkRBVEUgT0YgQklSVEgtLS0tLS0tLS0NClNFWC4tLS0tLS0tLS0t
-LS0tLS0tDQpDT05UQUNUIEFERFJFU1MtLS0tLS0tLS0tDQpDT1VOVFJZLS0t
-LS0tLS0tLS0tLS0tLS0tLS0NCk1PQklMRSBOVU1CRVItLS0tLS0tLS0tLS0t
-LQ0KT0NDVVBBVElPTi0tLS0tLS0tLS0NCkUtTUFJTCBJLkQtLS0tLS0tLS0t
-LS0tLS0tLQ0KDQpDb25ncmF0dWxhdGlvbnMgb25jZSBhZ2Fpbi4NCkRyLiBJ
-YW4gSGlsbC4NCk9ubGluZSBDby1jb29yZGluYXRvcg==
-
-------=_NextPart_000_0017_01C2A9A6.6EE0181E--
+--Andy
