@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1HJWHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 18:07:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56043 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751616Ab1HJWHp (ORCPT
+	id S1755078Ab1HJWVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 18:21:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42635 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab1HJWVU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 18:07:45 -0400
-Date: Wed, 10 Aug 2011 23:07:27 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sam wang <linux.swang@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch] perf: ARMv7 wrong "branches" generalized instruction
-Message-ID: <20110810220727.GA5270@e102144-lin.cambridge.arm.com>
-References: <alpine.DEB.2.00.1108101328440.22769@cl320.eecs.utk.edu>
- <20110810183306.GA32695@e102144-lin.cambridge.arm.com>
- <alpine.DEB.2.00.1108101452510.25186@cl320.eecs.utk.edu>
+	Wed, 10 Aug 2011 18:21:20 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        "Hilman, Kevin" <khilman@ti.com>
+Date: Thu, 11 Aug 2011 03:51:02 +0530
+Subject: RE: [PATCH 08/19] mach-davinci: move DaVinci TNET GPIO driver to
+ GPIO subsystem
+Thread-Topic: [PATCH 08/19] mach-davinci: move DaVinci TNET GPIO driver to
+ GPIO subsystem
+Thread-Index: AcxXV30aXI+XiBwUT5Kl/355GFJipAAUgdsw
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024E04F945@dbde02.ent.ti.com>
+References: <1312978639-18339-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1312978639-18339-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108101452510.25186@cl320.eecs.utk.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 08:01:20PM +0100, Vince Weaver wrote:
-> On Wed, 10 Aug 2011, Will Deacon wrote:
+Hi Linus,
+
+On Wed, Aug 10, 2011 at 17:47:19, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> > > It turns out the branches event used (ARMV7_PERFCTR_PC_WRITE) only seems
-> > > to count taken branches.
-> >
-> > It also counts exceptions and instructions that write to the PC.
+> As per example from the other ARM boards, push the DaVinci TNET
+> GPIO driver down to the GPIO subsystem so it can be consolidated.
 > 
-> are those more common than not-taken branches?  I'd think branch predictor 
-> statistics will be a bit off if only taken instructions are measured.
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-They're almost certainly not as common in normal code. However, as I've
-mentioned below, ARMV7_PERFCTR_PC_IMM_BRANCH only counts immediate branches
-so I don't think this is so useful for general consumption.
+There should be no need of this since the TNETV107x
+GPIO can simply be supported using the basic MMIO GPIO
+driver. I submitted patches for that a while back
+but have some comments from Grant to address. He requested
+some changes to be done to the basic MMIO GPIO driver
+itself.
 
-> > > ARMV7_PERFCTR_PC_IMM_BRANCH seems to do a better job of counting both 
-> > > taken and not-taken.  So I've attached a patch to change the definition
-> > > for Cotex A9.
-> >
-> > Well, it also only considers immediate branches so whilst it might 
-> > satisy your test, I think that overall it's a less meaningful number.
-> 
-> I guess there isn't more info available about which branches exactly are 
-> counted by all the events?  I've gone through the trouble of writing such 
-> tests to find out experimentally what various counters count for x86, it 
-> would be sad to have to do it again for ARM.
+https://lkml.org/lkml/2011/7/5/16
 
-The problem is, it's largely CPU specific. This has improved slightly with
-newer cores and there is a PMUv2 document which describes common
-architectural events and their reserved numbers, but it is still optional
-for the CPU to implement these (notably, Cortex-A9 doesn't implement the
-architected instruction counter).
+I do plan to rework those patches and post them back.
 
-Whilst your tests sound useful, to get any meaningful results out of ARM you
-will need to either skip difficult tests or make them CPU specific and use the
-raw encodings.
+Thanks,
+Sekhar
 
-> > (b) start replacing our generalised events with HW_OP_UNSUPPORTED and force
-> >     the user to use raw events. I agree this isn't very friendly, but it's
-> >     better than giving them crazy results [for example, we currently report
-> >     more cache misses than cache references on A9 iirc].
-> > 
-> > Personally, I'm favour of (b) and getting userspace to provide the user with
-> > a CPU-specific event listing and then translate this to raw events using
-> > something like libpfm.
-> 
-> I agree 100%, but it's an unpopular opinion on linux-kernel.  (Note that 
-> I'm the one who contributed ARM Cortex A8/A9 support to both libpfm4 and 
-> PAPI).
-
-I can see why it's an unpopular idea if it's not necessary on your
-architecture but for ARM it's really the only way forward without continuing
-to introduce a mess of sparsely populated event tables every time a new CPU
-crops up.
-
-> Since the generalized events are there and ABI though, people are going to 
-> use them.  That's why I've been writing tests that check them to see 
-> exactly what they are measuring.
-
-Right, but as I say, `instructions' on one core might not be `instructions'
-on another core. Just removing the ABI types from ARM will at least stop
-people using them. From what I've seen of perf users on ARM, they start with
-the ABI events, get some nonsensical results and then switch exclusively to
-raw events from then on.
-
-> It's still an important issue to know what "branches" measures, just it 
-> probably shouldn't be a kernel issue like it's become.
-
-The TRM for the A9 will describe various events for counting branch-related
-events. These may be specific to the pipeline and micro-architecture and
-therefore you can't really tar them all with the same brush.
-
-Will
