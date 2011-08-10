@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab1HJVOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 17:14:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53777 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab1HJVOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 17:14:31 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=l9gFkNDSZusA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=W4PfQ-7MLw6kV6gEiV8A:9 a=pln2nVSROM2cTgEqBBEA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 09/10] tracing/filter: Change filter_match_preds
- function to use walk_pred_tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1312452506-5100-10-git-send-email-jolsa@redhat.com>
-References: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
-	 <1312452506-5100-10-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Aug 2011 17:14:29 -0400
-Message-ID: <1313010869.18583.274.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1755000Ab1HJVQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 17:16:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42014 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754942Ab1HJVQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 17:16:15 -0400
+References: <cover.1312988155.git.luto@mit.edu> <8449fb3abf89851fd6b2260972666a6f82542284.1312988155.git.luto@mit.edu> <4E42BDFF.5060507@zytor.com> <CAObL_7Ge7PDSqt8sfBAODDnuA34oCsA4Lat24RXGe1DPAKdXqA@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAObL_7Ge7PDSqt8sfBAODDnuA34oCsA4Lat24RXGe1DPAKdXqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 3/3] x86-64: Rework vsyscall emulation and add vsyscall= parameter
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 10 Aug 2011 16:14:29 -0500
+To: Andrew Lutomirski <luto@mit.edu>
+CC: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        lueckintel@yahoo.com, kimwooyoung@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>
+Message-ID: <ad7e51af-a4cf-4b30-972f-8704ef748d24@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 12:08 +0200, Jiri Olsa wrote:
-> Changing filter_match_preds function to use unified predicates tree
-> processing.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/trace_events_filter.c |  119 +++++++++++++++++-------------------
->  1 files changed, 55 insertions(+), 64 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index d4e0c09..55b13b9 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -467,6 +467,7 @@ static int process_ops(struct filter_pred *preds,
->  
->  	for (i = 0; i < op->val; i++) {
->  		pred = &preds[op->ops[i]];
-> +		BUG_ON(!pred->fn);
+Andrew Lutomirski <luto@mit.edu> wrote:
 
-Why the added BUG_ON()s? Do we really need to crash the kernel on error
-here?
+>On Wed, Aug 10, 2011 at 1:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 08/10/2011 10:15 AM, Andy Lutomirski wrote:
+>>> There are three choices:
+>>>
+>>> vsyscall=native: Vsyscalls are native code that issues the
+>>> corresponding syscalls.
+>>>
+>>> vsyscall=emulate (default): Vsyscalls are emulated by instruction
+>>> fault traps, tested in the bad_area path.  The actual contents of
+>>> the vsyscall page is the same as the vsyscall=native case except
+>>> that it's marked NX.  This way programs that make assumptions about
+>>> what the code in the page does will not be confused when they read
+>>> that code.
+>>>
+>>> vsyscall=none: Trying to execute a vsyscall will segfault.
+>>>
+>>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>>
+>> Hi Andy,
+>>
+>> This patch doesn't apply.  What is your baseline for this patch?
+>
+>My baseline was a commit that probably only lives in my tree, but the
+>patches should apply cleanly on top of
+>c149a665ac488e0dac22a42287f45ad1bda06ff1, which is the current
+>tip/x86/vdso.
+>
+>--Andy
 
--- Steve
+Please rebase your patch on the current -linus since it appears to have changed since x86/vdso was merged.
 
->  		match = pred->fn(pred, rec);
->  		if (!!match == type)
->  			return match;
-> @@ -474,92 +475,82 @@ static int process_ops(struct filter_pred *preds,
->  	return match;
->  }
->  
-> +struct filter_match_preds_data {
-> +	struct filter_pred *preds;
-> +	int match;
-> +	void *rec;
-> +};
-> +
-> +static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
-> +				 int *err, void *data)
-> +{
-> +	struct filter_match_preds_data *d = data;
-> +
-> +	*err = 0;
-> +	switch (move) {
-> +	case MOVE_DOWN:
-> +		/* only AND and OR have children */
-> +		if (pred->left != FILTER_PRED_INVALID) {
-> +			/* If ops is set, then it was folded. */
-> +			if (!pred->ops)
-> +				return WALK_PRED_DEFAULT;
-> +			/* We can treat folded ops as a leaf node */
-> +			d->match = process_ops(d->preds, pred, d->rec);
-> +		} else {
-> +			BUG_ON(!pred->fn);
-> +			d->match = pred->fn(pred, d->rec);
-> +		}
-
-
+    -hpa
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
