@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1HJUZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 16:25:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53675 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab1HJUZi (ORCPT
+	id S1753139Ab1HJU0D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 16:26:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:25332 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab1HJU0B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 16:25:38 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=ryAVDAa3YogA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=UXsgqqzdZeakFHdqRpUA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace
- filter
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20110727121734.GB2605@jolsa.brq.redhat.com>
-References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
-	 <1310390576-8289-4-git-send-email-jolsa@redhat.com>
-	 <20110718151229.GA32167@somewhere>
-	 <20110719095727.GA3008@jolsa.brq.redhat.com>
-	 <20110726134327.GA1779@somewhere>
-	 <20110727121734.GB2605@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Aug 2011 16:25:35 -0400
-Message-ID: <1313007935.18583.267.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Aug 2011 16:26:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="37839940"
+From: "Mansoor, Illyas" <illyas.mansoor@intel.com>
+To: "Mansoor, Illyas" <illyas.mansoor@intel.com>, Greg KH <gregkh@suse.de>
+CC: "Liu, ShuoX" <shuox.liu@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "Yanmin_zhang@linux.intel.com" <Yanmin_zhang@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>
+Date: Thu, 11 Aug 2011 01:55:47 +0530
+Subject: RE: [linux-pm] [PATCH v4] PM: add statistics debugfs file for
+ suspend	to ram
+Thread-Topic: [linux-pm] [PATCH v4] PM: add statistics debugfs file for
+ suspend	to ram
+Thread-Index: AcxXmAl9Qmv5R5/+TBqD6T5He3/DOwAAqZ+AAAA24qA=
+Message-ID: <EB6073F1DF78F9439DFDCC701BC6466007B36A0D19@bgsmsx502.gar.corp.intel.com>
+References: <6E3BC7F7C9A4BF4286DD4C043110F30B5B847F42F9@shsmsx502.ccr.corp.intel.com>
+	<EB6073F1DF78F9439DFDCC701BC6466007B36A0CCE@bgsmsx502.gar.corp.intel.com>
+	<20110810194529.GA5590@suse.de>
+	<EB6073F1DF78F9439DFDCC701BC6466007B36A0D12@bgsmsx502.gar.corp.intel.com>
+	<20110810195854.GA5939@suse.de>
+ <EB6073F1DF78F9439DFDCC701BC6466007B36A0D14@bgsmsx502.gar.corp.intel.com>
+In-Reply-To: <EB6073F1DF78F9439DFDCC701BC6466007B36A0D14@bgsmsx502.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Again, sorry for the late reply.
-
-On Wed, 2011-07-27 at 14:17 +0200, Jiri Olsa wrote:
-> On Tue, Jul 26, 2011 at 03:43:44PM +0200, Frederic Weisbecker wrote:
 > 
-> SNIP
+> > On Thu, Aug 11, 2011 at 01:22:56AM +0530, Mansoor, Illyas wrote:
+> > > static pm_message_t pm_transition;
+> > > > > >
+> > > > > > @@ -464,8 +465,12 @@ void dpm_resume_noirq(pm_message_t state)
+> > > > > >  		mutex_unlock(&dpm_list_mtx);
+> > > > > >
+> > > > > >  		error = device_resume_noirq(dev, state);
+> > > > > > -		if (error)
+> > > > > > +		if (error) {
+> > > > > > +			suspend_stats.failed_resume_noirq++;
+> > > > > > +			dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+> > > > > > +			dpm_save_failed_dev(dev_name(dev));
+> > > > >
+> > > > > Please make these statistics conditionally enabled, so on a production
+> > system
+> > > > > If we need to disable these statistics code we should be able to do so.
+> > > >
+> > > > Why, are they taking time or space that is needed for something else?
+> > > > What's the downside here of just not always having this enabled?
+> > >
+> > > Why have something that is not required/Used?
+> >
+> > Because someone might need it and rebuilding a kernel isn't possible on
+> > lots of devices.
 > 
-> > Ideally, the filter engine should split expressions into a tree
-> > of ops:
-> > 
-> > 	ip == func1 + func2 + func3 || ip == func4
-> > 
-> > should be parsed into:
-> > 
-> >             ||
-> >             /\
-> >            /  \
-> >           /    \
-> >          /      \
-> >         ==       ==
-> >        /  \     /  \
-> >       /    \   ip   \
-> >      /      \       func4
-> >     ip       +       
-> >             / \
-> >            /   \
-> >           +     \
-> >          /  \   func3
-> >         /    \
-> >     func1   func2
-> > 
-> > And then pass that to ftrace that interprets that tree
-> > by building set of functions on top of each node joined to
-> > the other.
-> > 
-> > But that can be complicated to do, and perhaps a bit of
-> > an overkill even for daily use of it.
-> > 
-> > Having a simple "ip == func + func2 + func3" expression support
+> Agreed.
 > 
-> so the '+' is just shortcut for '||' ... like:
-
-Please, lets use something other than '+', as it can also be construed
-as addition, and will probably confuse things. Or we change the '==' to
-'|=' or something, and then comma separate it?
-
-ip |= func1, func2, func3
-
-Where we can say the '|=' ',' pair is a short cut of multiple a == b
-|| ..
-
--- Steve
-
+> >
+> > > Its only useful if DEBUGFS is configured anyways
+> >
+> > Almost all systems these days have debugfs enabled, so that's a moot
+> > point.
 > 
-> "ip == x1 || ip == x1" AND "ip == x1 + x2" mean the same thing
+> We could do the same for this as well, since DEBUGFS is still a compile time
+> Option even thou many enable it by default we don't make it part of the kernel
+> isn't it.
 > 
-> if we omit the '+' and keep just the whitespace we could use the function
-> name parser as used in set_ftrace_filter interface with no change ;)
-> but adding new separator should not be that hard..
-> 
-> > should be enough I think. And we can reject expressions that don't
-> > fit that pattern. Then if it becomes necessary one day to support
-> > real expressions there, we can still switch to a real tree.
-> > 
-> > Does that look sane? 
-> 
-> I'l make the change and send new version
-> 
-> thanks,
-> jirka
 
+May be it's not worth debating on this one, I'm okay if it's part of the kernel as well.
 
+-Illyas
