@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1HJLPv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:15:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32999 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853Ab1HJLPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:15:50 -0400
-Date: Wed, 10 Aug 2011 12:15:47 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/7] Reduce filesystem writeback from page reclaim v3
-Message-ID: <20110810111547.GZ19099@suse.de>
-References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
- <20110810110056.GA31756@infradead.org>
+	id S1753457Ab1HJLSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:18:09 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15940 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753000Ab1HJLSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 07:18:07 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18s4f453efBu7wug2TDO2aq
+Date: Wed, 10 Aug 2011 04:18:05 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Maxin B John <maxin.john@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arch:arm:plat-omap:iovmm: remove unused variable 'va'
+Message-ID: <20110810111804.GG1939@atomide.com>
+References: <20110808101546.GA25572@maxin>
+ <CAMhs6YwHbFknDpOg9e_5XcB-X9qo+DXX3tAaQy5xQopepeKOxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110810110056.GA31756@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMhs6YwHbFknDpOg9e_5XcB-X9qo+DXX3tAaQy5xQopepeKOxw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 07:00:56AM -0400, Christoph Hellwig wrote:
-> On Wed, Aug 10, 2011 at 11:47:13AM +0100, Mel Gorman wrote:
-> >   o Dropped btrfs warning when filesystems are called from direct
-> >     reclaim. The fallback method for migration looks indistinguishable
-> >     from direct reclaim.
-> 
-> The right fix is to simply remove that fallback, possibly in combination
-> with implementating real migration support for btrfs.
-> 
+* Maxin B John <maxin.john@gmail.com> [110810 04:06]:
+> ping.
 
-Removing the fallback entirely is overkill as proper migration support
-is not going to get 100% coverage but I agree that btrfs should have
-real migration support. I didn't think it belonged in this series
-though.
+Sorry I've been on vacation, applying to fixes.
 
--- 
-Mel Gorman
-SUSE Labs
+Regards,
+
+Tony
+
+ 
+> On Mon, Aug 8, 2011 at 1:15 PM, Maxin B. John <maxin.john@gmail.com> wrote:
+> > The pointer "va" returned from "phys_to_virt(pa)" is never used in
+> > "sgtable_fill_kmalloc()".So,it is safe to remove this set-but-unused variable.
+> >
+> > Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> > ---
+> > diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+> > index c60737c..79e7fed 100644
+> > --- a/arch/arm/plat-omap/iovmm.c
+> > +++ b/arch/arm/plat-omap/iovmm.c
+> > @@ -423,9 +423,6 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
+> >  {
+> >        unsigned int i;
+> >        struct scatterlist *sg;
+> > -       void *va;
+> > -
+> > -       va = phys_to_virt(pa);
+> >
+> >        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+> >                unsigned bytes;
+> >
