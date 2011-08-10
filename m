@@ -1,461 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1HJPQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:16:22 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:47483 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753641Ab1HJPQC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:16:02 -0400
-X-AuditID: 12074422-b7ba7ae000000a14-20-4e42a0a3d3e8
-From: Andy Lutomirski <luto@MIT.EDU>
-To: x86@kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        lueckintel@yahoo.com, kimwooyoung@gmail.com,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 3/3] x86-64: Rework vsyscall emulation and add vsyscall= parameter
-Date: Wed, 10 Aug 2011 11:15:32 -0400
-Message-Id: <8449fb3abf89851fd6b2260972666a6f82542284.1312988155.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1312988155.git.luto@mit.edu>
-References: <cover.1312988155.git.luto@mit.edu>
-In-Reply-To: <cover.1312988155.git.luto@mit.edu>
-References: <cover.1312988155.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsUixG6nort4gZOfwbWXOhZ9V46yWxy59p3d
-	4vOGf2wW0zaKW7z6U25xedccNosV5ztZLbZcama1eNT3lt3ix4bHrA5cHt9b+1g8brX9YfaY
-	v/Mjo8fOWXfZPTat6mTzODHjN4vH501yHrNmHWbyONHyhTWAM4rLJiU1J7MstUjfLoEro2nj
-	DOaC29kVdz7MZG1gvB7WxcjJISFgIrGl5QsbhC0mceHeeiCbi0NIYB+jRPON7UwgCSGBDYwS
-	C7aVQCSeMUn0rFvCDpJgE1CR6Fj6AKiIg0NEQEhi6d06kBpmgY1MEg0LnjOC1AgLBEm8b97J
-	AmKzCKhKTO34DdbLCxS/2LSTHWKznMSRy8/BlnEKGEhMP/OUEWKxvsT7CXfYcYlPYBRYwMiw
-	ilE2JbdKNzcxM6c4NVm3ODkxLy+1SNdULzezRC81pXQTIzjgXZR2MP48qHSIUYCDUYmH98Yy
-	Rz8h1sSy4srcQ4ySHExKorz98538hPiS8lMqMxKLM+KLSnNSiw8xSnAwK4nwSs0DyvGmJFZW
-	pRblw6SkOViUxHm5djr4CQmkJ5akZqemFqQWwWRlODiUJHhFgZEtJFiUmp5akZaZU4KQZuLg
-	BBnOAzScHaSGt7ggMbc4Mx0if4pRUUqc9znIRQIgiYzSPLheWEJ6xSgO9IowrwBIOw8wmcF1
-	vwIazAQ0uP6OA8jgkkSElFQDo8dPbj8n59tlZ4LvPZlwb7Pg2ZuBSqcfb2Pryd0hkznl1vPK
-	sk/su6bOvix24U3eGY+tq8XP2VVVRX/WrBA6uCIgtfRYZxH7Cz3+WdzuvOt+Sk3/1Jvz7En8
-	SeUPp634Vgdcvbjyv/vnSC25q8veXuxyd5O61H2fZYlJFfPWoxVLjzJfubH1xG8lluKMREMt
-	5qLiRABO/tP0IwMAAA==
+	id S1753884Ab1HJPSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:18:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47872 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab1HJPSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 11:18:44 -0400
+From: <pavan_savoy@ti.com>
+To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
+CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 1/8] drivers:misc: ti-st: avoid a misleading dbg msg
+Date: Wed, 10 Aug 2011 10:18:30 -0500
+Message-ID: <1312989517-28604-2-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
+References: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are three choices:
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-vsyscall=native: Vsyscalls are native code that issues the
-corresponding syscalls.
+Previously the private data of each protocol registered to use ST was
+used to determine whether the protocol was registered to use shared
+transport or otherwise.
+However, now a flag is_registered is maintained to identify whether a
+protocol intends to use ST.
+Upon closing of the UART the error message relevant to this lack of
+un-registration was misleading and this patch fixes that.
 
-vsyscall=emulate (default): Vsyscalls are emulated by instruction
-fault traps, tested in the bad_area path.  The actual contents of
-the vsyscall page is the same as the vsyscall=native case except
-that it's marked NX.  This way programs that make assumptions about
-what the code in the page does will not be confused when they read
-that code.
-
-vsyscall=none: Trying to execute a vsyscall will segfault.
-
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- Documentation/kernel-parameters.txt |   21 +++++++++
- arch/x86/include/asm/irq_vectors.h  |    4 --
- arch/x86/include/asm/traps.h        |    2 -
- arch/x86/include/asm/vsyscall.h     |    6 +++
- arch/x86/kernel/entry_64.S          |    1 -
- arch/x86/kernel/traps.c             |    6 ---
- arch/x86/kernel/vmlinux.lds.S       |   33 --------------
- arch/x86/kernel/vsyscall_64.c       |   79 +++++++++++++++++++++-------------
- arch/x86/kernel/vsyscall_emu_64.S   |   36 ++++++++++------
- arch/x86/mm/fault.c                 |   12 +++++
- 10 files changed, 111 insertions(+), 89 deletions(-)
+ drivers/misc/ti-st/st_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index e279b72..78926aa 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2680,6 +2680,27 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	vmpoff=		[KNL,S390] Perform z/VM CP command after power off.
- 			Format: <command>
- 
-+	vsyscall=	[X86-64]
-+			Controls the behavior of vsyscalls (i.e. calls to
-+			fixed addresses of 0xffffffffff600x00 from legacy
-+			code).  Most statically-linked binaries and older
-+			versions of glibc use these calls.  Because these
-+			functions are at fixed addresses, they make nice
-+			targets for exploits that can control RIP.
-+
-+			emulate     [default] Vsyscalls turn into traps and are
-+			            emulated reasonably safely.
-+
-+			native      Vsyscalls are native syscall instructions.
-+			            This is a little bit faster than trapping
-+			            and makes a few dynamic recompilers work
-+			            better than they would in emulation mode.
-+			            It also makes exploits much easier to write.
-+
-+			none        Vsyscalls don't work at all.  This makes
-+			            them quite hard to use for exploits but
-+			            might break your system.
-+
- 	vt.cur_default=	[VT] Default cursor shape.
- 			Format: 0xCCBBAA, where AA, BB, and CC are the same as
- 			the parameters of the <Esc>[?A;B;Cc escape sequence;
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index f9a3209..7e50f06 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -17,7 +17,6 @@
-  *  Vectors   0 ...  31 : system traps and exceptions - hardcoded events
-  *  Vectors  32 ... 127 : device interrupts
-  *  Vector  128         : legacy int80 syscall interface
-- *  Vector  204         : legacy x86_64 vsyscall emulation
-  *  Vectors 129 ... INVALIDATE_TLB_VECTOR_START-1 except 204 : device interrupts
-  *  Vectors INVALIDATE_TLB_VECTOR_START ... 255 : special interrupts
-  *
-@@ -51,9 +50,6 @@
- #ifdef CONFIG_X86_32
- # define SYSCALL_VECTOR			0x80
- #endif
--#ifdef CONFIG_X86_64
--# define VSYSCALL_EMU_VECTOR		0xcc
--#endif
- 
- /*
-  * Vectors 0x30-0x3f are used for ISA interrupts.
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 2bae0a5..0012d09 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -40,7 +40,6 @@ asmlinkage void alignment_check(void);
- asmlinkage void machine_check(void);
- #endif /* CONFIG_X86_MCE */
- asmlinkage void simd_coprocessor_error(void);
--asmlinkage void emulate_vsyscall(void);
- 
- dotraplinkage void do_divide_error(struct pt_regs *, long);
- dotraplinkage void do_debug(struct pt_regs *, long);
-@@ -67,7 +66,6 @@ dotraplinkage void do_alignment_check(struct pt_regs *, long);
- dotraplinkage void do_machine_check(struct pt_regs *, long);
- #endif
- dotraplinkage void do_simd_coprocessor_error(struct pt_regs *, long);
--dotraplinkage void do_emulate_vsyscall(struct pt_regs *, long);
- #ifdef CONFIG_X86_32
- dotraplinkage void do_iret_error(struct pt_regs *, long);
- #endif
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index 6010707..eaea1d3 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -27,6 +27,12 @@ extern struct timezone sys_tz;
- 
- extern void map_vsyscall(void);
- 
-+/*
-+ * Called on instruction fetch fault in vsyscall page.
-+ * Returns true if handled.
-+ */
-+extern bool emulate_vsyscall(struct pt_regs *regs, unsigned long address);
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _ASM_X86_VSYSCALL_H */
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index e13329d..6419bb0 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1111,7 +1111,6 @@ zeroentry spurious_interrupt_bug do_spurious_interrupt_bug
- zeroentry coprocessor_error do_coprocessor_error
- errorentry alignment_check do_alignment_check
- zeroentry simd_coprocessor_error do_simd_coprocessor_error
--zeroentry emulate_vsyscall do_emulate_vsyscall
- 
- 
- 	/* Reload gs selector with exception handling */
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 9682ec5..6913369 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -872,12 +872,6 @@ void __init trap_init(void)
- 	set_bit(SYSCALL_VECTOR, used_vectors);
- #endif
- 
--#ifdef CONFIG_X86_64
--	BUG_ON(test_bit(VSYSCALL_EMU_VECTOR, used_vectors));
--	set_system_intr_gate(VSYSCALL_EMU_VECTOR, &emulate_vsyscall);
--	set_bit(VSYSCALL_EMU_VECTOR, used_vectors);
--#endif
--
- 	/*
- 	 * Should be a barrier for any external CPU state:
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index 54c91ff..c8e335d 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -717,7 +717,7 @@ static void st_tty_close(struct tty_struct *tty)
  	 */
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index 8f3a265..0f703f1 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -71,7 +71,6 @@ PHDRS {
- 	text PT_LOAD FLAGS(5);          /* R_E */
- 	data PT_LOAD FLAGS(6);          /* RW_ */
- #ifdef CONFIG_X86_64
--	user PT_LOAD FLAGS(5);          /* R_E */
- #ifdef CONFIG_SMP
- 	percpu PT_LOAD FLAGS(6);        /* RW_ */
- #endif
-@@ -174,38 +173,6 @@ SECTIONS
- 
-        . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
- 
--#define VSYSCALL_ADDR (-10*1024*1024)
--
--#define VLOAD_OFFSET (VSYSCALL_ADDR - __vsyscall_0 + LOAD_OFFSET)
--#define VLOAD(x) (ADDR(x) - VLOAD_OFFSET)
--
--#define VVIRT_OFFSET (VSYSCALL_ADDR - __vsyscall_0)
--#define VVIRT(x) (ADDR(x) - VVIRT_OFFSET)
--
--	__vsyscall_0 = .;
--
--	. = VSYSCALL_ADDR;
--	.vsyscall : AT(VLOAD(.vsyscall)) {
--		/* work around gold bug 13023 */
--		__vsyscall_beginning_hack = .;
--		*(.vsyscall_0)
--
--		. = __vsyscall_beginning_hack + 1024;
--		*(.vsyscall_1)
--
--		. = __vsyscall_beginning_hack + 2048;
--		*(.vsyscall_2)
--
--		. = __vsyscall_beginning_hack + 4096;  /* Pad the whole page. */
--	} :user =0xcc
--	. = ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
--
--#undef VSYSCALL_ADDR
--#undef VLOAD_OFFSET
--#undef VLOAD
--#undef VVIRT_OFFSET
--#undef VVIRT
--
- #endif /* CONFIG_X86_64 */
- 
- 	/* Init code and data - will be freed after init */
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index bf8e9ff..18ae83d 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -56,6 +56,27 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- };
- 
-+static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
-+
-+static int __init vsyscall_setup(char *str)
-+{
-+	if (str) {
-+		if (!strcmp("emulate", str))
-+			vsyscall_mode = EMULATE;
-+		else if (!strcmp("native", str))
-+			vsyscall_mode = NATIVE;
-+		else if (!strcmp("none", str))
-+			vsyscall_mode = NONE;
-+		else
-+			return -EINVAL;
-+
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+early_param("vsyscall", vsyscall_setup);
-+
- void update_vsyscall_tz(void)
- {
- 	unsigned long flags;
-@@ -100,7 +121,7 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
- 
- 	printk("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
- 	       level, tsk->comm, task_pid_nr(tsk),
--	       message, regs->ip - 2, regs->cs,
-+	       message, regs->ip, regs->cs,
- 	       regs->sp, regs->ax, regs->si, regs->di);
- }
- 
-@@ -118,45 +139,39 @@ static int addr_to_vsyscall_nr(unsigned long addr)
- 	return nr;
- }
- 
--void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
-+bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
- {
- 	struct task_struct *tsk;
- 	unsigned long caller;
- 	int vsyscall_nr;
- 	long ret;
- 
--	local_irq_enable();
-+	/*
-+	 * No point in checking CS -- the only way to get here is a user mode
-+	 * trap to a high address, which means that we're in 64-bit user code.
-+	 */
- 
--	if (!user_64bit_mode(regs)) {
--		/*
--		 * If we trapped from kernel mode, we might as well OOPS now
--		 * instead of returning to some random address and OOPSing
--		 * then.
--		 */
--		BUG_ON(!user_mode(regs));
-+	WARN_ON_ONCE(address != regs->ip);
- 
--		/* Compat mode and non-compat 32-bit CS should both segfault. */
--		warn_bad_vsyscall(KERN_WARNING, regs,
--				  "illegal int 0xcc from 32-bit mode");
--		goto sigsegv;
-+	if (vsyscall_mode == NONE) {
-+		warn_bad_vsyscall(KERN_INFO, regs,
-+				  "vsyscall attempted with vsyscall=none");
-+		return false;
+ 	spin_lock_irqsave(&st_gdata->lock, flags);
+ 	for (i = ST_BT; i < ST_MAX_CHANNELS; i++) {
+-		if (st_gdata->list[i] != NULL)
++		if (st_gdata->is_registered[i] == true)
+ 			pr_err("%d not un-registered", i);
+ 		st_gdata->list[i] = NULL;
  	}
- 
--	/*
--	 * x86-ism here: regs->ip points to the instruction after the int 0xcc,
--	 * and int 0xcc is two bytes long.
--	 */
--	vsyscall_nr = addr_to_vsyscall_nr(regs->ip - 2);
-+	vsyscall_nr = addr_to_vsyscall_nr(address);
- 
- 	trace_emulate_vsyscall(vsyscall_nr);
- 
- 	if (vsyscall_nr < 0) {
- 		warn_bad_vsyscall(KERN_WARNING, regs,
--				  "illegal int 0xcc (exploit attempt?)");
-+				  "misaligned vsyscall (exploit attempt or buggy program) -- look up the vsyscall kernel parameter if you need a workaround");
- 		goto sigsegv;
- 	}
- 
- 	if (get_user(caller, (unsigned long __user *)regs->sp) != 0) {
--		warn_bad_vsyscall(KERN_WARNING, regs, "int 0xcc with bad stack (exploit attempt?)");
-+		warn_bad_vsyscall(KERN_WARNING, regs,
-+				  "vsyscall with bad stack (exploit attempt?)");
- 		goto sigsegv;
- 	}
- 
-@@ -201,13 +216,11 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 	regs->ip = caller;
- 	regs->sp += 8;
- 
--	local_irq_disable();
--	return;
-+	return true;
- 
- sigsegv:
--	regs->ip -= 2;  /* The faulting instruction should be the int 0xcc. */
- 	force_sig(SIGSEGV, current);
--	local_irq_disable();
-+	return true;
- }
- 
- /*
-@@ -255,15 +268,21 @@ cpu_vsyscall_notifier(struct notifier_block *n, unsigned long action, void *arg)
- 
- void __init map_vsyscall(void)
- {
--	extern char __vsyscall_0;
--	unsigned long physaddr_page0 = __pa_symbol(&__vsyscall_0);
-+	extern char __vsyscall_page;
-+	unsigned long physaddr_vsyscall = __pa_symbol(&__vsyscall_page);
- 	extern char __vvar_page;
- 	unsigned long physaddr_vvar_page = __pa_symbol(&__vvar_page);
- 
--	/* Note that VSYSCALL_MAPPED_PAGES must agree with the code below. */
--	__set_fixmap(VSYSCALL_FIRST_PAGE, physaddr_page0, PAGE_KERNEL_VSYSCALL);
-+	__set_fixmap(VSYSCALL_FIRST_PAGE, physaddr_vsyscall,
-+		     vsyscall_mode == NATIVE
-+		     ? PAGE_KERNEL_VSYSCALL
-+		     : PAGE_KERNEL_VVAR);
-+	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_FIRST_PAGE) !=
-+		     (unsigned long)VSYSCALL_START);
-+
- 	__set_fixmap(VVAR_PAGE, physaddr_vvar_page, PAGE_KERNEL_VVAR);
--	BUILD_BUG_ON((unsigned long)__fix_to_virt(VVAR_PAGE) != (unsigned long)VVAR_ADDRESS);
-+	BUILD_BUG_ON((unsigned long)__fix_to_virt(VVAR_PAGE) !=
-+		     (unsigned long)VVAR_ADDRESS);
- }
- 
- static int __init vsyscall_init(void)
-diff --git a/arch/x86/kernel/vsyscall_emu_64.S b/arch/x86/kernel/vsyscall_emu_64.S
-index ffa845e..c9596a9 100644
---- a/arch/x86/kernel/vsyscall_emu_64.S
-+++ b/arch/x86/kernel/vsyscall_emu_64.S
-@@ -7,21 +7,31 @@
-  */
- 
- #include <linux/linkage.h>
-+
- #include <asm/irq_vectors.h>
-+#include <asm/page_types.h>
-+#include <asm/unistd_64.h>
-+
-+__PAGE_ALIGNED_DATA
-+	.globl __vsyscall_page
-+	.balign PAGE_SIZE, 0xcc
-+	.type __vsyscall_page, @object
-+__vsyscall_page:
-+
-+	mov $__NR_gettimeofday, %rax
-+	syscall
-+	ret
- 
--/* The unused parts of the page are filled with 0xcc by the linker script. */
-+	.balign 1024, 0xcc
-+	mov $__NR_time, %rax
-+	syscall
-+	ret
- 
--.section .vsyscall_0, "a"
--ENTRY(vsyscall_0)
--	int $VSYSCALL_EMU_VECTOR
--END(vsyscall_0)
-+	.balign 1024, 0xcc
-+	mov $__NR_getcpu, %rax
-+	syscall
-+	ret
- 
--.section .vsyscall_1, "a"
--ENTRY(vsyscall_1)
--	int $VSYSCALL_EMU_VECTOR
--END(vsyscall_1)
-+	.balign 4096, 0xcc
- 
--.section .vsyscall_2, "a"
--ENTRY(vsyscall_2)
--	int $VSYSCALL_EMU_VECTOR
--END(vsyscall_2)
-+	.size __vsyscall_page, 4096
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index decd51a..247aae3 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -720,6 +720,18 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
- 		if (is_errata100(regs, address))
- 			return;
- 
-+#ifdef CONFIG_X86_64
-+		/*
-+		 * Instruction fetch faults in the vsyscall page might need
-+		 * emulation.
-+		 */
-+		if (unlikely((error_code & PF_INSTR) &&
-+			     ((address & ~0xfff) == VSYSCALL_START))) {
-+			if (emulate_vsyscall(regs, address))
-+				return;
-+		}
-+#endif
-+
- 		if (unlikely(show_unhandled_signals))
- 			show_signal_msg(regs, error_code, address, tsk);
- 
 -- 
-1.7.6
+1.7.4.1
 
