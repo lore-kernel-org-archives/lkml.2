@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1HJAuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 20:50:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61196 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab1HJAuV (ORCPT
+	id S1752760Ab1HJA5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:57:33 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:44967 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751164Ab1HJA5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 20:50:21 -0400
-MIME-Version: 1.0
-Date: Wed, 10 Aug 2011 02:50:20 +0200
-Message-ID: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
-Subject: BUG: Bisected Gianfar in bridge not forwarding packets (was: 3.0-rc1
- Bridge not forwarding unicast packages)
-From: Michael Guntsche <mguntsche@gmail.com>
-To: shemminger@vyatta.com, jpirko@redhat.com, sebastian.belden@googlemail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Aug 2011 20:57:31 -0400
+Subject: Re: [PATCH] treewide: Update sha_transform
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        GeertUytterhoeven <geert@linux-m68k.org>
+In-Reply-To: <CA+55aFwHEoDkWr6Mh=r1KG4MLRbY0_iVF-v3BPkK+zhxkriHdw@mail.gmail.com>
+References: <1312844837-10086-1-git-send-email-msb@chromium.org>
+	 <1312847115.1643.22.camel@Joe-Laptop> <20110809055226.GE6103@google.com>
+	 <1312880303.1676.5.camel@Joe-Laptop>
+	 <CA+55aFwHEoDkWr6Mh=r1KG4MLRbY0_iVF-v3BPkK+zhxkriHdw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 17:57:28 -0700
+Message-ID: <1312937848.11924.44.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good evening/morning,
+On Tue, 2011-08-09 at 08:41 -0700, Linus Torvalds wrote:
+> On Tue, Aug 9, 2011 at 1:58 AM, Joe Perches <joe@perches.com> wrote:
+> > Eliminate possible sha_transform unaligned accesses to data by copying
+> > data to an aligned __u32 array if necessary.
+> This is wrong. Not only does it double the stack space, when I tried
+> it for git it just made things slower. So don't do it.
 
-> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
-> testing. On a first look everything seemed to work fine, but when I
-> tried to connect via openvpn to my internal network (tap0 being bridged
-> with the internal network) I noticed that I was not able to access the
-> server on my internal network. I could access the bridge (which is
-> acting as the openvpn server as well) just fine though.
-> To debug this I ran tcpdump on the openvpn client and started a ping to the
-> internal network. I could see the ARP requests being answered.....
-<snip>
+Maybe the aligned copy should be in an
+#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS block.
 
-After much digging and testing I found the commit that causes the
-problem for me here.
+Maybe Mandeep could test aligned/unaligned speeds
+for his board?
 
-87c288c6e gianfar: do vlan cleanup
-
-Before this commit my bridge works fine. I simplified the test case
-and just tried to access the server from a local wireless device with
-gets also bridged via
-a gianfar nic to the wired lan. Before commit 87c288c6e I can ping the
-device from the internal network afterwards it stops.
-For testing purposes I reverted this commit (plus some others to make
-the code compile) and it started working again.
-The hardware is a routerboard with three onboard nics two of em gianfar.
-The gianfar nics do not support any kind of offloading,
-
-Offload parameters for lan_wire:
-rx-checksumming: off
-tx-checksumming: off
-scatter-gather: off
-tcp-segmentation-offload: off
-udp-fragmentation-offload: off
-generic-segmentation-offload: off
-generic-receive-offload: on
-large-receive-offload: off
-rx-vlan-offload: off
-tx-vlan-offload: off
-ntuple-filters: off
-receive-hashing: off
-
-The Bridge device on the other hand....
-
-Offload parameters for lan:
-rx-checksumming: on
-tx-checksumming: on
-scatter-gather: off
-tcp-segmentation-offload: off
-udp-fragmentation-offload: off
-generic-segmentation-offload: off
-generic-receive-offload: on
-large-receive-offload: off
-rx-vlan-offload: off
-tx-vlan-offload: on
-ntuple-filters: off
-receive-hashing: off
-
-Is it possible that the new code is tripped up by the bridge offload
-parameters somehow and thinks that the gianfar nic supports it as
-well?
-As I wrote in my initial mail, connecting to the Bridge itself works,
-I can also see ARP requests and Broadcasts, the rest just seems to
-disappear.
-
-As for the commits I reverted:
-a4aeb2662 vlan: kill __vlan_hwaccel_rx and vlan_hwaccel_rx
-6dacaddd4 vlan: kill vlan_hwaccel_receive_skb
-7890a5b9c vlan: kill ndo_vlan_rx_register
-b852b7208 gianfar: fix bug caused by 87c288c6e9aa31720b72e2bc2d665e24e1653c3e
-
-87c288c6e gianfar: do vlan cleanup
-
-I really think that there is only some small change in the gianfar
-code needed, but I could not figure it out myself.
-Please tell me if you need any more information.
-
-Kind regards,
-Michael Guntsche
