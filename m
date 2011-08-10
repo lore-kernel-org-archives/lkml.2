@@ -1,116 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404Ab1HJNkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:40:46 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:51726 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750741Ab1HJNkp (ORCPT
+	id S1751801Ab1HJNvC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:51:02 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:20930 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab1HJNvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:40:45 -0400
-Subject: Re: [PATCH v2] pch ieee1588 driver for Intel EG20T PCH
-From: Joe Perches <joe@perches.com>
-To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Cc: richard.cochran@omicron.at, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        tomoya-linux@dsn.okisemi.com
-In-Reply-To: <1312956783-11460-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-References: <1312956783-11460-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Aug 2011 06:40:43 -0700
-Message-ID: <1312983643.11924.84.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Aug 2011 09:51:00 -0400
+Date: Wed, 10 Aug 2011 09:50:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [Xen-devel] Re: [PATCH] xen: modify kernel mappings
+ corresponding to granted pages
+Message-ID: <20110810135033.GA6672@dumpdata.com>
+References: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20110809023407.GA13905@dumpdata.com>
+ <1312893028.26263.129.camel@zakaz.uk.xensource.com>
+ <20110809155014.GA4237@dumpdata.com>
+ <1312963564.26263.154.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312963564.26263.154.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090209.4E428CB4.00D2,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 15:13 +0900, Toshiharu Okada wrote:
-> This patch is for IEEE1588 driver of Intel EG20T PCH.
-> EG20T PCH is the platform controller hub that is used in Intel's
-> general embedded platform.
-> This driver adds support for using the EG20T PCH as a PTP clock.
+On Wed, Aug 10, 2011 at 09:06:04AM +0100, Ian Campbell wrote:
+> On Tue, 2011-08-09 at 16:50 +0100, Konrad Rzeszutek Wilk wrote:
+> > > > So I hadn't looked at this in detail, but I wonder if we can use the
+> > > > MULTIcall for this? It looks like we need to do two hypercalls so why
+> > > > not batch it?
+> > > 
+> > > That was going to be my next question. We should definitely batch these
+> > > if possible.
+> > > 
+> > > > And while we are it - we could change the MMU ops to only do this on
+> > > > initial domain and for the domU case do the old mechanism?
+> > > 
+> > > We need this in domU for driver domains and the like, don't we?
+> > 
+> > Sure, but I believe the majority of domU domains would not require this.
+> 
+> The overhead of this stuff is low if not used, isn't it? Compared with
+> the complexity of having domains know if they might be used as a driver
+> domain or not that seems like the tradeoff to be aiming for.
+> 
+> > I was thinking that when we start playing with the device/driver domains
+> > we would want to escalate the privilige level (or perhaps not)?
+> 
+> We don't want any escalation of privilege over and above what is
+> necessary to be a driver domain, which is generally none.
+> 
+> >  Or
+> > perhaps introcuce a new type - "if (xen_driver_domain())" to recognize
+> > that we are special ?
+> 
+> Where does the information to set xen_driver_domain == TRUE come from?
 
-> Would you review this patch, although this driver has not been tested yet?
-
-Just trivia...
-
-> diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
-[]
-> +/**
-> + * struct ch_1588_params_ - 1588 module paramter
-
-parameter
-
-> + */
-> +struct pch_params_ {
-> +	u8 station[STATION_ADDR_LEN];
-> +};
- 
-names for struct types ending in _ are pretty unusual.
-
-[]
-
-> +/**
-> + * get_decimal() - Returns the decimal value of the passed hexadecimal value
-> + * @ch:	The hexadecimal value that has to be converted.
-> + */
-> +static s32 get_decimal(u8 ch)
-> +{
-> +	s32 ret;
-> +
-> +	if ((ch >= '0') && (ch <= '9'))
-> +		ret = ch - '0';
-> +	else if ((ch >= 'A') && (ch <= 'F'))
-> +		ret = 10 + ch - 'A';
-> +	else if ((ch >= 'a') && (ch <= 'f'))
-> +		ret = 10 + ch - 'a';
-> +	else
-> +		return -1;
-> +
-> +	return ret;
-> +}
-
-hex_to_bin
-
-> +pch_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-[]
-> +	if (ret != 0) {
-> +		dev_err(&pdev->dev,
-> +			"%s:could not enable the pci device\n", __func__);
-> +		goto err_pci_en;
-> +	}
-
-It seems all of the dev_<level> logging messages include __func__.
-I think these __func__ uses are not particularly valuable and could
-be removed.
-
-> +	/* retreive the available length of the IO memory space */
-
-retrieve
-
-> +	if (!request_mem_region(chip->mem_base, chip->mem_size, "1588_regs")) {
-> +		dev_err(&pdev->dev, "%s: could not allocate register memory "
-> +			"space\n", __func__);
-
-Please don't split format strings.
-
-		dev_err(&pdev->dev, "could not allocate register memory space\n");
-or if you must
-		dev_err(&pdev->dev, "%s: could not allocate register memory space\n",
-			__func__);
-[]
-> +	if (strcmp(pch_param.station, "00:00:00:00:00:00") != 0) {
-> +		if (pch_set_station_address(pch_param.station, pdev) != 0) {
-> +			dev_err(&pdev->dev,
-> +				"%s: Invalid station address parameter\n"
-> +				"Module loaded; But, station address not set "
-> +				"correctly\n", __func__);
-
-			dev_err(&pdev->dev,
-				"%s: Invalid station address parameter\n"
-				"Module loaded but station address not set correctly\n",
-				__func__);
-
-
+No idea. Was just thinking about it.. but you have convienced me it
+is not worth looking at.
