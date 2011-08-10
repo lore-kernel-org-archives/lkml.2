@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1HJRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 13:42:29 -0400
-Received: from www17.your-server.de ([213.133.104.17]:34996 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab1HJRm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 13:42:29 -0400
-Subject: [PATCH] drivers/char: don't use IS_ERR()
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Aug 2011 19:41:49 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312998113.5589.204.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1754458Ab1HJRmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 13:42:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754423Ab1HJRmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 13:42:39 -0400
+Date: Wed, 10 Aug 2011 19:39:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: samir baid <samirbaid@gmail.com>
+Cc: tj@kernel.org, jan.kratochvil@redhat.com, vda.linux@googlemail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Question regarding ptrace
+Message-ID: <20110810173953.GB19981@redhat.com>
+References: <CAPoVYDc85W3qM_7vLwuMqP88epGgpvu4oBG5RiaRUKLWB-y6mA@mail.gmail.com> <20110810120042.GA3500@redhat.com> <CAPoVYDd1YfenMmdT6TS5-F1EXuJnkAh6sKbo4iFGjj7Q6ZDmWw@mail.gmail.com> <20110810172250.GA19099@redhat.com> <20110810173851.GA19981@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110810173851.GA19981@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+I just noticed we discuss this offlist.
 
- The various basic memory allocation functions don't return ERR_PTR
+We hate the private discussions ;) lets add lkml. Perhaps you
+found a kernel bug...
 
- The semantic patch that makes this change is available
- in scripts/coccinelle/null/eno.cocci.
-
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-
-diff --git a/drivers/char/msm_smd_pkt.c b/drivers/char/msm_smd_pkt.c
-index b6f8a65..ceece48 100644
---- a/drivers/char/msm_smd_pkt.c
-+++ b/drivers/char/msm_smd_pkt.c
-@@ -379,9 +379,8 @@ static int __init smd_pkt_init(void)
- 	for (i = 0; i < NUM_SMD_PKT_PORTS; ++i) {
- 		smd_pkt_devp[i] = kzalloc(sizeof(struct smd_pkt_dev),
- 					  GFP_KERNEL);
--		if (IS_ERR(smd_pkt_devp[i])) {
--			r = PTR_ERR(smd_pkt_devp[i]);
--			pr_err("kmalloc() failed %d\n", r);
-+		if (!smd_pkt_devp[i]) {
-+			pr_err("kmalloc() failed\n");
- 			goto clean_cdevs;
- 		}
- 
-
+On 08/10, Oleg Nesterov wrote:
+>
+> On 08/10, samir baid wrote:
+> >
+> > Here is a
+> > brief description of the code -
+> 
+> Oops. it is not that brief ;) I simply do not understand it, may be you
+> can show the code... But please try to simplify it as much as possible
+> to remove the unnecessary details,
+> 
+> > Running the above programs -
+> >  1. Ran Tracee.
+> >  2. Ran Tracer with the PID.
+> >  3. Ran command - kill -s 30 <tracee pid>
+> >
+> > My understanding was, after i did step 3 above, tracer should get a signal
+> > stop with signal 30. And then i perform a signal injection to tracee. What i
+> > wanted to acheive was, once injected the signal to the tracee i wanted to
+> > single step it at the instruction level.
+> 
+> This should work, the tracee should enter the handler. For example, see
+> the test-case below.
+> 
+> Oleg.
+> 
+> #include <stdio.h>
+> #include <unistd.h>
+> #include <signal.h>
+> #include <sys/ptrace.h>
+> #include <sys/wait.h>
+> #include <sys/user.h>
+> #include <stddef.h>
+> #include <assert.h>
+> 
+> void sigh(int sig)
+> {
+> }
+> 
+> void *getip(int pid)
+> {
+> 	return (void*)ptrace(PTRACE_PEEKUSER, pid,
+> 			offsetof(struct user, regs.rip), 0);
+> }
+> 
+> int main(void)
+> {
+> 	int pid;
+> 
+> 	signal(30, sigh);
+> 
+> 	pid = fork();
+> 	if (!pid) {
+> 		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+> 
+> 		kill(getpid(), SIGSTOP);
+> 
+> 		return 0;
+> 	}
+> 
+> 	assert(wait(NULL) == pid);
+> 
+> 	assert(ptrace(PTRACE_SINGLESTEP, pid, 0, 30) == 0);
+> 	assert(wait(NULL) == pid);
+> 
+> 	assert(sigh == getip(pid));
+> 
+> 	kill(SIGKILL, pid);
+> 	return 0;
+> }
 
