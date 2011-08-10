@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1HJJiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:38:05 -0400
-Received: from cernmx30.cern.ch ([137.138.144.177]:45621 "EHLO
-	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab1HJJhU (ORCPT
+	id S1753470Ab1HJJi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:38:28 -0400
+Received: from cernmx31.cern.ch ([137.138.144.179]:27905 "EHLO
+	CERNMX31.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab1HJJhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:37:20 -0400
+	Wed, 10 Aug 2011 05:37:19 -0400
 From: Manohar Vanga <manohar.vanga@cern.ch>
 To: <martyn.welch@ge.com>
 CC: <gregkh@suse.de>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
         <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
-Subject: [PATCH 3/6] staging: vme: keep track of registered buses
-Date: Wed, 10 Aug 2011 11:33:47 +0200
-Message-ID: <1312968830-13377-4-git-send-email-manohar.vanga@cern.ch>
+Subject: [PATCH 2/6] staging: vme: make [alloc|free]_consistent bridge specific
+Date: Wed, 10 Aug 2011 11:33:46 +0200
+Message-ID: <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
 References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
@@ -25,139 +25,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a list which keeps track of all registered VME
-buses. This is required for adding refcounting later to bridge
-modules, something that is not currently implemented.
-
-This is based on the changes introduced by Emilio G. Cota in the
-patch:
-
-    https://lkml.org/lkml/2010/10/25/486
+Make PCI dependent functions ([alloc|free]_consistent() in
+'vme.c') bridge specific. By removing the dependency of the
+VME bridge framework on PCI, this patch allows for addition of
+non-PCI based VME bridges.
 
 Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
 ---
- drivers/staging/vme/vme.c        |   46 ++++++++++++++++++++-----------------
- drivers/staging/vme/vme_bridge.h |    1 +
- 2 files changed, 26 insertions(+), 21 deletions(-)
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   24 ++++++++++++++++++
+ drivers/staging/vme/bridges/vme_tsi148.c   |   24 ++++++++++++++++++
+ drivers/staging/vme/vme.c                  |   36 ++++++++++++++++-----------
+ drivers/staging/vme/vme_bridge.h           |   10 +++++--
+ 4 files changed, 76 insertions(+), 18 deletions(-)
 
+diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+index c378819..15a0b19 100644
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -1507,6 +1507,28 @@ static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
+ 
+ }
+ 
++void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
++	dma_addr_t *dma)
++{
++	struct pci_dev *pdev;
++
++	/* Find pci_dev container of dev */
++	pdev = container_of(parent, struct pci_dev, dev);
++
++	return pci_alloc_consistent(pdev, size, dma);
++}
++
++void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
++	dma_addr_t dma)
++{
++	struct pci_dev *pdev;
++
++	/* Find pci_dev container of dev */
++	pdev = container_of(parent, struct pci_dev, dev);
++
++	pci_free_consistent(pdev, size, vaddr, dma);
++}
++
+ static int __init ca91cx42_init(void)
+ {
+ 	return pci_register_driver(&ca91cx42_driver);
+@@ -1776,6 +1798,8 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	ca91cx42_bridge->lm_attach = ca91cx42_lm_attach;
+ 	ca91cx42_bridge->lm_detach = ca91cx42_lm_detach;
+ 	ca91cx42_bridge->slot_get = ca91cx42_slot_get;
++	ca91cx42_bridge->alloc_consistent = ca91cx42_alloc_consistent;
++	ca91cx42_bridge->free_consistent = ca91cx42_free_consistent;
+ 
+ 	data = ioread32(ca91cx42_device->base + MISC_CTL);
+ 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
+diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+index e3f021e..5c147d6 100644
+--- a/drivers/staging/vme/bridges/vme_tsi148.c
++++ b/drivers/staging/vme/bridges/vme_tsi148.c
+@@ -2122,6 +2122,28 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
+ 	return (int)slot;
+ }
+ 
++void *tsi148_alloc_consistent(struct device *parent, size_t size,
++	dma_addr_t *dma)
++{
++	struct pci_dev *pdev;
++
++	/* Find pci_dev container of dev */
++	pdev = container_of(parent, struct pci_dev, dev);
++
++	return pci_alloc_consistent(pdev, size, dma);
++}
++
++void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
++	dma_addr_t dma)
++{
++	struct pci_dev *pdev;
++
++	/* Find pci_dev container of dev */
++	pdev = container_of(parent, struct pci_dev, dev);
++
++	pci_free_consistent(pdev, size, vaddr, dma);
++}
++
+ static int __init tsi148_init(void)
+ {
+ 	return pci_register_driver(&tsi148_driver);
+@@ -2451,6 +2473,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	tsi148_bridge->lm_attach = tsi148_lm_attach;
+ 	tsi148_bridge->lm_detach = tsi148_lm_detach;
+ 	tsi148_bridge->slot_get = tsi148_slot_get;
++	tsi148_bridge->alloc_consistent = tsi148_alloc_consistent;
++	tsi148_bridge->free_consistent = tsi148_free_consistent;
+ 
+ 	data = ioread32be(tsi148_device->base + TSI148_LCSR_VSTAT);
+ 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
 diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index 15a6161..f811d07 100644
+index 330a4ff..15a6161 100644
 --- a/drivers/staging/vme/vme.c
 +++ b/drivers/staging/vme/vme.c
-@@ -34,9 +34,10 @@
- #include "vme.h"
- #include "vme_bridge.h"
- 
--/* Bitmask and mutex to keep track of bridge numbers */
-+/* Bitmask and list of registered buses both protected by common mutex */
- static unsigned int vme_bus_numbers;
--static DEFINE_MUTEX(vme_bus_num_mtx);
-+static LIST_HEAD(vme_bus_list);
-+static DEFINE_MUTEX(vme_buses_lock);
- 
- static void __exit vme_exit(void);
- static int __init vme_init(void);
-@@ -1309,11 +1310,12 @@ EXPORT_SYMBOL(vme_slot_get);
- 
- /* - Bridge Registration --------------------------------------------------- */
- 
--/* call with vme_bus_num_mtx held */
--static int __vme_alloc_bus_num(int bus_num)
-+/* call with vme_buses_lock held */
-+static int __vme_add_bus(struct vme_bridge *bridge)
+@@ -83,15 +83,11 @@ static struct vme_bridge *find_bridge(struct vme_resource *resource)
+ /*
+  * Allocate a contiguous block of memory for use by the driver. This is used to
+  * create the buffers for the slave windows.
+- *
+- * XXX VME bridges could be available on buses other than PCI. At the momment
+- *     this framework only supports PCI devices.
+  */
+ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
+ 	dma_addr_t *dma)
  {
- 	int num;
- 	int i;
-+	int bus_num = bridge->num;
+ 	struct vme_bridge *bridge;
+-	struct pci_dev *pdev;
  
- 	if (bus_num == -1) {
- 		/* try to find a free bus number */
-@@ -1335,25 +1337,29 @@ static int __vme_alloc_bus_num(int bus_num)
- 		}
- 		num = bus_num;
+ 	if (resource == NULL) {
+ 		printk(KERN_ERR "No resource\n");
+@@ -104,28 +100,29 @@ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
+ 		return NULL;
  	}
-+	bridge->num = num;
-+	list_add_tail(&bridge->bus_list, &vme_bus_list);
- 	vme_bus_numbers |= 1 << num;
--	return num;
-+	return 0;
- }
  
--static int vme_alloc_bus_num(int bus_num)
-+static int vme_add_bus(struct vme_bridge *bridge)
- {
--	int num;
-+	int ret;
- 
--	mutex_lock(&vme_bus_num_mtx);
--	num = __vme_alloc_bus_num(bus_num);
--	mutex_unlock(&vme_bus_num_mtx);
--	return num;
-+	mutex_lock(&vme_buses_lock);
-+	ret = __vme_add_bus(bridge);
-+	mutex_unlock(&vme_buses_lock);
+-	/* Find pci_dev container of dev */
+ 	if (bridge->parent == NULL) {
+-		printk(KERN_ERR "Dev entry NULL\n");
++		printk(KERN_ERR "Dev entry NULL for"
++			" bridge %s\n", bridge->name);
++		return NULL;
++	}
 +
-+	return ret;
- }
++	if (bridge->alloc_consistent == NULL) {
++		printk(KERN_ERR "alloc_consistent not supported by"
++			" bridge %s\n", bridge->name);
+ 		return NULL;
+ 	}
+-	pdev = container_of(bridge->parent, struct pci_dev, dev);
  
--static void vme_free_bus_num(int bus)
-+static void vme_remove_bus(struct vme_bridge *bridge)
+-	return pci_alloc_consistent(pdev, size, dma);
++	return bridge->alloc_consistent(bridge->parent, size, dma);
+ }
+ EXPORT_SYMBOL(vme_alloc_consistent);
+ 
+ /*
+  * Free previously allocated contiguous block of memory.
+- *
+- * XXX VME bridges could be available on buses other than PCI. At the momment
+- *     this framework only supports PCI devices.
+  */
+ void vme_free_consistent(struct vme_resource *resource, size_t size,
+ 	void *vaddr, dma_addr_t dma)
  {
--	mutex_lock(&vme_bus_num_mtx);
--	vme_bus_numbers &= ~(0x1 << bus);
--	mutex_unlock(&vme_bus_num_mtx);
-+	mutex_lock(&vme_buses_lock);
-+	vme_bus_numbers &= ~(1 << bridge->num);
-+	list_del(&bridge->bus_list);
-+	mutex_unlock(&vme_buses_lock);
- }
+ 	struct vme_bridge *bridge;
+-	struct pci_dev *pdev;
  
- int vme_register_bridge(struct vme_bridge *bridge)
-@@ -1362,12 +1368,10 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 	int retval;
- 	int i;
- 
--	retval = vme_alloc_bus_num(bridge->num);
--	if (retval < 0)
-+	retval = vme_add_bus(bridge);
-+	if (retval)
- 		return retval;
- 
--	bridge->num = retval;
--
- 	/* This creates 32 vme "slot" devices. This equates to a slot for each
- 	 * ID available in a system conforming to the ANSI/VITA 1-1994
- 	 * specification.
-@@ -1398,7 +1402,7 @@ err_reg:
- 		dev = &bridge->dev[i];
- 		device_unregister(dev);
+ 	if (resource == NULL) {
+ 		printk(KERN_ERR "No resource\n");
+@@ -138,10 +135,19 @@ void vme_free_consistent(struct vme_resource *resource, size_t size,
+ 		return;
  	}
--	vme_free_bus_num(bridge->num);
-+	vme_remove_bus(bridge);
- 	return retval;
+ 
+-	/* Find pci_dev container of dev */
+-	pdev = container_of(bridge->parent, struct pci_dev, dev);
++	if (bridge->parent == NULL) {
++		printk(KERN_ERR "Dev entry NULL for"
++			" bridge %s\n", bridge->name);
++		return;
++	}
++
++	if (bridge->free_consistent == NULL) {
++		printk(KERN_ERR "free_consistent not supported by"
++			" bridge %s\n", bridge->name);
++		return;
++	}
+ 
+-	pci_free_consistent(pdev, size, vaddr, dma);
++	bridge->free_consistent(bridge->parent, size, vaddr, dma);
  }
- EXPORT_SYMBOL(vme_register_bridge);
-@@ -1413,7 +1417,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
- 		dev = &bridge->dev[i];
- 		device_unregister(dev);
- 	}
--	vme_free_bus_num(bridge->num);
-+	vme_remove_bus(bridge);
- }
- EXPORT_SYMBOL(vme_unregister_bridge);
+ EXPORT_SYMBOL(vme_free_consistent);
  
 diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-index a9084f0..8959670 100644
+index 4c6ec31..a9084f0 100644
 --- a/drivers/staging/vme/vme_bridge.h
 +++ b/drivers/staging/vme/vme_bridge.h
-@@ -112,6 +112,7 @@ struct vme_bridge {
+@@ -98,8 +98,6 @@ struct vme_irq {
+ /* This structure stores all the information about one bridge
+  * The structure should be dynamically allocated by the driver and one instance
+  * of the structure should be present for each VME chip present in the system.
+- *
+- * Currently we assume that all chips are PCI-based
+  */
+ struct vme_bridge {
+ 	char name[VMENAMSIZ];
+@@ -112,7 +110,7 @@ struct vme_bridge {
+ 	struct list_head vme_errors;	/* List for errors generated on VME */
+ 
  	/* Bridge Info - XXX Move to private structure? */
- 	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
+-	struct device *parent;	/* Generic device struct (pdev->dev for PCI) */
++	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
  	void *driver_priv;	/* Private pointer for the bridge driver */
-+	struct list_head bus_list; /* list of VME buses */
  
  	struct device dev[VME_SLOTS_MAX];	/* Device registered with
- 						 * device model on VME bus
+@@ -165,6 +163,12 @@ struct vme_bridge {
+ 
+ 	/* CR/CSR space functions */
+ 	int (*slot_get) (struct vme_bridge *);
++
++	/* Bridge parent interface */
++	void *(*alloc_consistent)(struct device *dev, size_t size,
++		dma_addr_t *dma);
++	void (*free_consistent)(struct device *dev, size_t size,
++		void *vaddr, dma_addr_t dma);
+ };
+ 
+ void vme_irq_handler(struct vme_bridge *, int, int);
 -- 
 1.7.4.1
 
