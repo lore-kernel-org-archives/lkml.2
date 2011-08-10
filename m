@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1HJLTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:19:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27986 "EHLO mx1.redhat.com"
+	id S1753516Ab1HJLUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:20:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33168 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab1HJLTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:19:52 -0400
-Date: Wed, 10 Aug 2011 13:19:48 +0200
-From: Jiri Pirko <jpirko@redhat.com>
-To: Michael Guntsche <mguntsche@gmail.com>
-Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
- 3.0-rc1 Bridge not forwarding unicast packages)
-Message-ID: <20110810111947.GC1909@minipsycho.brq.redhat.com>
-References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
- <20110810090014.GB1909@minipsycho.brq.redhat.com>
- <CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
- <CAMvAeqM-oH1UzxEp9PgO6ZP-AKtqosuMg5za25_X8DpPJMDX2w@mail.gmail.com>
+	id S1753419Ab1HJLUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 07:20:01 -0400
+Date: Wed, 10 Aug 2011 13:19:58 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 3/6]  memg: vmscan pass nodemask
+Message-ID: <20110810111958.GB15007@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809191018.af81c55d.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMvAeqM-oH1UzxEp9PgO6ZP-AKtqosuMg5za25_X8DpPJMDX2w@mail.gmail.com>
+In-Reply-To: <20110809191018.af81c55d.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Aug 10, 2011 at 12:30:16PM CEST, mguntsche@gmail.com wrote:
->On Wed, Aug 10, 2011 at 11:59 AM, Michael Guntsche <mguntsche@gmail.com> wrote:
-><snip>
->>>>Offload parameters for lan_wire:
->>>>rx-checksumming: off
->>>>tx-checksumming: off
->>>>scatter-gather: off
->>>>tcp-segmentation-offload: off
->>>>udp-fragmentation-offload: off
->>>>generic-segmentation-offload: off
->>>>generic-receive-offload: on
->>>>large-receive-offload: off
->>>>rx-vlan-offload: off
->>>>tx-vlan-offload: off
->>>>ntuple-filters: off
->>>>receive-hashing: off
->>>>
->>>>The Bridge device on the other hand....
->>>>
->>>>Offload parameters for lan:
->>>>rx-checksumming: on
->>>>tx-checksumming: on
->>>>scatter-gather: off
->>>>tcp-segmentation-offload: off
->>>>udp-fragmentation-offload: off
->>>>generic-segmentation-offload: off
->>>>generic-receive-offload: on
->>>>large-receive-offload: off
->>>>rx-vlan-offload: off
->>>>tx-vlan-offload: on
->>>  ^^^^^^^^^^^^^^^^^^^ is this gfar?
->> No the "Lan" nic is the bridge itself. The gfar in question is lan_wire.
->>
->> /Michael
->>
->
->Ok I would have saved hours of bisecting if I had just used the -e
->switch with tcpdump from the beginning.
->Jiri first of all the patch makes the connection work again. I can
->ping the client on the wlan from the server and vice-versa. Taking a
->look at the tcpdump (WITH -e) makes it obvious why it fails with the
->non patched version...
->
->This is a capture from the gfar lan port on the bridge with no patch applied
->12:13:24.011492 00:13:d4:4f:a2:dc (oui Unknown) > b4:07:f9:70:b7:c1
->(oui Unknown), ethertype 802.1Q (0x8100), length 102: vlan 19, p 0,
->ethertype IPv4, gibson.comsick.at > 192.168.42.55: ICMP echo request,
->id 23567, seq 74, length 64
->
->As you can see we get a VLAN package????
+On Tue 09-08-11 19:10:18, KAMEZAWA Hiroyuki wrote:
+> 
+> pass memcg's nodemask to try_to_free_pages().
+> 
+> try_to_free_pages can take nodemask as its argument but memcg
+> doesn't pass it. Considering memcg can be used with cpuset on
+> big NUMA, memcg should pass nodemask if available.
+> 
+> Now, memcg maintain nodemask with periodic updates. pass it.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Changelog:
+>  - fixed bugs to pass nodemask.
 
-Ugh, this is what I expected. Patch to fix:
+Yes, looks good now.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Subject: [patch net-2.6] gianfar: prevent buggy hw rx vlan tagging
+> Index: mmotm-Aug3/mm/vmscan.c
+> ===================================================================
+> --- mmotm-Aug3.orig/mm/vmscan.c
+> +++ mmotm-Aug3/mm/vmscan.c
+> @@ -2354,7 +2354,7 @@ unsigned long try_to_free_mem_cgroup_pag
+>  		.order = 0,
+>  		.mem_cgroup = mem_cont,
+>  		.memcg_record = rec,
+> -		.nodemask = NULL, /* we don't care the placement */
+> +		.nodemask = NULL,
+>  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+>  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
+>  	};
 
-On some buggy chips, "vlan tag present" flag is set which causes packet
-loss. Fix this by checking if rx vlan accel is enabled in features.
+We can remove the whole nodemask initialization.
 
-Reported-by: Michael Guntsche <mguntsche@gmail.com>
-Signed-off-by: Jiri Pirko <jpirko@redhat.com>
----
- drivers/net/gianfar.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+> @@ -2368,7 +2368,7 @@ unsigned long try_to_free_mem_cgroup_pag
+>  	 * take care of from where we get pages. So the node where we start the
+>  	 * scan does not need to be the current node.
+>  	 */
+> -	nid = mem_cgroup_select_victim_node(mem_cont);
+> +	nid = mem_cgroup_select_victim_node(mem_cont, &sc.nodemask);
+>  
+>  	zonelist = NODE_DATA(nid)->node_zonelists;
 
-diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
-index 2659daa..31d5c57 100644
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -2710,8 +2710,13 @@ static int gfar_process_frame(struct net_device *dev, struct sk_buff *skb,
- 	/* Tell the skb what kind of packet this is */
- 	skb->protocol = eth_type_trans(skb, dev);
- 
--	/* Set vlan tag */
--	if (fcb->flags & RXFCB_VLN)
-+	/*
-+	 * There's need to check for NETIF_F_HW_VLAN_RX here.
-+	 * Even if vlan rx accel is disabled, on some chips
-+	 * RXFCB_VLN is pseudo randomly set.
-+	 */
-+	if (dev->features & NETIF_F_HW_VLAN_RX &&
-+	    fcb->flags & RXFCB_VLN)
- 		__vlan_hwaccel_put_tag(skb, fcb->vlctl);
- 
- 	/* Send the packet up the stack */
 -- 
-1.7.6
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
