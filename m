@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab1HJBev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 21:34:51 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:55410 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750991Ab1HJBeu (ORCPT
+	id S1752807Ab1HJBfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 21:35:02 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:42755 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752384Ab1HJBey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 21:34:50 -0400
+	Tue, 9 Aug 2011 21:34:54 -0400
 From: Mike Turquette <mturquette@ti.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
         patches@linaro.org, Mike Turquette <mturquette@ti.com>
-Subject: [PATCH 0/2] new cpumask for hotpluggable CPUs
-Date: Tue,  9 Aug 2011 18:33:25 -0700
-Message-Id: <1312940007-26069-1-git-send-email-mturquette@ti.com>
+Subject: [PATCH 2/2] cpu: update cpu_hotpluggable_mask in register_cpu
+Date: Tue,  9 Aug 2011 18:33:27 -0700
+Message-Id: <1312940007-26069-3-git-send-email-mturquette@ti.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1312940007-26069-1-git-send-email-mturquette@ti.com>
+References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series introduces a new cpumask which tracks CPUs that
-support hotplugging.  The purpose of this patch series is to provide a
-simple method for kernel code to know which CPUs can be hotplugged and
-which ones cannot.  Potential users of this code might be a thermal
-mitigation technique which uses hotplug to lower temperature, or a power
-capping mechanism which uses hotplug to lower power consumption.
+Update the cpu_hotpluggable_mask for each registered CPU which supports
+hotplug.  This makes it trivial for kernel code to know which CPUs
+support hotplug operations.
 
-All the of usual cpumask helper functions are created for this new mask.
-The second patch in this series simply sets the bit for elligible CPUs
-while they are being registered.  The cpumask itself is static after
-boot and should not change (like the possbile mask).
+Signed-off-by: Mike Turquette <mturquette@ti.com>
+---
+ drivers/base/cpu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Mike Turquette (2):
-  cpumask: introduce cpumask for hotpluggable CPUs
-  cpu: update cpu_hotpluggable_mask in register_cpu
-
- drivers/base/cpu.c      |    4 +++-
- include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
- kernel/cpu.c            |   18 ++++++++++++++++++
- 3 files changed, 43 insertions(+), 6 deletions(-)
-
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 251acea..91ddcf8 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -224,8 +224,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 
+ 	error = sysdev_register(&cpu->sysdev);
+ 
+-	if (!error && cpu->hotpluggable)
++	if (!error && cpu->hotpluggable) {
+ 		register_cpu_control(cpu);
++		set_cpu_hotpluggable(num, true);
++	}
+ 	if (!error)
+ 		per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
+ 	if (!error)
 -- 
 1.7.4.1
 
