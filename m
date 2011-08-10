@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1HJTKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 15:10:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34962 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab1HJTKT (ORCPT
+	id S1754774Ab1HJTOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 15:14:44 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:53565 "EHLO
+	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab1HJTOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 15:10:19 -0400
-Message-ID: <4E42D769.8030704@windriver.com>
-Date: Wed, 10 Aug 2011 15:09:29 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 10 Aug 2011 15:14:43 -0400
+Date: Wed, 10 Aug 2011 15:14:24 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110810191424.GA26147@flamenco.cs.columbia.edu>
+References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
+ <1312968830-13377-5-git-send-email-manohar.vanga@cern.ch>
+ <4E4258F4.8040408@ge.com>
 MIME-Version: 1.0
-To: Mike Frysinger <vapier.adi@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, <mingo@elte.hu>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <linux-arch@vger.kernel.org>, <sfr@canb.auug.org.au>
-Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
-References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFwtyfzaFABHKD+OMWsojGov0JLmnrZimhVaOcrer=tJjQ@mail.gmail.com> <20110802183019.GB8393@windriver.com> <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com>
-In-Reply-To: <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4258F4.8040408@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-08-07 10:42 PM, Mike Frysinger wrote:
+On Wed, Aug 10, 2011 at 11:09:56 +0100, Martyn Welch wrote:
+> On 10/08/11 10:33, Manohar Vanga wrote:
+> >  static struct vme_bridge *find_bridge(struct vme_resource *resource)
+> > @@ -1525,9 +1573,13 @@ static int vme_bus_probe(struct device *dev)
+> >  	driver = dev_to_vme_driver(dev);
+> >  	bridge = dev_to_bridge(dev);
+> >  
+> > +	vme_bridge_get(bridge->num);
 
-[...]
+Here the return pointer is not being checked, although things
+would need to be very wrong for this to fail here.
 
+> >  	if (driver->probe != NULL)
+> >  		retval = driver->probe(dev, bridge->num, vme_calc_slot(dev));
+> >  
+> > +	if (retval)
+> > +		vme_bridge_put(bridge);
+> > +
 > 
-> Blackfin is broken because of this.  a simple grep of the tree
+> Given that we are recounting automatically in probe and remove, under what
+> circumstances would we need to call them separately?
 
-I've run all the in-tree blackfin configs, so it is all good.
+I agree, it's hard to imagine a scenario where "doubly locking"
+the module would make any sense at all.
 
-Have you thought about getting at least one blackfin defconfig in
-the linux-next build coverage?  Gives you a better chance of
-having people see when they've broken it.
+It would also be nice to:
 
-Thanks,
-Paul.
+- Increment the refcount of the bridge device with get_device(),
+  this way we protect against the device removal as well.
+  Bonus points if we increment the bridge module's refcount
+  once per device driver using it and the bridge device's
+  refcount once per device sitting on it.
 
-> probably could pick this up.  maybe something like:
-> grep EXPORT_SYMBOL * -rIl | xargs grep -L linux/export.h
-> 
-> from my logs, i see at least:
-> arch/blackfin/kernel/dma-mapping.c:103: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/kernel/dma-mapping.c:111: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/kernel/dma-mapping.c:121: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/kernel/dma-mapping.c:136: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/kernel/dma-mapping.c:148: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/kernel/sys_bfin.c:50: warning: type defaults to 'int' in
-> declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf518/boards/ezbrd.c:825: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf527/boards/ad7160eval.c:852: warning: type
-> defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf527/boards/ezbrd.c:876: warning: type defaults to
-> 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf527/boards/ezkit.c:1317: warning: type defaults
-> to 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf527/boards/tll6527m.c:938: warning: type defaults
-> to 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mach-bf537/boards/dnp5370.c:396: warning: type defaults
-> to 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mm/init.c:22: warning: type defaults to 'int' in
-> declaration of 'EXPORT_SYMBOL'
-> arch/blackfin/mm/init.c:32: warning: type defaults to 'int' in
-> declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:1002: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:107: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:1089: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:124: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:271: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:293: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:353: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:373: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:451: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:515: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:591: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:599: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:610: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:621: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:775: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:786: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:797: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:90: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> sound/soc/blackfin/bf5xx-sport.c:968: warning: type defaults to 'int'
-> in declaration of 'EXPORT_SYMBOL'
-> -mike
+- re-think what the return value of vme_bridge_get should be;
+  guess my original idea was to return a reference to a bridge,
+  which would be safely used by device drivers from there
+  on. Since apparently we're not going this way, then perhaps
+  an int (returning 0 on success and -ENXIO on failure) would
+  be clearer.
+
+		Emilio
