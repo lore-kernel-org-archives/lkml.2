@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1HJLMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:12:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57884 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1HJLMO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:12:14 -0400
+	id S1753402Ab1HJLNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:13:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14619 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753118Ab1HJLNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 07:13:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,349,1309762800"; 
+   d="scan'208";a="37014036"
+Date: Wed, 10 Aug 2011 19:13:34 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
+Message-ID: <20110810111334.GB27604@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094527.002914580@intel.com>
+ <1312914906.1083.71.camel@twins>
+ <20110810034012.GD24486@localhost>
+ <1312971948.23660.8.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20110808101546.GA25572@maxin>
-References: <20110808101546.GA25572@maxin>
-Date: Wed, 10 Aug 2011 14:12:11 +0300
-Message-ID: <CAMhs6YwHbFknDpOg9e_5XcB-X9qo+DXX3tAaQy5xQopepeKOxw@mail.gmail.com>
-Subject: Re: [PATCH] arch:arm:plat-omap:iovmm: remove unused variable 'va'
-From: Maxin B John <maxin.john@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312971948.23660.8.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping.
+On Wed, Aug 10, 2011 at 06:25:48PM +0800, Peter Zijlstra wrote:
+> On Wed, 2011-08-10 at 11:40 +0800, Wu Fengguang wrote:
+> > On Wed, Aug 10, 2011 at 02:35:06AM +0800, Peter Zijlstra wrote:
+> > > On Sat, 2011-08-06 at 16:44 +0800, Wu Fengguang wrote:
+> > > > 
+> > > > Add two fields to task_struct.
+> > > > 
+> > > > 1) account dirtied pages in the individual tasks, for accuracy
+> > > > 2) per-task balance_dirty_pages() call intervals, for flexibility
+> > > > 
+> > > > The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
+> > > > scale near-sqrt to the safety gap between dirty pages and threshold.
+> > > > 
+> > > > XXX: The main problem of per-task nr_dirtied is, if 10k tasks start
+> > > > dirtying pages at exactly the same time, each task will be assigned a
+> > > > large initial nr_dirtied_pause, so that the dirty threshold will be
+> > > > exceeded long before each task reached its nr_dirtied_pause and hence
+> > > > call balance_dirty_pages(). 
+> > > 
+> > > Right, so why remove the per-cpu threshold? you can keep that as a bound
+> > > on the number of out-standing dirty pages.
+> > 
+> > Right, I also have the vague feeling that the per-cpu threshold can
+> > somehow backup the per-task threshold in case there are too many tasks.
+> > 
+> > > Loosing that bound is actually a bad thing (TM), since you could have
+> > > configured a tight dirty limit and lock up your machine this way.
+> > 
+> > It seems good enough to only remove the 4MB upper limit for
+> > ratelimit_pages, so that the per-cpu limit won't kick in too
+> > frequently in typical machines.
+> > 
+> >   * Here we set ratelimit_pages to a level which ensures that when all CPUs are
+> >   * dirtying in parallel, we cannot go more than 3% (1/32) over the dirty memory
+> >   * thresholds before writeback cuts in.
+> > - *
+> > - * But the limit should not be set too high.  Because it also controls the
+> > - * amount of memory which the balance_dirty_pages() caller has to write back.
+> > - * If this is too large then the caller will block on the IO queue all the
+> > - * time.  So limit it to four megabytes - the balance_dirty_pages() caller
+> > - * will write six megabyte chunks, max.
+> > - */
+> > -
+> >  void writeback_set_ratelimit(void)
+> >  {
+> >         ratelimit_pages = vm_total_pages / (num_online_cpus() * 32);
+> >         if (ratelimit_pages < 16)
+> >                 ratelimit_pages = 16;
+> > -       if (ratelimit_pages * PAGE_CACHE_SIZE > 4096 * 1024)
+> > -               ratelimit_pages = (4096 * 1024) / PAGE_CACHE_SIZE;
+> >  }
+> 
+> Uhm, so what's your bound then? 1/32 of the per-cpu memory seems rather
+> a lot.
 
-On Mon, Aug 8, 2011 at 1:15 PM, Maxin B. John <maxin.john@gmail.com> wrote:
-> The pointer "va" returned from "phys_to_virt(pa)" is never used in
-> "sgtable_fill_kmalloc()".So,it is safe to remove this set-but-unused variable.
->
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-> ---
-> diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-> index c60737c..79e7fed 100644
-> --- a/arch/arm/plat-omap/iovmm.c
-> +++ b/arch/arm/plat-omap/iovmm.c
-> @@ -423,9 +423,6 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
->  {
->        unsigned int i;
->        struct scatterlist *sg;
-> -       void *va;
-> -
-> -       va = phys_to_virt(pa);
->
->        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
->                unsigned bytes;
->
+Ah yes, vm_total_pages is not longer suitable here, may use
+
+        ratelimit_pages = dirty_threshold / (num_online_cpus() * 32);
+
+We just need to ensure the dirty_threshold won't be exceeded too much
+in the rare case tsk->nr_dirtied_pause cannot keep dirty pages under
+control when there are >10k dirtier tasks.
+
+Thanks,
+Fengguang
