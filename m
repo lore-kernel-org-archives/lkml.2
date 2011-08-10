@@ -1,116 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab1HJPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:09:29 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45893 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1HJPJ1 convert rfc822-to-8bit (ORCPT
+	id S1753181Ab1HJPLw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:11:52 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59305 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab1HJPLv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:09:27 -0400
+	Wed, 10 Aug 2011 11:11:51 -0400
 MIME-Version: 1.0
-Message-ID: <2f1abd2b-4c58-46b4-83bd-18c5338de28e@default>
-Date: Wed, 10 Aug 2011 08:08:57 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marcus Klemm <marcus.klemm@googlemail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, kvm@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>, Brian King <brking@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: RE: [PATCH v2] staging: zcache: support multiple clients, prep for
- KVM and RAMster
-References: <1d15f28a-56df-4cf4-9dd9-1032f211c0d0@default>
- <4E429407.8000209@linux.vnet.ibm.com 4E429945.1020008@linux.vnet.ibm.com>
-In-Reply-To: <4E429945.1020008@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <493994B35A117E4F832F97C4719C4C040132CE88A0@orsmsx505.amr.corp.intel.com>
+References: <cover.1312893572.git.luto@mit.edu> <d9f3056c77b6cd44a2f4c90278ce483a011dda12.1312893572.git.luto@mit.edu>
+ <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
+ <CAObL_7EozFSbcqJiwV=PNH-3sN0M1QfaTu3i4A_OKsZ0Ue5g7A@mail.gmail.com> <493994B35A117E4F832F97C4719C4C040132CE88A0@orsmsx505.amr.corp.intel.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 10 Aug 2011 11:11:30 -0400
+X-Google-Sender-Auth: wUh49FJf73dSBjXMNiNS0FigTWo
+Message-ID: <CAObL_7E_2hMPtmgvq8ypKTovH-DKP+4LjRW_McMazJcfr_9Vdg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Anvin, H Peter" <h.peter.anvin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4E429F18.0091,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH v2] staging: zcache: support multiple clients, prep for KVM and RAMster
-> 
-> > This crash is hit every time a high memory page is swapped out.
-> >
-> > I have no solution right now other that to revert this patch and
-> > restore the original signatures.
+On Wed, Aug 10, 2011 at 11:05 AM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
+>> -----Original Message-----
+>> From: amluto@gmail.com [mailto:amluto@gmail.com] On Behalf Of Andrew
+>> Lutomirski
+>> Sent: Wednesday, August 10, 2011 7:50 AM
+>> To: Yu, Fenghua
+>> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Matthew Garrett; Len
+>> Brown; linux-acpi@vger.kernel.org; Ingo Molnar; Anvin, H Peter
+>> Subject: Re: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
+>> hasn't already
+>>
+>> On Tue, Aug 9, 2011 at 11:40 AM, Yu, Fenghua <fenghua.yu@intel.com>
+>> wrote:
+>> >> -----Original Message-----
+>> >> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+>> >> Sent: Tuesday, August 09, 2011 5:41 AM
+>> >> To: x86@kernel.org; linux-kernel@vger.kernel.org
+>> >> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+>> >> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+>> >> Subject: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
+>> >> hasn't already
+>> >>
+>> >> Intel SDM volume 3A, 8.4.2 says:
+>> >>
+>> >>   Software can disable fast-string operation by clearing the
+>> >>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>> >>   However, Intel recomments that system software always enable
+>> >>   fast-string operation.
+>> >>
+>> >> The Intel DQ67SW board (with latest BIOS) disables fast string
+>> >> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+>> >> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+>> >> this.
+>> >>
+>> >> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>> >> ---
+>> >>  arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
+>> >>  1 files changed, 23 insertions(+), 5 deletions(-)
+>> >
+>> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+>> >
+>> >
+>>
+>> Please don't apply.  This patch breaks !CONFIG_SMP.  I'll send a fixed
+>> patch later on.
+>
+> +                               printk_once(KERN_INFO FW_WARN "CPU #%d: IA32_MISC_ENABLE.FAST_STRING_ENABLE was not set",
+> There is no need to print CPU id. Then there is no SMP issue.
 
-Hi Seth --
+True, and with the printk_once change it's pointless.  I was printing
+it because of the other patch: my BIOS enables monitor/mwait on some,
+but not all, CPUs.  (Working around that is a little less optional.
+My systems gets lucky because it's off on the boot CPU so the idle
+loop doesn't call mwait.  If it were the other way around, the kernel
+would presumably oops quickly.)
 
-Thanks for your testing.  I haven't done much testing on 32-bit.
-
-> Sorry for the noise, but I noticed right after I sent this that
-> the tmem layer doesn't DO anything with the data parameter. So
-> a possible solution is to just pass the page pointer instead of
-> the virtual address.  After all, pointers are pointers.
-
-Yes, this looks like a good patch.
-
-> --- a/drivers/staging/zcache/zcache.c
-> +++ b/drivers/staging/zcache/zcache.c
-> @@ -1153,7 +1153,7 @@ static void *zcache_pampd_create(char *data, size_t size,
->         size_t clen;
->         int ret;
->         unsigned long count;
-> -       struct page *page = virt_to_page(data);
-> +       struct page *page = (struct page *)(data);
->         struct zcache_client *cli = pool->client;
->         uint16_t client_id = get_client_id_from_client(cli);
->         unsigned long zv_mean_zsize;
-> @@ -1220,7 +1220,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsi
->         int ret = 0;
-> 
->         BUG_ON(is_ephemeral(pool));
-> -       zv_decompress(virt_to_page(data), pampd);
-> +       zv_decompress((struct page *)(data), pampd);
->         return ret;
->  }
-> 
-> @@ -1532,7 +1532,7 @@ static int zcache_put_page(int cli_id, int pool_id, struct
->                 goto out;
->         if (!zcache_freeze && zcache_do_preload(pool) == 0) {
->                 /* preload does preempt_disable on success */
-> -               ret = tmem_put(pool, oidp, index, page_address(page),
-> +               ret = tmem_put(pool, oidp, index, (char *)(page),
->                                 PAGE_SIZE, 0, is_ephemeral(pool));
->                 if (ret < 0) {
->                         if (is_ephemeral(pool))
-> @@ -1565,7 +1565,7 @@ static int zcache_get_page(int cli_id, int pool_id, struct
->         pool = zcache_get_pool_by_id(cli_id, pool_id);
->         if (likely(pool != NULL)) {
->                 if (atomic_read(&pool->obj_count) > 0)
-> -                       ret = tmem_get(pool, oidp, index, page_address(page),
-> +                       ret = tmem_get(pool, oidp, index, (char *)(page),
->                                         &size, 0, is_ephemeral(pool));
->                 zcache_put_pool(pool);
->         }
-> 
-> I tested this and it works.
-> 
-> Dan, does this mess anything else up?
-
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
-> > What was the rationale for the signature changes?
-> > Seth
-
-The change on the tmem side allows tmem to handle pre-compressed pages,
-which is useful to RAMster and possibly for KVM.  The new "raw"
-parameter identifies that case, but for zcache "raw" is always zero so
-your solution looks fine.
-
-Seth, could you submit an "official" patch (i.e. proper subject field,
-signed-off-by) and I will ack that and ask GregKH to queue it up for
-a 3.1-rc?
-
-Subject something like: staging: zcache: fix highmem crash on 32-bit
-
-Thanks,
-Dan
+--Andy
