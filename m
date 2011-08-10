@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab1HJOTs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:19:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36790 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750922Ab1HJOTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:19:46 -0400
-Date: Wed, 10 Aug 2011 10:19:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hans de Goede <hdegoede@redhat.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <4E41912F.50901@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1108101016200.1917-100000@iolanthe.rowland.org>
+	id S1752656Ab1HJOUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:20:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44481 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751902Ab1HJOUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 10:20:31 -0400
+Date: Wed, 10 Aug 2011 16:20:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 0/6]  memg: better numa scanning
+Message-ID: <20110810142030.GD15007@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809143314.GJ7463@tiehlicka.suse.cz>
+ <20110810091544.d73c7775.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110810091544.d73c7775.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Aug 2011, Hans de Goede wrote:
-
-> Hi,
+On Wed 10-08-11 09:15:44, KAMEZAWA Hiroyuki wrote:
+> On Tue, 9 Aug 2011 16:33:14 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> On 08/09/2011 04:19 PM, Alan Stern wrote:
-> > On Tue, 9 Aug 2011, Hans de Goede wrote:
-> > According to Theodore, we have developed 5 drivers for them because the
-> > stillcam modes in different devices use four different vendor-specific
-> > drivers.
+> > On Tue 09-08-11 19:04:50, KAMEZAWA Hiroyuki wrote:
+[...]
+> > > #!/bin/bash -x
+> > > 
+> > > cgset -r memory.limit_in_bytes=500M A
+> > > 
+> > > make -j 4 clean
+> > > sync
+> > > sync
+> > > sync
+> > > echo 3 > /proc/sys/vm/drop_caches
+> > > sleep 1
+> > > echo 0 > /cgroup/memory/A/memory.vmscan_stat
+> > > cgexec -g memory:A -g cpuset:A time make -j 8
+> > > ==
+> > > 
+> > > On 8cpu, 4-node fake-numa box.
+> > 
+> > How big are those nodes? I assume that you haven't used any numa
+> > policies, right?
+> > 
 > 
-> Yes, but so the the webcam modes of the different devices, so for
-> the 5 (not sure if that is the right number) dual-cam mode chipsets
-> we support there will be 5 drivers, each supporting both the
-> webcam and the access to pictures stored in memory of the chipset
-> they support. So 5 chipsets -> 5 drivers each supporting 1 chipset,
-> and both functions of the single logical device that chipset
-> represents.
+> This box has 24GB memory and fake numa creates 6GBnode x 4.
 > 
-> >  Does it really make sense to combine 5 drivers into one?
+> [kamezawa@bluextal ~]$ grep MemTotal /sys/devices/system/node/node?/meminfo
+> /sys/devices/system/node/node0/meminfo:Node 0 MemTotal:        6290360 kB
+> /sys/devices/system/node/node1/meminfo:Node 1 MemTotal:        6291456 kB
+> /sys/devices/system/node/node2/meminfo:Node 2 MemTotal:        6291456 kB
+> /sys/devices/system/node/node3/meminfo:Node 3 MemTotal:        6291456 kB
 > 
-> Right, that is not the plan. The plan is to simply stop having 2 drivers
-> for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
-> + 5 webcam, to just 5 drivers. We will also likely be able to share
-> code between the code for the 2 functionalities for things like generic
-> set / get register functions, initialization, etc.
+> 2 cpus per each node. (IIRC, Hyperthread)
+> 
+> [kamezawa@bluextal ~]$ ls -d /sys/devices/system/node/node?/cpu?
+> /sys/devices/system/node/node0/cpu0  /sys/devices/system/node/node2/cpu2
+> /sys/devices/system/node/node0/cpu4  /sys/devices/system/node/node2/cpu6
+> /sys/devices/system/node/node1/cpu1  /sys/devices/system/node/node3/cpu3
+> /sys/devices/system/node/node1/cpu5  /sys/devices/system/node/node3/cpu7
+> 
+> And yes, I don't use any numa policy other than spread-page.
 
-Okay, I didn't realize that the different cameras used different webcam 
-drivers as well as different stillcam drivers.
+OK, so the load should fit into a single node without spread-page.
 
-As far as I can see, there's nothing to stop anybody from adding the 
-stillcam functionality into the webcam drivers right now.  If some 
-common code can be abstracted out into a shared source file, so much 
-the better.
+> > > (each node has 2cpus.)
+> > > 
+> > > Under the limit of 500M, 'make' need to scan memory to reclaim.
+> > > This tests see how vmscan works.
+> > > 
+> > > When cpuset.memory_spread_page==0.
+> > 
+> > > 
+> > > [Before patch]
+> > > 773.07user 305.45system 4:09.64elapsed 432%CPU (0avgtext+0avgdata 1456576maxresident)k
+> > > 4397944inputs+5093232outputs (9688major+35689066minor)pagefaults 0swaps
+> > > scanned_pages_by_limit 3867645
+> > > scanned_anon_pages_by_limit 1518266
+> > > scanned_file_pages_by_limit 2349379
+> > > rotated_pages_by_limit 1502640
+> > > rotated_anon_pages_by_limit 1416627
+> > > rotated_file_pages_by_limit 86013
+> > > freed_pages_by_limit 1005141
+> > > freed_anon_pages_by_limit 24577
+> > > freed_file_pages_by_limit 980564
+> > > elapsed_ns_by_limit 82833866094
+> > > 
+> > > [Patched]
+> > > 773.73user 305.09system 3:51.28elapsed 466%CPU (0avgtext+0avgdata 1458464maxresident)k
+> > > 4400264inputs+4797056outputs (5578major+35690202minor)pagefaults 0swaps
+> > 
+> > Hmm, 57% reduction of major page faults which doesn't fit with other
+> > numbers. At least I do not see any corelation with them. Your workload
+> > has freed more or less the same number of file pages (>1% less). Do you
+> > have a theory for that?
+> > 
+> [Before] freed_anon_pages_by_limit 24577 
+> [After]  freed_anon_pages_by_limit 20599
+> 
+> This reduces 3987 swap out. Changes in major fault is 4110.
+> I think this is major reason to reduce the major faults.
 
-That would solve the problem, right?
-
-Alan Stern
-
+Ahh, right you are.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
