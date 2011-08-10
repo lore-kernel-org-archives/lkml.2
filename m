@@ -1,66 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab1HJKBf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 06:01:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab1HJKBe convert rfc822-to-8bit (ORCPT
+	id S1753815Ab1HJKCY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 06:02:24 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:60901 "EHLO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab1HJKCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 06:01:34 -0400
-Subject: Re: [tip:core/urgent] lockdep: Fix wrong assumption in
- match_held_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        sergey.senozhatsky@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Date: Wed, 10 Aug 2011 12:01:10 +0200
-In-Reply-To: <20110810025845.GA5640@zhy>
-References: <1312547787.28695.2.camel@twins>
-	 <tip-80e0401e35410a69bfae05b454db8a7187edd6b8@git.kernel.org>
-	 <20110810025845.GA5640@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312970470.23660.3.camel@twins>
-Mime-Version: 1.0
+	Wed, 10 Aug 2011 06:02:22 -0400
+Message-ID: <4E425725.7080305@ge.com>
+Date: Wed, 10 Aug 2011 11:02:13 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Manohar Vanga <manohar.vanga@cern.ch>
+CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] staging: vme: allow explicit assignment of bus numbers
+References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch> <1312968830-13377-2-git-send-email-manohar.vanga@cern.ch>
+In-Reply-To: <1312968830-13377-2-git-send-email-manohar.vanga@cern.ch>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Aug 2011 09:58:56.0032 (UTC) FILETIME=[1E0AD200:01CC5744]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 10:58 +0800, Yong Zhang wrote:
-
-> > Link: http://lkml.kernel.org/r/1312547787.28695.2.camel@twins
+On 10/08/11 10:33, Manohar Vanga wrote:
+> From: Emilio G. Cota <cota@braap.org>
 > 
-> BTW, I can't open this link.
+> In a configuration with several bridges, each bridge is
+> assigned a certain bus number depending on the order in which
+> bridge modules are loaded. This can complicate multi-bridge
+> installations because the bus numbers will depend on the load
+> order of the bridges.
+> 
+> This patch allows bridges to register with a bus number of
+> their choice, while keeping the previous 'first come, first
+> serve' behaviour as the default.
+> 
+> Module parameters have been added to the bridge drivers to
+> allow overriding of the auto-assignment during load time.
+> 
+> This patch also explicitly defines VME_MAX_BRIDGES as the,
+> size of vme_bus_numbers (unsigned int); something that was
+> implicit earlier in the code.
+> 
 
-Gah! I did mess that up, but I've no idea how though, I usually
-copy/paste or let my script do it, in case of copy/paste one would
-assume I picked the wrong msg, but a grep through my sent folder doesn't
-find any email with that msgid.. and my script isn't imaginative enough
-to  just make one up like that. Anyway:
+I'm sorry, I'm still simply not convinced by this patch:
 
-  lkml.kernel.org/r/1312969382.23148.1.camel@twins
+1) For a single bus driver (i.e. in the situation where we have 2 bridges of
+the same type), the numbering of the buses is still dependent on the order
+that they are found in the scan.
 
-should be the actual link, however that doesn't appear to work either,
-included the relevant headers of the actual email:
+2) If the bridge drivers are loaded as modules, I have a feeling they will be
+loaded sequentially and therefore the order of the bridges would only change
+if the order of the loading of the drivers changed.
 
----
+3) If the modules are built into the kernel, I believe the drivers will
+already be available at PCI scan time, thus we end up with the same problem as
+(1).
 
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>, 
- Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
- KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Date: Fri, 05 Aug 2011 14:36:20 +0200
-In-Reply-To: <20110804155347.GB3562@swordfish.minsk.epam.com>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
-         <1312470358.16729.25.camel@twins>
-         <20110804153752.GA3562@swordfish.minsk.epam.com>
-         <1312472867.16729.38.camel@twins>
-         <20110804155347.GB3562@swordfish.minsk.epam.com>
+Martyn
 
-Message-ID: <1312969382.23148.1.camel@twins>
+> Signed-off-by: Emilio G. Cota <cota@braap.org>
+> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+> ---
+>  drivers/staging/vme/bridges/vme_ca91cx42.c |   20 ++++++++++++
+>  drivers/staging/vme/bridges/vme_tsi148.c   |   21 +++++++++++++
+>  drivers/staging/vme/vme.c                  |   46 ++++++++++++++++++++++-----
+>  drivers/staging/vme/vme.h                  |    2 +
+>  4 files changed, 80 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> index 5122c13..c378819 100644
+> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
+> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> @@ -41,6 +41,13 @@ static void __exit ca91cx42_exit(void);
+>  
+>  /* Module parameters */
+>  static int geoid;
+> +static int bus_ids[VME_MAX_BRIDGES];
+> +static int id_count;
+> +
+> +/* The number of registered buses */
+> +static int bus_count;
+> +/* Mutex for protecting ID access */
+> +static DEFINE_MUTEX(bus_id_mutex);
+>  
+>  static const char driver_name[] = "vme_ca91cx42";
+>  
+> @@ -1779,6 +1786,12 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	if (ca91cx42_crcsr_init(ca91cx42_bridge, pdev))
+>  		dev_err(&pdev->dev, "CR/CSR configuration failed.\n");
+>  
+> +	mutex_lock(&bus_id_mutex);
+> +	if (bus_count >= id_count)
+> +		ca91cx42_bridge->num = -1;
+> +	else
+> +		ca91cx42_bridge->num = bus_ids[bus_count];
+> +
+>  	/* Need to save ca91cx42_bridge pointer locally in link list for use in
+>  	 * ca91cx42_remove()
+>  	 */
+> @@ -1788,11 +1801,15 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  		goto err_reg;
+>  	}
+>  
+> +	bus_count++;
+> +	mutex_unlock(&bus_id_mutex);
+> +
+>  	pci_set_drvdata(pdev, ca91cx42_bridge);
+>  
+>  	return 0;
+>  
+>  err_reg:
+> +	mutex_unlock(&bus_id_mutex);
+>  	ca91cx42_crcsr_exit(ca91cx42_bridge, pdev);
+>  err_lm:
+>  	/* resources are stored in link list */
+> @@ -1930,5 +1947,8 @@ module_param(geoid, int, 0);
+>  MODULE_DESCRIPTION("VME driver for the Tundra Universe II VME bridge");
+>  MODULE_LICENSE("GPL");
+>  
+> +MODULE_PARM_DESC(bus_num, "Explicitly set bus number (override auto-assign)");
+> +module_param_array(bus_ids, int, &id_count, 0);
+> +
+>  module_init(ca91cx42_init);
+>  module_exit(ca91cx42_exit);
+> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+> index 9c53951..e3f021e 100644
+> --- a/drivers/staging/vme/bridges/vme_tsi148.c
+> +++ b/drivers/staging/vme/bridges/vme_tsi148.c
+> @@ -44,6 +44,14 @@ static void __exit tsi148_exit(void);
+>  static int err_chk;
+>  static int geoid;
+>  
+> +static int bus_ids[VME_MAX_BRIDGES];
+> +static int id_count;
+> +
+> +/* The number of registered buses */
+> +static int bus_count;
+> +/* Mutex for protecting ID access */
+> +static DEFINE_MUTEX(bus_id_mutex);
+> +
+>  static const char driver_name[] = "vme_tsi148";
+>  
+>  static DEFINE_PCI_DEVICE_TABLE(tsi148_ids) = {
+> @@ -2462,12 +2470,21 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  		goto err_crcsr;
+>  	}
+>  
+> +	mutex_lock(&bus_id_mutex);
+> +	if (bus_count >= id_count)
+> +		tsi148_bridge->num = -1;
+> +	else
+> +		tsi148_bridge->num = bus_ids[bus_count];
+> +
+>  	retval = vme_register_bridge(tsi148_bridge);
+>  	if (retval != 0) {
+>  		dev_err(&pdev->dev, "Chip Registration failed.\n");
+>  		goto err_reg;
+>  	}
+>  
+> +	bus_count++;
+> +	mutex_unlock(&bus_id_mutex);
+> +
+>  	pci_set_drvdata(pdev, tsi148_bridge);
+>  
+>  	/* Clear VME bus "board fail", and "power-up reset" lines */
+> @@ -2479,6 +2496,7 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	return 0;
+>  
+>  err_reg:
+> +	mutex_unlock(&bus_id_mutex);
+>  	tsi148_crcsr_exit(tsi148_bridge, pdev);
+>  err_crcsr:
+>  err_lm:
+> @@ -2633,6 +2651,9 @@ module_param(err_chk, bool, 0);
+>  MODULE_PARM_DESC(geoid, "Override geographical addressing");
+>  module_param(geoid, int, 0);
+>  
+> +MODULE_PARM_DESC(bus_ids, "Explicitly set bus number (override auto-assign)");
+> +module_param_array(bus_ids, int, &id_count, 0);
+> +
+>  MODULE_DESCRIPTION("VME driver for the Tundra Tempe VME bridge");
+>  MODULE_LICENSE("GPL");
+>  
+> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+> index c078ce3..330a4ff 100644
+> --- a/drivers/staging/vme/vme.c
+> +++ b/drivers/staging/vme/vme.c
+> @@ -1303,20 +1303,44 @@ EXPORT_SYMBOL(vme_slot_get);
+>  
+>  /* - Bridge Registration --------------------------------------------------- */
+>  
+> -static int vme_alloc_bus_num(void)
+> +/* call with vme_bus_num_mtx held */
+> +static int __vme_alloc_bus_num(int bus_num)
+>  {
+> +	int num;
+>  	int i;
+>  
+> -	mutex_lock(&vme_bus_num_mtx);
+> -	for (i = 0; i < sizeof(vme_bus_numbers) * 8; i++) {
+> -		if (((vme_bus_numbers >> i) & 0x1) == 0) {
+> -			vme_bus_numbers |= (0x1 << i);
+> -			break;
+> +	if (bus_num == -1) {
+> +		/* try to find a free bus number */
+> +		for (i = 0; i < VME_MAX_BRIDGES; i++) {
+> +			if ((vme_bus_numbers & (1 << i)) == 0) {
+> +				num = i;
+> +				break;
+> +			}
+> +		}
+> +		if (i == VME_MAX_BRIDGES) {
+> +			pr_warn("vme: No bus numbers left\n");
+> +			return -ENODEV;
+>  		}
+> +	} else {
+> +		/* check if the given bus number is already in use */
+> +		if (vme_bus_numbers & (1 << bus_num)) {
+> +			pr_warn("vme: bus number %d already in use\n", bus_num);
+> +			return -EBUSY;
+> +		}
+> +		num = bus_num;
+>  	}
+> -	mutex_unlock(&vme_bus_num_mtx);
+> +	vme_bus_numbers |= 1 << num;
+> +	return num;
+> +}
+>  
+> -	return i;
+> +static int vme_alloc_bus_num(int bus_num)
+> +{
+> +	int num;
+> +
+> +	mutex_lock(&vme_bus_num_mtx);
+> +	num = __vme_alloc_bus_num(bus_num);
+> +	mutex_unlock(&vme_bus_num_mtx);
+> +	return num;
+>  }
+>  
+>  static void vme_free_bus_num(int bus)
+> @@ -1332,7 +1356,11 @@ int vme_register_bridge(struct vme_bridge *bridge)
+>  	int retval;
+>  	int i;
+>  
+> -	bridge->num = vme_alloc_bus_num();
+> +	retval = vme_alloc_bus_num(bridge->num);
+> +	if (retval < 0)
+> +		return retval;
+> +
+> +	bridge->num = retval;
+>  
+>  	/* This creates 32 vme "slot" devices. This equates to a slot for each
+>  	 * ID available in a system conforming to the ANSI/VITA 1-1994
+> diff --git a/drivers/staging/vme/vme.h b/drivers/staging/vme/vme.h
+> index 4155d8c..3ccb497 100644
+> --- a/drivers/staging/vme/vme.h
+> +++ b/drivers/staging/vme/vme.h
+> @@ -88,6 +88,8 @@ struct vme_resource {
+>  
+>  extern struct bus_type vme_bus_type;
+>  
+> +/* VME_MAX_BRIDGES comes from the type of vme_bus_numbers */
+> +#define VME_MAX_BRIDGES		(sizeof(unsigned int)*8)
+>  #define VME_SLOT_CURRENT	-1
+>  #define VME_SLOT_ALL		-2
+>  
 
 
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)127322748                          | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
