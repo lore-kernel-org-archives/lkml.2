@@ -1,187 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751020Ab1HJNJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:09:57 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48770 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750749Ab1HJNJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:09:56 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Karl Komierowski <karl.komierowski@stericsson.com>,
-        Kalle Komierowski <kalle.komierowski@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd/ab8500-gpadc: refactor GPADC API, add raw access
-Date: Wed, 10 Aug 2011 15:09:43 +0200
-Message-ID: <1312981783-19117-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751224Ab1HJNLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:11:43 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:21202 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1HJNLl convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:8:1>);
+	Wed, 10 Aug 2011 09:11:41 -0400
+Message-Id: <4E429FE30200007800050910@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 10 Aug 2011 14:12:35 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Ingo Molnar" <mingo@elte.hu>
+Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        "Matt Fleming" <matt@console-pimps.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <hpa@linux.intel.com>,
+        "Avi Kivity" <avi@redhat.com>, <mjg@redhat.com>,
+        "Marcelo Tosatti" <mtosatti@redhat.com>,
+        "johnstultz" <johnstul@us.ibm.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
+ <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
+ <4E4009A50200007800050258@nat28.tlf.novell.com>
+ <20110810090330.GF26762@elte.hu>
+ <4E426D4702000078000508B5@nat28.tlf.novell.com>
+ <20110810095140.GB21059@elte.hu>
+In-Reply-To: <20110810095140.GB21059@elte.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Karl Komierowski <karl.komierowski@stericsson.com>
+>>> On 10.08.11 at 11:51, Ingo Molnar <mingo@elte.hu> wrote:
 
-Refactor the GPADC interface to avoid bugs in calling code:
+> * Jan Beulich <JBeulich@novell.com> wrote:
+> 
+>> >>> On 10.08.11 at 11:03, Ingo Molnar <mingo@elte.hu> wrote:
+>> 
+>> > * Jan Beulich <JBeulich@novell.com> wrote:
+>> > 
+>> >> >>> On 08.08.11 at 15:40, Matt Fleming <matt@console-pimps.org> wrote:
+>> >> > On Fri, 2011-08-05 at 18:04 +0100, Jan Beulich wrote:
+>> >> >> 
+>> >> >> Virtual platforms will have to take care of the serialization in the
+>> >> >> host anyway, so the guest side implementation of getwallclock et al
+>> >> >> is entirely unaffected.
+>> >> > 
+>> >> > Ah, OK, that's the important part. I didn't realise that rtc_lock isn't
+>> >> > actually required by any other code. In which case, yes, it completely
+>> >> > makes sense to push the locking of rtc_lock down into the
+>> >> > implementations that actually need it.
+>> >> > 
+>> >> > It'd be great if I could get some ACK's from the virtualization guys.
+>> >> > 
+>> >> > --------8<--------
+>> >> > 
+>> >> > From a0a39dbb69f6ac675846bf00f30ad153506a4567 Mon Sep 17 00:00:00 2001
+>> >> > From: Matt Fleming <matt.fleming@intel.com>
+>> >> > Date: Mon, 8 Aug 2011 12:59:35 +0100
+>> >> > Subject: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+>> >> > 
+>> >> > A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
+>> >> > Serialize EFI time accesses on rtc_lock") because efi_get_time() and
+>> >> > friends can be called with rtc_lock already held by
+>> >> > read_persistent_time(), e.g.
+>> >> > 
+>> >> > timekeeping_init()
+>> >> >     read_persistent_clock()     <-- acquire rtc_lock
+>> >> >         efi_get_time()
+>> >> >             phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
+>> >> > 
+>> >> > To fix this let's push the locking down into the get_wallclock() and
+>> >> > set_wallclock() implementations. Only the clock implementations that
+>> >> > access the x86 RTC directly need to acquire rtc_lock, so it makes
+>> >> > sense to push the locking down into the rtc, vrtc and efi code.
+>> >> > 
+>> >> > The virtualization implementations don't require rtc_lock to be held
+>> >> > because they provide their own serialization.
+>> >> > 
+>> >> > Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+>> >> 
+>> >> Acked-by: Jan Beulich <jbeulich@novell.com>
+>> > 
+>> > How urgent is thix fix - can it wait until Thomas comes back and 
+>> > starts processing patches again?
+>> 
+>> Without it booting on EFI can't be expected to work (and while I 
+>> was really sure I tested this before submitting, I apparently must 
+>> have used a stale kernel then - I'm really sorry for that), so 
+>> getting it applied soon would be rather desirable.
+>> 
+>> But then again I don't seem to be able to boot 3.0.1 with both 
+>> patches applied on my only EFI box, so there must be something else 
+>> that broke, and hence maybe I really did test it (on 3.0-rc7) and 
+>> it worked then. Debugging...
+> 
+> Ok, once you figure it out we can merge all fixes upstream ASAP.
 
-- ab8500_gpadc_[convert|read_raw|ad_to_voltage] clarifies
-  each functions use case, *convert wraps *read_raw, and we
-  can access raw ADC values properly.
-- Renamed gpadc function arguments from "input" to "channel" to
-  clarify use, so we don't get confused again.
+So this is a combination of two recent events: In my patch set, I
+recently removed efi.c's X86_32 conditional around setting
+x86_platform.[gs]et_wallclock. Without that removal, the deadlock
+wouldn't occur (because mach_get_cmos_time() would get called
+instead) on 64-bits, which is the only thing I run.
 
-Signed-off-by: Kalle Komierowski <kalle.komierowski@stericsson.com>
-Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
-Reviewed-by: John Beckett <john.beckett@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/ab8500-gpadc.c       |   56 +++++++++++++++++++++++++++++---------
- include/linux/mfd/ab8500/gpadc.h |    5 +++-
- 2 files changed, 47 insertions(+), 14 deletions(-)
+With that conditional removed, Matthew's NX consolidation patch
+gets into the way: For the physical call path it is simply wrong
+(correct only for the phys_efi_set_virtual_address_map() call, as
+there the memory map got virtual addresses assigned already) -
+it switches from early_runtime_code_mapping_set_exec()'s using
+of md->phys_addr to efi_set_executable() using md->virt_addr.
+But the latter isn't set at that point yet. And it's unclear to me why
+this works on 32-bit.
 
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-index f16afb2..e985d17 100644
---- a/drivers/mfd/ab8500-gpadc.c
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -143,12 +143,15 @@ struct ab8500_gpadc *ab8500_gpadc_get(char *name)
- }
- EXPORT_SYMBOL(ab8500_gpadc_get);
- 
--static int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 input,
-+/**
-+ * ab8500_gpadc_ad_to_voltage() - Convert a raw ADC value to a voltage
-+ */
-+int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 channel,
- 	int ad_value)
- {
- 	int res;
- 
--	switch (input) {
-+	switch (channel) {
- 	case MAIN_CHARGER_V:
- 		/* For some reason we don't have calibrated data */
- 		if (!gpadc->cal_data[ADC_INPUT_VMAIN].gain) {
-@@ -232,18 +235,46 @@ static int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 input,
- 	}
- 	return res;
- }
-+EXPORT_SYMBOL(ab8500_gpadc_ad_to_voltage);
- 
- /**
-  * ab8500_gpadc_convert() - gpadc conversion
-- * @input:	analog input to be converted to digital data
-+ * @channel:	analog channel to be converted to digital data
-  *
-  * This function converts the selected analog i/p to digital
-  * data.
-  */
--int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
-+int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 channel)
-+{
-+	int ad_value;
-+	int voltage;
-+
-+	ad_value = ab8500_gpadc_read_raw(gpadc, channel);
-+	if (ad_value < 0) {
-+		dev_err(gpadc->dev, "GPADC raw value failed ch: %d\n", channel);
-+		return ad_value;
-+	}
-+
-+	voltage = ab8500_gpadc_ad_to_voltage(gpadc, channel, ad_value);
-+
-+	if (voltage < 0)
-+		dev_err(gpadc->dev, "GPADC to voltage conversion failed ch:"
-+			" %d AD: 0x%x\n", channel, ad_value);
-+
-+	return voltage;
-+}
-+EXPORT_SYMBOL(ab8500_gpadc_convert);
-+
-+/**
-+ * ab8500_gpadc_read_raw() - gpadc read
-+ * @channel:	analog channel to be read
-+ *
-+ * This function obtains the raw ADC value, this then needs
-+ * to be converted by calling ab8500_gpadc_ad_to_voltage()
-+ */
-+int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel)
- {
- 	int ret;
--	u16 data = 0;
- 	int looplimit = 0;
- 	u8 val, low_data, high_data;
- 
-@@ -278,9 +309,9 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- 		goto out;
- 	}
- 
--	/* Select the input source and set average samples to 16 */
-+	/* Select the channel source and set average samples to 16 */
- 	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
--		AB8500_GPADC_CTRL2_REG, (input | SW_AVG_16));
-+		AB8500_GPADC_CTRL2_REG, (channel | SW_AVG_16));
- 	if (ret < 0) {
- 		dev_err(gpadc->dev,
- 			"gpadc_conversion: set avg samples failed\n");
-@@ -292,7 +323,7 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- 	 * charging current sense if it needed, ABB 3.0 needs some special
- 	 * treatment too.
- 	 */
--	switch (input) {
-+	switch (channel) {
- 	case MAIN_CHARGER_C:
- 	case USB_CHARGER_C:
- 		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
-@@ -359,7 +390,6 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- 		goto out;
- 	}
- 
--	data = (high_data << 8) | low_data;
- 	/* Disable GPADC */
- 	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
- 		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
-@@ -370,8 +400,8 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
- 	/* Disable VTVout LDO this is required for GPADC */
- 	regulator_disable(gpadc->regu);
- 	mutex_unlock(&gpadc->ab8500_gpadc_lock);
--	ret = ab8500_gpadc_ad_to_voltage(gpadc, input, data);
--	return ret;
-+
-+	return (high_data << 8) | low_data;
- 
- out:
- 	/*
-@@ -385,10 +415,10 @@ out:
- 	regulator_disable(gpadc->regu);
- 	mutex_unlock(&gpadc->ab8500_gpadc_lock);
- 	dev_err(gpadc->dev,
--		"gpadc_conversion: Failed to AD convert channel %d\n", input);
-+		"gpadc_conversion: Failed to AD convert channel %d\n", channel);
- 	return ret;
- }
--EXPORT_SYMBOL(ab8500_gpadc_convert);
-+EXPORT_SYMBOL(ab8500_gpadc_read_raw);
- 
- /**
-  * ab8500_bm_gpswadcconvend_handler() - isr for s/w gpadc conversion completion
-diff --git a/include/linux/mfd/ab8500/gpadc.h b/include/linux/mfd/ab8500/gpadc.h
-index 46b9540..2529667 100644
---- a/include/linux/mfd/ab8500/gpadc.h
-+++ b/include/linux/mfd/ab8500/gpadc.h
-@@ -27,6 +27,9 @@
- struct ab8500_gpadc;
- 
- struct ab8500_gpadc *ab8500_gpadc_get(char *name);
--int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input);
-+int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 channel);
-+int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel);
-+int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc,
-+    u8 channel, int ad_value);
- 
- #endif /* _AB8500_GPADC_H */
--- 
-1.7.3.2
+Bottom line - the fix here is needed for 32-bit booting only (and
+hence isn't - afaic - as critical as I first thought). But the adjustment
+I'm holding is a necessary one (and I don't even understand why,
+when 32- and 64-bit EFI code got merged, this was left 32-bit only),
+and the NX consolidation change needs to be fixed too (basically as
+a prerequisite).
 
+Jan
