@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1HJOaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:30:55 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:49186 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750780Ab1HJOay (ORCPT
+	id S1752779Ab1HJOcY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:32:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53146 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751906Ab1HJOcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:30:54 -0400
-Subject: Re: [PATCH 2/6] staging: vme: make [alloc|free]_consistent bridge
- specific
-From: Joe Perches <joe@perches.com>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, cota@braap.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4E428DC3.5070302@ge.com>
-References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
-	 <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>
-	 <1312981940.11924.68.camel@Joe-Laptop>  <4E4288CB.7080708@ge.com>
-	 <1312984261.11924.91.camel@Joe-Laptop>  <4E428DC3.5070302@ge.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Aug 2011 07:30:52 -0700
-Message-ID: <1312986652.11924.94.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Aug 2011 10:32:23 -0400
+Date: Wed, 10 Aug 2011 10:32:22 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Daniel Mack <zonque@gmail.com>
+cc: Florian Mickler <florian@mickler.org>, Oliver Neukum <oliver@neukum.org>,
+        <linux-usb@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+        <pedrib@gmail.com>, William Light <wrl@illest.net>,
+        Greg KH <greg@kroah.com>, <linux-kernel@vger.kernel.org>,
+        Robert Hancock <hancockrwd@gmail.com>
+Subject: Re: Allocating buffers for USB transfers (again)
+In-Reply-To: <CACTFLAPb-ks_hwQZqp8J0A_3svG4GzYEZ2vL7VOVC5U8dkit-Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 14:55 +0100, Martyn Welch wrote:
-> On 10/08/11 14:51, Joe Perches wrote:
-> > On Wed, 2011-08-10 at 14:34 +0100, Martyn Welch wrote:
-> >> On 10/08/11 14:12, Joe Perches wrote:
-> >>> Except for the name, those 2 blocks are identical.
-> >>> Maybe create a non-pci generic version instead?
-> >> I'm not sure you can (I spent quite a bit of time attempting to do just that
-> >> when I wrote the original).
-> > Doesn't something like this work?
-[]
-> Could. Though we'd have to put this in a new common file for use by
-> vme_tsi148.c and vme_ca91cx42.c as the point of this was to get it out of the
-> VME core code. I'm just not sure that it's worth it.
+On Wed, 10 Aug 2011, Daniel Mack wrote:
 
-That's a bit different than what you wrote earlier.
-No worries then.
+> So it seems we can finally close this issue. I got myself a new laptop
+> recently, and was actually happy to see that this machine showed the
+> bug as well. So I started investigating on what's going on and after
+> hours of debugging in the wrong area, I stumbled over a bug in my own
+> code. The patch attached fixes the problem for me, and William (one of
+> the very few people who saw it, too) also reported green light.
+> 
+> However, it remains a puzzle to me where the acutal root cause is for
+> this is, and I would much like to know. Let me briefly explain what
+> I'm seeing.
+> 
+> The driver operates in a mode so that it copies the layout of its
+> inbound stream to the output stream, thus guaranteeing the data rate
+> of outbound data is equal to that of the input stream. For that, I
+> walk the isochronous frames of each received urb and prepare an urb
+> for sending that has the same iso packet structure in terms of lengths
+> and offsets, jumping over and ignoring frames that are actually
+> invalid (status != 0). So here was the problem: if there were frames
+> with any different status field, the driver would calculate the wrong
+> offset and the playback stream will have artefacts. So, a classic bug
+> you might think, and the fix is trivial.
+> 
+> However, what I really don't understand is why this wasn't observed
+> any earlier by any of the many users, and why iit makes a difference
+> which type of memory I use for this. Recall that my original patch
+> that allocates DMA coherent memory for the transfer buffers also fixes
+> the problem just fine. Or put it that way: when allocating "normal"
+> memory using kmalloc(), the stream appears to have "holes" in the iso
+> packet structure, while with DMA coherent memory, the layout is
+> different. And all this only happens on fairly new 64bit-enabled
+> machines.
+> 
+> Can anyone explain this?
 
-cheers, Joe
+Looking at the driver's current code, it appears that your patch does 
+not fix the bug properly.  Using discontiguous regions in the transfer 
+buffer is perfectly okay.  The real problem is later on, where you do:
 
+	if (send_it) {
+		out->number_of_packets = FRAMES_PER_URB;
+
+This should be
+
+		out->number_of_packets = outframe;
+
+The way it is now, the USB stack will try to use data from all the 
+frame descriptors, and the last few will be stale because the loop 
+doesn't set them.
+
+I don't know why this would cause the strange symptoms, though.
+
+Alan Stern
 
