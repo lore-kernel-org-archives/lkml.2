@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1HJMS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 08:18:58 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:36458 "EHLO
+	id S1754332Ab1HJMTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 08:19:09 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:38593 "EHLO
 	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753991Ab1HJMSz (ORCPT
+	by vger.kernel.org with ESMTP id S1754160Ab1HJMTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 08:18:55 -0400
+	Wed, 10 Aug 2011 08:19:04 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 18/19] mach-sa1100: move SA1100 GPIO driver to GPIO subsystem
-Date: Wed, 10 Aug 2011 14:18:41 +0200
-Message-ID: <1312978721-18671-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 19/19] mach-sa1100: delete irq_to_gpio() function
+Date: Wed, 10 Aug 2011 14:18:48 +0200
+Message-ID: <1312978728-18704-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,59 +24,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-As per example from the other ARM boards, push the SA100
-GPIO driver down to the GPIO subsystem so it can be consolidated.
+This function is not used in the assabet build, and on the whole the
+call is hard to consolidate so get rid of it from this machine.
 
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-sa1100/Makefile                      |    2 +-
- drivers/gpio/Makefile                              |    2 +-
- .../gpio.c => drivers/gpio/gpio-sa1100.c           |    1 -
- 3 files changed, 2 insertions(+), 3 deletions(-)
- rename arch/arm/mach-sa1100/gpio.c => drivers/gpio/gpio-sa1100.c (98%)
+ arch/arm/mach-sa1100/include/mach/gpio.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-sa1100/Makefile b/arch/arm/mach-sa1100/Makefile
-index 41252d2..73a5c64 100644
---- a/arch/arm/mach-sa1100/Makefile
-+++ b/arch/arm/mach-sa1100/Makefile
-@@ -3,7 +3,7 @@
- #
+diff --git a/arch/arm/mach-sa1100/include/mach/gpio.h b/arch/arm/mach-sa1100/include/mach/gpio.h
+index ab45b43..7036318 100644
+--- a/arch/arm/mach-sa1100/include/mach/gpio.h
++++ b/arch/arm/mach-sa1100/include/mach/gpio.h
+@@ -53,7 +53,5 @@ static inline void gpio_set_value(unsigned gpio, int value)
  
- # Common support
--obj-y := clock.o generic.o gpio.o irq.o dma.o time.o #nmi-oopser.o
-+obj-y := clock.o generic.o irq.o dma.o time.o #nmi-oopser.o
- obj-m :=
- obj-n :=
- obj-  :=
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 7f846bf..6b77473 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -47,7 +47,7 @@ obj-$(CONFIG_GPIO_RDC321X)	+= gpio-rdc321x.o
- obj-$(CONFIG_GPIO_PLAT_SAMSUNG)	+= gpio-plat-samsung.o
- obj-$(CONFIG_GPIO_S5PC100)	+= gpio-s5pc100.o
- obj-$(CONFIG_GPIO_S5PV210)	+= gpio-s5pv210.o
--
-+obj-$(CONFIG_ARCH_SA1100)	+= gpio-sa1100.o
- obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
- obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
- obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
-diff --git a/arch/arm/mach-sa1100/gpio.c b/drivers/gpio/gpio-sa1100.c
-similarity index 98%
-rename from arch/arm/mach-sa1100/gpio.c
-rename to drivers/gpio/gpio-sa1100.c
-index e547ed4..b6c1f6d 100644
---- a/arch/arm/mach-sa1100/gpio.c
-+++ b/drivers/gpio/gpio-sa1100.c
-@@ -12,7 +12,6 @@
- #include <linux/module.h>
+ #define gpio_to_irq(gpio)	((gpio < 11) ? (IRQ_GPIO0 + gpio) : \
+ 					(IRQ_GPIO11 - 11 + gpio))
+-#define irq_to_gpio(irq)	((irq < IRQ_GPIO11_27) ? (irq - IRQ_GPIO0) : \
+-					(irq - IRQ_GPIO11 + 11))
  
- #include <mach/hardware.h>
--#include "generic.h"
- 
- static int sa1100_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
+ #endif
 -- 
 1.7.3.2
 
