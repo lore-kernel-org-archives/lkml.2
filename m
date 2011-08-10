@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1HJJqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:46:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64667 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab1HJJqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:46:50 -0400
-Message-ID: <4E425384.3040909@suse.cz>
-Date: Wed, 10 Aug 2011 11:46:44 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110729 Thunderbird/6.0
+	id S1753441Ab1HJJrN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:47:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43251 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753006Ab1HJJrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:47:11 -0400
+Date: Wed, 10 Aug 2011 09:46:26 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-qgokmxsmvppwpc5404qhyk7e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, chr.ohm@gmx.net,
+        peterz@infradead.org, efault@gmx.de, ben@decadent.org.uk,
+        fweisbec@gmail.com, jrnieder@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, chr.ohm@gmx.net,
+        efault@gmx.de, peterz@infradead.org, ben@decadent.org.uk,
+        fweisbec@gmail.com, jrnieder@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools: Check $HOME/.perfconfig ownership
+Git-Commit-ID: 069e3725dd9be3b759a98e8c80ac5fc38b392b23
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Andreas Bombe <aeb@debian.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
-References: <1310646915-3032-1-git-send-email-jslaby@suse.cz> <20110719003503.GA4138@amos.fritz.box> <4E3FE2D2.5020801@gmail.com> <20110810010933.GA4733@amos.fritz.box>
-In-Reply-To: <20110810010933.GA4733@amos.fritz.box>
-X-Enigmail-Version: 1.3a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 10 Aug 2011 09:46:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2011 03:09 AM, Andreas Bombe wrote:
-> On Mon, Aug 08, 2011 at 03:21:22PM +0200, Jiri Slaby wrote:
->> On 07/19/2011 02:35 AM, Andreas Bombe wrote:
->>> On Thu, Jul 14, 2011 at 02:35:10PM +0200, Jiri Slaby wrote:
->>>> This should also fix the issue Andreas is seeing (BTM in comparison to
->>>> BKL doesn't have any hidden functionality like unlocking during
->>>> sleeping).
->>>
->>> I tested the patch series and it does not appear to make a difference
->>> for the internal (16550A) serial ports on my system. Also, I am still
->>> unclear on why it freezes the X display during the timeout period.
->>
->> Sorry for the delay. Could you attach output of sysrq-t when this
->> happens? I mean with a kernel patched by my patch.
-> 
-> I did my simple test on ttyS0 again: "stty -F /dev/ttyS0 crtscts" then
-> "echo >/dev/ttyS0". I attached the gzipped sysrq-t list in case you need
-> the complete output. This is just the process while it is trying to
-> close the device (bash's internal echo):
-> 
-> [  321.948012] bash            S ffff8800bcc85e80     0  4000   2828 0x00000000
-> [  321.948012]  ffff880127079c38 0000000000000046 ffff880127079c50 0000000100002fff
-> [  321.948012]  ffff880127079fd8 0000000000011fc0 ffff880127079fd8 0000000000011fc0
-> [  321.948012]  ffff8801270dde80 ffff8800bcc85e80 ffff880127079c38 0000000100002fff
-> [  321.948012] Call Trace:
-> [  321.948012]  [<ffffffff813cdf2e>] schedule_timeout+0xb5/0xf2
-> [  321.948012]  [<ffffffff8104ae2b>] ? call_timer_fn+0x154/0x154
-> [  321.948012]  [<ffffffff81255d60>] tty_wait_until_sent+0xa3/0xec
-> [  321.948012]  [<ffffffff8105a190>] ? __init_waitqueue_head+0x46/0x46
-> [  321.948012]  [<ffffffff81268c05>] uart_close+0x12b/0x243
-> [  321.948012]  [<ffffffff81250454>] ? __tty_fasync+0x5c/0x124
-> [  321.948012]  [<ffffffff81251a00>] tty_release+0x1d3/0x4d7
-> [  321.948012]  [<ffffffff813cfbd8>] ? _raw_spin_unlock+0x43/0x51
-> [  321.948012]  [<ffffffff8110db81>] ? dput+0xfe/0x11d
-> [  321.948012]  [<ffffffff810fdc86>] __fput+0x107/0x1a2
-> [  321.948012]  [<ffffffff810fdd36>] fput+0x15/0x17
-> [  321.948012]  [<ffffffff810fb014>] filp_close+0x69/0x75
-> [  321.948012]  [<ffffffff81109654>] sys_dup3+0x12b/0x153
-> [  321.948012]  [<ffffffff811096d5>] sys_dup2+0x59/0x60
-> [  321.948012]  [<ffffffff813d0a12>] system_call_fastpath+0x16/0x1b
-> 
-> 
-> [  321.948012] Sched Debug Version: v0.10, 3.1.0-rc1+ser-00011-g37ed45d #87
+Commit-ID:  069e3725dd9be3b759a98e8c80ac5fc38b392b23
+Gitweb:     http://git.kernel.org/tip/069e3725dd9be3b759a98e8c80ac5fc38b392b23
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 9 Aug 2011 12:42:13 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 9 Aug 2011 12:42:13 -0300
 
-What tree is this? I cannot see the path through the code.
+perf tools: Check $HOME/.perfconfig ownership
 
-thanks,
--- 
-js
-suse labs
+Just like we do already for perf.data files.
+
+Requested-by: Ingo Molnar <mingo@elte.hu>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Christian Ohm <chr.ohm@gmx.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-qgokmxsmvppwpc5404qhyk7e@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/config.c |   27 +++++++++++++++++++++++----
+ 1 files changed, 23 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 6c86eca..fe02903 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -413,13 +413,32 @@ int perf_config(config_fn_t fn, void *data)
+ 	home = getenv("HOME");
+ 	if (perf_config_global() && home) {
+ 		char *user_config = strdup(mkpath("%s/.perfconfig", home));
+-		if (!access(user_config, R_OK)) {
+-			ret += perf_config_from_file(fn, user_config, data);
+-			found += 1;
++		struct stat st;
++
++		if (user_config == NULL) {
++			warning("Not enough memory to process %s/.perfconfig, "
++				"ignoring it.", home);
++			goto out;
++		}
++
++		if (stat(user_config, &st) < 0)
++			goto out_free;
++
++		if (st.st_uid && (st.st_uid != geteuid())) {
++			warning("File %s not owned by current user or root, "
++				"ignoring it.", user_config);
++			goto out_free;
+ 		}
++
++		if (!st.st_size)
++			goto out_free;
++
++		ret += perf_config_from_file(fn, user_config, data);
++		found += 1;
++out_free:
+ 		free(user_config);
+ 	}
+-
++out:
+ 	if (found == 0)
+ 		return -1;
+ 	return ret;
