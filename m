@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751052Ab1HJEL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 00:11:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58840 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1HJELz (ORCPT
+	id S1751191Ab1HJEYD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 00:24:03 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33973 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750927Ab1HJEYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 00:11:55 -0400
-Date: Tue, 09 Aug 2011 21:11:37 -0700 (PDT)
-Message-Id: <20110809.211137.1412336654766141870.davem@davemloft.net>
-To: joe@perches.com
-Cc: stufever@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        wangshaoyan.pt@taobao.com
-Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1312949237.11924.58.camel@Joe-Laptop>
-References: <1312943316.11924.54.camel@Joe-Laptop>
-	<CANxBZFpm-at-FgNdP9nefwFfpzHmTMMsPSNWKJuT2R6TazhsYQ@mail.gmail.com>
-	<1312949237.11924.58.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 10 Aug 2011 00:24:01 -0400
+Message-ID: <4E420761.1000108@metafoo.de>
+Date: Wed, 10 Aug 2011 06:21:53 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] mfd: Convert pcf50633 to use new register map API
+References: <1312790680-12195-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1312790680-12195-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 09 Aug 2011 21:11:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue, 09 Aug 2011 21:07:17 -0700
+On 08/08/2011 10:04 AM, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-> On Wed, 2011-08-10 at 11:50 +0800, Wang Shaoyan wrote:
->> Yes, I want to test, but I can't open CONFIG_GIANFAR, because I can't
->> find FSL_SOC, am i miss something?
-> 
-> A cross compiler for powerpc?
+Tested-by: Lars-Peter Clausen <lars@metafoo.de>
 
-This is really misleading, because in the commit message the stack
-usage message is reported but the patch submitted obviously didn't
-generate that message since they can't even build test this change.
-
-I'm not going to apply this until someone both build and functionally
-tests this patch.
+> ---
+>  drivers/mfd/Kconfig               |    1 +
+>  drivers/mfd/pcf50633-core.c       |  114 +++++++++++-------------------------
+>  include/linux/mfd/pcf50633/core.h |    3 +-
+>  3 files changed, 38 insertions(+), 80 deletions(-)
+>  [...]
