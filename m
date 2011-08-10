@@ -1,147 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab1HJJNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:13:48 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46219 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1HJJNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:13:47 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Alex Ray <alexjray.ncsu@gmail.com>, Eric Van Hensbergen <ericvh@gmail.com>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alex Ray <ajray@ncsu.edu>
-Subject: Re: [PATCH] 9p: remove CONFIG_NET_9P_DEBUG option
-In-Reply-To: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
-References: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
-User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
-Date: Wed, 10 Aug 2011 14:43:32 +0530
-Message-ID: <877h6l7hoj.fsf@skywalker.in.ibm.com>
+	id S1752652Ab1HJJQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:16:06 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:43615 "EHLO
+	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab1HJJQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:16:04 -0400
+Date: Wed, 10 Aug 2011 05:15:50 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110810091550.GA383@flamenco.cs.columbia.edu>
+References: <20110805174728.GA1741@flamenco.cs.columbia.edu>
+ <4E3F97EA.2020600@ge.com>
+ <20110808091432.GA19570@flamenco.cs.columbia.edu>
+ <4E3FABDA.8080204@ge.com>
+ <20110808101140.GA21300@flamenco.cs.columbia.edu>
+ <4E3FC33D.2080202@ge.com>
+ <20110808172216.GA2311@flamenco.cs.columbia.edu>
+ <4E40F719.1020100@ge.com>
+ <20110809191915.GB28746@flamenco.cs.columbia.edu>
+ <4E42359B.2050105@ge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E42359B.2050105@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 10, 2011 at 08:39:07 +0100, Martyn Welch wrote:
+> And I think you need to go and do a grep of the code and find out where those
+> functions are actually used, rather than blindly relying on the comment.
+(snip)
+> Go grep the code.
 
-On Mon,  1 Aug 2011 07:14:44 -0500, Alex Ray <alexjray.ncsu@gmail.com> wrote:
-> Remove the CONFIG_NET_9P_DEBUG option, used to completely remove logging
-> functionality from v9fs.  Logging is (already) controlled with the
-> run-time debug= option, this gets rid of the compile-time option (which
-> was being misunderstood and misused).
-> 
-> Signed-off-by: Alex Ray <ajray@ncsu.edu>
+/me greps once again..
 
-I see this merged to for-next.  Do we know whether enabling debug always have a
-performance impact ?. 
+RapidIO: there are no rapidIO drivers upstream, only switches
+and rionet, which does not manage RapidIO devices (it just sends
+Ethernet packets on top of RapidIO's messaging).  So obviously
+there aren't any callers.
 
--aneesh
+PCI: pci_dev_get() referenced in 60 files.  Another way of
+explicitly incrementing the refcount of a pci device is with
+pci_get_device(), which searches in the device list for a
+particular one by its vendor/device ID.  This function is
+referenced in 127 files.
 
-> ---
->  fs/9p/v9fs.c        |    2 --
->  include/net/9p/9p.h |    6 ------
->  net/9p/Kconfig      |    5 -----
->  net/9p/mod.c        |    2 --
->  net/9p/protocol.c   |    7 -------
->  5 files changed, 0 insertions(+), 22 deletions(-)
-> 
-> diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
-> index ef96618..f1cb2e2 100644
-> --- a/fs/9p/v9fs.c
-> +++ b/fs/9p/v9fs.c
-> @@ -148,9 +148,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
->  		switch (token) {
->  		case Opt_debug:
->  			v9ses->debug = option;
-> -#ifdef CONFIG_NET_9P_DEBUG
->  			p9_debug_level = option;
-> -#endif
->  			break;
-> 
->  		case Opt_dfltuid:
-> diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
-> index 342dcf1..17cc437 100644
-> --- a/include/net/9p/9p.h
-> +++ b/include/net/9p/9p.h
-> @@ -61,7 +61,6 @@ enum p9_debug_flags {
->  	P9_DEBUG_VPKT =		(1<<12),
->  };
-> 
-> -#ifdef CONFIG_NET_9P_DEBUG
->  extern unsigned int p9_debug_level;
-> 
->  #define P9_DPRINTK(level, format, arg...) \
-> @@ -78,11 +77,6 @@ do {  \
-> 
->  #define P9_DUMP_PKT(way, pdu) p9pdu_dump(way, pdu)
-> 
-> -#else
-> -#define P9_DPRINTK(level, format, arg...)  do { } while (0)
-> -#define P9_DUMP_PKT(way, pdu) do { } while (0)
-> -#endif
-> -
-> 
->  #define P9_EPRINTK(level, format, arg...) \
->  do { \
-> diff --git a/net/9p/Kconfig b/net/9p/Kconfig
-> index d9ea09b..e1335e5 100644
-> --- a/net/9p/Kconfig
-> +++ b/net/9p/Kconfig
-> @@ -28,9 +28,4 @@ config NET_9P_RDMA
->  	help
->  	  This builds support for an RDMA transport.
-> 
-> -config NET_9P_DEBUG
-> -	bool "Debug information"
-> -	help
-> -	  Say Y if you want the 9P subsystem to log debug information.
-> -
->  endif
-> diff --git a/net/9p/mod.c b/net/9p/mod.c
-> index 2664d12..4a3a303 100644
-> --- a/net/9p/mod.c
-> +++ b/net/9p/mod.c
-> @@ -34,12 +34,10 @@
->  #include <linux/list.h>
->  #include <linux/spinlock.h>
-> 
-> -#ifdef CONFIG_NET_9P_DEBUG
->  unsigned int p9_debug_level = 0;	/* feature-rific global debug level  */
->  EXPORT_SYMBOL(p9_debug_level);
->  module_param_named(debug, p9_debug_level, uint, 0);
->  MODULE_PARM_DESC(debug, "9P debugging level");
-> -#endif
-> 
->  /*
->   * Dynamic Transport Registration Routines
-> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
-> index df58375..04b0585 100644
-> --- a/net/9p/protocol.c
-> +++ b/net/9p/protocol.c
-> @@ -40,7 +40,6 @@
->  static int
->  p9pdu_writef(struct p9_fcall *pdu, int proto_version, const char *fmt, ...);
-> 
-> -#ifdef CONFIG_NET_9P_DEBUG
->  void
->  p9pdu_dump(int way, struct p9_fcall *pdu)
->  {
-> @@ -63,12 +62,6 @@ p9pdu_dump(int way, struct p9_fcall *pdu)
->  		print_hex_dump_bytes("]9P[ ", DUMP_PREFIX_OFFSET, pdu->sdata,
->  									len);
->  }
-> -#else
-> -void
-> -p9pdu_dump(int way, struct p9_fcall *pdu)
-> -{
-> -}
-> -#endif
->  EXPORT_SYMBOL(p9pdu_dump);
-> 
->  void p9stat_free(struct p9_wstat *stbuf)
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+USB: usb_get_dev() referenced in 75 files.
+
+There are also lots of direct calls to get_device() from .probe
+methods of devices not tied to a particular bus.
+
+Guess that was enough grepping.
+
+> Suitable bug fixes are welcome.
+
+I sent a fix (as part of an admittedly large patchset) in
+Nov 2010[1], ie 9 months ago, you were sick at the time and
+told me you'd have a look at the changes later[2], which
+unfortunately never happened, even after pinging you off-list.
+
+Anyway let's forget that, Manohar's patches are what matters now.
+
+		Emilio
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1054034
+[2] http://thread.gmane.org/gmane.linux.kernel/1054034/focus=9819
+
