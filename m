@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab1HJWDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 18:03:05 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45370 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab1HJWDC (ORCPT
+	id S1753223Ab1HJWGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 18:06:21 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:56010 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab1HJWGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 18:03:02 -0400
-Message-ID: <4E42FFDC.9090103@panasas.com>
-Date: Wed, 10 Aug 2011 15:02:04 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nfs: fix a couple of minor portability issues
-References: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com>
-In-Reply-To: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 10 Aug 2011 18:06:20 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 11 Aug 2011 00:06:04 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux1394-devel@lists.sourceforge.net
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+        Carl Karsten <carl@personnelware.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] firewire: cdev: fix 32 bit userland on 64 bit kernel compat
+ corner cases
+Message-ID: <20110811000604.4a5ec5b7@stein>
+In-Reply-To: <20110810234635.11ea2ea1@stein>
+References: <CADmzSSh_gRKxjGNk7c938mhZQhe3N-18KJrqq4UpG8L6FcCQDQ@mail.gmail.com>
+	<4E415305.3040404@ladisch.de>
+	<4E4159D1.9020208@ladisch.de>
+	<20110809221719.74e29be5@stein>
+	<4E4231DF.2060303@ladisch.de>
+	<20110810163444.768d583d@stein>
+	<4E42BA4D.7080203@ladisch.de>
+	<20110810234635.11ea2ea1@stein>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2011 10:56 AM, Chris Metcalf wrote:
-> Building on tilepro revealed two minor portability issues: the
-> blocklayout.c file used prefetchw() without #include <linux/prefetch.h>,
-> and the nfs4filelayout.c file used do_div() on an s64 not a u64.
-> This change fixes those two issues so the NFS code builds on tilepro.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  fs/nfs/blocklayout/blocklayout.c |    1 +
->  fs/nfs/nfs4filelayout.c          |    6 +++---
->  2 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
-> index e56564d..9561c8f 100644
-> --- a/fs/nfs/blocklayout/blocklayout.c
-> +++ b/fs/nfs/blocklayout/blocklayout.c
-> @@ -36,6 +36,7 @@
->  #include <linux/namei.h>
->  #include <linux/bio.h>		/* struct bio */
->  #include <linux/buffer_head.h>	/* various write calls */
-> +#include <linux/prefetch.h>
->  
->  #include "blocklayout.h"
->  
-> diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
-> index e8915d4..6976a72 100644
-> --- a/fs/nfs/nfs4filelayout.c
-> +++ b/fs/nfs/nfs4filelayout.c
-> @@ -48,13 +48,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
->  			    loff_t offset)
->  {
->  	u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
-> -	u64 tmp;
-> +	u64 tmp, uoff;
->  
->  	offset -= flseg->pattern_offset;
-> -	tmp = offset;
-> +	tmp = uoff = offset;
->  	do_div(tmp, stripe_width);
->  
-> -	return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
-> +	return tmp * flseg->stripe_unit + do_div(uoff, flseg->stripe_unit);
+Clemens points out that we need to use compat_ptr() in order to safely
+cast from u64 to addresses of a 32-bit usermode client.
 
-For proper u64 divisions it is best to use the div_u64 (and div64_u64) and not
-use do_div. (And please don't add an unnecessary variable, just use a cast)
+Before, our conversion went wrong
+  - in practice if the client cast from pointer to integer such that
+    sign-extension happened, (libraw1394 and libdc1394 at least were not
+    doing that, IOW were not affected)
+or
+  - in theory on s390 (which doesn't have FireWire though) and on the
+    tile architecture, regardless of what the client does.
+The bug would usually be observed as the initial get_info ioctl failing
+with "Bad address" (EFAULT).
 
-Thanks
-Boaz
+Reported-by: Carl Karsten <carl@personnelware.com>
+Reported-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: stable@kernel.org
+---
+ drivers/firewire/core-cdev.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
->  }
->  
->  /* This function is used by the layout driver to calculate the
+Index: b/drivers/firewire/core-cdev.c
+===================================================================
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -216,15 +216,33 @@ struct inbound_phy_packet_event {
+ 	struct fw_cdev_event_phy_packet phy_packet;
+ };
+ 
+-static inline void __user *u64_to_uptr(__u64 value)
++#ifdef CONFIG_COMPAT
++static void __user *u64_to_uptr(u64 value)
++{
++	if (is_compat_task())
++		return compat_ptr(value);
++	else
++		return (void __user *)(unsigned long)value;
++}
++
++static u64 uptr_to_u64(void __user *ptr)
++{
++	if (is_compat_task())
++		return ptr_to_compat(ptr);
++	else
++		return (u64)(unsigned long)ptr;
++}
++#else
++static inline void __user *u64_to_uptr(u64 value)
+ {
+ 	return (void __user *)(unsigned long)value;
+ }
+ 
+-static inline __u64 uptr_to_u64(void __user *ptr)
++static inline u64 uptr_to_u64(void __user *ptr)
+ {
+-	return (__u64)(unsigned long)ptr;
++	return (u64)(unsigned long)ptr;
+ }
++#endif /* CONFIG_COMPAT */
+ 
+ static int fw_device_op_open(struct inode *inode, struct file *file)
+ {
 
+
+-- 
+Stefan Richter
+-=====-==-== =--- -=-=-
+http://arcgraph.de/sr/
