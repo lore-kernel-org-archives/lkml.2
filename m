@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1HJTJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 15:09:25 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:43172 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab1HJTJY (ORCPT
+	id S1754761Ab1HJTKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 15:10:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34962 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753890Ab1HJTKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 15:09:24 -0400
-Date: Wed, 10 Aug 2011 15:09:19 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Ike Panhc <ike.pan@canonical.com>, linux-kernel@vger.kernel.org,
-        mjg@redhat.com, platform-driver-x86@vger.kernel.org
-Subject: Re: [RESEND][PATCH 0/5] Support for the TS-5500 board
-Message-ID: <20110810150919.39519e62@v0nbox>
-In-Reply-To: <1312986047.2989.47.camel@i7.infradead.org>
-References: <1311887450-22235-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <20110809233208.1a71122e@lenov0n>
- <4E421CD8.3090606@canonical.com>
- <CAHR064hamS0gHqQR5a5UAanN89CzzW94sjW6SB3=8MAcf6pkMg@mail.gmail.com>
- <20110810100629.715c3bb7@v0nbox>
- <1312986047.2989.47.camel@i7.infradead.org>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 10 Aug 2011 15:10:19 -0400
+Message-ID: <4E42D769.8030704@windriver.com>
+Date: Wed, 10 Aug 2011 15:09:29 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, <mingo@elte.hu>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <linux-arch@vger.kernel.org>, <sfr@canb.auug.org.au>
+Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
+References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFwtyfzaFABHKD+OMWsojGov0JLmnrZimhVaOcrer=tJjQ@mail.gmail.com> <20110802183019.GB8393@windriver.com> <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com>
+In-Reply-To: <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011 15:20:46 +0100,
-David Woodhouse <dwmw2@infradead.org> wrote:
-> Just expose these devices in the device-tree. You shouldn't *need* a
-> new MTD device driver; physmap_of should be just fine.
+On 11-08-07 10:42 PM, Mike Frysinger wrote:
 
-I didn't write a new MTD device driver, but just moved the already
-existing one to the ts5500 platform directory. The point is that my
-TS-5500 doesn't have this flash, so I couldn't try. The fifth patch
-from this set could just be ignored.
+[...]
 
-> If your bootloader doesn't pass one, your platform-specific code
-> should just register its own device-tree blob during early boot. And
-> your device drivers should just match against the devices therein.
+> 
+> Blackfin is broken because of this.  a simple grep of the tree
 
-I'm a bit confused with what should be done for the support for an
-embedded platform (X86-based) like this TS-5500. Is the actual code
-hierarchy OK? What is the impact of adding a device-tree to this code?
+I've run all the in-tree blackfin configs, so it is all good.
+
+Have you thought about getting at least one blackfin defconfig in
+the linux-next build coverage?  Gives you a better chance of
+having people see when they've broken it.
 
 Thanks,
-Vivien.
+Paul.
+
+> probably could pick this up.  maybe something like:
+> grep EXPORT_SYMBOL * -rIl | xargs grep -L linux/export.h
+> 
+> from my logs, i see at least:
+> arch/blackfin/kernel/dma-mapping.c:103: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/kernel/dma-mapping.c:111: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/kernel/dma-mapping.c:121: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/kernel/dma-mapping.c:136: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/kernel/dma-mapping.c:148: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/kernel/sys_bfin.c:50: warning: type defaults to 'int' in
+> declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf518/boards/ezbrd.c:825: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf527/boards/ad7160eval.c:852: warning: type
+> defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf527/boards/ezbrd.c:876: warning: type defaults to
+> 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf527/boards/ezkit.c:1317: warning: type defaults
+> to 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf527/boards/tll6527m.c:938: warning: type defaults
+> to 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mach-bf537/boards/dnp5370.c:396: warning: type defaults
+> to 'int' in declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mm/init.c:22: warning: type defaults to 'int' in
+> declaration of 'EXPORT_SYMBOL'
+> arch/blackfin/mm/init.c:32: warning: type defaults to 'int' in
+> declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:1002: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:107: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:1089: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:124: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:271: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:293: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:353: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:373: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:451: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:515: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:591: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:599: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:610: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:621: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:775: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:786: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:797: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:90: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> sound/soc/blackfin/bf5xx-sport.c:968: warning: type defaults to 'int'
+> in declaration of 'EXPORT_SYMBOL'
+> -mike
