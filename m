@@ -1,150 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab1HJEbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 00:31:10 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:57379 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab1HJEbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 00:31:09 -0400
-Message-ID: <4E420941.3080601@ce.jp.nec.com>
-Date: Wed, 10 Aug 2011 13:29:53 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1751473Ab1HJEdL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 00:33:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34747 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020Ab1HJEdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 00:33:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,348,1309762800"; 
+   d="scan'208";a="36916089"
+Date: Wed, 10 Aug 2011 12:33:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
+Message-ID: <20110810043305.GE24486@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094527.136636891@intel.com>
+ <20110809191622.GH6482@redhat.com>
 MIME-Version: 1.0
-To: James.Bottomley@HansenPartnership.com, jaxboe@fusionio.com
-CC: roland@purestorage.com, stern@rowland.harvard.edu,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Subject: [BUG] Oops when SCSI device under multipath is removed
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="17pEHd4RhPHOinZp"
+Content-Disposition: inline
+In-Reply-To: <20110809191622.GH6482@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
 
-With the attached shell script, blk_insert_cloned_request will cause
-oops with 3.1-rc1. (This is a regression introduced in 2.6.39)
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The regression was introduced by 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b,
-"[SCSI] put stricter guards on queue dead checks".
-Part of the commit has moved scsi_free_queue(), which calls
-blk_cleanup_queue(), to scsi_remove_device(), which is called while
-the device is still open.
-The oops occurs because blk_insert_cloned_request() is called
-after blk_cleanup_queue() is called (which frees elevator
-and turns on QUEUE_FLAG_DEAD).
+On Wed, Aug 10, 2011 at 03:16:22AM +0800, Vivek Goyal wrote:
+> On Sat, Aug 06, 2011 at 04:44:52PM +0800, Wu Fengguang wrote:
+> 
+> [..]
+> > -/*
+> > - * task_dirty_limit - scale down dirty throttling threshold for one task
+> > - *
+> > - * task specific dirty limit:
+> > - *
+> > - *   dirty -= (dirty/8) * p_{t}
+> > - *
+> > - * To protect light/slow dirtying tasks from heavier/fast ones, we start
+> > - * throttling individual tasks before reaching the bdi dirty limit.
+> > - * Relatively low thresholds will be allocated to heavy dirtiers. So when
+> > - * dirty pages grow large, heavy dirtiers will be throttled first, which will
+> > - * effectively curb the growth of dirty pages. Light dirtiers with high enough
+> > - * dirty threshold may never get throttled.
+> > - */
+> 
+> Hi Fengguang,
+> 
+> So we have got rid of the notion of per task dirty limit based on their
+> fraction? What replaces it.
 
-2 patches have been proposed but neither of them included:
-  1) Add QUEUE_FLAG_DEAD check in blk_insert_cloned_request()
-     https://lkml.org/lkml/2011/7/8/457
-  2) SCSI to call blk_cleanup_queue() from device's ->release() callback
-     (before 2.6.39, it used to work like this)
-     https://lkml.org/lkml/2011/7/2/106
+It's simply removed :)
 
-Both work fine for this test case
-but it seems it's not possible to make the patch 1) safe because
-QUEUE_FLAG_DEAD check is racy. There is a window between the check
-and the use of elevator.
-So I think the patch 2) is better. Could you please consider to include it?
+> I can't see any code which is replacing it.
 
-   BUG: unable to handle kernel NULL pointer dereference at           (null)
-   IP: [<          (null)>]           (null)
-   PGD 29c015067 PUD 29855a067 PMD 0 
-   Oops: 0010 [#1] SMP 
-   CPU 2 
-   ..
-   Pid: 6125, comm: dd Not tainted 3.1.0-rc1 #1
-   RIP: 0010:[<0000000000000000>]  [<          (null)>]           (null)
-   RSP: 0018:ffff880288377990  EFLAGS: 00010092
-   RAX: ffff88029c3e4e00 RBX: ffff88029a324cc8 RCX: 0000000000000240
-   RDX: 0000000000000002 RSI: 0000000000000001 RDI: ffff88029a324cc8
-   RBP: ffff8802883779a8 R08: 0000000000000000 R09: 0000000000000000
-   R10: 0000000000000002 R11: 0000000000000000 R12: ffff88029a324cc8
-   R13: 0000000000000002 R14: 0000000000000002 R15: ffff88029a46c180
-   FS:  00007fc4daf3d700(0000) GS:ffff8802afa00000(0000) knlGS:0000000000000000
-   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-   CR2: 0000000000000000 CR3: 000000029abe4000 CR4: 00000000000006e0
-   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-   Process dd (pid: 6125, threadinfo ffff880288376000, task ffff8802879ac260)
-   Stack:
-   ffffffff81223d8a ffff8802883779d8 ffff88029b5a6018 ffff8802883779d8
-   ffffffff81224bdf ffff88029b5a6018 ffff88029a324cc8 0000000000000002
-   ffff88029a46c000 ffff880288377a08 ffffffff8122974d ffff880288377a08
-   Call Trace:
-   [<ffffffff81223d8a>] ? elv_drain_elevator+0x2a/0x80
-   [<ffffffff81224bdf>] __elv_add_request+0x9f/0x200
-   [<ffffffff8122974d>] add_acct_request+0x3d/0x50
-   [<ffffffff812297c5>] blk_insert_cloned_request+0x65/0x90
-   [<ffffffffa01870ee>] dm_dispatch_request+0x3e/0x70 [dm_mod]
-   [<ffffffffa0187e71>] dm_request_fn+0x191/0x290 [dm_mod]
-   [<ffffffff8122571e>] __blk_run_queue+0x1e/0x20
-   [<ffffffff81228a4e>] queue_unplugged+0x4e/0xc0
-   [<ffffffff81228c76>] blk_flush_plug_list+0x1b6/0x210
-   [<ffffffff814c62a5>] io_schedule+0x75/0xd0
-   [<ffffffff811a03b4>] __blockdev_direct_IO+0x924/0xb20
-   [<ffffffff8119dc77>] blkdev_direct_IO+0x57/0x60
-   [<ffffffff8119cc60>] ? blkdev_get_block+0x70/0x70
-   [<ffffffff8110ce35>] generic_file_aio_read+0x6f5/0x770
-   [<ffffffff814c971b>] ? _raw_spin_unlock+0x2b/0x40
-   [<ffffffff81131cda>] ? handle_pte_fault+0x40a/0x9c0
-   [<ffffffff8101aa53>] ? native_sched_clock+0x13/0x60
-   [<ffffffff81019e99>] ? sched_clock+0x9/0x10
-   [<ffffffff8116746a>] do_sync_read+0xda/0x120
-   [<ffffffff811f943e>] ? security_file_permission+0x8e/0x90
-   [<ffffffff81167bed>] vfs_read+0xcd/0x190
-   [<ffffffff81167db4>] sys_read+0x54/0xa0
-   [<ffffffff814d1582>] system_call_fastpath+0x16/0x1b
-   Code:  Bad RIP value.
-   RIP  [<          (null)>]           (null)
-   RSP <ffff880288377990>
-   CR2: 0000000000000000
-   ---[ end trace 4abd28efc271910a ]---
+The think time compensation feature (patch attached) will be providing
+the same protection for light/slow dirtiers. With it, the slower
+dirtiers won't be throttled at all, because the pause time calculated
+by
 
--- 
-Jun'ichi Nomura, NEC Corporation
+        period = pages_dirtied / rate
+        pause = period - think
+
+will be <= 0.
+
+For example, given write_bw = 100MB/s and
+
+- 2 dd tasks that dirty pages as fast as possible
+- 1 scp whose dirty rate is limited by network bandwidth 10MB/s
+
+Then with think time compensation, the real dirty rates will be
+
+- 2 dd tasks: (100-10)/2 = 45MB/s (each)
+- 1 scp task: 10MB/s
+
+The scp task won't be throttled by balance_dirty_pages() any more.
+This is a tested feature. In the below graph, the dirty rate (the
+slope of the lines) of the last 3 tasks are 2, 4, 8 MB/s
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/RATES-2-4-8/btrfs-fio-rates-128k-8p-2975M-2.6.38-rc6-dt6+-2011-03-01-20-45/balance_dirty_pages-task-bw.png
+
+given this fio workload, which started one full speed dirtier and
+four 1, 2, 4, 8 MB/s rate limited dirtiers
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/RATES-2-4-8/btrfs-fio-rates-128k-8p-2975M-2.6.38-rc6-dt6+-2011-03-01-20-45/fio-rates
+
+> If yes, I am wondering how
+> do you get fairness among tasks which share this bdi.
+> 
+> Also wondering what did this patch series to do make sure that tasks
+> share bdi more fairly and get write_bw/N bandwidth.
+
+Each of the N dd tasks will be rate limited by
+
+        rate = base_rate * pos_ratio
+
+At any time snapshot, each bdi task will see almost the same base_rate
+and pos_ratio, so will be throttled almost at the same rate. This is a
+strong guarantee of fairness under all situations.
+
+Since pos_ratio is fluctuating (evenly) around 1.0, and
+base_rate=bdi->dirty_ratelimit is fluctuating around (write_bw/N),
+on average we get
+
+        avg_rate = (write_bw/N) * 1.0
+
+(I'll explain the "dirty_ratelimit = write_bw/N" magic other emails.)
+
+The below graphs demonstrate the dirty progress of the last 3 dd tasks.
+The slope of each curve is the dirty rate.
+
+They vividly show three curves progressing at the same pace in all of
+the 3 stages
+
+- rampup stage (20-100s) 
+
+- disturbed stage (120s-160s)
+  (disturbed by starting a 1GB read dd in the middle of the tests)
+
+- stable stage (after 160s)
+
+And dirtied almost the same amount of pages during the test.
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/8G/xfs-10dd-4k-32p-6802M-20:10-3.0.0-next-20110802+-2011-08-06.16:26/balance_dirty_pages-task-bw.png
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/2G/xfs-10dd-4k-8p-1947M-20:10-3.0.0-next-20110802+-2011-08-06.15:49/balance_dirty_pages-task-bw.png
+
+Thanks,
+Fengguang
+
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=think-time-compensation
+
+Subject: writeback: dirty ratelimit - think time compensation
+Date: Sat Jun 11 19:25:42 CST 2011
+
+Compensate the task's think time when computing the final pause time,
+so that ->dirty_ratelimit can be executed accurately.
+
+In the rare case that the task slept longer than the period time (result
+in negative pause time), the extra sleep time will be compensated in
+next period if it's not too big (<500ms).
+
+Accumulated errors are carefully avoided as long as the max pause area
+is not hitted.
+
+Pseudo code:
+
+	period = pages_dirtied / bw;
+	think = jiffies - dirty_paused_when;
+	pause = period - think;
+
+case 1: period > think
+
+                pause = period - think
+                dirty_paused_when += pause
+
+                             period time
+              |======================================>|
+                  think time
+              |===============>|
+        ------|----------------|----------------------|-----------
+        dirty_paused_when   jiffies
 
 
+case 2: period <= think
 
-#!/bin/bash
+                don't pause; reduce future pause time by:
+                dirty_paused_when += period
 
-dev=$1
-if [ -z "$dev" ]; then
-	echo "usage: $0 <sdX>    where <sdX> is unused SCSI device"
-	exit 1
-fi
-if [ ! -e /dev/$dev -o ! -d /sys/block/$dev ] ; then
-	echo "device $dev not found"
-	exit 1
-fi
-if [ $dev = ${dev#sd} ]; then
-	echo "device $dev is not SCSI device"
-	exit 1
-fi
-echo "Use SCSI device $dev"
+                       period time
+              |=========================>|
+                             think time
+              |======================================>|
+        ------|--------------------------+------------|-----------
+        dirty_paused_when                          jiffies
 
-mapname=deadmp
-maptab="0 $(blockdev --getsz /dev/$dev) multipath 0 0 1 1 round-robin 1 1 1 1 /dev/$dev 1"
-modprobe dm-multipath
-modprobe dm-round-robin
-echo "Creating multipath device: $mapname"
-echo $maptab | dmsetup create $mapname
-if [ $? -ne 0 ]; then
-	echo "failed to create mpath device"
-	exit 1
-fi
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/fork.c         |    1 +
+ mm/page-writeback.c   |   34 +++++++++++++++++++++++++++++++---
+ 3 files changed, 33 insertions(+), 3 deletions(-)
 
-echo "Deleting $dev"
-echo 1 > /sys/block/$dev/device/delete
-sleep 1
+--- linux-next.orig/include/linux/sched.h	2011-08-09 07:53:31.000000000 +0800
++++ linux-next/include/linux/sched.h	2011-08-09 07:54:12.000000000 +0800
+@@ -1531,6 +1531,7 @@ struct task_struct {
+ 	 */
+ 	int nr_dirtied;
+ 	int nr_dirtied_pause;
++	unsigned long dirty_paused_when; /* start of a write-and-pause period */
+ 
+ #ifdef CONFIG_LATENCYTOP
+ 	int latency_record_count;
+--- linux-next.orig/mm/page-writeback.c	2011-08-09 07:53:31.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-09 08:08:11.000000000 +0800
+@@ -817,6 +817,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
++	long period;
+ 	long pause = 0;
+ 	bool dirty_exceeded = false;
+ 	unsigned long bw;
+@@ -825,6 +826,8 @@ static void balance_dirty_pages(struct a
+ 	unsigned long start_time = jiffies;
+ 
+ 	for (;;) {
++		unsigned long now = jiffies;
++
+ 		/*
+ 		 * Unstable writes are a feature of certain networked
+ 		 * filesystems (i.e. NFS) in which data may have been
+@@ -842,8 +845,11 @@ static void balance_dirty_pages(struct a
+ 		 * catch-up. This avoids (excessively) small writeouts
+ 		 * when the bdi limits are ramping up.
+ 		 */
+-		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
++		if (nr_dirty <= (background_thresh + dirty_thresh) / 2) {
++			current->dirty_paused_when = now;
++			current->nr_dirtied = 0;
+ 			break;
++		}
+ 
+ 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+ 
+@@ -879,17 +885,40 @@ static void balance_dirty_pages(struct a
+ 		bw = bdi_position_ratio(bdi, dirty_thresh, nr_dirty,
+ 					bdi_thresh, bdi_dirty);
+ 		if (unlikely(bw == 0)) {
++			period = MAX_PAUSE;
+ 			pause = MAX_PAUSE;
+ 			goto pause;
+ 		}
+ 		bw = (u64)base_bw * bw >> BANDWIDTH_CALC_SHIFT;
+-		pause = (HZ * pages_dirtied + bw / 2) / (bw | 1);
++		period = (HZ * pages_dirtied + bw / 2) / (bw | 1);
++		pause = current->dirty_paused_when + period - now;
++		/*
++		 * For less than 1s think time (ext3/4 may block the dirtier
++		 * for up to 800ms from time to time on 1-HDD; so does xfs,
++		 * however at much less frequency), try to compensate it in
++		 * future periods by updating the virtual time; otherwise just
++		 * do a reset, as it may be a light dirtier.
++		 */
++		if (unlikely(pause <= 0)) {
++			if (pause < -HZ) {
++				current->dirty_paused_when = now;
++				current->nr_dirtied = 0;
++			} else if (period) {
++				current->dirty_paused_when += period;
++				current->nr_dirtied = 0;
++			}
++			pause = 1; /* avoid resetting nr_dirtied_pause below */
++			break;
++		}
+ 		pause = min(pause, MAX_PAUSE);
+ 
+ pause:
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 
++		current->dirty_paused_when = now + pause;
++		current->nr_dirtied = 0;
++
+ 		dirty_thresh = hard_dirty_limit(dirty_thresh);
+ 		/*
+ 		 * max-pause area. If dirty exceeded but still within this
+@@ -916,7 +945,6 @@ pause:
+ 	if (!dirty_exceeded && bdi->dirty_exceeded)
+ 		bdi->dirty_exceeded = 0;
+ 
+-	current->nr_dirtied = 0;
+ 	current->nr_dirtied_pause = ratelimit_pages(nr_dirty, dirty_thresh);
+ 
+ 	if (writeback_in_progress(bdi))
+--- linux-next.orig/kernel/fork.c	2011-08-09 07:53:31.000000000 +0800
++++ linux-next/kernel/fork.c	2011-08-09 07:54:12.000000000 +0800
+@@ -1303,6 +1303,7 @@ static struct task_struct *copy_process(
+ 
+ 	p->nr_dirtied = 0;
+ 	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
++	p->dirty_paused_when = 0;
+ 
+ 	/*
+ 	 * Ok, make it visible to the rest of the system.
 
-echo "Try I/O on $dev"
-dd if=/dev/mapper/${mapname} of=/dev/null bs=4k count=1 iflag=direct
-
-sleep 10
-dmsetup remove $mapname
+--17pEHd4RhPHOinZp--
