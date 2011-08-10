@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1HJSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:07:58 -0400
-Received: from dd13538.kasserver.com ([85.13.135.107]:36941 "EHLO
-	dd13538.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1HJSH5 (ORCPT
+	id S1754448Ab1HJSIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:08:50 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:29561 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab1HJSIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:07:57 -0400
-Date: Wed, 10 Aug 2011 20:07:54 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
-Message-ID: <20110810180754.GB13832@bombe-desk.opditex>
-Mail-Followup-To: Jiri Slaby <jirislaby@gmail.com>,
-	Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de,
-	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
- <20110719003503.GA4138@amos.fritz.box>
- <4E3FE2D2.5020801@gmail.com>
- <20110810010933.GA4733@amos.fritz.box>
- <4E429907.6080000@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E429907.6080000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Aug 2011 14:08:40 -0400
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 14:08:40 EDT
+Message-Id: <201108101803.p7AI34fd008483@farm-0023.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 10 Aug 2011 13:53:02 -0400
+Subject: [PATCH] arch/tile: use #include <asm/atomic.h> in tilepro assembly files
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 10 Aug 2011 18:03:04.0775 (UTC) FILETIME=[C0713D70:01CC5787]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 04:43:19PM +0200, Jiri Slaby wrote:
-> On 08/10/2011 03:09 AM, Andreas Bombe wrote:
-> > I did my simple test on ttyS0 again: "stty -F /dev/ttyS0 crtscts" then
-> > "echo >/dev/ttyS0". I attached the gzipped sysrq-t list in case you need
-> > the complete output. This is just the process while it is trying to
-> > close the device (bash's internal echo):
-> 
-> Hmm, perhaps obvious question. What is the port connected with? And with
-> what cable? Is it null modem cable? Or at least with DTR-CTS connected?
+The standard <linux/atomic.h> is not safe to include from assembly, and
+in general there's no need for it to be, since it's not very meaningful
+for assembly code.
 
-Nothing is connected. After all, the whole point of this exercise is to
-give the driver data to send which it can't get out so I can see whether
-it blocks all tty operations system wide while trying to do the flush on
-close.
+Assembly support in tilepro for atomics does need to get some constants
+from the tilepro <asm/atomic.h>, however, so fix those files back to
+the way they were, to directly #include <asm/atomic.h>.
 
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/intvec_32.S  |    2 +-
+ arch/tile/lib/atomic_asm_32.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index fc94607..72ade79 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -21,7 +21,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/thread_info.h>
+ #include <asm/irqflags.h>
+-#include <linux/atomic.h>
++#include <asm/atomic.h>
+ #include <asm/asm-offsets.h>
+ #include <hv/hypervisor.h>
+ #include <arch/abi.h>
+diff --git a/arch/tile/lib/atomic_asm_32.S b/arch/tile/lib/atomic_asm_32.S
+index 1f75a2a..2444873 100644
+--- a/arch/tile/lib/atomic_asm_32.S
++++ b/arch/tile/lib/atomic_asm_32.S
+@@ -70,7 +70,7 @@
+  */
+ 
+ #include <linux/linkage.h>
+-#include <linux/atomic.h>
++#include <asm/atomic.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ 
 -- 
-Andreas Bombe
+1.6.5.2
+
