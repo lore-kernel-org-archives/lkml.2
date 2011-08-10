@@ -1,75 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1HJPEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:04:05 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:41709 "HELO
+	id S1753464Ab1HJPEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:04:15 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:42033 "HELO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753250Ab1HJPEC (ORCPT
+	with SMTP id S1753347Ab1HJPEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:04:02 -0400
+	Wed, 10 Aug 2011 11:04:09 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v7 06/16] ARM: LPAE: Use a mask for physical addresses in page table entries
-Date: Wed, 10 Aug 2011 16:03:29 +0100
-Message-Id: <1312988619-16804-7-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v7 11/16] ARM: LPAE: Add fault handling support
+Date: Wed, 10 Aug 2011 16:03:34 +0100
+Message-Id: <1312988619-16804-12-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
 References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 10 Aug 2011 15:03:52.0257 (UTC) FILETIME=[B7713310:01CC576E]
-X-MC-Unique: 111081016040001701
+X-OriginalArrivalTime: 10 Aug 2011 15:03:54.0101 (UTC) FILETIME=[B88A9250:01CC576E]
+X-MC-Unique: 111081016040607501
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p7AF4gPN003912
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p7AF4iod003920
 
-With LPAE, the physical address mask is 40-bit while the page table
-entry is 64-bit. This patch introduces PHYS_MASK for the 2-level page
-table format, defined as ~0UL.
+The DFSR and IFSR register format is different when LPAE is enabled. In
+addition, DFSR and IFSR have the similar definitions for the fault type.
+This modifies modifies the fault code to correctly handle the new
+format.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/pgtable-2level-hwdef.h |    2 ++
- arch/arm/include/asm/pgtable.h              |    6 +++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ arch/arm/mm/alignment.c |    8 ++++-
+ arch/arm/mm/fault.c     |   87 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgtable-2level-hwdef.h b/arch/arm/include/asm/pgtable-2level-hwdef.h
-index 2b52c40..5cfba15 100644
---- a/arch/arm/include/asm/pgtable-2level-hwdef.h
-+++ b/arch/arm/include/asm/pgtable-2level-hwdef.h
-@@ -88,4 +88,6 @@
- #define PTE_SMALL_AP_URO_SRW	(_AT(pteval_t, 0xaa) << 4)
- #define PTE_SMALL_AP_URW_SRW	(_AT(pteval_t, 0xff) << 4)
- 
-+#define PHYS_MASK		(~0UL)
-+
- #endif
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index 9618052..8f9e1dd 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -199,10 +199,10 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
- 
- static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- {
--	return __va(pmd_val(pmd) & PAGE_MASK);
-+	return __va(pmd_val(pmd) & PHYS_MASK & (s32)PAGE_MASK);
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index be7c638..f0bf61a 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -909,6 +909,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	return 0;
  }
  
--#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd)))
-+#define pmd_page(pmd)		pfn_to_page(__phys_to_pfn(pmd_val(pmd) & PHYS_MASK))
++#ifdef CONFIG_ARM_LPAE
++#define ALIGNMENT_FAULT		33
++#else
++#define ALIGNMENT_FAULT		1
++#endif
++
+ /*
+  * This needs to be done after sysctl_init, otherwise sys/ will be
+  * overwritten.  Actually, this shouldn't be in sys/ at all since
+@@ -942,7 +948,7 @@ static int __init alignment_init(void)
+ 		ai_usermode = UM_FIXUP;
+ 	}
  
- /* we don't need complex calculations here as the pmd is folded into the pgd */
- #define pmd_addr_end(addr,end)	(end)
-@@ -223,7 +223,7 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
- #define pte_offset_map(pmd,addr)	(__pte_map(pmd) + pte_index(addr))
- #define pte_unmap(pte)			__pte_unmap(pte)
+-	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
++	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
+ 			"alignment exception");
  
--#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
-+#define pte_pfn(pte)		((pte_val(pte) & PHYS_MASK) >> PAGE_SHIFT)
- #define pfn_pte(pfn,prot)	__pte(__pfn_to_phys(pfn) | pgprot_val(prot))
+ 	/*
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index 3b5ea68..91d1768 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -33,10 +33,15 @@
+ #define FSR_WRITE		(1 << 11)
+ #define FSR_FS4			(1 << 10)
+ #define FSR_FS3_0		(15)
++#define FSR_FS5_0		(0x3f)
  
- #define pte_page(pte)		pfn_to_page(pte_pfn(pte))
+ static inline int fsr_fs(unsigned int fsr)
+ {
++#ifdef CONFIG_ARM_LPAE
++	return fsr & FSR_FS5_0;
++#else
+ 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
++#endif
+ }
+ 
+ #ifdef CONFIG_MMU
+@@ -122,8 +127,10 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08llx", (long long)pte_val(*pte));
++#ifndef CONFIG_ARM_LPAE
+ 		printk(", *ppte=%08llx",
+ 		       (long long)pte_val(pte[PTE_HWTABLE_PTRS]));
++#endif
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+@@ -440,6 +447,12 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+ 	pmd = pmd_offset(pud, addr);
+ 	pmd_k = pmd_offset(pud_k, addr);
+ 
++#ifdef CONFIG_ARM_LPAE
++	/*
++	 * Only one hardware entry per PMD with LPAE.
++	 */
++	index = 0;
++#else
+ 	/*
+ 	 * On ARM one Linux PGD entry contains two hardware entries (see page
+ 	 * tables layout in pgtable.h). We normally guarantee that we always
+@@ -449,6 +462,7 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
+ 	 * for the first of pair.
+ 	 */
+ 	index = (addr >> SECTION_SHIFT) & 1;
++#endif
+ 	if (pmd_none(pmd_k[index]))
+ 		goto bad_area;
+ 
+@@ -494,6 +508,72 @@ static struct fsr_info {
+ 	int	code;
+ 	const char *name;
+ } fsr_info[] = {
++#ifdef CONFIG_ARM_LPAE
++	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
++	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
++	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
++	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
++	{ do_bad,		SIGBUS,  BUS_ADRALN,	"alignment fault"		},
++	{ do_bad,		SIGBUS,  0,		"debug event"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
++#else	/* !CONFIG_ARM_LPAE */
+ 	/*
+ 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+ 	 * defines these to be "precise" aborts.
+@@ -535,6 +615,7 @@ static struct fsr_info {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
++#endif	/* CONFIG_ARM_LPAE */
+ };
+ 
+ void __init
+@@ -573,6 +654,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ }
+ 
+ 
++#ifdef CONFIG_ARM_LPAE
++#define ifsr_info	fsr_info
++#else	/* !CONFIG_ARM_LPAE */
+ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
+@@ -607,6 +691,7 @@ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
+ };
++#endif	/* CONFIG_ARM_LPAE */
+ 
+ void __init
+ hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
+@@ -642,6 +727,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ 
+ static int __init exceptions_init(void)
+ {
++#ifndef CONFIG_ARM_LPAE
+ 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+ 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
+ 				"I-cache maintenance fault");
+@@ -657,6 +743,7 @@ static int __init exceptions_init(void)
+ 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
+ 				"section access flag fault");
+ 	}
++#endif
+ 
+ 	return 0;
+ }
 
