@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1HJHjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 03:39:13 -0400
-Received: from exprod5og102.obsmtp.com ([64.18.0.143]:36340 "EHLO
-	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1HJHjM (ORCPT
+	id S1751870Ab1HJHkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 03:40:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51919 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab1HJHkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 03:39:12 -0400
-Message-ID: <4E42359B.2050105@ge.com>
-Date: Wed, 10 Aug 2011 08:39:07 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 10 Aug 2011 03:40:52 -0400
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module refcounting
-References: <20110805090416.GA4806@becoht-mvanga> <4E3BB6E7.6020809@ge.com> <20110805174728.GA1741@flamenco.cs.columbia.edu> <4E3F97EA.2020600@ge.com> <20110808091432.GA19570@flamenco.cs.columbia.edu> <4E3FABDA.8080204@ge.com> <20110808101140.GA21300@flamenco.cs.columbia.edu> <4E3FC33D.2080202@ge.com> <20110808172216.GA2311@flamenco.cs.columbia.edu> <4E40F719.1020100@ge.com> <20110809191915.GB28746@flamenco.cs.columbia.edu>
-In-Reply-To: <20110809191915.GB28746@flamenco.cs.columbia.edu>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <20110810070722.GA2150@minipsycho>
+References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
+	<20110810070722.GA2150@minipsycho>
+Date: Wed, 10 Aug 2011 09:40:50 +0200
+Message-ID: <CAMvAeqNA9Wcr3bO+Vya4gt2YC47oe=-A8Fxnswdj0ozD5tfZtQ@mail.gmail.com>
+Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
+ 3.0-rc1 Bridge not forwarding unicast packages)
+From: Michael Guntsche <mguntsche@gmail.com>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2011 07:35:51.0064 (UTC) FILETIME=[2100A980:01CC5730]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/11 20:19, Emilio G. Cota wrote:
-> On Tue, Aug 09, 2011 at 10:00:09 +0100, Martyn Welch wrote:
->> So, out of the 3 bus types you have used to demonstrate that refcounts should
->> always be handled explicitly, 2 of the 3 (at least to me) appear to implicitly
->> handling refcounting.
-> (snip)
->> It appears to me that both PCI and RapidIO (both buses that you have tried to
->> use to defend your position) don't seem to me to by-and-large expect drivers
->> to explicitly manage refcounting.
-> 
-> Well if that's the impression you get, perhaps you need to
-> actually read the code:
-> 
-> In drivers/rapidio/rio-driver.c:
-> 
-> /**
->  * rio_dev_get - Increments the reference count of the RIO device structure
->  *
->  * @rdev: RIO device being referenced
->  *
->  * Each live reference to a device should be refcounted.
->  *
->  * Drivers for RIO devices should normally record such references in
->  * their probe() methods, when they bind to a device, and release
->  * them by calling rio_dev_put(), in their disconnect() methods.
->  */
-> struct rio_dev *rio_dev_get(struct rio_dev *rdev)
-> {
->         if (rdev)
->                 get_device(&rdev->dev);
-> 
->         return rdev;
-> }
-> 
-> You can find a similar function (with almost the very same description)
-> for usb and pci.
-> 
-
-And I think you need to go and do a grep of the code and find out where those
-functions are actually used, rather than blindly relying on the comment.
-
->> That leaves USB, which I'd argue is a very different bus to VME.
-> 
-> From the device model's viewpoint, VME is not special in any way,
-> something you don't seem to understand.
-> 
->>> I'm tired of your non-arguments. I'm just trying to persuade you
->>> to do what everyone else is doing, with technical reasons. To me
->>> (and to everybody else in this list, I'd imagine) refcounting
->>> should be explicit. You're going against what I perceive are
->>> well-established pratices in the kernel. I can't understand it.
+On Wed, Aug 10, 2011 at 9:07 AM, Jiri Pirko <jpirko@redhat.com> wrote:
+> Wed, Aug 10, 2011 at 02:50:20AM CEST, mguntsche@gmail.com wrote:
+>>Good evening/morning,
 >>
->> Which I have yet to see you convincingly backup. I see a
->> large amount of bluff about oppses and how buses apparently
->> deal with refcounting.  I also know I have had a number of
->> commits to the VME code by a number of others (which is a
->> matter of public record, you can look at the commits in git)
->> that haven't complained about how the bus code is structured.
-> 
-> You're in denial. Manohar's patch fixes a very obvious bug,
-> which is fixed in the same way other buses deal with this.
-> 
+>>> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
+>>> testing. On a first look everything seemed to work fine, but when I
+>>> tried to connect via openvpn to my internal network (tap0 being bridged
+>>> with the internal network) I noticed that I was not able to access the
+>>> server on my internal network. I could access the bridge (which is
+>>> acting as the openvpn server as well) just fine though.
+>>> To debug this I ran tcpdump on the openvpn client and started a ping to the
+>>> internal network. I could see the ARP requests being answered.....
+>><snip>
+>>
+>>After much digging and testing I found the commit that causes the
+>>problem for me here.
+>>
+>>87c288c6e gianfar: do vlan cleanup
+>>
+>>Before this commit my bridge works fine. I simplified the test case
+>>and just tried to access the server from a local wireless device with
+>>gets also bridged via
+>>a gianfar nic to the wired lan. Before commit 87c288c6e I can ping the
+>>device from the internal network afterwards it stops.
+>>For testing purposes I reverted this commit (plus some others to make
+>>the code compile) and it started working again.
+>>The hardware is a routerboard with three onboard nics two of em gianfar.
+>>The gianfar nics do not support any kind of offloading,
+>
+> Thanks for testing/report. I'm not sure I understand your simplified
+> case :(
+Sorry if my explanation was confusing but it was late night/morning
+when I wrote it.
 
-Go grep the code.
+The setup is quite easy.
 
->> I also know I have had a number of commits to the VME code
->> by a number of others (which is a matter of public record,
->> you can look at the commits in git) that haven't complained
->> about how the bus code is structured.
-> 
-> The fact that other people didn't notice this bug is irrelevant.
-> 
+WLAN ----->|Bridge|<----- Wired Lan (gianfar nic)
 
-Suitable bug fixes are welcome.
+Client (in WLAN): 192.168.42.55
+Bridge: 192.168.42.1
+Server (on Wired): 192.168.42.127
 
->> You have proposed a completely different structure. Manohar has proposed some
->> changes and I am trying to work with him to find a solution that satisfies
->> both of us.
-> 
-> ??? I just want you to ack Manohar's patch.
-> 
+With your patch the Bridge can ping the client and the server, but the
+client cannot reach the server and vice-versa.
 
-I won't be in it's current form. I'm looking forward to seeing Manohar's
-revised patch series.
+>
+> Anyway, gianfar supports rx/tx vlan accel. Would you please try to turn
+> it on/off manually by ethtool to see if it works in some setup?
+The gianfar chip in this routerboard does NOT support vlan accel it is
+a TSEC model.
+ethtool complains that this feature is not supported.
 
-Martyn
+>
+> I presume you have no vlans involved in your setup, right?
+No, there are no vlans in my setup.
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+
+>>Is it possible that the new code is tripped up by the bridge offload
+>>parameters somehow and thinks that the gianfar nic supports it as
+>>well?
+>
+> I don't see how now. Outside the bridge all is working correctly?
+Yes I can access the server from the bridge so the network is working.
+For me it looks like that the packets are just dropped when they
+should go through the bridge.
+
+Kind regards,
+Michael
