@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab1HJK0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 06:26:23 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51679 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1HJK0U convert rfc822-to-8bit (ORCPT
+	id S1752577Ab1HJKaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 06:30:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43587 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab1HJKaS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 06:26:20 -0400
-Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Aug 2011 12:25:48 +0200
-In-Reply-To: <20110810034012.GD24486@localhost>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094527.002914580@intel.com> <1312914906.1083.71.camel@twins>
-	 <20110810034012.GD24486@localhost>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 10 Aug 2011 06:30:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
+References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
+	<20110810090014.GB1909@minipsycho.brq.redhat.com>
+	<CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
+Date: Wed, 10 Aug 2011 12:30:16 +0200
+Message-ID: <CAMvAeqM-oH1UzxEp9PgO6ZP-AKtqosuMg5za25_X8DpPJMDX2w@mail.gmail.com>
+Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
+ 3.0-rc1 Bridge not forwarding unicast packages)
+From: Michael Guntsche <mguntsche@gmail.com>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312971948.23660.8.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 11:40 +0800, Wu Fengguang wrote:
-> On Wed, Aug 10, 2011 at 02:35:06AM +0800, Peter Zijlstra wrote:
-> > On Sat, 2011-08-06 at 16:44 +0800, Wu Fengguang wrote:
-> > > 
-> > > Add two fields to task_struct.
-> > > 
-> > > 1) account dirtied pages in the individual tasks, for accuracy
-> > > 2) per-task balance_dirty_pages() call intervals, for flexibility
-> > > 
-> > > The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
-> > > scale near-sqrt to the safety gap between dirty pages and threshold.
-> > > 
-> > > XXX: The main problem of per-task nr_dirtied is, if 10k tasks start
-> > > dirtying pages at exactly the same time, each task will be assigned a
-> > > large initial nr_dirtied_pause, so that the dirty threshold will be
-> > > exceeded long before each task reached its nr_dirtied_pause and hence
-> > > call balance_dirty_pages(). 
-> > 
-> > Right, so why remove the per-cpu threshold? you can keep that as a bound
-> > on the number of out-standing dirty pages.
-> 
-> Right, I also have the vague feeling that the per-cpu threshold can
-> somehow backup the per-task threshold in case there are too many tasks.
-> 
-> > Loosing that bound is actually a bad thing (TM), since you could have
-> > configured a tight dirty limit and lock up your machine this way.
-> 
-> It seems good enough to only remove the 4MB upper limit for
-> ratelimit_pages, so that the per-cpu limit won't kick in too
-> frequently in typical machines.
-> 
->   * Here we set ratelimit_pages to a level which ensures that when all CPUs are
->   * dirtying in parallel, we cannot go more than 3% (1/32) over the dirty memory
->   * thresholds before writeback cuts in.
-> - *
-> - * But the limit should not be set too high.  Because it also controls the
-> - * amount of memory which the balance_dirty_pages() caller has to write back.
-> - * If this is too large then the caller will block on the IO queue all the
-> - * time.  So limit it to four megabytes - the balance_dirty_pages() caller
-> - * will write six megabyte chunks, max.
-> - */
-> -
->  void writeback_set_ratelimit(void)
->  {
->         ratelimit_pages = vm_total_pages / (num_online_cpus() * 32);
->         if (ratelimit_pages < 16)
->                 ratelimit_pages = 16;
-> -       if (ratelimit_pages * PAGE_CACHE_SIZE > 4096 * 1024)
-> -               ratelimit_pages = (4096 * 1024) / PAGE_CACHE_SIZE;
->  }
+On Wed, Aug 10, 2011 at 11:59 AM, Michael Guntsche <mguntsche@gmail.com> wrote:
+<snip>
+>>>Offload parameters for lan_wire:
+>>>rx-checksumming: off
+>>>tx-checksumming: off
+>>>scatter-gather: off
+>>>tcp-segmentation-offload: off
+>>>udp-fragmentation-offload: off
+>>>generic-segmentation-offload: off
+>>>generic-receive-offload: on
+>>>large-receive-offload: off
+>>>rx-vlan-offload: off
+>>>tx-vlan-offload: off
+>>>ntuple-filters: off
+>>>receive-hashing: off
+>>>
+>>>The Bridge device on the other hand....
+>>>
+>>>Offload parameters for lan:
+>>>rx-checksumming: on
+>>>tx-checksumming: on
+>>>scatter-gather: off
+>>>tcp-segmentation-offload: off
+>>>udp-fragmentation-offload: off
+>>>generic-segmentation-offload: off
+>>>generic-receive-offload: on
+>>>large-receive-offload: off
+>>>rx-vlan-offload: off
+>>>tx-vlan-offload: on
+>>  ^^^^^^^^^^^^^^^^^^^ is this gfar?
+> No the "Lan" nic is the bridge itself. The gfar in question is lan_wire.
+>
+> /Michael
+>
 
-Uhm, so what's your bound then? 1/32 of the per-cpu memory seems rather
-a lot.
+Ok I would have saved hours of bisecting if I had just used the -e
+switch with tcpdump from the beginning.
+Jiri first of all the patch makes the connection work again. I can
+ping the client on the wlan from the server and vice-versa. Taking a
+look at the tcpdump (WITH -e) makes it obvious why it fails with the
+non patched version...
+
+This is a capture from the gfar lan port on the bridge with no patch applied
+12:13:24.011492 00:13:d4:4f:a2:dc (oui Unknown) > b4:07:f9:70:b7:c1
+(oui Unknown), ethertype 802.1Q (0x8100), length 102: vlan 19, p 0,
+ethertype IPv4, gibson.comsick.at > 192.168.42.55: ICMP echo request,
+id 23567, seq 74, length 64
+
+As you can see we get a VLAN package????
+
+With the patched version:
+12:16:33.756966 00:13:d4:4f:a2:dc (oui Unknown) > b4:07:f9:70:b7:c1
+(oui Unknown), ethertype IPv4 (0x0800), length 98: gibson.comsick.at >
+192.168.42.55: ICMP echo request, id 23669, seq 2, length 64
+12:16:33.843289 b4:07:f9:70:b7:c1 (oui Unknown) > 00:13:d4:4f:a2:dc
+(oui Unknown), ethertype IPv4 (0x0800), length 98: 192.168.42.55 >
+gibson.comsick.at: ICMP echo reply, id 23669, seq 2, length 64
+
+No VLAN and I get my replies.
+All that is left to do now is to find out why the current driver
+thinks that it is on a VLAN when it isn't.
+
+Any ideas Jiri?
+
+Kind regards,
+Michael
