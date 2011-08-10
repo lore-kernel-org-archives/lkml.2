@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1HJO7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:59:16 -0400
-Received: from banach.math.auburn.edu ([131.204.45.3]:42227 "EHLO
-	banach.math.auburn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab1HJO7N (ORCPT
+	id S1753195Ab1HJPD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:03:58 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:41403 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753118Ab1HJPD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:59:13 -0400
-Date: Wed, 10 Aug 2011 10:03:20 -0500 (CDT)
-From: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <Pine.LNX.4.44L0.1108101016200.1917-100000@iolanthe.rowland.org>
-Message-ID: <alpine.LNX.2.00.1108100951590.24873@banach.math.auburn.edu>
-References: <Pine.LNX.4.44L0.1108101016200.1917-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Aug 2011 11:03:56 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v7 01/16] ARM: LPAE: add ISBs around MMU enabling code
+Date: Wed, 10 Aug 2011 16:03:24 +0100
+Message-Id: <1312988619-16804-2-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.4.2.g597a6
+In-Reply-To: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 10 Aug 2011 15:03:50.0444 (UTC) FILETIME=[B65C8EC0:01CC576E]
+X-MC-Unique: 111081016035309201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p7AF4fwa003908
 
+From: Will Deacon <will.deacon@arm.com>
 
+Before we enable the MMU, we must ensure that the TTBR registers contain
+sane values. After the MMU has been enabled, we jump to the *virtual*
+address of the following function, so we also need to ensure that the
+SCTLR write has taken effect.
 
-On Wed, 10 Aug 2011, Alan Stern wrote:
+This patch adds ISB instructions around the SCTLR write to ensure the
+visibility of the above.
 
-> On Tue, 9 Aug 2011, Hans de Goede wrote:
-> 
-> > Hi,
-> > 
-> > On 08/09/2011 04:19 PM, Alan Stern wrote:
-> > > On Tue, 9 Aug 2011, Hans de Goede wrote:
-> > > According to Theodore, we have developed 5 drivers for them because the
-> > > stillcam modes in different devices use four different vendor-specific
-> > > drivers.
-> > 
-> > Yes, but so the the webcam modes of the different devices, so for
-> > the 5 (not sure if that is the right number) dual-cam mode chipsets
-> > we support there will be 5 drivers, each supporting both the
-> > webcam and the access to pictures stored in memory of the chipset
-> > they support. So 5 chipsets -> 5 drivers each supporting 1 chipset,
-> > and both functions of the single logical device that chipset
-> > represents.
-> > 
-> > >  Does it really make sense to combine 5 drivers into one?
-> > 
-> > Right, that is not the plan. The plan is to simply stop having 2 drivers
-> > for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
-> > + 5 webcam, to just 5 drivers. We will also likely be able to share
-> > code between the code for the 2 functionalities for things like generic
-> > set / get register functions, initialization, etc.
-> 
-> Okay, I didn't realize that the different cameras used different webcam 
-> drivers as well as different stillcam drivers.
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm/boot/compressed/head.S  |    1 +
+ arch/arm/include/asm/assembler.h |   11 +++++++++++
+ arch/arm/kernel/head.S           |    2 ++
+ arch/arm/kernel/sleep.S          |    2 ++
+ 4 files changed, 16 insertions(+), 0 deletions(-)
 
-Oh, yes. They are Proprietary devices. And that means what it says. :-)
-And all different from each other, too.
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index e95a598..716c7ba 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -551,6 +551,7 @@ __armv7_mmu_cache_on:
+ 		mcrne	p15, 0, r3, c2, c0, 0	@ load page table pointer
+ 		mcrne	p15, 0, r1, c3, c0, 0	@ load domain access control
+ #endif
++		mcr	p15, 0, r0, c7, c5, 4	@ ISB
+ 		mcr	p15, 0, r0, c1, c0, 0	@ load control register
+ 		mrc	p15, 0, r0, c1, c0, 0	@ and read it back
+ 		mov	r0, #0
+diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
+index 29035e8..b6e65de 100644
+--- a/arch/arm/include/asm/assembler.h
++++ b/arch/arm/include/asm/assembler.h
+@@ -187,6 +187,17 @@
+ #endif
  
-> As far as I can see, there's nothing to stop anybody from adding the 
-> stillcam functionality into the webcam drivers right now.  If some 
-> common code can be abstracted out into a shared source file, so much 
-> the better.
-> 
-> That would solve the problem, right?
+ /*
++ * Instruction barrier
++ */
++	.macro	instr_sync
++#if __LINUX_ARM_ARCH__ >= 7
++	isb
++#elif __LINUX_ARM_ARCH__ == 6
++	mcr	p15, 0, r0, c7, c5, 4
++#endif
++	.endm
++
++/*
+  * SMP data memory barrier
+  */
+ 	.macro	smp_dmb mode
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 742b610..d8231b2 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -396,8 +396,10 @@ ENDPROC(__enable_mmu)
+ 	.align	5
+ __turn_mmu_on:
+ 	mov	r0, r0
++	instr_sync
+ 	mcr	p15, 0, r0, c1, c0, 0		@ write control reg
+ 	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
++	instr_sync
+ 	mov	r3, r3
+ 	mov	r3, r13
+ 	mov	pc, r3
+diff --git a/arch/arm/kernel/sleep.S b/arch/arm/kernel/sleep.S
+index dc902f2..ecece65 100644
+--- a/arch/arm/kernel/sleep.S
++++ b/arch/arm/kernel/sleep.S
+@@ -85,8 +85,10 @@ ENDPROC(cpu_resume_mmu)
+ 	.ltorg
+ 	.align	5
+ cpu_resume_turn_mmu_on:
++	instr_sync
+ 	mcr	p15, 0, r1, c1, c0, 0	@ turn on MMU, I-cache, etc
+ 	mrc	p15, 0, r1, c0, c0, 0	@ read id reg
++	instr_sync
+ 	mov	r1, r1
+ 	mov	r1, r1
+ 	mov	pc, r3			@ jump to virtual address
 
-I think everyone involved believes that it would solve the problem. 
-
-The question has been all along whether or not there is any other way 
-which would work. Also the question of what, exactly, "belongs" in the 
-kernel and what does not. For, if something has been historically 
-supported in userspace (stillcam support, in this case) and has worked 
-well there, I would think it is kind of too bad to have to move said 
-support into the kernel just because the same hardware requires kernel 
-support for another functionality and the two sides clash. I mean, the 
-kernel is already big enough, no? But the logic that Hans has set forth 
-seems rather compelling. 
-
-Theodore Kilgore
