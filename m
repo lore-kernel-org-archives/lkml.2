@@ -1,157 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1HJUc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 16:32:27 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:36335 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab1HJUc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 16:32:26 -0400
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
-	device
-From: Badari Pulavarty <pbadari@us.ibm.com>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khoa Huynh <khoa@us.ibm.com>
-In-Reply-To: <4E41EAC5.8060001@gmail.com>
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>
-	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>
-	 <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com>
-	 <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop>
-	 <4E3BCE4D.7090809@gmail.com> <4E3C302A.3040500@us.ibm.com>
-	 <4E3F3D4E.70104@gmail.com> <4E3F6E72.1000907@us.ibm.com>
-	 <4E3F90E3.9080600@gmail.com> <4E4019E1.2090508@us.ibm.com>
-	 <4E41EAC5.8060001@gmail.com>
-Content-Type: text/plain
-Date: Wed, 10 Aug 2011 13:37:47 -0700
-Message-Id: <1313008667.9603.14.camel@badari-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1753726Ab1HJUdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 16:33:39 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:13668 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751925Ab1HJUdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 16:33:38 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: grant.likely@secretlab.ca
+Cc: dilinger@queued.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] gpio-vx855: add device tree binding
+Message-Id: <20110810203334.411529D401C@zog.reactivated.net>
+Date: Wed, 10 Aug 2011 21:33:34 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=k1O6yqwARh4A:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=x7EdvbJ8gsB9n6TrBDgA:9 a=2VOpp8wDU8semRwgGpEA:7 a=d4CUUju0HPYA:10 a=XRHo941U3qHBMacx:21 a=yClDitE5-8W8Zd-a:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 10:19 +0800, Liu Yuan wrote:
-> On 08/09/2011 01:16 AM, Badari Pulavarty wrote:
-> > On 8/8/2011 12:31 AM, Liu Yuan wrote:
-> >> On 08/08/2011 01:04 PM, Badari Pulavarty wrote:
-> >>> On 8/7/2011 6:35 PM, Liu Yuan wrote:
-> >>>> On 08/06/2011 02:02 AM, Badari Pulavarty wrote:
-> >>>>> On 8/5/2011 4:04 AM, Liu Yuan wrote:
-> >>>>>> On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
-> >>>>>>> Hi Liu Yuan,
-> >>>>>>>
-> >>>>>>> I started testing your patches. I applied your kernel patch to 3.0
-> >>>>>>> and applied QEMU to latest git.
-> >>>>>>>
-> >>>>>>> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
-> >>>>>>> I ran simple "dd" read tests from the guest on all block devices
-> >>>>>>> (with various blocksizes, iflag=direct).
-> >>>>>>>
-> >>>>>>> Unfortunately, system doesn't stay up. I immediately get into
-> >>>>>>> panic on the host. I didn't get time to debug the problem. 
-> >>>>>>> Wondering
-> >>>>>>> if you have seen this issue before and/or you have new patchset
-> >>>>>>> to try ?
-> >>>>>>>
-> >>>>>>> Let me know.
-> >>>>>>>
-> >>>>>>> Thanks,
-> >>>>>>> Badari
-> >>>>>>>
-> >>>>>>
-> >>>>>> Okay, it is actually a bug pointed out by MST on the other 
-> >>>>>> thread, that it needs a mutex for completion thread.
-> >>>>>>
-> >>>>>> Now would you please this attachment?This patch only applies to 
-> >>>>>> kernel part, on top of v1 kernel patch.
-> >>>>>>
-> >>>>>> This patch mainly moves completion thread into vhost thread as a 
-> >>>>>> function. As a result, both requests submitting and completion 
-> >>>>>> signalling is in the same thread.
-> >>>>>>
-> >>>>>> Yuan
-> >>>>>
-> >>>>> Unfortunately, "dd" tests (4 out of 6) in the guest hung. I see 
-> >>>>> following messages
-> >>>>>
-> >>>>> virtio_blk virtio2: requests: id 0 is not a head !
-> >>>>> virtio_blk virtio3: requests: id 1 is not a head !
-> >>>>> virtio_blk virtio5: requests: id 1 is not a head !
-> >>>>> virtio_blk virtio1: requests: id 1 is not a head !
-> >>>>>
-> >>>>> I still see host panics. I will collect the host panic and see if 
-> >>>>> its still same or not.
-> >>>>>
-> >>>>> Thanks,
-> >>>>> Badari
-> >>>>>
-> >>>>>
-> >>>> Would you please show me how to reproduce it step by step? I tried 
-> >>>> dd with two block device attached, but didn't get hung nor panic.
-> >>>>
-> >>>> Yuan
-> >>>
-> >>> I did 6 "dd"s on 6 block devices..
-> >>>
-> >>> dd if=/dev/vdb of=/dev/null bs=1M iflag=direct &
-> >>> dd if=/dev/vdc of=/dev/null bs=1M iflag=direct &
-> >>> dd if=/dev/vdd of=/dev/null bs=1M iflag=direct &
-> >>> dd if=/dev/vde of=/dev/null bs=1M iflag=direct &
-> >>> dd if=/dev/vdf of=/dev/null bs=1M iflag=direct &
-> >>> dd if=/dev/vdg of=/dev/null bs=1M iflag=direct &
-> >>>
-> >>> I can reproduce the problem with in 3 minutes :(
-> >>>
-> >>> Thanks,
-> >>> Badari
-> >>>
-> >>>
-> >> Ah...I made an embarrassing mistake that I tried to 'free()' an 
-> >> kmem_cache object.
-> >>
-> >> Would you please revert the vblk-for-kernel-2 patch and apply the new 
-> >> one attached in this letter?
-> >>
-> > Hmm.. My version of the code seems to have kzalloc() for used_info. I 
-> > don't have a version
-> > that is using kmem_cache_alloc(). Would it be possible for you to send 
-> > out complete patch
-> > (with all the fixes applied) for me to try ? This will avoid all the 
-> > confusion ..
-> >
-> > Thanks,
-> > Badari
-> >
->
-> Okay, please apply the attached patch to the vanilla kernel. :)
+This is needed to enable the HDD LED on the OLPC XO-1.5 laptop,
+enabled through devicetree and the gpio-leds driver.
 
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ .../devicetree/bindings/gpio/gpio_vx855.txt        |   20 ++++++++++++++++++++
+ drivers/gpio/gpio-vx855.c                          |    5 +++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio_vx855.txt
 
-It looks like the patch wouldn't work for testing multiple devices.
+v2: extended the documentation with information about the pin numbering
+scheme, which matches that of the driver.
 
-vhost_blk_open() does
-+       used_info_cachep = KMEM_CACHE(used_info, SLAB_HWCACHE_ALIGN |
-SLAB_PANIC);
-
-When opening second device, we get panic since used_info_cachep is
-already created. Just to make progress I moved this call to
-vhost_blk_init().
-
-I don't see any host panics now. With single block device (dd),
-it seems to work fine. But when I start testing multiple block
-devices I quickly run into hangs in the guest. I see following
-messages in the guest from virtio_ring.c:
-
-virtio_blk virtio2: requests: id 0 is not a head !
-virtio_blk virtio1: requests: id 0 is not a head !
-virtio_blk virtio4: requests: id 1 is not a head !
-virtio_blk virtio3: requests: id 39 is not a head !
-
-Thanks,
-Badari
-
-
+diff --git a/Documentation/devicetree/bindings/gpio/gpio_vx855.txt b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+new file mode 100644
+index 0000000..17285a5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio_vx855.txt
+@@ -0,0 +1,20 @@
++VIA VX855 GPIO controller
++
++Required properties:
++- compatible : "via,vx855-gpio"
++- #gpio-cells : Should be two. The first cell is the pin number and the
++  second cell is used to specify optional parameters:
++  - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- gpio-controller : Marks the device node as a GPIO controller.
++
++As VIA differentiates between GPI, GPO and GPIO on its 42 available pins,
++with each pin type restarting numbering at 0, the following numbering scheme
++is used in the device tree for the pin number:
++
++PIN NO		VIA NAME
++0..13		GPI 0..13
++14..26		GPO 0..12
++27..41		GPIO 0..14
++
++For example, GPIO 11 (VIA name) is referred to with pin number 38 in the
++device tree.
+diff --git a/drivers/gpio/gpio-vx855.c b/drivers/gpio/gpio-vx855.c
+index ef5aabd..5b7e9ba 100644
+--- a/drivers/gpio/gpio-vx855.c
++++ b/drivers/gpio/gpio-vx855.c
+@@ -31,6 +31,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pci.h>
+ #include <linux/io.h>
++#include <linux/of.h>
+ 
+ #define MODULE_NAME "vx855_gpio"
+ 
+@@ -216,6 +217,10 @@ static void vx855gpio_gpio_setup(struct vx855_gpio *vg)
+ 	c->ngpio = NR_VX855_GP;
+ 	c->can_sleep = 0;
+ 	c->names = vx855gpio_names;
++
++#ifdef CONFIG_OF_GPIO
++	c->of_node = of_find_compatible_node(NULL, NULL, "via,vx855-gpio");
++#endif
+ }
+ 
+ /* This platform device is ordinarily registered by the vx855 mfd driver */
+-- 
+1.7.6
 
