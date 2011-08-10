@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1HJTOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 15:14:44 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:53565 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890Ab1HJTOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 15:14:43 -0400
-Date: Wed, 10 Aug 2011 15:14:24 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110810191424.GA26147@flamenco.cs.columbia.edu>
-References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
- <1312968830-13377-5-git-send-email-manohar.vanga@cern.ch>
- <4E4258F4.8040408@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4258F4.8040408@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754781Ab1HJTQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 15:16:30 -0400
+Received: from lo.gmane.org ([80.91.229.12]:33951 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890Ab1HJTQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 15:16:29 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+Subject: Re: [patch] perf: ARMv7 wrong "branches" generalized instruction
+Date: Wed, 10 Aug 2011 20:16:17 +0100
+Message-ID: <yw1xmxfhoz5q.fsf@unicorn.mansr.com>
+References: <alpine.DEB.2.00.1108101328440.22769@cl320.eecs.utk.edu>
+	<20110810183306.GA32695@e102144-lin.cambridge.arm.com>
+	<alpine.DEB.2.00.1108101452510.25186@cl320.eecs.utk.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: unicorn.mansr.com
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Cancel-Lock: sha1:sxt4Hau72B+fQcPZYo4D2SxNF8I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 11:09:56 +0100, Martyn Welch wrote:
-> On 10/08/11 10:33, Manohar Vanga wrote:
-> >  static struct vme_bridge *find_bridge(struct vme_resource *resource)
-> > @@ -1525,9 +1573,13 @@ static int vme_bus_probe(struct device *dev)
-> >  	driver = dev_to_vme_driver(dev);
-> >  	bridge = dev_to_bridge(dev);
-> >  
-> > +	vme_bridge_get(bridge->num);
+Vince Weaver <vweaver1@eecs.utk.edu> writes:
 
-Here the return pointer is not being checked, although things
-would need to be very wrong for this to fail here.
+> On Wed, 10 Aug 2011, Will Deacon wrote:
+>
+>> > It turns out the branches event used (ARMV7_PERFCTR_PC_WRITE) only seems
+>> > to count taken branches.
+>>
+>> It also counts exceptions and instructions that write to the PC.
+>
+> are those more common than not-taken branches? 
 
-> >  	if (driver->probe != NULL)
-> >  		retval = driver->probe(dev, bridge->num, vme_calc_slot(dev));
-> >  
-> > +	if (retval)
-> > +		vme_bridge_put(bridge);
-> > +
-> 
-> Given that we are recounting automatically in probe and remove, under what
-> circumstances would we need to call them separately?
+Every function return and every PLT call would fall in this category.
 
-I agree, it's hard to imagine a scenario where "doubly locking"
-the module would make any sense at all.
+> I'd think branch predictor statistics will be a bit off if only taken
+> instructions are measured.
 
-It would also be nice to:
+Clearly.
 
-- Increment the refcount of the bridge device with get_device(),
-  this way we protect against the device removal as well.
-  Bonus points if we increment the bridge module's refcount
-  once per device driver using it and the bridge device's
-  refcount once per device sitting on it.
+-- 
+Måns Rullgård
+mans@mansr.com
 
-- re-think what the return value of vme_bridge_get should be;
-  guess my original idea was to return a reference to a bridge,
-  which would be safely used by device drivers from there
-  on. Since apparently we're not going this way, then perhaps
-  an int (returning 0 on success and -ENXIO on failure) would
-  be clearer.
-
-		Emilio
