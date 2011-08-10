@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1HJBfC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 21:35:02 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:42755 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752384Ab1HJBey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 21:34:54 -0400
-From: Mike Turquette <mturquette@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Mike Turquette <mturquette@ti.com>
-Subject: [PATCH 2/2] cpu: update cpu_hotpluggable_mask in register_cpu
-Date: Tue,  9 Aug 2011 18:33:27 -0700
-Message-Id: <1312940007-26069-3-git-send-email-mturquette@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312940007-26069-1-git-send-email-mturquette@ti.com>
-References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
+	id S1752472Ab1HJBse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 21:48:34 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:49189 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab1HJBsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 21:48:33 -0400
+Subject: Re: linux-next: build failure after merge of the security-testing
+ tree
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110810105840.cb0b3ac63c84b51b98029d8c@canb.auug.org.au>
+References: <20110810105840.cb0b3ac63c84b51b98029d8c@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 21:48:29 -0400
+Message-ID: <1312940909.2611.10.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the cpu_hotpluggable_mask for each registered CPU which supports
-hotplug.  This makes it trivial for kernel code to know which CPUs
-support hotplug operations.
+On Wed, 2011-08-10 at 10:58 +1000, Stephen Rothwell wrote:
+> Hi James,
+> 
+> After merging the security-testing tree, today's linux-next build
+> (powerpc ppc64_defconfig) failed like this:
+> 
+> fs/reiserfs/xattr_security.c: In function 'reiserfs_security_init':
+> fs/reiserfs/xattr_security.c:69:2: error: implicit declaration of function 'security_old_inode_init_security'
+> 
+> Caused by commit 9d8f13ba3f48 ("security: new
+> security_inode_init_security API adds function callback").  Forgotten
+> include?
+> 
+> I have used the security-testing tree from next-20110809 for today.
 
-Signed-off-by: Mike Turquette <mturquette@ti.com>
----
- drivers/base/cpu.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+No, I left out the stub definition in the include.  James, how do you
+want me to correct this and the missing 'inline'?  Should I be updating
+the original patches or submitting them as new patches?
 
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 251acea..91ddcf8 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -224,8 +224,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
- 
- 	error = sysdev_register(&cpu->sysdev);
- 
--	if (!error && cpu->hotpluggable)
-+	if (!error && cpu->hotpluggable) {
- 		register_cpu_control(cpu);
-+		set_cpu_hotpluggable(num, true);
-+	}
- 	if (!error)
- 		per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
- 	if (!error)
--- 
-1.7.4.1
+thanks,
+
+Mimi
 
