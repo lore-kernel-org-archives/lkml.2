@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1HJOdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:33:25 -0400
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:41725 "EHLO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab1HJOdY (ORCPT
+	id S1752855Ab1HJOeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:34:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59329 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab1HJOeV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:33:24 -0400
-Message-ID: <4E4296B0.5050302@ge.com>
-Date: Wed, 10 Aug 2011 15:33:20 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 10 Aug 2011 10:34:21 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, cota@braap.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] staging: vme: make [alloc|free]_consistent bridge
- specific
-References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>	 <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>	 <1312981940.11924.68.camel@Joe-Laptop>  <4E4288CB.7080708@ge.com>	 <1312984261.11924.91.camel@Joe-Laptop>  <4E428DC3.5070302@ge.com> <1312986652.11924.94.camel@Joe-Laptop>
-In-Reply-To: <1312986652.11924.94.camel@Joe-Laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2011 14:30:03.0775 (UTC) FILETIME=[FE5F68F0:01CC5769]
+In-Reply-To: <1312985888.2989.46.camel@i7.infradead.org>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<1312067670.22074.61.camel@i7.infradead.org>
+	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	<4E34998D.8060806@zytor.com>
+	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	<4E4140B3.7090802@suse.cz>
+	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
+	<4E4280BA.9050109@suse.cz>
+	<1312981658.2989.39.camel@i7.infradead.org>
+	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
+	<1312985888.2989.46.camel@i7.infradead.org>
+Date: Wed, 10 Aug 2011 10:34:19 -0400
+Message-ID: <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/11 15:30, Joe Perches wrote:
-> On Wed, 2011-08-10 at 14:55 +0100, Martyn Welch wrote:
->> On 10/08/11 14:51, Joe Perches wrote:
->>> On Wed, 2011-08-10 at 14:34 +0100, Martyn Welch wrote:
->>>> On 10/08/11 14:12, Joe Perches wrote:
->>>>> Except for the name, those 2 blocks are identical.
->>>>> Maybe create a non-pci generic version instead?
->>>> I'm not sure you can (I spent quite a bit of time attempting to do just that
->>>> when I wrote the original).
->>> Doesn't something like this work?
-> []
->> Could. Though we'd have to put this in a new common file for use by
->> vme_tsi148.c and vme_ca91cx42.c as the point of this was to get it out of the
->> VME core code. I'm just not sure that it's worth it.
-> 
-> That's a bit different than what you wrote earlier.
-> No worries then.
-> 
+On Wed, Aug 10, 2011 at 10:17 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Wed, 2011-08-10 at 10:15 -0400, Arnaud Lacombe wrote:
+>>
+>> hum, let's take a real life example: user foo wants his config to
+>> enable CONFIG_WIRELESS_EXT, so with what you propose, he would do:
+>>
+>> # make CONFIG_WIRELESS_EXT=y allmodconfig
+>>
+>> currently, this would _never_ work, unless one of the symbol selected
+>> by `allmodconfig' selects it, as WIRELESS_EXT is defined the
+>> following:
+>>
+>> config WIRELESS_EXT
+>>     bool
+>>
+>> I suspect there also an implicit dependency to WIRELESS.
+>
+> This is a complete red herring. It's *always* been like that, and works
+> *just* like this for the 'all.config' file etc.
+>
+your point being ? I might as well tell you that I find the current
+behavior of 'all*.config' just as broken wrt. to dependency
+management.
 
-Sorry, I originally read your question to mean "create a function that didn't
-use PCI specific functions".
+> If you have nothing relevant to say, just don't say anything.
+>
+maybe you can come with a detailed description of your proposal's
+behavior, including how to manage case like this, instead of just
+throwing patch around ?
 
-Martyn
+If I do:
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+# make CONFIG_WIRELESS_EXT=y allnoconfig
+
+I expect either a success or an error, not a silent discard. And
+*yes*, the problem already exists with "all*.config".
+
+Thanks,
+ - Arnaud
