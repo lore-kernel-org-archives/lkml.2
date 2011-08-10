@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab1HJCYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 22:24:25 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35298 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1HJCYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 22:24:24 -0400
-From: stufever@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, joe@perches.com, davem@davemloft.net,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Subject: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-Date: Wed, 10 Aug 2011 10:29:59 +0800
-Message-Id: <1312943399-14435-1-git-send-email-wangshaoyan.pt@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752591Ab1HJC1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 22:27:36 -0400
+Received: from frodo.hserus.net ([204.74.68.40]:55114 "EHLO frodo.hserus.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991Ab1HJC1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 22:27:35 -0400
+X-Greylist: delayed 1525 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 22:27:35 EDT
+Date: Tue, 9 Aug 2011 23:01:57 -0300
+From: Christian Robottom Reis <kiko@linaro.org>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH 1/2] cpumask: introduce cpumask for hotpluggable CPUs
+Message-ID: <20110810020157.GA29494@anthem.async.com.br>
+References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
+ <1312940007-26069-2-git-send-email-mturquette@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312940007-26069-2-git-send-email-mturquette@ti.com>
+Organization: http://www.linaro.org/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+On Tue, Aug 09, 2011 at 06:33:26PM -0700, Mike Turquette wrote:
+> - *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
+> - *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
+> - *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
+> - *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
+> + *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
+> + *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
+> + *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
+> + *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
+> + *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
 
-  drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
-
-Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
----
- drivers/net/gianfar_ethtool.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-index 6e35069..a4777d2 100644
---- a/drivers/net/gianfar_ethtool.c
-+++ b/drivers/net/gianfar_ethtool.c
-@@ -686,10 +686,21 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- {
- 	unsigned int last_rule_idx = priv->cur_filer_idx;
- 	unsigned int cmp_rqfpr;
--	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
--	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
-+	unsigned int *local_rqfpr;
-+	unsigned int *local_rqfcr;
- 	int i = 0x0, k = 0x0;
- 	int j = MAX_FILER_IDX, l = 0x0;
-+	int ret = 1;
-+
-+	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	if (!local_rqfpr || !local_rqfcr) {
-+		pr_err("Out of memory\n");
-+		ret = 0;
-+		got err;
-+	}
- 
- 	switch (class) {
- 	case TCP_V4_FLOW:
-@@ -706,7 +717,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 		break;
- 	default:
- 		pr_err("Right now this class is not supported\n");
--		return 0;
-+		ret = 0;
-+		goto err;
- 	}
- 
- 	for (i = 0; i < MAX_FILER_IDX + 1; i++) {
-@@ -721,7 +733,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 
- 	if (i == MAX_FILER_IDX + 1) {
- 		pr_err("No parse rule found, can't create hash rules\n");
--		return 0;
-+		ret = 0;
-+		goto err;
- 	}
- 
- 	/* If a match was found, then it begins the starting of a cluster rule
-@@ -765,7 +778,10 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 		priv->cur_filer_idx = priv->cur_filer_idx - 1;
- 	}
- 
--	return 1;
-+err:
-+	kfree(local_rqfcr);
-+	kfree(local_rqfpr);
-+	return ret;
- }
- 
- static int gfar_set_hash_opts(struct gfar_private *priv, struct ethtool_rxnfc *cmd)
+Why not fix the 'iff' typo while you're here?
 -- 
-1.7.4.1
-
+Christian Robottom Reis, Engineering VP
+Brazil (GMT-3) | [+55] 16 9112 6430 | [+1] 612 216 4935
+Linaro.org: Open Source Software for ARM SoCs
