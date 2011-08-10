@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab1HJVGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 17:06:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43016 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab1HJVGA (ORCPT
+	id S1754958Ab1HJVHV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 17:07:21 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63304 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab1HJVHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 17:06:00 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=PKQHljGB0YUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7Lq4m09SG7u2NAY-s-IA:9 a=2FA0Y1kJdl0KZBOh2E8A:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 06/10] tracing/filter: Change count_leafs function to
- use walk_pred_tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1312452506-5100-7-git-send-email-jolsa@redhat.com>
-References: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
-	 <1312452506-5100-7-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Aug 2011 17:05:58 -0400
-Message-ID: <1313010358.18583.273.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Aug 2011 17:07:20 -0400
+MIME-Version: 1.0
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 10 Aug 2011 15:06:49 -0600
+Message-ID: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
+Subject: dynamic-debug not built into scx200_acb, scx200_i2c
+To: LKML <linux-kernel@vger.kernel.org>, linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I really like these two patches (5 and 6) as I hated the duplicate code
-of the two tree walks. But... see below.
+scx200_acb has several pr_debugs, but theyre not available via dynamic-debug
+
+Ive been unable to figure out why.
+Any ideas ?
+
+jimc@chumly:~/projects/lx/linux-2.6$ grep debug drivers/i2c/busses/scx200_*
+drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": ACBCTL2 readback failed\n");
+drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": disabled, but
+ACBCTL1=0x%02x\n",
+drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": enabled, but NMINTE
+won't be set, "
+drivers/i2c/busses/scx200_acb.c:	pr_debug(NAME ": NatSemi SCx200
+ACCESS.bus Driver\n");
+drivers/i2c/busses/scx200_i2c.c:	pr_debug(NAME ": NatSemi SCx200 I2C Driver\n");
+drivers/i2c/busses/scx200_i2c.c:	pr_debug(NAME ": SCL=GPIO%02u,
+SDA=GPIO%02u\n", scl, sda);
 
 
-On Thu, 2011-08-04 at 12:08 +0200, Jiri Olsa wrote:
-> Changing count_leafs function to use unified predicates tree
-> processing.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/trace_events_filter.c |   45 +++++++++--------------------------
->  1 files changed, 12 insertions(+), 33 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index 5b889d4..14a9dad 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -1418,43 +1418,22 @@ static int check_pred_tree(struct event_filter *filter,
->  			      check_pred_tree_cb, &data);
->  }
->  
-> -static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
-> +static int count_leafs_cb(enum move_type move, struct filter_pred *pred,
-> +			  int *err, void *data)
->  {
-> -	struct filter_pred *pred;
-> -	enum move_type move = MOVE_DOWN;
-> -	int count = 0;
-> -	int done = 0;
-> +	int *count = data;
->  
-> -	pred = root;
-> +	if ((move == MOVE_DOWN) &&
-> +	    (pred->left == FILTER_PRED_INVALID))
-> +		(*count)++;
->  
-> -	do {
-> -		switch (move) {
-> -		case MOVE_DOWN:
-> -			if (pred->left != FILTER_PRED_INVALID) {
-> -				pred = &preds[pred->left];
-> -				continue;
-> -			}
-> -			/* A leaf at the root is just a leaf in the tree */
-> -			if (pred == root)
-> -				return 1;
-> -			count++;
-> -			pred = get_pred_parent(pred, preds,
-> -					       pred->parent, &move);
-> -			continue;
-> -		case MOVE_UP_FROM_LEFT:
-> -			pred = &preds[pred->right];
-> -			move = MOVE_DOWN;
-> -			continue;
-> -		case MOVE_UP_FROM_RIGHT:
-> -			if (pred == root)
-> -				break;
-> -			pred = get_pred_parent(pred, preds,
-> -					       pred->parent, &move);
-> -			continue;
-> -		}
-> -		done = 1;
-> -	} while (!done);
-> +	return WALK_PRED_DEFAULT;
-> +}
->  
-> +static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
-> +{
-> +	int count = 0;
-> +	WARN_ON(walk_pred_tree(preds, root, count_leafs_cb, &count));
-
-Please do not put functionality in a WARN_ON(). Some people have
-WARN_ON() turn into nops.
-
-Make this a:
-
-	ret = walk_pred_tree(preds, root, count_leafs_cb, &count);
-	WARN_ON(ret);
-
--- Steve
-
->  	return count;
->  }
->  
+jimc@chumly:~/projects/lx/build-skc$ for k in `find drivers -name
+\*.ko`; do echo $k; readelf -S $k |grep __verbose; done
+drivers/i2c/busses/i2c-stub.ko
+drivers/i2c/busses/i2c-gpio.ko
+drivers/i2c/busses/scx200_i2c.ko
+drivers/i2c/busses/scx200_acb.ko
+drivers/i2c/muxes/gpio-i2cmux.ko
+drivers/i2c/i2c-mux.ko
+drivers/i2c/i2c-dev.ko
+  [15] __verbose         PROGBITS        00000000 0018c8 0000c0 00  WA  0   0  8
+  [16] .rel__verbose     REL             00000000 0024cc 000100 08     23  15  4
+drivers/i2c/i2c-core.ko
+  [24] __verbose         PROGBITS        00000000 003e58 000198 00  WA  0   0  8
+  [25] .rel__verbose     REL             00000000 0058c8 000220 08     32  24  4
 
 
+drivers/gpio/nsc_gpio.ko
+  [18] __verbose         PROGBITS        00000000 000850 000090 00  WA  0   0  8
+  [19] .rel__verbose     REL             00000000 0011bc 0000c0 08     26  18  4
+drivers/gpio/pcf857x.ko
+  [14] __verbose         PROGBITS        00000000 000e80 000048 00  WA  0   0  8
+  [15] .rel__verbose     REL             00000000 001710 000060 08     22  14  4
+drivers/gpio/pc8736x_gpio.ko
+  [17] __verbose         PROGBITS        00000000 001140 0000a8 00  WA  0   0  8
+  [18] .rel__verbose     REL             00000000 001da0 0000e0 08     25  17  4
+drivers/gpio/scx200_gpio.ko
+drivers/bluetooth/bfusb.ko
+  [14] __verbose         PROGBITS        00000000 002160 000198 00  WA  0   0  8
+  [15] .rel__verbose     REL             00000000 003108 000220 08     22  14  4
+drivers/bluetooth/btusb.ko
+  [16] __verbose         PROGBITS        00000000 002ca8 0001c8 00  WA  0   0  8
+  [17] .rel__verbose     REL             00000000 003e44 000260 08     24  16  4
+drivers/bluetooth/bcm203x.ko
+  [15] __verbose         PROGBITS        00000000 000f78 000078 00  WA  0   0  8
+  [16] .rel__verbose     REL             00000000 001a04 0000a0 08     23  15  4
+drivers/bluetooth/hci_uart.ko
+  [17] __verbose         PROGBITS        00000000 004068 000510 00  WA  0   0  8
+  [18] .rel__verbose     REL             00000000 0060a4 0006c0 08     25  17  4
+drivers/bluetooth/bpa10x.ko
+  [14] __verbose         PROGBITS        00000000 0014f0 000120 00  WA  0   0  8
+  [15] .rel__verbose     REL             00000000 002130 000180 08     22  14  4
+drivers/connector/cn.ko
+drivers/cpufreq/cpufreq_userspace.ko
+  [16] __verbose         PROGBITS        00000000 0008b8 000078 00  WA  0   0  8
+  [17] .rel__verbose     REL             00000000 001258 0000a0 08     24  16  4
+drivers/cpufreq/gx-suspmod.ko
+  [16] __verbose         PROGBITS        00000000 000f80 0000d8 00  WA  0   0  8
+  [17] .rel__verbose     REL             00000000 001ae8 000120 08     25  16  4
+drivers/cpufreq/cpufreq_ondemand.ko
+drivers/cpufreq/cpufreq_performance.ko
+  [14] __verbose         PROGBITS        00000000 000388 000018 00  WA  0   0  8
+  [15] .rel__verbose     REL             00000000 000a30 000020 08     22  14  4
