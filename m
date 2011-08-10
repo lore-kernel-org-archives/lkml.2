@@ -1,86 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab1HJM7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 08:59:12 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:48816 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab1HJM7L (ORCPT
+	id S1753991Ab1HJM7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 08:59:35 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:52941 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab1HJM7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 08:59:11 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-Date: Wed, 10 Aug 2011 14:59:07 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [RFC][PATCH 1/2] S5PV210: SPI: Add clkdev support
-In-reply-to: <CAAgF-BftGYkZ6aaSZgxd8gk1Zy9-sJEroZcaijd6zN3Qr9MEhQ@mail.gmail.com>
-To: padma venkat <padma.kvr@gmail.com>
-Cc: Padmavathi Venna <padma.v@samsung.com>, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, jassi Brar <jassisinghbrar@gmail.com>
-Message-id: <4E42809B.7070504@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18)
- Gecko/20110617 Thunderbird/3.1.11
-References: <1312898222-7165-1-git-send-email-padma.v@samsung.com>
- <4E413941.10307@samsung.com>
- <CAAgF-BftGYkZ6aaSZgxd8gk1Zy9-sJEroZcaijd6zN3Qr9MEhQ@mail.gmail.com>
+	Wed, 10 Aug 2011 08:59:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Alan Cox <alan@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 1/1] TTY: pty, fix pty counting
+Date: Wed, 10 Aug 2011 14:59:28 +0200
+Message-Id: <1312981168-17039-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Padmavathi,
+tty_operations->remove is normally called like:
+queue_release_one_tty
+ ->tty_shutdown
+   ->tty_driver_remove_tty
+     ->tty_operations->remove
 
-On 08/10/2011 02:04 PM, padma venkat wrote:
-> Hi Sylwester,
-> 
-> On Tue, Aug 9, 2011 at 7:12 PM, Sylwester Nawrocki
-> <s.nawrocki@samsung.com> wrote:
->> [corrected Jassi's email address]
->>
->> On 08/09/2011 03:57 PM, Padmavathi Venna wrote:
->>> Create a clkdev alias for spi bus clock and modify the spi
->>> driver to lookup the clock using the alias name instead of
->>> passing clock name and clock number from SPI platform data.
->>>
->>> Signed-off-by: Padmavathi Venna <padma.v@samsung.com>
->>> ---
->>> This patch is tested for S5PV210 platform and similar
->>> changes can be adopted for rest of the Samsung's s3c
->>> and s5p platforms, if this approach is accepted.
->>
->> It is a bit surprising to me how you do intend to use the clock aliases.
->> Are we seriously going to be creating clock con_id aliases for most
->> of the available devices ? It doesn't sound sane to me..
->
-> We don't need to create the alias names for all the devices. But we need
-> to create only for those which need clock information from platform data.
-> As far as I know we need to create for spi,hsmmc,uart and iis.
+However tty_shutdown() is called from queue_release_one_tty() only if
+tty_operations->shutdown is NULL. But for pty, it is not.
+pty_unix98_shutdown() is used there as ->shutdown.
 
-That's already a lot. 
-Just to clarify, the clock names were originally passed in platform_data
-because they differ across SoCs the driver supports, right ?
-Or are there any other reasons ?
+So tty_operations->remove of pty (i.e. pty_unix98_remove()) is never
+called. This results in invalid pty_count. I.e. what can be seen in
+/proc/sys/kernel/pty/nr.
 
-The whole idea of the clkdev is not to require any information about 
-the clocks in platform_data. You just need to be registering the clock 
-identifiers *at the device*, not the clock names specific to the machine.
-The platform code takes care of the translation and the drivers only need
-to ask clkdev for the 'clock connection id', rather than the original
-machine clock name.
-You can do this by adding the aliases, but it's not optimal. You are adding
-the code which could well be avoided.
+I see this was already reported at:
+  https://lkml.org/lkml/2009/11/5/370
+But it was not fixed since then.
 
->
->>
->> Wouldn't it be possible to avoid the aliases by correcting the clock
->> registration process ?
->
-> Yes it is possible but we don't have the flexibility to create the alias names
-> only for the required clocks.
+This patch is kind of a hackish way. The problem lies in ->install. We
+allocate there another tty (so-called tty->link). So ->install is
+called once, but ->remove twice, for both tty and tty->link. The fix
+here is to count both tty and tty->link and divide the count by 2 for
+user.
 
-By registering proper clock connection ids you would not need the aliases at all.
+And to have ->remove called, let's make tty_driver_remove_tty() global
+and call that from pty_unix98_shutdown() (tty_operations->shutdown).
 
---
-Regards,
-Sylwester
+While at it, let's document that when ->shutdown is defined,
+tty_shutdown() is not called.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ drivers/tty/pty.c          |   17 +++++++++++++++--
+ drivers/tty/tty_io.c       |    3 +--
+ include/linux/tty.h        |    2 ++
+ include/linux/tty_driver.h |    3 +++
+ 4 files changed, 21 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 98b6e3b..e809e9d 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -446,8 +446,19 @@ static inline void legacy_pty_init(void) { }
+ int pty_limit = NR_UNIX98_PTY_DEFAULT;
+ static int pty_limit_min;
+ static int pty_limit_max = NR_UNIX98_PTY_MAX;
++static int tty_count;
+ static int pty_count;
+ 
++static inline void pty_inc_count(void)
++{
++	pty_count = (++tty_count) / 2;
++}
++
++static inline void pty_dec_count(void)
++{
++	pty_count = (--tty_count) / 2;
++}
++
+ static struct cdev ptmx_cdev;
+ 
+ static struct ctl_table pty_table[] = {
+@@ -542,6 +553,7 @@ static struct tty_struct *pts_unix98_lookup(struct tty_driver *driver,
+ 
+ static void pty_unix98_shutdown(struct tty_struct *tty)
+ {
++	tty_driver_remove_tty(tty->driver, tty);
+ 	/* We have our own method as we don't use the tty index */
+ 	kfree(tty->termios);
+ }
+@@ -588,7 +600,8 @@ static int pty_unix98_install(struct tty_driver *driver, struct tty_struct *tty)
+ 	 */
+ 	tty_driver_kref_get(driver);
+ 	tty->count++;
+-	pty_count++;
++	pty_inc_count(); /* tty */
++	pty_inc_count(); /* tty->link */
+ 	return 0;
+ err_free_mem:
+ 	deinitialize_tty_struct(o_tty);
+@@ -602,7 +615,7 @@ err_free_tty:
+ 
+ static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
+ {
+-	pty_count--;
++	pty_dec_count();
+ }
+ 
+ static const struct tty_operations ptm_unix98_ops = {
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 150e4f7..4f1fc81 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1295,8 +1295,7 @@ static int tty_driver_install_tty(struct tty_driver *driver,
+  *
+  *	Locking: tty_mutex for now
+  */
+-static void tty_driver_remove_tty(struct tty_driver *driver,
+-						struct tty_struct *tty)
++void tty_driver_remove_tty(struct tty_driver *driver, struct tty_struct *tty)
+ {
+ 	if (driver->ops->remove)
+ 		driver->ops->remove(driver, tty);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 6d5eceb..a7720a4 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -421,6 +421,8 @@ extern void tty_driver_flush_buffer(struct tty_struct *tty);
+ extern void tty_throttle(struct tty_struct *tty);
+ extern void tty_unthrottle(struct tty_struct *tty);
+ extern int tty_do_resize(struct tty_struct *tty, struct winsize *ws);
++extern void tty_driver_remove_tty(struct tty_driver *driver,
++				  struct tty_struct *tty);
+ extern void tty_shutdown(struct tty_struct *tty);
+ extern void tty_free_termios(struct tty_struct *tty);
+ extern int is_current_pgrp_orphaned(void);
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index 9deeac8..ecdaeb9 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -47,6 +47,9 @@
+  *
+  * 	This routine is called synchronously when a particular tty device
+  *	is closed for the last time freeing up the resources.
++ *	Note that tty_shutdown() is not called if ops->shutdown is defined.
++ *	This means one is responsible to take care of calling ops->remove (e.g.
++ *	via tty_driver_remove_tty) and releasing tty->termios.
+  *
+  *
+  * void (*cleanup)(struct tty_struct * tty);
+-- 
+1.7.6
+
+
