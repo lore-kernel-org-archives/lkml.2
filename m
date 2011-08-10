@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1HJXwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 19:52:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab1HJXwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 19:52:35 -0400
-Date: Wed, 10 Aug 2011 19:52:33 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-i2c@vger.kernel.org
-Subject: Re: dynamic-debug not built into scx200_acb, scx200_i2c
-Message-ID: <20110810235233.GA2588@redhat.com>
-References: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753524Ab1HKAAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 20:00:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41195 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab1HKAAN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 20:00:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 11 Aug 2011 08:52:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 2/6]  memcg: stop vmscan when enough done.
+Message-Id: <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110810141425.GC15007@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110810141425.GC15007@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 03:06:49PM -0600, Jim Cromie wrote:
-> scx200_acb has several pr_debugs, but theyre not available via dynamic-debug
+On Wed, 10 Aug 2011 16:14:25 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> On Tue 09-08-11 19:09:33, KAMEZAWA Hiroyuki wrote:
+> > memcg :avoid node fallback scan if possible.
+> > 
+> > Now, try_to_free_pages() scans all zonelist because the page allocator
+> > should visit all zonelists...but that behavior is harmful for memcg.
+> > Memcg just scans memory because it hits limit...no memory shortage
+> > in pased zonelist.
+> > 
+> > For example, with following unbalanced nodes
+> > 
+> >      Node 0    Node 1
+> > File 1G        0
+> > Anon 200M      200M
+> > 
+> > memcg will cause swap-out from Node1 at every vmscan.
+> > 
+> > Another example, assume 1024 nodes system.
+> > With 1024 node system, memcg will visit 1024 nodes
+> > pages per vmscan... This is overkilling. 
+> > 
+> > This is why memcg's victim node selection logic doesn't work
+> > as expected.
+> > 
+> > This patch is a help for stopping vmscan when we scanned enough.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Ive been unable to figure out why.
-> Any ideas ?
+> OK, I see the point. At first I was afraid that we would make a bigger
+> pressure on the node which triggered the reclaim but as we are selecting
+> t dynamically (mem_cgroup_select_victim_node) - round robin at the
+> moment - it should be fair in the end. More targeted node selection
+> should be even more efficient.
+> 
+> I still have a concern about resize_limit code path, though. It uses
+> memcg direct reclaim to get under the new limit (assuming it is lower
+> than the current one). 
+> Currently we might reclaim nr_nodes * SWAP_CLUSTER_MAX while
+> after your change we have it at SWAP_CLUSTER_MAX. This means that
+> mem_cgroup_resize_mem_limit might fail sooner on large NUMA machines
+> (currently it is doing 5 rounds of reclaim before it gives up). I do not
+> consider this to be blocker but maybe we should enhance
+> mem_cgroup_hierarchical_reclaim with a nr_pages argument to tell it how
+> much we want to reclaim (min(SWAP_CLUSTER_MAX, nr_pages)).
+> What do you think?
 > 
 
-hmmm...I see drivers/i2c/busses/Makefile has:
+Hmm,
 
-ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+> mem_cgroup_resize_mem_limit might fail sooner on large NUMA machines
 
-Any chance CONFIG_I2C_DEBUG_BUS is set?
+mem_cgroup_resize_limit() just checks (curusage < prevusage), then, 
+I agree reducing the number of scan/reclaim will cause that.
+
+I agree to pass nr_pages to try_to_free_mem_cgroup_pages().
+
 
 Thanks,
+-Kame
 
--Jason
-
-
-> jimc@chumly:~/projects/lx/linux-2.6$ grep debug drivers/i2c/busses/scx200_*
-> drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": ACBCTL2 readback failed\n");
-> drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": disabled, but
-> ACBCTL1=0x%02x\n",
-> drivers/i2c/busses/scx200_acb.c:		pr_debug(NAME ": enabled, but NMINTE
-> won't be set, "
-> drivers/i2c/busses/scx200_acb.c:	pr_debug(NAME ": NatSemi SCx200
-> ACCESS.bus Driver\n");
-> drivers/i2c/busses/scx200_i2c.c:	pr_debug(NAME ": NatSemi SCx200 I2C Driver\n");
-> drivers/i2c/busses/scx200_i2c.c:	pr_debug(NAME ": SCL=GPIO%02u,
-> SDA=GPIO%02u\n", scl, sda);
-> 
-> 
-> jimc@chumly:~/projects/lx/build-skc$ for k in `find drivers -name
-> \*.ko`; do echo $k; readelf -S $k |grep __verbose; done
-> drivers/i2c/busses/i2c-stub.ko
-> drivers/i2c/busses/i2c-gpio.ko
-> drivers/i2c/busses/scx200_i2c.ko
-> drivers/i2c/busses/scx200_acb.ko
-> drivers/i2c/muxes/gpio-i2cmux.ko
-> drivers/i2c/i2c-mux.ko
-> drivers/i2c/i2c-dev.ko
->   [15] __verbose         PROGBITS        00000000 0018c8 0000c0 00  WA  0   0  8
->   [16] .rel__verbose     REL             00000000 0024cc 000100 08     23  15  4
-> drivers/i2c/i2c-core.ko
->   [24] __verbose         PROGBITS        00000000 003e58 000198 00  WA  0   0  8
->   [25] .rel__verbose     REL             00000000 0058c8 000220 08     32  24  4
-> 
-> 
-> drivers/gpio/nsc_gpio.ko
->   [18] __verbose         PROGBITS        00000000 000850 000090 00  WA  0   0  8
->   [19] .rel__verbose     REL             00000000 0011bc 0000c0 08     26  18  4
-> drivers/gpio/pcf857x.ko
->   [14] __verbose         PROGBITS        00000000 000e80 000048 00  WA  0   0  8
->   [15] .rel__verbose     REL             00000000 001710 000060 08     22  14  4
-> drivers/gpio/pc8736x_gpio.ko
->   [17] __verbose         PROGBITS        00000000 001140 0000a8 00  WA  0   0  8
->   [18] .rel__verbose     REL             00000000 001da0 0000e0 08     25  17  4
-> drivers/gpio/scx200_gpio.ko
-> drivers/bluetooth/bfusb.ko
->   [14] __verbose         PROGBITS        00000000 002160 000198 00  WA  0   0  8
->   [15] .rel__verbose     REL             00000000 003108 000220 08     22  14  4
-> drivers/bluetooth/btusb.ko
->   [16] __verbose         PROGBITS        00000000 002ca8 0001c8 00  WA  0   0  8
->   [17] .rel__verbose     REL             00000000 003e44 000260 08     24  16  4
-> drivers/bluetooth/bcm203x.ko
->   [15] __verbose         PROGBITS        00000000 000f78 000078 00  WA  0   0  8
->   [16] .rel__verbose     REL             00000000 001a04 0000a0 08     23  15  4
-> drivers/bluetooth/hci_uart.ko
->   [17] __verbose         PROGBITS        00000000 004068 000510 00  WA  0   0  8
->   [18] .rel__verbose     REL             00000000 0060a4 0006c0 08     25  17  4
-> drivers/bluetooth/bpa10x.ko
->   [14] __verbose         PROGBITS        00000000 0014f0 000120 00  WA  0   0  8
->   [15] .rel__verbose     REL             00000000 002130 000180 08     22  14  4
-> drivers/connector/cn.ko
-> drivers/cpufreq/cpufreq_userspace.ko
->   [16] __verbose         PROGBITS        00000000 0008b8 000078 00  WA  0   0  8
->   [17] .rel__verbose     REL             00000000 001258 0000a0 08     24  16  4
-> drivers/cpufreq/gx-suspmod.ko
->   [16] __verbose         PROGBITS        00000000 000f80 0000d8 00  WA  0   0  8
->   [17] .rel__verbose     REL             00000000 001ae8 000120 08     25  16  4
-> drivers/cpufreq/cpufreq_ondemand.ko
-> drivers/cpufreq/cpufreq_performance.ko
->   [14] __verbose         PROGBITS        00000000 000388 000018 00  WA  0   0  8
->   [15] .rel__verbose     REL             00000000 000a30 000020 08     22  14  4
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
