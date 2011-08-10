@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1HJOha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:37:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59806 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab1HJOh3 (ORCPT
+	id S1752932Ab1HJOhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:37:37 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:57149 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752896Ab1HJOhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:37:29 -0400
-Message-ID: <4E4297A6.6050101@gmail.com>
-Date: Wed, 10 Aug 2011 09:37:26 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Wed, 10 Aug 2011 10:37:35 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+3bXNL+6neoDkluEJWp6sV
+Date: Wed, 10 Aug 2011 07:37:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Hemant Pedanekar <hemantp@ti.com>
+Cc: linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] omap: timer: Set dmtimer used as clocksource in
+ autoreload mode
+Message-ID: <20110810143732.GN1939@atomide.com>
+References: <1312982375-11848-1-git-send-email-hemantp@ti.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "weizeng.he@csr.com" <weizeng.he@csr.com>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Barry Song'" <21cnbao@gmail.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Olof Johansson'" <olof@lixom.net>
-Subject: Re: Subject: L2x0 OF properties do not include interrupt #
-References: <000201cc575b$c1229010$4367b030$@rutland@arm.com> <4E428EB0.1080204@gmail.com> <20110810141048.GK10121@e102144-lin.cambridge.arm.com>
-In-Reply-To: <20110810141048.GK10121@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312982375-11848-1-git-send-email-hemantp@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2011 09:10 AM, Will Deacon wrote:
-> Hi Rob,
+* Hemant Pedanekar <hemantp@ti.com> [110810 06:14]:
+> If CONFIG_OMAP_32K_TIMER is not selected and dmtimer is used as clocksource, the
+> timer stops counting once overflow occurs as it was not set in autoreload mode.
+> This results into timekeeping failure: for example, 'sleep 1' at the shell after
+> the timer counter overflow would hang.
 > 
-> On Wed, Aug 10, 2011 at 02:59:12PM +0100, Rob Herring wrote:
->> I think you should allow for either the single irq or individual irqs.
->> You can specify that the event counter interrupt must be first, then the
->> pmu driver could work either way ignoring the rest. The driver probably
->> needs to mark the handler as shared if there is only the combined
->> interrupt unless you expect all interrupts to be handled by 1 driver.
-> 
-> I much prefer having seperate, individual IRQs with no requirement on
-> ordering.
-> 
-> Now, the L2 binding also doesn't fit too well for the L2CC on Cortex-A15,
-> which is an inner cache like the one on Cortex-A8. Because of this, it
-> doesn't have a base address but it *does* have an IRQ which is how external
-> aborts are raised.
+> This patch sets up autoreload when starting the clocksource timer which fixes
+> the above issue.
 
-This is not a general L2 binding, but an L2x0/PL310 binding. A8/A15 L2
-is a completely different binding and driver though. You would do
-something like the current cpu pmu binding that is just interrupts.
+Thanks for updating this, will apply into fixes.
 
-Rob
+Tony
+
+
+> 
+> Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
+> ---
+>  arch/arm/mach-omap2/timer.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index e964072..cf1de7d 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -293,7 +293,8 @@ static void __init omap2_gp_clocksource_init(int gptimer_id,
+>  	pr_info("OMAP clocksource: GPTIMER%d at %lu Hz\n",
+>  		gptimer_id, clksrc.rate);
+>  
+> -	__omap_dm_timer_load_start(clksrc.io_base, OMAP_TIMER_CTRL_ST, 0, 1);
+> +	__omap_dm_timer_load_start(clksrc.io_base,
+> +			OMAP_TIMER_CTRL_ST | OMAP_TIMER_CTRL_AR, 0, 1);
+>  	init_sched_clock(&cd, dmtimer_update_sched_clock, 32, clksrc.rate);
+>  
+>  	if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
+> -- 
+> 1.7.3.5
+> 
