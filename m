@@ -1,207 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab1HJIm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 04:42:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43366 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab1HJImx (ORCPT
+	id S1752629Ab1HJIm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 04:42:56 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51677 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab1HJImp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 04:42:53 -0400
-Date: Wed, 10 Aug 2011 11:42:48 +0300
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 1/2] cpumask: introduce cpumask for hotpluggable CPUs
-Message-ID: <20110810084248.GB7673@matterhorn1>
-Mail-Followup-To: Mike Turquette <mturquette@ti.com>,
-	linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-	linaro-dev@lists.linaro.org, patches@linaro.org
-References: <1312940007-26069-1-git-send-email-mturquette@ti.com>
- <1312940007-26069-2-git-send-email-mturquette@ti.com>
+	Wed, 10 Aug 2011 04:42:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1312940007-26069-2-git-send-email-mturquette@ti.com>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E423C83.9090209@kernel.dk>
+References: <20110809034724.GA22257@july>
+	<4E4181E4.3090704@kernel.dk>
+	<CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
+	<4E423C83.9090209@kernel.dk>
+Date: Wed, 10 Aug 2011 17:42:45 +0900
+X-Google-Sender-Auth: vQZx_rxSPqkndGNlmt-Z9JFjAaU
+Message-ID: <CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] request: teach the device more intelligent
+From: Kyungmin Park <kmpark@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Aug 09, Mike Turquette wrote:
-> On some platforms it is possible to have some CPUs which support CPU
-> hotplug and some which do not.  Currently the prescence of an 'online'
-> sysfs entry in userspace is adequate for applications to know that a CPU
-> supports hotplug, but there is no convenient way to make the same
-> determination in the kernel.
-> 
-> To better model this relationship this patch introduces a new cpumask to
-> track CPUs that support CPU hotplug operations.
-> 
-> This new cpumask is populated at boot-time and remains static for the
-> life of the machine.  Bits set in the mask indicate a CPU which supports
-> hotplug, but make no guarantees about whether that CPU is currently
-> online or not.  Likewise a cleared bit in the mask indicates either a
-> CPU which cannot hotplug or a lack of a populated CPU.
-> 
-> The purpose of this new cpumask is to aid kernel code which uses CPU to
-> take CPUs online and offline.  Possible uses are as a thermal event
-> mitigation technique or as a power capping mechanism.
-> 
-> Signed-off-by: Mike Turquette <mturquette@ti.com>
-> ---
->  include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
->  kernel/cpu.c            |   18 ++++++++++++++++++
->  2 files changed, 40 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-> index b24ac56..9eed444 100644
-> --- a/include/linux/cpumask.h
-> +++ b/include/linux/cpumask.h
-> @@ -39,10 +39,11 @@ extern int nr_cpu_ids;
->   * The following particular system cpumasks and operations manage
->   * possible, present, active and online cpus.
->   *
-> - *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
-> - *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
-> - *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
-> - *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
-> + *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
-> + *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
-> + *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
-> + *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
-> + *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
->   *
->   *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
->   *
-> @@ -51,7 +52,11 @@ extern int nr_cpu_ids;
->   *  life of that system boot.  The cpu_present_mask is dynamic(*),
->   *  representing which CPUs are currently plugged in.  And
->   *  cpu_online_mask is the dynamic subset of cpu_present_mask,
-> - *  indicating those CPUs available for scheduling.
-> + *  indicating those CPUs available for scheduling.  The
-> + *  cpu_hotpluggable_mask is also fixed at boot time, as the set of CPU
-> + *  id's which are possible AND can hotplug.  Cleared bits in this mask
-> + *  mean that either the CPU is not possible, or it is possible but does
-> + *  not support CPU hotplug operations.
->   *
->   *  If HOTPLUG is enabled, then cpu_possible_mask is forced to have
->   *  all NR_CPUS bits set, otherwise it is just the set of CPUs that
-> @@ -61,6 +66,9 @@ extern int nr_cpu_ids;
->   *  depending on what ACPI reports as currently plugged in, otherwise
->   *  cpu_present_mask is just a copy of cpu_possible_mask.
->   *
-> + *  If CONFIG_HOTPLUG_CPU is enabled, then cpu_hotpluggable_mask matches
-> + *  the description above, otherwise it is the empty set.
-> + *
->   *  (*) Well, cpu_present_mask is dynamic in the hotplug case.  If not
->   *      hotplug, it's a copy of cpu_possible_mask, hence fixed at boot.
->   *
-> @@ -76,6 +84,7 @@ extern int nr_cpu_ids;
->   */
->  
->  extern const struct cpumask *const cpu_possible_mask;
-> +extern const struct cpumask *const cpu_hotpluggable_mask;
->  extern const struct cpumask *const cpu_online_mask;
->  extern const struct cpumask *const cpu_present_mask;
->  extern const struct cpumask *const cpu_active_mask;
-> @@ -85,19 +94,23 @@ extern const struct cpumask *const cpu_active_mask;
->  #define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
->  #define num_present_cpus()	cpumask_weight(cpu_present_mask)
->  #define num_active_cpus()	cpumask_weight(cpu_active_mask)
-> +#define num_hotpluggable_cpus()	cpumask_weight(cpu_hotpluggable_mask)
->  #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
->  #define cpu_possible(cpu)	cpumask_test_cpu((cpu), cpu_possible_mask)
->  #define cpu_present(cpu)	cpumask_test_cpu((cpu), cpu_present_mask)
->  #define cpu_active(cpu)		cpumask_test_cpu((cpu), cpu_active_mask)
-> +#define cpu_hotpluggable(cpu)	cpumask_test_cpu((cpu, cpu_hotpluggable_mask)
+On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2011-08-10 01:43, Kyungmin Park wrote:
+>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>> On 2011-08-09 05:47, Kyungmin Park wrote:
+>>>> Hi Jens
+>>>>
+>>>> Now eMMC device requires the upper layer information to improve the data
+>>>> performance and reliability.
+>>>>
+>>>> . Context ID
+>>>> Using the context information, it can sort out the data internally and improve the performance.
+>>>> The main problem is that it's needed to define "What's the context".
+>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>>>
+>>>> . Data Tag
+>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>>>
+>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>>>
+>>>> Can you give your opinions and does it proper fields at requests?
+>>>
+>>> You need this to work on all IO schedulers, not just cfq.
+>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
+>>
+>>> And since that's the case, there's no need to add this field since you can just
+>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
+>>>
+>>> static int cfq_foo(struct request *rq)
+>>> {
+>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
+>>>
+>>>        if (cfqq)
+>>>                return cfqq->pid;
+>>>
+>>>        return -1;
+>>> }
+>>
+>> The actual user of these information is device driver. e.g.,
+>> drivers/mmc/card/block.c
+>> So it's not good to use cfq data structure at D/D. some time later
+>> these are also used at scsi device drivers.
+>
+> No, what I'm suggesting above is the CFQ implementation. You would need
+> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
+> If you notice, the above function does not take or output anything
+> related to CFQ in particular, it'll just return you the unique key you
+> need.
+>
+> It's either the above, or a field in the request that the schedulers
+> fill out. However, it'd be somewhat annoying to grow struct request for
+> something that has a narrow scope of use. Hence the suggestion to add a
+> strategy helper for this.
+Okay, I'll add new elevator function one for getting context or more hints.
+BTW, does it okay to call elevator function call at D/D?
 
-                                 missing closing bracket? ^^^^ 							   
+The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
 
->  #else
->  #define num_online_cpus()	1U
->  #define num_possible_cpus()	1U
->  #define num_present_cpus()	1U
->  #define num_active_cpus()	1U
-> +#define num_hotpluggable_cpus()	0
->  #define cpu_online(cpu)		((cpu) == 0)
->  #define cpu_possible(cpu)	((cpu) == 0)
->  #define cpu_present(cpu)	((cpu) == 0)
->  #define cpu_active(cpu)		((cpu) == 0)
-> +#define cpu_hotpluggable(cpu)	0
->  #endif
->  
->  /* verify cpu argument to cpumask_* operators */
-> @@ -678,16 +691,20 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
->  #define cpu_none_mask to_cpumask(cpu_bit_bitmap[0])
->  
->  #define for_each_possible_cpu(cpu) for_each_cpu((cpu), cpu_possible_mask)
-> +#define for_each_hotpluggable_cpu(cpu) \
-> +				   for_each_cpu((cpu), cpu_hotpluggable_mask)
->  #define for_each_online_cpu(cpu)   for_each_cpu((cpu), cpu_online_mask)
->  #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
->  
->  /* Wrappers for arch boot code to manipulate normally-constant masks */
->  void set_cpu_possible(unsigned int cpu, bool possible);
-> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable);
->  void set_cpu_present(unsigned int cpu, bool present);
->  void set_cpu_online(unsigned int cpu, bool online);
->  void set_cpu_active(unsigned int cpu, bool active);
->  void init_cpu_present(const struct cpumask *src);
->  void init_cpu_possible(const struct cpumask *src);
-> +void init_cpu_hotpluggable(const struct cpumask *src);
->  void init_cpu_online(const struct cpumask *src);
->  
->  /**
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 12b7458..8c397c9 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -536,6 +536,11 @@ static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
->  const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
->  EXPORT_SYMBOL(cpu_possible_mask);
->  
-> +static DECLARE_BITMAP(cpu_hotpluggable_bits, CONFIG_NR_CPUS) __read_mostly;
-> +const struct cpumask *const cpu_hotpluggable_mask =
-> +					to_cpumask(cpu_hotpluggable_bits);
-> +EXPORT_SYMBOL(cpu_hotpluggable_mask);
-> +
->  static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
->  const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
->  EXPORT_SYMBOL(cpu_online_mask);
-> @@ -556,6 +561,14 @@ void set_cpu_possible(unsigned int cpu, bool possible)
->  		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
->  }
->  
-> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable)
-> +{
-> +	if (hotpluggable)
-> +		cpumask_set_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
-> +	else
-> +		cpumask_clear_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
-> +}
-> +
->  void set_cpu_present(unsigned int cpu, bool present)
->  {
->  	if (present)
-> @@ -590,6 +603,11 @@ void init_cpu_possible(const struct cpumask *src)
->  	cpumask_copy(to_cpumask(cpu_possible_bits), src);
->  }
->  
-> +void init_cpu_hotpluggable(const struct cpumask *src)
-> +{
-> +	cpumask_copy(to_cpumask(cpu_hotpluggable_bits), src);
-> +}
-> +
->  void init_cpu_online(const struct cpumask *src)
->  {
->  	cpumask_copy(to_cpumask(cpu_online_bits), src);
-> -- 
-> 1.7.4.1
-> 
-> 
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
+                struct elevator_queue *e = md->queue.queue->elevator;
+                int context = -1;
+
+                if (e->ops->elevator_get_req_hint_fn && req) {
+                        context = e->ops->elevator_get_req_hint_fn(req);
+
+>
+>>> As to the hot part, I think that would be better as just a request flag
+>>> like eg the meta flag.
+>> Yes it can use the JBD_flags at cfq. but same reason it's not proper
+>> reference at device drivers. that's reason to make a filed at request.
+>>
+>> Device driver should or must see the request data structure and don't
+>> refer the upper layer data structures.
+>
+> The device driver sees the struct request, which is where this flag ends
+> up.
+It's ext{3,4} series specific detection method. if user use the
+another filesystem, it's difficult to detect hot/cold.
+I'll more think about it.
+
+Thank you for suggestion.
+Kyungmin Park
+>
+> --
+> Jens Axboe
+>
+>
