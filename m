@@ -1,198 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1HJPNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 11:13:19 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:62300 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753121Ab1HJPNR (ORCPT
+	id S1753432Ab1HJPNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 11:13:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55167 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753168Ab1HJPNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 11:13:17 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=wzY9NJouJbkA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=Z4Rwk6OoAAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=vFEDP9ux3MrRXwMhmlsA:9 a=eyaL23Kbt8dJTL9kwPsA:7 a=CjuIK1q_8ugA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.79.195.91
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
-Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
-        "'George Spelvin'" <linux@horizon.com>, <linux-kernel@vger.kernel.org>
-References: <4E40C5C7.2050609@systemfabricworks.com> <00d401cc565c$98eeab60$cacc0220$@systemfabricworks.com> <OF4E555F7A.DF08D1FB-ONC12578E7.005FA1A8-C12578E7.0060F7CA@transmode.se> <019701cc56e8$e606f9c0$b214ed40$@systemfabricworks.com> <OF3719A120.AE2CD7D2-ONC12578E8.00342C83-C12578E8.00402A3E@transmode.se>
-In-Reply-To: <OF3719A120.AE2CD7D2-ONC12578E8.00342C83-C12578E8.00402A3E@transmode.se>
-Subject: RE: [patch v3 7/7] crc32: final-cleanup.diff
-Date: Wed, 10 Aug 2011 10:13:00 -0500
-Message-ID: <002601cc576f$ff062180$fd126480$@systemfabricworks.com>
+	Wed, 10 Aug 2011 11:13:21 -0400
+Date: Wed, 10 Aug 2011 16:12:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Herring <rob.herring@calxeda.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "weizeng.he@csr.com" <weizeng.he@csr.com>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "'Barry Song'" <21cnbao@gmail.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Olof Johansson'" <olof@lixom.net>
+Subject: Re: Subject: L2x0 OF properties do not include interrupt #
+Message-ID: <20110810151256.GN10121@e102144-lin.cambridge.arm.com>
+References: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
+ <201108101609.56995.arnd@arndb.de>
+ <4E42965A.9010500@calxeda.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFUJhJtE0E7wgc4id8VkXG2Xj6UAAJcT3PpAdqTgv0BwaAE6gHro1xjlcdybPA=
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E42965A.9010500@calxeda.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK. Can you post your current version of crc32.c? I'll try to merge them
-together.
+On Wed, Aug 10, 2011 at 03:31:54PM +0100, Rob Herring wrote:
+> Here's all the interrupts on the PL310:
+> 
+> DECERRINTR Decode error received on master ports from L3
+> SLVERRINTR Slave error received on master ports from L3
+> ERRRDINTR Error on L2 data RAM read
+> ERRRTINTR Error on L2 tag RAM read
+> ERRWDINTR Error on L2 data RAM write
+> ERRWTINTR Error on L2 tag RAM write
+> PARRDINTR Parity error on L2 data RAM read
+> PARRTINTR Parity error on L2 tag RAM read
+> ECNTRINTR Event Counter Overflow/Increment
+> L2CCINTR L2CC Combined Interrupt Output
+> 
+> It's likely that you would want to split these to different drivers.
+> EDAC for parity/bus errors and hw-events for event counters, for example.
 
-> -----Original Message-----
-> From: Joakim Tjernlund [mailto:joakim.tjernlund@transmode.se]
-> Sent: Wednesday, August 10, 2011 6:41 AM
-> To: Bob Pearson
-> Cc: akpm@linux-foundation.org; fzago@systemfabricworks.com; George
-> Spelvin; linux-kernel@vger.kernel.org
-> Subject: RE: [patch v3 7/7] crc32: final-cleanup.diff
-> 
-> "Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/10
-> 01:05:56:
-> >
-> > >
-> > > Doing this adds one insn to ppc. What is good for x86 isn't for
-> > > pcc32 (and I guess any modern arch).
-> >
-> > I looked at the assembly output from the original code and I see two
-> > compares at the end of the first loop, one for --len and one for (buf &
-3)
-> > which it has to compute. You are better off just computing buf & 3 once
-> and
-> > comparing with len once to compute init_len then in each iteration in
-the
-> > loop you only have to compare one thing.
-> >
-> > As proposed:
-> >         init_len = min((-((uintptr_t)buf)) & 3, len);
-> >         ...
-> >
-> >         /* process unaligned initial bytes */
-> >         for (i = 0; i < init_len; i++)
-> >                 DO_CRC(*buf++);
-> >
-> >
-> > crc32x_le:
-> >         <.....>
-> >         negq    %rcx            # (-buf)
-> >         andl    $3, %ecx            # (-buf) & 3
-> >         cmpq    %rdx, %rcx            # min()
-> >         cmova   %rdx, %rcx            # init_len =
-> >         xorl    %edi, %edi            # i = 0
-> >         <.....>
-> >         jmp     .L2
-> > .L3:
-> > # crc = tab[0][(crc ^ (*buf++)) & 255] ^ (crc >> 8)
-> >         movb    (%rsi,%rdi), %dl         # buf[i]
-> >         incq    %rdi               # buf++
-> >         xorl    %eax, %edx            # crc ^ *buf++
-> >         shrl    $8, %eax            # crc >> 8
-> >         movzbl  %dl, %edx            # & 255
-> >         xorl    crc32table_le(,%rdx,4), %eax                 # crc =
-> > tab[...] ^ (crc >> 8)
-> > .L2:
-> >         cmpq    %rcx, %rdi            # compare i with
-> > init_len
-> >         jb      .L3
-> >         <.....>
-> >
-> > As was originally:
-> >         if (unlikely((long)buf & 3 && len)) {
-> >                 do {
-> >                         DO_CRC(*buf++);
-> >                 } while ((--len) && ((long)buf)&3);
-> >         }
-> >
-> > crc32x_le:
-> >         pushq   %rbp
-> >         movl    %edi, %eax
-> >         pushq   %rbx
-> >         testb   $3, %sil
-> >         je      .L16
-> >         testq   %rdx, %rdx
-> > .L25:
-> >         je      .L16
-> >         movb    (%rsi), %cl            # *p
-> >         incq    %rsi               # p++
-> >         xorl    %eax, %ecx            # crc ^ *p
-> >         shrl    $8, %eax            # crc >> 8
-> >         movzbl  %cl, %ecx            # ... & 255
-> >         xorl    crc32table_le(,%rcx,4), %eax      # tab[...] ^ (crc >>
-> > 8)
-> >         decq    %rdx            # len--
-> >         je      .L16               # if len != 0
-> > continue
-> >         testb   $3, %sil            # buf & 3
-> >         jmp     .L25               # if buf & 3
-> > continue
-> > .L16:
-> >
-> > The first loop has 8 instructions second one has 11 instructions. First
-loop
-> > has slightly more setup to compute init_len, second loop has a couple of
-> > extra branches to compute the if() outside of the loop.
-> >
-> > I get better performance with the new form of the loop. How, does PPC
-> get
-> > better results with two tests?
-> 
-> You are right, even ppc gets less insns in the byte loop. However I tested
-> your latest patch series and your version is a tiny bit slower than my
-best
-> version(numbers below)
-> Probably due to that your version has a higher startup cost and uses more
-> registers(3 regs are pushed to the stack vs. 2 regs in mine)
-> 
-> >
-> > >
-> > > > >
-> > > > > -/* implements slicing-by-4 or slicing-by-8 algorithm */
-> > > > > -static inline u32
-> > > > > -crc32_body(u32 crc, unsigned char const *buf, size_t len, const
-u32
-> > > > > (*tab)[256])
-> > > >
-> > > > After careful measurements and looking at asm code I figured out
-that
-> > > there
-> > > > was no penalty for using 2D array. That allowed me to go back to the
-> > > > original form.
-> > >
-> > > What about my suggestion to assign each table to a ptr? This was good
-> > > for ppc so if it doesn't slow x86 it should be added.
-> >
-> > Gcc is very clever and inlined crc32_body() into crc32_le() and
-crc32_be()
-> > and then replaced references to tab[x][y] with references to
-crc32table_le
-> > and crc32table_be plus a constant offset which depended on the first
-index
-> > ([x]). So in effect it completely unrolled back to 1D arrays as
-> > (crc32table_le + offset)[y], which is equivalent to the t0_le[y] code I
-had
-> > before.
-> 
-> So x86 optimizes the table accesses well then. PPC32 doesn't and adding
-> my small optimization makes a huge difference:
-> org:
-> crc32: CRC_LE_BITS = 8, CRC_BE BITS = 8
-> crc32: self tests passed, processed 225944 bytes in 2257673 nsec
-> 
-> my t0, t1, t2, t3 ptrs
-> crc32: CRC_LE_BITS = 8, CRC_BE BITS = 8
-> crc32: self tests passed, processed 225944 bytes in 1949869 nsec
-> 
-> Numbers for 32 bits with your patch.
-> 
-> v3 up to 6 of 7
-> crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
-> crc32: self tests passed, processed 225944 bytes in 2362044 nsec
-> 
-> v3 up to 7 of 7
-> crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
-> crc32: self tests passed, processed 225944 bytes in 2149972 nsec
-> 
-> my t0, t1, t2, t3 ptrs on v3 7 of 7
-> crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
-> crc32: self tests passed, processed 225944 bytes in 1953290 nsec
-> 
-> Finally, 64 bits on PPC is broken in v3!
-> 
->  Jocke
+I completely agree with you here. In reality, I expect we'll be lucky if
+even the combined interrupt is wired up so maybe the individual property
+names should only be added on an as-needed basis? For the time being we can
+happily get by with something like combined-interrupt = <...>.
 
+Or would you rather specify everything up front?
 
+Will
