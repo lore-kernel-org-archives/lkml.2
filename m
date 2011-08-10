@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1HJLYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:24:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33408 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab1HJLYj (ORCPT
+	id S1753554Ab1HJLZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:25:22 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:42251 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab1HJLZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:24:39 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Johannes Weiner <jweiner@redhat.com>, fuse-devel@lists.sourceforge.net,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] fuse: delete dead .write_begin and .write_end aops
-References: <1311626135-14279-1-git-send-email-jweiner@redhat.com>
-	<20110725204942.GA12183@infradead.org>
-	<87aabkeyfj.fsf@tucsk.pomaz.szeredi.hu>
-	<20110810102604.GB6117@infradead.org>
-Date: Wed, 10 Aug 2011 13:24:36 +0200
-In-Reply-To: <20110810102604.GB6117@infradead.org> (Christoph Hellwig's
-	message of "Wed, 10 Aug 2011 06:26:04 -0400")
-Message-ID: <87sjp97bm3.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 10 Aug 2011 07:25:21 -0400
+X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 07:25:20 EDT
+Date: Wed, 10 Aug 2011 13:15:42 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Julia Lawall <julia@diku.dk>, Jaroslav Kysela <perex@perex.cz>,
+        kernel-janitors@vger.kernel.org, Andreas Mohr <andi@lisas.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound/pci/azt3328.c: adjust error handling code to
+ include debugging code
+Message-ID: <20110810111542.GA5881@rhlx01.hs-esslingen.de>
+References: <1312969744-29659-1-git-send-email-julia@diku.dk>
+ <s5hk4albni7.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hk4albni7.wl%tiwai@suse.de>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Hi,
 
-> On Mon, Aug 08, 2011 at 05:05:20PM +0200, Miklos Szeredi wrote:
->> > The loop code still calls them uncondtionally.  This actually is a big
->> > as write_begin and write_end require filesystems specific locking,
->> > and might require code in the filesystem to e.g. update the ctime
->> > properly.  I'll let Miklos chime in if leaving them in was intentional,
->> > and if it was a comment is probably justified.
->> 
->> Loop checks for ->write_begin() and falls back to ->write if the former
->> isn't defined.
->> 
->> So I think the patch is fine.  I tested loop over fuse, and it still
->> works after the patch.
->
-> It works, but it involves another data copy, which will slow down
-> various workloads that people at least historically cared about.
+On Wed, Aug 10, 2011 at 11:54:08AM +0200, Takashi Iwai wrote:
+> At Wed, 10 Aug 2011 11:49:04 +0200,
+> Julia Lawall wrote:
+> > 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > snd_azf3328_dbgcallenter is called at the very beginning of the function,
+> > so it could be useful to call snd_azf3328_dbgcallleave at all exit points.
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> Applied now to sound git tree.  Thanks.
 
-AFAICS, normally there isn't an additional copy.  If ->write_begin is
-defined the copy from the bio_vec to the filesystem page is done with
-transfer_none() in the loop driver.
+5 minutes, 4 seconds. Your responsiveness appears to be degrading. I've
+seen better ;)
 
-Otherwise the copy is done by ->write() itself on the kmapped bio.
+JFTR:
+Acked-by: Andreas Mohr <andi@lisas.de>
 
-If there's a crypto transfer function then a temporary page will be used
-in the no write_begin case.  But I don't think there the additional copy
-makes much difference or that anyone cares.
-
-Thanks,
-Miklos
+Andreas Mohr
