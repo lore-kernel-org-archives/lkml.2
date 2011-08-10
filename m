@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1HJA5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 20:57:33 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:44967 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751164Ab1HJA5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 20:57:31 -0400
-Subject: Re: [PATCH] treewide: Update sha_transform
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        GeertUytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <CA+55aFwHEoDkWr6Mh=r1KG4MLRbY0_iVF-v3BPkK+zhxkriHdw@mail.gmail.com>
-References: <1312844837-10086-1-git-send-email-msb@chromium.org>
-	 <1312847115.1643.22.camel@Joe-Laptop> <20110809055226.GE6103@google.com>
-	 <1312880303.1676.5.camel@Joe-Laptop>
-	 <CA+55aFwHEoDkWr6Mh=r1KG4MLRbY0_iVF-v3BPkK+zhxkriHdw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 17:57:28 -0700
-Message-ID: <1312937848.11924.44.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752930Ab1HJA5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:57:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42749 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab1HJA5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 20:57:44 -0400
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com> <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org> <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org> <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com> <20110809150424.GO5782@one.firstfloor.org> <CAObL_7HL7SwCfXsD3dPesE4cU-nmoMCRVCP6u2Mn8efo7EG5Zg@mail.gmail.com> <4E416716.1040904@zytor.com> <CAObL_7FzTisOGJLP7wGUKDCO6qJ20-kaMFWdjm0a+dKpNWBe3g@mail.gmail.com> <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com> <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com> <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: New vsyscall emulation breaks JITs
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 09 Aug 2011 19:56:47 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Lutomirski <luto@mit.edu>
+CC: Greg Lueck <lueckintel@yahoo.com>, Andi Kleen <andi@firstfloor.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
+Message-ID: <e4ce8567-22f5-4906-8dce-418e1afd60ff@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-09 at 08:41 -0700, Linus Torvalds wrote:
-> On Tue, Aug 9, 2011 at 1:58 AM, Joe Perches <joe@perches.com> wrote:
-> > Eliminate possible sha_transform unaligned accesses to data by copying
-> > data to an aligned __u32 array if necessary.
-> This is wrong. Not only does it double the stack space, when I tried
-> it for git it just made things slower. So don't do it.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Maybe the aligned copy should be in an
-#ifndef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS block.
+>On Tue, Aug 9, 2011 at 2:04 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>
+>> Here's a different proposal, then:
+>>
+>> What if the kernel had the sequence:
+>>
+>> mov $__NR_whatever,%eax
+>> syscall
+>> ret
+>>
+>> in the vsyscall page but marked the vsyscall page NX.
+>
+>This sounds like a sound idea. And then the difference between "fast
+>and native" and "slow and trapping" ends up literally being just the
+>NX bit.
+>
+>                        Linus
 
-Maybe Mandeep could test aligned/unaligned speeds
-for his board?
-
+Very promising idea indeed.
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
