@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1HJO2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:28:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50056 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750780Ab1HJO2k (ORCPT
+	id S1752667Ab1HJOaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:30:55 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:49186 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750780Ab1HJOay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:28:40 -0400
-Date: Wed, 10 Aug 2011 15:28:08 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "weizeng.he@csr.com" <weizeng.he@csr.com>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "'Barry Song'" <21cnbao@gmail.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Olof Johansson'" <olof@lixom.net>
-Subject: Re: Subject: L2x0 OF properties do not include interrupt #
-Message-ID: <20110810142808.GL10121@e102144-lin.cambridge.arm.com>
-References: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
- <4E428EB0.1080204@gmail.com>
- <20110810141048.GK10121@e102144-lin.cambridge.arm.com>
- <201108101624.27881.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108101624.27881.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Aug 2011 10:30:54 -0400
+Subject: Re: [PATCH 2/6] staging: vme: make [alloc|free]_consistent bridge
+ specific
+From: Joe Perches <joe@perches.com>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, cota@braap.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4E428DC3.5070302@ge.com>
+References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
+	 <1312968830-13377-3-git-send-email-manohar.vanga@cern.ch>
+	 <1312981940.11924.68.camel@Joe-Laptop>  <4E4288CB.7080708@ge.com>
+	 <1312984261.11924.91.camel@Joe-Laptop>  <4E428DC3.5070302@ge.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Aug 2011 07:30:52 -0700
+Message-ID: <1312986652.11924.94.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 03:24:27PM +0100, Arnd Bergmann wrote:
-> On Wednesday 10 August 2011, Will Deacon wrote:
-> > On Wed, Aug 10, 2011 at 02:59:12PM +0100, Rob Herring wrote:
-> > > I think you should allow for either the single irq or individual irqs.
-> > > You can specify that the event counter interrupt must be first, then the
-> > > pmu driver could work either way ignoring the rest. The driver probably
-> > > needs to mark the handler as shared if there is only the combined
-> > > interrupt unless you expect all interrupts to be handled by 1 driver.
-> > 
-> > I much prefer having seperate, individual IRQs with no requirement on
-> > ordering.
-> > 
-> 
-> What do you mean with 'no requirement on ordering'? If we have multiple
-> interrupt sources, we definitely want to identify which one calls which
-> handler, and the only information we have is the position in the array
-> of interrupt numbers.
+On Wed, 2011-08-10 at 14:55 +0100, Martyn Welch wrote:
+> On 10/08/11 14:51, Joe Perches wrote:
+> > On Wed, 2011-08-10 at 14:34 +0100, Martyn Welch wrote:
+> >> On 10/08/11 14:12, Joe Perches wrote:
+> >>> Except for the name, those 2 blocks are identical.
+> >>> Maybe create a non-pci generic version instead?
+> >> I'm not sure you can (I spent quite a bit of time attempting to do just that
+> >> when I wrote the original).
+> > Doesn't something like this work?
+[]
+> Could. Though we'd have to put this in a new common file for use by
+> vme_tsi148.c and vme_ca91cx42.c as the point of this was to get it out of the
+> VME core code. I'm just not sure that it's worth it.
 
-I was hoping that it was possible to have separate properties which describe
-the interrupt. So you could have something like pmu-interrupt <75> and
-abort-interrupt <76> rather than interrupts <75, 76>.
+That's a bit different than what you wrote earlier.
+No worries then.
 
-I've not played with DT bindings before though, so if it's usually done with
-an ordered list then so be it!
+cheers, Joe
 
-Will
+
