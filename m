@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1HJSwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:52:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35756 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab1HJSwH (ORCPT
+	id S1754702Ab1HJSw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:52:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49202 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab1HJSw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:52:07 -0400
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Wed, 10 Aug 2011 19:52:01 +0100
-In-Reply-To: <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	 <1312067670.22074.61.camel@i7.infradead.org>
-	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	 <4E34998D.8060806@zytor.com>
-	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	 <4E4140B3.7090802@suse.cz>
-	 <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	 <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>
-	 <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	 <1312985888.2989.46.camel@i7.infradead.org>
-	 <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	 <1312993987.2989.53.camel@i7.infradead.org>
-	 <CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	 <1312999168.2989.61.camel@i7.infradead.org>
-	 <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313002322.2989.88.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 10 Aug 2011 14:52:58 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=NBLMJvnzKAXoQZ4QSK+4u0KodYlrR9EO4ZtpLgLKeH4GT1dpYsPKKPTpf9omSbg16
+	WjuUwgFfqig2sDcXtLwJA==
+From: Mike Waychison <mikew@google.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Waychison <mikew@google.com>
+Subject: [PATCH] tcp: initialize variable ecn_ok in syncookies path
+Date: Wed, 10 Aug 2011 11:51:24 -0700
+Message-Id: <1313002284-2362-1-git-send-email-mikew@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 14:40 -0400, Arnaud Lacombe wrote:
-> so, at best, this buggy behavior is ~ 6 years old. Before that, I'd
-> assume that the internal namespace was not accessible by any other
-> mean than the front-ends.
+Using a gcc 4.4.3, warnings are emitted for a possibly uninitialized use
+of ecn_ok.
 
-I've been editing .config or doing 's/.*CONFIG_FOO[= ].*/CONFIG_FOO=y/'
-on it for a decade before that. With all the same limitations as
-all.config, and my new CONFIG_FOO=y command line support.
+This can happen if cookie_check_timestamp() returns due to not having
+seen a timestamp.  Defaulting to ecn off seems like a reasonable thing to do in this case, so initialized ecn_ok to false.
 
-How do *you* quickly, from the command line, enable or disable a single
-option in an existing config?
+Signed-off-by: Mike Waychison <mikew@google.com>
+---
+ net/ipv4/syncookies.c |    2 +-
+ net/ipv6/syncookies.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> > Please, if this offends you then by all means go and fix it. A sane way
-> > of handling dependencies would give a way to say "do what you need to do
-> > in order to enable CONFIG_SATA_MV", and should remove the abomination of
-> > 'select', which was introduced purely to work around that lack.
-> >
-> > But none of that is directly relevant in *this* thread.
-> >
-> to paraphrase you, I'd say, this might looks "cute but might give
-> behavior that people will come to depend on in their scripts and then
-> we take it away again", "that's why I'd kind of like to see it done
-> *once*, *properly*".
-
-That's a reasonable concern, but I think it's misplaced in this case.
-We're not enabling anything that we're later going to break. I can't see
-many people *depending* on the fact that 'make CONFIG_SATA_MV=y
-oldconfig' actually does *nothing* in some cases.
-
-When we later, hopefully, get proper dependency resolution, that will
-take something that *wasn't* working and make it work. For all.config
-and for the command line overrides (and in other places) at the same
-time.
-
+diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
+index 92bb943..3bc5c8f 100644
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -276,7 +276,7 @@ struct sock *cookie_v4_check(struct sock *sk, struct sk_buff *skb,
+ 	int mss;
+ 	struct rtable *rt;
+ 	__u8 rcv_wscale;
+-	bool ecn_ok;
++	bool ecn_ok = false;
+ 
+ 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
+ 		goto out;
+diff --git a/net/ipv6/syncookies.c b/net/ipv6/syncookies.c
+index 89d5bf8..ac83896 100644
+--- a/net/ipv6/syncookies.c
++++ b/net/ipv6/syncookies.c
+@@ -165,7 +165,7 @@ struct sock *cookie_v6_check(struct sock *sk, struct sk_buff *skb)
+ 	int mss;
+ 	struct dst_entry *dst;
+ 	__u8 rcv_wscale;
+-	bool ecn_ok;
++	bool ecn_ok = false;
+ 
+ 	if (!sysctl_tcp_syncookies || !th->ack || th->rst)
+ 		goto out;
 -- 
-dwmw2
+1.7.3.1
 
