@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1HJMd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 08:33:57 -0400
-Received: from dd13538.kasserver.com ([85.13.135.107]:42381 "EHLO
-	dd13538.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab1HJMdz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 08:33:55 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 08:33:54 EDT
-Date: Wed, 10 Aug 2011 14:25:33 +0200
-From: Andreas Bombe <aeb@debian.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
-Message-ID: <20110810122532.GA13832@bombe-desk.opditex>
-Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
-	Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
-	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
- <20110719003503.GA4138@amos.fritz.box>
- <4E3FE2D2.5020801@gmail.com>
- <20110810010933.GA4733@amos.fritz.box>
- <4E425384.3040909@suse.cz>
+	id S1753565Ab1HJMlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 08:41:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64083 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753043Ab1HJMlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 08:41:12 -0400
+Date: Wed, 10 Aug 2011 14:40:34 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 1/7] mm: vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20110810124034.GA24133@redhat.com>
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
+ <1312973240-32576-2-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E425384.3040909@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1312973240-32576-2-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 11:46:44AM +0200, Jiri Slaby wrote:
-> > [  321.948012] Sched Debug Version: v0.10, 3.1.0-rc1+ser-00011-g37ed45d #87
+On Wed, Aug 10, 2011 at 11:47:14AM +0100, Mel Gorman wrote:
+> From: Mel Gorman <mel@csn.ul.ie>
 > 
-> What tree is this? I cannot see the path through the code.
+> When kswapd is failing to keep zones above the min watermark, a process
+> will enter direct reclaim in the same manner kswapd does. If a dirty
+> page is encountered during the scan, this page is written to backing
+> storage using mapping->writepage.
+> 
+> This causes two problems. First, it can result in very deep call
+> stacks, particularly if the target storage or filesystem are complex.
+> Some filesystems ignore write requests from direct reclaim as a result.
+> The second is that a single-page flush is inefficient in terms of IO.
+> While there is an expectation that the elevator will merge requests,
+> this does not always happen. Quoting Christoph Hellwig;
+> 
+> 	The elevator has a relatively small window it can operate on,
+> 	and can never fix up a bad large scale writeback pattern.
+> 
+> This patch prevents direct reclaim writing back filesystem pages by
+> checking if current is kswapd. Anonymous pages are still written to
+> swap as there is not the equivalent of a flusher thread for anonymous
+> pages. If the dirty pages cannot be written back, they are placed
+> back on the LRU lists. There is now a direct dependency on dirty page
+> balancing to prevent too many pages in the system being dirtied which
+> would prevent reclaim making forward progress.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-In order to identify patched versions, I inserted a commit to add "+ser"
-to EXTRAVERSION before applying your patch series. Otherwise it's just
-the plain Linux git from Linus. I just rebased onto the latest git
-for the new test but I can't say which version exactly because I don't
-have that tree with me right now.
-
--- 
-Andreas Bombe
+Acked-by: Johannes Weiner <jweiner@redhat.com>
