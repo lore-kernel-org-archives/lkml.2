@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab1HJQeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 12:34:12 -0400
-Received: from home.keithp.com ([63.227.221.253]:39446 "EHLO keithp.com"
+	id S1753974Ab1HJQeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:34:20 -0400
+Received: from gateway.hbm.com ([213.157.30.2]:17824 "EHLO hbmntx5.hbm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab1HJQeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 12:34:10 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Intel drivers <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, stable@kernel.org
-Subject: Re: [PULL] drm-intel-next
-In-Reply-To: <4E42AFBE.7000502@mit.edu>
-References: <yunhb5xlvfy.fsf@aiko.keithp.com> <4E42AFBE.7000502@mit.edu>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 10 Aug 2011 09:34:06 -0700
-Message-ID: <yun39h9gr9d.fsf@aiko.keithp.com>
+	id S1753180Ab1HJQeL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 12:34:11 -0400
+Thread-Index: AcxXe1RvO1gd3wDnR0CjJRjQrdiAwQ==
+Thread-Topic: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-class: urn:content-classes:message
+Importance: normal
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
+Date: Wed, 10 Aug 2011 18:33:54 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
+Cc: "Peter Zijlstra" <peterz@infradead.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <1312465990.16729.22.camel@twins> <201108091707.49832.tim.sander@hbm.com> <20110809173310.GB11398@pengutronix.de>
+In-Reply-To: <20110809173310.GB11398@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/Plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201108101833.54661.tim.sander@hbm.com>
+X-OriginalArrivalTime: 10 Aug 2011 16:34:09.0455 (UTC) FILETIME=[545803F0:01CC577B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi Uwe
 
-On Wed, 10 Aug 2011 12:20:14 -0400, Andy Lutomirski <luto@MIT.EDU> wrote:
+I triple checked.
+> I think targetinstall should ask about the changed config items.
+It only asks one way, when going from an upatched kernel to an patched one.
+Since i was coming from an preempt rt kernel to an unpatched one no questions
+where asked (probably since all settings where still in place as i wasn't 
+using the preempt rt feature with the preempt rt patched kernel source
+aka "Low latency desktop")
 
-> Can you ack at least this one:
->=20
-> >        Revert and fix "drm/i915/dp: remove DPMS mode tracking from DP"
-> (i.e. d2b996ac698aebb28557355857927b8b934bb4f9)
->=20
-> for -stable?  It fixes an annoying regression in 3.0.
+> check if ${PROJECT_DIR}/${PLATFORMNAME}/build/linux-3.0/ (or similar)
+> really has the rt patch applied. (e.g. is there a localversion-rt file?)
+Yes, one version has rt7 appended the other not.
 
-I'm working on a set of patches for -stable; we've found a number of
-small patches that fix some fairly serious regressions.
+But i think the regression when going from 3.0-rt7 to 3.0.1-rt8 with 
+CONFIG_PREEMPT_RTB is more worthwhile to discuss. Which i detailed in the 
+other mail.
 
-=2D-=20
-keith.packard@intel.com
+Best regards
+Tim
 
---=-=-=
-Content-Type: application/pgp-signature
+Sorry for the noise:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
 
-iD8DBQFOQrL+Qp8BWwlsTdMRAulpAJ4vAmWxZVeaOQYlUvc1jZH2VfUNPgCeNLG+
-aATsbbCtth4jSHyJ0rUwFo4=
-=Zr+0
------END PGP SIGNATURE-----
---=-=-=--
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+
