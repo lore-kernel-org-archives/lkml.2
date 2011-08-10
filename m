@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1HJN7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:59:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46413 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1HJN7Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:59:16 -0400
-Message-ID: <4E428EB0.1080204@gmail.com>
-Date: Wed, 10 Aug 2011 08:59:12 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1752110Ab1HJOAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:00:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12655 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750826Ab1HJOAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 10:00:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,350,1309762800"; 
+   d="scan'208";a="37064192"
+Date: Wed, 10 Aug 2011 22:00:02 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: dirty rate control
+Message-ID: <20110810140002.GA29724@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.878435971@intel.com>
+ <20110809155046.GD6482@redhat.com>
+ <1312906591.1083.43.camel@twins>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de, weizeng.he@csr.com, workgroup.linux@csr.com,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Barry Song'" <21cnbao@gmail.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Olof Johansson'" <olof@lixom.net>, Will Deacon <Will.Deacon@arm.com>
-Subject: Re: Subject: L2x0 OF properties do not include interrupt #
-References: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
-In-Reply-To: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312906591.1083.43.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Wed, Aug 10, 2011 at 12:16:30AM +0800, Peter Zijlstra wrote:
+> On Tue, 2011-08-09 at 11:50 -0400, Vivek Goyal wrote:
+> > 
+> > So IIUC, bdi->dirty_ratelimit is the dynmically adjusted desired rate
+> > limit (based on postion ratio, dirty_bw and write_bw). But this seems
+> > to be overall bdi limit and does not seem to take into account the
+> > number of tasks doing IO to that bdi (as your comment suggests).
+> > So it probably will track write_bw as opposed to write_bw/N. What
+> > am I missing? 
 
-On 08/10/2011 07:48 AM, Mark Rutland wrote:
-> Hi all,
-> 
-> I'm working on a driver for the PMU found in L220/PL310 L2 Cache Controllers
-> (as an extension to the existing L2x0 code).
-> 
-> I've taken a look into what BSP support would be required and mocked up some
-> platform_device support, though I notice that Rob Herring has provided
-> devicetree bindings for the L2x0 ("l2x0: Add OF based initialization") which
-> should probably be used to initialize the PMU (if present) from devicetree.
-> 
-> The L2x0 hardware supports a combined interrupt line, which is present on the
-> Vexpress A9x4, EB11MPcore, PB1176, etc. This can be used to signal errors on
-> read/write, parity checks, etc. The PMU also fires an interrupt on this line
-> when any of its counters saturate.
-> 
-> Unfortunately the L2x0 OF bindings introduced by the patch don't include an
-> (optional) interrupt property, which means the PMU driver won't be able to be
-> initialised via devicetree. As we want to get as much as possible dynamically
-> configured via devicetree, this is problematic.
-> 
-> I realise I'm a bit late to the party here, but I'd like to propose adding an
-> optional interrupt parameter to the binding. I'm not aware of any
-> implementations which use separate interrupts, but given the binding
-> seems to be generic across L2CC implementations (and is not limited simply to
-> the L2x0), having a list rather than a single interrupt may be appropriate for
-> someone.
+In normal situation (near the setpoints),
 
-Good thing the party never ends...
+   task_ratelimit ~= bdi->dirty_ratelimit ~= write_bw / N
 
-> This would boil down to (for the moment) a Documentation change along the lines of:
-> 
->> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
->> index f50e021..d4b387b 100644
->> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
->> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
->> @@ -28,6 +28,7 @@ Optional properties:
->>  - arm,filter-ranges : <start length> Starting address and length of window to
->>    filter. Addresses in the filter window are directed to the M1 port. Other
->>    addresses will go to the M0 port.
->> +- interrupt : A combined interrupt.
->>  
->>  Example:
->>  
->> @@ -39,4 +40,5 @@ L2: cache-controller {
->>          arm,filter-latency = <0x80000000 0x8000000>;
->>          cache-unified;
->>          cache-level = <2>;
->> +        interrupt = <45>;
->>  };
-> 
-> Any thoughts?
+Yes, dirty_ratelimit is a per-bdi variable, because all tasks share
+roughly the same dirty ratelimit for the obvious reason of fairness.
+ 
+> I think the per task thing comes from him using the pages_dirtied
+> argument to balance_dirty_pages() to compute the sleep time.
 
-I think you should allow for either the single irq or individual irqs.
-You can specify that the event counter interrupt must be first, then the
-pmu driver could work either way ignoring the rest. The driver probably
-needs to mark the handler as shared if there is only the combined
-interrupt unless you expect all interrupts to be handled by 1 driver.
+Yeah. Ultimately it will allow different tasks to be throttled at
+different (user specified) rates.
 
-Rob
+> Although I'm not quite sure how he keeps fairness in light of the
+> sleep time bounding to MAX_PAUSE.
 
-> 
-> Thanks,
-> Mark
-> 
-> 
+Firstly, MAX_PAUSE will only be applied when the dirty pages rush
+high (dirty exceeded).  Secondly, the dirty exceeded state is global
+to all tasks, in which case each task will sleep for MAX_PAUSE equally.
+So the fairness is still maintained in dirty exceeded state.
 
+Thanks,
+Fengguang
