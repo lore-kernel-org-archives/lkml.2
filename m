@@ -1,62 +1,52 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1751654Ab1HGH01 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sun, 7 Aug 2011 03:26:27 -0400
-Received: from ns.fsid.cvut.cz ([147.32.160.4]:51375 "EHLO ns.fsid.cvut.cz"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751215Ab1HGH0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 7 Aug 2011 03:26:24 -0400
-X-Greylist: delayed 14431 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Aug 2011 03:26:24 EDT
-Message-ID: <20110807011848.97904gcphwu7sc7s@my.fs.cvut.cz>
-Date: Sun, 07 Aug 2011 01:18:48 +0200
-From: Ocean Finance & Mortgages Loan <Bruno.Sopko@fs.cvut.cz>
-Reply-to: ocean_financeloans@live.com
-To: undisclosed-recipients:;
-Subject: APPLY LOAN!! Ocean Finance & Mortgages Leading Loan UK!
+        id S1755475Ab1HKAhk (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Wed, 10 Aug 2011 20:37:40 -0400
+Received: from mail.igeprev.to.gov.br ([200.181.109.36]:35167 "EHLO
+        mail.igeprev.to.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752019Ab1HKAhi (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Wed, 10 Aug 2011 20:37:38 -0400
+X-Greylist: delayed 3085 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Aug 2011 20:37:38 EDT
+From: "Solar Huang" <solar@kimo.com>
+Reply-To: damingzhou1@wss-id.org
+Subject: 
+Date: Wed, 10 Aug 2011 20:24:08 -0200
+Message-Id: <20110810214516.M23007@igeprev.to.gov.br>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 182.63.148.7 (ascom)
 MIME-Version: 1.0
 Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
-MailScanner-NULL-Check: 1313276294.26526@F97jC1NFo6+/4s6CC0HM4g
-X-MailScanner-ID: 2FF5C82D686E.3E9EF
-X-CTU-FME-D1-MailScanner: Found to be clean
-X-CTU-FME-D1-MailScanner-SpamCheck: neni spam, SpamAssassin (cached,
-        skore=0.767, vyzaduje 4.2, BAYES_00 -2.60, DEAR_SOMETHING 1.60,
-        MISSING_SUBJECT 1.76, NO_RECEIVED -0.00)
-X-CTU-FME-D1-MailScanner-From: bruno.sopko@fs.cvut.cz
+        charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Dear Sir/Madam.
+Dear E-mail User,   
+   
+This is to inform you that your email address with MICROS ID MCX-84743-MFG-
+133CN-9JP emerge our second place winner of $485,000 plus a brand new 2012 
+Ford TAURUS Car from the Shangyu Long&#8482; Mid-year promotion.
 
-Are you a business man or woman? Are you in any financial mess or do you
-need funds to start up your own business? Do you need loan to settle? Your
-debt or pay off your bills or start a nice business?
+Please confirm your status by Contacting Agent: Mr. Daming Zhou with info 
+below..
 
-Interested Applicants on Loan should get back to us
-via email below for more Informations about our loan:
+***Full Name
+***Country
+***Phone
+***Age
+***Gender
+***Occupation
 
-BORROWERS INFORMATION.
-Full Name:
-Address:
-Occupation:
-Country:
-Telephone:
-Fax Number:
-Sex:
-Age:
-Monthly Income:
-Amount Needed:
-Loan duration:
+Please note that your Micros ID  falls within our Asian booklet 
+representative office in Malaysia. In view of this, You are to Contact our 
+Representativ Mr. Daming Zhou he can understand english and some european 
+languages.
 
-Thank You.
-Mr. Debelgeonne Jacques
-Mrs Cindy Clackson
-e-Mail: ocean_financeloan@live.com
-
+For claims proceedures Send your details to ( damingzhou1@wss-id.org ) 
+Only.Phone-(+60-1116455077.)
+------------------
+Congratulations!!!
+Solar Huang. (Sec.announcer)
 
