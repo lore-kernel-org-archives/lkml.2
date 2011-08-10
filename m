@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1HJSWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:22:22 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:41244 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab1HJSWV (ORCPT
+	id S1754578Ab1HJSWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:22:45 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:44982 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754286Ab1HJSWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:22:21 -0400
-Date: Wed, 10 Aug 2011 14:21:34 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3 0/2] Forcibly enable some MISC_ENABLE features on Intel
-In-reply-to: <CAObL_7G5j-8dmQDc2Q+matB8nHk7421CWnBHqQs9-T2fjVecng@mail.gmail.com>
-Message-id: <alpine.LFD.2.02.1108101418540.16220@x980>
-References: <cover.1312893572.git.luto@mit.edu>
- <20110809135050.79eed316@lxorguk.ukuu.org.uk>
- <CAObL_7G5j-8dmQDc2Q+matB8nHk7421CWnBHqQs9-T2fjVecng@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Aug 2011 14:22:44 -0400
+Date: Wed, 10 Aug 2011 11:22:42 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>, xen-devel@lists.xensource.com
+Subject: [PATCH mainline] xen: xen-selfballoon.c needs more header files
+Message-Id: <20110810112242.18b743de.rdunlap@xenotime.net>
+In-Reply-To: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-FWIW,
-Intel's internal bug database claims this issue on your board
-is fixed in the next BIOS update.
+Fix build errors (found when CONFIG_SYSFS is not enabled):
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+drivers/xen/xen-selfballoon.c:446: warning: data definition has no type or storage class
+drivers/xen/xen-selfballoon.c:446: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+drivers/xen/xen-selfballoon.c:446: warning: parameter names (without types) in function declaration
+drivers/xen/xen-selfballoon.c:485: error: expected declaration specifiers or '...' before string constant
+drivers/xen/xen-selfballoon.c:485: warning: data definition has no type or storage class
+drivers/xen/xen-selfballoon.c:485: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/xen/xen-selfballoon.c:485: warning: function declaration isn't a prototype
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/xen/xen-selfballoon.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+and will need <linux/export.h> when module.h is split up.
+
+--- lnx-31-rc1.orig/drivers/xen/xen-selfballoon.c
++++ lnx-31-rc1/drivers/xen/xen-selfballoon.c
+@@ -70,6 +70,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/mman.h>
++#include <linux/module.h>
+ #include <linux/workqueue.h>
+ #include <xen/balloon.h>
+ #include <xen/tmem.h>
