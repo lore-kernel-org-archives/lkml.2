@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1HJXCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 19:02:44 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49408 "EHLO e3.ny.us.ibm.com"
+	id S1755391Ab1HJXCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 19:02:49 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:49419 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291Ab1HJXCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 19:02:41 -0400
+	id S1755288Ab1HJXCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 19:02:47 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ilkka Koskinen <ilkka.koskinen@nokia.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 2/4] rtc: rtc-twl: Switch to using threaded irq
-Date: Wed, 10 Aug 2011 16:01:56 -0700
-Message-Id: <1313017318-789-3-git-send-email-john.stultz@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>, Willy Tarreau <w@1wt.eu>,
+        stable@kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 4/4] rtc: Fix RTC PIE frequency limit
+Date: Wed, 10 Aug 2011 16:01:58 -0700
+Message-Id: <1313017318-789-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1313017318-789-1-git-send-email-john.stultz@linaro.org>
 References: <1313017318-789-1-git-send-email-john.stultz@linaro.org>
@@ -21,32 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Thomas earlier submitted a fix to limit the RTC PIE freq, but
+picked 5000Hz out of the air. Willy noticed that we should
+instead use the 8192Hz max from the rtc man documentation.
 
-The driver is accessing to i2c bus in interrupt handler.
-Therefore, it should use threaded irq.
-
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: stable@kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Acked-by: Balaji T K <balajitk@ti.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/rtc/rtc-twl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/rtc/interface.c |    2 +-
+ include/linux/rtc.h     |    3 +++
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
-index 9a81f77..1963cdd 100644
---- a/drivers/rtc/rtc-twl.c
-+++ b/drivers/rtc/rtc-twl.c
-@@ -462,7 +462,7 @@ static int __devinit twl_rtc_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		goto out1;
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 3195dbd..eb4c883 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -708,7 +708,7 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ 	int err = 0;
+ 	unsigned long flags;
  
--	ret = request_irq(irq, twl_rtc_interrupt,
-+	ret = request_threaded_irq(irq, NULL, twl_rtc_interrupt,
- 				IRQF_TRIGGER_RISING,
- 				dev_name(&rtc->dev), rtc);
- 	if (ret < 0) {
+-	if (freq <= 0 || freq > 5000)
++	if (freq <= 0 || freq > RTC_MAX_FREQ)
+ 		return -EINVAL;
+ retry:
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index b27ebea..93f4d03 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -97,6 +97,9 @@ struct rtc_pll_info {
+ #define RTC_AF 0x20	/* Alarm interrupt */
+ #define RTC_UF 0x10	/* Update interrupt for 1Hz RTC */
+ 
++
++#define RTC_MAX_FREQ	8192
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/types.h>
 -- 
 1.7.3.2.146.gca209
 
