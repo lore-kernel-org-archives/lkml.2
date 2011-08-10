@@ -1,60 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1HJJGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:06:48 -0400
-Received: from smtp2.uniroma3.it ([62.241.4.211]:35680 "EHLO smtp2.uniroma3.it"
+	id S1752504Ab1HJJNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:13:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46219 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607Ab1HJJGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:06:47 -0400
-Message-ID: <4E2E11AD001A3FD9@smtp2.uniroma3.it> (added by postmaster@poste.it)
-Reply-To: <claimsgroup222@hotmail.co.uk>
-From: "COCA COLA PLC" <zennaro@uniroma3.it>
-Subject: 
-Date: Wed, 10 Aug 2011 14:36:18 -0700
+	id S1750978Ab1HJJNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:13:47 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Alex Ray <alexjray.ncsu@gmail.com>, Eric Van Hensbergen <ericvh@gmail.com>
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex Ray <ajray@ncsu.edu>
+Subject: Re: [PATCH] 9p: remove CONFIG_NET_9P_DEBUG option
+In-Reply-To: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
+References: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Wed, 10 Aug 2011 14:43:32 +0530
+Message-ID: <877h6l7hoj.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0042_01C2A9A6.10ADC5B2"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
 
-------=_NextPart_000_0042_01C2A9A6.10ADC5B2
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+On Mon,  1 Aug 2011 07:14:44 -0500, Alex Ray <alexjray.ncsu@gmail.com> wrote:
+> Remove the CONFIG_NET_9P_DEBUG option, used to completely remove logging
+> functionality from v9fs.  Logging is (already) controlled with the
+> run-time debug= option, this gets rid of the compile-time option (which
+> was being misunderstood and misused).
+> 
+> Signed-off-by: Alex Ray <ajray@ncsu.edu>
 
-PLS FIND ATTACHMENT
+I see this merged to for-next.  Do we know whether enabling debug always have a
+performance impact ?. 
 
-------=_NextPart_000_0042_01C2A9A6.10ADC5B2
-Content-Type: application/octet-stream;
-	name="COCA COLA NOTIFICATION.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="COCA COLA NOTIFICATION.txt"
+-aneesh
 
-QXR0ZW50aW9uIFdpbm5lcg0KDQpUaGlzIGVtYWlsIGlzIHRvIG5vdGlmeSB5
-b3UgdGhhdCB5b3VyIGVtYWlsIGFkZHJlc3Mgd2FzDQpyYW5kb21seSBzZWxl
-Y3RlZCBhbmQgZW50ZXJlZCBpbnRvIG91ciBmcmVlIFRoaXJkIENhdGVnb3J5
-DQpkcmF3cy5Zb3UgaGF2ZSBzdWJzZXF1ZW50bHkgZW1lcmdlZCBhIHdpbm5l
-ciBhbmQgdGhlcmVmb3JlDQplbnRpdGxlZCB0byBhIHN1YnN0YW50aWFsIGFt
-b3VudCBvZiAxLDAwMCwwMDAuMDAgR3JlYXQgQnJpdGlzaA0KUG91bmRzLmtp
-bmRseSBjb25maXJtIHJlY2VpcHQgb2YgdGhpcyBlbWFpbCwgYnkgZm9yd2Fy
-ZGluZw0KWW91ciBEZXRhaWxzIHRvIHRoZSBjbGFpbXMgZGVwYXJ0bWVudC4N
-Cg0KTmFtZTogVG9tbXkgUm9nZXINCkVtYWlsOmNsYWltc2dyb3VwOTE5QGhv
-dG1haWwuY28udWsNCg0KSU1QT1JUQU5UIEZJTEwgT1VUIFRISVMgV0lOTkVS
-UyBWRVJJRklDQVRJT04gRk9STSBCRUxPVzoNCg0KRlVMTCBOQU1FUy0tLS0t
-LS0tLS0NCkRBVEUgT0YgQklSVEgtLS0tLS0tLS0NClNFWC4tLS0tLS0tLS0t
-LS0tLS0tDQpDT05UQUNUIEFERFJFU1MtLS0tLS0tLS0tDQpDT1VOVFJZLS0t
-LS0tLS0tLS0tLS0tLS0tLS0NCk1PQklMRSBOVU1CRVItLS0tLS0tLS0tLS0t
-LQ0KT0NDVVBBVElPTi0tLS0tLS0tLS0NCkUtTUFJTCBJLkQtLS0tLS0tLS0t
-LS0tLS0tLQ0KDQpDb25ncmF0dWxhdGlvbnMgb25jZSBhZ2Fpbi4NCkRyLiBJ
-YW4gSGlsbC4NCk9ubGluZSBDby1jb29yZGluYXRvcg==
-
-------=_NextPart_000_0042_01C2A9A6.10ADC5B2--
+> ---
+>  fs/9p/v9fs.c        |    2 --
+>  include/net/9p/9p.h |    6 ------
+>  net/9p/Kconfig      |    5 -----
+>  net/9p/mod.c        |    2 --
+>  net/9p/protocol.c   |    7 -------
+>  5 files changed, 0 insertions(+), 22 deletions(-)
+> 
+> diff --git a/fs/9p/v9fs.c b/fs/9p/v9fs.c
+> index ef96618..f1cb2e2 100644
+> --- a/fs/9p/v9fs.c
+> +++ b/fs/9p/v9fs.c
+> @@ -148,9 +148,7 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
+>  		switch (token) {
+>  		case Opt_debug:
+>  			v9ses->debug = option;
+> -#ifdef CONFIG_NET_9P_DEBUG
+>  			p9_debug_level = option;
+> -#endif
+>  			break;
+> 
+>  		case Opt_dfltuid:
+> diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
+> index 342dcf1..17cc437 100644
+> --- a/include/net/9p/9p.h
+> +++ b/include/net/9p/9p.h
+> @@ -61,7 +61,6 @@ enum p9_debug_flags {
+>  	P9_DEBUG_VPKT =		(1<<12),
+>  };
+> 
+> -#ifdef CONFIG_NET_9P_DEBUG
+>  extern unsigned int p9_debug_level;
+> 
+>  #define P9_DPRINTK(level, format, arg...) \
+> @@ -78,11 +77,6 @@ do {  \
+> 
+>  #define P9_DUMP_PKT(way, pdu) p9pdu_dump(way, pdu)
+> 
+> -#else
+> -#define P9_DPRINTK(level, format, arg...)  do { } while (0)
+> -#define P9_DUMP_PKT(way, pdu) do { } while (0)
+> -#endif
+> -
+> 
+>  #define P9_EPRINTK(level, format, arg...) \
+>  do { \
+> diff --git a/net/9p/Kconfig b/net/9p/Kconfig
+> index d9ea09b..e1335e5 100644
+> --- a/net/9p/Kconfig
+> +++ b/net/9p/Kconfig
+> @@ -28,9 +28,4 @@ config NET_9P_RDMA
+>  	help
+>  	  This builds support for an RDMA transport.
+> 
+> -config NET_9P_DEBUG
+> -	bool "Debug information"
+> -	help
+> -	  Say Y if you want the 9P subsystem to log debug information.
+> -
+>  endif
+> diff --git a/net/9p/mod.c b/net/9p/mod.c
+> index 2664d12..4a3a303 100644
+> --- a/net/9p/mod.c
+> +++ b/net/9p/mod.c
+> @@ -34,12 +34,10 @@
+>  #include <linux/list.h>
+>  #include <linux/spinlock.h>
+> 
+> -#ifdef CONFIG_NET_9P_DEBUG
+>  unsigned int p9_debug_level = 0;	/* feature-rific global debug level  */
+>  EXPORT_SYMBOL(p9_debug_level);
+>  module_param_named(debug, p9_debug_level, uint, 0);
+>  MODULE_PARM_DESC(debug, "9P debugging level");
+> -#endif
+> 
+>  /*
+>   * Dynamic Transport Registration Routines
+> diff --git a/net/9p/protocol.c b/net/9p/protocol.c
+> index df58375..04b0585 100644
+> --- a/net/9p/protocol.c
+> +++ b/net/9p/protocol.c
+> @@ -40,7 +40,6 @@
+>  static int
+>  p9pdu_writef(struct p9_fcall *pdu, int proto_version, const char *fmt, ...);
+> 
+> -#ifdef CONFIG_NET_9P_DEBUG
+>  void
+>  p9pdu_dump(int way, struct p9_fcall *pdu)
+>  {
+> @@ -63,12 +62,6 @@ p9pdu_dump(int way, struct p9_fcall *pdu)
+>  		print_hex_dump_bytes("]9P[ ", DUMP_PREFIX_OFFSET, pdu->sdata,
+>  									len);
+>  }
+> -#else
+> -void
+> -p9pdu_dump(int way, struct p9_fcall *pdu)
+> -{
+> -}
+> -#endif
+>  EXPORT_SYMBOL(p9pdu_dump);
+> 
+>  void p9stat_free(struct p9_wstat *stbuf)
+> -- 
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
