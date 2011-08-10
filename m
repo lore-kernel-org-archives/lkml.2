@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab1HJQUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 12:20:24 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:60806 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751709Ab1HJQUX (ORCPT
+	id S1753252Ab1HJQ3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 12:29:08 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:47793 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab1HJQ3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 12:20:23 -0400
-X-AuditID: 1209190d-b7be0ae000000a16-62-4e42af2020f1
-Message-ID: <4E42AFBE.7000502@mit.edu>
-Date: Wed, 10 Aug 2011 12:20:14 -0400
-From: Andy Lutomirski <luto@MIT.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Wed, 10 Aug 2011 12:29:06 -0400
+X-IronPort-AV: E=Sophos;i="4.67,351,1309737600"; 
+   d="scan'208";a="7216218"
+Subject: [PATCH 0/2 v2] minor cleanups to EFLAGS initialisation in
+ ret_from_fork
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, "H. Peter Anvin" <hpa@zytor.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        LinusTorvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 10 Aug 2011 17:29:03 +0100
+Message-ID: <1312993743.26263.268.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: Dave Airlie <airlied@linux.ie>,
-        Intel drivers <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, stable@kernel.org
-Subject: Re: [PULL] drm-intel-next
-References: <yunhb5xlvfy.fsf@aiko.keithp.com>
-In-Reply-To: <yunhb5xlvfy.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsUixG6nrquw3snPYOdNFovecyeZLK58fc9m
-	MXvCZiaLJd9ms1tc3jWHzeLT+QtsDmwetz5+ZfPYtKqTzWP7twesHve7jzN5fN4kF8AaxWWT
-	kpqTWZZapG+XwJXxYMNttoJXLBXNb5sZGxjvMXcxcnJICJhITNi4jw3CFpO4cG89mC0ksI9R
-	4lQHbxcjF5C9gVHi++XD7BCJt0wS376EgNi8AmoSS54dYO1i5OBgEVCV2LqaESTMJqAi0bH0
-	AROILSoQJHH/dwMLRLmgxMmZT8BsEaDyo1PaWUDmMwucZ5RoP9kPtlhYQEniZOt9JohduhJn
-	n10Am88poCex82IpiMksYC3xbXcRSAWzgLzE9rdzmCcwCs5CsmEWQtUsJFULGJlXMcqm5Fbp
-	5iZm5hSnJusWJyfm5aUW6Rrp5WaW6KWmlG5iBAU/pyTvDsZ3B5UOMQpwMCrx8DKtdvITYk0s
-	K67MPcQoycGkJMoruw4oxJeUn1KZkVicEV9UmpNafIhRgoNZSYRXah5QjjclsbIqtSgfJiXN
-	waIkzlu4w8FPSCA9sSQ1OzW1ILUIJivDwaEkwSsEjHIhwaLU9NSKtMycEoQ0EwcnyHAeoOHM
-	IDW8xQWJucWZ6RD5U4yKUuK8siAJAZBERmkeXC8sOb1iFAd6RZiXHaSKB5jY4LpfAQ1mAhpc
-	f8cBZHBJIkJKqoGROb+0dp3NOZXqvbeDF3bUaM7PZJ5ab2AafCnhz6/EBSJZEl2TBVxWb120
-	X6o3Ia+tcCbjrfrHK46zG6nvVY3jY941e7L55YI94ZKvutJufpY8O2kO81Q1eSfX8388+lXu
-	Gc6KWCTwudW3x75PiOmHePDSyiPbnq2vnfZ3x7xNehOygyzWdR1QYinOSDTUYi4qTgQAkNCa
-	kCkDAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2011 11:14 PM, Keith Packard wrote:
->
-> Here's a pile of fixes on top of the stuff already in drm-core-next.
->
->   * Pile of mode setting fixes which eliminate a selection of bugs and
->     other annoyances. Eliminates the 'stripey' effect when going from
->     two to one monitor, makes hot-plug work after suspend/resume, turns
->     off the pipe/plane in DPMS off.
+The following series removes the use of a global kernel_eflags variable
+from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
+64 bit version of that code path.
 
-Can you ack at least this one:
+kernel_eflags could be made a __read_mostly but actually there is no
+reason to prefer the value at cpu_init() time to a compile time constant
+value for the initial eflags after a fork.
 
->        Revert and fix "drm/i915/dp: remove DPMS mode tracking from DP"
-(i.e. d2b996ac698aebb28557355857927b8b934bb4f9)
+Test booted on 32 and 64 bit.
 
-for -stable?  It fixes an annoying regression in 3.0.
+changes since v1:
+      * rebased onto tip/master
+      * make 32 bit look like 64 bit instead of vice versa since the
+        behaviour of resetting eflags with interrupts disabled before
+        calling schedule_tail seems more obviously safe than resetting
+        eflags with interrupts enabled afterwards (although I think both
+        are actually correct).
+      * As a consequence of the above patch 3/3 (use symbolic names for
+        bits in eflags) goes away since we only use the MBO bit 1 now,
+        which doesn't have a name.
 
-Thanks,
-Andy
