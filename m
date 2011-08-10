@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab1HJMU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 08:20:28 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:48981 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753969Ab1HJMRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754039Ab1HJMRY (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Aug 2011 08:17:24 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:45089 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753875Ab1HJMRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 08:17:22 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>
-Subject: [PATCH 07/19] mach-davinci: move GPIO driver to GPIO subsystem
-Date: Wed, 10 Aug 2011 14:17:11 +0200
-Message-ID: <1312978631-18306-1-git-send-email-linus.walleij@stericsson.com>
+        zeal <zealcook@gmail.com>, Daniel Silverstone <dsilvers@simtec.co.uk>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH 04/19] mach-ks8695: move GPIO driver to GPIO subsystem
+Date: Wed, 10 Aug 2011 14:16:49 +0200
+Message-ID: <1312978609-18202-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,48 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-As per example from the other ARM boards, push the DaVinci GPIO
+As per example from the other ARM boards, push the KS8695 GPIO
 driver down to the GPIO subsystem so it can be consolidated.
 
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@ti.com>
+Cc: zeal <zealcook@gmail.com>
+Cc: Daniel Silverstone <dsilvers@simtec.co.uk>
+Cc: Ben Dooks <ben-linux@fluff.org>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-davinci/Makefile                     |    2 +-
+ arch/arm/mach-ks8695/Makefile                      |    2 +-
  drivers/gpio/Makefile                              |    1 +
- .../gpio.c => drivers/gpio/gpio-davinci.c          |    0
+ .../gpio.c => drivers/gpio/gpio-ks8695.c           |    0
  3 files changed, 2 insertions(+), 1 deletions(-)
- rename arch/arm/mach-davinci/gpio.c => drivers/gpio/gpio-davinci.c (100%)
+ rename arch/arm/mach-ks8695/gpio.c => drivers/gpio/gpio-ks8695.c (100%)
 
-diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
-index 0b87a1c..8f3c8ee 100644
---- a/arch/arm/mach-davinci/Makefile
-+++ b/arch/arm/mach-davinci/Makefile
-@@ -5,7 +5,7 @@
+diff --git a/arch/arm/mach-ks8695/Makefile b/arch/arm/mach-ks8695/Makefile
+index 7e3e816..853efd9 100644
+--- a/arch/arm/mach-ks8695/Makefile
++++ b/arch/arm/mach-ks8695/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for KS8695 architecture support
+ #
  
- # Common objects
- obj-y 			:= time.o clock.o serial.o io.o psc.o \
--			   gpio.o dma.o usb.o common.o sram.o aemif.o
-+			   dma.o usb.o common.o sram.o aemif.o
- 
- obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
- 
+-obj-y				:= cpu.o irq.o time.o gpio.o devices.o
++obj-y				:= cpu.o irq.o time.o devices.o
+ obj-m				:=
+ obj-n				:=
+ obj-				:=
 diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 27295cb..a26fffa 100644
+index 9588948..27295cb 100644
 --- a/drivers/gpio/Makefile
 +++ b/drivers/gpio/Makefile
-@@ -14,6 +14,7 @@ obj-$(CONFIG_GPIO_ADP5588)	+= gpio-adp5588.o
- obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
-+obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
- obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+@@ -18,6 +18,7 @@ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
  obj-$(CONFIG_GPIO_EXYNOS4)	+= gpio-exynos4.o
  obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
-diff --git a/arch/arm/mach-davinci/gpio.c b/drivers/gpio/gpio-davinci.c
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
++obj-$(CONFIG_MACH_KS8695)	+= gpio-ks8695.o
+ obj-$(CONFIG_GPIO_LANGWELL)	+= gpio-langwell.o
+ obj-$(CONFIG_GPIO_MAX730X)	+= gpio-max730x.o
+ obj-$(CONFIG_GPIO_MAX7300)	+= gpio-max7300.o
+diff --git a/arch/arm/mach-ks8695/gpio.c b/drivers/gpio/gpio-ks8695.c
 similarity index 100%
-rename from arch/arm/mach-davinci/gpio.c
-rename to drivers/gpio/gpio-davinci.c
+rename from arch/arm/mach-ks8695/gpio.c
+rename to drivers/gpio/gpio-ks8695.c
 -- 
 1.7.3.2
 
