@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab1HJSk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:40:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51733 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab1HJSkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:40:24 -0400
+	id S1754665Ab1HJSlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:41:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3181 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754543Ab1HJSlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 14:41:17 -0400
+Date: Wed, 10 Aug 2011 14:40:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+        Jan Kara <jack@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
+Message-ID: <20110810184052.GE3396@redhat.com>
+References: <20110806084447.388624428@intel.com>
+ <20110809020127.GA3700@redhat.com>
+ <20110809055551.GP3162@dastard>
+ <20110809140421.GB6482@redhat.com>
+ <CAHH2K0bV3WPSOBn=Kob-kvw0FgchUhm_bA9HGVJGmsZgWf0dSg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1312999168.2989.61.camel@i7.infradead.org>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	<4E34998D.8060806@zytor.com>
-	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	<4E4140B3.7090802@suse.cz>
-	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	<4E4280BA.9050109@suse.cz>
-	<1312981658.2989.39.camel@i7.infradead.org>
-	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	<1312985888.2989.46.camel@i7.infradead.org>
-	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	<1312993987.2989.53.camel@i7.infradead.org>
-	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	<1312999168.2989.61.camel@i7.infradead.org>
-Date: Wed, 10 Aug 2011 14:40:24 -0400
-Message-ID: <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHH2K0bV3WPSOBn=Kob-kvw0FgchUhm_bA9HGVJGmsZgWf0dSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Aug 10, 2011 at 12:41:00AM -0700, Greg Thelen wrote:
 
-On Wed, Aug 10, 2011 at 1:59 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2011-08-10 at 13:44 -0400, Arnaud Lacombe wrote:
->> Exactly my point, you just successfully created an half-backed config
->> which is different than what Aunt Tillie wanted you to generate. This
->> should be an hard error, same for "all*.config", not to mention that
->> the error message is far from being helpful.
->
-> You are whining about something that has been true of the kernel config
-> system for at least the last 16 years that I've been working on it,
->
-s/16/6/; the all.config logic has been added in:
+[..]
+> > > However, before we have a "finished product", there is still another
+> > > piece of the puzzle to be put in place - memcg-aware buffered
+> > > writeback. That is, having a flusher thread do work on behalf of
+> > > memcg in the IO context of the memcg. Then the IO controller just
+> > > sees a stream of async writes in the context of the memcg the
+> > > buffered writes came from in the first place. The block layer
+> > > throttles them just like any other IO in the IO context of the
+> > > memcg...
+> >
+> > Yes that is still a piece remaining. I was hoping that Greg Thelen will
+> > be able to extend his patches to submit writes in the context of
+> > per cgroup flusher/worker threads and solve this problem.
+> >
+> > Thanks
+> > Vivek
+> 
+> Are you suggesting multiple flushers per bdi (one per cgroup)?  I
+> thought the point of IO less was to one issue buffered writes from a
+> single thread.
 
-commit 90389160efc2864501ced6e662f9419eb7a3e6c8
-Author: Roman Zippel <zippel@linux-m68k.org>
-Date:   Tue Nov 8 21:34:49 2005 -0800
+I think in one of the mail threads Dave Chinner mentioned this idea
+of using per cgroup worker/worqueue.
 
-    [PATCH] kconfig: preset config during all*config
+Agreed that it leads back to the issue of multiple writers (but only
+if multiple cgroups are there). But at the same time it simplifies
+atleast two problems.
 
-so, at best, this buggy behavior is ~ 6 years old. Before that, I'd
-assume that the internal namespace was not accessible by any other
-mean than the front-ends.
+- Worker could be migrated to the cgroup we are writting for and we
+  don't need the IO tracking logic. blkio controller should will
+  automatically account the IO to right group.
 
-> You're *right*, of course, but you're getting on my tits by whining
-> about it only *now*, in this context.
-well... sorry for your tits, 'hope you're enjoying it ;-)
+- We don't have to worry about a single flusher thread sleeping
+  on request queue because either queue or group is congested and
+  this can lead other group's IO is not being submitted.
 
-> At least I have offered *an* error
-> message reporting that the request was not honoured, which is a whole
-> lot better that we've been used to.
->
-s/error/warning/, but indeed, that's a step forward.
-
-> Please, if this offends you then by all means go and fix it. A sane way
-> of handling dependencies would give a way to say "do what you need to do
-> in order to enable CONFIG_SATA_MV", and should remove the abomination of
-> 'select', which was introduced purely to work around that lack.
->
-> But none of that is directly relevant in *this* thread.
->
-to paraphrase you, I'd say, this might looks "cute but might give
-behavior that people will come to depend on in their scripts and then
-we take it away again", "that's why I'd kind of like to see it done
-*once*, *properly*".
-
- - Arnaud
-
-> --
-> dwmw2
->
->
+Thanks
+Vivek
