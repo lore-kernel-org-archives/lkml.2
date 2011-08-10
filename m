@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1HJDw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 23:52:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56067 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab1HJDwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 23:52:25 -0400
-From: Hemant Pedanekar <hemantp@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: [PATCH] omap: timer: Set dmtimer used as clocksource in autoreload mode
-Date: Wed, 10 Aug 2011 09:22:03 +0530
-Message-ID: <1312948323-22823-1-git-send-email-hemantp@ti.com>
-X-Mailer: git-send-email 1.7.3.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1750884Ab1HJEAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 00:00:45 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:50764 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab1HJEAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 00:00:44 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, joe@perches.com, davem@davemloft.net,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
+Date: Wed, 10 Aug 2011 12:06:09 +0800
+Message-Id: <1312949169-26146-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_OMAP_32K_TIMER is not selected and dmtimer is used as clocksource, the
-timer stops counting once overflow occurs as it was not set in autoreload mode.
-This results into timekeeping failure: for example, 'sleep 1' at the shell after
-the timer counter overflow would hang.
+From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-This patch sets up autoreload when starting the clocksource timer which fixes
-the above issue.
+  drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
 
-Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 ---
- arch/arm/mach-omap2/timer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/gianfar_ethtool.c |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index e964072..796b935 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -293,7 +293,7 @@ static void __init omap2_gp_clocksource_init(int gptimer_id,
- 	pr_info("OMAP clocksource: GPTIMER%d at %lu Hz\n",
- 		gptimer_id, clksrc.rate);
+diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
+index 6e35069..25a8c2a 100644
+--- a/drivers/net/gianfar_ethtool.c
++++ b/drivers/net/gianfar_ethtool.c
+@@ -686,10 +686,21 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+ {
+ 	unsigned int last_rule_idx = priv->cur_filer_idx;
+ 	unsigned int cmp_rqfpr;
+-	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
+-	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
++	unsigned int *local_rqfpr;
++	unsigned int *local_rqfcr;
+ 	int i = 0x0, k = 0x0;
+ 	int j = MAX_FILER_IDX, l = 0x0;
++	int ret = 1;
++
++	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
++		GFP_KERNEL);
++	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
++		GFP_KERNEL);
++	if (!local_rqfpr || !local_rqfcr) {
++		pr_err("Out of memory\n");
++		ret = 0;
++		goto err;
++	}
  
--	__omap_dm_timer_load_start(clksrc.io_base, OMAP_TIMER_CTRL_ST, 0, 1);
-+	omap_dm_timer_set_load_start(&clksrc, 1, 0);
- 	init_sched_clock(&cd, dmtimer_update_sched_clock, 32, clksrc.rate);
+ 	switch (class) {
+ 	case TCP_V4_FLOW:
+@@ -706,7 +717,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+ 		break;
+ 	default:
+ 		pr_err("Right now this class is not supported\n");
+-		return 0;
++		ret = 0;
++		goto err;
+ 	}
  
- 	if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
+ 	for (i = 0; i < MAX_FILER_IDX + 1; i++) {
+@@ -721,7 +733,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+ 
+ 	if (i == MAX_FILER_IDX + 1) {
+ 		pr_err("No parse rule found, can't create hash rules\n");
+-		return 0;
++		ret = 0;
++		goto err;
+ 	}
+ 
+ 	/* If a match was found, then it begins the starting of a cluster rule
+@@ -765,7 +778,10 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+ 		priv->cur_filer_idx = priv->cur_filer_idx - 1;
+ 	}
+ 
+-	return 1;
++err:
++	kfree(local_rqfcr);
++	kfree(local_rqfpr);
++	return ret;
+ }
+ 
+ static int gfar_set_hash_opts(struct gfar_private *priv, struct ethtool_rxnfc *cmd)
 -- 
-1.7.3.5
+1.7.4.1
 
