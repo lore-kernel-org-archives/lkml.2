@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751020Ab1HJIFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 04:05:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54129 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763Ab1HJIFw (ORCPT
+	id S1751495Ab1HJIGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 04:06:16 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:59991 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1HJIGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 04:05:52 -0400
-Date: Wed, 10 Aug 2011 10:05:49 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Robert Schwebel <rsc@pengutronix.de>
-Subject: [PATCH] mfd wm8350: rename static gpio_set_debounce()
-Message-ID: <20110810080549.GX31404@pengutronix.de>
+	Wed, 10 Aug 2011 04:06:06 -0400
+X-IronPort-AV: E=Sophos;i="4.67,349,1309737600"; 
+   d="scan'208";a="7202865"
+Subject: Re: [PATCH] xen: modify kernel mappings corresponding to granted
+ pages
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Jeremy Fitzhardinge" <Jeremy.Fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110809155014.GA4237@dumpdata.com>
+References: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20110809023407.GA13905@dumpdata.com>
+	 <1312893028.26263.129.camel@zakaz.uk.xensource.com>
+	 <20110809155014.GA4237@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 10 Aug 2011 09:06:04 +0100
+Message-ID: <1312963564.26263.154.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:03:25 up 49 days, 13:50, 31 users,  load average: 1.77, 2.94,
- 4.17
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-08-09 at 16:50 +0100, Konrad Rzeszutek Wilk wrote:
+> > > So I hadn't looked at this in detail, but I wonder if we can use the
+> > > MULTIcall for this? It looks like we need to do two hypercalls so why
+> > > not batch it?
+> > 
+> > That was going to be my next question. We should definitely batch these
+> > if possible.
+> > 
+> > > And while we are it - we could change the MMU ops to only do this on
+> > > initial domain and for the domU case do the old mechanism?
+> > 
+> > We need this in domU for driver domains and the like, don't we?
+> 
+> Sure, but I believe the majority of domU domains would not require this.
 
-The kernel already has a function with this name declared
-in asm-generic/gpio.h. So if this header leaks into wm8350/gpio.c
-we get
+The overhead of this stuff is low if not used, isn't it? Compared with
+the complexity of having domains know if they might be used as a driver
+domain or not that seems like the tradeoff to be aiming for.
 
-drivers/mfd/wm8350-gpio.c:40:12: error: conflicting types for 'gpio_set_debounce'
-include/asm-generic/gpio.h:156:12: note: previous declaration of 'gpio_set_debounce' was here
+> I was thinking that when we start playing with the device/driver domains
+> we would want to escalate the privilige level (or perhaps not)?
 
-Fix this by adding a wm8350_ prefix to the function.
+We don't want any escalation of privilege over and above what is
+necessary to be a driver domain, which is generally none.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
+>  Or
+> perhaps introcuce a new type - "if (xen_driver_domain())" to recognize
+> that we are special ?
 
-This is the minimal solution to this problem. It would be more
-consistent though not required to add a wm8350_ prefix to the
-other functions in this file aswell. Let me know what you prefer.
+Where does the information to set xen_driver_domain == TRUE come from?
 
- drivers/mfd/wm8350-gpio.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Ian.
 
-diff --git a/drivers/mfd/wm8350-gpio.c b/drivers/mfd/wm8350-gpio.c
-index ebf99be..d584f6b 100644
---- a/drivers/mfd/wm8350-gpio.c
-+++ b/drivers/mfd/wm8350-gpio.c
-@@ -37,7 +37,7 @@ static int gpio_set_dir(struct wm8350 *wm8350, int gpio, int dir)
- 	return ret;
- }
- 
--static int gpio_set_debounce(struct wm8350 *wm8350, int gpio, int db)
-+static int wm8350_gpio_set_debounce(struct wm8350 *wm8350, int gpio, int db)
- {
- 	if (db == WM8350_GPIO_DEBOUNCE_ON)
- 		return wm8350_set_bits(wm8350, WM8350_GPIO_DEBOUNCE,
-@@ -210,7 +210,7 @@ int wm8350_gpio_config(struct wm8350 *wm8350, int gpio, int dir, int func,
- 		goto err;
- 	if (gpio_set_polarity(wm8350, gpio, pol))
- 		goto err;
--	if (gpio_set_debounce(wm8350, gpio, debounce))
-+	if (wm8350_gpio_set_debounce(wm8350, gpio, debounce))
- 		goto err;
- 	if (gpio_set_dir(wm8350, gpio, dir))
- 		goto err;
--- 
-1.7.5.4
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
