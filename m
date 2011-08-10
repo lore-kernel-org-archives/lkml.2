@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab1HJGeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 02:34:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57879 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab1HJGeP (ORCPT
+	id S1750999Ab1HJGlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 02:41:17 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39082 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1HJGlQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 02:34:15 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@lst.de>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 1/2] Move some REQ flags to the common bio/request area
-Date: Wed, 10 Aug 2011 15:32:03 +0900
-Message-Id: <1312957924-2316-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Wed, 10 Aug 2011 02:41:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110809142256.GB1805@kroah.com>
+References: <4DDBF8BD.3000603@freemail.hu>
+	<20110524183448.GA18511@kroah.com>
+	<4DDC142E.6070003@freemail.hu>
+	<20110525031222.GB14290@haskell.muteddisk.com>
+	<4DDC93D5.9070607@freemail.hu>
+	<4DDDFDA7.6030900@freemail.hu>
+	<4E097A32.1000504@freemail.hu>
+	<CAL-cBk1Kzr1Gn3YCHDpudkVSmdSWOcCo7_rpLddCUQ_3ZjP+kQ@mail.gmail.com>
+	<20110809142256.GB1805@kroah.com>
+Date: Wed, 10 Aug 2011 14:41:14 +0800
+X-Google-Sender-Auth: fMjCTIj2gLqQUQj2ADz0rRD50Ls
+Message-ID: <CAL-cBk3vD7qiwmxjO83SXDCWwSCX8L2hmKetJT-gx1nZbq=mkg@mail.gmail.com>
+Subject: Re: [PATCH, RFC] USBIP protocol documentation
+From: David Chang <dchang@suse.com>
+To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Matthew Wilcox <matthew@wil.cx>, Max Vozeler <max@vozeler.com>,
+        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Matt Mooney <mfm@muteddisk.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+Hi Németh,
 
-REQ_SECURE, REQ_FLUSH and REQ_FUA may all be set on a bio as well as
-on a request, so relocate them to the shared part of the enum.
+2011/8/9 Greg KH <greg@kroah.com>:
+> On Tue, Aug 09, 2011 at 05:23:14PM +0800, David Chang wrote:
+>> Hi Greg,
+>>
+>> Sorry, just one question about the usbip protocol document.
+>> I would like to know why didn't you apply this patch.
+>
+> Because it was sent as a "RFC" (i.e. request for comments) and based on
+> the discussion afterward, there were lots of comments :)
+>
+> If someone wants to resend it to me, without that marking, I'll be glad
+> to apply it.
+>
 
-Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- include/linux/blk_types.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Could you resend the protocol document patch again without the RFC marking?
+And then we can get an initial version of the USBIP document.
+Thanks!
 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 6395692b2e7a..32f0076e844b 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -125,7 +125,11 @@ enum rq_flag_bits {
- 	__REQ_SYNC,		/* request is sync (sync write or read) */
- 	__REQ_META,		/* metadata io request */
- 	__REQ_DISCARD,		/* request to discard sectors */
-+	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
-+
- 	__REQ_NOIDLE,		/* don't anticipate more IO after this one */
-+	__REQ_FUA,		/* forced unit access */
-+	__REQ_FLUSH,		/* request for cache flush */
- 
- 	/* bio only flags */
- 	__REQ_RAHEAD,		/* read ahead, can fail anytime */
-@@ -135,7 +139,6 @@ enum rq_flag_bits {
- 	/* request only flags */
- 	__REQ_SORTED,		/* elevator knows about this request */
- 	__REQ_SOFTBARRIER,	/* may not be passed by ioscheduler */
--	__REQ_FUA,		/* forced unit access */
- 	__REQ_NOMERGE,		/* don't touch this for merging */
- 	__REQ_STARTED,		/* drive already may have started this one */
- 	__REQ_DONTPREP,		/* don't call prep for this one */
-@@ -146,11 +149,9 @@ enum rq_flag_bits {
- 	__REQ_PREEMPT,		/* set for "ide_preempt" requests */
- 	__REQ_ALLOCED,		/* request came from our alloc pool */
- 	__REQ_COPY_USER,	/* contains copies of user pages */
--	__REQ_FLUSH,		/* request for cache flush */
- 	__REQ_FLUSH_SEQ,	/* request for flush sequence */
- 	__REQ_IO_STAT,		/* account I/O stat */
- 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
--	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
--- 
-1.7.6
-
+Best Regards,
+David
