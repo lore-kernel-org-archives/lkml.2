@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab1HJJ7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:59:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48912 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab1HJJ7w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:59:52 -0400
+	id S1753737Ab1HJKAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 06:00:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54981 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753633Ab1HJKAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 06:00:46 -0400
+Date: Wed, 10 Aug 2011 12:00:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 1/6]  memg: better numa scanning
+Message-ID: <20110810100042.GA15007@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809190824.99347a0f.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110810090014.GB1909@minipsycho.brq.redhat.com>
-References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
-	<20110810090014.GB1909@minipsycho.brq.redhat.com>
-Date: Wed, 10 Aug 2011 11:59:50 +0200
-Message-ID: <CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
-Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
- 3.0-rc1 Bridge not forwarding unicast packages)
-From: Michael Guntsche <mguntsche@gmail.com>
-To: Jiri Pirko <jpirko@redhat.com>
-Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809190824.99347a0f.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 11:00 AM, Jiri Pirko <jpirko@redhat.com> wrote:
-> Wed, Aug 10, 2011 at 02:50:20AM CEST, mguntsche@gmail.com wrote:
->>Good evening/morning,
->>
->>> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
->>> testing. On a first look everything seemed to work fine, but when I
->>> tried to connect via openvpn to my internal network (tap0 being bridged
->>> with the internal network) I noticed that I was not able to access the
->>> server on my internal network. I could access the bridge (which is
->>> acting as the openvpn server as well) just fine though.
->>> To debug this I ran tcpdump on the openvpn client and started a ping to the
->>> internal network. I could see the ARP requests being answered.....
->><snip>
->>
->>After much digging and testing I found the commit that causes the
->>problem for me here.
->>
->>87c288c6e gianfar: do vlan cleanup
->>
->>Before this commit my bridge works fine. I simplified the test case
->>and just tried to access the server from a local wireless device with
->>gets also bridged via
->>a gianfar nic to the wired lan. Before commit 87c288c6e I can ping the
->>device from the internal network afterwards it stops.
->>For testing purposes I reverted this commit (plus some others to make
->>the code compile) and it started working again.
->>The hardware is a routerboard with three onboard nics two of em gianfar.
->>The gianfar nics do not support any kind of offloading,
->>
->>Offload parameters for lan_wire:
->>rx-checksumming: off
->>tx-checksumming: off
->>scatter-gather: off
->>tcp-segmentation-offload: off
->>udp-fragmentation-offload: off
->>generic-segmentation-offload: off
->>generic-receive-offload: on
->>large-receive-offload: off
->>rx-vlan-offload: off
->>tx-vlan-offload: off
->>ntuple-filters: off
->>receive-hashing: off
->>
->>The Bridge device on the other hand....
->>
->>Offload parameters for lan:
->>rx-checksumming: on
->>tx-checksumming: on
->>scatter-gather: off
->>tcp-segmentation-offload: off
->>udp-fragmentation-offload: off
->>generic-segmentation-offload: off
->>generic-receive-offload: on
->>large-receive-offload: off
->>rx-vlan-offload: off
->>tx-vlan-offload: on
->  ^^^^^^^^^^^^^^^^^^^ is this gfar?
-No the "Lan" nic is the bridge itself. The gfar in question is lan_wire.
+On Tue 09-08-11 19:08:24, KAMEZAWA Hiroyuki wrote:
+> 
+> Making memcg numa's scanning information update by schedule_work().
+> 
+> Now, memcg's numa information is updated under a thread doing
+> memory reclaim. It's not very heavy weight now. But upcoming updates
+> around numa scanning will add more works. This patch makes
+> the update be done by schedule_work() and reduce latency caused
+> by this updates.
 
-/Michael
+I am not sure whether this pays off. Anyway, I think it would be better
+to place this patch somewhere at the end of the series so that we can
+measure its impact separately.
+
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Otherwise looks good to me.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+Just a minor nit bellow.
+
+> ---
+>  mm/memcontrol.c |   42 ++++++++++++++++++++++++++++++------------
+>  1 file changed, 30 insertions(+), 12 deletions(-)
+> 
+> Index: mmotm-Aug3/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-Aug3.orig/mm/memcontrol.c
+> +++ mmotm-Aug3/mm/memcontrol.c
+> @@ -285,6 +285,7 @@ struct mem_cgroup {
+>  	nodemask_t	scan_nodes;
+>  	atomic_t	numainfo_events;
+>  	atomic_t	numainfo_updating;
+> +	struct work_struct	numainfo_update_work;
+>  #endif
+>  	/*
+>  	 * Should the accounting and control be hierarchical, per subtree?
+> @@ -1567,6 +1568,23 @@ static bool test_mem_cgroup_node_reclaim
+>  }
+>  #if MAX_NUMNODES > 1
+>  
+> +static void mem_cgroup_numainfo_update_work(struct work_struct *work)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	int nid;
+> +
+> +	memcg = container_of(work, struct mem_cgroup, numainfo_update_work);
+> +
+> +	memcg->scan_nodes = node_states[N_HIGH_MEMORY];
+> +	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
+> +		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
+> +			node_clear(nid, memcg->scan_nodes);
+> +	}
+> +	atomic_set(&memcg->numainfo_updating, 0);
+> +	css_put(&memcg->css);
+> +}
+> +
+> +
+>  /*
+>   * Always updating the nodemask is not very good - even if we have an empty
+>   * list or the wrong list here, we can start from some node and traverse all
+> @@ -1575,7 +1593,6 @@ static bool test_mem_cgroup_node_reclaim
+>   */
+
+Would be good to update the function comment as well (we still have 10s
+period there).
+
+>  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
+>  {
+> -	int nid;
+>  	/*
+>  	 * numainfo_events > 0 means there was at least NUMAINFO_EVENTS_TARGET
+>  	 * pagein/pageout changes since the last update.
+[...]
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
