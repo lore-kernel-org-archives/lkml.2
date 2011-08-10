@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab1HJGLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 02:11:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42737 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab1HJGLU (ORCPT
+	id S1752646Ab1HJGLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 02:11:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54843 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab1HJGLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 02:11:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 10 Aug 2011 15:03:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v5 0/6]  memg: better numa scanning
-Message-Id: <20110810150358.89290de4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110810091544.d73c7775.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110809143314.GJ7463@tiehlicka.suse.cz>
-	<20110810091544.d73c7775.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 10 Aug 2011 02:11:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6433"; a="109254746"
+X-IronPort-AV: E=Sophos;i="4.67,347,1309762800"; 
+   d="scan'208";a="112899769"
+Message-ID: <4E42210E.70202@qca.qualcomm.com>
+Date: Wed, 10 Aug 2011 09:11:26 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Vivek Natarajan <nataraja@qca.qualcomm.com>,
+        Suraj Sumangala <surajs@qca.qualcomm.com>,
+        Joe Perches <joe@perches.com>, Jouni Malinen <jouni@qca.qualcomm.com>
+Subject: Re: linux-next: build failure after merge of the final tree (wireless
+ tree related)
+References: <20110810122109.a81b3186e4131aba82a4cae0@canb.auug.org.au>
+In-Reply-To: <20110810122109.a81b3186e4131aba82a4cae0@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.234.11.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011 09:15:44 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi Stephen,
 
-> On Tue, 9 Aug 2011 16:33:14 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+On 08/10/2011 05:21 AM, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
 > 
-> > Hmm, 57% reduction of major page faults which doesn't fit with other
-> > numbers. At least I do not see any corelation with them. Your workload
-> > has freed more or less the same number of file pages (>1% less). Do you
-> > have a theory for that?
-> > 
-> > Is it possible that this is caused by "memcg: stop vmscan when enough
-> > done."?
-> > 
+> drivers/net/wireless/ath/ath6kl/built-in.o: In function `htc_start':
+> (.opd+0x600): multiple definition of `htc_start'
+> drivers/net/wireless/ath/ath9k/built-in.o:(.opd+0x3e40): first defined here
+> drivers/net/wireless/ath/ath6kl/built-in.o: In function `.htc_stop':
+> (.text+0x7b40): multiple definition of `.htc_stop'
+> drivers/net/wireless/ath/ath9k/built-in.o:(.text+0x67b34): first defined here
+> drivers/net/wireless/ath/ath6kl/built-in.o: In function `.htc_start':
+> (.text+0x7d18): multiple definition of `.htc_start'
+> drivers/net/wireless/ath/ath9k/built-in.o:(.text+0x67ba0): first defined here
+> drivers/net/wireless/ath/ath6kl/built-in.o: In function `htc_stop':
+> (.opd+0x5e8): multiple definition of `htc_stop'
+> drivers/net/wireless/ath/ath9k/built-in.o:(.opd+0x3e28): first defined here
 > 
+> Probably caused by commit bdcd81707973 ("Add ath6kl cleaned up driver").
+> 
+> I have reverted commit 392e741939dd ("Merge branch 'ath6kl-next' of
+> master.kernel.org:/pub/scm/linux/kernel/git/kvalo/ath6kl") for today.
 
-I did more runs. In this time, I did 3 sequence of runs per test. Then, 2nd, 3rd
-runs will see some garbage(file cache) of previous runs. cpuset is not used.
+Sorry about that! I'll send a fix right away.
 
-[Nopatch]
-[1] 772.07user 308.73system 4:05.41elapsed 440%CPU (0avgtext+0avgdata 1458400maxresident)k
-    4519512inputs+7485704outputs (8078major+35671016minor)pagefaults 0swaps
-[2] 774.19user 306.19system 4:03.05elapsed 444%CPU (0avgtext+0avgdata 1455472maxresident)k
-    4502272inputs+5168832outputs (7815major+35691489minor)pagefaults 0swaps
-[3] 773.99user 310.71system 4:00.31elapsed 451%CPU (0avgtext+0avgdata 1458144maxresident)k
-    4518448inputs+8695352outputs (7768major+35683064minor)pagefaults 0swaps
+> John, this has happened a couple of times before where people have just
+> copied an existing driver that happens to have some badly named global
+> variables.  :-(
 
-[Patch 1-3 applied]
-[1] 771.75user 312.82system 4:09.55elapsed 434%CPU (0avgtext+0avgdata 1458320maxresident)k
-    4413032inputs+7895152outputs (8793major+35691822minor)pagefaults 0swaps
-[2] 772.66user 308.93system 4:15.22elapsed 423%CPU (0avgtext+0avgdata 1457504maxresident)k
-    4469120inputs+12484960outputs (10952major+35702053minor)pagefaults 0swaps
-[3] 771.83user 305.53system 3:57.63elapsed 453%CPU (0avgtext+0avgdata 1457856maxresident)k
-    4355392inputs+5169560outputs (6985major+35680863minor)pagefaults 0swaps
+I was working on adding ath6kl prefix too all global ath6kl symbols but
+I haven't been able to finish that yet.
 
-[Full Patched]
-[1] 771.19user 303.37system 3:49.47elapsed 468%CPU (0avgtext+0avgdata 1458400maxresident)k
-    4260032inputs+4919824outputs (5496major+35672873minor)pagefaults 0swaps
-[2] 772.51user 305.90system 3:56.89elapsed 455%CPU (0avgtext+0avgdata 1458416maxresident)k
-    4463728inputs+4621496outputs (6301major+35671610minor)pagefaults 0swaps
-[3] 773.14user 305.02system 3:55.09elapsed 458%CPU (0avgtext+0avgdata 1458240maxresident)k
-    4447088inputs+5190792outputs (5106major+35699087minor)pagefaults 0swaps
-
-The patch 3 is require for patch 5 to work correctly (It makes node-selection unused.)
-But it seems to be not more than that.
-
-Thanks,
--Kame
-
+Kalle
