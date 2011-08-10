@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1HJOSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 10:18:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52801 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab1HJOSL (ORCPT
+	id S1752591Ab1HJOTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 10:19:48 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36790 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750922Ab1HJOTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 10:18:11 -0400
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Wed, 10 Aug 2011 15:17:47 +0100
-In-Reply-To: <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	 <1312067670.22074.61.camel@i7.infradead.org>
-	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	 <4E34998D.8060806@zytor.com>
-	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	 <4E4140B3.7090802@suse.cz>
-	 <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	 <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>
-	 <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312985888.2989.46.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 10 Aug 2011 10:19:46 -0400
+Date: Wed, 10 Aug 2011 10:19:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <4E41912F.50901@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1108101016200.1917-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 10:15 -0400, Arnaud Lacombe wrote:
-> 
-> hum, let's take a real life example: user foo wants his config to
-> enable CONFIG_WIRELESS_EXT, so with what you propose, he would do:
-> 
-> # make CONFIG_WIRELESS_EXT=y allmodconfig
-> 
-> currently, this would _never_ work, unless one of the symbol selected
-> by `allmodconfig' selects it, as WIRELESS_EXT is defined the
-> following:
-> 
-> config WIRELESS_EXT
->     bool
-> 
-> I suspect there also an implicit dependency to WIRELESS. 
+On Tue, 9 Aug 2011, Hans de Goede wrote:
 
-This is a complete red herring. It's *always* been like that, and works
-*just* like this for the 'all.config' file etc.
+> Hi,
+> 
+> On 08/09/2011 04:19 PM, Alan Stern wrote:
+> > On Tue, 9 Aug 2011, Hans de Goede wrote:
+> > According to Theodore, we have developed 5 drivers for them because the
+> > stillcam modes in different devices use four different vendor-specific
+> > drivers.
+> 
+> Yes, but so the the webcam modes of the different devices, so for
+> the 5 (not sure if that is the right number) dual-cam mode chipsets
+> we support there will be 5 drivers, each supporting both the
+> webcam and the access to pictures stored in memory of the chipset
+> they support. So 5 chipsets -> 5 drivers each supporting 1 chipset,
+> and both functions of the single logical device that chipset
+> represents.
+> 
+> >  Does it really make sense to combine 5 drivers into one?
+> 
+> Right, that is not the plan. The plan is to simply stop having 2 drivers
+> for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
+> + 5 webcam, to just 5 drivers. We will also likely be able to share
+> code between the code for the 2 functionalities for things like generic
+> set / get register functions, initialization, etc.
 
-If you have nothing relevant to say, just don't say anything.
+Okay, I didn't realize that the different cameras used different webcam 
+drivers as well as different stillcam drivers.
 
--- 
-dwmw2
+As far as I can see, there's nothing to stop anybody from adding the 
+stillcam functionality into the webcam drivers right now.  If some 
+common code can be abstracted out into a shared source file, so much 
+the better.
+
+That would solve the problem, right?
+
+Alan Stern
 
