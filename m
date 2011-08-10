@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750999Ab1HJGlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 02:41:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39082 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1HJGlQ convert rfc822-to-8bit (ORCPT
+	id S1751238Ab1HJGmK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 02:42:10 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:61511 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1HJGmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 02:41:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110809142256.GB1805@kroah.com>
-References: <4DDBF8BD.3000603@freemail.hu>
-	<20110524183448.GA18511@kroah.com>
-	<4DDC142E.6070003@freemail.hu>
-	<20110525031222.GB14290@haskell.muteddisk.com>
-	<4DDC93D5.9070607@freemail.hu>
-	<4DDDFDA7.6030900@freemail.hu>
-	<4E097A32.1000504@freemail.hu>
-	<CAL-cBk1Kzr1Gn3YCHDpudkVSmdSWOcCo7_rpLddCUQ_3ZjP+kQ@mail.gmail.com>
-	<20110809142256.GB1805@kroah.com>
-Date: Wed, 10 Aug 2011 14:41:14 +0800
-X-Google-Sender-Auth: fMjCTIj2gLqQUQj2ADz0rRD50Ls
-Message-ID: <CAL-cBk3vD7qiwmxjO83SXDCWwSCX8L2hmKetJT-gx1nZbq=mkg@mail.gmail.com>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-From: David Chang <dchang@suse.com>
-To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Matthew Wilcox <matthew@wil.cx>, Max Vozeler <max@vozeler.com>,
-        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Matt Mooney <mfm@muteddisk.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Aug 2011 02:42:08 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix volatile warning issue in das16.c
+Date: Wed, 10 Aug 2011 12:11:51 +0530
+Message-Id: <1312958511-3716-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH]Staging: comedi:fix volatile warning issue in das16.c>
+References: <[PATCH]Staging: comedi:fix volatile warning issue in das16.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Németh,
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-2011/8/9 Greg KH <greg@kroah.com>:
-> On Tue, Aug 09, 2011 at 05:23:14PM +0800, David Chang wrote:
->> Hi Greg,
->>
->> Sorry, just one question about the usbip protocol document.
->> I would like to know why didn't you apply this patch.
->
-> Because it was sent as a "RFC" (i.e. request for comments) and based on
-> the discussion afterward, there were lots of comments :)
->
-> If someone wants to resend it to me, without that marking, I'll be glad
-> to apply it.
->
+This is a patch to the das16.c file that fixes up a volatile warning found by the checkpatch.pl tool
 
-Could you resend the protocol document patch again without the RFC marking?
-And then we can get an initial version of the USBIP document.
-Thanks!
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/das16.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-Best Regards,
-David
+diff --git a/drivers/staging/comedi/drivers/das16.c b/drivers/staging/comedi/drivers/das16.c
+index e7905ba..e25c6b4 100644
+--- a/drivers/staging/comedi/drivers/das16.c
++++ b/drivers/staging/comedi/drivers/das16.c
+@@ -740,8 +740,9 @@ struct das16_private_struct {
+ 	unsigned int ai_unipolar;	/*  unipolar flag */
+ 	unsigned int ai_singleended;	/*  single ended flag */
+ 	unsigned int clockbase;	/*  master clock speed in ns */
+-	volatile unsigned int control_state;	/*  dma, interrupt and trigger control bits */
+-	volatile unsigned long adc_byte_count;	/*  number of bytes remaining */
++	/* dma, interrupt and trigger control bits */
++	unsigned int control_state;
++	unsigned long adc_byte_count;	/*  number of bytes remaining */
+ 	/*  divisor dividing master clock to get conversion frequency */
+ 	unsigned int divisor1;
+ 	/*  divisor dividing master clock to get conversion frequency */
+@@ -750,7 +751,8 @@ struct das16_private_struct {
+ 	uint16_t *dma_buffer[2];
+ 	dma_addr_t dma_buffer_addr[2];
+ 	unsigned int current_buffer;
+-	volatile unsigned int dma_transfer_size;	/*  target number of bytes to transfer per dma shot */
++	/* target number of bytes to transfer per dma shot */
++	unsigned int dma_transfer_size;
+ 	/**
+ 	 * user-defined analog input and output ranges
+ 	 * defined from config options
+@@ -759,8 +761,8 @@ struct das16_private_struct {
+ 	struct comedi_lrange *user_ao_range_table;
+ 
+ 	struct timer_list timer;	/*  for timed interrupt */
+-	volatile short timer_running;
+-	volatile short timer_mode;	/*  true if using timer mode */
++	short timer_running;
++	short timer_mode;	/*  true if using timer mode */
+ };
+ #define devpriv ((struct das16_private_struct *)(dev->private))
+ #define thisboard ((struct das16_board *)(dev->board_ptr))
+-- 
+1.6.5.2
+
