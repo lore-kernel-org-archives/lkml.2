@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab1HJSH1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 14:07:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34470 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753542Ab1HJSH0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 14:07:26 -0400
+	id S1753914Ab1HJSH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 14:07:58 -0400
+Received: from dd13538.kasserver.com ([85.13.135.107]:36941 "EHLO
+	dd13538.kasserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab1HJSH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 14:07:57 -0400
+Date: Wed, 10 Aug 2011 20:07:54 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 1/6] TTY: serial, remove BTM from wait_until_sent
+Message-ID: <20110810180754.GB13832@bombe-desk.opditex>
+Mail-Followup-To: Jiri Slaby <jirislaby@gmail.com>,
+	Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de,
+	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
+References: <1310646915-3032-1-git-send-email-jslaby@suse.cz>
+ <20110719003503.GA4138@amos.fritz.box>
+ <4E3FE2D2.5020801@gmail.com>
+ <20110810010933.GA4733@amos.fritz.box>
+ <4E429907.6080000@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1312990072.1674.5.camel@pasglop>
-References: <1312990072.1674.5.camel@pasglop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 10 Aug 2011 11:07:03 -0700
-Message-ID: <CA+55aFxbjN3y3Wg193C2qDLbv+AeuR0=23p-r38jB19WbbRa-g@mail.gmail.com>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E429907.6080000@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 8:27 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
->
-> Here are a few fixes for powerpc. Mostly innocuous stuff, in fact most of
-> it has been in my tree for a while, I just hadn't got a chance to actually
-> send it as I was travelling.
->
-> Cheers,
-> Ben.
->
-> The following changes since commit 53d1e658df6e26d62500410719aaee2b82067c03:
->
->  Merge branch 'devicetree/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-08-04 06:37:07 -1000)
->
-> are available in the git repository at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git ..BRANCH.NOT.VERIFIED..
+On Wed, Aug 10, 2011 at 04:43:19PM +0200, Jiri Slaby wrote:
+> On 08/10/2011 03:09 AM, Andreas Bombe wrote:
+> > I did my simple test on ttyS0 again: "stty -F /dev/ttyS0 crtscts" then
+> > "echo >/dev/ttyS0". I attached the gzipped sysrq-t list in case you need
+> > the complete output. This is just the process while it is trying to
+> > close the device (bash's internal echo):
+> 
+> Hmm, perhaps obvious question. What is the port connected with? And with
+> what cable? Is it null modem cable? Or at least with DTR-CTS connected?
 
-What branch?
+Nothing is connected. After all, the whole point of this exercise is to
+give the driver data to send which it can't get out so I can see whether
+it blocks all tty operations system wide while trying to do the flush on
+close.
 
-                        Linus
+-- 
+Andreas Bombe
