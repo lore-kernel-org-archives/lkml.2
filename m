@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329Ab1HJFOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 01:14:55 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56940 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750857Ab1HJFOy (ORCPT
+	id S1751509Ab1HJFVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 01:21:44 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44594 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1HJFVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 01:14:54 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/h2C9/G/fhLEmWECs4+qpDLwSB43oeu9uBpTzW5z
-	5rtoNlSSmME3Db
-Subject: Re: [ANNOUNCE] 3.0-rt1
-From: Mike Galbraith <efault@gmx.de>
-To: pmorreale@novell.com
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1311428078.2502.0.camel@hermosa.morreale.net>
-References: <alpine.LFD.2.02.1107222203400.2702@ionos>
-	 <4E2A1E75.4070709@gmail.com> <1311428078.2502.0.camel@hermosa.morreale.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Aug 2011 07:14:50 +0200
-Message-ID: <1312953290.5395.39.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 10 Aug 2011 01:21:43 -0400
+Date: Wed, 10 Aug 2011 00:21:35 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: [GIT PULL] eCryptfs fixes for 3.1-rc2
+Message-ID: <20110810052134.GA26944@boyd.l.tihix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-23 at 07:34 -0600, Peter W. Morreale wrote:
-> On Sat, 2011-07-23 at 03:05 +0200, Maarten Lankhorst wrote:
+Hi Linus,
 
-> > Only the nvidia driver fails to build because of rtmutex and migrate enable/disable being GPL only, you might want to reconsider the GPL only status of them.
-> > 
-> > ~Maarten
-> 
-> Or, alternatively, please ask Nvidia to GPL their driver.
+John has added an eCryptfs mount option to do a mount time check
+ensuring that the source mount point is owned by the real uid of the
+process performing the mount. Roberto's Kconfig patch fixes a
+dependency-based compile error when encrypted keys are built as a module
+but eCryptfs is a built-in. My first patch removes a call to BUG() when
+we should be returning an error and my second patch simply fixes a
+compiler warning.
 
-I know a couple folks for whom this will eventually become a problem.
+The following changes since commit 322a8b034003c0d46d39af85bf24fee27b902f48:
 
-One is doing (very) high performance aircraft simulation, where
-rendering performance highly important.  AFAIK there is currently no
-viable alternative to "the blob"
+  Linux 3.1-rc1 (2011-08-07 18:23:30 -0700)
 
-	-Mike
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git for-linus
 
+John Johansen (1):
+      Ecryptfs: Add mount option to check uid of device being mounted = expect uid
+
+Roberto Sassu (1):
+      eCryptfs: fix compile error
+
+Tyler Hicks (2):
+      eCryptfs: Return error when lower file pointer is NULL
+      eCryptfs: Fix payload_len unitialized variable warning
+
+ fs/ecryptfs/Kconfig      |    2 +-
+ fs/ecryptfs/keystore.c   |    2 +-
+ fs/ecryptfs/main.c       |   23 +++++++++++++++++++++--
+ fs/ecryptfs/read_write.c |   18 ++++++++++--------
+ 4 files changed, 33 insertions(+), 12 deletions(-)
