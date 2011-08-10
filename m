@@ -1,68 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab1HJLv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 07:51:27 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30962 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752826Ab1HJLv0 (ORCPT
+	id S1753792Ab1HJLv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 07:51:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36013 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab1HJLv4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 07:51:26 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18h415qlIrUJgsNThVOewcP
-Date: Wed, 10 Aug 2011 04:51:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Hemant Pedanekar <hemantp@ti.com>
-Cc: linux-omap@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omap: timer: Set dmtimer used as clocksource in
- autoreload mode
-Message-ID: <20110810115122.GH1939@atomide.com>
-References: <1312948323-22823-1-git-send-email-hemantp@ti.com>
+	Wed, 10 Aug 2011 07:51:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312948323-22823-1-git-send-email-hemantp@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110810111947.GC1909@minipsycho.brq.redhat.com>
+References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
+	<20110810090014.GB1909@minipsycho.brq.redhat.com>
+	<CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
+	<CAMvAeqM-oH1UzxEp9PgO6ZP-AKtqosuMg5za25_X8DpPJMDX2w@mail.gmail.com>
+	<20110810111947.GC1909@minipsycho.brq.redhat.com>
+Date: Wed, 10 Aug 2011 13:51:54 +0200
+Message-ID: <CAMvAeqOZ9OoV5KxTbn0+sPxJ=AkSrb__31GShVshDkX6NUXgNw@mail.gmail.com>
+Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
+ 3.0-rc1 Bridge not forwarding unicast packages)
+From: Michael Guntsche <mguntsche@gmail.com>
+To: Jiri Pirko <jpirko@redhat.com>
+Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Hemant Pedanekar <hemantp@ti.com> [110809 20:46]:
-> If CONFIG_OMAP_32K_TIMER is not selected and dmtimer is used as clocksource, the
-> timer stops counting once overflow occurs as it was not set in autoreload mode.
-> This results into timekeeping failure: for example, 'sleep 1' at the shell after
-> the timer counter overflow would hang.
-> 
-> This patch sets up autoreload when starting the clocksource timer which fixes
-> the above issue.
-> 
-> Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
+On Wed, Aug 10, 2011 at 1:19 PM, Jiri Pirko <jpirko@redhat.com> wrote:
+> Wed, Aug 10, 2011 at 12:30:16PM CEST, mguntsche@gmail.com wrote:
+>>On Wed, Aug 10, 2011 at 11:59 AM, Michael Guntsche <mguntsche@gmail.com> wrote:
+>><snip>
+>>>>>Offload parameters for lan_wire:
+>>>>>rx-checksumming: off
+>>>>>tx-checksumming: off
+>>>>>scatter-gather: off
+>>>>>tcp-segmentation-offload: off
+>>>>>udp-fragmentation-offload: off
+>>>>>generic-segmentation-offload: off
+>>>>>generic-receive-offload: on
+>>>>>large-receive-offload: off
+>>>>>rx-vlan-offload: off
+>>>>>tx-vlan-offload: off
+>>>>>ntuple-filters: off
+>>>>>receive-hashing: off
+>>>>>
+>>>>>The Bridge device on the other hand....
+>>>>>
+>>>>>Offload parameters for lan:
+>>>>>rx-checksumming: on
+>>>>>tx-checksumming: on
+>>>>>scatter-gather: off
+>>>>>tcp-segmentation-offload: off
+>>>>>udp-fragmentation-offload: off
+>>>>>generic-segmentation-offload: off
+>>>>>generic-receive-offload: on
+>>>>>large-receive-offload: off
+>>>>>rx-vlan-offload: off
+>>>>>tx-vlan-offload: on
+>>>>  ^^^^^^^^^^^^^^^^^^^ is this gfar?
+>>> No the "Lan" nic is the bridge itself. The gfar in question is lan_wire.
+>>>
+>>> /Michael
+>>>
+>>
+>>Ok I would have saved hours of bisecting if I had just used the -e
+>>switch with tcpdump from the beginning.
+>>Jiri first of all the patch makes the connection work again. I can
+>>ping the client on the wlan from the server and vice-versa. Taking a
+>>look at the tcpdump (WITH -e) makes it obvious why it fails with the
+>>non patched version...
+>>
+>>This is a capture from the gfar lan port on the bridge with no patch applied
+>>12:13:24.011492 00:13:d4:4f:a2:dc (oui Unknown) > b4:07:f9:70:b7:c1
+>>(oui Unknown), ethertype 802.1Q (0x8100), length 102: vlan 19, p 0,
+>>ethertype IPv4, gibson.comsick.at > 192.168.42.55: ICMP echo request,
+>>id 23567, seq 74, length 64
+>>
+>>As you can see we get a VLAN package????
+>
+> Ugh, this is what I expected. Patch to fix:
+>
+> Subject: [patch net-2.6] gianfar: prevent buggy hw rx vlan tagging
+>
+> On some buggy chips, "vlan tag present" flag is set which causes packet
+> loss. Fix this by checking if rx vlan accel is enabled in features.
+>
+> Reported-by: Michael Guntsche <mguntsche@gmail.com>
+> Signed-off-by: Jiri Pirko <jpirko@redhat.com>
 > ---
->  arch/arm/mach-omap2/timer.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index e964072..796b935 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -293,7 +293,7 @@ static void __init omap2_gp_clocksource_init(int gptimer_id,
->  	pr_info("OMAP clocksource: GPTIMER%d at %lu Hz\n",
->  		gptimer_id, clksrc.rate);
->  
-> -	__omap_dm_timer_load_start(clksrc.io_base, OMAP_TIMER_CTRL_ST, 0, 1);
-> +	omap_dm_timer_set_load_start(&clksrc, 1, 0);
->  	init_sched_clock(&cd, dmtimer_update_sched_clock, 32, clksrc.rate);
->  
->  	if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
+>  drivers/net/gianfar.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
+> index 2659daa..31d5c57 100644
+> --- a/drivers/net/gianfar.c
+> +++ b/drivers/net/gianfar.c
+> @@ -2710,8 +2710,13 @@ static int gfar_process_frame(struct net_device *dev, struct sk_buff *skb,
+>        /* Tell the skb what kind of packet this is */
+>        skb->protocol = eth_type_trans(skb, dev);
+>
+> -       /* Set vlan tag */
+> -       if (fcb->flags & RXFCB_VLN)
+> +       /*
+> +        * There's need to check for NETIF_F_HW_VLAN_RX here.
+> +        * Even if vlan rx accel is disabled, on some chips
+> +        * RXFCB_VLN is pseudo randomly set.
+> +        */
+> +       if (dev->features & NETIF_F_HW_VLAN_RX &&
+> +           fcb->flags & RXFCB_VLN)
+>                __vlan_hwaccel_put_tag(skb, fcb->vlctl);
+>
+>        /* Send the packet up the stack */
+> --
+> 1.7.6
+>
+>
 
-You should be able to just set the autoreload mode by changing to use
-OMAP_TIMER_CTRL_POSTED | OMAP_TIMER_CTRL_AR in the __omap_dm_timer_load_start
-above.
+Jiri, there seems to be another bug lingering in the bridge code,
+which might cause this problem in the first place but I am not really
+sure. I looked at the ethtool output some more and I noticed that some
+features were enabled on the Bridge which should be off.
 
-This avoids calling something that might be a loadable module eventually.
+With 3.1-rc1
+Offload parameters for lan (This is the bridge interface itself):
+rx-checksumming: on                  <---- ON
+tx-checksumming: on                  <---- ON
+scatter-gather: off
+tcp-segmentation-offload: off
+udp-fragmentation-offload: off
+generic-segmentation-offload: off
+generic-receive-offload: on
+large-receive-offload: off
+rx-vlan-offload: off
+tx-vlan-offload: on                         <---- ON
 
-Regards,
+I booted an older kernel on the same hardware (2.6.39) and the output differs.
 
-Tony
+Offload parameters for lan:
+rx-checksumming: off
+tx-checksumming: off
+scatter-gather: off
+tcp-segmentation-offload: off
+udp-fragmentation-offload: off
+generic-segmentation-offload: off
+generic-receive-offload: off
+large-receive-offload: off
+rx-vlan-offload: off
+tx-vlan-offload: off
+ntuple-filters: off
+receive-hashing: off
+
+As you can see all the values are OFF which is correct, since no
+attached interface supports these features.
+Is it possible that this is tripping up the now changed gianfar code somehow?
+What I am trying to say. Could it be that your patch is hiding a
+problem that is now surfacing with a change in the bridge code?
+
+I am thinking about this commit:
+c4d27ef95:  bridge: convert br_features_recompute() to ndo_fix_features
+
+Of course this could also be a totally separate bug as well.
+
+Any thoughts, Dave, Stephen?
+
+Kind regards,
+Michael Guntsche
