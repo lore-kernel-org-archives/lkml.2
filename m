@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1HJACk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 20:02:40 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:44674 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751393Ab1HJACj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 20:02:39 -0400
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: "Fabio M . Di Nitto" <fabbione@fabbione.net>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>
-Subject: [PATCH] kernel/printk: do not turn off bootconsole in printk_late_init if keep_bootcon
-Date: Tue,  9 Aug 2011 17:02:33 -0700
-Message-Id: <1312934553-17085-1-git-send-email-nacc@us.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752183Ab1HJALz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:11:55 -0400
+Received: from usa7109mr002.acs-inc.com ([63.101.151.11]:18317 "EHLO
+	USA7109MR002.ACS-INC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab1HJALx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 20:11:53 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 20:11:53 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0FAJjJQU4N/Z0f/2dsb2JhbAA/mCUBjxp3gVYBF4IREsQ9hkYEh12LK5EL
+Message-Id: <201108100002.p7A02OcR001266@pogo.cesa.opbu.xerox.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI probe: fix "can't handle 64-bit address space for bridge" on x86-32 PAE
+Date: Tue, 09 Aug 2011 17:02:24 -0700
+From: Andrew Klossner <andrew@cesa.opbu.xerox.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that commit 7bf693951a8e5f7e600a45b74d91d962a453146e doesn't
-always achieve what it aims, as printk_late_init() runs it
-unconditionally turns off all boot consoles. With this patch, I am able
-to see more messages on the boot console in KVM guests than I can
-without, when keep_bootcon is specified.
+If sizeof(long) is 4 bytes but sizeof(phys_addr_t) is 8 bytes, don't
+fail to configure a bridge for PCI prefetchable memory space that
+extends beyond 4GB.  The problem was encountered on an embedded system
+using a Freescale MPC8536 PowerPC processor.  The problem is possible
+on x86-32 systems with PAE, although it has not been observed in the
+wild.
 
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@suse.de>
+This patch preserves the current behavior for any oddball systems on
+which sizeof(long) is 8 bytes and sizeof(phys_addr_t) is 4 bytes.
+
+Signed-off-by: Andrew Klossner <andrew@cesa.opbu.xerox.com>
+
 ---
- kernel/printk.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/pci/probe.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 37dff34..293a6cc 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1602,7 +1602,7 @@ static int __init printk_late_init(void)
- 	struct console *con;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 795c902..1385bd3 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -316,7 +316,11 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
+ {
+ 	struct pci_dev *dev = child->self;
+ 	u16 mem_base_lo, mem_limit_lo;
++#if defined CONFIG_PHYS_ADDR_T_64BIT & BITS_PER_LONG != 64
++	phys_addr_t base, limit;
++#else
+ 	unsigned long base, limit;
++#endif
+ 	struct resource *res;
  
- 	for_each_console(con) {
--		if (con->flags & CON_BOOT) {
-+		if (!keep_bootcon && con->flags & CON_BOOT) {
- 			printk(KERN_INFO "turn off boot console %s%d\n",
- 				con->name, con->index);
- 			unregister_console(con);
--- 
-1.7.4.1
-
+ 	res = child->resource[2];
+@@ -339,6 +343,9 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
+ #if BITS_PER_LONG == 64
+ 			base |= ((long) mem_base_hi) << 32;
+ 			limit |= ((long) mem_limit_hi) << 32;
++#elif defined CONFIG_PHYS_ADDR_T_64BIT
++			base |= ((phys_addr_t) mem_base_hi) << 32;
++			limit |= ((phys_addr_t) mem_limit_hi) << 32;
+ #else
+ 			if (mem_base_hi || mem_limit_hi) {
+ 				dev_err(&dev->dev, "can't handle 64-bit "
