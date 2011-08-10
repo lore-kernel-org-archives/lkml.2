@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab1HJJdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 05:33:04 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:33318 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752822Ab1HJJdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 05:33:01 -0400
-In-Reply-To: <018501cc56d6$448293a0$cd87bae0$@systemfabricworks.com>
-References: <4E40C55F.8070703@systemfabricworks.com> <OFBF50514E.82734B36-ONC12578E7.005E58EE-C12578E7.005F648F@transmode.se> <018501cc56d6$448293a0$cd87bae0$@systemfabricworks.com>
-Subject: RE: [patch v3 6/7] crc32: add-slicing-by-8.diff
-X-KeepSent: 177C3D3E:3BACC024-C12578E8:00345039;
- type=4; name=$KeepSent
-To: "Bob Pearson" <rpearson@systemfabricworks.com>
-Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com, linux@horizon.com,
-        linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF177C3D3E.3BACC024-ONC12578E8.00345039-C12578E8.003474EE@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Wed, 10 Aug 2011 11:32:58 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 08/10/2011 11:32:58
+	id S1753020Ab1HJJey (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:34:54 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:47050 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab1HJJex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:34:53 -0400
+Date: Wed, 10 Aug 2011 03:34:52 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tony Lindgren <tony@atomide.com>
+cc: Daniel Morsing <daniel.morsing@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: Build failure: bisected: v3.1-rc1 with config ARCH_OMAP &&
+ !ARCH_OMAP4 fails with linker error
+In-Reply-To: <20110810092139.GD1939@atomide.com>
+Message-ID: <alpine.DEB.2.00.1108100333520.12674@utopia.booyaka.com>
+References: <1312819724.14483.29.camel@morsingpad> <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com> <20110809131453.GR1866@atomide.com> <alpine.DEB.2.00.1108092102580.12674@utopia.booyaka.com> <alpine.DEB.2.00.1108100045270.12674@utopia.booyaka.com>
+ <20110810092139.GD1939@atomide.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/09 22:52:34:
+On Wed, 10 Aug 2011, Tony Lindgren wrote:
 
-> From: "Bob Pearson" <rpearson@systemfabricworks.com>
-> To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
-> Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>, <linux@horizon.com>, <linux-kernel@vger.kernel.org>
-> Date: 2011/08/09 22:52
-> Subject: RE: [patch v3 6/7] crc32: add-slicing-by-8.diff
->
-> > >    - extend largest BITS size from 32 to 64
-> > >    - extend table from tab[4][256] to tab[8][256]
-> > >    - change algorithm to align on 8 byte boundary
-> > >      (it was noted that all that is really required
-> > >      is that the inner loop must comsume 8 bytes.
-> > >      As written it can start on even or odd 4 byte
-> > >      boundary.)
-> > So why not do that in the code too?
-> >
->
-> I did the experiment with the random test set and it is a couple of % faster
-> so I made the change. I had thought that it wouldn't make a measurable
-> difference.
+> Thanks yes that does the trick. I'd like to queue this immediately so we
+> have more time to look at the other fixes if you don't mind.
 
-That could depend on how the test data table is aligned. What if you change
-the alignment of the table?
+That's fine, feel free to send this first.  Will try to have the rest of 
+my 3.1-rc fixes ready to go in a few days.
 
+> I noticed some checkpatch warnings, updated patch below. Does that look
+> OK to you?
+
+Fine by me.
+
+- Paul
