@@ -1,125 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224Ab1HJNLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:11:43 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:21202 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1HJNLl convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:8:1>);
-	Wed, 10 Aug 2011 09:11:41 -0400
-Message-Id: <4E429FE30200007800050910@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 10 Aug 2011 14:12:35 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Matt Fleming" <matt@console-pimps.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <hpa@linux.intel.com>,
-        "Avi Kivity" <avi@redhat.com>, <mjg@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>,
-        "johnstultz" <johnstul@us.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
- <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
- <4E4009A50200007800050258@nat28.tlf.novell.com>
- <20110810090330.GF26762@elte.hu>
- <4E426D4702000078000508B5@nat28.tlf.novell.com>
- <20110810095140.GB21059@elte.hu>
-In-Reply-To: <20110810095140.GB21059@elte.hu>
+	id S1751052Ab1HJNLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:11:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61974 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1HJNLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 09:11:38 -0400
+Subject: [PATCH] rtc: ep93xx: Fix 'rtc' may be used uninitialized warning
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Aug 2011 21:11:26 +0800
+Message-ID: <1312981886.21916.2.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.08.11 at 11:51, Ingo Molnar <mingo@elte.hu> wrote:
+commit 92d921c5d "rtc: ep93xx: Initialize drvdata before registering device"
+ensures the drvdata is initialized prior to registering the rtc device.
+But it set the drvdata to an uninitialized pointer.
+Thus calling platform_get_drvdata in ep93xx_rtc_remove does not get correct address.
 
-> * Jan Beulich <JBeulich@novell.com> wrote:
-> 
->> >>> On 10.08.11 at 11:03, Ingo Molnar <mingo@elte.hu> wrote:
->> 
->> > * Jan Beulich <JBeulich@novell.com> wrote:
->> > 
->> >> >>> On 08.08.11 at 15:40, Matt Fleming <matt@console-pimps.org> wrote:
->> >> > On Fri, 2011-08-05 at 18:04 +0100, Jan Beulich wrote:
->> >> >> 
->> >> >> Virtual platforms will have to take care of the serialization in the
->> >> >> host anyway, so the guest side implementation of getwallclock et al
->> >> >> is entirely unaffected.
->> >> > 
->> >> > Ah, OK, that's the important part. I didn't realise that rtc_lock isn't
->> >> > actually required by any other code. In which case, yes, it completely
->> >> > makes sense to push the locking of rtc_lock down into the
->> >> > implementations that actually need it.
->> >> > 
->> >> > It'd be great if I could get some ACK's from the virtualization guys.
->> >> > 
->> >> > --------8<--------
->> >> > 
->> >> > From a0a39dbb69f6ac675846bf00f30ad153506a4567 Mon Sep 17 00:00:00 2001
->> >> > From: Matt Fleming <matt.fleming@intel.com>
->> >> > Date: Mon, 8 Aug 2011 12:59:35 +0100
->> >> > Subject: [PATCH] x86, efi: Don't recursively acquire rtc_lock
->> >> > 
->> >> > A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
->> >> > Serialize EFI time accesses on rtc_lock") because efi_get_time() and
->> >> > friends can be called with rtc_lock already held by
->> >> > read_persistent_time(), e.g.
->> >> > 
->> >> > timekeeping_init()
->> >> >     read_persistent_clock()     <-- acquire rtc_lock
->> >> >         efi_get_time()
->> >> >             phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
->> >> > 
->> >> > To fix this let's push the locking down into the get_wallclock() and
->> >> > set_wallclock() implementations. Only the clock implementations that
->> >> > access the x86 RTC directly need to acquire rtc_lock, so it makes
->> >> > sense to push the locking down into the rtc, vrtc and efi code.
->> >> > 
->> >> > The virtualization implementations don't require rtc_lock to be held
->> >> > because they provide their own serialization.
->> >> > 
->> >> > Signed-off-by: Matt Fleming <matt.fleming@intel.com>
->> >> 
->> >> Acked-by: Jan Beulich <jbeulich@novell.com>
->> > 
->> > How urgent is thix fix - can it wait until Thomas comes back and 
->> > starts processing patches again?
->> 
->> Without it booting on EFI can't be expected to work (and while I 
->> was really sure I tested this before submitting, I apparently must 
->> have used a stale kernel then - I'm really sorry for that), so 
->> getting it applied soon would be rather desirable.
->> 
->> But then again I don't seem to be able to boot 3.0.1 with both 
->> patches applied on my only EFI box, so there must be something else 
->> that broke, and hence maybe I really did test it (on 3.0-rc7) and 
->> it worked then. Debugging...
-> 
-> Ok, once you figure it out we can merge all fixes upstream ASAP.
+This patch fixes below warning by adding struct rtc_device *rtc to struct ep93xx_rtc.
+Then set platform drvdata to ep93xx_rtc instead of rtc.
 
-So this is a combination of two recent events: In my patch set, I
-recently removed efi.c's X86_32 conditional around setting
-x86_platform.[gs]et_wallclock. Without that removal, the deadlock
-wouldn't occur (because mach_get_cmos_time() would get called
-instead) on 64-bits, which is the only thing I run.
+  CC      drivers/rtc/rtc-ep93xx.o
+drivers/rtc/rtc-ep93xx.c: In function 'ep93xx_rtc_probe':
+drivers/rtc/rtc-ep93xx.c:154: warning: 'rtc' may be used uninitialized in this function
 
-With that conditional removed, Matthew's NX consolidation patch
-gets into the way: For the physical call path it is simply wrong
-(correct only for the phys_efi_set_virtual_address_map() call, as
-there the memory map got virtual addresses assigned already) -
-it switches from early_runtime_code_mapping_set_exec()'s using
-of md->phys_addr to efi_set_executable() using md->virt_addr.
-But the latter isn't set at that point yet. And it's unclear to me why
-this works on 32-bit.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+hi,
+I don't have this hardware handy, I appreciate someone can test this patch.
+Thanks,
+Axel
 
-Bottom line - the fix here is needed for 32-bit booting only (and
-hence isn't - afaic - as critical as I first thought). But the adjustment
-I'm holding is a necessary one (and I don't even understand why,
-when 32- and 64-bit EFI code got merged, this was left 32-bit only),
-and the NX consolidation change needs to be fixed too (basically as
-a prerequisite).
+ drivers/rtc/rtc-ep93xx.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-Jan
+diff --git a/drivers/rtc/rtc-ep93xx.c b/drivers/rtc/rtc-ep93xx.c
+index 335551d..14a42a1 100644
+--- a/drivers/rtc/rtc-ep93xx.c
++++ b/drivers/rtc/rtc-ep93xx.c
+@@ -36,6 +36,7 @@
+  */
+ struct ep93xx_rtc {
+ 	void __iomem	*mmio_base;
++	struct rtc_device *rtc;
+ };
+ 
+ static int ep93xx_rtc_get_swcomp(struct device *dev, unsigned short *preload,
+@@ -130,7 +131,6 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct ep93xx_rtc *ep93xx_rtc;
+ 	struct resource *res;
+-	struct rtc_device *rtc;
+ 	int err;
+ 
+ 	ep93xx_rtc = devm_kzalloc(&pdev->dev, sizeof(*ep93xx_rtc), GFP_KERNEL);
+@@ -151,12 +151,12 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 
+ 	pdev->dev.platform_data = ep93xx_rtc;
+-	platform_set_drvdata(pdev, rtc);
++	platform_set_drvdata(pdev, ep93xx_rtc);
+ 
+-	rtc = rtc_device_register(pdev->name,
++	ep93xx_rtc->rtc = rtc_device_register(pdev->name,
+ 				&pdev->dev, &ep93xx_rtc_ops, THIS_MODULE);
+-	if (IS_ERR(rtc)) {
+-		err = PTR_ERR(rtc);
++	if (IS_ERR(ep93xx_rtc->rtc)) {
++		err = PTR_ERR(ep93xx_rtc->rtc);
+ 		goto exit;
+ 	}
+ 
+@@ -167,7 +167,7 @@ static int __init ep93xx_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ fail:
+-	rtc_device_unregister(rtc);
++	rtc_device_unregister(ep93xx_rtc->rtc);
+ exit:
+ 	platform_set_drvdata(pdev, NULL);
+ 	pdev->dev.platform_data = NULL;
+@@ -176,11 +176,11 @@ exit:
+ 
+ static int __exit ep93xx_rtc_remove(struct platform_device *pdev)
+ {
+-	struct rtc_device *rtc = platform_get_drvdata(pdev);
++	struct ep93xx_rtc *ep93xx_rtc = platform_get_drvdata(pdev);
+ 
+ 	sysfs_remove_group(&pdev->dev.kobj, &ep93xx_rtc_sysfs_files);
+ 	platform_set_drvdata(pdev, NULL);
+-	rtc_device_unregister(rtc);
++	rtc_device_unregister(ep93xx_rtc->rtc);
+ 	pdev->dev.platform_data = NULL;
+ 
+ 	return 0;
+-- 
+1.7.4.1
+
+
+
