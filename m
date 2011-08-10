@@ -1,129 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab1HJIhm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 04:37:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11139 "EHLO mx1.redhat.com"
+	id S1752538Ab1HJIiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 04:38:22 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:51688 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751528Ab1HJIhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 04:37:36 -0400
-Date: Wed, 10 Aug 2011 10:37:33 +0200
-From: Jiri Pirko <jpirko@redhat.com>
-To: Michael Guntsche <mguntsche@gmail.com>
-Cc: shemminger@vyatta.com, sebastian.belden@googlemail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets (was:
- 3.0-rc1 Bridge not forwarding unicast packages)
-Message-ID: <20110810083732.GA1909@minipsycho.brq.redhat.com>
-References: <CAMvAeqOA0=FnjB2oPPCEYpkXdKrmqOs+MwAqszV5sTGys_a3mQ@mail.gmail.com>
- <20110810070722.GA2150@minipsycho>
- <CAMvAeqNA9Wcr3bO+Vya4gt2YC47oe=-A8Fxnswdj0ozD5tfZtQ@mail.gmail.com>
+	id S1752231Ab1HJIiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 04:38:21 -0400
+Date: Wed, 10 Aug 2011 12:36:50 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Ray Lee <ray-lk@madrabbit.org>
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>, intel-gfx@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, Luke-Jr <luke@dashjr.org>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
+Message-ID: <20110810083650.GB3187@tugrik.mns.mnsspb.ru>
+References: <013811$4lfs6@fmsmga002.fm.intel.com> <201108091809.58425.anarsoul@gmail.com> <20110809153446.GA22077@tugrik.mns.mnsspb.ru> <201108091903.00071.anarsoul@gmail.com> <20110809163206.GA3410@tugrik.mns.mnsspb.ru> <CADU53JVXiX2v+5N-VP8mz6vnxF60BYYXKV_PZQdd_U+qM5Gd6A@mail.gmail.com> <20110809174001.GA23408@tugrik.mns.mnsspb.ru> <CADU53JW0-HaLZcSQ49G8bj2aHBJCL8Ub8MeGYBOd_wZmoDc4Tg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMvAeqNA9Wcr3bO+Vya4gt2YC47oe=-A8Fxnswdj0ozD5tfZtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADU53JW0-HaLZcSQ49G8bj2aHBJCL8Ub8MeGYBOd_wZmoDc4Tg@mail.gmail.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Aug 10, 2011 at 09:40:50AM CEST, mguntsche@gmail.com wrote:
->On Wed, Aug 10, 2011 at 9:07 AM, Jiri Pirko <jpirko@redhat.com> wrote:
->> Wed, Aug 10, 2011 at 02:50:20AM CEST, mguntsche@gmail.com wrote:
->>>Good evening/morning,
->>>
->>>> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
->>>> testing. On a first look everything seemed to work fine, but when I
->>>> tried to connect via openvpn to my internal network (tap0 being bridged
->>>> with the internal network) I noticed that I was not able to access the
->>>> server on my internal network. I could access the bridge (which is
->>>> acting as the openvpn server as well) just fine though.
->>>> To debug this I ran tcpdump on the openvpn client and started a ping to the
->>>> internal network. I could see the ARP requests being answered.....
->>><snip>
->>>
->>>After much digging and testing I found the commit that causes the
->>>problem for me here.
->>>
->>>87c288c6e gianfar: do vlan cleanup
->>>
->>>Before this commit my bridge works fine. I simplified the test case
->>>and just tried to access the server from a local wireless device with
->>>gets also bridged via
->>>a gianfar nic to the wired lan. Before commit 87c288c6e I can ping the
->>>device from the internal network afterwards it stops.
->>>For testing purposes I reverted this commit (plus some others to make
->>>the code compile) and it started working again.
->>>The hardware is a routerboard with three onboard nics two of em gianfar.
->>>The gianfar nics do not support any kind of offloading,
->>
->> Thanks for testing/report. I'm not sure I understand your simplified
->> case :(
->Sorry if my explanation was confusing but it was late night/morning
->when I wrote it.
->
->The setup is quite easy.
->
->WLAN ----->|Bridge|<----- Wired Lan (gianfar nic)
->
->Client (in WLAN): 192.168.42.55
->Bridge: 192.168.42.1
->Server (on Wired): 192.168.42.127
->
->With your patch the Bridge can ping the client and the server, but the
->client cannot reach the server and vice-versa.
+On Tue, Aug 09, 2011 at 10:43:08AM -0700, Ray Lee wrote:
+> On Tue, Aug 9, 2011 at 10:40 AM, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> >> If you like, submit a patch. You may now be more up-to-date on those
+> >> particular code paths than most of the intel-gfx developers.
+> >
+> > Ray, I'd agree with you if the topic was about cleanups.
+> 
+> At this point it is about cleanups unless Keith's patch upthread does
+> not work for you. Does it or not?
 
-This is very interesting. Can you please find out of packets get lost on
-tx or rx of gianfar? Please try to watch the trafic by tcpdump on bridge
-and on gianfar device.
+I've already wrote two weeks ago it does, but if this needs to be
+restated one more time here it is: Keith's patch fixes the problem in a
+sense that X now starts and seemingly works (thanks), but several issues
+remain to be there imho. I've got the message, if it's ok for intel-gfx
+to leave them as is - it's ok for me.
 
 
->
->>
->> Anyway, gianfar supports rx/tx vlan accel. Would you please try to turn
->> it on/off manually by ethtool to see if it works in some setup?
->The gianfar chip in this routerboard does NOT support vlan accel it is
->a TSEC model.
->ethtool complains that this feature is not supported.
-
-What routerboard is it? Maybe I can get one to see this myself. Thanks.
-
-
-Can you please send me output of following command?
-"cat /sys/class/net/[gianfar devname]/features"
-
-Also, please try with following testing patch:
-
-
-diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
-index 2659daa..2727bb7 100644
---- a/drivers/net/gianfar.c
-+++ b/drivers/net/gianfar.c
-@@ -2711,8 +2711,8 @@ static int gfar_process_frame(struct net_device *dev, struct sk_buff *skb,
- 	skb->protocol = eth_type_trans(skb, dev);
- 
- 	/* Set vlan tag */
--	if (fcb->flags & RXFCB_VLN)
--		__vlan_hwaccel_put_tag(skb, fcb->vlctl);
-+	//if (fcb->flags & RXFCB_VLN)
-+	//	__vlan_hwaccel_put_tag(skb, fcb->vlctl);
- 
- 	/* Send the packet up the stack */
- 	ret = netif_receive_skb(skb);
-
->
->>
->> I presume you have no vlans involved in your setup, right?
->No, there are no vlans in my setup.
->
->
->>>Is it possible that the new code is tripped up by the bridge offload
->>>parameters somehow and thinks that the gianfar nic supports it as
->>>well?
->>
->> I don't see how now. Outside the bridge all is working correctly?
->Yes I can access the server from the bridge so the network is working.
->For me it looks like that the packets are just dropped when they
->should go through the bridge.
->
->Kind regards,
->Michael
+Peace,
+Kirill
