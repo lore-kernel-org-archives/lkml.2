@@ -1,77 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab1HJNIB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 09:08:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47039 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab1HJNIA (ORCPT
+	id S1751020Ab1HJNJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 09:09:57 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:48770 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750749Ab1HJNJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 09:08:00 -0400
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Wed, 10 Aug 2011 14:07:36 +0100
-In-Reply-To: <4E4280BA.9050109@suse.cz>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	 <1312067670.22074.61.camel@i7.infradead.org>
-	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	 <4E34998D.8060806@zytor.com>
-	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	 <4E4140B3.7090802@suse.cz>
-	 <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	 <4E4280BA.9050109@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312981658.2989.39.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 10 Aug 2011 09:09:56 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Kalle Komierowski <kalle.komierowski@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd/ab8500-gpadc: refactor GPADC API, add raw access
+Date: Wed, 10 Aug 2011 15:09:43 +0200
+Message-ID: <1312981783-19117-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 14:59 +0200, Michal Marek wrote:
-> I wasn't talking about the env= syntax, but about
-> 
-> make CONFIG_EXT2_FS=m all
-> which makes kbuild visit fs/ext2 even if CONFIG_EXT2_FS is disabled in
-> .config. With no update of the configuration or checking the dependencies.
-> 
-> Hm, actually this would be a problem even if kconfig does read the
-> CONFIG_* variables from the environment, because it could result in a
-> mismatch if kconfig determines that the variable cannot be set, but make
-> still sees it in the environment. So we would have to use 'undefine
-> CONFIG_FOO' instead of '# CONFIG_FOO is not set' in
-> include/config/auto.conf, to be able to properly support make CONFIG_FOO=y. 
+From: Karl Komierowski <karl.komierowski@stericsson.com>
 
-That's always been true; it's *always* been broken like that.
+Refactor the GPADC interface to avoid bugs in calling code:
 
-But now we're actually *encouraging* people to start setting
-CONFIG_FOO=y in the environment or the make command line, so we should
-certainly make it more robust.
+- ab8500_gpadc_[convert|read_raw|ad_to_voltage] clarifies
+  each functions use case, *convert wraps *read_raw, and we
+  can access raw ADC values properly.
+- Renamed gpadc function arguments from "input" to "channel" to
+  clarify use, so we don't get confused again.
 
-It should be simple enough to force a reconfig if CONFIG_* is specified
-in the environment.
+Signed-off-by: Kalle Komierowski <kalle.komierowski@stericsson.com>
+Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Reviewed-by: John Beckett <john.beckett@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/ab8500-gpadc.c       |   56 +++++++++++++++++++++++++++++---------
+ include/linux/mfd/ab8500/gpadc.h |    5 +++-
+ 2 files changed, 47 insertions(+), 14 deletions(-)
 
-Actually, while we're at it let's stop just picking it up from the
-environment and pick it up *only* if it's overridden in the make flags.
-
-Something like this will list the variables which are overridden on the
-command line:
-
-CONFIG_OVERRIDES := $(patsubst line:%,%,$(filter line:%,$(foreach var, $(filter CONFIG_%,$(.VARIABLES)), $(origin $(var)):$(var))))
-
-Then we can make auto.conf.cmd trigger a reconfig if it's non-empty, and
-make the kconfig tool allow overrides *only* for those variables
-specified in $CONFIG_OVERRIDES... which avoids any worries about "stray"
-environment variables too.
-
-I'll see if I can clean the above expression up and do that.
+diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+index f16afb2..e985d17 100644
+--- a/drivers/mfd/ab8500-gpadc.c
++++ b/drivers/mfd/ab8500-gpadc.c
+@@ -143,12 +143,15 @@ struct ab8500_gpadc *ab8500_gpadc_get(char *name)
+ }
+ EXPORT_SYMBOL(ab8500_gpadc_get);
  
+-static int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 input,
++/**
++ * ab8500_gpadc_ad_to_voltage() - Convert a raw ADC value to a voltage
++ */
++int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 channel,
+ 	int ad_value)
+ {
+ 	int res;
+ 
+-	switch (input) {
++	switch (channel) {
+ 	case MAIN_CHARGER_V:
+ 		/* For some reason we don't have calibrated data */
+ 		if (!gpadc->cal_data[ADC_INPUT_VMAIN].gain) {
+@@ -232,18 +235,46 @@ static int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc, u8 input,
+ 	}
+ 	return res;
+ }
++EXPORT_SYMBOL(ab8500_gpadc_ad_to_voltage);
+ 
+ /**
+  * ab8500_gpadc_convert() - gpadc conversion
+- * @input:	analog input to be converted to digital data
++ * @channel:	analog channel to be converted to digital data
+  *
+  * This function converts the selected analog i/p to digital
+  * data.
+  */
+-int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
++int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 channel)
++{
++	int ad_value;
++	int voltage;
++
++	ad_value = ab8500_gpadc_read_raw(gpadc, channel);
++	if (ad_value < 0) {
++		dev_err(gpadc->dev, "GPADC raw value failed ch: %d\n", channel);
++		return ad_value;
++	}
++
++	voltage = ab8500_gpadc_ad_to_voltage(gpadc, channel, ad_value);
++
++	if (voltage < 0)
++		dev_err(gpadc->dev, "GPADC to voltage conversion failed ch:"
++			" %d AD: 0x%x\n", channel, ad_value);
++
++	return voltage;
++}
++EXPORT_SYMBOL(ab8500_gpadc_convert);
++
++/**
++ * ab8500_gpadc_read_raw() - gpadc read
++ * @channel:	analog channel to be read
++ *
++ * This function obtains the raw ADC value, this then needs
++ * to be converted by calling ab8500_gpadc_ad_to_voltage()
++ */
++int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel)
+ {
+ 	int ret;
+-	u16 data = 0;
+ 	int looplimit = 0;
+ 	u8 val, low_data, high_data;
+ 
+@@ -278,9 +309,9 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
+ 		goto out;
+ 	}
+ 
+-	/* Select the input source and set average samples to 16 */
++	/* Select the channel source and set average samples to 16 */
+ 	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
+-		AB8500_GPADC_CTRL2_REG, (input | SW_AVG_16));
++		AB8500_GPADC_CTRL2_REG, (channel | SW_AVG_16));
+ 	if (ret < 0) {
+ 		dev_err(gpadc->dev,
+ 			"gpadc_conversion: set avg samples failed\n");
+@@ -292,7 +323,7 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
+ 	 * charging current sense if it needed, ABB 3.0 needs some special
+ 	 * treatment too.
+ 	 */
+-	switch (input) {
++	switch (channel) {
+ 	case MAIN_CHARGER_C:
+ 	case USB_CHARGER_C:
+ 		ret = abx500_mask_and_set_register_interruptible(gpadc->dev,
+@@ -359,7 +390,6 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
+ 		goto out;
+ 	}
+ 
+-	data = (high_data << 8) | low_data;
+ 	/* Disable GPADC */
+ 	ret = abx500_set_register_interruptible(gpadc->dev, AB8500_GPADC,
+ 		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
+@@ -370,8 +400,8 @@ int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input)
+ 	/* Disable VTVout LDO this is required for GPADC */
+ 	regulator_disable(gpadc->regu);
+ 	mutex_unlock(&gpadc->ab8500_gpadc_lock);
+-	ret = ab8500_gpadc_ad_to_voltage(gpadc, input, data);
+-	return ret;
++
++	return (high_data << 8) | low_data;
+ 
+ out:
+ 	/*
+@@ -385,10 +415,10 @@ out:
+ 	regulator_disable(gpadc->regu);
+ 	mutex_unlock(&gpadc->ab8500_gpadc_lock);
+ 	dev_err(gpadc->dev,
+-		"gpadc_conversion: Failed to AD convert channel %d\n", input);
++		"gpadc_conversion: Failed to AD convert channel %d\n", channel);
+ 	return ret;
+ }
+-EXPORT_SYMBOL(ab8500_gpadc_convert);
++EXPORT_SYMBOL(ab8500_gpadc_read_raw);
+ 
+ /**
+  * ab8500_bm_gpswadcconvend_handler() - isr for s/w gpadc conversion completion
+diff --git a/include/linux/mfd/ab8500/gpadc.h b/include/linux/mfd/ab8500/gpadc.h
+index 46b9540..2529667 100644
+--- a/include/linux/mfd/ab8500/gpadc.h
++++ b/include/linux/mfd/ab8500/gpadc.h
+@@ -27,6 +27,9 @@
+ struct ab8500_gpadc;
+ 
+ struct ab8500_gpadc *ab8500_gpadc_get(char *name);
+-int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 input);
++int ab8500_gpadc_convert(struct ab8500_gpadc *gpadc, u8 channel);
++int ab8500_gpadc_read_raw(struct ab8500_gpadc *gpadc, u8 channel);
++int ab8500_gpadc_ad_to_voltage(struct ab8500_gpadc *gpadc,
++    u8 channel, int ad_value);
+ 
+ #endif /* _AB8500_GPADC_H */
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+1.7.3.2
 
