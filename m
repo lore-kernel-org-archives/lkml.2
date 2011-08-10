@@ -1,141 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab1HJIzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 04:55:42 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:48636 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab1HJIzk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 04:55:40 -0400
+	id S1752379Ab1HJJEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 05:04:47 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59019 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751393Ab1HJJEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 05:04:45 -0400
+Date: Wed, 10 Aug 2011 11:03:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, hpa@linux.intel.com,
+        Avi Kivity <avi@redhat.com>, mjg@redhat.com,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        johnstultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+Message-ID: <20110810090330.GF26762@elte.hu>
+References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
+ <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
+ <4E4009A50200007800050258@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
-References: <20110809034724.GA22257@july>
-	<4E4181E4.3090704@kernel.dk>
-	<CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
-	<4E423C83.9090209@kernel.dk>
-	<CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
-	<CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
-Date: Wed, 10 Aug 2011 17:55:40 +0900
-X-Google-Sender-Auth: 1KHGDrB4RO93KPSmWk8DLgkumVY
-Message-ID: <CAH9JG2ViS01evDeyypPPB9OWiXwCdrTLf6yqe4gZaEQoaOzaTQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-From: Kyungmin Park <kmpark@infradead.org>
-To: Shaohua Li <shli@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        jh80.chung@samsung.com, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4009A50200007800050258@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 5:47 PM, Shaohua Li <shli@kernel.org> wrote:
-> 2011/8/10 Kyungmin Park <kmpark@infradead.org>:
->> On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>> On 2011-08-10 01:43, Kyungmin Park wrote:
->>>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>> On 2011-08-09 05:47, Kyungmin Park wrote:
->>>>>> Hi Jens
->>>>>>
->>>>>> Now eMMC device requires the upper layer information to improve the data
->>>>>> performance and reliability.
->>>>>>
->>>>>> . Context ID
->>>>>> Using the context information, it can sort out the data internally and improve the performance.
->>>>>> The main problem is that it's needed to define "What's the context".
->>>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
->>>>>>
->>>>>> . Data Tag
->>>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
->>>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
->>>>>>
->>>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
->>>>>>
->>>>>> Can you give your opinions and does it proper fields at requests?
->>>>>
->>>>> You need this to work on all IO schedulers, not just cfq.
->>>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
->>>>
->>>>> And since that's the case, there's no need to add this field since you can just
->>>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
->>>>>
->>>>> static int cfq_foo(struct request *rq)
->>>>> {
->>>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
->>>>>
->>>>>        if (cfqq)
->>>>>                return cfqq->pid;
->>>>>
->>>>>        return -1;
->>>>> }
->>>>
->>>> The actual user of these information is device driver. e.g.,
->>>> drivers/mmc/card/block.c
->>>> So it's not good to use cfq data structure at D/D. some time later
->>>> these are also used at scsi device drivers.
->>>
->>> No, what I'm suggesting above is the CFQ implementation. You would need
->>> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
->>> If you notice, the above function does not take or output anything
->>> related to CFQ in particular, it'll just return you the unique key you
->>> need.
->>>
->>> It's either the above, or a field in the request that the schedulers
->>> fill out. However, it'd be somewhat annoying to grow struct request for
->>> something that has a narrow scope of use. Hence the suggestion to add a
->>> strategy helper for this.
->> Okay, I'll add new elevator function one for getting context or more hints.
->> BTW, does it okay to call elevator function call at D/D?
->>
->> The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
->>
->>                struct elevator_queue *e = md->queue.queue->elevator;
->>                int context = -1;
->>
->>                if (e->ops->elevator_get_req_hint_fn && req) {
->>                        context = e->ops->elevator_get_req_hint_fn(req);
-> I'm wondering how the driver deal with elevator switch. A context id from
-> one elevator might just be garbage for another elevator.
 
-In case of MMC. it doesn't need to persistent pid. it's enough to use
-the temporal context ID.
-Please see the test output.
+* Jan Beulich <JBeulich@novell.com> wrote:
 
- PID TTY      STAT   TIME COMMAND
-...
-  346 ?        S      0:01 [kworker/0:1]
-  348 ?        S      0:01 [mmcqd/0]
-  349 ?        S      0:00 [mmcqd/0boot0]
-  350 ?        S      0:00 [mmcqd/0boot1]
-  363 ?        S      0:00 [kworker/1:1]
-  365 ?        S      0:00 [mmcqd/1]
-  369 ?        S      0:00 [jbd2/mmcblk0p3-]
-  370 ?        S<     0:00 [ext4-dio-unwrit]
-  386 ?        S      0:00 [jbd2/mmcblk0p6-]
-  387 ?        S<     0:00 [ext4-dio-unwrit]
-  448 ttySAC2  Ss     0:00 -sh
-  461 ?        Ss     0:00 /usr/sbin/inetd
-  464 ttySAC2  R+     0:00 ps ax
+> >>> On 08.08.11 at 15:40, Matt Fleming <matt@console-pimps.org> wrote:
+> > On Fri, 2011-08-05 at 18:04 +0100, Jan Beulich wrote:
+> >> 
+> >> Virtual platforms will have to take care of the serialization in the
+> >> host anyway, so the guest side implementation of getwallclock et al
+> >> is entirely unaffected.
+> > 
+> > Ah, OK, that's the important part. I didn't realise that rtc_lock isn't
+> > actually required by any other code. In which case, yes, it completely
+> > makes sense to push the locking of rtc_lock down into the
+> > implementations that actually need it.
+> > 
+> > It'd be great if I could get some ACK's from the virtualization guys.
+> > 
+> > --------8<--------
+> > 
+> > From a0a39dbb69f6ac675846bf00f30ad153506a4567 Mon Sep 17 00:00:00 2001
+> > From: Matt Fleming <matt.fleming@intel.com>
+> > Date: Mon, 8 Aug 2011 12:59:35 +0100
+> > Subject: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+> > 
+> > A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
+> > Serialize EFI time accesses on rtc_lock") because efi_get_time() and
+> > friends can be called with rtc_lock already held by
+> > read_persistent_time(), e.g.
+> > 
+> > timekeeping_init()
+> >     read_persistent_clock()     <-- acquire rtc_lock
+> >         efi_get_time()
+> >             phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
+> > 
+> > To fix this let's push the locking down into the get_wallclock() and
+> > set_wallclock() implementations. Only the clock implementations that
+> > access the x86 RTC directly need to acquire rtc_lock, so it makes
+> > sense to push the locking down into the rtc, vrtc and efi code.
+> > 
+> > The virtualization implementations don't require rtc_lock to be held
+> > because they provide their own serialization.
+> > 
+> > Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> 
+> Acked-by: Jan Beulich <jbeulich@novell.com>
 
-[ 1021.153100] mmc_blk_issue_rq[1203] req df94e7e0, context 448 <- sh
-[ 1021.236799] mmc_blk_issue_rq[1203] req df82c8c0, context 448
+How urgent is thix fix - can it wait until Thomas comes back and 
+starts processing patches again?
 
-[ 1023.712727] mmc_blk_issue_rq[1203] req df82c9a0, context 464
-[ 1023.722319] mmc_blk_issue_rq[1203] req df82c9a0, context 464
-[ 1023.737660] mmc_blk_issue_rq[1203] req df94e700, context 464
-[ 1023.744930] mmc_blk_issue_rq[1203] req df94e620, context 464
+Thanks,
 
-[ 1025.189639] mmc_blk_issue_rq[1203] req df82c7e0, context 369 <- jbd2
-[ 1025.194334] mmc_blk_issue_rq[1203] req df82c9a0, context 369
-[ 1025.200157] mmc_blk_issue_rq[1203] req df82cee0, context 369
-[ 1025.213215] mmc_blk_issue_rq[1203] req df9a5b08, context 0 <- flush
-[ 1025.217627] mmc_blk_issue_rq[1203] req df82cee0, context 0 <- flush
-
->
-> Thanks,
-> Shaohua
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+	Ingo
