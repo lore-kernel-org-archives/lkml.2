@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab1HJFxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 01:53:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60250 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1HJFxf (ORCPT
+	id S1752311Ab1HJGBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 02:01:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60044 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab1HJGBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 01:53:35 -0400
-Message-ID: <4E421CD8.3090606@canonical.com>
-Date: Wed, 10 Aug 2011 13:53:28 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110801 Thunderbird/6.0
+	Wed, 10 Aug 2011 02:01:49 -0400
+Message-ID: <4E421EC7.6090505@gmail.com>
+Date: Wed, 10 Aug 2011 16:01:43 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: linux-kernel@vger.kernel.org, mjg@redhat.com,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [RESEND][PATCH 0/5] Support for the TS-5500 board
-References: <1311887450-22235-1-git-send-email-vivien.didelot@savoirfairelinux.com> <20110809233208.1a71122e@lenov0n>
-In-Reply-To: <20110809233208.1a71122e@lenov0n>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Julia Lawall <julia@diku.dk>
+CC: Jiandong Zheng <jdzheng@broadcom.com>, kernel-janitors@vger.kernel.org,
+        Scott Branden <sbranden@broadcom.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mtd/nand/bcm_umi_nand.c: add missing kfree/ioremap
+References: <1312954935-14592-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1312954935-14592-1-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think platform-driver-x86 may not be the best mailing list for your patches.
+On 10/08/11 15:42, Julia Lawall wrote:
+> From: Julia Lawall<julia@diku.dk>
+>
+> The error handling code under the #if should be the same as elsewhere in
+> the function.
+>
+> Signed-off-by: Julia Lawall<julia@diku.dk>
+>
+> ---
+>   drivers/mtd/nand/bcm_umi_nand.c |    5 ++++-
+>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mtd/nand/bcm_umi_nand.c b/drivers/mtd/nand/bcm_umi_nand.c
+> index a8ae898..72e8ec2 100644
+> --- a/drivers/mtd/nand/bcm_umi_nand.c
+> +++ b/drivers/mtd/nand/bcm_umi_nand.c
+> @@ -433,8 +433,11 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
+>
+>   #if USE_DMA
+>   	err = nand_dma_init();
+> -	if (err != 0)
+> +	if (err != 0) {
+> +		iounmap(bcm_umi_io_base);
+> +		kfree(board_mtd);
+>   		return err;
+> +	}
+>   #endif
 
-Please try to use scripts/get_maintainer.pl and it can tell you who you shall ask for reviewing.
+This probe function should possibly use goto exits on failure. It 
+reduces a bit of code duplication and helps prevent this type of error.
 
-On 08/10/2011 11:32 AM, Vivien Didelot wrote:
-> Le Thu, 28 Jul 2011 17:10:45 -0400,
-> Vivien Didelot <vivien.didelot@savoirfairelinux.com> a écrit :
-> 
->> This set of patches brings the support for the Technologic Systems
->> TS-5500 Single Board Computer.
->>
->> The first patch adds the base for the support of the board in
->> /arch/x86/platform/ts5500 and a documentation file in
->> Documentation/ABI/testing/sysfs-platform-ts5500.
->>
->> The second patch adds support for GPIO.
->>
->> The third patch adds support for the on-board LED.
->>
->> The fourth patch brings support for the Analogic/Digital converter.
->>
->> The fifth patch moves the already existing support for the Flash MTD
->> into the /arch/x86/platform/ts5500 directory.
->>
->> Jerome Oufella (1):
->>   gpio: add support for TS-5500 GPIO
->>
->> Jonas Fonseca (2):
->>   leds: add support for TS-5500 LED
->>   adc: add support for TS-5500 ADC
->>
->> Vivien Didelot (2):
->>   x86: base support for TS-5500 Single Board Computer
->>   mtd: move support for TS-5500 MTD
->>
->>  Documentation/ABI/testing/sysfs-platform-ts5500 |   46 +++
->>  MAINTAINERS                                     |   13 +
->>  arch/x86/Kconfig                                |    2 +
->>  arch/x86/platform/Makefile                      |    1 +
->>  arch/x86/platform/ts5500/Kconfig                |   47 +++
->>  arch/x86/platform/ts5500/Makefile               |    5 +
->>  arch/x86/platform/ts5500/ts5500.c               |  440
->> +++++++++++++++++++++++
->> arch/x86/platform/ts5500/ts5500_adc.c           |  326
->> +++++++++++++++++ arch/x86/platform/ts5500/ts5500_adc.h           |
->> 62 ++++ arch/x86/platform/ts5500/ts5500_flash.c         |  118 ++++++
->> arch/x86/platform/ts5500/ts5500_gpio.c          |  421
->> ++++++++++++++++++++++
->> arch/x86/platform/ts5500/ts5500_gpio.h          |   60 +++
->> arch/x86/platform/ts5500/ts5500_leds.c          |  133 +++++++
->> drivers/mtd/maps/Kconfig                        |   18 -
->> drivers/mtd/maps/Makefile                       |    1 -
->> drivers/mtd/maps/ts5500_flash.c                 |  121 ------- 16
->> files changed, 1674 insertions(+), 140 deletions(-) create mode
->> 100644 Documentation/ABI/testing/sysfs-platform-ts5500 create mode
->> 100644 arch/x86/platform/ts5500/Kconfig create mode 100644
->> arch/x86/platform/ts5500/Makefile create mode 100644
->> arch/x86/platform/ts5500/ts5500.c create mode 100644
->> arch/x86/platform/ts5500/ts5500_adc.c create mode 100644
->> arch/x86/platform/ts5500/ts5500_adc.h create mode 100644
->> arch/x86/platform/ts5500/ts5500_flash.c create mode 100644
->> arch/x86/platform/ts5500/ts5500_gpio.c create mode 100644
->> arch/x86/platform/ts5500/ts5500_gpio.h create mode 100644
->> arch/x86/platform/ts5500/ts5500_leds.c delete mode 100644
->> drivers/mtd/maps/ts5500_flash.c
->>
-> 
-> This set of patches has been sent two times without any answer yet.
-> Can I have any feedback please?
-> 
-> Regards,
-> Vivien.
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+~Ryan
 
