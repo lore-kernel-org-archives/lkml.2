@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab1HJWdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 18:33:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:56199 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab1HJWdn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 18:33:43 -0400
+	id S1755222Ab1HJWen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 18:34:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41281 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651Ab1HJWem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 18:34:42 -0400
+Date: Thu, 11 Aug 2011 00:34:27 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110810223427.GA18227@quack.suse.cz>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.733282037@intel.com>
+ <1312811193.10488.33.camel@twins>
+ <20110808141128.GA22080@localhost>
+ <1312814501.10488.41.camel@twins>
+ <20110808230535.GC7176@localhost>
+ <1312910427.1083.68.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <1313002322.2989.88.camel@i7.infradead.org>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	<4E34998D.8060806@zytor.com>
-	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	<4E4140B3.7090802@suse.cz>
-	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	<4E4280BA.9050109@suse.cz>
-	<1312981658.2989.39.camel@i7.infradead.org>
-	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	<1312985888.2989.46.camel@i7.infradead.org>
-	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	<1312993987.2989.53.camel@i7.infradead.org>
-	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	<1312999168.2989.61.camel@i7.infradead.org>
-	<CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-	<1313002322.2989.88.camel@i7.infradead.org>
-Date: Wed, 10 Aug 2011 18:33:42 -0400
-Message-ID: <CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312910427.1083.68.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue 09-08-11 19:20:27, Peter Zijlstra wrote:
+> On Tue, 2011-08-09 at 12:32 +0200, Peter Zijlstra wrote:
+> > >                     origin - dirty
+> > >         pos_ratio = --------------
+> > >                     origin - goal 
+> > 
+> > > which comes from the below [*] control line, so that when (dirty == goal),
+> > > pos_ratio == 1.0:
+> > 
+> > OK, so basically you want a linear function for which:
+> > 
+> > f(goal) = 1 and has a root somewhere > goal.
+> > 
+> > (that one line is much more informative than all your graphs put
+> > together, one can start from there and derive your function)
+> > 
+> > That does indeed get you the above function, now what does it mean? 
+> 
+> So going by:
+> 
+>                                          write_bw
+>   ref_bw = dirty_ratelimit * pos_ratio * --------
+>                                          dirty_bw
 
-On Wed, Aug 10, 2011 at 2:52 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2011-08-10 at 14:40 -0400, Arnaud Lacombe wrote:
->> so, at best, this buggy behavior is ~ 6 years old. Before that, I'd
->> assume that the internal namespace was not accessible by any other
->> mean than the front-ends.
->
-> I've been editing .config or doing 's/.*CONFIG_FOO[= ].*/CONFIG_FOO=y/'
-> on it for a decade before that. With all the same limitations as
-> all.config, and my new CONFIG_FOO=y command line support.
->
-> How do *you* quickly, from the command line, enable or disable a single
-> option in an existing config?
->
->> > Please, if this offends you then by all means go and fix it. A sane way
->> > of handling dependencies would give a way to say "do what you need to do
->> > in order to enable CONFIG_SATA_MV", and should remove the abomination of
->> > 'select', which was introduced purely to work around that lack.
->> >
->> > But none of that is directly relevant in *this* thread.
->> >
->> to paraphrase you, I'd say, this might looks "cute but might give
->> behavior that people will come to depend on in their scripts and then
->> we take it away again", "that's why I'd kind of like to see it done
->> *once*, *properly*".
->
-> That's a reasonable concern, but I think it's misplaced in this case.
-> We're not enabling anything that we're later going to break. I can't see
-> many people *depending* on the fact that 'make CONFIG_SATA_MV=y
-> oldconfig' actually does *nothing* in some cases.
->
-you are wrong, you ends up with half-baked compile-time dependency,
-which break the build:
+  Actually, thinking about these formulas, why do we even bother with
+computing all these factors like write_bw, dirty_bw, pos_ratio, ...
+Couldn't we just have a feedback loop (probably similar to the one
+computing pos_ratio) which will maintain single value - ratelimit? When we
+are getting close to dirty limit, we will scale ratelimit down, when we
+will be getting significantly below dirty limit, we will scale the
+ratelimit up.  Because looking at the formulas it seems to me that the net
+effect is the same - pos_ratio basically overrules everything... 
 
-% make allnoconfig drivers/ata/
+> pos_ratio seems to be the feedback on the deviation of the dirty pages
+> around its setpoint. So we adjust the reference bw (or rather ratelimit)
+> to take account of the shift in output vs input capacity as well as the
+> shift in dirty pages around its setpoint.
+> 
+> From that we derive the condition that: 
+> 
+>   pos_ratio(setpoint) := 1
+> 
+> Now in order to create a linear function we need one more condition. We
+> get one from the fact that once we hit the limit we should hard throttle
+> our writers. We get that by setting the ratelimit to 0, because, after
+> all, pause = nr_dirtied / ratelimit would yield inf. in that case. Thus:
+> 
+>   pos_ratio(limit) := 0
+> 
+> Using these two conditions we can solve the equations and get your:
+> 
+>                         limit - dirty
+>   pos_ratio(dirty) =  ----------------
+>                       limit - setpoint
+> 
+> Now, for some reason you chose not to use limit, but something like
+> min(limit, 4*thresh) something to do with the slope affecting the rate
+> of adjustment. This wants a comment someplace.
+> 
+> 
+> Now all of the above would seem to suggest:
+> 
+>   dirty_ratelimit := ref_bw
+> 
+> However for that you use:
+> 
+>   if (pos_bw < dirty_ratelimit && ref_bw < dirty_ratelimit)
+> 	dirty_ratelimit = max(ref_bw, pos_bw);
+> 
+>   if (pos_bw > dirty_ratelimit && ref_bw > dirty_ratelimit)
+> 	dirty_ratelimit = min(ref_bw, pos_bw);
+> 
+> You have:
+> 
+>   pos_bw = dirty_ratelimit * pos_ratio
+> 
+> Which is ref_bw without the write_bw/dirty_bw factor, this confuses me..
+> why are you ignoring the shift in output vs input rate there?
 
-do nothing, but works.
-
-% make CONFIG_SATA_MV=y allnoconfig drivers/ata/
-
-tries to build `drivers/ata/sata_mv.o' and miserably fails.
-
-[tested on top of your patches]
-
- - Arnaud
-
-> When we later, hopefully, get proper dependency resolution, that will
-> take something that *wasn't* working and make it work. For all.config
-> and for the command line overrides (and in other places) at the same
-> time.
->
-> --
-> dwmw2
->
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
