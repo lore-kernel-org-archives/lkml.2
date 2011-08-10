@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab1HJALz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 20:11:55 -0400
-Received: from usa7109mr002.acs-inc.com ([63.101.151.11]:18317 "EHLO
-	USA7109MR002.ACS-INC.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab1HJALx (ORCPT
+	id S1752336Ab1HJAQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 20:16:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51159 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab1HJAQr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 20:11:53 -0400
-X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 20:11:53 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao0FAJjJQU4N/Z0f/2dsb2JhbAA/mCUBjxp3gVYBF4IREsQ9hkYEh12LK5EL
-Message-Id: <201108100002.p7A02OcR001266@pogo.cesa.opbu.xerox.com>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI probe: fix "can't handle 64-bit address space for bridge" on x86-32 PAE
-Date: Tue, 09 Aug 2011 17:02:24 -0700
-From: Andrew Klossner <andrew@cesa.opbu.xerox.com>
+	Tue, 9 Aug 2011 20:16:47 -0400
+MIME-Version: 1.0
+Date: Wed, 10 Aug 2011 09:16:46 +0900
+Message-ID: <CAME+iufMQT-pWzxgc79NyZq-hW-6QU9FAJd1SV_UR+zR2erPOQ@mail.gmail.com>
+Subject: kernel panic with simple driver
+From: "Murali K. Vemuri" <vemuri.muralikrishna@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If sizeof(long) is 4 bytes but sizeof(phys_addr_t) is 8 bytes, don't
-fail to configure a bridge for PCI prefetchable memory space that
-extends beyond 4GB.  The problem was encountered on an embedded system
-using a Freescale MPC8536 PowerPC processor.  The problem is possible
-on x86-32 systems with PAE, although it has not been observed in the
-wild.
+Hello there,
 
-This patch preserves the current behavior for any oddball systems on
-which sizeof(long) is 8 bytes and sizeof(phys_addr_t) is 4 bytes.
+I have a small driver code with which I am randomly receiving kernel
+panic. Can someone help me what is the mistake here?
+The kernel panic is exactly caught to be at "add_timer (&my_timer) ".
+I am able to get the print "Kicking off the timer" when the panic
+happens.
 
-Signed-off-by: Andrew Klossner <andrew@cesa.opbu.xerox.com>
+Also, I could not observe any specific pattern in which the panic
+occurs. But it is purely random. So far I was able to reproduce the
+panic thrice out of 100+ attempts.
 
----
- drivers/pci/probe.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+In all other attempts, my_dev_ioctl is called correctly and works correctly.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 795c902..1385bd3 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -316,7 +316,11 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
- {
- 	struct pci_dev *dev = child->self;
- 	u16 mem_base_lo, mem_limit_lo;
-+#if defined CONFIG_PHYS_ADDR_T_64BIT & BITS_PER_LONG != 64
-+	phys_addr_t base, limit;
-+#else
- 	unsigned long base, limit;
-+#endif
- 	struct resource *res;
- 
- 	res = child->resource[2];
-@@ -339,6 +343,9 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
- #if BITS_PER_LONG == 64
- 			base |= ((long) mem_base_hi) << 32;
- 			limit |= ((long) mem_limit_hi) << 32;
-+#elif defined CONFIG_PHYS_ADDR_T_64BIT
-+			base |= ((phys_addr_t) mem_base_hi) << 32;
-+			limit |= ((phys_addr_t) mem_limit_hi) << 32;
- #else
- 			if (mem_base_hi || mem_limit_hi) {
- 				dev_err(&dev->dev, "can't handle 64-bit "
+struct timer_list my_timer;
+
+static int my_dev_ioctl(struct inode *inode, struct file *file,
+                unsigned int cmd, unsigned long arg)
+{
+    switch(cmd)
+    {
+        case MATCH_CASE:
+            if (timer_pending (&my_timer))
+            {
+                printk(KERN_ERR "Timer currently pending, not adding
+any more\n");
+            }
+            else
+            {
+                printk(KERN_ERR "Kicking off the timer\n");
+                add_timer(&my_timer);
+            }
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+static struct miscdevice my_dummy_dev =
+{
+    .minor = MISC_DYNAMIC_MINOR,
+    .name = "dummy_dev",
+    .fops = &my_dev_fops,
+};
+
+static int __init my_dev_init(void)
+{
+    /*initialize some GPIOs */
+    init_timer (&my_timer);
+    my_timer.data = 0;
+    my_timer.expires = jiffies + msecs_to_jiffies(500);
+    my_timer.function = ring_led_detect_timer;
+    misc_register(&mbi5025_dev);
+}
+module_init(my_dev_init);
+
+
+Thanks in advance
+Murali
