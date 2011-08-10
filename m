@@ -1,98 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab1HJKGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 06:06:07 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33827 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894Ab1HJKGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 06:06:05 -0400
-From: Florian Mickler <florian@mickler.org>
-To: mchehab@infradead.org
-Cc: tino.keitel@tikei.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Florian Mickler <florian@mickler.org>,
-        "v3.0.y" <stable@kernel.org>
-Subject: [PATCH] [media] vp7045: fix buffer setup
-Date: Wed, 10 Aug 2011 12:05:20 +0200
-Message-Id: <1312970720-25694-1-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <20110809200842.GA29662@mac.home>
-References: <20110809200842.GA29662@mac.home>
+	id S1752167Ab1HJKGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 06:06:48 -0400
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:35763 "EHLO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1HJKGr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 06:06:47 -0400
+Message-ID: <4E425833.6020907@ge.com>
+Date: Wed, 10 Aug 2011 11:06:43 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Manohar Vanga <manohar.vanga@cern.ch>
+CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] staging: vme: keep track of registered buses
+References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch> <1312968830-13377-4-git-send-email-manohar.vanga@cern.ch>
+In-Reply-To: <1312968830-13377-4-git-send-email-manohar.vanga@cern.ch>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Aug 2011 10:06:44.0968 (UTC) FILETIME=[358CC680:01CC5745]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dvb_usb_device_init calls the frontend_attach method of this driver which
-uses vp7045_usb_ob. In order to have a buffer ready in vp7045_usb_op, it has to
-be allocated before that happens.
+On 10/08/11 10:33, Manohar Vanga wrote:
+> This patch adds a list which keeps track of all registered VME
+> buses. This is required for adding refcounting later to bridge
+> modules, something that is not currently implemented.
+> 
+> This is based on the changes introduced by Emilio G. Cota in the
+> patch:
+> 
+>     https://lkml.org/lkml/2010/10/25/486
+> 
+> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
 
-Luckily we can use the whole private data as the buffer as it gets separately
-allocated on the heap via kzalloc in dvb_usb_device_init and is thus apt for
-use via usb_control_msg.
+Looks OK:
 
-This fixes a
-	BUG: unable to handle kernel paging request at 0000000000001e78
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 
-reported by Tino Keitel and diagnosed by Dan Carpenter.
+> ---
+>  drivers/staging/vme/vme.c        |   46 ++++++++++++++++++++-----------------
+>  drivers/staging/vme/vme_bridge.h |    1 +
+>  2 files changed, 26 insertions(+), 21 deletions(-)
+> 
+> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+> index 15a6161..f811d07 100644
+> --- a/drivers/staging/vme/vme.c
+> +++ b/drivers/staging/vme/vme.c
+> @@ -34,9 +34,10 @@
+>  #include "vme.h"
+>  #include "vme_bridge.h"
+>  
+> -/* Bitmask and mutex to keep track of bridge numbers */
+> +/* Bitmask and list of registered buses both protected by common mutex */
+>  static unsigned int vme_bus_numbers;
+> -static DEFINE_MUTEX(vme_bus_num_mtx);
+> +static LIST_HEAD(vme_bus_list);
+> +static DEFINE_MUTEX(vme_buses_lock);
+>  
+>  static void __exit vme_exit(void);
+>  static int __init vme_init(void);
+> @@ -1309,11 +1310,12 @@ EXPORT_SYMBOL(vme_slot_get);
+>  
+>  /* - Bridge Registration --------------------------------------------------- */
+>  
+> -/* call with vme_bus_num_mtx held */
+> -static int __vme_alloc_bus_num(int bus_num)
+> +/* call with vme_buses_lock held */
+> +static int __vme_add_bus(struct vme_bridge *bridge)
+>  {
+>  	int num;
+>  	int i;
+> +	int bus_num = bridge->num;
+>  
+>  	if (bus_num == -1) {
+>  		/* try to find a free bus number */
+> @@ -1335,25 +1337,29 @@ static int __vme_alloc_bus_num(int bus_num)
+>  		}
+>  		num = bus_num;
+>  	}
+> +	bridge->num = num;
+> +	list_add_tail(&bridge->bus_list, &vme_bus_list);
+>  	vme_bus_numbers |= 1 << num;
+> -	return num;
+> +	return 0;
+>  }
+>  
+> -static int vme_alloc_bus_num(int bus_num)
+> +static int vme_add_bus(struct vme_bridge *bridge)
+>  {
+> -	int num;
+> +	int ret;
+>  
+> -	mutex_lock(&vme_bus_num_mtx);
+> -	num = __vme_alloc_bus_num(bus_num);
+> -	mutex_unlock(&vme_bus_num_mtx);
+> -	return num;
+> +	mutex_lock(&vme_buses_lock);
+> +	ret = __vme_add_bus(bridge);
+> +	mutex_unlock(&vme_buses_lock);
+> +
+> +	return ret;
+>  }
+>  
+> -static void vme_free_bus_num(int bus)
+> +static void vme_remove_bus(struct vme_bridge *bridge)
+>  {
+> -	mutex_lock(&vme_bus_num_mtx);
+> -	vme_bus_numbers &= ~(0x1 << bus);
+> -	mutex_unlock(&vme_bus_num_mtx);
+> +	mutex_lock(&vme_buses_lock);
+> +	vme_bus_numbers &= ~(1 << bridge->num);
+> +	list_del(&bridge->bus_list);
+> +	mutex_unlock(&vme_buses_lock);
+>  }
+>  
+>  int vme_register_bridge(struct vme_bridge *bridge)
+> @@ -1362,12 +1368,10 @@ int vme_register_bridge(struct vme_bridge *bridge)
+>  	int retval;
+>  	int i;
+>  
+> -	retval = vme_alloc_bus_num(bridge->num);
+> -	if (retval < 0)
+> +	retval = vme_add_bus(bridge);
+> +	if (retval)
+>  		return retval;
+>  
+> -	bridge->num = retval;
+> -
+>  	/* This creates 32 vme "slot" devices. This equates to a slot for each
+>  	 * ID available in a system conforming to the ANSI/VITA 1-1994
+>  	 * specification.
+> @@ -1398,7 +1402,7 @@ err_reg:
+>  		dev = &bridge->dev[i];
+>  		device_unregister(dev);
+>  	}
+> -	vme_free_bus_num(bridge->num);
+> +	vme_remove_bus(bridge);
+>  	return retval;
+>  }
+>  EXPORT_SYMBOL(vme_register_bridge);
+> @@ -1413,7 +1417,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
+>  		dev = &bridge->dev[i];
+>  		device_unregister(dev);
+>  	}
+> -	vme_free_bus_num(bridge->num);
+> +	vme_remove_bus(bridge);
+>  }
+>  EXPORT_SYMBOL(vme_unregister_bridge);
+>  
+> diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
+> index a9084f0..8959670 100644
+> --- a/drivers/staging/vme/vme_bridge.h
+> +++ b/drivers/staging/vme/vme_bridge.h
+> @@ -112,6 +112,7 @@ struct vme_bridge {
+>  	/* Bridge Info - XXX Move to private structure? */
+>  	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
+>  	void *driver_priv;	/* Private pointer for the bridge driver */
+> +	struct list_head bus_list; /* list of VME buses */
+>  
+>  	struct device dev[VME_SLOTS_MAX];	/* Device registered with
+>  						 * device model on VME bus
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=40062
-Cc: v3.0.y <stable@kernel.org>
-Tested-by: Tino Keitel <tino.keitel@tikei.de>
-Signed-off-by: Florian Mickler <florian@mickler.org>
----
- drivers/media/dvb/dvb-usb/vp7045.c |   26 ++++----------------------
- 1 files changed, 4 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/media/dvb/dvb-usb/vp7045.c b/drivers/media/dvb/dvb-usb/vp7045.c
-index 3db89e3..536c16c 100644
---- a/drivers/media/dvb/dvb-usb/vp7045.c
-+++ b/drivers/media/dvb/dvb-usb/vp7045.c
-@@ -224,26 +224,8 @@ static struct dvb_usb_device_properties vp7045_properties;
- static int vp7045_usb_probe(struct usb_interface *intf,
- 		const struct usb_device_id *id)
- {
--	struct dvb_usb_device *d;
--	int ret = dvb_usb_device_init(intf, &vp7045_properties,
--				   THIS_MODULE, &d, adapter_nr);
--	if (ret)
--		return ret;
--
--	d->priv = kmalloc(20, GFP_KERNEL);
--	if (!d->priv) {
--		dvb_usb_device_exit(intf);
--		return -ENOMEM;
--	}
--
--	return ret;
--}
--
--static void vp7045_usb_disconnect(struct usb_interface *intf)
--{
--	struct dvb_usb_device *d = usb_get_intfdata(intf);
--	kfree(d->priv);
--	dvb_usb_device_exit(intf);
-+	return dvb_usb_device_init(intf, &vp7045_properties,
-+				   THIS_MODULE, NULL, adapter_nr);
- }
- 
- static struct usb_device_id vp7045_usb_table [] = {
-@@ -258,7 +240,7 @@ MODULE_DEVICE_TABLE(usb, vp7045_usb_table);
- static struct dvb_usb_device_properties vp7045_properties = {
- 	.usb_ctrl = CYPRESS_FX2,
- 	.firmware = "dvb-usb-vp7045-01.fw",
--	.size_of_priv = sizeof(u8 *),
-+	.size_of_priv = 20,
- 
- 	.num_adapters = 1,
- 	.adapter = {
-@@ -305,7 +287,7 @@ static struct dvb_usb_device_properties vp7045_properties = {
- static struct usb_driver vp7045_usb_driver = {
- 	.name		= "dvb_usb_vp7045",
- 	.probe		= vp7045_usb_probe,
--	.disconnect	= vp7045_usb_disconnect,
-+	.disconnect	= dvb_usb_device_exit,
- 	.id_table	= vp7045_usb_table,
- };
- 
 -- 
-1.7.6
-
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)127322748                          | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
