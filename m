@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab1HKODX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:03:23 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60115 "EHLO
+	id S1752249Ab1HKN5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:57:48 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60044 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab1HKN6A (ORCPT
+	by vger.kernel.org with ESMTP id S1751522Ab1HKN50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:00 -0400
+	Thu, 11 Aug 2011 09:57:26 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 20/41] OpenRISC: Don't mask signals if we fail to setup signal stack
-Date: Thu, 11 Aug 2011 14:56:54 +0100
-Message-Id: <1313071035-12047-21-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Subject: [PATCH 06/41] cris: Use set_current_blocked()
+Date: Thu, 11 Aug 2011 14:56:40 +0100
+Message-Id: <1313071035-12047-7-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -21,91 +21,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Matt Fleming <matt.fleming@linux.intel.com>
 
-setup_rt_frame() needs to return an indication of whether it succeeded
-or failed in setting up the signal stack frame. If setup_rt_frame()
-fails then we must not modify current->blocked.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check whether the signal we're about to block
+is pending in the shared queue.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
 ---
- arch/openrisc/kernel/signal.c |   29 ++++++++++++++++++-----------
- 1 files changed, 18 insertions(+), 11 deletions(-)
+ arch/cris/arch-v10/kernel/signal.c |   33 +++++++++++++------------------
+ arch/cris/arch-v32/kernel/signal.c |   37 +++++++++++++----------------------
+ 2 files changed, 28 insertions(+), 42 deletions(-)
 
-diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
-index 2f75e74..b0bdfda 100644
---- a/arch/openrisc/kernel/signal.c
-+++ b/arch/openrisc/kernel/signal.c
-@@ -196,8 +196,8 @@ static inline void __user *get_sigframe(struct k_sigaction *ka,
-  * trampoline which performs the syscall sigreturn, or a provided
-  * user-mode trampoline.
-  */
--static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
--			   sigset_t *set, struct pt_regs *regs)
-+static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-+			  sigset_t *set, struct pt_regs *regs)
+diff --git a/arch/cris/arch-v10/kernel/signal.c b/arch/cris/arch-v10/kernel/signal.c
+index e78fe49..9f8c29c 100644
+--- a/arch/cris/arch-v10/kernel/signal.c
++++ b/arch/cris/arch-v10/kernel/signal.c
+@@ -50,12 +50,14 @@ void do_signal(int canrestart, struct pt_regs *regs);
+ int sys_sigsuspend(old_sigset_t mask, long r11, long r12, long r13, long mof,
+ 	long srp, struct pt_regs *regs)
  {
- 	struct rt_sigframe *frame;
- 	unsigned long return_ip;
-@@ -254,18 +254,23 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	/* actually move the usp to reflect the stacked frame */
- 	regs->sp = (unsigned long)frame;
+-	mask &= _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
++
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
++
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+ 	set_thread_flag(TIF_RESTORE_SIGMASK);
+@@ -184,10 +186,7 @@ asmlinkage int sys_sigreturn(long r10, long r11, long r12, long r13, long mof,
+ 		goto badframe;
  
--	return;
-+	return 0;
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
  
- give_sigsegv:
- 	force_sigsegv(sig, current);
-+	return -EFAULT;
+ 	if (restore_sigcontext(regs, &frame->sc))
+ 		goto badframe;
+@@ -223,10 +222,7 @@ asmlinkage int sys_rt_sigreturn(long r10, long r11, long r12, long r13,
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+@@ -469,13 +465,12 @@ static inline int handle_signal(int canrestart, unsigned long sig,
+ 		ret = setup_frame(sig, ka, oldset, regs);
+ 
+ 	if (ret == 0) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked, &current->blocked,
+-			&ka->sa.sa_mask);
++		sigset_t blocked;
++
++		sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+ 		if (!(ka->sa.sa_flags & SA_NODEFER))
+-			sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
++			sigaddset(&blocked, sig);
++		set_current_blocked(&blocked);
+ 	}
+ 	return ret;
  }
- 
--static inline void
-+static inline int
- handle_signal(unsigned long sig,
- 	      siginfo_t *info, struct k_sigaction *ka,
- 	      sigset_t *oldset, struct pt_regs *regs)
+diff --git a/arch/cris/arch-v32/kernel/signal.c b/arch/cris/arch-v32/kernel/signal.c
+index ce4ab1a..e493656 100644
+--- a/arch/cris/arch-v32/kernel/signal.c
++++ b/arch/cris/arch-v32/kernel/signal.c
+@@ -62,12 +62,14 @@ int
+ sys_sigsuspend(old_sigset_t mask, long r11, long r12, long r13, long mof,
+ 	       long srp, struct pt_regs *regs)
  {
--	setup_rt_frame(sig, ka, info, oldset, regs);
-+	int ret;
+-	mask &= _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
 +
-+	ret = setup_rt_frame(sig, ka, info, oldset, regs);
-+	if (ret)
-+		return ret;
- 
- 	spin_lock_irq(&current->sighand->siglock);
- 	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
-@@ -274,6 +279,8 @@ handle_signal(unsigned long sig,
- 	recalc_sigpending();
- 
- 	spin_unlock_irq(&current->sighand->siglock);
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
 +
-+	return 0;
- }
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
++
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+ 	set_thread_flag(TIF_RESTORE_SIGMASK);
+@@ -176,12 +178,7 @@ sys_sigreturn(long r10, long r11, long r12, long r13, long mof, long srp,
+ 		goto badframe;
  
- /*
-@@ -362,13 +369,13 @@ void do_signal(struct pt_regs *regs)
- 			oldset = &current->blocked;
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-
+-	current->blocked = set;
+-
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
  
- 		/* Whee!  Actually deliver the signal.  */
--		handle_signal(signr, &info, &ka, oldset, regs);
--		/* a signal was successfully delivered; the saved
--		 * sigmask will have been stored in the signal frame,
--		 * and will be restored by sigreturn, so we can simply
--		 * clear the TIF_RESTORE_SIGMASK flag */
--		if (test_thread_flag(TIF_RESTORE_SIGMASK))
-+		if (!handle_signal(signr, &info, &ka, oldset, regs)) {
-+			/* a signal was successfully delivered; the saved
-+			 * sigmask will have been stored in the signal frame,
-+			 * and will be restored by sigreturn, so we can simply
-+			 * clear the TIF_RESTORE_SIGMASK flag */
- 			clear_thread_flag(TIF_RESTORE_SIGMASK);
-+		}
+ 	if (restore_sigcontext(regs, &frame->sc))
+ 		goto badframe;
+@@ -222,12 +219,7 @@ sys_rt_sigreturn(long r10, long r11, long r12, long r13, long mof, long srp,
+ 		goto badframe;
  
- 		tracehook_signal_handler(signr, &info, &ka, regs,
- 					 test_thread_flag(TIF_SINGLESTEP));
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-
+-	current->blocked = set;
+-
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+@@ -516,13 +508,12 @@ handle_signal(int canrestart, unsigned long sig,
+ 		ka->sa.sa_handler = SIG_DFL;
+ 
+ 	if (ret == 0) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked, &current->blocked,
+-			&ka->sa.sa_mask);
++		sigset_t blocked;
++
++		sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+ 		if (!(ka->sa.sa_flags & SA_NODEFER))
+-			sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
++			sigaddset(&blocked, sig);
++		set_current_blocked(&blocked);
+ 	}
+ 
+ 	return ret;
 -- 
 1.7.4.4
 
