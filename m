@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198Ab1HKEXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 00:23:08 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:51787 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab1HKEXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 00:23:06 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH 1/2] evm: building without EVM enabled fixes
-Date: Thu, 11 Aug 2011 00:22:51 -0400
-Message-Id: <1313036572-27122-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751881Ab1HKEXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 00:23:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49452 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1HKEX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 00:23:26 -0400
+Date: Thu, 11 Aug 2011 05:23:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Arnaud Lacombe <lacombar@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall exports, not
+ SUBARCH_i386
+Message-ID: <20110811042319.GP2203@ZenIV.linux.org.uk>
+References: <1312151063.18010.25.camel@i7.infradead.org>
+ <20110731224834.GC2203@ZenIV.linux.org.uk>
+ <20110731225801.GD2203@ZenIV.linux.org.uk>
+ <1312153988.18010.39.camel@i7.infradead.org>
+ <CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
+ <20110801043207.GE2203@ZenIV.linux.org.uk>
+ <CAFLxGvwxQ2VeqkDpkiVks35DHxZFvAP5nKUtD7i4Z32291otOg@mail.gmail.com>
+ <20110809233817.GL2203@ZenIV.linux.org.uk>
+ <20110810040445.GM2203@ZenIV.linux.org.uk>
+ <20110810174432.GN2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110810174432.GN2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Missing 'inline' on evm_inode_setattr() definition.
-Introduced by commit 817b54aa45db ("evm: add evm_inode_setattr to prevent
-updating an invalid security.evm").
+On Wed, Aug 10, 2011 at 06:44:32PM +0100, Al Viro wrote:
 
-- Missing security_old_inode_init_security() stub function definition.
-Caused by commit 9d8f13ba3f48 ("security: new security_inode_init_security
-API adds function callback").
+> Fixed and pushed (um-header.git #master); however, looking around that area
+> shows more races ;-/
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
----
- include/linux/evm.h      |    2 +-
- include/linux/security.h |    7 +++++++
- 2 files changed, 8 insertions(+), 1 deletions(-)
+Such as, for example, seriously broken handling of free_winch(): delaying
+free_irq() until after return from IRQ handler is nice, but not enough -
+freeing struct winch itself (or winch->stack, for that matter) is also best
+left until after free_irq().  Normal way to do that is schedule_work()...
+Fixed and pushed...
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index db5556d..62deb65 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -45,7 +45,7 @@ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
- }
- #endif
- 
--static int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
-+static inline int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
- {
- 	return 0;
- }
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 1c528b1..f399cf1 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -2048,6 +2048,13 @@ static inline int security_inode_init_security(struct inode *inode,
- 	return -EOPNOTSUPP;
- }
- 
-+int security_old_inode_init_security(struct inode *inode, struct inode *dir,
-+				     const struct qstr *qstr, char **name,
-+				     void **value, size_t *len)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static inline int security_inode_create(struct inode *dir,
- 					 struct dentry *dentry,
- 					 int mode)
--- 
-1.7.3.4
-
+Folks, I don't know what to do with all that stuff; as far as I'm concerned
+the ideal variant would be to have functioning git tree maintained by Richard.
+Is that possible?  I can ask to start pulling um-header.git into linux-next,
+but I would very much prefer to avoid that, TYVM...  If nothing else, ACK/NAK
+on the stuff in there should be done by architecture maintainer(s).
