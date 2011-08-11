@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab1HKGnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 02:43:17 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:34878 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab1HKGnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754234Ab1HKGnP (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Aug 2011 02:43:15 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk() issue in das1800.c
-Date: Thu, 11 Aug 2011 12:27:44 +0530
-Message-Id: <1313045864-20313-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi: fix printk warning issue in das1800.c>
-References: <[PATCH]Staging: comedi: fix printk warning issue in das1800.c>
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33366 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab1HKGnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 02:43:12 -0400
+Date: Thu, 11 Aug 2011 08:43:04 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Dave Jones <davej@redhat.com>
+Subject: Re: linux-next: build failure in Linus' tree
+Message-ID: <20110811064304.GA9994@aftab>
+References: <20110811115926.655a067c61de5f430ef5e772@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110811115926.655a067c61de5f430ef5e772@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Wed, Aug 10, 2011 at 09:59:26PM -0400, Stephen Rothwell wrote:
+> Hi Linus,
+> 
+> With Linus' tree, today's linux-next build (x86_64 allmodconfig) failed
+> like this:
+> 
+> drivers/edac/i7core_edac.c:259:19: error: field 'edac_mce' has incomplete type
+> drivers/edac/i7core_edac.c:262:24: error: 'MCE_LOG_LEN' undeclared here (not in a function)
+> drivers/edac/i7core_edac.c: In function 'i7core_mce_output_error':
+> drivers/edac/i7core_edac.c:1671:25: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1672:20: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1673:23: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1674:15: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1675:18: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1676:18: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1680:7: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1742:22: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1742:31: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1743:39: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1744:15: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1751:7: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c: In function 'i7core_check_error':
+> drivers/edac/i7core_edac.c:1787:50: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1791:3: error: invalid use of undefined type 'struct mce'
+> drivers/edac/i7core_edac.c:1793:49: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c: In function 'i7core_mce_check_error':
+> drivers/edac/i7core_edac.c:1838:11: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1842:9: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1847:6: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1859:52: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c:1864:9: error: dereferencing pointer to incomplete type
+> drivers/edac/i7core_edac.c: In function 'i7core_unregister_mci':
+> drivers/edac/i7core_edac.c:1910:2: error: implicit declaration of function 'edac_mce_unregister'
+> drivers/edac/i7core_edac.c: In function 'i7core_register_mci':
+> drivers/edac/i7core_edac.c:2008:2: error: implicit declaration of function 'edac_mce_register'
+> 
+> Caused by commit af9d220bac41 ("EDAC: Correct Kconfig dependencies").
+> Since CONFIG_EDAC_MCE is no longer selected most of the stuff in
+> linux/edac_mce.h is not available.  I have reverted that commit for today.
 
-This is a patch to the das1800.c file that fixes up a printk() warning found by the checkpatch.pl tool
+§$%§$&&§! (please excuse my french).
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/das1800.c |   49 +++++++++++++----------------
- 1 files changed, 22 insertions(+), 27 deletions(-)
+And I build-tested this patch with randconfigs a whole night and didn't
+see any issues. But I think I see what happens, the above is the result
+of a chain of unfortunate events :-)
 
-diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
-index a6df30b..ee5f614 100644
---- a/drivers/staging/comedi/drivers/das1800.c
-+++ b/drivers/staging/comedi/drivers/das1800.c
-@@ -826,76 +826,71 @@ static int das1800_probe(struct comedi_device *dev)
- 	int id;
- 	int board;
- 
--	id = (inb(dev->iobase + DAS1800_DIGITAL) >> 4) & 0xf;	/* get id bits */
-+	/* get id bits */
-+	id = (inb(dev->iobase + DAS1800_DIGITAL) >> 4) & 0xf;
- 	board = ((struct das1800_board *)dev->board_ptr) - das1800_boards;
- 
- 	switch (id) {
- 	case 0x3:
- 		if (board == das1801st_da || board == das1802st_da ||
- 		    board == das1701st_da || board == das1702st_da) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk
--		    (" Board model (probed, not recommended): das-1800st-da series\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800st-da series\n");
- 		return das1801st;
- 		break;
- 	case 0x4:
- 		if (board == das1802hr_da || board == das1702hr_da) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk
--		    (" Board model (probed, not recommended): das-1802hr-da\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1802hr-da\n");
- 		return das1802hr;
- 		break;
- 	case 0x5:
- 		if (board == das1801ao || board == das1802ao ||
- 		    board == das1701ao || board == das1702ao) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk
--		    (" Board model (probed, not recommended): das-1800ao series\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800ao series\n");
- 		return das1801ao;
- 		break;
- 	case 0x6:
- 		if (board == das1802hr || board == das1702hr) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk(" Board model (probed, not recommended): das-1802hr\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1802hr\n");
- 		return das1802hr;
- 		break;
- 	case 0x7:
- 		if (board == das1801st || board == das1802st ||
- 		    board == das1701st || board == das1702st) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk
--		    (" Board model (probed, not recommended): das-1800st series\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800st series\n");
- 		return das1801st;
- 		break;
- 	case 0x8:
- 		if (board == das1801hc || board == das1802hc) {
--			printk(" Board model: %s\n",
--			       das1800_boards[board].name);
-+			printk(KERN_DEBUG " Board model: %s\n",
-+					das1800_boards[board].name);
- 			return board;
- 		}
--		printk
--		    (" Board model (probed, not recommended): das-1800hc series\n");
-+		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800hc series\n");
- 		return das1801hc;
- 		break;
- 	default:
--		printk
--		    (" Board model: probe returned 0x%x (unknown, please report)\n",
--		     id);
-+		printk(KERN_DEBUG " Board model: probe returned 0x%x (unknown, please report)\n",
-+				id);
- 		return board;
- 		break;
- 	}
+* Randy mistakenly reported the original randconfig issue against
+3.1-rc1. However, in reality it was against linux-next. It was caused by
+the fact that i7core_edac now needs to depend on X86_MCE_INTEL (which
+pulls in X86_MCE for the notifier chain).
+
+* I sent the proper fix which was for Mauro to apply _ontop_ of
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/edac.git linux_next
+
+where the rest of the i7core_edac changes are. This patch depends on them.
+
+* I wasn't clear enough with the patch though, and I see Linus has
+applied it already on his tree, which is clearly too early - it has to
+go in in the next merge window together with the rest of the stuff in
+Mauro's branch.
+
+So, I guess we're reverting for now, Linus?
+
+Thanks and sorry for the trouble.
+
 -- 
-1.6.5.2
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
