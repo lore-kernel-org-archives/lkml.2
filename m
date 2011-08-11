@@ -1,82 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1HKT2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:28:47 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48551 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752425Ab1HKT2p convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:28:45 -0400
+	id S1753361Ab1HKT3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:29:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50324 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab1HKT3f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 15:29:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikKnE-9WncNCADKfZVqkP1LFPYeXA@mail.gmail.com>
-References: <1302817968-28516-1-git-send-email-fernando.lugo@ti.com>
-	<20110414223036.GA7335@n2100.arm.linux.org.uk>
-	<BANLkTin8gugnVoai6VHC7qMgK4eKRXRtHg@mail.gmail.com>
-	<20110428134055.GA19709@n2100.arm.linux.org.uk>
-	<BANLkTikKnE-9WncNCADKfZVqkP1LFPYeXA@mail.gmail.com>
-Date: Thu, 11 Aug 2011 14:28:39 -0500
-Message-ID: <CADysL2bp08WP798_MvUJthGi9ACySDE=Dc_BM9Vd0A=YcKpm+Q@mail.gmail.com>
-Subject: Re: [PATCH] OMAP: iommu flush page table entries from L1 and L2 cache
-From: "Gupta, Ramesh" <grgupta@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Fernando Guzman Lugo <fernando.lugo@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com
+In-Reply-To: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
+Date: Thu, 11 Aug 2011 15:29:34 -0400
+Message-ID: <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
+Subject: Re: [PATCH] CIFS: remove local xattr definitions
+From: Eric Paris <eparis@parisplace.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russel,
+Not that this patch is wrong, but shouldn't cifs include xattr.h
+directly rather than rely on such an obscure indirect callchain as
+well?
 
+-Eric
 
-On Thu, Apr 28, 2011 at 11:48 AM, Gupta, Ramesh <grgupta@ti.com> wrote:
-> Hi Russel,
+On Thu, Aug 11, 2011 at 3:14 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> Local XATTR_TRUSTED_PREFIX_LEN and XATTR_SECURITY_PREFIX_LEN definitions
+> redefined ones in 'linux/xattr.h'. This was caused by commit 9d8f13ba3f48
+> ("security: new security_inode_init_security API adds function callback")
+> including 'linux/xattr.h' in 'linux/security.h'.
 >
-> On Thu, Apr 28, 2011 at 8:40 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Fri, Apr 15, 2011 at 06:26:40AM -0500, Gupta, Ramesh wrote:
->>> Russell,
->>>
->>> On Thu, Apr 14, 2011 at 5:30 PM, Russell King - ARM Linux
->>> <linux@arm.linux.org.uk> wrote:
->>> > On Thu, Apr 14, 2011 at 04:52:48PM -0500, Fernando Guzman Lugo wrote:
->>> >> From: Ramesh Gupta <grgupta@ti.com>
->>> >>
->>> >> This patch is to flush the iommu page table entries from L1 and L2
->>> >> caches using dma_map_single. This also simplifies the implementation
->>> >> by removing the functions  flush_iopgd_range/flush_iopte_range.
->>> >
->>> > No.  This usage is just wrong.  If you're going to use the DMA API then
->>> > unmap it, otherwise the DMA API debugging will go awol.
->>> >
->>>
->>> Thank you for the comments, this particular memory is always a write
->>> from the A9 for MMU programming and
->>> only read from the slave processor, that is the reason for not calling
->>> the unmap. I can re-look into the changes to call
->>> unmap in a proper way as this impacts the DMA API.
->>> Are there any other ways to perform only flush the memory from L1/L2 caches?
->>
->> We _could_ invent a new API to deal with this, which is probably going
->> to be far better in the longer term for page table based iommus.  That's
->> going to need some thought - eg, do we need to pass a struct device
->> argument for the iommu cache flushing so we know whether we need to flush
->> or not (eg, if we have cache coherent iommus)...
-
-my apologies for a late mail on this topic.
-
-do you think of any other requirements for this new API?
-
-Could we use the existing dmac_flush_range(), outer_flush_range()
-for this purpose instead of a new API?
-
-I see a comment in the arch/arm/include/asm/cacheflush.h
-for  _not_ to use these APIs directly, but I am not really understand
-the reason for that.
-
-I would appreciate any inputs on this.
-
-thank you and regards
-Ramesh Gupta G
+> In file included from include/linux/security.h:39,
+>                 from include/net/sock.h:54,
+>                 from fs/cifs/cifspdu.h:25,
+>                 from fs/cifs/xattr.c:26:
+>
+> This patch removes the local definitions.
+>
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> ---
+>  fs/cifs/xattr.c |   39 +++++++++++++++++----------------------
+>  1 files changed, 17 insertions(+), 22 deletions(-)
+>
+> diff --git a/fs/cifs/xattr.c b/fs/cifs/xattr.c
+> index 2a22fb2..7f23f3c 100644
+> --- a/fs/cifs/xattr.c
+> +++ b/fs/cifs/xattr.c
+> @@ -31,16 +31,8 @@
+>  #define MAX_EA_VALUE_SIZE 65535
+>  #define CIFS_XATTR_DOS_ATTRIB "user.DosAttrib"
+>  #define CIFS_XATTR_CIFS_ACL "system.cifs_acl"
+> -#define CIFS_XATTR_USER_PREFIX "user."
+> -#define CIFS_XATTR_SYSTEM_PREFIX "system."
+> -#define CIFS_XATTR_OS2_PREFIX "os2."
+> -#define CIFS_XATTR_SECURITY_PREFIX "security."
+> -#define CIFS_XATTR_TRUSTED_PREFIX "trusted."
+> -#define XATTR_TRUSTED_PREFIX_LEN  8
+> -#define XATTR_SECURITY_PREFIX_LEN 9
+> -/* BB need to add server (Samba e.g) support for security and trusted prefix */
+> -
+>
+> +/* BB need to add server (Samba e.g) support for security and trusted prefix */
+>
+>  int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+>  {
+> @@ -76,8 +68,8 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+>        }
+>        if (ea_name == NULL) {
+>                cFYI(1, "Null xattr names not supported");
+> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5)
+> -               && (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4))) {
+> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
+> +               && (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))) {
+>                cFYI(1,
+>                     "illegal xattr request %s (only user namespace supported)",
+>                     ea_name);
+> @@ -88,7 +80,7 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+>                        goto remove_ea_exit;
+>
+> -               ea_name += 5; /* skip past user. prefix */
+> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+>                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
+>                        (__u16)0, cifs_sb->local_nls,
+>                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+> @@ -149,21 +141,23 @@ int cifs_setxattr(struct dentry *direntry, const char *ea_name,
+>
+>        if (ea_name == NULL) {
+>                cFYI(1, "Null xattr names not supported");
+> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
+> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
+> +                  == 0) {
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+>                        goto set_ea_exit;
+>                if (strncmp(ea_name, CIFS_XATTR_DOS_ATTRIB, 14) == 0)
+>                        cFYI(1, "attempt to set cifs inode metadata");
+>
+> -               ea_name += 5; /* skip past user. prefix */
+> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+>                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+>                        (__u16)value_size, cifs_sb->local_nls,
+>                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+> -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
+> +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
+> +                  == 0) {
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+>                        goto set_ea_exit;
+>
+> -               ea_name += 4; /* skip past os2. prefix */
+> +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+>                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+>                        (__u16)value_size, cifs_sb->local_nls,
+>                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+> @@ -269,7 +263,8 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+>        /* return alt name if available as pseudo attr */
+>        if (ea_name == NULL) {
+>                cFYI(1, "Null xattr names not supported");
+> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
+> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
+> +                  == 0) {
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+>                        goto get_ea_exit;
+>
+> @@ -277,15 +272,15 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+>                        cFYI(1, "attempt to query cifs inode metadata");
+>                        /* revalidate/getattr then populate from inode */
+>                } /* BB add else when above is implemented */
+> -               ea_name += 5; /* skip past user. prefix */
+> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+>                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+>                        buf_size, cifs_sb->local_nls,
+>                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+> -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
+> +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+>                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+>                        goto get_ea_exit;
+>
+> -               ea_name += 4; /* skip past os2. prefix */
+> +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+>                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+>                        buf_size, cifs_sb->local_nls,
+>                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+> @@ -339,10 +334,10 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+>                cFYI(1, "Query CIFS ACL not supported yet");
+>  #endif /* CONFIG_CIFS_ACL */
+>        } else if (strncmp(ea_name,
+> -                 CIFS_XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
+> +                 XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
+>                cFYI(1, "Trusted xattr namespace not supported yet");
+>        } else if (strncmp(ea_name,
+> -                 CIFS_XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
+> +                 XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
+>                cFYI(1, "Security xattr namespace not supported yet");
+>        } else
+>                cFYI(1,
+> --
+> 1.7.3.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
