@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab1HKDVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:21:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51606 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab1HKDVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:21:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,354,1309762800"; 
-   d="scan'208";a="37298933"
-Date: Thu, 11 Aug 2011 11:21:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
-Message-ID: <20110811032143.GB11404@localhost>
-References: <20110806084447.388624428@intel.com>
- <20110809020127.GA3700@redhat.com>
+	id S1754160Ab1HKDWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:22:38 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:54807
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753423Ab1HKDWf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 23:22:35 -0400
+X-SpamScore: -21
+X-BigFish: VPS-21(zzbb2dK9371K936eK1432N98dK4015Lzz1202hzz8275dhz32i668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LPQUPA-02-LGP-02
+X-M-MSG: 
+Subject: Re: Allocating buffers for USB transfers (again)
+From: Andiry Xu <andiry.xu@amd.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Daniel Mack <zonque@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Florian Mickler <florian@mickler.org>,
+        Oliver Neukum <oliver@neukum.org>, <linux-usb@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>,
+        Clemens Ladisch <clemens@ladisch.de>, <pedrib@gmail.com>,
+        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
+        <linux-kernel@vger.kernel.org>, Robert Hancock <hancockrwd@gmail.com>
+In-Reply-To: <20110810231552.GA7194@xanatos>
+References: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org>
+	 <4E42A4AE.4020008@gmail.com>  <20110810231552.GA7194@xanatos>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Aug 2011 11:22:21 +0800
+Message-ID: <1313032941.1918.8.camel@brienza-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809020127.GA3700@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.28.3 
+X-OriginalArrivalTime: 11 Aug 2011 03:22:25.0341 (UTC) FILETIME=[E41936D0:01CC57D5]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [...] it only deals with controlling buffered write IO and nothing
-> else. So on the same block device, other direct writes might be
-> going on from same group and in this scheme a user will not have any
-> control.
+On Wed, 2011-08-10 at 16:15 -0700, Sarah Sharp wrote:
+> On Wed, Aug 10, 2011 at 05:33:02PM +0200, Daniel Mack wrote:
+> > On 08/10/2011 04:32 PM, Alan Stern wrote:
+> > >Looking at the driver's current code, it appears that your patch
+> > >does not fix the bug properly.  Using discontiguous regions in the
+> > >transfer buffer is perfectly okay.  The real problem is later on,
+> > >where you do:
+> > >
+> > >if (send_it) { out->number_of_packets = FRAMES_PER_URB;
+> > >
+> > >This should be
+> > >
+> > >out->number_of_packets = outframe;
+> > >
+> > >The way it is now, the USB stack will try to use data from all the
+> > >frame descriptors, and the last few will be stale because the loop
+> > >doesn't set them.
+> > 
+> > That's actually true, even though it doesn't seem to cause any trouble.
+> > I tested everything here of course, and the output URBs return back from
+> > the USB stack with their length fields zeroed out, which then
+> > causes the stack to send packets with zero-length fields at the end.
+> 
+> Actually, it causes system hangs when the driver is loaded on a device
+> attached to a USB 3.0 port, as Alan Stern pointed out:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=40702
+> 
+> Please don't submit zero-length transfers.  The xHCI driver just isn't
+> able to handle it.  Arguably, it probably should have just rejected your
+> URB when it found a zero length buffer, so I'll probably be submitting a
+> patch to fix that.
+> 
 
-The IO-less balance_dirty_pages() will be able to throttle DIRECT
-writes. There is nothing fundamental in the way.
+I think queue a zero-length TRB to xhci host is OK. I've not tested it,
+but the issue here seems is caused by td->last_trb = NULL. Check
+count_isoc_trbs_needed(), num_trbs will be 0 if the packet length is
+zero and (addr & (TRB_MAS_BUFF_SIZE - 1)) is zero. We can not return
+num_trbs as 0 to xhci_queue_isoc_tx(), which caused a td added to ep's
+td list, while it's not actually queued to ep ring and last_trb is not
+set.
 
-The basic approach will be to add a balance_dirty_pages_ratelimited_nr()
-call in the DIRECT write path, and to call into balance_dirty_pages()
-regardless of the various dirty thresholds.
-
-Then the IO-less balance_dirty_pages() has all the facilities to
-throttle a task at any auto-estimated or user-specified ratelimit.
-
-> Another disadvantage is that throttling at page cache level does not
-> take care of IO spikes at device level.
-
-Yes this is a problem. But it's a problem best fixable in the IO
-scheduler.. (I cannot go to details at this time, however it does
-_sound_ possible to me..)
-
-> How do you implement proportional control here? From overall bdi bandwidth
-> vary per cgroup bandwidth regularly based on cgroup weight? Again the
-> issue here is that it controls only buffered WRITES and nothing else and
-> in this case co-ordinating with CFQ will probably be hard. So I guess
-> usage of proportional IO just for buffered WRITES will have limited
-> usage.
-
-"priority" may be a more suitable phrase. It will be implemented like
-this (without the user interface):
-
-@@ -1007,6 +1001,13 @@ static void balance_dirty_pages(struct a
-                max_pause = bdi_max_pause(bdi, bdi_dirty);
-               
-                base_rate = bdi->dirty_ratelimit;
-+               /*
-+                * Double the bandwidth for PF_LESS_THROTTLE (ie. nfsd) and
-+                * real-time tasks.
-+                */
-+               if (current->flags & PF_LESS_THROTTLE || rt_task(current))
-+                       base_rate *= 2;
-+              
-                pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
-                                               background_thresh, nr_dirty,
-                                               bdi_thresh, bdi_dirty);                                                        
-That is, if start 2 dd tasks A and B with priority_B=2. Then the
-resulting rate_B will be equal to 2*rate_A. The ->dirty_ratelimit will
-auto adapt to rate_A or equally (write_bw/3).
-
-The same can be applied to cgroup. One may specify the whole cgroup's
-dirty rate be throttled at N times that of a normal dd in the root cgroup,
-or be throttled at some absolute 10MB/s rate. The corresponding
-cgroup->dirty_ratelimit will be set to (N * bdi->dirty_ratelimit) for
-the former and 10MB/s for the latter.
-
-The user can specify any combinations of "priority" and "absolute
-ratelimit" for any task and/or cgroup, tasks inside cgroup, and so on.
-We have very powerful (bdi or cgroup)->dirty_ratelimit adaptation
-mechanism to support the combinations :)
-
-The "priority" can even be applied to DIRECT dirtiers, _as long as_
-there are other buffered dirtiers to generate enough dirty pages. It's
-not as easy to apply priorities when there are only DIRECT dirtiers.
-In contrast, the absolute ratelimit is always applicable to all kind
-of tasks and cgroups.
+In order to avoid this, we just make sure count_isoc_trbs_needed()
+always return 1 or larger numbers, instead of reject the urb. Is that
+feasible?
 
 Thanks,
-Fengguang
+Andiry
+
+
