@@ -1,384 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab1HKMVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:21:00 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62851 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754007Ab1HKMU6 (ORCPT
+	id S1755673Ab1HKM3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:29:12 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46390 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab1HKM3I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:20:58 -0400
+	Thu, 11 Aug 2011 08:29:08 -0400
 MIME-Version: 1.0
-Date: Thu, 11 Aug 2011 17:50:56 +0530
-Message-ID: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
-Subject: [PATCH] writeback: Per-block device bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F38838966E@AUSP01VMBX24.collaborationhost.net>
+References: <1312978655-18405-1-git-send-email-linus.walleij@stericsson.com>
+	<ADE657CA350FB648AAC2C43247A983F001F38838966E@AUSP01VMBX24.collaborationhost.net>
+Date: Thu, 11 Aug 2011 14:29:07 +0200
+Message-ID: <CACRpkdabHj_C7wgGfu3g6LSsa2iMZS0h279wf6McOxfge9Gm_w@mail.gmail.com>
+Subject: Re: [PATCH 10/19] mach-ep93xx: break out GPIO driver specifics
+From: Linus Walleij <linus.walleij@linaro.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>, Ryan Mallon <rmallon@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Aug 10, 2011 at 7:23 PM, H Hartley Sweeten
+<hartleys@visionengravers.com> wrote:
+> On Wednesday, August 10, 2011 5:18 AM, Linus Walleij wrote:
 
-Currently the /proc/sys/vm/dirty_writeback_centisecs and
-/proc/sys/vm/dirty_expire_centisecs values are
-global to the system.
-All the BDI flush-* threads are controlled by these central values.
+> I'm a bit confused by the intentions of this patch.  Please see below.
 
-However, the user/admin might want to set different writeback speeds
-for different block devices based on
-their page write-back performance.
-For example, the user might want to write-back pages in smaller
-intervals to a block device which has a
-faster known writeback speed.
+The intentions are in path 0, in this case specifically to
+let gpio.h be only about generic GPIO and gpiolib and
+gpio-<foo>.h be platform and driver specifics.
 
-This patch creates 3 new counters (in centisecs) for all the BDI
-threads that were controlled centrally by these
-2 counters:
-i)   /sys/block/<block_dev>/bdi/dirty_writeback_interval,
-ii)  /sys/block/<block_dev>/bdi/dirty_expire_interval,
-iii) /proc/sys/vm/sync_supers_centisecs.
 
-Although these new counters can be tuned individually, I have taken
-care that they be centrally reset by changes
-to the /proc/sys/vm/dirty_expire_centisecs and
-/proc/sys/vm/dirty_writeback_centisecs so that the earlier
-functionality is not broken by distributions using these central values.
-After resetting all values centrally, these values can be tuned
-individually without altering the central values.
+>> diff --git a/arch/arm/mach-ep93xx/core.c b/arch/arm/mach-ep93xx/core.c
+>> index c60f081..94c78bc 100644
+>> --- a/arch/arm/mach-ep93xx/core.c
+>> +++ b/arch/arm/mach-ep93xx/core.c
+>> @@ -38,6 +38,7 @@
+>>  #include <mach/fb.h>
+>>  #include <mach/ep93xx_keypad.h>
+>>  #include <mach/ep93xx_spi.h>
+>> +#include <mach/gpio-ep93xx.h>
+>
+> Why is this additional include needed?  With your change to the ep93xx
+> <mach/gpio.h> below, this header is already included by <linux/gpio.h>.
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
+Yes, but it is included in <mach/gpio.h> because the quick
+generic gpio macros in there use them, not because it
+wants to expose symbols from <mach/gpio-ep93xx.h> to
+the entire system, that is just a side effect due to
+low encapsulation.
 
-diff -uprN a/fs/fs-writeback.c b/fs/fs-writeback.c
---- a/fs/fs-writeback.c	2011-08-05 10:29:21.000000000 +0530
-+++ b/fs/fs-writeback.c	2011-08-09 09:15:37.093041675 +0530
-@@ -638,8 +638,8 @@ static inline bool over_bground_thresh(v
-  * just walks the superblock inode list, writing back any inodes which are
-  * older than a specific point in time.
-  *
-- * Try to run once per dirty_writeback_interval.  But if a writeback event
-- * takes longer than a dirty_writeback_interval interval, then leave a
-+ * Try to run once per bdi->dirty_writeback_interval.  But if a writeback event
-+ * takes longer than a bdi->dirty_writeback_interval interval, then leave a
-  * one-second gap.
-  *
-  * older_than_this takes precedence over nr_to_write.  So we'll only write back
-@@ -663,7 +663,7 @@ static long wb_writeback(struct bdi_writ
- 	if (wbc.for_kupdate) {
- 		wbc.older_than_this = &oldest_jif;
- 		oldest_jif = jiffies -
--				msecs_to_jiffies(dirty_expire_interval * 10);
-+				msecs_to_jiffies(wb->bdi->dirty_expire_interval * 10);
- 	}
- 	if (!wbc.range_cyclic) {
- 		wbc.range_start = 0;
-@@ -811,15 +811,16 @@ static long wb_check_old_data_flush(stru
- {
- 	unsigned long expired;
- 	long nr_pages;
-+	struct backing_dev_info *bdi = wb->bdi;
+> Since this file actually uses the gpiolib calls, the include of
+> <linux/gpio.h> is needed and appropriate.
 
- 	/*
- 	 * When set to zero, disable periodic writeback
- 	 */
--	if (!dirty_writeback_interval)
-+	if (!bdi->dirty_writeback_interval)
- 		return 0;
+Yes that one *also*.
 
- 	expired = wb->last_old_flush +
--			msecs_to_jiffies(dirty_writeback_interval * 10);
-+			msecs_to_jiffies(bdi->dirty_writeback_interval * 10);
- 	if (time_before(jiffies, expired))
- 		return 0;
+Because you do both generic and driver-specific
+operations.
 
-@@ -923,8 +924,8 @@ int bdi_writeback_thread(void *data)
- 			continue;
- 		}
+The intention is not to minimize the number of #include<>
+statements (if we want that we could always rely on
+implicit includes from other files, which is an abomonation),
+the intention is separation of concerns.
 
--		if (wb_has_dirty_io(wb) && dirty_writeback_interval)
--			schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
-+		if (wb_has_dirty_io(wb) && bdi->dirty_writeback_interval)
-+			schedule_timeout(msecs_to_jiffies(bdi->dirty_writeback_interval * 10));
- 		else {
- 			/*
- 			 * We have nothing to do, so can go sleep without any
-diff -uprN a/include/linux/backing-dev.h b/include/linux/backing-dev.h
---- a/include/linux/backing-dev.h	2011-08-05 10:29:21.000000000 +0530
-+++ b/include/linux/backing-dev.h	2011-08-09 09:15:37.094041619 +0530
-@@ -76,6 +76,8 @@ struct backing_dev_info {
+> Question... Shouldn't the gpio_to_irq and irq_to_gpio defines also be moved
+> here?
 
- 	unsigned int min_ratio;
- 	unsigned int max_ratio, max_prop_frac;
-+	unsigned int dirty_writeback_interval;
-+	unsigned int dirty_expire_interval;
+These are currently part of the generic GPIO and gpiolib
+since they are defined in <linux/gpio.h> :-/
 
- 	struct bdi_writeback wb;  /* default writeback info for this bdi */
- 	spinlock_t wb_lock;	  /* protects work_list */
-@@ -333,4 +335,5 @@ static inline int bdi_sched_wait(void *w
- 	return 0;
- }
+We will get rid of them eventually but I cannot refactor
+the entire universe at once.
 
-+extern unsigned int shortest_dirty_writeback_interval;
- #endif		/* _LINUX_BACKING_DEV_H */
-diff -uprN a/include/linux/writeback.h b/include/linux/writeback.h
---- a/include/linux/writeback.h	2011-08-05 10:29:21.000000000 +0530
-+++ b/include/linux/writeback.h	2011-08-09 10:09:23.581268260 +0530
-@@ -100,6 +100,7 @@ extern unsigned long dirty_background_by
- extern int vm_dirty_ratio;
- extern unsigned long vm_dirty_bytes;
- extern unsigned int dirty_writeback_interval;
-+extern unsigned int sync_supers_interval;
- extern unsigned int dirty_expire_interval;
- extern int vm_highmem_is_dirtyable;
- extern int block_dump;
-@@ -123,6 +124,10 @@ extern int dirty_bytes_handler(struct ct
- struct ctl_table;
- int dirty_writeback_centisecs_handler(struct ctl_table *, int,
- 				      void __user *, size_t *, loff_t *);
-+int sync_supers_centisecs_handler(struct ctl_table *, int,
-+				      void __user *, size_t *, loff_t *);
-+int dirty_expire_centisecs_handler(struct ctl_table *, int,
-+				      void __user *, size_t *, loff_t *);
+>> -#define EP93XX_GPIO_LINE_EGPIO7              EP93XX_GPIO_LINE_A(7)
+>> +/* new generic GPIO API - see Documentation/gpio.txt */
+>
+> Russell's patch removed this comment.  I don't see any reason to
+> put it back.
 
- void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
- unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-diff -uprN a/kernel/sysctl.c b/kernel/sysctl.c
---- a/kernel/sysctl.c	2011-08-05 10:29:21.000000000 +0530
-+++ b/kernel/sysctl.c	2011-08-09 12:39:43.453087554 +0530
-@@ -1076,12 +1076,19 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= dirty_writeback_centisecs_handler,
- 	},
-+    {
-+        .procname   = "sync_supers_centisecs",
-+        .data       = &sync_supers_interval,
-+        .maxlen     = sizeof(sync_supers_interval),
-+        .mode       = 0644,
-+        .proc_handler   = sync_supers_centisecs_handler,
-+    },
- 	{
- 		.procname	= "dirty_expire_centisecs",
- 		.data		= &dirty_expire_interval,
- 		.maxlen		= sizeof(dirty_expire_interval),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec_minmax,
-+		.proc_handler	= dirty_expire_centisecs_handler,
- 		.extra1		= &zero,
- 	},
- 	{
-diff -uprN a/mm/backing-dev.c b/mm/backing-dev.c
---- a/mm/backing-dev.c	2011-08-05 10:29:21.000000000 +0530
-+++ b/mm/backing-dev.c	2011-08-09 12:08:06.287079027 +0530
-@@ -39,6 +39,10 @@ DEFINE_SPINLOCK(bdi_lock);
- LIST_HEAD(bdi_list);
- LIST_HEAD(bdi_pending_list);
+My bad, fixing it up.
 
-+/* Same value as the dirty_writeback_interval as this is what our
-+ * initial shortest_dirty_writeback_interval. */
-+unsigned int shortest_dirty_writeback_interval = 5 * 100;
-+
- static struct task_struct *sync_supers_tsk;
- static struct timer_list sync_supers_timer;
+>> -/* GPIO port B.  */
+>> -#define EP93XX_GPIO_LINE_B(x)                ((x) + 8)
+>> -#define EP93XX_GPIO_LINE_EGPIO8              EP93XX_GPIO_LINE_B(0)
+>> -#define EP93XX_GPIO_LINE_EGPIO9              EP93XX_GPIO_LINE_B(1)
+>> -#define EP93XX_GPIO_LINE_EGPIO10     EP93XX_GPIO_LINE_B(2)
+>> -#define EP93XX_GPIO_LINE_EGPIO11     EP93XX_GPIO_LINE_B(3)
+>> -#define EP93XX_GPIO_LINE_EGPIO12     EP93XX_GPIO_LINE_B(4)
+>> -#define EP93XX_GPIO_LINE_EGPIO13     EP93XX_GPIO_LINE_B(5)
+>> -#define EP93XX_GPIO_LINE_EGPIO14     EP93XX_GPIO_LINE_B(6)
+>> -#define EP93XX_GPIO_LINE_EGPIO15     EP93XX_GPIO_LINE_B(7)
+>> +#include <asm-generic/gpio.h>
+>
+> I believe Russell's patch moves this include to arm's <asm/gpio.h>.
+> Having it included here is a bit redundant.
 
-@@ -204,12 +208,50 @@ static ssize_t max_ratio_store(struct de
- }
- BDI_SHOW(max_ratio, bdi->max_ratio)
+Fixing it. My error.
 
-+static ssize_t dirty_writeback_interval_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	char *end;
-+	unsigned int interval;
-+	ssize_t ret = -EINVAL;
-+
-+	interval = simple_strtoul(buf, &end, 10);
-+	if (*buf && (end[0] == '\0' || (end[0] == '\n' && end[1] == '\0'))) {
-+		bdi->dirty_writeback_interval = interval;
-+		shortest_dirty_writeback_interval =
-+						min(shortest_dirty_writeback_interval,interval);
-+		ret = count;
-+	}
-+	return ret;
-+}
-+BDI_SHOW(dirty_writeback_interval, bdi->dirty_writeback_interval)
-+
-+static ssize_t dirty_expire_interval_store (struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	char *end;
-+	unsigned int interval;
-+	ssize_t ret = -EINVAL;
-+
-+	interval = simple_strtoul(buf, &end, 10);
-+	if (*buf && (end[0] == '\0' || (end[0] == '\n' && end[1] == '\0'))) {
-+		bdi->dirty_expire_interval = interval;
-+		ret = count;
-+	}
-+	return ret;
-+}
-+BDI_SHOW(dirty_expire_interval, bdi->dirty_expire_interval)
-+
- #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
+>> +#include "gpio-ep93xx.h"
+>
+> Why this form?  Isn't <mach/gpio-ep93xx.h> the preferred form?
 
- static struct device_attribute bdi_dev_attrs[] = {
- 	__ATTR_RW(read_ahead_kb),
- 	__ATTR_RW(min_ratio),
- 	__ATTR_RW(max_ratio),
-+	__ATTR_RW(dirty_writeback_interval),
-+	__ATTR_RW(dirty_expire_interval),
- 	__ATTR_NULL,
- };
+This is to make the inclusion very local. The only reason it is
+included at all is to get EP93XX_GPIO_LINE_MAX_IRQ,
+nothing else.
 
-@@ -291,7 +333,7 @@ void bdi_arm_supers_timer(void)
- 	if (!dirty_writeback_interval)
- 		return;
+>> -/* maximum value for irq capable line identifiers */
+>> -#define EP93XX_GPIO_LINE_MAX_IRQ     EP93XX_GPIO_LINE_F(7)
+>> +#define gpio_get_value       __gpio_get_value
+>> +#define gpio_set_value       __gpio_set_value
+>> +#define gpio_cansleep        __gpio_cansleep
 
--	next = msecs_to_jiffies(dirty_writeback_interval * 10) + jiffies;
-+	next = msecs_to_jiffies(sync_supers_interval* 10) + jiffies;
- 	mod_timer(&sync_supers_timer, round_jiffies_up(next));
- }
+You didn't comment on this but it's yet another bug due to
+bad rebasing. Fixing it. Thse should not be reintroduced.
 
-@@ -336,7 +378,7 @@ void bdi_wakeup_thread_delayed(struct ba
- {
- 	unsigned long timeout;
+>> diff --git a/arch/arm/mach-ep93xx/simone.c b/arch/arm/mach-ep93xx/simone.c
+>> index 8392e95..1a472ff 100644
+>> --- a/arch/arm/mach-ep93xx/simone.c
+>> +++ b/arch/arm/mach-ep93xx/simone.c
+>> @@ -18,12 +18,12 @@
+>>  #include <linux/kernel.h>
+>>  #include <linux/init.h>
+>>  #include <linux/platform_device.h>
+>> -#include <linux/gpio.h>
+>>  #include <linux/i2c.h>
+>>  #include <linux/i2c-gpio.h>
+>>
+>>  #include <mach/hardware.h>
+>>  #include <mach/fb.h>
+>> +#include <mach/gpio-ep93xx.h>
+>
+> Here I can kind of agree on the removal of <linux/gpio.h> and adding <mach/gpio-ep93xx.h>.
+>
+> This file does not use any of the gpiolib calls.  It just needs to pick up the defines
+> for the two gpio pins used for the I2C bus.
 
--	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	timeout = msecs_to_jiffies(bdi->dirty_writeback_interval * 10);
- 	mod_timer(&bdi->wb.wakeup_timer, jiffies + timeout);
- }
+Yes that's the idea.
 
-@@ -348,7 +390,19 @@ static unsigned long bdi_longest_inactiv
- {
- 	unsigned long interval;
+> Still, it seems a bit awkward....
 
--	interval = msecs_to_jiffies(dirty_writeback_interval * 10);
-+	interval = msecs_to_jiffies(shortest_dirty_writeback_interval * 10);
-+	return max(5UL * 60 * HZ, interval);
-+}
-+
-+/*
-+ * Calculate the longest interval (jiffies) this bdi thread is allowed to be
-+ * inactive.
-+ */
-+static unsigned long bdi_longest_inactive_this(struct backing_dev_info *bdi)
-+{
-+	unsigned long interval;
-+
-+	interval = msecs_to_jiffies(bdi->dirty_writeback_interval * 10);
- 	return max(5UL * 60 * HZ, interval);
- }
+In what way?
 
-@@ -422,7 +476,7 @@ static int bdi_forker_thread(void *ptr)
- 			 */
- 			if (bdi->wb.task && !have_dirty_io &&
- 			    time_after(jiffies, bdi->wb.last_active +
--						bdi_longest_inactive())) {
-+						bdi_longest_inactive_this(bdi))) {
- 				task = bdi->wb.task;
- 				bdi->wb.task = NULL;
- 				spin_unlock(&bdi->wb_lock);
-@@ -469,7 +523,7 @@ static int bdi_forker_thread(void *ptr)
- 			break;
+> Same comment here. It's technically correct but it's seems awkward.
 
- 		case NO_ACTION:
--			if (!wb_has_dirty_io(me) || !dirty_writeback_interval)
-+			if (!wb_has_dirty_io(me) || !me->bdi->dirty_writeback_interval)
- 				/*
- 				 * There are no dirty data. The only thing we
- 				 * should now care about is checking for
-@@ -479,7 +533,7 @@ static int bdi_forker_thread(void *ptr)
- 				 */
- 				schedule_timeout(bdi_longest_inactive());
- 			else
--				schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
-+				schedule_timeout(msecs_to_jiffies(me->bdi->dirty_writeback_interval * 10));
- 			try_to_freeze();
- 			/* Back to the main loop */
- 			continue;
-@@ -641,6 +695,8 @@ int bdi_init(struct backing_dev_info *bd
- 	bdi->min_ratio = 0;
- 	bdi->max_ratio = 100;
- 	bdi->max_prop_frac = PROP_FRAC_BASE;
-+	bdi->dirty_writeback_interval = dirty_writeback_interval;
-+	bdi->dirty_expire_interval = dirty_expire_interval;
- 	spin_lock_init(&bdi->wb_lock);
- 	INIT_LIST_HEAD(&bdi->bdi_list);
- 	INIT_LIST_HEAD(&bdi->work_list);
-diff -uprN a/mm/page-writeback.c b/mm/page-writeback.c
---- a/mm/page-writeback.c	2011-08-05 10:29:21.000000000 +0530
-+++ b/mm/page-writeback.c	2011-08-09 13:09:37.985919961 +0530
-@@ -92,6 +92,11 @@ unsigned long vm_dirty_bytes;
- unsigned int dirty_writeback_interval = 5 * 100; /* centiseconds */
+Define awkward.
 
- /*
-+ * The interval between sync_supers thread writebacks
-+ */
-+unsigned int sync_supers_interval = 5 * 100; /* centiseconds */
-+
-+/*
-  * The longest time for which data is allowed to remain dirty
-  */
- unsigned int dirty_expire_interval = 30 * 100; /* centiseconds */
-@@ -686,8 +691,60 @@ void throttle_vm_writeout(gfp_t gfp_mask
- int dirty_writeback_centisecs_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
-+	struct backing_dev_info *bdi;
-+
-+	proc_dointvec(table, write, buffer, length, ppos);
-+
-+	if (write) {
-+		/* Traverse all the BDIs registered to the BDI list and reset their
-+		 * bdi->dirty_writeback_interval to this value. */
-+	    spin_lock_bh(&bdi_lock);
-+		list_for_each_entry(bdi, &bdi_list, bdi_list)
-+			bdi->dirty_writeback_interval = dirty_writeback_interval;
-+	    spin_unlock_bh(&bdi_lock);
-+
-+		sync_supers_interval =
-+			shortest_dirty_writeback_interval = dirty_writeback_interval;
-+
-+	}
-+
-+	bdi_arm_supers_timer();
-+
-+	return 0;
-+}
-+
-+/*
-+ * sysctl handler for /proc/sys/vm/sync_supers_centisecs
-+ */
-+int sync_supers_centisecs_handler(ctl_table *table, int write,
-+	void __user *buffer, size_t *length, loff_t *ppos)
-+{
- 	proc_dointvec(table, write, buffer, length, ppos);
-+
- 	bdi_arm_supers_timer();
-+
-+	return 0;
-+}
-+
-+/*
-+ * sysctl handler for /proc/sys/vm/dirty_expire_centisecs
-+ */
-+int dirty_expire_centisecs_handler(ctl_table *table, int write,
-+	void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	struct backing_dev_info *bdi;
-+
-+	proc_dointvec_minmax(table, write, buffer, length, ppos);
-+
-+	if (write) {
-+		/* Traverse all the BDIs registered to the BDI list and reset their
-+		 * bdi->dirty_expire_interval to this value. */
-+	    spin_lock_bh(&bdi_lock);
-+		list_for_each_entry(bdi, &bdi_list, bdi_list)
-+			bdi->dirty_expire_interval = dirty_expire_interval;
-+	    spin_unlock_bh(&bdi_lock);
-+	}
-+
- 	return 0;
- }
+I know you can get the same *implicitly* from <linux/gpio.h>
+but that is the awkward problem we're trying to get rid of.
+
+Eventually <linux/gpio.h> will *not* bring in *any* platform-
+or driver-specific crap. Not today, but as soon as we get
+somewhere with the single image concept.
+
+Similarly, platforms with GPIO not using generic GPIO
+or gpiolib at all have simply had their headers renamed
+<mach/gpio-foo.h>.
+
+Atleast that's my idea, I guess someone may smack my
+fingers.
+
+Thanks,
+Linus Walleij
