@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab1HKNdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:33:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50353 "EHLO mx2.suse.de"
+	id S1751133Ab1HKNl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:41:28 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:33325 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab1HKNdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:33:53 -0400
-Message-ID: <4E43DA3F.7090709@suse.cz>
-Date: Thu, 11 Aug 2011 15:33:51 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1751026Ab1HKNlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 09:41:25 -0400
+X-ASG-Debug-ID: 1313070080-01de280c1e13d480001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E43DBFB.6020105@fusionio.com>
+Date: Thu, 11 Aug 2011 15:41:15 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        Dick Streefland <dick@streefland.net>,
-        WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] scripts: add extract-vmlinux
-References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com> <1313052783-27607-1-git-send-email-corentin.chary@gmail.com> <1313062101.8300.23.camel@x61.thuisdomein> <CAHR064h8souTS7HZBk_6Kc0uRqRhJDGaB_4pFgHGJRSAF_50ig@mail.gmail.com>
-In-Reply-To: <CAHR064h8souTS7HZBk_6Kc0uRqRhJDGaB_4pFgHGJRSAF_50ig@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Kyungmin Park <kmpark@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
+        "shli@kernel.org" <shli@kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [RFC PATCH v2] Add new elevator ops for request hint
+References: <20110811004216.GA24810@july> <20110811133302.GC8552@redhat.com>
+X-ASG-Orig-Subj: Re: [RFC PATCH v2] Add new elevator ops for request hint
+In-Reply-To: <20110811133302.GC8552@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1313070080
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.71459
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.8.2011 15:08, Corentin Chary wrote:
-> On Thu, Aug 11, 2011 at 1:28 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
->> On Thu, 2011-08-11 at 10:53 +0200, Corentin Chary wrote:
->>> +try_decompress()
->>> +{
->>> +     for     pos in `tr "$1\n$2" "\n$2=" < "$img" | grep -abo "^$2"`
->>> +     do
->>> +             pos=${pos%%:*}
->>> +             tail -c+$pos "$img" | $3 > $tmp 2> /dev/null
+On 2011-08-11 15:33, Vivek Goyal wrote:
+> On Thu, Aug 11, 2011 at 09:42:16AM +0900, Kyungmin Park wrote:
+>> Hi Jens
 >>
->> Perhaps a few comments on the above lines would be nice. Without those
->> comments I must guess you're finding compressed data somewhere in the
->> input file. It also seems you're looping through the entire input file.
->> Or are (sequences of) commands like the above considered obvious?
-> 
-> It's copied from extract-ikconfig, there was no comment in it, so I
-> assumed it's obvious.
-> Basically it uses brute force (tm) to find well known headers and try
-> to decompress from here.
-
-And explanation of the "tr" trick would not hurt though. It replaces the
-binary magic with an ascii sequence on a new line (for older grep
-versions to get it right) and tries all occurrences of that sequence, am
-I right? But I wouldn't call it "obvious" :).
-
-
->>> +# That didn't work, so retry after decompression.
->>> +try_decompress '\037\213\010' xy    gunzip
->>> +try_decompress '\3757zXZ\000' abcde unxz
->>> +try_decompress 'BZh'          xy    bunzip2
->>> +try_decompress '\135\0\0\0'   xxx   unlzma
->>> +try_decompress '\211\114\132' xy    'lzop -d'
+>> Now eMMC device requires the upper layer information to improve the data
+>> performance and reliability.
 >>
->> Perhaps you could first test whether these commands are available before
->> running try_decompress() with them?
+>> . Context ID
+>> Using the context information, it can sort out the data internally and improve the performance.
+>> The main problem is that it's needed to define "What's the context". 
+>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>
 > 
-> Same as before, if it's ok for extract-ikconfig not to check the
-> command, then it's ok for me.
-> If it's not, then we should patch both.
+> Hi,
+> 
+> Can you please give little more details about the optimization you will
+> do with this pid information?
 
-Also, if you have lzma to build a lzma-compressed kernel, then you very
-likely also have unlzma.
+It is provided in one of the other email threads for this patch.
 
-Michal
+> Also what happens in the case of noop and deadline which don't maintain
+> per process queues and can't provide this information.
+
+It'll still work, it isn't really tied to the CFQ way of diviying things
+up.
+
+>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+> 
+> So are you planning to later fix file systems to appropriately mark meta
+> data requests?
+
+One thing that occured to me is that equating META to HOT is not
+necessarily a good idea. Meta data isn't necessarily more "hot" than
+regular data, it all depends on how it's being used. So I think it would
+be a lot more appropriate to pass down this information specifically,
+instead of overloading REQ_META.
+
+-- 
+Jens Axboe
+
