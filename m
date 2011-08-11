@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab1HKL4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:56:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43784 "EHLO mx2.suse.de"
+	id S1755452Ab1HKL4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:56:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab1HKL4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:56:21 -0400
-Message-ID: <4E43C363.3000103@suse.cz>
-Date: Thu, 11 Aug 2011 13:56:19 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1753538Ab1HKL4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 07:56:40 -0400
+Date: Thu, 11 Aug 2011 13:56:35 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: achender@linux.vnet.ibm.com
+cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
+        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] loop: add discard support for loop devices
+In-Reply-To: <1313063143-14473-1-git-send-email-lczerner@redhat.com>
+Message-ID: <alpine.LFD.2.00.1108111348020.4160@dhcp-27-109.brq.redhat.com>
+References: <1313063143-14473-1-git-send-email-lczerner@redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Andreas Schwab <schwab@redhat.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-References: <1312067499.22074.59.camel@i7.infradead.org>  <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>  <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>  <1312985888.2989.46.camel@i7.infradead.org>  <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>  <1312993987.2989.53.camel@i7.infradead.org>  <CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>  <1312999168.2989.61.camel@i7.infradead.org>  <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>  <1313002322.2989.88.camel@i7.infradead.org>  <CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>  <1313018232.2989.114.camel@i7.infradead.org>  <CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>  <1313052168.18037.9.camel@i7.infradead.org> <4E4399B3.3020909@suse.cz>  <1313061012.18037.17.camel@i7.infradead.org> <m3r54std0x.fsf@hase.home> <1313062813.18037.24.camel@i7.infradead.org>
-In-Reply-To: <1313062813.18037.24.camel@i7.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.8.2011 13:40, David Woodhouse wrote:
-> On Thu, 2011-08-11 at 13:15 +0200, Andreas Schwab wrote:
->>> That would be cute, but I'm not sure how to undefine something set on
->>> the command line:
->>>
->>> $ cat > Makefile <<EOF
->>> undefine BAR
->>
->> override undefine BAR
-> 
-> Thanks. So we don't really need to change the auto.conf syntax; we could
-> just do:
-> 
-> $(foreach var, $(filter CONFIG_%,$(.VARIABLES)), $(eval override undefine $(var)))
-> 
-> But still I suspect we might *not* want that for options set on the
-> command line. We *don't* want 'make CONFIG_FOO=y oldconfig bzImage' to
-> say 'you can't enable CONFIG_FOO' and then build the bzImage anyway.
+On Thu, 11 Aug 2011, Lukas Czerner wrote:
 
-If you do
-$ echo 'CONFIG_FOO=y' >all.config
-$ make allnoconfig bzImage
-then it will also build bzImage even if kconfig wasn't able to set
-CONFIG_FOO=y. IMO printing a warning that CONFIG_FOO could not be set is
-sufficient, as long as CONFIG_FOO is consistently unset.
+> This commit adds discard support for loop devices. Discard is usually
+> supported by SSD and thinly provisioned devices as a method for
+> reclaiming unused space. This is no different than trying to reclaim
+> back space which is not used by the file system on the image, but it
+> still occupies space on the host file system.
+> 
+> We can do the reclamation on file system which does support hole
+> punching. So when discard request gets to the loop driver we can
+> translate that to punch a hole to the underlying file, hence reclaim
+> the free space.
+> 
+> This is very useful for trimming down the size of the image to only what
+> is really used by the file system on that image. Fstrim may be used for
+> that purpose.
+> 
+> It has been tested on ext4, xfs and btrfs with the image file systems
+> ext4, ext3, xfs and btrfs. ext4, or ext6 image on ext4 file system has
+> some problems but it seems that ext4 punch hole implementation is
+> somewhat flawed and it is unrelated to this commit.
+> 
+> Also this is a very good method of validating file systems punch hole
+> implementation.
+> 
+> Note that when encryption is used, discard support is disabled, because
+> using it might leak some information useful for possible attacker.
 
-Michal
+Hi Allison,
+
+as I mentioned in the commit description I believe that I have
+seen problems with punch hole implementation. You can apply the
+commit to add discard support for loop device and then here is how
+to reproduce the problem:
+
+
+# mkfs.ext4 /dev/sdd
+# mount /dev/sdd /mnt/test
+# dd if=/dev/zero of=/mnt/test/bigfil2 bs=4096 seek=100M count=1
+# mkfs.ext4 /mnt/test/bigfil2
+# mount -o loop /mnt/test/bigfil2 /mnt/test3/
+# fstrim -v /mnt/test3/
+422650347520 Bytes were trimmed
+
+# fsck.ext4 -fn /mnt/test1/bigfil2
+e2fsck 1.41.12 (17-May-2010)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Block bitmap differences:  +(524288--532511)
+Fix? no
+
+Free blocks count wrong for group #16 (24544, counted=32768).
+Fix? no
+
+Free blocks count wrong (103161576, counted=103169800).
+Fix? no
+
+
+/mnt/test1/bigfil2: ********** WARNING: Filesystem still has errors
+**********
+
+/mnt/test1/bigfil2: 11/26214400 files (0.0% non-contiguous),
+1696024/104857600 blocks
+
+And we also get corrupted file system on the ext3 image. I did
+not saw that for other file systems, but it is probably just the matter
+of how are blocks laid out in the file system format and there are more
+chunks of free blocks in ext[43] than xfs, or btrfs.
+
+Also you can find fstrim in latest util-inux-ng. And lastly I believe
+that this is great way to validate punch hole implementation. Just
+create an image on ext4 file system and run xfstest 251 (or stress.sh -
+oss.oracle.com/~mason/stress.sh) on it the image mounted with -o
+discard.
+
+Thanks!
+-Lukas
