@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1HKIV2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:21:28 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53427 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab1HKIVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:21:25 -0400
-Message-ID: <4E4390FC.7090103@linux.vnet.ibm.com>
-Date: Thu, 11 Aug 2011 13:51:16 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	id S1753668Ab1HKIXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:23:46 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:38599 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab1HKIXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 04:23:42 -0400
+X-ASG-Debug-ID: 1313051021-03d6a510a92980e0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E439189.1030905@fusionio.com>
+Date: Thu, 11 Aug 2011 10:23:37 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+To: Shaohua Li <shli@kernel.org>
+CC: Kyungmin Park <kmpark@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2][cleanup] memcg: renaming of mem variable to memcg
-References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com> <20110810172942.23280.99644.sendpatchset@oc5400248562.ibm.com> <20110811080500.GC8023@tiehlicka.suse.cz>
-In-Reply-To: <20110811080500.GC8023@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [RFC PATCH v2] Add new elevator ops for request hint
+References: <20110811004216.GA24810@july> <CANejiEXgsVW4qk3hwHvd6YzgRsZueAB3ZSh3Rvx3fz9tM7KHPw@mail.gmail.com> <CANejiEUSU_hfex5i5znjAUU9Te2o-fgKuO=uD0UW+a4eaiU4Bw@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [RFC PATCH v2] Add new elevator ops for request hint
+In-Reply-To: <CANejiEUSU_hfex5i5znjAUU9Te2o-fgKuO=uD0UW+a4eaiU4Bw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1313051021
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.71438
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 01:35 PM, Michal Hocko wrote:
-> On Wed 10-08-11 22:59:42, Raghavendra K T wrote:
->>   The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses
->>   "struct mem_cgroup *memcg". This patch renames all mem variables to memcg in header file.
->
-> Any reason (other than that this is a different file) to have this as a
-> separate patch?
->
-Yes you are right, There is no much significant reason. since source 
-file patch was so huge and viable for conflicts, thought it would apply 
-clean easily.
->>
->> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
->> ---
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 5633f51..fb1ed1c 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -88,8 +88,8 @@ extern void mem_cgroup_uncharge_end(void);
->>   extern void mem_cgroup_uncharge_page(struct page *page);
->>   extern void mem_cgroup_uncharge_cache_page(struct page *page);
-(snip)
->>   }
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
->
+On 2011-08-11 03:14, Shaohua Li wrote:
+> 2011/8/11 Shaohua Li <shli@kernel.org>:
+>> 2011/8/11 Kyungmin Park <kmpark@infradead.org>:
+>>> Hi Jens
+>>>
+>>> Now eMMC device requires the upper layer information to improve the data
+>>> performance and reliability.
+>>>
+>>> . Context ID
+>>> Using the context information, it can sort out the data internally and improve the performance.
+>>> The main problem is that it's needed to define "What's the context".
+>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>>
+>>> . Data Tag
+>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>>
+>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>>
+>>> Sample usage is following in drivers/mmc/card/block.c
+>>>
+>>>        struct elevator_queue *e = md->queue.queue->elevator;
+>>>        struct request_hint hint;
+>>>        int ret;
+>>>
+>>>        if (e->ops->elevator_get_req_hint_fn && req)
+>>>                ret = e->ops->elevator_get_req_hint_fn(req, &hint);
+>> please put this to blkdev.h or similar. directly using it here
+>> is abnormal.
+> BTW, we can add a (rq->cmd_flags & REQ_ELVPRIV) check here to make
+> sure the request is at io scheduler.
+
+Yep, that should all go inside elv_get_request_context() or whatever is
+a good name. I don't want the hint structure, the caller can just check
+the request flags himself.
+
+So something like:
+
+int elv_get_request_context(struct request_queue *q, struct request *rq)
+{
+        struct elevator_queue *e = q->elevator;
+
+        if (!(rq->cmd_flags & REQ_ELVPRIV))
+                return -1;
+
+        if (e->ops->elevator_get_req_context_fn)
+                return e->ops->elevator_get_req_context_fn(q, rq);
+
+        return -1;
+}
+
+and then cfq/others adding that helper to provide the mapping.
+
+Context is a bad name, but so is hint. Perhaps app_key would be better,
+as it more direcly infers what is being returned.
+
+-- 
+Jens Axboe
 
