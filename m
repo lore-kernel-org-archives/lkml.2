@@ -1,200 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1HKRrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:47:55 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:58639 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab1HKRrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:47:53 -0400
-Subject: Re: [PATCH v2] hwmon: add caseopen detection to w83627ehf driver
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Ian Dobson <i.dobson@planet-ian.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1313009786-29885-1-git-send-email-mad_soft@inbox.ru>
-References: <1313009786-29885-1-git-send-email-mad_soft@inbox.ru>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 11 Aug 2011 10:46:54 -0700
-Message-ID: <1313084814.2214.100.camel@groeck-laptop>
+	id S1752705Ab1HKRs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:48:28 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:23712 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab1HKRs1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 13:48:27 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-10.tower-132.messagelabs.com!1313084905!34828918!2
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Ryan Mallon <rmallon@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Date: Thu, 11 Aug 2011 12:48:24 -0500
+Subject: RE: [PATCH 10/19] mach-ep93xx: break out GPIO driver specifics
+Thread-Topic: [PATCH 10/19] mach-ep93xx: break out GPIO driver specifics
+Thread-Index: AcxYIlEzTDiKzyFnS+CbB8tv7Dj8ewAJPYaAAAEyWeA=
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3883899A6@AUSP01VMBX24.collaborationhost.net>
+References: <1312978655-18405-1-git-send-email-linus.walleij@stericsson.com>
+	<ADE657CA350FB648AAC2C43247A983F001F38838966E@AUSP01VMBX24.collaborationhost.net>
+	<CACRpkdabHj_C7wgGfu3g6LSsa2iMZS0h279wf6McOxfge9Gm_w@mail.gmail.com>
+ <ADE657CA350FB648AAC2C43247A983F001F388389983@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F388389983@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 16:56 -0400, Dmitry Artamonow wrote:
-> Export caseopen alarm status into userspace for Winbond W83627*
-> and Nuvoton NCT677[56] chips and implement alarm clear knob.
-> Second caseopen alarm on NCT6776 is also supported.
-> 
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+On Thursday, August 11, 2011 10:16 AM, H Hartley Sweeten wrote:
+> On Thursday, August 11, 2011 5:29 AM, Linus Walleij wrote:
+>> On Wed, Aug 10, 2011 at 7:23 PM, H Hartley Sweeten wrote:
+>>> On Wednesday, August 10, 2011 5:18 AM, Linus Walleij wrote:
+>>>> +#include "gpio-ep93xx.h"
+>>>
+>>> Why this form?  Isn't <mach/gpio-ep93xx.h> the preferred form?
+>>
+>> This is to make the inclusion very local. The only reason it is
+>> included at all is to get EP93XX_GPIO_LINE_MAX_IRQ,
+>> nothing else.
+>
+> Hmm..  It is needed for gpio_to_irq()...
+>
+> The only other user of that define is drivers/gpio/gpio-ep93xx.c.
+>
+> To follow the intentions of this patch it would be nice to remove this 
+> include from <mach/gpio.h> and add <mach/gpio-ep93xx.h> to the gpio driver.
+> But, any user of gpio_to_irq() whould also have to include <mach/gpio-ep93xx.h>
+> also.
+>
+> The other solution is to hook up the gpiolib to_irq callback in
+> gpio-ep93xx and do:
+>
+> #define gpio_to_irq	__gpio_to_irq
+>
+> Maybe this is a better option?
 
-Hi Dmitry,
+BTW, I have a patch for this if you want.
 
-please consider the changes suggested below.
+----
 
-Thanks,
-Guenter
+gpio-ep93xx: hookup the to_irq callback in the driver
 
-> ---
->  drivers/hwmon/w83627ehf.c |   80 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 80 insertions(+), 0 deletions(-)
-> 
-> Changes from v1:
-> * support for Nuvoton NCT677[56] is added (including second caseopen on NCT6776)
-> * now data->caseopen contains raw register value, extraction of needed bits
->   is done in show_caseopen()
-> * store_caseopen_clear() is renamed to clear_caseopen()
-> 
-> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-> index f2b377c..6964b15 100644
-> --- a/drivers/hwmon/w83627ehf.c
-> +++ b/drivers/hwmon/w83627ehf.c
-> @@ -197,6 +197,9 @@ static const u16 W83627EHF_REG_TEMP_CONFIG[] = { 0, 0x152, 0x252, 0 };
->  #define W83627EHF_REG_ALARM2		0x45A
->  #define W83627EHF_REG_ALARM3		0x45B
->  
-> +#define W83627EHF_REG_CASEOPEN_DET	0x42 /* SMI STATUS #2 */
-> +#define W83627EHF_REG_CASEOPEN_CLR	0x46 /* SMI MASK #3 */
-> +
->  /* SmartFan registers */
->  #define W83627EHF_REG_FAN_STEPUP_TIME 0x0f
->  #define W83627EHF_REG_FAN_STEPDOWN_TIME 0x0e
-> @@ -468,6 +471,7 @@ struct w83627ehf_data {
->  	s16 temp_max[9];
->  	s16 temp_max_hyst[9];
->  	u32 alarms;
-> +	u8 caseopen;
->  
->  	u8 pwm_mode[4]; /* 0->DC variable voltage, 1->PWM variable duty cycle */
->  	u8 pwm_enable[4]; /* 1->manual
-> @@ -873,6 +877,9 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
->  			       (w83627ehf_read_value(data,
->  					W83627EHF_REG_ALARM3) << 16);
->  
-> +		data->caseopen = w83627ehf_read_value(data,
-> +						W83627EHF_REG_CASEOPEN_DET);
-> +
->  		data->last_updated = jiffies;
->  		data->valid = 1;
->  	}
-> @@ -1654,6 +1661,66 @@ show_vid(struct device *dev, struct device_attribute *attr, char *buf)
->  }
->  static DEVICE_ATTR(cpu0_vid, S_IRUGO, show_vid, NULL);
->  
-> +
-> +/* Case open detection */
-> +
-> +static ssize_t
-> +show_caseopen(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	struct w83627ehf_data *data = w83627ehf_update_device(dev);
-> +	struct sensor_device_attribute *sensor_attr = to_sensor_dev_attr(attr);
-> +	int nr = sensor_attr->index;
-> +	switch (nr) {
-> +	case 0:
-> +		return sprintf(buf, "%d\n", (data->caseopen >> 4) & 0x1);
-> +	case 1:
-> +		return sprintf(buf, "%d\n", (data->caseopen >> 6) & 0x1);
-> +	default:
-> +		return -ENXIO;
-> +	}
+Remove the ep93xx machine specific dependencies for gpio_to_irq() by
+hooking up the callback in the driver and using __gpio_to_irq.
 
-	struct w83627ehf_data *data = w83627ehf_update_device(dev);
-	
-	return sprintf(buf, "%d", 
-		!!(data->caseopen & to_sensor_dev_attr_2(attr)->index));
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-> +}
-> +
-> +static ssize_t
-> +clear_caseopen(struct device *dev, struct device_attribute *attr,
-> +			const char *buf, size_t count)
-> +{
-> +	struct w83627ehf_data *data = dev_get_drvdata(dev);
-> +	struct sensor_device_attribute *sensor_attr = to_sensor_dev_attr(attr);
-> +	int nr = sensor_attr->index;
-> +	unsigned long val;
-> +	unsigned int reg, mask = 0;
+---
 
-Initializing mask is unnecessary, and sensor_attr / nr variables are not
-really necessary - see below.
-
-> +
-> +	if (strict_strtoul(buf, 10, &val) || val != 0)
-> +		return -EINVAL;
-> +
-> +	switch (nr) {
-> +	case 0:
-> +		mask = 0x80;
-> +		break;
-> +	case 1:
-> +		mask = 0x40;
-> +		break;
-> +	default:
-> +		return -ENXIO;
-> +	}
-> +
-	
-	mask = to_sensor_dev_attr_2(attr)->nr;
-
-> +	mutex_lock(&data->update_lock);
-> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
-> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg | mask);
-> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg & ~mask);
-> +	data->valid = 0;	/* Force cache refresh */
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	return count;
-> +}
-> +
-> +static struct sensor_device_attribute sda_caseopen[] = {
-> +	SENSOR_ATTR(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
-> +			clear_caseopen, 0),
-> +	SENSOR_ATTR(intrusion1_alarm, S_IWUSR | S_IRUGO, show_caseopen,
-> +			clear_caseopen, 1),
-
-	SENSOR_ATTR_2(intrusion0_alarm, S_IWUSR | S_IRUGO,
-			show_caseopen, clear_caseopen, 0x80, 0x10),
-	SENSOR_ATTR_2(intrusion1_alarm, S_IWUSR | S_IRUGO,
-			show_caseopen, clear_caseopen, 0x40, 0x40),
-
-> +};
-> +
->  /*
->   * Driver and device management
->   */
-> @@ -1710,6 +1777,9 @@ static void w83627ehf_device_remove_files(struct device *dev)
->  		device_remove_file(dev, &sda_temp_type[i].dev_attr);
->  	}
->  
-> +	device_remove_file(dev, &sda_caseopen[0].dev_attr);
-> +	device_remove_file(dev, &sda_caseopen[1].dev_attr);
-> +
->  	device_remove_file(dev, &dev_attr_name);
->  	device_remove_file(dev, &dev_attr_cpu0_vid);
->  }
-> @@ -2261,6 +2331,16 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
->  			goto exit_remove;
->  	}
->  
-> +	err = device_create_file(dev, &sda_caseopen[0].dev_attr);
-> +	if (err)
-> +		goto exit_remove;
-> +
-> +	if (sio_data->kind == nct6776) {
-> +		err = device_create_file(dev, &sda_caseopen[1].dev_attr);
-> +		if (err)
-> +			goto exit_remove;
-> +	}
-> +
->  	err = device_create_file(dev, &dev_attr_name);
->  	if (err)
->  		goto exit_remove;
-
-
+diff --git a/arch/arm/mach-ep93xx/include/mach/gpio.h b/arch/arm/mach-ep93xx/include/mach/gpio.h
+index 071f676..76c68fa 100644
+--- a/arch/arm/mach-ep93xx/include/mach/gpio.h
++++ b/arch/arm/mach-ep93xx/include/mach/gpio.h
+@@ -99,14 +99,7 @@
+ /* maximum value for irq capable line identifiers */
+ #define EP93XX_GPIO_LINE_MAX_IRQ	EP93XX_GPIO_LINE_F(7)
+ 
+-/*
+- * Map GPIO A0..A7  (0..7)  to irq 64..71,
+- *          B0..B7  (7..15) to irq 72..79, and
+- *          F0..F7 (16..24) to irq 80..87.
+- */
+-#define gpio_to_irq(gpio)	\
+-	(((gpio) <= EP93XX_GPIO_LINE_MAX_IRQ) ? (64 + (gpio)) : -EINVAL)
+-
++#define gpio_to_irq		__gpio_to_irq
+ #define irq_to_gpio(irq)	((irq) - gpio_to_irq(0))
+ 
+ #endif
+diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+index 468b27d..6a56895 100644
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@ -308,6 +308,21 @@ static int ep93xx_gpio_set_debounce(struct gpio_chip *chip,
+ 	return 0;
+ }
+ 
++/*
++ * Map GPIO A0..A7  (0..7)  to irq 64..71,
++ *          B0..B7  (7..15) to irq 72..79, and
++ *          F0..F7 (16..24) to irq 80..87.
++ */
++static int ep93xx_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	int gpio = chip->base + offset;
++
++	if (gpio > EP93XX_GPIO_LINE_MAX_IRQ)
++		return -EINVAL;
++
++	return 64 + gpio;
++}
++
+ static int ep93xx_gpio_add_bank(struct bgpio_chip *bgc, struct device *dev,
+ 	void __iomem *mmio_base, struct ep93xx_gpio_bank *bank)
+ {
+@@ -322,8 +337,10 @@ static int ep93xx_gpio_add_bank(struct bgpio_chip *bgc, struct device *dev,
+ 	bgc->gc.label = bank->label;
+ 	bgc->gc.base = bank->base;
+ 
+-	if (bank->has_debounce)
++	if (bank->has_debounce) {
+ 		bgc->gc.set_debounce = ep93xx_gpio_set_debounce;
++		bgc->gc.to_irq = ep93xx_gpio_to_irq;
++	}
+ 
+ 	return gpiochip_add(&bgc->gc);
+ }
