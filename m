@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab1HKRs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:48:28 -0400
-Received: from mail132.messagelabs.com ([216.82.242.115]:23712 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab1HKRs1 convert rfc822-to-8bit (ORCPT
+	id S1752514Ab1HKRwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:52:08 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:34307 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751314Ab1HKRwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:48:27 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-10.tower-132.messagelabs.com!1313084905!34828918!2
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Ryan Mallon <rmallon@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Date: Thu, 11 Aug 2011 12:48:24 -0500
-Subject: RE: [PATCH 10/19] mach-ep93xx: break out GPIO driver specifics
-Thread-Topic: [PATCH 10/19] mach-ep93xx: break out GPIO driver specifics
-Thread-Index: AcxYIlEzTDiKzyFnS+CbB8tv7Dj8ewAJPYaAAAEyWeA=
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3883899A6@AUSP01VMBX24.collaborationhost.net>
-References: <1312978655-18405-1-git-send-email-linus.walleij@stericsson.com>
-	<ADE657CA350FB648AAC2C43247A983F001F38838966E@AUSP01VMBX24.collaborationhost.net>
-	<CACRpkdabHj_C7wgGfu3g6LSsa2iMZS0h279wf6McOxfge9Gm_w@mail.gmail.com>
- <ADE657CA350FB648AAC2C43247A983F001F388389983@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F388389983@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 13:52:04 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=pmgP8lociU8A:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=azj6Gt-4AAAA:8 a=YORvzBCaAAAA:8 a=W0vUJOdyAAAA:8 a=PZfq-FPGQo1XFE9m-lwA:9 a=A9BfQROEsJzYu0BuQnMA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=jbrJJM5MRmoA:10 a=eJ1lpvm07AkA:10 a=VV2__AUApEoA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: <linux-kernel@vger.kernel.org>, <joakim.tjernlund@transmode.se>,
+        <akpm@linux-foundation.org>, <linux@horizon.com>,
+        <fzago@systemfabricworks.com>, "George Spelvin" <linux@horizon.com>
+Subject: [patch v5 resending 0/8] Add slicing-by-8 to crc32
+Date: Thu, 11 Aug 2011 12:52:01 -0500
+Message-ID: <014801cc584f$5ff90e00$1feb2a00$@systemfabricworks.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcxYTpnfBpxqkyAgTIOmEvcESo/MDg==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 11, 2011 10:16 AM, H Hartley Sweeten wrote:
-> On Thursday, August 11, 2011 5:29 AM, Linus Walleij wrote:
->> On Wed, Aug 10, 2011 at 7:23 PM, H Hartley Sweeten wrote:
->>> On Wednesday, August 10, 2011 5:18 AM, Linus Walleij wrote:
->>>> +#include "gpio-ep93xx.h"
->>>
->>> Why this form?  Isn't <mach/gpio-ep93xx.h> the preferred form?
->>
->> This is to make the inclusion very local. The only reason it is
->> included at all is to get EP93XX_GPIO_LINE_MAX_IRQ,
->> nothing else.
->
-> Hmm..  It is needed for gpio_to_irq()...
->
-> The only other user of that define is drivers/gpio/gpio-ep93xx.c.
->
-> To follow the intentions of this patch it would be nice to remove this 
-> include from <mach/gpio.h> and add <mach/gpio-ep93xx.h> to the gpio driver.
-> But, any user of gpio_to_irq() whould also have to include <mach/gpio-ep93xx.h>
-> also.
->
-> The other solution is to hook up the gpiolib to_irq callback in
-> gpio-ep93xx and do:
->
-> #define gpio_to_irq	__gpio_to_irq
->
-> Maybe this is a better option?
+Resending the patch series by hand. I have been having a lot of problems
+trying to
+Figure out how to make quilt and thunderbird play together. Please let me
+Know of this one is better. I have never been able to get quilt to
+Make a mbox that my thunderbird likes but Frank has been able to do it.
+The last time I imported a mbox into thunderbird as Unsent Messages and then
+Edited each note and typed send but for some reason there was a lot of
+breakage.
+This time I just used the external editor to read in each patch from the
+patches
+Directory one a time.
 
-BTW, I have a patch for this if you want.
+[G.S.] Sorry but I managed to leave you off the list. They are out there in
+case you
+Don't subscribe to the whole list.
 
-----
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Bob Pearson
+> Sent: Wednesday, August 10, 2011 5:43 PM
+> To: linux-kernel@vger.kernel.org; joakim.tjernlund@transmode.se;
+> akpm@linux-foundation.org; linux@horizon.com;
+> fzago@systemfabricworks.com
+> Subject: [patch v5 0/8] Add slicing-by-8 to crc32
+> 
+> Changes for v5 (and hopefully last version)
+> 	- added expanded version of document
+> 	- added pointers to replace 2D table
+> 	  references inside of loops
+> 
+> Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-gpio-ep93xx: hookup the to_irq callback in the driver
-
-Remove the ep93xx machine specific dependencies for gpio_to_irq() by
-hooking up the callback in the driver and using __gpio_to_irq.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-
----
-
-diff --git a/arch/arm/mach-ep93xx/include/mach/gpio.h b/arch/arm/mach-ep93xx/include/mach/gpio.h
-index 071f676..76c68fa 100644
---- a/arch/arm/mach-ep93xx/include/mach/gpio.h
-+++ b/arch/arm/mach-ep93xx/include/mach/gpio.h
-@@ -99,14 +99,7 @@
- /* maximum value for irq capable line identifiers */
- #define EP93XX_GPIO_LINE_MAX_IRQ	EP93XX_GPIO_LINE_F(7)
- 
--/*
-- * Map GPIO A0..A7  (0..7)  to irq 64..71,
-- *          B0..B7  (7..15) to irq 72..79, and
-- *          F0..F7 (16..24) to irq 80..87.
-- */
--#define gpio_to_irq(gpio)	\
--	(((gpio) <= EP93XX_GPIO_LINE_MAX_IRQ) ? (64 + (gpio)) : -EINVAL)
--
-+#define gpio_to_irq		__gpio_to_irq
- #define irq_to_gpio(irq)	((irq) - gpio_to_irq(0))
- 
- #endif
-diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
-index 468b27d..6a56895 100644
---- a/drivers/gpio/gpio-ep93xx.c
-+++ b/drivers/gpio/gpio-ep93xx.c
-@@ -308,6 +308,21 @@ static int ep93xx_gpio_set_debounce(struct gpio_chip *chip,
- 	return 0;
- }
- 
-+/*
-+ * Map GPIO A0..A7  (0..7)  to irq 64..71,
-+ *          B0..B7  (7..15) to irq 72..79, and
-+ *          F0..F7 (16..24) to irq 80..87.
-+ */
-+static int ep93xx_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	int gpio = chip->base + offset;
-+
-+	if (gpio > EP93XX_GPIO_LINE_MAX_IRQ)
-+		return -EINVAL;
-+
-+	return 64 + gpio;
-+}
-+
- static int ep93xx_gpio_add_bank(struct bgpio_chip *bgc, struct device *dev,
- 	void __iomem *mmio_base, struct ep93xx_gpio_bank *bank)
- {
-@@ -322,8 +337,10 @@ static int ep93xx_gpio_add_bank(struct bgpio_chip *bgc, struct device *dev,
- 	bgc->gc.label = bank->label;
- 	bgc->gc.base = bank->base;
- 
--	if (bank->has_debounce)
-+	if (bank->has_debounce) {
- 		bgc->gc.set_debounce = ep93xx_gpio_set_debounce;
-+		bgc->gc.to_irq = ep93xx_gpio_to_irq;
-+	}
- 
- 	return gpiochip_add(&bgc->gc);
- }
