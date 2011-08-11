@@ -1,61 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab1HKDXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:23:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39024 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab1HKDX3 (ORCPT
+	id S1754595Ab1HKD3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:29:49 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41826 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146Ab1HKD3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:23:29 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=4Stzp0-EpPcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tcGCEW8-2yqL9dmH9McA:9 a=b9hHhNdkK1YoWnzfdfMA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH][3.0] Tracepoint: dissociate from module mutex (v2)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <4E434928.9020304@hitachi.com>
-References: <20110810191839.GC8525@Krystal>  <4E434928.9020304@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Aug 2011 23:23:27 -0400
-Message-ID: <1313033007.18583.283.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Aug 2011 23:29:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313018232.2989.114.camel@i7.infradead.org>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<1312067670.22074.61.camel@i7.infradead.org>
+	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	<4E34998D.8060806@zytor.com>
+	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	<4E4140B3.7090802@suse.cz>
+	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
+	<4E4280BA.9050109@suse.cz>
+	<1312981658.2989.39.camel@i7.infradead.org>
+	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
+	<1312985888.2989.46.camel@i7.infradead.org>
+	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+	<1312993987.2989.53.camel@i7.infradead.org>
+	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
+	<1312999168.2989.61.camel@i7.infradead.org>
+	<CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
+	<1313002322.2989.88.camel@i7.infradead.org>
+	<CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
+	<1313018232.2989.114.camel@i7.infradead.org>
+Date: Wed, 10 Aug 2011 23:29:46 -0400
+Message-ID: <CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 12:14 +0900, Masami Hiramatsu wrote:
-> (2011/08/11 4:18), Mathieu Desnoyers wrote:
-> > Copy the information needed from struct module into a local module list
-> > held within tracepoint.c from within the module coming/going notifier.
-> > 
-> > This vastly simplifies locking of tracepoint registration /
-> > unregistration, because we don't have to take the module mutex to
-> > register and unregister tracepoints anymore. Steven Rostedt ran into
-> > dependency problems related to modules mutex vs kprobes mutex vs ftrace
-> > mutex vs tracepoint mutex that seems to be hard to fix without removing
-> > this dependency between tracepoint and module mutex. (note: it should be
-> > investigated whether kprobes could benefit of being dissociated from the
-> > modules mutex too.)
-> 
-> Thanks, it seems that kprobes has already mostly done that.
-> It holds module_mutex only in kprobe_optimizer. However,
-> it seems meaningless, because kprobe_mutex already protects
-> kprobe_optimizer against the kprobes module notifier.
-> Thus, a module removing will stays on the notifier until
-> the optimizer runs out. So I think we can remove that mutex lock.
-> 
+Hi,
 
-So should I change my patch 4/5 to just remove the module_mutex?
+On Wed, Aug 10, 2011 at 7:16 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Wed, 2011-08-10 at 18:33 -0400, Arnaud Lacombe wrote:
+>> > We're not enabling anything that we're later going to break. I can't see
+>> > many people *depending* on the fact that 'make CONFIG_SATA_MV=y
+>> > oldconfig' actually does *nothing* in some cases.
+>> >
+>> you are wrong, you ends up with half-baked compile-time dependency,
+>> which break the build:
+>
+> s/*nothing*/nothing useful/, for crying out loud.
+>
+> The point remains that we're not enabling anything which we're later
+> going to break. Nobody is going to come to *depend* on this behaviour.
+>
+> And anyway, this behaviour exists even *before* my patches, as Michal
+> pointed out in a far more helpful and constructive fashion in
+> <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
+> earlier today.
+>
+> It's simple enough to fix, too:
+>
+> diff --git a/Makefile b/Makefile
+> index 1fc5172..6cc7f7b 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -474,6 +474,9 @@ ifeq ($(KBUILD_EXTMOD),)
+>         endif
+>  endif
+>
+> +# This could probably be simpler?
+> +CONFIG_OVERRIDES := $(patsubst line:%,%,$(filter line:%,$(foreach var, $(filter CONFIG_%,$(.VARIABLES)), $(origin $(var)):$(var))))
+> +
+>  ifeq ($(mixed-targets),1)
+>  # ===========================================================================
+>  # We're called with mixed targets (*config and build targets).
+> @@ -507,6 +510,10 @@ else
+>  # Build targets only - this includes vmlinux, arch specific targets, clean
+>  # targets and others. In general all targets except *config targets.
+>
+> +ifneq ($(CONFIG_OVERRIDES),)
+> +$(error Cannot perform build targets with CONFIG symbols overridden)
+> +endif
+> +
+>  ifeq ($(KBUILD_EXTMOD),)
+>  # Additional helpers built in scripts/
+>  # Carefully list dependencies so we do not try to build scripts twice
+>
+how is that supposed to work with your other patches ?
 
-[PATCH 4/5][RFC] kprobes: Inverse taking of module_mutex with kprobe_mutex
+% vi mail.txt
+[strip all lines until 'diff --git a/Makefile b/Makefile']
+% git apply mail.txt
+% make CONFIG_NET=y allyesconfig drivers/ata/
+[...]
+scripts/kconfig/conf --allyesconfig Kconfig
+#
+# CONFIG_NET set to y from environment
+#
+#
+# configuration written to .config
+#
+Makefile:504: *** Cannot perform build targets with CONFIG symbols
+overridden.  Stop.
+make: *** [prepare] Error 2
 
--- Steve
-
-
+ - Arnaud
