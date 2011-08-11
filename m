@@ -1,140 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab1HKA0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 20:26:50 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:51022 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab1HKA0s (ORCPT
+	id S1755463Ab1HKA3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 20:29:14 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48660 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1HKA3K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 20:26:48 -0400
-Message-ID: <4E432122.9050101@ce.jp.nec.com>
-Date: Thu, 11 Aug 2011 09:24:02 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Wed, 10 Aug 2011 20:29:10 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: jaxboe@fusionio.com, roland@purestorage.com, stern@rowland.harvard.edu,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-References: <4E420941.3080601@ce.jp.nec.com> <1313005933.2785.12.camel@mulgrave>
-In-Reply-To: <1313005933.2785.12.camel@mulgrave>
+In-Reply-To: <4E424A0A.6090300@kernel.dk>
+References: <20110809034724.GA22257@july>
+	<4E4181E4.3090704@kernel.dk>
+	<CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
+	<4E423C83.9090209@kernel.dk>
+	<CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
+	<CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
+	<4E424A0A.6090300@kernel.dk>
+Date: Thu, 11 Aug 2011 08:29:09 +0800
+X-Google-Sender-Auth: 9hXmmbUclDW7SaAR8mET76zcbZ4
+Message-ID: <CANejiEU+gG9wWb+=zqASj1M-CmcDhXi2kft=FpFJ8K6Tb+whrw@mail.gmail.com>
+Subject: Re: [RFC PATCH] request: teach the device more intelligent
+From: Shaohua Li <shli@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kyungmin Park <kmpark@infradead.org>, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, jh80.chung@samsung.com, linux-mmc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
-
-On 08/11/11 04:52, James Bottomley wrote:
-> On Wed, 2011-08-10 at 13:29 +0900, Jun'ichi Nomura wrote:
->> 2 patches have been proposed but neither of them included:
->>   1) Add QUEUE_FLAG_DEAD check in blk_insert_cloned_request()
->>      https://lkml.org/lkml/2011/7/8/457
->>   2) SCSI to call blk_cleanup_queue() from device's ->release() callback
->>      (before 2.6.39, it used to work like this)
->>      https://lkml.org/lkml/2011/7/2/106
-> 
-> Well, they both have documented objections.  I asked why we destroy the
-> elevator in the del case and didn't get any traction, so let me show the
-> actual patch which should fix all of these issues.
-> 
-> Is there a good reason for not doing this as a bug fix now?
-> 
-> James
-> 
-> ---
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index b627558..cc72b7d 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -367,11 +367,6 @@ void blk_cleanup_queue(struct request_queue *q)
->  	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
->  	mutex_unlock(&q->sysfs_lock);
->  
-> -	if (q->elevator)
-> -		elevator_exit(q->elevator);
-> -
-> -	blk_throtl_exit(q);
-> -
->  	blk_put_queue(q);
->  }
->  EXPORT_SYMBOL(blk_cleanup_queue);
-> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-> index 0ee17b5..a5a756b 100644
-> --- a/block/blk-sysfs.c
-> +++ b/block/blk-sysfs.c
-> @@ -477,6 +477,11 @@ static void blk_release_queue(struct kobject *kobj)
->  
->  	blk_sync_queue(q);
->  
-> +	if (q->elevator)
-> +		elevator_exit(q->elevator);
-> +
-> +	blk_throtl_exit(q);
-> +
->  	if (rl->rq_pool)
->  		mempool_destroy(rl->rq_pool);
-
-I think it doesn't work because elevator_exit() and
-blk_throtl_exit() take &q->queue_lock, which may be freed
-by LLD after blk_cleanup_queue, before blk_release_queue.
-
-Vivek's comment here describes it in detail:
-https://lkml.org/lkml/2011/7/12/279
-
-Vivek Goyal wrote:
-> I thought a driver could either rely on spin lock provided by request
-> queue or override that by providing its own spinlock.
-> 
-> blk_init_allocated_queue_node()
->         /* Override internal queue lock with supplied lock pointer */
->         if (lock)
->                 q->queue_lock           = lock;
-> So if driver calls blk_cleanup_queue() and drops its reference on queue, then
-> it should be free to release any memory it has allocated for spinlock.
-> So though queue is around there are no gurantees that q->queue_lock is
-> still around. That memory might have been freed by driver and reused.
-> 
-> I see many drivers are providing their own locks. Some samples from
-> drivers/block.
-> 
-> /virtio_blk.c:	q = vblk->disk->queue = blk_init_queue(do_virtblk_request,
-> &vblk->lock);
-> ./xd.c:	xd_queue = blk_init_queue(do_xd_request, &xd_lock);
-> ./cpqarray.c:	q = blk_init_queue(do_ida_request, &hba[i]->lock);
-> ./sx8.c:	q = blk_init_queue(carm_rq_fn, &host->lock);
-> ./sx8.c:	q = blk_init_queue(carm_oob_rq_fn, &host->lock);
-> ./floppy.c:	disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
-> ./viodasd.c:	q = blk_init_queue(do_viodasd_request, &d->q_lock);
-> ./cciss.c:	disk->queue = blk_init_queue(do_cciss_request, &h->lock);
-> ./hd.c:	hd_queue = blk_init_queue(do_hd_request, &hd_lock);
-> ./DAC960.c:  	RequestQueue = blk_init_queue(DAC960_RequestFunction,&Controller->queue_lock);
-> ./z2ram.c:    z2_queue = blk_init_queue(do_z2_request, &z2ram_lock);
-> ./amiflop.c:	disk->queue = blk_init_queue(do_fd_request, &amiflop_lock);
-> ./xen-blkfront.c:	rq = blk_init_queue(do_blkif_request, &blkif_io_lock);
-> ./paride/pd.c:	pd_queue = blk_init_queue(do_pd_request, &pd_lock);
-> ./paride/pf.c:	pf_queue = blk_init_queue(do_pf_request, &pf_spin_lock);
-> ./paride/pcd.c:	pcd_queue = blk_init_queue(do_pcd_request, &pcd_lock);
-> ./mg_disk.c:	host->breq = blk_init_queue(mg_request_poll, &host->lock);
-> ./mg_disk.c:	host->breq = blk_init_queue(mg_request, &host->lock);
-> ./rbd.c:	q = blk_init_queue(rbd_rq_fn, &rbd_dev->lock);
-> ./sunvdc.c:	q = blk_init_queue(do_vdc_request, &port->vio.lock);
-> ./swim.c:	swd->queue = blk_init_queue(do_fd_request, &swd->lock);
-> ./xsysace.c:	ace->queue = blk_init_queue(ace_request, &ace->lock);
-> ./osdblk.c:	q = blk_init_queue(osdblk_rq_fn, &osdev->lock);
-> ./ps3disk.c:	queue = blk_init_queue(ps3disk_request, &priv->lock);
-> ./swim3.c:	swim3_queue = blk_init_queue(do_fd_request, &swim3_lock);
-> ./ub.c:	if ((q = blk_init_queue(ub_request_fn, sc->lock)) == NULL)
-> ./nbd.c:	disk->queue = blk_init_queue(do_nbd_request, &nbd_lock);
-
-# SCSI doesn't hit this problem because it uses
-# queue_lock embedded in struct request_queue.
-
+2011/8/10 Jens Axboe <axboe@kernel.dk>:
+> On 2011-08-10 10:47, Shaohua Li wrote:
+>> 2011/8/10 Kyungmin Park <kmpark@infradead.org>:
+>>> On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>> On 2011-08-10 01:43, Kyungmin Park wrote:
+>>>>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>> On 2011-08-09 05:47, Kyungmin Park wrote:
+>>>>>>> Hi Jens
+>>>>>>>
+>>>>>>> Now eMMC device requires the upper layer information to improve the data
+>>>>>>> performance and reliability.
+>>>>>>>
+>>>>>>> . Context ID
+>>>>>>> Using the context information, it can sort out the data internally and improve the performance.
+>>>>>>> The main problem is that it's needed to define "What's the context".
+>>>>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>>>>>>
+>>>>>>> . Data Tag
+>>>>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>>>>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>>>>>>
+>>>>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>>>>>>
+>>>>>>> Can you give your opinions and does it proper fields at requests?
+>>>>>>
+>>>>>> You need this to work on all IO schedulers, not just cfq.
+>>>>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
+>>>>>
+>>>>>> And since that's the case, there's no need to add this field since you can just
+>>>>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
+>>>>>>
+>>>>>> static int cfq_foo(struct request *rq)
+>>>>>> {
+>>>>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
+>>>>>>
+>>>>>>        if (cfqq)
+>>>>>>                return cfqq->pid;
+>>>>>>
+>>>>>>        return -1;
+>>>>>> }
+>>>>>
+>>>>> The actual user of these information is device driver. e.g.,
+>>>>> drivers/mmc/card/block.c
+>>>>> So it's not good to use cfq data structure at D/D. some time later
+>>>>> these are also used at scsi device drivers.
+>>>>
+>>>> No, what I'm suggesting above is the CFQ implementation. You would need
+>>>> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
+>>>> If you notice, the above function does not take or output anything
+>>>> related to CFQ in particular, it'll just return you the unique key you
+>>>> need.
+>>>>
+>>>> It's either the above, or a field in the request that the schedulers
+>>>> fill out. However, it'd be somewhat annoying to grow struct request for
+>>>> something that has a narrow scope of use. Hence the suggestion to add a
+>>>> strategy helper for this.
+>>> Okay, I'll add new elevator function one for getting context or more hints.
+>>> BTW, does it okay to call elevator function call at D/D?
+>>>
+>>> The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
+>>>
+>>>                struct elevator_queue *e = md->queue.queue->elevator;
+>>>                int context = -1;
+>>>
+>>>                if (e->ops->elevator_get_req_hint_fn && req) {
+>>>                        context = e->ops->elevator_get_req_hint_fn(req);
+>> I'm wondering how the driver deal with elevator switch. A context id from
+>> one elevator might just be garbage for another elevator.
+>
+> Any request with sched private data is drained prior to switching over.
+> This problem isn't unique to this context id, we have other per-request
+> IO scheduler data structures associated with the request, too.
+what I'm afraid is the context id isn't consistent. Say in cfq, context id
+for app1 is 1, app2 2. Then switching to deadline, context id for app1
+is 2, app2 1. Will the driver be confused about this?
 
 Thanks,
--- 
-Jun'ichi Nomura, NEC Corporation
+Shaohua
