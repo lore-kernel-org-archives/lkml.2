@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260Ab1HKQbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 12:31:13 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:60290 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab1HKQbH convert rfc822-to-8bit (ORCPT
+	id S1751339Ab1HKQfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 12:35:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39790 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750825Ab1HKQfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 12:31:07 -0400
-Date: Thu, 11 Aug 2011 18:30:27 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LXC Development <Lxc-devel@lists.sourceforge.net>,
-        containers@lists.linux-foundation.org
-Subject: Re: [RFC] catching sys_reboot syscall
-Message-ID: <20110811183027.49275b2d@neptune.home>
-In-Reply-To: <4E42EEE3.9050608@free.fr>
-References: <4E4051A0.8030009@free.fr>
-	<20110810221028.2e0c8590@neptune.home>
-	<4E42EEE3.9050608@free.fr>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 12:35:16 -0400
+Date: Thu, 11 Aug 2011 17:34:27 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "'Barry Song'" <21cnbao@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "weizeng.he@csr.com" <weizeng.he@csr.com>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Subject: L2x0 OF properties do not include interrupt #
+Message-ID: <20110811163427.GD5154@e102144-lin.cambridge.arm.com>
+References: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
+ <201108101624.27881.arnd@arndb.de>
+ <20110810142808.GL10121@e102144-lin.cambridge.arm.com>
+ <201108111505.11887.arnd@arndb.de>
+ <20110811130910.GA10189@e102144-lin.cambridge.arm.com>
+ <4E43F5F8.4060704@gmail.com>
+ <20110811153800.GC5154@e102144-lin.cambridge.arm.com>
+ <4E43FDFF.1080401@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E43FDFF.1080401@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 August 2011 Daniel Lezcano <daniel.lezcano@free.fr> wrote:
-> On 08/10/2011 10:10 PM, Bruno Prémont wrote:
-> > Hi Daniel,
-> >
-> > [I'm adding containers ml as we had a discussion there some time ago
-> >  for this feature]
+On Thu, Aug 11, 2011 at 05:06:23PM +0100, Rob Herring wrote:
+> On 08/11/2011 10:38 AM, Will Deacon wrote:
+> > 
+> > You mean putting the combined interrupt first? If so, we may as well just
+> > specify that until somebody builds a platform that doesn't have it.
+> > 
 > 
-> [ ... ]
+> No, either you have 1 interrupt and it is the combined one. or you have
+> the 9? separate interrupts.  Having both combined and separate hooked up
+> is a bit dumb, so I would not worry about that case. I would just define
+> the event counter interrupt 1st as that is probably the primary use.
+> Also, I think that was the only interrupt on the L2x0 controllers IIRC.
 > 
-> >> +    if (cmd == LINUX_REBOOT_CMD_RESTART2)
-> >> +        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0)
-> >> +            return -EFAULT;
-> >> +
-> >> +    /* If we are not in the initial pid namespace, we send a signal
-> >> +     * to the parent of this init pid namespace, notifying a shutdown
-> >> +     * occured */
-> >> +    if (pid_ns != &init_pid_ns)
-> >> +        pid_namespace_reboot(pid_ns, cmd, buffer);
-> > Should there be a return here?
-> > Or does pid_namespace_reboot() never return by submitting signal to
-> > parent?
-> 
-> Yes, it does not return a value, like 'do_notify_parent_cldstop'
+> It's also conceivable that some of the interrupts get routed somewhere
+> else rather than just into the GIC.
 
-So execution flow continues reaching the whole "host reboot code"?
+Ok. I think the binding that Mark posted to devicetree-discuss:
 
-That's not so good as it then prevents using CAP_SYS_BOOT inside PID namespace
-to limit access to rebooting the container from inside as giving a process
-inside container CAP_SYS_BOOT would cause host to reboot (and when not given
-process inside container would get -EPERM in all cases).
+http://lists.ozlabs.org/pipermail/devicetree-discuss/2011-August/007349.html
 
-Wouldn't the following be better?:
-...
-+
-+    /* We only trust the superuser with rebooting the system. */
-+    if (!capable(CAP_SYS_BOOT))
-+        return -EPERM;
-+
-+    /* If we are not in the initial pid namespace, we send a signal
-+     * to the parent of this init pid namespace, notifying a shutdown
-+     * occured */
-+    if (pid_ns != &init_pid_ns) {
-+        pid_namespace_reboot(pid_ns, cmd, buffer);
-+        return 0;
-+    }
-+
-     mutex_lock(&reboot_mutex);
-     switch (cmd) {
-...
+will take care of this. We have a single interrupt (I don't think we even
+need to specify what it is). Interrupt handlers can request this with
+IRQ_SHARED and then check the status register to see whether they actually
+need to do anything.
 
-
-If I misunderstood, please correct me.
-
-Thanks,
-Bruno
+Will
