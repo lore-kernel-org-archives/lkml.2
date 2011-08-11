@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab1HKSpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:45:18 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:60223 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab1HKSpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:45:16 -0400
-Message-ID: <4E4422FD.3060706@panasas.com>
-Date: Thu, 11 Aug 2011 11:44:13 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752656Ab1HKSs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:48:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65431 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab1HKSs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:48:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="37616903"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alex Neronskiy <zakmagnus@chromium.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
+        Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Alex Neronskiy <zakmagnus@chromium.com>
+Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
+References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
+	<1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+Date: Thu, 11 Aug 2011 11:48:26 -0700
+In-Reply-To: <1312999364-21104-2-git-send-email-zakmagnus@chromium.org> (Alex
+	Neronskiy's message of "Wed, 10 Aug 2011 11:02:44 -0700")
+Message-ID: <m2bovvn5s5.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
-        peter honeyman <honey@citi.umich.edu>
-CC: <tao.peng@emc.com>, <torvalds@linux-foundation.org>,
-        <rdunlap@xenotime.net>, <bergwolf@gmail.com>,
-        <Trond.Myklebust@netapp.com>, <linux-raid@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        "Welch, Brent" <welch@panasas.com>
-Subject: Re: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com> <20110810122304.96b8be67.rdunlap@xenotime.net> <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com> <20110810175829.a834d80f.rdunlap@xenotime.net> <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com> <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com> <4E43AAD1.7090806@tonian.com>
-In-Reply-To: <4E43AAD1.7090806@tonian.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 03:11 AM, Benny Halevy wrote:
-> On 2011-08-11 06:26, tao.peng@emc.com wrote:
-> 
-> My Ack, that's indeed closer to what I had queued in my tree originally and
-> follows the approach we used for the objects layout driver.
-> 
-> Benny
-> 
+Alex Neronskiy <zakmagnus@chromium.org> writes:
 
-Yes but this breaks "Sorin"'s conspiracy to sneak into readhat the block
-layout driver. Because it would be selected automatically if you set
-CONFIG_NFS41.
+> From: Alex Neronskiy <zakmagnus@chromium.com>
+>
+> Instead of using the log, use debugfs for output of both stall
+> lengths and stack traces. Printing to the log can result in
+> watchdog touches, 
 
-Because for some perverted reason readhat wants pNFS-Files in, with
-latest patches, but not the blocks or objects. I liked it that Blocks
-tried to state: "pNFS is with blocks as well". Even Trond agreed that
-it is logical this way.
+Why? Because of printk being slow or something else?
 
-You select CONFIG_NFS41 or not. objects and blocks are a part of that,
-mandated by the protocol.
+The first could be probably workarounded, especially if you
+already have "two buffers"
 
-(I don't know that it was "Sorin"'s Idea, I meant the block guys)
+> distorting the very events being measured.
+> Additionally, the information will not distract from lockups
+> when users view the log.
+>
+> A two-buffer system is used to ensure that the trace information
+> can always be recorded without contention.
 
-I wish we can go back to the auto selection but fix the dependency
-stuff. Surly it is possible.
+This implies that kernel bug reports will often not contain the 
+back trace, right? Seems like a bad thing to me because it will
+make bug reports worse.
 
-Thanks
-Boaz
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
