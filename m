@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab1HKRKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:10:13 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:29396 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab1HKRKL (ORCPT
+	id S1752006Ab1HKROU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:14:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65186 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1HKROT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:10:11 -0400
-Message-ID: <4E440CF1.2060000@tilera.com>
-Date: Thu, 11 Aug 2011 13:10:09 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Oleg Nesterov <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 29/41] tile: Use set_current_blocked()
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-30-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1313071035-12047-30-git-send-email-matt@console-pimps.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 13:14:19 -0400
+From: Ralf Thielow <ralf.thielow@googlemail.com>
+To: rdunlap@xenotime.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Thielow <ralf.thielow@googlemail.com>
+Subject: [PATCH] Documentation: SubmittingDrivers: Update Linus' git repository
+Date: Thu, 11 Aug 2011 19:13:45 +0200
+Message-Id: <1313082825-3162-1-git-send-email-ralf.thielow@googlemail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/11/2011 9:57 AM, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
->
-> As described in e6fa16ab ("signal: sigprocmask() should do
-> retarget_shared_pending()") the modification of current->blocked is
-> incorrect as we need to check whether the signal we're about to block
-> is pending in the shared queue.
->
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/tile/kernel/compat_signal.c |    5 +----
->  arch/tile/kernel/signal.c        |   16 ++++++----------
->  2 files changed, 7 insertions(+), 14 deletions(-)
+Change resource URL to new git tree -
+(http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git).
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
+---
+ Documentation/SubmittingDrivers |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/Documentation/SubmittingDrivers b/Documentation/SubmittingDrivers
+index 319baa8..36d16bb 100644
+--- a/Documentation/SubmittingDrivers
++++ b/Documentation/SubmittingDrivers
+@@ -130,7 +130,7 @@ Linux kernel master tree:
+ 	ftp.??.kernel.org:/pub/linux/kernel/...
+ 	?? == your country code, such as "us", "uk", "fr", etc.
+ 
+-	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git
++	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
+ 
+ Linux kernel mailing list:
+ 	linux-kernel@vger.kernel.org
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.6
 
