@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1HKTPE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:15:04 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:46005 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751984Ab1HKTPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:15:01 -0400
-Date: Thu, 11 Aug 2011 12:14:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
-Subject: Re: linux-next: Tree for Aug 11 (sound/soc + regmap)
-Message-Id: <20110811121459.b235aff5.rdunlap@xenotime.net>
-In-Reply-To: <20110811162058.42b462bc80e67d7a80ecff93@canb.auug.org.au>
-References: <20110811162058.42b462bc80e67d7a80ecff93@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1753306Ab1HKT0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:26:15 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:41664 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753130Ab1HKT0O convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 15:26:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313087423.8491.11.camel@twins>
+References: <1313006614-28702-1-git-send-email-mturquette@ti.com> <1313087423.8491.11.camel@twins>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 11 Aug 2011 12:25:53 -0700
+Message-ID: <CAJOA=zNoTbPViL81esyD0So_D70_0_BAxrM2ks3SgV5=FSTWHQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] new cpumask for hotpluggable CPUs
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011 16:20:58 +1000 Stephen Rothwell wrote:
+On Thu, Aug 11, 2011 at 11:30 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2011-08-10 at 13:03 -0700, Mike Turquette wrote:
+>> This patch series introduces a new cpumask which tracks CPUs that
+>> support hotplugging.  The purpose of this patch series is to provide a
+>> simple method for kernel code to know which CPUs can be hotplugged and
+>> which ones cannot.  Potential users of this code might be a thermal
+>> mitigation technique which uses hotplug to lower temperature, or a power
+>> capping mechanism which uses hotplug to lower power consumption.
+>>
+>> All the of usual cpumask helper functions are created for this new mask.
+>> The second patch in this series simply sets the bit for elligible CPUs
+>> while they are being registered.  The cpumask itself is static after
+>> boot and should not change (like the possbile mask).
+>
+> I still most strongly object to people using hotplug for these goals.
+>
+> Why do you need to go through the entire dance of hotplug just to idle a
+> cpu? Hotplug not only idles the cpu but tears down (and rebuilds) an
+> insane amount of resources associated with the cpu.
 
-> Hi all,
+I think you're nacking the wrong series.  This patchset simply allows
+kernel space to know which CPUs can go offline and which one can't,
+which seems pretty innocuous.  Are you fundamentally opposed to the
+kernel having better accessor functions to this data?
 
-When CONFIG_SPI is not enabled (so REGMAP_SPI is not enabled):
-(on i386 and x86_64)
+I'll soon be posting some code which does implement hotplug as a
+power-capping feature.  I think *that* is the patch that you'll want
+to nack.
 
-sound/built-in.o: In function `snd_soc_codec_set_cache_io':
-(.text+0x85635): undefined reference to `regmap_init_spi'
+Thanks for reviewing,
+Mike
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
