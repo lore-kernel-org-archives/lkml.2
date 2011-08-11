@@ -1,62 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab1HKUvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:51:38 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39733 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab1HKUvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:51:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6435"; a="109738040"
-Message-ID: <4E4440C7.70208@codeaurora.org>
-Date: Thu, 11 Aug 2011 14:51:19 -0600
-From: Kenneth Heitke <kheitke@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100722 Eudora/3.0.4
+	id S1753865Ab1HKUxA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:53:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718Ab1HKUw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:52:59 -0400
+Date: Thu, 11 Aug 2011 16:52:53 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Joe Perches <joe@perches.com>, gregkh@suse.de
+Cc: jim.cromie@gmail.com, bvanassche@acm.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/11 re-post] dynamic_debug: consolidate repetitive
+ struct _ddebug descriptor definitions
+Message-ID: <20110811205253.GC6670@redhat.com>
+References: <cover.1313085588.git.jbaron@redhat.com>
+ <88ee1dfb582d4b2dbdcfa93eeaa61a2ad531bd1e.1313085588.git.jbaron@redhat.com>
+ <1313089327.13877.11.camel@Joe-Laptop>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: davidb@codeaurora.org, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
-        john.stultz@linaro.org, akpm@linux-foundation.org, ohad@wizery.com,
-        gregkh@suse.de, stefanr@s5r6.in-berlin.de, lethal@linux-sh.org,
-        linville@tuxdriver.com, zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org> <201108111455.56319.arnd@arndb.de>
-In-Reply-To: <201108111455.56319.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313089327.13877.11.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 06:55 AM, Arnd Bergmann wrote:
-> On Thursday 11 August 2011, Kenneth Heitke wrote:
->> From: Sagar Dharia<sdharia@codeaurora.org>
->>
->> SLIMbus (Serial Low Power Interchip Media Bus) is a specification
->> developed by MIPI (Mobile Industry Processor Interface) alliance.
->
-> Hi Kenneth and Sagar,
->
-> On a very high level, I think the driver is in the right place here,
-> and it's appropriate to have a new bus type along with similar
-> existing bus_types like i2c. It's also good to see that you have
-> a good documentation file for this bus.
->
-> My main issue with the driver is the device registration method
-> that now looks a bit aged. More about this below.
->
+On Thu, Aug 11, 2011 at 12:02:06PM -0700, Joe Perches wrote:
+> > From: Jason Baron <jbaron@redhat.com>
+> > Replace the repetitive  struct _ddebug descriptor definitions with
+> > a new DYNAMIC_DEBUG_META_DATA(fmt) macro.
+> 
+> Hey Jason.
+> 
+> I think some improvements can be made to this one.
+> 
+> > diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+> []
+> > @@ -54,33 +54,28 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+> >  			     const char *fmt, ...)
+> >  	__attribute__ ((format (printf, 3, 4)));
+> >  
+> > +#define DYNAMIC_DEBUG_METADATA(fmt)				\
+> > +	static struct _ddebug descriptor			\
+> > +	__used							\
+> > +	__attribute__((section("__verbose"), aligned(8))) =	\
+> > +	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,	\
+> > +		_DPRINTK_FLAGS_DEFAULT };
+> > +
+> 
+> I think this is unclear and should be:
+> 
+> #define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
+> 	static struct _ddebug name				\
+> 	__used							\
+> 	__attribute__((section("__verbose"), aligned(8))) =	\
+> 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,	\
+> 		_DPRINTK_FLAGS_DEFAULT }
+> 
+> (extra semicolon at end removed)
+> 
+> so the uses become:
+> 
+> >  #define dynamic_dev_dbg(dev, fmt, ...) do {				\
+> > -	static struct _ddebug descriptor				\
+> > -	__used								\
+> > -	__attribute__((section("__verbose"), aligned(8))) =		\
+> > -	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+> > -		_DPRINTK_FLAGS_DEFAULT };				\
+> > +	DYNAMIC_DEBUG_METADATA(fmt);					\
+> 
+> 	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);
+> 
+> >  	if (unlikely(descriptor.enabled))				\
+> > -		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
+> > +		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
+> >  	} while (0)
+> 
+> so then there aren't any magic variable names.
+> 
+> cheers, Joe
+> 
 
-Arnd,
+Ok, Thanks for the review. Here's a re-post of it:
 
-Thank you for taking the time to review the driver.  I appreciate your 
-comments and will roll them in to the next revision of the driver.  I'll 
-also try to follow up with any questions and concerns that you raised.
+From: Jason Baron <jbaron@redhat.com>
 
-thanks,
-Ken
+Replace the repetitive struct _ddebug descriptor definitions with
+a new DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt) macro.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+
+ include/linux/dynamic_debug.h |   33 ++++++++++++++-------------------
+ 1 files changed, 14 insertions(+), 19 deletions(-)
+
+
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index feaac1e..d1a78b2 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -54,33 +54,28 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+ 			     const char *fmt, ...)
+ 	__attribute__ ((format (printf, 3, 4)));
+ 
++#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
++	static struct _ddebug name				\
++	__used							\
++	__attribute__((section("__verbose"), aligned(8))) =	\
++	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,	\
++		_DPRINTK_FLAGS_DEFAULT }
++
+ #define dynamic_pr_debug(fmt, ...) do {					\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
+ 	if (unlikely(descriptor.enabled))				\
+-		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
++		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__);\
+ 	} while (0)
+ 
+ #define dynamic_dev_dbg(dev, fmt, ...) do {				\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		\
+ 	if (unlikely(descriptor.enabled))				\
+-		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
++		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
+ 	} while (0)
+ 
+-#define dynamic_netdev_dbg(dev, fmt, ...) do {				\
+-	static struct _ddebug descriptor				\
+-	__used								\
+-	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+-		_DPRINTK_FLAGS_DEFAULT };				\
+-	if (unlikely(descriptor.enabled))				\
++#define dynamic_netdev_dbg(dev, fmt, ...) do {				   \
++	DECLARE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);		   \
++	if (unlikely(descriptor.enabled))				   \
+ 		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
+ 	} while (0)
+ 
