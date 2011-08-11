@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab1HKFpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 01:45:20 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42516 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab1HKFpS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 01:45:18 -0400
+	id S1752750Ab1HKFsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 01:48:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:52195 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751036Ab1HKFsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 01:48:07 -0400
+X-IronPort-AV: E=Sophos;i="4.67,355,1309762800"; 
+   d="scan'208";a="569783138"
+Message-ID: <4E436D89.6000201@netapp.com>
+Date: Thu, 11 Aug 2011 11:20:01 +0530
+From: Sreeram B S <sreeramb@netapp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1313024628.11924.139.camel@Joe-Laptop>
-References: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
- <1313020216.11924.129.camel@Joe-Laptop> <1313020897.11924.137.camel@Joe-Laptop>
- <20110811002039.GA3552@redhat.com> <1313024628.11924.139.camel@Joe-Laptop>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Wed, 10 Aug 2011 23:44:46 -0600
-Message-ID: <CAJfuBxyNBxs0hcTV=0N1UBYWnuXKsMUq3DC3GDgedRL5YX+34A@mail.gmail.com>
-Subject: Re: RFC: Use dynamic-debug with pr_debug when -DDEBUG is set
-To: Joe Perches <joe@perches.com>
-Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: Re: UDP requires 2 reads to obtain vital information - Kindly comment
+References: <4E42B886.4030607@netapp.com> <1312998648.2295.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1312998648.2295.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 7:03 PM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2011-08-10 at 20:20 -0400, Jason Baron wrote:
->> On Wed, Aug 10, 2011 at 05:01:37PM -0700, Joe Perches wrote:
->> > Perhaps another way to enable pr_debug use
->> > is to reverse the order of dynamic_pr_debug
->> > defines.
->> > ie:  change printk.h:
->> > #if defined(CONFIG_DYNAMIC_DEBUG)
->> > /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
->> > #define pr_debug(fmt, ...) \
->> >     dynamic_pr_debug(fmt, ##__VA_ARGS__)
->> > #elif defined(DEBUG)
->> > #define pr_debug(fmt, ...) \
->> >     printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
->> > and change dynamic_debug.h:
->> > #define DPRINTK_FLAGS_DEFAULT 0
->> > to:
->> > #if defined DEBUG
->> > #define DPRINTK_FLAGS_DEFAULT DPRINTK_FLAGS_PRINT
->> > #else
->> > #define DPRINT_FLAGS_DEFAULT 0
->> > #endif
->> > That seems pretty sensible to me.  Jason?
->> cool idea. I like it.
+Hi all,
+    Thanks for all the replies.
+    Yes, it worked wonderfully upon setting the msg_name to the address 
+of the place-holder for peer-address!
+
+Regards,
+Sreeram
+
+On 08/10/2011 11:20 PM, Eric Dumazet wrote:
+> Le mercredi 10 aoÃ»t 2011 Ã  22:27 +0530, Sreeram B S a Ã©crit :
+>> Respected people,
+>>      I am Sreeram. I work on TCP/IP network applications.
+>>      This mail is regarding UDP.
+>>      Whenever a UDP datagram arrives, the receiver may wish to know the
+>> sender's IP address and also the destination address of that datagram.
+>> The recvfrom() function will return the sender's IP address. If the
+>> destination address of the datagram is required, then the user has to
+>> set the IP_PKTINFO socket option for the UDP socket and get the
+>> address as ancillary data in recvmsg(). So, the point here is that the
+>> user has to issue 2 reads on the same datagram (with the flag MSG_PEEK
+>> in first read call enabled) in order to obtain the sender's IP and the
+>> destination IP of the datagram. I personally feel that there should be
+>> a way provided to the user to obtain these values in a single read
+>> call. By doing this I am sure that lot of time would be saved in
+>> collecting the required information.
+>>      I have written a simple UDP client program to show that we need 2
+>> reads to obtain the above information. I have made it signal-driven
+>> just to make it interesting and not for any other reason. I have
+>> attached the client program along with this mail.
+>>      Fortunately, as mentioned above, Linux provides the IP_PKTINFO
+>> socket option, enabling which, will send in a structure 'struct
+>> in_pktinfo' as ancillary data in recvmsg(). The structure is as
+>> follows:
+>>
+>>                    struct in_pktinfo {
+>>                        unsigned int   ipi_ifindex;  /* Interface index */
+>>                        struct in_addr ipi_spec_dst; /* Local address */
+>>                        struct in_addr ipi_addr;     /* Header Destination
+>>                                                        address */
+>>                    };
+>>
+>>      Would it be incorrect if I request the kernel coders to add the
+>> sender's IP address as well in this structure, so that the user will
+>> get both the sender's IP and the destination IP address of the
+>> datagram in a single call to recvmsg()?
+>>      I very well understand that my knowledge is very much diminished.
+>> Hence I request you to kindly correct me if what I have
+>> understood/suggested is incorrect.
+>> Please suggest.
+>>
+>> Regards,
+>> Sreeram
 >
-> You've got a bunch of patches ready to
-> be pulled/queued, so I think you should
-> do it.
+> Part of your program :
 >
-> cheers, Joe
+>   /* Now receive the destination address. */
+>      iov[0].iov_base = mesg;
+>      iov[0].iov_len = 1;
+>      msg.msg_name = NULL;<<  HERE>>
+>      msg.msg_namelen = 0;<<  HERE>>
+>      msg.msg_control = calloc(1, 100);
+>      msg.msg_controllen = 100;
+>      msg.msg_iov =&iov[0];
+>      msg.msg_iovlen = 1;
 >
-
-Thanks Joe,
-
-Ive just added this.  It works nicely, with one trivial change
-to add MODNAME, imitating the common non-dynamic-debug usage:
-
-#if defined DEBUG
-#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT |
-_DPRINTK_FLAGS_INCL_MODNAME
-
-Ive tested the changes on scx200_acb, and changed
-the printks therein to corresponding pr_<foo>
-As I said, it works nicely.
-
-Ive added these 2 patches to my series, which I'll be posting shortly.
-In the meantime, its available at:
-
-git://github.com/jimc/linux-2.6.git
-in branch dyndbg-v4
+>
+> Remove the MSG_PEEK not needed call, and use instead :
+>
+> msg.msg_name =&peer;
+> msg.msg_namelen = sizeof(peer);
+>
+>
+> It should solve your problem : one single system call to get the message
+> payload and metainformation (your own IP in ancillary data, and peer IP
+> in&peer)
+>
+>
+>
+>
