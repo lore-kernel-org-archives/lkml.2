@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab1HKOVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:21:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20736 "EHLO mx1.redhat.com"
+	id S1752204Ab1HKOVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:21:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22636 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab1HKOVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:21:04 -0400
-Date: Thu, 11 Aug 2011 10:20:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Shaohua Li <shli@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com,
-        linux-mmc@vger.kernel.org
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-Message-ID: <20110811142049.GE8552@redhat.com>
-References: <20110809034724.GA22257@july>
- <4E4181E4.3090704@kernel.dk>
- <CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
- <4E423C83.9090209@kernel.dk>
- <CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
- <CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
- <4E424A0A.6090300@kernel.dk>
- <CANejiEU+gG9wWb+=zqASj1M-CmcDhXi2kft=FpFJ8K6Tb+whrw@mail.gmail.com>
- <CAH9JG2XTOOS5GGO7howP+SLbTkj0xUJHPisFYPZfkJddWeKQ4Q@mail.gmail.com>
+	id S1751500Ab1HKOVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 10:21:33 -0400
+Date: Thu, 11 Aug 2011 16:21:26 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/10] ftrace/filter: Trace events filtering related fixies
+Message-ID: <20110811142126.GC2065@jolsa.brq.redhat.com>
+References: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
+ <1313011535.18583.280.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAH9JG2XTOOS5GGO7howP+SLbTkj0xUJHPisFYPZfkJddWeKQ4Q@mail.gmail.com>
+In-Reply-To: <1313011535.18583.280.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 09:36:04AM +0900, Kyungmin Park wrote:
-
-[...]
-> No, no need to consistent. the context id id only valid when several
-> requests are request the I/O simultaneously
-> e.g.,
-> App1 requests A, B, C, D, ...
-> App2 requests a, b, c, d, ...
-> App2 requests 1, 2, 3, 4, 5, ...
-> with following order, A, B, a, 1, C, b, 2, ...
+On Wed, Aug 10, 2011 at 05:25:35PM -0400, Steven Rostedt wrote:
+> On Thu, 2011-08-04 at 12:08 +0200, Jiri Olsa wrote:
+> > hi,
+> > 
+> > on the way to perf/ftrace filtering changes, I made some changes
+> > to the current events filtering code. It could be divided into 3
+> > parts roughly:
+> > 
+> > - remove unnecessary dynamic allocations (patches 1 - 4)
+> > - unify the predicate tree walking (patches 5 - 9)
+> > - added startup test for event filtering (patch 10)
+> > 
+> > attached patches:
+> > - 01/10 tracing/filter: Use static allocation for filter predicates
+> > - 02/10 tracing/filter: Separate predicate init and filter addition
+> > - 03/10 tracing/filter: Remove field_name from filter_pred struct
+> > - 04/10 tracing/filter: Simplify tracepoint event lookup
+> > - 05/10 tracing/filter: Unify predicate tree walking, change check_pred_tree function to use it
+> > - 06/10 tracing/filter: Change count_leafs function to use walk_pred_tree
+> > - 07/10 tracing/filter: Change fold_pred_tree function to use walk_pred_tree
+> > - 08/10 tracing/filter: Change fold_pred function to use walk_pred_tree
+> > - 09/10 tracing/filter: Change filter_match_preds function to use walk_pred_tree
+> > - 10/10 tracing/filter: Add startup tests for events filter
 > 
-> The current eMMC can't handle these operation.
+> Other than the comments I made, I really like this patch set. Thanks a
+> lot for the hard work put into this!
 > 
-> Instead using context, it can teach the these operation comes from
-> using context ID. and finally can place the request in-order at card
-> internally.
-> 
-> Open Context ID operation, perform I/O with context Id, ...., and
-> Close Context ID operation until queue is empty.
+> If you do an update, I'll pull it into my queue for 3.2.
 
-Hi Kyungmin,
+thanks for comments, I'll send out v2 shortly
 
-So once we have context information, we want to process all the requests
-from the same context together? IOW, we expect that driver will have
-multiple requests in flight from various context and it will batch the
-requests from same context together?
-
-How does that help? Is it something related to seeking? If yes, then just
-setting the rotational=1 should help as CFQ will sequence all the
-sequential IO where it can. For random IO, anyway optimization will not
-help. May be it is about something else which I am completely missing.
-Some details here will help.
-
-Thanks
-Vivek
+jirka
