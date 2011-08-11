@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab1HKK7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 06:59:51 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:53840 "EHLO
+	id S1753853Ab1HKK75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 06:59:57 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:53848 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab1HKK7t (ORCPT
+	by vger.kernel.org with ESMTP id S1753458Ab1HKK7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 06:59:49 -0400
+	Thu, 11 Aug 2011 06:59:51 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9] x86 EFI boot stub
-Date: Thu, 11 Aug 2011 11:59:37 +0100
-Message-Id: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
+Cc: Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 2/9] efi.h: Add struct definition for boot time services
+Date: Thu, 11 Aug 2011 11:59:39 +0100
+Message-Id: <1313060386-4858-3-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
+References: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Matt Fleming <matt.fleming@linux.intel.com>
 
-This series adds support for an EFI boot stub, similar to the existing
-BIOS boot stub. The result is that you can boot a bzImage on an EFI
-machine without the use of a boot loader by making the bzImage appear
-to the EFI firmware to be an EFI application. Also, a single bzImage
-can be booted on either a BIOS or EFI machine.
+With the forthcoming efi stub code we're gonna need to access boot
+time services so let's define a struct so we can access the functions.
 
-Using the EFI boot stub has the advantage that the kernel is
-responsible for configuring the machine to the point where we can
-fully boot the kernel, so we are no longer at the mercy of the boot
-loader.
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
+---
+ include/linux/efi.h |   53 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 52 insertions(+), 1 deletions(-)
 
-This series is also available in the 'x86/efi-stub' branch at,
-
-     git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/linux-2.6.git
-
-Matt Fleming (9):
-  x86: Don't use magic strings for EFI loader signature
-  efi.h: Add struct definition for boot time services
-  efi.h: Add efi_image_loaded_t
-  efi.h: Add allocation types for boottime->allocate_pages()
-  efi.h: Add graphics protocol guid
-  efi.h: Add boottime->locate_handle search types
-  efi: Add EFI file I/O data types
-  x86, efi: EFI boot stub support
-  x86, efi: Make efi_call_phys_prelog() CONFIG_RELOCATABLE-aware
-
- arch/x86/Kconfig                       |    7 +
- arch/x86/boot/compressed/Makefile      |   10 +-
- arch/x86/boot/compressed/eboot.c       |  779 ++++++++++++++++++++++++++++++++
- arch/x86/boot/compressed/efi_stub_32.S |   87 ++++
- arch/x86/boot/compressed/efi_stub_64.S |    1 +
- arch/x86/boot/compressed/head_32.S     |   13 +
- arch/x86/boot/compressed/head_64.S     |   11 +
- arch/x86/boot/compressed/string.c      |    9 +
- arch/x86/boot/header.S                 |  157 +++++++
- arch/x86/boot/string.c                 |   35 ++
- arch/x86/boot/tools/build.c            |   27 ++
- arch/x86/include/asm/efi.h             |    4 +
- arch/x86/kernel/setup.c                |    7 +-
- arch/x86/platform/efi/efi_32.c         |   22 +-
- include/linux/efi.h                    |  130 ++++++-
- 15 files changed, 1282 insertions(+), 17 deletions(-)
- create mode 100644 arch/x86/boot/compressed/eboot.c
- create mode 100644 arch/x86/boot/compressed/efi_stub_32.S
- create mode 100644 arch/x86/boot/compressed/efi_stub_64.S
-
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 2362a0b..9547597 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -139,6 +139,57 @@ typedef struct {
+ } efi_time_cap_t;
+ 
+ /*
++ * EFI Boot Services table
++ */
++typedef struct {
++	efi_table_hdr_t hdr;
++	void *raise_tpl;
++	void *restore_tpl;
++	void *allocate_pages;
++	void *free_pages;
++	void *get_memory_map;
++	void *allocate_pool;
++	void *free_pool;
++	void *create_event;
++	void *set_timer;
++	void *wait_for_event;
++	void *signal_event;
++	void *close_event;
++	void *check_event;
++	void *install_protocol_interface;
++	void *reinstall_protocol_interface;
++	void *uninstall_protocol_interface;
++	void *handle_protocol;
++	void *__reserved;
++	void *register_protocol_notify;
++	void *locate_handle;
++	void *locate_device_path;
++	void *install_configuration_table;
++	void *load_image;
++	void *start_image;
++	void *exit;
++	void *unload_image;
++	void *exit_boot_services;
++	void *get_next_monotonic_count;
++	void *stall;
++	void *set_watchdog_timer;
++	void *connect_controller;
++	void *disconnect_controller;
++	void *open_protocol;
++	void *close_protocol;
++	void *open_protocol_information;
++	void *protocols_per_handle;
++	void *locate_handle_buffer;
++	void *locate_protocol;
++	void *install_multiple_protocol_interfaces;
++	void *uninstall_multiple_protocol_interfaces;
++	void *calculate_crc32;
++	void *copy_mem;
++	void *set_mem;
++	void *create_event_ex;
++} efi_boot_services_t;
++
++/*
+  * Types and defines for EFI ResetSystem
+  */
+ #define EFI_RESET_COLD 0
+@@ -261,7 +312,7 @@ typedef struct {
+ 	unsigned long stderr_handle;
+ 	unsigned long stderr;
+ 	efi_runtime_services_t *runtime;
+-	unsigned long boottime;
++	efi_boot_services_t *boottime;
+ 	unsigned long nr_tables;
+ 	unsigned long tables;
+ } efi_system_table_t;
 -- 
 1.7.4.4
 
