@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1HKLKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:10:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47344 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1HKLKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:10:14 -0400
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Thu, 11 Aug 2011 12:10:10 +0100
-In-Reply-To: <4E4399B3.3020909@suse.cz>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	  <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	  <4E4140B3.7090802@suse.cz>
-	  <CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	  <4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>
-	  <CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	  <1312985888.2989.46.camel@i7.infradead.org>
-	  <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	  <1312993987.2989.53.camel@i7.infradead.org>
-	  <CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	  <1312999168.2989.61.camel@i7.infradead.org>
-	  <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-	  <1313002322.2989.88.camel@i7.infradead.org>
-	  <CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
-	  <1313018232.2989.114.camel@i7.infradead.org>
-	  <CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>
-	 <1313052168.18037.9.camel@i7.infradead.org> <4E4399B3.3020909@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313061012.18037.17.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754377Ab1HKLOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:14:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41542 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab1HKLOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 07:14:36 -0400
+Date: Thu, 11 Aug 2011 13:14:23 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110811111423.GD4755@quack.suse.cz>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.733282037@intel.com>
+ <1312811193.10488.33.camel@twins>
+ <20110808141128.GA22080@localhost>
+ <1312814501.10488.41.camel@twins>
+ <20110808230535.GC7176@localhost>
+ <1312910427.1083.68.camel@twins>
+ <20110810223427.GA18227@quack.suse.cz>
+ <20110811022952.GA11404@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811022952.GA11404@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 10:58 +0200, Michal Marek wrote:
-> I would much rather see include/config/auto.conf reset all configuration
-> variables to match what kconfig computed. I.e. use 'undefine CONFIG_FOO'
-> instead of '# CONFIG_FOO is not set'. 
+On Thu 11-08-11 10:29:52, Wu Fengguang wrote:
+> On Thu, Aug 11, 2011 at 06:34:27AM +0800, Jan Kara wrote:
+> > On Tue 09-08-11 19:20:27, Peter Zijlstra wrote:
+> > > On Tue, 2011-08-09 at 12:32 +0200, Peter Zijlstra wrote:
+> > > > >                     origin - dirty
+> > > > >         pos_ratio = --------------
+> > > > >                     origin - goal 
+> > > > 
+> > > > > which comes from the below [*] control line, so that when (dirty == goal),
+> > > > > pos_ratio == 1.0:
+> > > > 
+> > > > OK, so basically you want a linear function for which:
+> > > > 
+> > > > f(goal) = 1 and has a root somewhere > goal.
+> > > > 
+> > > > (that one line is much more informative than all your graphs put
+> > > > together, one can start from there and derive your function)
+> > > > 
+> > > > That does indeed get you the above function, now what does it mean? 
+> > > 
+> > > So going by:
+> > > 
+> > >                                          write_bw
+> > >   ref_bw = dirty_ratelimit * pos_ratio * --------
+> > >                                          dirty_bw
+> > 
+> >   Actually, thinking about these formulas, why do we even bother with
+> > computing all these factors like write_bw, dirty_bw, pos_ratio, ...
+> > Couldn't we just have a feedback loop (probably similar to the one
+> > computing pos_ratio) which will maintain single value - ratelimit? When we
+> > are getting close to dirty limit, we will scale ratelimit down, when we
+> > will be getting significantly below dirty limit, we will scale the
+> > ratelimit up.  Because looking at the formulas it seems to me that the net
+> > effect is the same - pos_ratio basically overrules everything... 
+> 
+> Good question. That is actually one of the early approaches I tried.
+> It somehow worked, however the resulted ratelimit is not only slow
+> responding, but also oscillating all the time.
+  Yes, I think I vaguely remember that.
 
-That would be cute, but I'm not sure how to undefine something set on
-the command line:
+> This is due to the imperfections
+> 
+> 1) pos_ratio at best only provides a "direction" for adjusting the
+>    ratelimit. There is only vague clues that if pos_ratio is small,
+>    the errors in ratelimit should be small.
+> 
+> 2) Due to time-lag, the assumptions in (1) about "direction" and
+>    "error size" can be wrong. The ratelimit may already be
+>    over-adjusted when the dirty pages take time to approach the
+>    setpoint. The larger memory, the more time lag, the easier to
+>    overshoot and oscillate.
+> 
+> 3) dirty pages are constantly fluctuating around the setpoint,
+>    so is pos_ratio.
+> 
+> With (1) and (2), it's a control system very susceptible to disturbs.
+> With (3) we get constant disturbs. Well I had very hard time and
+> played dirty tricks (which you may never want to know ;-) trying to
+> tradeoff between response time and stableness..
+  Yes, I can see especially 2) is a problem. But I don't understand why
+your current formula would be that much different. As Peter decoded from
+your code, your current formula is:
+                                        write_bw
+ ref_bw = dirty_ratelimit * pos_ratio * --------
+                                        dirty_bw
 
-$ cat > Makefile <<EOF
-undefine BAR
+while previously it was essentially:
+ ref_bw = dirty_ratelimit * pos_ratio
 
-foo:
-	echo $(BAR)
-EOF
-$ make foo BAR=hh
-echo hh
-hh
+So what is so magical about computing write_bw and dirty_bw separately? Is
+it because previously you did not use derivation of distance from the goal
+for updating pos_ratio? Because in your current formula write_bw/dirty_bw
+is a derivation of position...
 
-Arguably, if someone *does* try something like Arnaud's 
- "make CONFIG_FOO_BAR=y oldconfig bzImage"
-.. and it *wasn't* able to set CONFIG_FOO_BAR, then the nicest behaviour
-would be to fail, rather than to attempt to build it.
-
-So perhaps we should clean up only those settings inherited from the
-environment, and still (as in the patch I sent earlier) refuse to allow
-build targets in conjunction with CONFIG overrides on the command line?
-
+								Honza
 -- 
-dwmw2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
