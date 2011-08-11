@@ -1,100 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab1HKMiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:38:12 -0400
-Received: from home.kolivas.org ([59.167.196.135]:42554 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab1HKMiK convert rfc822-to-8bit (ORCPT
+	id S1755642Ab1HKMjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:39:47 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40186 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755306Ab1HKMjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:38:10 -0400
-X-Greylist: delayed 1661 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 08:38:09 EDT
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: 3.0.0-ck1
-Date: Thu, 11 Aug 2011 22:10:25 +1000
-User-Agent: KMail/1.13.6 (Linux/3.0.0-ck1; KDE/4.6.2; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108112210.25459.kernel@kolivas.org>
+	Thu, 11 Aug 2011 08:39:46 -0400
+Date: Thu, 11 Aug 2011 13:43:09 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] gma500: Add VBLANK support for Poulsbo hardware
+Message-ID: <20110811134309.3acbd6d1@lxorguk.ukuu.org.uk>
+In-Reply-To: <1312234930-2387-3-git-send-email-patrik.r.jakobsson@gmail.com>
+References: <1312234930-2387-1-git-send-email-patrik.r.jakobsson@gmail.com>
+	<1312234930-2387-3-git-send-email-patrik.r.jakobsson@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any commodity hardware 
-workload.
+On Mon,  1 Aug 2011 23:42:10 +0200
+Patrik Jakobsson <patrik.r.jakobsson@gmail.com> wrote:
 
-I dedicate this release to the most unlikely recipient - the republic of Nauru 
-after my recent trip there. (See my blog for why I was there)
+> Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+> ---
+>  drivers/staging/gma500/psb_drv.h |    3 ++
+>  drivers/staging/gma500/psb_irq.c |   71 ++++++++++++++++++++++----------------
+>  2 files changed, 44 insertions(+), 30 deletions(-)
 
+All three applied
 
-Apply to 3.0(.x):
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/3.0/3.0.0-
-ck1/patch-3.0.0-ck1.bz2
+Thanks
 
-
-Broken out tarball:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/3.0/3.0.0-ck1/3.0.0-
-ck1-broken-out.tar.bz2
-
-
-Discrete patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/3.0/3.0.0-
-ck1/patches/
-
-
-All -ck patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/
-
-
-BFS by itself:
-http://ck.kolivas.org/patches/bfs/
-
-
-Web:
-http://kernel.kolivas.org
-
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-
-Each discrete patch contains a brief description of what it does at the top of 
-the patch itself.
-
-
-Full patchlist:
-
-3.0-sched-bfs-406.patch
-sched-add-above-background-load-function.patch
-mm-zero_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail-1.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-cpufreq-bfs_tweaks.patch
-ck1-version.patch
-
-
-Apart from major surgery required to get BFS to play nicely with the 3.0 
-scheduler changes, the only change from the last -ck release is the 
-reinstatement of the cpu frequency tweaks designed to optimise BFS' 
-performance on the slower frequency changing multicore CPUs by allowing them 
-to speed up easier and harder for them to throttle down.
-
-
-お楽しみください
-Please enjoy!
-
--- 
--ck
+Alan
