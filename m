@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab1HKRTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:19:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14816 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab1HKRT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:19:27 -0400
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zohar@linux.vnet.ibm.com
-Subject: [RFC v1.1 5/5] evm: creates dedicated evm keyring to store public keys
-Date: Thu, 11 Aug 2011 20:20:08 +0300
-Message-Id: <f44cf991a3a17529dbe4f5f0231fb9fa0552858a.1313082284.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <cover.1313082284.git.dmitry.kasatkin@intel.com>
-References: <cover.1313082284.git.dmitry.kasatkin@intel.com>
-In-Reply-To: <cover.1313082284.git.dmitry.kasatkin@intel.com>
-References: <cover.1313082284.git.dmitry.kasatkin@intel.com>
+	id S1751752Ab1HKRVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:21:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:57903 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205Ab1HKRVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 13:21:11 -0400
+Message-ID: <4E440F6D.7020009@windriver.com>
+Date: Thu, 11 Aug 2011 13:20:45 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, <mingo@elte.hu>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <linux-arch@vger.kernel.org>, <sfr@canb.auug.org.au>
+Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
+References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFwtyfzaFABHKD+OMWsojGov0JLmnrZimhVaOcrer=tJjQ@mail.gmail.com> <20110802183019.GB8393@windriver.com> <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com> <4E42D769.8030704@windriver.com> <CAMjpGUcTMwYs99Nu02u+Sbg99RuJvRDpjvY6ChDLUEASf1wUrA@mail.gmail.com> <4E43D4AD.6080702@windriver.com> <CAMjpGUch3O_DWKv39A_H91bU5ypSxSgHjSVX8WYDnGxKVBPZLQ@mail.gmail.com>
+In-Reply-To: <CAMjpGUch3O_DWKv39A_H91bU5ypSxSgHjSVX8WYDnGxKVBPZLQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+On 11-08-11 01:15 PM, Mike Frysinger wrote:
+> On Thu, Aug 11, 2011 at 09:10, Paul Gortmaker wrote:
+>> On 11-08-11 12:34 AM, Mike Frysinger wrote:
+>>> On Wed, Aug 10, 2011 at 15:09, Paul Gortmaker wrote:
+>>>> Have you thought about getting at least one blackfin defconfig in
+>>>> the linux-next build coverage?  Gives you a better chance of
+>>>> having people see when they've broken it.
+>>>
+>>> all of the blackfin defconfigs get tested nightly in linux-next by an
+>>> ADI build machine.  i just didnt have a chance to review the logs as i
+>>> was traveling.
+>>
+>> That is good, but as you've noted, it isn't something that anyone
+>> else can see when they are combing the normal linux-next build
+>> results below looking to see if they broke anything.
+>>
+>> http://kisskb.ellerman.id.au/kisskb/branch/9/
+> 
+> ive never heard of this site before, and there doesnt appear to be any
+> documentation on that site about it
+> -mike
 
-EVM/IMA might perform lots of signature verification operations.
-For that reason performance is very critical. This patch adds
-evm_keyring to store public keys used by EVM only.
+It is mentioned in the boilerplate text that Stephen puts in his
+daily linux-next emails (copied below).  Note the text about
+"always open to add more builds" -- that is what I had in mind
+when suggesting you get blackfin added to -next coverage builds.
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-Acked-by: Mimi Zohar <zohar@us.ibm.com>
----
- security/integrity/evm/evm.h      |    4 +++-
- security/integrity/evm/evm_main.c |   18 ++++++++++++++++++
- 2 files changed, 21 insertions(+), 1 deletions(-)
+P.
 
-diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
-index 9e1bcba..4f4ba20 100644
---- a/security/integrity/evm/evm.h
-+++ b/security/integrity/evm/evm.h
-@@ -32,6 +32,8 @@ extern struct crypto_shash *hash_tfm;
- /* List of EVM protected security xattrs */
- extern char *evm_config_xattrnames[];
- 
-+extern struct key *evm_keyring;
-+
- extern int evm_init_key(void);
- extern int evm_update_evmxattr(struct dentry *dentry,
- 			       const char *req_xattr_name,
-@@ -53,7 +55,7 @@ extern void evm_cleanup_secfs(void);
- static inline int evm_sign_verify(const char *sig, int siglen,
- 		       const char *digest, int digestlen)
- {
--	return ksign_verify(NULL, sig, siglen, digest, digestlen);
-+	return ksign_verify(evm_keyring, sig, siglen, digest, digestlen);
- }
- 
- #else
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index a99c644..73c0568 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -20,6 +20,7 @@
- #include <linux/integrity.h>
- #include <linux/evm.h>
- #include <crypto/hash.h>
-+#include <linux/init_task.h>
- #include "evm.h"
- 
- int evm_initialized;
-@@ -38,6 +39,8 @@ char *evm_config_xattrnames[] = {
- 	NULL
- };
- 
-+struct key *evm_keyring;
-+
- static int evm_fixmode;
- static int __init evm_set_fixmode(char *str)
- {
-@@ -382,18 +385,33 @@ static int __init init_evm(void)
- {
- 	int error;
- 
-+#ifdef CONFIG_EVM_DIGSIG
-+	evm_keyring = keyring_alloc("_evm", 0, 0, &init_cred,
-+					KEY_ALLOC_NOT_IN_QUOTA, NULL);
-+	if (IS_ERR(evm_keyring))
-+		return PTR_ERR(evm_keyring);
-+#endif
-+
- 	error = evm_init_secfs();
- 	if (error < 0) {
- 		printk(KERN_INFO "EVM: Error registering secfs\n");
- 		goto err;
- 	}
-+
-+	return 0;
- err:
-+#ifdef CONFIG_EVM_DIGSIG
-+	key_put(evm_keyring);
-+#endif
- 	return error;
- }
- 
- static void __exit cleanup_evm(void)
- {
- 	evm_cleanup_secfs();
-+#ifdef CONFIG_EVM_DIGSIG
-+	key_put(evm_keyring);
-+#endif
- 	if (hmac_tfm)
- 		crypto_free_shash(hmac_tfm);
- 	if (hash_tfm)
--- 
-1.7.4.1
+--------------
 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 199 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
