@@ -1,169 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab1HKNLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:11:24 -0400
-Received: from bitmer.com ([213.157.87.50]:41512 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab1HKNLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755928Ab1HKNLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:11:25 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36674 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab1HKNLW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Aug 2011 09:11:22 -0400
-X-Greylist: delayed 1552 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 09:11:22 EDT
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-To: alsa-devel@alsa-project.org
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: [PATCH] ASoC: omap: Update e-mail address of Jarkko Nikula
-Date: Thu, 11 Aug 2011 15:44:57 +0300
-Message-Id: <1313066697-18635-1-git-send-email-jarkko.nikula@bitmer.com>
-X-Mailer: git-send-email 1.7.2.5
+Message-ID: <4E43D4AD.6080702@windriver.com>
+Date: Thu, 11 Aug 2011 09:10:05 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, <mingo@elte.hu>,
+        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <linux-arch@vger.kernel.org>, <sfr@canb.auug.org.au>
+Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
+References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com> <CA+55aFwtyfzaFABHKD+OMWsojGov0JLmnrZimhVaOcrer=tJjQ@mail.gmail.com> <20110802183019.GB8393@windriver.com> <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com> <4E42D769.8030704@windriver.com> <CAMjpGUcTMwYs99Nu02u+Sbg99RuJvRDpjvY6ChDLUEASf1wUrA@mail.gmail.com>
+In-Reply-To: <CAMjpGUcTMwYs99Nu02u+Sbg99RuJvRDpjvY6ChDLUEASf1wUrA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My gmail account got disabled and I'm not going to reopen it.
+On 11-08-11 12:34 AM, Mike Frysinger wrote:
+> On Wed, Aug 10, 2011 at 15:09, Paul Gortmaker wrote:
+>> On 11-08-07 10:42 PM, Mike Frysinger wrote:
+>>
+>> [...]
+>>
+>>> Blackfin is broken because of this.  a simple grep of the tree
+>>
+>> I've run all the in-tree blackfin configs, so it is all good.
+> 
+> so you made a change and it's all good <now> ?
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
----
-Be careful about your age in google+ registration...
----
- MAINTAINERS                 |    2 +-
- include/sound/tlv320aic3x.h |    2 +-
- sound/soc/omap/n810.c       |    4 ++--
- sound/soc/omap/omap-mcbsp.c |    4 ++--
- sound/soc/omap/omap-mcbsp.h |    2 +-
- sound/soc/omap/omap-pcm.c   |    4 ++--
- sound/soc/omap/omap-pcm.h   |    2 +-
- sound/soc/omap/rx51.c       |    2 +-
- 8 files changed, 11 insertions(+), 11 deletions(-)
+Correct.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1f8267f..3e6b34c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4604,7 +4604,7 @@ F:	arch/arm/mach-omap2/clockdomain2xxx_3xxx.c
- F:	arch/arm/mach-omap2/clockdomain44xx.c
- 
- OMAP AUDIO SUPPORT
--M:	Jarkko Nikula <jhnikula@gmail.com>
-+M:	Jarkko Nikula <jarkko.nikula@bitmer.com>
- L:	alsa-devel@alsa-project.org (subscribers-only)
- L:	linux-omap@vger.kernel.org
- S:	Maintained
-diff --git a/include/sound/tlv320aic3x.h b/include/sound/tlv320aic3x.h
-index 99e0308..ffd9bc7 100644
---- a/include/sound/tlv320aic3x.h
-+++ b/include/sound/tlv320aic3x.h
-@@ -1,7 +1,7 @@
- /*
-  * Platform data for Texas Instruments TLV320AIC3x codec
-  *
-- * Author: Jarkko Nikula <jhnikula@gmail.com>
-+ * Author: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-diff --git a/sound/soc/omap/n810.c b/sound/soc/omap/n810.c
-index 83d213b..62e292f 100644
---- a/sound/soc/omap/n810.c
-+++ b/sound/soc/omap/n810.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2008 Nokia Corporation
-  *
-- * Contact: Jarkko Nikula <jhnikula@gmail.com>
-+ * Contact: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
-@@ -402,6 +402,6 @@ static void __exit n810_soc_exit(void)
- module_init(n810_soc_init);
- module_exit(n810_soc_exit);
- 
--MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
-+MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@bitmer.com>");
- MODULE_DESCRIPTION("ALSA SoC Nokia N810");
- MODULE_LICENSE("GPL");
-diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
-index 07b7723..ebcc2d4 100644
---- a/sound/soc/omap/omap-mcbsp.c
-+++ b/sound/soc/omap/omap-mcbsp.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2008 Nokia Corporation
-  *
-- * Contact: Jarkko Nikula <jhnikula@gmail.com>
-+ * Contact: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *          Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or
-@@ -780,6 +780,6 @@ static void __exit snd_omap_mcbsp_exit(void)
- }
- module_exit(snd_omap_mcbsp_exit);
- 
--MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
-+MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@bitmer.com>");
- MODULE_DESCRIPTION("OMAP I2S SoC Interface");
- MODULE_LICENSE("GPL");
-diff --git a/sound/soc/omap/omap-mcbsp.h b/sound/soc/omap/omap-mcbsp.h
-index 9a7dedd..65cde9d 100644
---- a/sound/soc/omap/omap-mcbsp.h
-+++ b/sound/soc/omap/omap-mcbsp.h
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2008 Nokia Corporation
-  *
-- * Contact: Jarkko Nikula <jhnikula@gmail.com>
-+ * Contact: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *          Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or
-diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
-index b2f5751..9b5c88a 100644
---- a/sound/soc/omap/omap-pcm.c
-+++ b/sound/soc/omap/omap-pcm.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2008 Nokia Corporation
-  *
-- * Contact: Jarkko Nikula <jhnikula@gmail.com>
-+ * Contact: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *          Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or
-@@ -436,6 +436,6 @@ static void __exit snd_omap_pcm_exit(void)
- }
- module_exit(snd_omap_pcm_exit);
- 
--MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
-+MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@bitmer.com>");
- MODULE_DESCRIPTION("OMAP PCM DMA module");
- MODULE_LICENSE("GPL");
-diff --git a/sound/soc/omap/omap-pcm.h b/sound/soc/omap/omap-pcm.h
-index a0ed1db..f95fe30 100644
---- a/sound/soc/omap/omap-pcm.h
-+++ b/sound/soc/omap/omap-pcm.h
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2008 Nokia Corporation
-  *
-- * Contact: Jarkko Nikula <jhnikula@gmail.com>
-+ * Contact: Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *          Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or
-diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
-index 0aae998..893300a 100644
---- a/sound/soc/omap/rx51.c
-+++ b/sound/soc/omap/rx51.c
-@@ -5,7 +5,7 @@
-  *
-  * Contact: Peter Ujfalusi <peter.ujfalusi@ti.com>
-  *          Eduardo Valentin <eduardo.valentin@nokia.com>
-- *          Jarkko Nikula <jhnikula@gmail.com>
-+ *          Jarkko Nikula <jarkko.nikula@bitmer.com>
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License
--- 
-1.7.2.5
+> 
+>> Have you thought about getting at least one blackfin defconfig in
+>> the linux-next build coverage?  Gives you a better chance of
+>> having people see when they've broken it.
+> 
+> all of the blackfin defconfigs get tested nightly in linux-next by an
+> ADI build machine.  i just didnt have a chance to review the logs as i
+> was traveling.
 
+That is good, but as you've noted, it isn't something that anyone
+else can see when they are combing the normal linux-next build
+results below looking to see if they broke anything.
+
+http://kisskb.ellerman.id.au/kisskb/branch/9/
+
+Thanks,
+Paul.
+
+> -mike
