@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1HKHLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 03:11:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5960 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1HKHLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 03:11:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,355,1309762800"; 
-   d="scan'208";a="37347528"
-Subject: [patch]block: revert a patch
-From: Shaohua Li <shaohua.li@intel.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: boyu.mt@taobao.com, Christoph Hellwig <hch@infradead.org>,
-        dan.j.williams@intel.com, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Aug 2011 15:11:50 +0800
-Message-ID: <1313046710.27321.7.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754744Ab1HKHNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 03:13:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4168 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab1HKHNP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 03:13:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Gi2UG6k5HbghqSYQcDSRrlQxfgw9RVdpxBUdGzq8ZDfiVVXi4KZsG3uVtm0FYtq9y
+	FdwqoTwWC53DqChqIAXFg==
+Date: Thu, 11 Aug 2011 00:13:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>,
+        "\"\"linux-kernel@vger.kernel.org\"\"" <linux-kernel@vger.kernel.org>,
+        "\"linux-mm@kvack.org\"" <linux-mm@kvack.org>
+Subject: Re: running of out memory => kernel crash
+In-Reply-To: <1313046422.18195.YahooMailNeo@web111711.mail.gq1.yahoo.com>
+Message-ID: <alpine.DEB.2.00.1108110010220.23622@chino.kir.corp.google.com>
+References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com> <1db776d865939be598cdb80054cf5d93.squirrel@xenotime.net> <1312874259.89770.YahooMailNeo@web111704.mail.gq1.yahoo.com> <alpine.DEB.2.00.1108090900170.30199@chino.kir.corp.google.com>
+ <1312964098.7449.YahooMailNeo@web111712.mail.gq1.yahoo.com> <alpine.DEB.2.00.1108102106410.14230@chino.kir.corp.google.com> <1313046422.18195.YahooMailNeo@web111711.mail.gq1.yahoo.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1080208226-1313046791=:23622"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reverts commit 35ae66e0a09ab70ed(block: Make rq_affinity = 1
-work as expected). The purpose is to avoid an unnecessary IPI.
-Let's take an example. My test box has cpu 0-7, one socket. Say request is
-added from CPU 1, blk_complete_request() occurs at CPU 7. Without the reverted
-patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU
-0, and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
-CPU 7 have no difference from cache sharing point view and we can avoid an
-ipi if doing it in CPU 7.
-An immediate concern is this is just like QUEUE_FLAG_SAME_FORCE, but actually
-not. blk_complete_request() is running in interrupt handler, and currently
-I/O controller doesn't support multiple interrupts (I checked several LSI
-cards and AHCI), so only one CPU can run blk_complete_request(). This is
-still quite different as QUEUE_FLAG_SAME_FORCE.
-Since only one CPU runs softirq, the only difference with below patch is
-softirq not always runs at the first CPU of a group.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+--397155492-1080208226-1313046791=:23622
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 487addc..58340d0 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -103,7 +103,7 @@ static struct notifier_block __cpuinitdata blk_cpu_notifier = {
- 
- void __blk_complete_request(struct request *req)
- {
--	int ccpu, cpu;
-+	int ccpu, cpu, group_cpu = NR_CPUS;
- 	struct request_queue *q = req->q;
- 	unsigned long flags;
- 
-@@ -117,12 +117,22 @@ void __blk_complete_request(struct request *req)
- 	 */
- 	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) && req->cpu != -1) {
- 		ccpu = req->cpu;
--		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
-+		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags)) {
- 			ccpu = blk_cpu_to_group(ccpu);
-+			group_cpu = blk_cpu_to_group(cpu);
-+		}
- 	} else
- 		ccpu = cpu;
- 
--	if (ccpu == cpu) {
-+	/*
-+	 * If current CPU and requested CPU are in the same group, running
-+	 * softirq in current CPU. One might concern this is just like
-+	 * QUEUE_FLAG_SAME_FORCE, but actually not. blk_complete_request() is
-+	 * running in interrupt handler, and currently I/O controller doesn't
-+	 * support multiple interrupts, so current CPU is unique actually. This
-+	 * avoids IPI sending from current CPU to the first CPU of a group.
-+	 */
-+	if (ccpu == cpu || ccpu == group_cpu) {
- 		struct list_head *list;
- do_local:
- 		list = &__get_cpu_var(blk_cpu_done);
+On Thu, 11 Aug 2011, Mahmood Naderan wrote:
 
+> >The default behavior is to kill all eligible and unkillable threads until 
+> >there are none left to sacrifice (i.e. all kthreads and OOM_DISABLE).
+>  
+> In a simple test with virtualbox, I reduced the amount of ram to 300MB. 
+> Then I ran "swapoff -a" and opened some applications. I noticed that the free
+> spaces is kept around 2-3MB and "kswapd" is running. Also I saw that disk
+> activity was very high. 
+> That mean although "swap" partition is turned off, "kswapd" was trying to do
+> something. I wonder how that behavior can be explained?
+> 
 
+Despite it's name, kswapd is still active, it's trying to reclaim memory 
+to prevent having to kill a process as the last resort.
+
+If /proc/sys/vm/panic_on_oom is not set, as previously mentioned, then 
+we'll need the kernel log to diagnose this further.
+--397155492-1080208226-1313046791=:23622--
