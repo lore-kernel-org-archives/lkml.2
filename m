@@ -1,163 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab1HKSg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:36:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51852 "EHLO mx1.redhat.com"
+	id S1753143Ab1HKShF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:37:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26743 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359Ab1HKSgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:36:54 -0400
-Date: Thu, 11 Aug 2011 14:36:48 -0400
+	id S1752673Ab1HKSg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:36:59 -0400
+Date: Thu, 11 Aug 2011 14:36:53 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: gregkh@suse.de
 Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
         linux-kernel@vger.kernel.org, davem@davemloft.net,
         aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Message-Id: <5514795fe63ccfd4b3a80283ed04a526abe3c59d.1313085588.git.jbaron@redhat.com>
+Message-Id: <7a6c401a1329e366db4f4089a326ff292aa1a86e.1313085588.git.jbaron@redhat.com>
 In-Reply-To: <cover.1313085588.git.jbaron@redhat.com>
 References: <cover.1313085588.git.jbaron@redhat.com>
-Subject: [PATCH 07/11] dynamic_debug: make netdev_dbg() call __netdev_printk()
+Subject: [PATCH 08/11] dynamic_debug: make netif_dbg() call __netdev_printk()
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Baron <jbaron@redhat.com>
 
-Previously, if dynamic debug was enabled netdev_dbg() was using
-dynamic_dev_dbg() to print out the underlying msg. Fix this by making
-sure netdev_dbg() uses __netdev_printk().
+Previously, netif_dbg() was using dynamic_dev_dbg() to perform
+the underlying printk. Fix it to use __netdev_printk(), instead.
 
 Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/dynamic_debug.h |   17 +++++++++++++++++
- include/linux/netdevice.h     |    6 ++++--
- lib/dynamic_debug.c           |   25 +++++++++++++++++++++++++
- net/core/dev.c                |    3 ++-
- 4 files changed, 48 insertions(+), 3 deletions(-)
+ include/linux/netdevice.h |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 843cb9e..feaac1e 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -47,6 +47,13 @@ extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 			     const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
- 
-+struct net_device;
-+
-+extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
-+			     const struct net_device *dev,
-+			     const char *fmt, ...)
-+	__attribute__ ((format (printf, 3, 4)));
-+
- #define dynamic_pr_debug(fmt, ...) do {					\
- 	static struct _ddebug descriptor				\
- 	__used								\
-@@ -67,6 +74,16 @@ extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
- 		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
-+#define dynamic_netdev_dbg(dev, fmt, ...) do {				\
-+	static struct _ddebug descriptor				\
-+	__used								\
-+	__attribute__((section("__verbose"), aligned(8))) =		\
-+	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
-+		_DPRINTK_FLAGS_DEFAULT };				\
-+	if (unlikely(descriptor.enabled))				\
-+		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
-+	} while (0)
-+
- #else
- 
- static inline int ddebug_remove_module(const char *mod)
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index ddee79b..9333a03 100644
+index 9333a03..2797260 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -2617,6 +2617,9 @@ static inline const char *netdev_name(const struct net_device *dev)
- 	return dev->name;
- }
- 
-+extern int __netdev_printk(const char *level, const struct net_device *dev,
-+			struct va_format *vaf);
-+
- extern int netdev_printk(const char *level, const struct net_device *dev,
- 			 const char *format, ...)
- 	__attribute__ ((format (printf, 3, 4)));
-@@ -2644,8 +2647,7 @@ extern int netdev_info(const struct net_device *dev, const char *format, ...)
- #elif defined(CONFIG_DYNAMIC_DEBUG)
- #define netdev_dbg(__dev, format, args...)			\
+@@ -2714,9 +2714,7 @@ do {								\
+ #define netif_dbg(priv, type, netdev, format, args...)		\
  do {								\
--	dynamic_dev_dbg((__dev)->dev.parent, "%s: " format,	\
--			netdev_name(__dev), ##args);		\
-+	dynamic_netdev_dbg(__dev, format, ##args);		\
+ 	if (netif_msg_##type(priv))				\
+-		dynamic_dev_dbg((netdev)->dev.parent,		\
+-				"%s: " format,			\
+-				netdev_name(netdev), ##args);	\
++		dynamic_netdev_dbg(netdev, format, ##args);	\
  } while (0)
  #else
- #define netdev_dbg(__dev, format, args...)			\
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 4fc03dd..ee3b9ba 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h>
- #include <linux/sched.h>
- #include <linux/device.h>
-+#include <linux/netdevice.h>
- 
- extern struct _ddebug __start___verbose[];
- extern struct _ddebug __stop___verbose[];
-@@ -503,6 +504,30 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
- }
- EXPORT_SYMBOL(__dynamic_dev_dbg);
- 
-+int __dynamic_netdev_dbg(struct _ddebug *descriptor,
-+		      const struct net_device *dev, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int res;
-+
-+	BUG_ON(!descriptor);
-+	BUG_ON(!fmt);
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	res = dynamic_emit_prefix(descriptor);
-+	res += __netdev_printk(KERN_CONT, dev, &vaf);
-+
-+	va_end(args);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(__dynamic_netdev_dbg);
-+
- static __initdata char ddebug_setup_string[1024];
- static __init int ddebug_setup_query(char *str)
- {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 17d67b5..c47a7bc 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6290,7 +6290,7 @@ const char *netdev_drivername(const struct net_device *dev)
- 	return empty;
- }
- 
--static int __netdev_printk(const char *level, const struct net_device *dev,
-+int __netdev_printk(const char *level, const struct net_device *dev,
- 			   struct va_format *vaf)
- {
- 	int r;
-@@ -6305,6 +6305,7 @@ static int __netdev_printk(const char *level, const struct net_device *dev,
- 
- 	return r;
- }
-+EXPORT_SYMBOL(__netdev_printk);
- 
- int netdev_printk(const char *level, const struct net_device *dev,
- 		  const char *format, ...)
+ #define netif_dbg(priv, type, dev, format, args...)			\
 -- 
 1.7.5.4
 
