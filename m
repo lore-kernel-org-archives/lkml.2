@@ -1,72 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab1HKMvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:51:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47979 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab1HKMvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:51:35 -0400
-Date: Thu, 11 Aug 2011 14:51:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Switch NUMA_BUILD and COMPACTION_BUILD to new
- IS_ENABLED() syntax
-Message-ID: <20110811125133.GJ8023@tiehlicka.suse.cz>
-References: <1312989160-737-1-git-send-email-mmarek@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312989160-737-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755794Ab1HKMvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:51:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46914 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab1HKMvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 08:51:37 -0400
+Date: Thu, 11 Aug 2011 05:51:33 -0700 (PDT)
+Message-Id: <20110811.055133.301483708516642472.davem@davemloft.net>
+To: tim.c.chen@linux.intel.com
+Cc: eric.dumazet@gmail.com, ebiederm@xmission.com, viro@zeniv.linux.org.uk,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [Patch] scm: Capture the full credentials of the scm sender
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1312908512.2576.97.camel@schen9-DESK>
+References: <1312841316.2576.49.camel@schen9-DESK>
+	<1312857834.2531.15.camel@edumazet-laptop>
+	<1312908512.2576.97.camel@schen9-DESK>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 11 Aug 2011 05:51:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-08-11 17:12:40, Michal Marek wrote:
-> Introduced in 3.1-rc1, IS_ENABLED(CONFIG_NUMA) expands to a true value
-> iff CONFIG_NUMA is set. This makes it easier to grep for code that
-> depends on CONFIG_NUMA.
+From: Tim Chen <tim.c.chen@linux.intel.com>
+Date: Tue, 09 Aug 2011 09:48:32 -0700
 
-Same applies to CONFIG_COMPACTION.
-
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-
-I like this.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  include/linux/gfp.h    |    2 +-
->  include/linux/kernel.h |   14 --------------
->  mm/page_alloc.c        |   17 +++++++++--------
->  mm/vmalloc.c           |    4 ++--
->  mm/vmscan.c            |    2 +-
->  5 files changed, 13 insertions(+), 26 deletions(-)
+> This patch corrects an erroneous update of credential's gid with uid
+> introduced in commit 257b5358b32f17 since 2.6.36.
 > 
-[...]
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 6e8ecb6..e052d79 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-[...]
-> @@ -2097,7 +2098,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
->  	 * allowed per node queues are empty and that nodes are
->  	 * over allocated.
->  	 */
-> -	if (NUMA_BUILD && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
-> +	if (IS_ENABLED(CONFIG_NUMA) && (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-I gues it makes sense to follow checkpatch here.
-
->  		goto nopage;
->  
->  restart:
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Applied, thanks.
