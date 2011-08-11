@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab1HKNZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:25:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49719 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab1HKNZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:25:18 -0400
-Date: Thu, 11 Aug 2011 15:25:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: fix comment on update nodemask
-Message-ID: <20110811132511.GM8023@tiehlicka.suse.cz>
-References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
- <20110809190824.99347a0f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110810100042.GA15007@tiehlicka.suse.cz>
- <20110811083043.a3b2ba65.kamezawa.hiroyu@jp.fujitsu.com>
- <20110811084456.5da61183.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751885Ab1HKN0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:26:39 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:56977 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012Ab1HKN0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 09:26:37 -0400
+Message-ID: <4E43D88A.3060303@tilera.com>
+Date: Thu, 11 Aug 2011 09:26:34 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110811084456.5da61183.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Dean Hildebrand <dhildebz@umich.edu>
+Subject: Re: [PATCH] nfs: fix a couple of minor portability issues
+References: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com> <4E42FFDC.9090103@panasas.com>
+In-Reply-To: <4E42FFDC.9090103@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-08-11 08:44:56, KAMEZAWA Hiroyuki wrote:
-> 
-> > > >  /*
-> > > >   * Always updating the nodemask is not very good - even if we have an empty
-> > > >   * list or the wrong list here, we can start from some node and traverse all
-> > > > @@ -1575,7 +1593,6 @@ static bool test_mem_cgroup_node_reclaim
-> > > >   */
-> > > 
-> > > Would be good to update the function comment as well (we still have 10s
-> > > period there).
-> > > 
-> > 
-> how about this ?
-> ==
-> 
-> Update function's comment. The behavior is changed by commit 453a9bf3
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> ---
->  mm/memcontrol.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> Index: mmotm-Aug3/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-Aug3.orig/mm/memcontrol.c
-> +++ mmotm-Aug3/mm/memcontrol.c
-> @@ -1568,10 +1568,7 @@ static bool test_mem_cgroup_node_reclaim
->  #if MAX_NUMNODES > 1
->  
->  /*
-> - * Always updating the nodemask is not very good - even if we have an empty
-> - * list or the wrong list here, we can start from some node and traverse all
-> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
-> - *
-> + * Update scan nodemask with memcg's event_counter(NUMAINFO_EVENTS_TARGET)
->   */
->  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
->  {
+On 8/10/2011 6:02 PM, Boaz Harrosh wrote:
+> On 08/10/2011 10:56 AM, Chris Metcalf wrote:
+>> Building on tilepro revealed two minor portability issues: the
+>> blocklayout.c file used prefetchw() without #include <linux/prefetch.h>,
+>> and the nfs4filelayout.c file used do_div() on an s64 not a u64.
+>> This change fixes those two issues so the NFS code builds on tilepro.
+>>
+>> [...] 
+>> diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
+>> index e8915d4..6976a72 100644
+>> --- a/fs/nfs/nfs4filelayout.c
+>> +++ b/fs/nfs/nfs4filelayout.c
+>> @@ -48,13 +48,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
+>>  			    loff_t offset)
+>>  {
+>>  	u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
+>> -	u64 tmp;
+>> +	u64 tmp, uoff;
+>>  
+>>  	offset -= flseg->pattern_offset;
+>> -	tmp = offset;
+>> +	tmp = uoff = offset;
+>>  	do_div(tmp, stripe_width);
+>>  
+>> -	return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
+>> +	return tmp * flseg->stripe_unit + do_div(uoff, flseg->stripe_unit);
+> For proper u64 divisions it is best to use the div_u64 (and div64_u64) and not
+> use do_div. (And please don't add an unnecessary variable, just use a cast)
 
-I would keep the first part about reasoning and just replace the one
-about 10 secs update.
+You can't use a cast with do_div() or you get errors about non-lvalues.
+
+And the context here is that we want the remainder, not the divided result,
+so we'd need a temporary variable anyway if we were going to use a routine
+from math64.h, presumably div_u64_rem().  But that's just an inline wrapper
+around do_div() anyway, so it's no more efficient, and not obviously any
+less "cluttered" in the source code here.  The original code author (who
+I'm adding belatedly to this email) may have a stronger opinion.
+
+I'm not the author or maintainer of this code, I just want it to compile
+without warning on 32-bit architectures :-)
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
