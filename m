@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1HKVDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:03:02 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:48180 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753840Ab1HKVDA (ORCPT
+	id S1753895Ab1HKVDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:03:49 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:35640 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752541Ab1HKVDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:03:00 -0400
-Date: Thu, 11 Aug 2011 14:02:57 -0700
+	Thu, 11 Aug 2011 17:03:48 -0400
+Date: Thu, 11 Aug 2011 13:57:07 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
-To: Ralf Thielow <ralf.thielow@googlemail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: SubmittingDrivers: Update Linus' git
- repository
-Message-Id: <20110811140257.7c145298.rdunlap@xenotime.net>
-In-Reply-To: <1313082825-3162-1-git-send-email-ralf.thielow@googlemail.com>
-References: <1313082825-3162-1-git-send-email-ralf.thielow@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        xen-devel@lists.xensource.com
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH -next] xen: fix swiotlb printk and panic args
+Message-Id: <20110811135707.b6dfe39c.rdunlap@xenotime.net>
+In-Reply-To: <20110811162058.42b462bc80e67d7a80ecff93@canb.auug.org.au>
+References: <20110811162058.42b462bc80e67d7a80ecff93@canb.auug.org.au>
 Organization: YPO4
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -26,33 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011 19:13:45 +0200 Ralf Thielow wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> Change resource URL to new git tree -
-> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git).
-> 
-> Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
-> ---
->  Documentation/SubmittingDrivers |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/SubmittingDrivers b/Documentation/SubmittingDrivers
-> index 319baa8..36d16bb 100644
-> --- a/Documentation/SubmittingDrivers
-> +++ b/Documentation/SubmittingDrivers
-> @@ -130,7 +130,7 @@ Linux kernel master tree:
->  	ftp.??.kernel.org:/pub/linux/kernel/...
->  	?? == your country code, such as "us", "uk", "fr", etc.
->  
-> -	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git
-> +	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
->  
->  Linux kernel mailing list:
->  	linux-kernel@vger.kernel.org
-> -- 
+Fix printk() and panic() args [swap them] to fix build warnings:
 
-Applied, thanks.
+drivers/xen/swiotlb-xen.c:201: warning: format '%s' expects type 'char *', but argument 2 has type 'int'
+drivers/xen/swiotlb-xen.c:201: warning: format '%d' expects type 'int', but argument 3 has type 'char *'
+drivers/xen/swiotlb-xen.c:202: warning: format '%s' expects type 'char *', but argument 2 has type 'int'
+drivers/xen/swiotlb-xen.c:202: warning: format '%d' expects type 'int', but argument 3 has type 'char *'
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/xen/swiotlb-xen.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- linux-next-20110811.orig/drivers/xen/swiotlb-xen.c
++++ linux-next-20110811/drivers/xen/swiotlb-xen.c
+@@ -198,8 +198,8 @@ error:
+ 		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
+ 		goto retry;
+ 	}
+-	xen_raw_printk("%s (rc:%d)", rc, m);
+-	panic("%s (rc:%d)", rc, m);
++	xen_raw_printk("%s (rc:%d)", m, rc);
++	panic("%s (rc:%d)", m, rc);
+ }
+ 
+ void *
