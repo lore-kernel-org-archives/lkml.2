@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1HKUyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:54:51 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5815 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab1HKUyt convert rfc822-to-8bit (ORCPT
+	id S1754000Ab1HKUzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:55:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54734 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab1HKUzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:54:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 11 Aug 2011 13:54:29 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>
-CC: Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 11 Aug 2011 13:54:25 -0700
-Subject: RE: [PATCH] i2c: tegra: fix possible race condition after tx
-Thread-Topic: [PATCH] i2c: tegra: fix possible race condition after tx
-Thread-Index: AcxYZBmIx8sjFiXbRwS4z3w9LJ9ScgABHBlw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CFC@HQMAIL01.nvidia.com>
-References: <1313093946-24559-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1313093946-24559-1-git-send-email-dianders@chromium.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 16:55:46 -0400
+Date: Fri, 12 Aug 2011 00:55:37 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] perf: fix temporary file ownership check
+Message-ID: <20110811205537.GA22864@albatros>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote at Thursday, August 11, 2011 2:19 PM:
-> In tegra_i2c_fill_tx_fifo, once we have finished pushing all the bytes
-> to the I2C hardware controller, the interrupt might happen before we
-> have updated i2c_dev->msg_buf_remaining at the end of the function.
-> Then, in tegra_i2c_isr, we will call again tegra_i2c_fill_tx_fifo
-> triggering weird behaviour. This has been shown to happen under real
-> conditions.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+A file in /tmp/ might be a symlink, so lstat() should be used
+instead of stat().
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ tools/perf/util/symbol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It's worth pointing out that this patch supersedes a previous attempt to fix
-the same problem, originally posted in https://lkml.org/lkml/2011/4/19/514,
-if I'm understanding correctly.
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index a8b5371..5db39f6 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1506,7 +1506,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
+ 		struct stat st;
+ 
+-		if (stat(dso->name, &st) < 0)
++		if (lstat(dso->name, &st) < 0)
+ 			return -1;
+ 
+ 		if (st.st_uid && (st.st_uid != geteuid())) {
 -- 
-nvpublic
+1.7.0.4
 
