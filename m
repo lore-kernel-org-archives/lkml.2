@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1HKNF5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:05:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38092 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab1HKNFx (ORCPT
+	id S1755890Ab1HKNGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:06:10 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:32945 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab1HKNGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:05:53 -0400
-Message-ID: <4E43D3AE.70901@gmail.com>
-Date: Thu, 11 Aug 2011 15:05:50 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Thu, 11 Aug 2011 09:06:08 -0400
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] x86 EFI boot stub
-References: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
-In-Reply-To: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024E04F945@dbde02.ent.ti.com>
+References: <1312978639-18339-1-git-send-email-linus.walleij@stericsson.com>
+	<B85A65D85D7EB246BE421B3FB0FBB593024E04F945@dbde02.ent.ti.com>
+Date: Thu, 11 Aug 2011 15:06:07 +0200
+Message-ID: <CACRpkdZvxvD01ofxMxDb3wXpt9_8wkU1rwxdLj5RuidoZNrb+w@mail.gmail.com>
+Subject: Re: [PATCH 08/19] mach-davinci: move DaVinci TNET GPIO driver to GPIO subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lee Jones <lee.jones@linaro.org>, "Hilman, Kevin" <khilman@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 12:59 PM, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On Thu, Aug 11, 2011 at 12:21 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> Hi Linus,
 >
-> This series adds support for an EFI boot stub, similar to the existing
-> BIOS boot stub. The result is that you can boot a bzImage on an EFI
-> machine without the use of a boot loader by making the bzImage appear
-> to the EFI firmware to be an EFI application. Also, a single bzImage
-> can be booted on either a BIOS or EFI machine.
+> On Wed, Aug 10, 2011 at 17:47:19, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> As per example from the other ARM boards, push the DaVinci TNET
+>> GPIO driver down to the GPIO subsystem so it can be consolidated.
+>>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: Kevin Hilman <khilman@ti.com>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Using the EFI boot stub has the advantage that the kernel is
-> responsible for configuring the machine to the point where we can
-> fully boot the kernel, so we are no longer at the mercy of the boot
-> loader.
+> There should be no need of this since the TNETV107x
+> GPIO can simply be supported using the basic MMIO GPIO
+> driver. I submitted patches for that a while back
+> but have some comments from Grant to address. He requested
+> some changes to be done to the basic MMIO GPIO driver
+> itself.
 >
-Fails to boot here. I thought changing characteristics from 0x60500020 to 0xe0500020 would help, but no. :/
-This change would make the code section writable.
+> https://lkml.org/lkml/2011/7/5/16
+>
+> I do plan to rework those patches and post them back.
 
-FileAlignment you use is probably wrong, I think it should be 0x200 not 0x2000 .
+OK I will keep this around in case it doesn't happen
+soon, it certainly does not make matters worse
+anyway.
 
-Maybe you need to add a data section and fix SizeOfInitializedData too?
-
-It just hangs on a blinking cursor, no idea if it actually started executing anything yet or not, since nothing is printed out.
-
-~Maarten
-
+Thanks,
+Linus Walleij
