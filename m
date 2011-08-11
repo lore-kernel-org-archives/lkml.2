@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1HKVNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:13:44 -0400
-Received: from void.printf.net ([89.145.121.20]:33877 "EHLO void.printf.net"
+	id S1754100Ab1HKVPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:15:00 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56822 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab1HKVNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:13:42 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Zhu <richard.zhu@linaro.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: linux-next: manual merge of the mmc tree with Linus' tree
-References: <20110811135555.f4b26adb8a73c1a22f75abc5@canb.auug.org.au>
-Date: Thu, 11 Aug 2011 17:13:19 -0400
-In-Reply-To: <20110811135555.f4b26adb8a73c1a22f75abc5@canb.auug.org.au>
-	(Stephen Rothwell's message of "Thu, 11 Aug 2011 13:55:55 +1000")
-Message-ID: <m2obzvps7k.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1753840Ab1HKVO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 17:14:59 -0400
+Date: Thu, 11 Aug 2011 14:13:41 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Subject: [PATCH] ext4: Always verify extent tree blocks
+Message-ID: <20110811211348.GK20655@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+It turns out that ext4_ext_check only verifies the validity of the extent block
+it's processing if the block has to be read in from the disk.  Unfortunately,
+this means that the check is NOT done if the block is already in memory, which
+means that if a file has a corrupted extent block, then the first IO peformed
+on the file will find the corrupt block and fail, but a second IO will see that
+the extent block is in memory, bypass the corruption check, and use garbage
+data as if they were extent data.
 
-On Wed, Aug 10 2011, Stephen Rothwell wrote:
-> Today's linux-next merge of the mmc tree got a conflict in
-> drivers/mmc/host/sdhci-esdhc-imx.c between commit 913413c307c9 ("mmc:
-> sdhci-esdhc-imx: extend card_detect and write_protect support for mx5")
-> from Linus' tree and commit 612e807e4852 ("mmc: sdhci-esdhc-imx: Enable
-> ADMA2") from the mmc tree.
->
-> I fixed it up (I think - see below) anc can carry the fix as necessary.
+A simple testcase is to allocate a file with enough extents to overflow the
+inode i_block, umount, overwrite the extent block magic with garbage, then
+mount the filesystem and try to access the file.  The first access causes the
+kernel to spit out an error, but subsequent accesses seem to succeed.
 
-Thanks for the conflict fixup.  I've merged 3.1-rc1 into mmc-next
-and compile-tested for mx35, so the mmc tree should be clean now.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+ fs/ext4/extents.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index ee4b391..bb07b79 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -744,8 +744,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 	i = depth;
+ 	/* walk through the tree */
+ 	while (i) {
+-		int need_to_validate = 0;
+-
+ 		ext_debug("depth %d: num %d, max %d\n",
+ 			  ppos, le16_to_cpu(eh->eh_entries), le16_to_cpu(eh->eh_max));
+ 
+@@ -764,8 +762,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 				put_bh(bh);
+ 				goto err;
+ 			}
+-			/* validate the extent entries */
+-			need_to_validate = 1;
+ 		}
+ 		eh = ext_block_hdr(bh);
+ 		ppos++;
+@@ -779,7 +775,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
+ 		path[ppos].p_hdr = eh;
+ 		i--;
+ 
+-		if (need_to_validate && ext4_ext_check(inode, eh, i))
++		if (ext4_ext_check(inode, eh, i))
+ 			goto err;
+ 	}
+ 
