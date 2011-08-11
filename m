@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab1HKLPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:15:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab1HKLPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:15:47 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	<4E4140B3.7090802@suse.cz>
-	<CACqU3MU4wJb3ij6skod-ZiM+Q0OMTXNdbJ+qWjJW8VZNEP+x1g@mail.gmail.com>
-	<4E4280BA.9050109@suse.cz> <1312981658.2989.39.camel@i7.infradead.org>
-	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
-	<1312985888.2989.46.camel@i7.infradead.org>
-	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	<1312993987.2989.53.camel@i7.infradead.org>
-	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	<1312999168.2989.61.camel@i7.infradead.org>
-	<CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-	<1313002322.2989.88.camel@i7.infradead.org>
-	<CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
-	<1313018232.2989.114.camel@i7.infradead.org>
-	<CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>
-	<1313052168.18037.9.camel@i7.infradead.org> <4E4399B3.3020909@suse.cz>
-	<1313061012.18037.17.camel@i7.infradead.org>
-X-Yow: Now that we're in LOVE, you can BUY this GOLDFISH for a 48% DISCOUNT.
-Date: Thu, 11 Aug 2011 13:15:26 +0200
-In-Reply-To: <1313061012.18037.17.camel@i7.infradead.org> (David Woodhouse's
-	message of "Thu, 11 Aug 2011 12:10:10 +0100")
-Message-ID: <m3r54std0x.fsf@hase.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754674Ab1HKLUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:20:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42560 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab1HKLUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 07:20:17 -0400
+Message-ID: <4E43BAB5.60406@infradead.org>
+Date: Thu, 11 Aug 2011 08:19:17 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        libusb-devel@lists.sourceforge.net, Alexander Graf <agraf@suse.de>,
+        Gerd Hoffmann <kraxel@redhat.com>, hector@marcansoft.com,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+References: <Pine.LNX.4.44L0.1108101156350.1917-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1108101300500.25084@banach.math.auburn.edu> <4E42E68D.6040501@infradead.org> <20110811105750.179e468a@tele>
+In-Reply-To: <20110811105750.179e468a@tele>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Woodhouse <dwmw2@infradead.org> writes:
+Em 11-08-2011 05:57, Jean-Francois Moine escreveu:
+> On Wed, 10 Aug 2011 17:14:05 -0300
+> Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+> 
+>>> -- moving the kernel webcam drivers out of the kernel and doing with these 
+>>> cameras _everything_ including webcam function through libusb. I myself do 
+>>> not have the imagination to be able to figure out how this could be done 
+>>> without a rather humongous amount of work (for example, which streaming 
+>>> apps that are currently available would be able to live with this?) but 
+>>> unless I misunderstand what he was saying, Greg K-H seems to think that 
+>>> this would be the best thing to do.  
+>>
+>> I also don't think that this a good alternative. As Hans V. pointed, one of
+>> our long term targets is to create per-sensor I2C drivers that are independent
+>> from the bridges. Also, moving it to userspace would require lots of work
+>> with the duplication of V4L and gspca core into userspace for the devices
+>> that would be moved, and may have some performance impacts.
+> 
+> If only gspca subdrivers are concerned, moving them to usespace should
+> be easy: only the gspca main has to be rewritten, and its best place is
+> in the v4l library.
 
-> That would be cute, but I'm not sure how to undefine something set on
-> the command line:
->
-> $ cat > Makefile <<EOF
-> undefine BAR
+It would end by having two userspace drivers, as the data access driver is 
+at libgphoto2. So, the problem will just be moved to userspace. You'll
+additionally need to deal with conflicts between kernelspace ALSA driver
+and userspace video driver.
 
-override undefine BAR
+Regards,
+Mauro.
 
-Andreas.
 
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+
+
