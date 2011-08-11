@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab1HKVLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:11:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11012 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab1HKVLI (ORCPT
+	id S1754160Ab1HKVL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:11:29 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:35813 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab1HKVL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:11:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6435"; a="109742598"
-Date: Thu, 11 Aug 2011 14:11:06 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCHv4 1/2] ARM: Set proper TEXT_OFFSET for newer MSMs
-Message-ID: <20110811211106.GA14101@huya.qualcomm.com>
-References: <1311794355-26988-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 11 Aug 2011 17:11:27 -0400
+Message-ID: <4E444552.9030105@panasas.com>
+Date: Thu, 11 Aug 2011 14:10:42 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311794355-26988-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
+        peter honeyman <honey@citi.umich.edu>
+CC: <tao.peng@emc.com>, <torvalds@linux-foundation.org>,
+        <rdunlap@xenotime.net>, <bergwolf@gmail.com>,
+        <Trond.Myklebust@netapp.com>, <linux-raid@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
+        "Welch, Brent" <welch@panasas.com>
+Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com> <20110810122304.96b8be67.rdunlap@xenotime.net> <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com> <20110810175829.a834d80f.rdunlap@xenotime.net> <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com> <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com> <4E43AAD1.7090806@tonian.com> <4E4422FD.3060706@panasas.com>
+In-Reply-To: <4E4422FD.3060706@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:19:14PM -0700, Stephen Boyd wrote:
-> MSMs post 8x50 have 2Mb at the beginning of RAM reserved for
-> shared memory. Since the kernel hasn't typically been told this
-> RAM exists, PHYS_OFFSET has been set to 0xN0200000 and the memory
-> atags passed to the kernel have matched. This doesn't play nicely
-> with things such as AUTO_ZRELADDR, which doesn't work at all, and
-> dynamic phys to virt, which requires an MSM specific workaround.
-> 
-> Work around these issues by telling the kernel RAM starts at
-> 0xN0000000 (it actually does) and fixup the atags from the
-> bootloader (if necessary) to say the same. In addition, make sure
-> to set TEXT_OFFSET at least 2Mb beyond the start of RAM so that
-> the kernel doesn't end up being decompressed into shared memory.
-> 
-> After doing this, AUTO_ZRELADDR should work on MSM with no
-> problems and ARM_PATCH_PHYS_VIRT_16BIT should no longer be
-> necessary.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> ---
+What about the below? based on v3.1-rc1
 
-Acked-by: David Brown <davidb@codeaurora.org>
+----
+From: Boaz Harrosh <bharrosh@panasas.com>
+Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
 
+Just like files-layout, blocks & objects layouts are part of the
+NFS 4.1 protocol and should be automatically selected if NFS_4_1
+is selected. The small problem is that these depend on other
+Kernel support being present, while files only depends on NFS
+itself.
+
+This patch removes from the user choice the presence of objects
+and blocks layout. But makes sure these are selected only if
+the depended subsystems are present in the Kernel.
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ fs/nfs/Kconfig |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index be02077..1b951cd 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -79,9 +79,6 @@ config NFS_V4_1
+ 	depends on NFS_FS && NFS_V4 && EXPERIMENTAL
+ 	select SUNRPC_BACKCHANNEL
+ 	select PNFS_FILE_LAYOUT
+-	select PNFS_BLOCK
+-	select MD
+-	select BLK_DEV_DM
+ 	help
+ 	  This option enables support for minor version 1 of the NFSv4 protocol
+ 	  (RFC 5661 and RFC 5663) in the kernel's NFS client.
+@@ -93,16 +90,13 @@ config PNFS_FILE_LAYOUT
+ 
+ config PNFS_BLOCK
+ 	tristate
++	depends on NFS_FS && NFS_V4_1 && MD && BLK_DEV_DM
++	default m
+ 
+ config PNFS_OBJLAYOUT
+-	tristate "Provide support for the pNFS Objects Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
++	tristate
+ 	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
+-	help
+-	  Say M here if you want your pNFS client to support the Objects Layout Driver.
+-	  Requires the SCSI osd initiator library (SCSI_OSD_INITIATOR) and
+-	  upper level driver (SCSI_OSD_ULD).
+-
+-	  If unsure, say N.
++	default m
+ 
+ config ROOT_NFS
+ 	bool "Root file system on NFS"
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.6
+
+
