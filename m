@@ -1,245 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1HKFzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 01:55:53 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58199 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab1HKFzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 01:55:45 -0400
-X-AuditID: b753bd60-a287bba0000050a4-73-4e436ede0804
-X-AuditID: b753bd60-a287bba0000050a4-73-4e436ede0804
-Message-ID: <4E436EDC.2080101@hitachi.com>
-Date: Thu, 11 Aug 2011 14:55:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH 3/5][RFC] ftrace: Return pt_regs to function trace callback
- (x86_64 only so
-References: <20110810162222.017387055@goodmis.org> <20110810163038.238028499@goodmis.org>
-In-Reply-To: <20110810163038.238028499@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1751685Ab1HKFzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 01:55:40 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53076 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750799Ab1HKFzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 01:55:39 -0400
+Date: Thu, 11 Aug 2011 15:55:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kalle Valo <kvalo@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>
+Subject: linux-next: build failure after merge of the final tree (wireless &
+ staging trees related)
+Message-Id: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__11_Aug_2011_15_55_29_+1000_SSJ48rtBGGjVaYX1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/08/11 1:22), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
->
-> Return as the 4th paramater to the function tracer callback the pt_regs.
->
-> So far this is only supported by x86_64. The ftrace_ops flag
-> FTRACE_OPS_FL_SAVE_REGS is added to tell the arch to save all regs
-> to the pt_regs, otherwise a minimum is just passed back (the same
-> regs that is saved by mcount itself).
+--Signature=_Thu__11_Aug_2011_15_55_29_+1000_SSJ48rtBGGjVaYX1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I guess it will be a bit hard to port this on x86-32, because
-on x86-32, the top of stack address in pt_regs is the address
-of sp member (e.g. &(pt_regs->sp)). I mean that when mcount-entry
-calls ftrace_caller, it pushes an address of the next instruction
-of mcount-entry on the top of stack.
-In that case, &(pt_regs->sp) points the entry which stores the
-address, instead of the return address of probed function.
+Hi all,
 
-e.g. with kprobes (on x86-32):
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-[  <bx>  ] <- pt_regs
-[  ...   ]
-[  <cs>  ]
-[<flags> ]
-[ret-addr] <- &(pt_regs.sp)
-[  arg1  ]
-[  arg2  ]
+drivers/staging/built-in.o: In function `aggr_recv_delba_req_evt':
+(.opd+0x23a60): multiple definition of `aggr_recv_delba_req_evt'
+drivers/net/built-in.o:(.opd+0x79980): first defined here
+drivers/staging/built-in.o: In function `.wlan_node_reclaim':
+(.text+0x303360): multiple definition of `.wlan_node_reclaim'
+drivers/net/built-in.o:(.text+0xdd0618): first defined here
+drivers/staging/built-in.o: In function `aggr_init':
+(.opd+0x23a00): multiple definition of `aggr_init'
+drivers/net/built-in.o:(.opd+0x79968): first defined here
+drivers/staging/built-in.o: In function `.aggr_recv_delba_req_evt':
+(.text+0x302614): multiple definition of `.aggr_recv_delba_req_evt'
+drivers/net/built-in.o:(.text+0xdc8b60): first defined here
+drivers/staging/built-in.o: In function `.wlan_node_table_cleanup':
+(.text+0x303888): multiple definition of `.wlan_node_table_cleanup'
+drivers/net/built-in.o:(.text+0xdd0a6c): first defined here
 
-with this method:
+You get the idea. :-(  So, the ath6kl driver now exists in the wireless
+tree and the staging tree.
 
-[  <bx>  ] <- pt_regs
-[  ...   ]
-[  <cs>  ]
-[<flags> ]
-[mcount-ret] <- &(pt_regs.sp)
-[ret-addr]
-[  arg1  ]
-[  arg2  ]
+I applied this patch for today (I have elided the part from "rm -rf
+drivers/staging/ath6kl"):
 
-I think this is hard to solve without a tricky hack.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 11 Aug 2011 15:49:40 +1000
+Subject: [PATCH] staging: remove the ath6kl driver
 
-For example, on x86-32, MCOUNT_FRAME_SAVE saves
-flags on the entry which will be <cs> and it saves
-mcount-ret to local stack and moves flags to next entry.
+since it is now in the main tree
 
-<save-frame>
-pushf			# save flags on CS(%esp)
-subl $12, %esp		# skip ip, orig_ax and gs
-pushl %fs
-pushl %es
-...
-pushl %ebx
-movl 56(%esp), %ebx	# load mcount-ret address
-movl 52(%esp), %ebp	# load flags
-movl %ebp, 56(%esp)	# store flags
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/Kconfig                            |    2 -
+ drivers/staging/Makefile                           |    1 -
+ drivers/staging/ath6kl/Kconfig                     |  158 -
+ drivers/staging/ath6kl/Makefile                    |  122 -
+ drivers/staging/ath6kl/TODO                        |   25 -
+ drivers/staging/ath6kl/bmi/include/bmi_internal.h  |   54 -
+ drivers/staging/ath6kl/bmi/src/bmi.c               | 1010 ---
+ .../staging/ath6kl/hif/common/hif_sdio_common.h    |   87 -
+ .../hif/sdio/linux_sdio/include/hif_internal.h     |  131 -
+ .../staging/ath6kl/hif/sdio/linux_sdio/src/hif.c   | 1273 ----
+ .../ath6kl/hif/sdio/linux_sdio/src/hif_scatter.c   |  393 --
+ drivers/staging/ath6kl/htc2/AR6000/ar6k.c          | 1479 -----
+ drivers/staging/ath6kl/htc2/AR6000/ar6k.h          |  401 --
+ drivers/staging/ath6kl/htc2/AR6000/ar6k_events.c   |  783 ---
+ drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox.c    |  755 ---
+ .../ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c        | 1284 ----
+ drivers/staging/ath6kl/htc2/htc.c                  |  575 --
+ drivers/staging/ath6kl/htc2/htc_debug.h            |   38 -
+ drivers/staging/ath6kl/htc2/htc_internal.h         |  211 -
+ drivers/staging/ath6kl/htc2/htc_recv.c             | 1572 -----
+ drivers/staging/ath6kl/htc2/htc_send.c             | 1018 ---
+ drivers/staging/ath6kl/htc2/htc_services.c         |  450 --
+ drivers/staging/ath6kl/include/a_config.h          |   31 -
+ drivers/staging/ath6kl/include/a_debug.h           |  195 -
+ drivers/staging/ath6kl/include/a_drv.h             |   32 -
+ drivers/staging/ath6kl/include/a_drv_api.h         |  204 -
+ drivers/staging/ath6kl/include/a_osapi.h           |   32 -
+ drivers/staging/ath6kl/include/aggr_recv_api.h     |  140 -
+ drivers/staging/ath6kl/include/ar3kconfig.h        |   65 -
+ drivers/staging/ath6kl/include/ar6000_api.h        |   32 -
+ drivers/staging/ath6kl/include/ar6000_diag.h       |   48 -
+ drivers/staging/ath6kl/include/ar6kap_common.h     |   44 -
+ drivers/staging/ath6kl/include/athbtfilter.h       |  135 -
+ drivers/staging/ath6kl/include/bmi.h               |  134 -
+ .../ath6kl/include/common/AR6002/AR6K_version.h    |   52 -
+ .../staging/ath6kl/include/common/AR6002/addrs.h   |   90 -
+ .../common/AR6002/hw4.0/hw/apb_athr_wlan_map.h     |   40 -
+ .../include/common/AR6002/hw4.0/hw/apb_map.h       |   40 -
+ .../include/common/AR6002/hw4.0/hw/mbox_host_reg.h |   24 -
+ .../include/common/AR6002/hw4.0/hw/mbox_reg.h      |  552 --
+ .../common/AR6002/hw4.0/hw/mbox_wlan_host_reg.h    |  471 --
+ .../include/common/AR6002/hw4.0/hw/mbox_wlan_reg.h |  589 --
+ .../include/common/AR6002/hw4.0/hw/rtc_reg.h       |  187 -
+ .../include/common/AR6002/hw4.0/hw/rtc_wlan_reg.h  |  162 -
+ .../include/common/AR6002/hw4.0/hw/uart_reg.h      |   40 -
+ drivers/staging/ath6kl/include/common/athdefs.h    |   75 -
+ drivers/staging/ath6kl/include/common/bmi_msg.h    |  233 -
+ drivers/staging/ath6kl/include/common/cnxmgmt.h    |   36 -
+ drivers/staging/ath6kl/include/common/dbglog.h     |  126 -
+ drivers/staging/ath6kl/include/common/dbglog_id.h  |  558 --
+ drivers/staging/ath6kl/include/common/discovery.h  |   75 -
+ .../staging/ath6kl/include/common/epping_test.h    |  111 -
+ drivers/staging/ath6kl/include/common/gmboxif.h    |   70 -
+ drivers/staging/ath6kl/include/common/gpio_reg.h   |    9 -
+ drivers/staging/ath6kl/include/common/htc.h        |  227 -
+ .../staging/ath6kl/include/common/htc_services.h   |   52 -
+ drivers/staging/ath6kl/include/common/pkt_log.h    |   45 -
+ drivers/staging/ath6kl/include/common/roaming.h    |   41 -
+ drivers/staging/ath6kl/include/common/targaddrs.h  |  395 --
+ drivers/staging/ath6kl/include/common/testcmd.h    |  185 -
+ drivers/staging/ath6kl/include/common/tlpm.h       |   38 -
+ drivers/staging/ath6kl/include/common/wlan_defs.h  |   79 -
+ drivers/staging/ath6kl/include/common/wmi.h        | 3220 ----------
+ drivers/staging/ath6kl/include/common/wmix.h       |  271 -
+ drivers/staging/ath6kl/include/common_drv.h        |  104 -
+ drivers/staging/ath6kl/include/dbglog_api.h        |   52 -
+ drivers/staging/ath6kl/include/dl_list.h           |  153 -
+ drivers/staging/ath6kl/include/dset_api.h          |   65 -
+ drivers/staging/ath6kl/include/hci_transport_api.h |  259 -
+ drivers/staging/ath6kl/include/hif.h               |  456 --
+ drivers/staging/ath6kl/include/host_version.h      |   52 -
+ drivers/staging/ath6kl/include/htc_api.h           |  575 --
+ drivers/staging/ath6kl/include/htc_packet.h        |  227 -
+ drivers/staging/ath6kl/include/wlan_api.h          |  128 -
+ drivers/staging/ath6kl/include/wmi_api.h           |  441 --
+ drivers/staging/ath6kl/miscdrv/ar3kconfig.c        |  565 --
+ .../staging/ath6kl/miscdrv/ar3kps/ar3kpsconfig.c   |  572 --
+ .../staging/ath6kl/miscdrv/ar3kps/ar3kpsconfig.h   |   75 -
+ .../staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c   |  969 ---
+ .../staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.h   |  113 -
+ drivers/staging/ath6kl/miscdrv/common_drv.c        |  910 ---
+ drivers/staging/ath6kl/miscdrv/credit_dist.c       |  417 --
+ drivers/staging/ath6kl/miscdrv/miscdrv.h           |   42 -
+ drivers/staging/ath6kl/os/linux/ar6000_drv.c       | 6267 ----------------=
+---
+ drivers/staging/ath6kl/os/linux/ar6000_pm.c        |  626 --
+ drivers/staging/ath6kl/os/linux/ar6000_raw_if.c    |  455 --
+ drivers/staging/ath6kl/os/linux/cfg80211.c         | 1892 ------
+ .../staging/ath6kl/os/linux/export_hci_transport.c |  124 -
+ drivers/staging/ath6kl/os/linux/hci_bridge.c       | 1141 ----
+ .../staging/ath6kl/os/linux/include/ar6000_drv.h   |  776 ---
+ drivers/staging/ath6kl/os/linux/include/ar6k_pal.h |   36 -
+ .../ath6kl/os/linux/include/ar6xapi_linux.h        |  190 -
+ .../staging/ath6kl/os/linux/include/athdrv_linux.h | 1217 ----
+ drivers/staging/ath6kl/os/linux/include/cfg80211.h |   61 -
+ .../staging/ath6kl/os/linux/include/config_linux.h |   51 -
+ .../staging/ath6kl/os/linux/include/debug_linux.h  |   50 -
+ .../ath6kl/os/linux/include/export_hci_transport.h |   76 -
+ .../ath6kl/os/linux/include/ieee80211_ioctl.h      |  177 -
+ .../staging/ath6kl/os/linux/include/osapi_linux.h  |  339 -
+ .../staging/ath6kl/os/linux/include/wlan_config.h  |  108 -
+ .../ath6kl/os/linux/include/wmi_filter_linux.h     |  300 -
+ drivers/staging/ath6kl/os/linux/netbuf.c           |  231 -
+ drivers/staging/ath6kl/reorder/aggr_rx_internal.h  |  117 -
+ drivers/staging/ath6kl/reorder/rcv_aggr.c          |  661 --
+ drivers/staging/ath6kl/wlan/include/ieee80211.h    |  397 --
+ .../staging/ath6kl/wlan/include/ieee80211_node.h   |   93 -
+ drivers/staging/ath6kl/wlan/src/wlan_node.c        |  636 --
+ drivers/staging/ath6kl/wlan/src/wlan_recv_beacon.c |  199 -
+ drivers/staging/ath6kl/wlan/src/wlan_utils.c       |   58 -
+ drivers/staging/ath6kl/wmi/wmi.c                   | 6444 ----------------=
+----
+ drivers/staging/ath6kl/wmi/wmi_host.h              |  102 -
+ 111 files changed, 0 insertions(+), 50006 deletions(-)
+ delete mode 100644 drivers/staging/ath6kl/Kconfig
+ delete mode 100644 drivers/staging/ath6kl/Makefile
+ delete mode 100644 drivers/staging/ath6kl/TODO
+ delete mode 100644 drivers/staging/ath6kl/bmi/include/bmi_internal.h
+ delete mode 100644 drivers/staging/ath6kl/bmi/src/bmi.c
+ delete mode 100644 drivers/staging/ath6kl/hif/common/hif_sdio_common.h
+ delete mode 100644 drivers/staging/ath6kl/hif/sdio/linux_sdio/include/hif_=
+internal.h
+ delete mode 100644 drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif.c
+ delete mode 100644 drivers/staging/ath6kl/hif/sdio/linux_sdio/src/hif_scat=
+ter.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/AR6000/ar6k.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/AR6000/ar6k.h
+ delete mode 100644 drivers/staging/ath6kl/htc2/AR6000/ar6k_events.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/AR6000/ar6k_gmbox_hciuart.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc_debug.h
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc_internal.h
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc_recv.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc_send.c
+ delete mode 100644 drivers/staging/ath6kl/htc2/htc_services.c
+ delete mode 100644 drivers/staging/ath6kl/include/a_config.h
+ delete mode 100644 drivers/staging/ath6kl/include/a_debug.h
+ delete mode 100644 drivers/staging/ath6kl/include/a_drv.h
+ delete mode 100644 drivers/staging/ath6kl/include/a_drv_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/a_osapi.h
+ delete mode 100644 drivers/staging/ath6kl/include/aggr_recv_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/ar3kconfig.h
+ delete mode 100644 drivers/staging/ath6kl/include/ar6000_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/ar6000_diag.h
+ delete mode 100644 drivers/staging/ath6kl/include/ar6kap_common.h
+ delete mode 100644 drivers/staging/ath6kl/include/athbtfilter.h
+ delete mode 100644 drivers/staging/ath6kl/include/bmi.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/AR6K_versi=
+on.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/addrs.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/a=
+pb_athr_wlan_map.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/a=
+pb_map.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/m=
+box_host_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/m=
+box_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/m=
+box_wlan_host_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/m=
+box_wlan_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/r=
+tc_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/r=
+tc_wlan_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/AR6002/hw4.0/hw/u=
+art_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/athdefs.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/bmi_msg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/cnxmgmt.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/dbglog.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/dbglog_id.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/discovery.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/epping_test.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/gmboxif.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/gpio_reg.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/htc.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/htc_services.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/pkt_log.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/roaming.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/targaddrs.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/testcmd.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/tlpm.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/wlan_defs.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/wmi.h
+ delete mode 100644 drivers/staging/ath6kl/include/common/wmix.h
+ delete mode 100644 drivers/staging/ath6kl/include/common_drv.h
+ delete mode 100644 drivers/staging/ath6kl/include/dbglog_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/dl_list.h
+ delete mode 100644 drivers/staging/ath6kl/include/dset_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/hci_transport_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/hif.h
+ delete mode 100644 drivers/staging/ath6kl/include/host_version.h
+ delete mode 100644 drivers/staging/ath6kl/include/htc_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/htc_packet.h
+ delete mode 100644 drivers/staging/ath6kl/include/wlan_api.h
+ delete mode 100644 drivers/staging/ath6kl/include/wmi_api.h
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/ar3kconfig.c
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsconfig.c
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsconfig.h
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.h
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/common_drv.c
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/credit_dist.c
+ delete mode 100644 drivers/staging/ath6kl/miscdrv/miscdrv.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/ar6000_drv.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/ar6000_pm.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/ar6000_raw_if.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/cfg80211.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/export_hci_transport.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/hci_bridge.c
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/ar6000_drv.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/ar6k_pal.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/ar6xapi_linux.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/athdrv_linux.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/cfg80211.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/config_linux.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/debug_linux.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/export_hci_tran=
+sport.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/ieee80211_ioctl=
+.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/osapi_linux.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/wlan_config.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/include/wmi_filter_linu=
+x.h
+ delete mode 100644 drivers/staging/ath6kl/os/linux/netbuf.c
+ delete mode 100644 drivers/staging/ath6kl/reorder/aggr_rx_internal.h
+ delete mode 100644 drivers/staging/ath6kl/reorder/rcv_aggr.c
+ delete mode 100644 drivers/staging/ath6kl/wlan/include/ieee80211.h
+ delete mode 100644 drivers/staging/ath6kl/wlan/include/ieee80211_node.h
+ delete mode 100644 drivers/staging/ath6kl/wlan/src/wlan_node.c
+ delete mode 100644 drivers/staging/ath6kl/wlan/src/wlan_recv_beacon.c
+ delete mode 100644 drivers/staging/ath6kl/wlan/src/wlan_utils.c
+ delete mode 100644 drivers/staging/ath6kl/wmi/wmi.c
+ delete mode 100644 drivers/staging/ath6kl/wmi/wmi_host.h
 
-call function (ebx is callee save)
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 06c9081..d497a93 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -126,8 +126,6 @@ source "drivers/staging/quickstart/Kconfig"
+=20
+ source "drivers/staging/sbe-2t3e3/Kconfig"
+=20
+-source "drivers/staging/ath6kl/Kconfig"
+-
+ source "drivers/staging/keucr/Kconfig"
+=20
+ source "drivers/staging/bcm/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index f3c5e33..fe6c611 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -54,7 +54,6 @@ obj-$(CONFIG_SOLO6X10)		+=3D solo6x10/
+ obj-$(CONFIG_TIDSPBRIDGE)	+=3D tidspbridge/
+ obj-$(CONFIG_ACPI_QUICKSTART)	+=3D quickstart/
+ obj-$(CONFIG_SBE_2T3E3)		+=3D sbe-2t3e3/
+-obj-$(CONFIG_ATH6K_LEGACY)	+=3D ath6kl/
+ obj-$(CONFIG_USB_ENESTORAGE)	+=3D keucr/
+ obj-$(CONFIG_BCM_WIMAX)		+=3D bcm/
+ obj-$(CONFIG_FT1000)		+=3D ft1000/
+--=20
+1.7.5.4
 
-<restore-frame>
-movl 56(%esp), %ebp	# load flags
-movl %ebp, 52(%esp)	# store flags
-movl %ebx, 56(%esp)	# load mcount-ret address
-...
-popf
-ret
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Hmm?
+--Signature=_Thu__11_Aug_2011_15_55_29_+1000_SSJ48rtBGGjVaYX1
+Content-Type: application/pgp-signature
 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/include/asm/ftrace.h     |   38 ++++++++++++++++++++----------------
->  arch/x86/kernel/entry_64.S        |   23 +++++++++++++++++++++-
->  include/linux/ftrace.h            |   15 ++++++++++++-
->  kernel/trace/ftrace.c             |   29 ++++++++++++++++++---------
->  kernel/trace/trace_events.c       |    2 +-
->  kernel/trace/trace_functions.c    |    7 +++--
->  kernel/trace/trace_irqsoff.c      |    2 +-
->  kernel/trace/trace_sched_wakeup.c |    3 +-
->  kernel/trace/trace_selftest.c     |   15 +++++++++----
->  kernel/trace/trace_stack.c        |    3 +-
->  10 files changed, 95 insertions(+), 42 deletions(-)
->
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index b3fcf16..0750c2a 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -4,26 +4,29 @@
->  #ifdef __ASSEMBLY__
->
->  	.macro MCOUNT_SAVE_FRAME
-> -	/* taken from glibc */
-> -	subq $0x38, %rsp
-> -	movq %rax, (%rsp)
-> -	movq %rcx, 8(%rsp)
-> -	movq %rdx, 16(%rsp)
-> -	movq %rsi, 24(%rsp)
-> -	movq %rdi, 32(%rsp)
-> -	movq %r8, 40(%rsp)
-> -	movq %r9, 48(%rsp)
-> +	 /*
-> +	  * We add enough stack to save all regs,
-> +	  * and we what we need in the location of pt_regs.
-> +	  */
-> +	subq $ORIG_RAX, %rsp
-> +	movq %rax, RAX(%rsp)
-> +	movq %rcx, RCX(%rsp)
-> +	movq %rdx, RDX(%rsp)
-> +	movq %rsi, RSI(%rsp)
-> +	movq %rdi, RDI(%rsp)
-> +	movq %r8, R8(%rsp)
-> +	movq %r9, R9(%rsp)
->  	.endm
->
->  	.macro MCOUNT_RESTORE_FRAME
-> -	movq 48(%rsp), %r9
-> -	movq 40(%rsp), %r8
-> -	movq 32(%rsp), %rdi
-> -	movq 24(%rsp), %rsi
-> -	movq 16(%rsp), %rdx
-> -	movq 8(%rsp), %rcx
-> -	movq (%rsp), %rax
-> -	addq $0x38, %rsp
-> +	movq R9(%rsp), %r9
-> +	movq R8(%rsp), %r8
-> +	movq RDI(%rsp), %rdi
-> +	movq RSI(%rsp), %rsi
-> +	movq RDX(%rsp), %rdx
-> +	movq RCX(%rsp), %rcx
-> +	movq RAX(%rsp), %rax
-> +	addq $ORIG_RAX, %rsp
->  	.endm
->
->  #endif
-> @@ -34,6 +37,7 @@
->
->  #if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
->  #define ARCH_SUPPORTS_FTRACE_OPS 1
-> +#define ARCH_SUPPORTS_FTRACE_SAVE_REGS 1
->  #endif
->
->  #ifndef __ASSEMBLY__
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 27adc2b..b77f297 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -78,7 +78,16 @@ ENTRY(ftrace_caller)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I can see below code before save frame.
+iQEcBAEBAgAGBQJOQ27RAAoJEDMEi1NhKgbsW+EH/1RVgUU02RbNw/tJaSL2CRUj
+BMj3ciMhBZOd0MPGYauPYtqDu2hx6wt1qVSCZAH2fv1gkRjrqkKsQrGz9+lU7v7H
+JecHp+xI4dPIeKiqKRfYnMW5tUpS3MbTQkFKYaxEhCM0YC6wDnegL2PE4/+lUXB3
+KzwWmyKClvRuuNlCtYW+BtkRa3HRX5iZb6gxuhoRSN9URaUzR2Q6zSHUjakaHu8M
+EnDfjNwelrlTSth9WNIYfdS1E6KecpIYuupEjYy1XqPiZOLcBfBgFDugp3BF5gZm
++DT9QvUUYLl37gDm1Mn7L6rUt8J9NWbvsIqBhRyFyHPIEYwlLFuomFCv69qhoRQ=
+=hWpx
+-----END PGP SIGNATURE-----
 
-	cmpl $0, function_trace_stop
-	jne  ftrace_stub
-
-Please pushf before comparing it. :)
-Sometimes, the value of eflags is worth to watch.
-I know that SF/ZF will be never used between
-function call, so it is OK if the eflags is saved
-in MCOUNT_SAVE_FRAME.
-
->  	MCOUNT_SAVE_FRAME
->
->  	leaq function_trace_op, %rdx
-> -	movq 0x38(%rsp), %rdi
-> +
-> +	cmpl $0, ftrace_save_regs
-> +	jne  save_all_regs
-> +
-> +call_func:
-> +
-> +	/* regs go into 4th parameter */
-> +	leaq (%rsp), %rcx
-> +
-> +	movq ORIG_RAX(%rsp), %rdi
->  	movq 8(%rbp), %rsi
->  	subq $MCOUNT_INSN_SIZE, %rdi
->
-> @@ -96,6 +105,18 @@ GLOBAL(ftrace_stub)
->  	retq
->  END(ftrace_caller)
->
-> +save_all_regs:
-> +	/* Save the rest of pt_regs */
-> +	movq %r15, R15(%rsp)
-> +	movq %r14, R14(%rsp)
-> +	movq %r13, R13(%rsp)
-> +	movq %r12, R12(%rsp)
-> +	movq %r10, R10(%rsp)
-> +	movq %rbp, RBP(%rsp)
-> +	movq %rbx, RBX(%rsp)
-> +	jmp call_func
-
-At least, pt_regs.sp must be saved for accessing
-vars on stack.
-
-> +
-> +
->  #else /* ! CONFIG_DYNAMIC_FTRACE */
->  ENTRY(mcount)
->  	cmpl $0, function_trace_stop
-
-You also need to restore the rest of pt_regs if
-ftrace_save_regs is true.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--Signature=_Thu__11_Aug_2011_15_55_29_+1000_SSJ48rtBGGjVaYX1--
