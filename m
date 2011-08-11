@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1HKL7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:59:48 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:40090 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab1HKL7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:59:45 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Bart De Schuymer <bart.de.schuymer@pandora.be>
-Cc: kernel-janitors@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        davem@davemloft.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net/bridge/netfilter/ebtables.c: use available error handling code
-Date: Thu, 11 Aug 2011 13:59:38 +0200
-Message-Id: <1313063978-29400-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1755446Ab1HKMCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:02:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60708 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab1HKMCq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 08:02:46 -0400
+Subject: Re: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Sander <tim.sander@hbm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 11 Aug 2011 14:02:22 +0200
+In-Reply-To: <201108111330.28168.tim.sander@hbm.com>
+References: <1312580681.28695.44.camel@twins>
+	 <201108091713.19292.tim.sander@hbm.com> <1313055790.23660.70.camel@twins>
+	 <201108111330.28168.tim.sander@hbm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313064142.7144.1.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Thu, 2011-08-11 at 13:30 +0200, Tim Sander wrote:
+> The error does not occur  when configured with 
+> CONFIG_PREEMPT_RT_FULL=y
+> but with 
+> CONFIG_PREEMPT_RTB=y.
+> The same error also happens with
+> CONFIG_PREEMPT_LL=y. (A log is appended after the other log just
+> search for CONFIG_PREEMPT_LL 
+> for starting point). 
 
-Free the locally allocated table and newinfo as done in adjacent error
-handling code.
+Does the below (on top of -rt8) cure things for you? Shouldn't make a
+difference for PREEMPT_LL though, so maybe there's something else busted
+as well. But from what I can tell PREEMPT_BASE should be fine with such
+things disabling preemption..
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+
 
 ---
- net/bridge/netfilter/ebtables.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index 2b5ca1a..5864cc4 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1198,7 +1198,8 @@ ebt_register_table(struct net *net, const struct ebt_table *input_table)
+Index: linux-2.6/include/linux/uaccess.h
+===================================================================
+--- linux-2.6.orig/include/linux/uaccess.h
++++ linux-2.6/include/linux/uaccess.h
+@@ -22,7 +22,7 @@ static inline void raw_pagefault_enable(
+ 	preempt_check_resched();
+ }
  
- 	if (table->check && table->check(newinfo, table->valid_hooks)) {
- 		BUGPRINT("The table doesn't like its own initial data, lol\n");
--		return ERR_PTR(-EINVAL);
-+		ret = -EINVAL;
-+		goto free_chainstack;
- 	}
+-#ifndef CONFIG_PREEMPT_RT_FULL
++#ifndef CONFIG_PREEMPT_RT_BASE
+ static inline void pagefault_disable(void)
+ {
+ 	raw_pagefault_disable();
+Index: linux-2.6/mm/memory.c
+===================================================================
+--- linux-2.6.orig/mm/memory.c
++++ linux-2.6/mm/memory.c
+@@ -3438,7 +3438,7 @@ int handle_pte_fault(struct mm_struct *m
+ 	return 0;
+ }
  
- 	table->private = newinfo;
+-#ifdef CONFIG_PREEMPT_RT_FULL
++#ifdef CONFIG_PREEMPT_RT_BASE
+ void pagefault_disable(void)
+ {
+ 	migrate_disable();
 
