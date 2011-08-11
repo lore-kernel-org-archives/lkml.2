@@ -1,122 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab1HKW4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 18:56:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58883 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab1HKW4w convert rfc822-to-8bit (ORCPT
+	id S1753844Ab1HKXAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 19:00:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:33821 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab1HKXAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 18:56:52 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Aug 2011 00:56:06 +0200
-References: <20110806084447.388624428@intel.com>
-	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
-	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
-	 <20110808230535.GC7176@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1313103367.26866.39.camel@twins>
-Mime-Version: 1.0
+	Thu, 11 Aug 2011 19:00:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
+	references:mime-version:content-type:content-disposition:in-reply-to:
+	x-operating-system:user-agent:x-system-of-record;
+	b=cbo7+1AVt5hPPtbqqB5m5aCxwgT1AFrU2EEhdamBxdyRn77REbQJtOGz+yfaokL+5
+	sy7jqwNhhxsrn3PZLpYoQ==
+Date: Thu, 11 Aug 2011 16:00:05 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alex Neronskiy <zakmagnus@chromium.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
+Message-ID: <20110811230005.GC16327@google.com>
+References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
+ <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+ <1313091323.8491.30.camel@twins>
+ <CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
+ <1313094223.26866.15.camel@twins>
+ <CAAuSN90CXXEdco_fNYrv-ZUZPr4nB4HYPM1NCgaSgGz+Z-jaRQ@mail.gmail.com>
+ <1313097475.26866.18.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313097475.26866.18.camel@twins>
+X-Operating-System: Linux/2.6.32-gg508-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-09 at 19:20 +0200, Peter Zijlstra wrote:
-> So going by:
+Hi Peter,
+
+Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2011-08-11 at 13:31 -0700, Alex Neronskiy wrote:
+> > 
+> > > I mean, we're at the point where a PREEMPT=y kernel has a pretty decent
+> > > latency and the PREEMPT_RT kernels live at ~30us. So wth are you
+> > > measuring?
+
+In an earlier patch in the series, Alex was looking into using the timer
+for getting stack traces but using a different time source (TSC, jiffies) for
+measuring the worst latency seen so far.
+
+Since you know when the watchdog should have run, you can measure the
+difference between when it did run and when it should have. This would allow
+you to be able to measure latency down to the ms or lower.
+
+> > Well, not all kernels have PREEMPT. Chromebook kernels don't, for example.
 > 
->                                          write_bw
->   ref_bw = dirty_ratelimit * pos_ratio * --------
->                                          dirty_bw
+> Can one infer from that statement that the purpose is trying to measure
+> non preempt latency? ...
 > 
-> pos_ratio seems to be the feedback on the deviation of the dirty pages
-> around its setpoint. So we adjust the reference bw (or rather ratelimit)
-> to take account of the shift in output vs input capacity as well as the
-> shift in dirty pages around its setpoint.
+
+Our "current" plan is to see if we can get away with PREEMPT_VOLUNTARY
+and then fix any issues that we find by adding pre-emption points and
+finer grain locking (to enable pre-emption points) where needed.
+We were hoping to use this patch to find those issues.
+
+Right now we have softlockup_thresh set to 10 seconds. But we have no idea
+whether this is too high or not. Ideally, you'd want to set the threshold
+as low as possible but no so low that you start panicking the system
+on temporary stalls.
+
+Let's say that worst stall that every happens on our system is < 1s and
+any stall that is > 1s is really a lockup. With this patch, we could
+say that with confidence and push the threshold down from 10 to 2.
+The quicker we can detect a lockup, the better. We minimize downtown
+and get the machine up in no time (our boot is only 8 seconds).
+
+But I suspect that there are stalls. In Alex's first run with the patch,
+he saw a few lockups which we are now investigating. They were mostly
+in the suspend/resume and boot/shutdown paths. One I'm confident
+is a bug and we'll send a patch upstream shortly.
+
+> ... Why not use the tracer build for that purpose?
 > 
-> From that we derive the condition that: 
+
+PREEMPT_TRACER is awesome for the lab or development machines but
+it adds too much overhead to use in production. Its add a pretty big
+overhead every time you context switch. With PREEMPT, the overhead
+would be even more.
+
+We're not 100% sure we shouldn't use PREEMPT instead of PREEMPT_VOLUNTARY.
+If we had the data from this patch, we might see that latency is too
+high and we might have to consider PREEMPT instead.
+
+> Still the watchdog ticks at 1s intervals or so, anything that takes that
+> long, even on voluntary preemption kernels is quite insane.
 > 
->   pos_ratio(setpoint) := 1
 > 
-> Now in order to create a linear function we need one more condition. We
-> get one from the fact that once we hit the limit we should hard throttle
-> our writers. We get that by setting the ratelimit to 0, because, after
-> all, pause = nr_dirtied / ratelimit would yield inf. in that case. Thus:
-> 
->   pos_ratio(limit) := 0
-> 
-> Using these two conditions we can solve the equations and get your:
-> 
->                         limit - dirty
->   pos_ratio(dirty) =  ----------------
->                       limit - setpoint
-> 
-> Now, for some reason you chose not to use limit, but something like
-> min(limit, 4*thresh) something to do with the slope affecting the rate
-> of adjustment. This wants a comment someplace. 
 
-Ok, so I think that pos_ratio(limit) := 0, is a stronger condition than
-your negative slope (df/dx < 0), simply because it implies your
-condition and because it expresses our hard stop at limit.
+The timer period is 1/5 the period of the threshold. The minimum threshold
+is 1s. So if we set the threshold to 1s, we could get a stack trace
+for a 200 ms stall. That would rock.
 
-Also, while I know this is totally over the top, but..
+We would love to set the threshold to 1s and know that we aren't seeing any
+stalls above 200ms. That would give us at least 800 ms of breathing room.
+But right now, we have no idea how much breathing room there is.
 
-I saw you added a ramp and brake area in future patches, so have you
-considered using a third order polynomial instead?
-
-The simple:
-
- f(x) = -x^3 
-
-has the 'right' shape, all we need is move it so that:
-
- f(s) = 1
-
-and stretch it to put the single root at our limit. You'd get something
-like:
-
-               s - x 3
- f(x) :=  1 + (-----)
-                 d
-
-Which, as required, is 1 at our setpoint and the factor d stretches the
-middle bit. Which has a single (real) root at: 
-
-  x = s + d, 
-
-by setting that to our limit, we get:
-
-  d = l - s
-
-Making our final function look like:
-
-               s - x 3
- f(x) :=  1 + (-----)
-               l - s
-
-You can clamp it at [0,2] or so. The implementation wouldn't be too
-horrid either, something like:
-
-unsigned long bdi_pos_ratio(..)
-{
-	if (dirty > limit)
-		return 0;
-
-	if (dirty < 2*setpoint - limit)
-		return 2 * SCALE;
-
-	x = SCALE * (setpoint - dirty) / (limit - setpoint);
-	xx = (x * x) / SCALE;
-	xxx = (xx * x) / SCALE;
-
-	return xxx;
-}
-
+Regards,
+Mandeep
