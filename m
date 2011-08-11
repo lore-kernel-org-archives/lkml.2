@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1HKA3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 20:29:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48660 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1HKA3K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 20:29:10 -0400
+	id S1753883Ab1HKAbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 20:31:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48243 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750802Ab1HKAbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 20:31:08 -0400
+Date: Thu, 11 Aug 2011 00:31:01 GMT
+From: tip-bot for Andy Lutomirski <luto@mit.edu>
+Message-ID: <tip-fce8dc06423d6fb2709469dc5c55b04e09c1d126@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <6b19f55bdb06a0c32c2fa6dba9b6f222e1fde999.1312988155.git.luto@mit.edu>
+References: <6b19f55bdb06a0c32c2fa6dba9b6f222e1fde999.1312988155.git.luto@mit.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86-64: Wire up getcpu syscall
+Git-Commit-ID: fce8dc06423d6fb2709469dc5c55b04e09c1d126
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <4E424A0A.6090300@kernel.dk>
-References: <20110809034724.GA22257@july>
-	<4E4181E4.3090704@kernel.dk>
-	<CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
-	<4E423C83.9090209@kernel.dk>
-	<CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
-	<CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
-	<4E424A0A.6090300@kernel.dk>
-Date: Thu, 11 Aug 2011 08:29:09 +0800
-X-Google-Sender-Auth: 9hXmmbUclDW7SaAR8mET76zcbZ4
-Message-ID: <CANejiEU+gG9wWb+=zqASj1M-CmcDhXi2kft=FpFJ8K6Tb+whrw@mail.gmail.com>
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-From: Shaohua Li <shli@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Kyungmin Park <kmpark@infradead.org>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, jh80.chung@samsung.com, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Aug 2011 00:31:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/10 Jens Axboe <axboe@kernel.dk>:
-> On 2011-08-10 10:47, Shaohua Li wrote:
->> 2011/8/10 Kyungmin Park <kmpark@infradead.org>:
->>> On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>> On 2011-08-10 01:43, Kyungmin Park wrote:
->>>>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>>> On 2011-08-09 05:47, Kyungmin Park wrote:
->>>>>>> Hi Jens
->>>>>>>
->>>>>>> Now eMMC device requires the upper layer information to improve the data
->>>>>>> performance and reliability.
->>>>>>>
->>>>>>> . Context ID
->>>>>>> Using the context information, it can sort out the data internally and improve the performance.
->>>>>>> The main problem is that it's needed to define "What's the context".
->>>>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
->>>>>>>
->>>>>>> . Data Tag
->>>>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
->>>>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
->>>>>>>
->>>>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
->>>>>>>
->>>>>>> Can you give your opinions and does it proper fields at requests?
->>>>>>
->>>>>> You need this to work on all IO schedulers, not just cfq.
->>>>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
->>>>>
->>>>>> And since that's the case, there's no need to add this field since you can just
->>>>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
->>>>>>
->>>>>> static int cfq_foo(struct request *rq)
->>>>>> {
->>>>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
->>>>>>
->>>>>>        if (cfqq)
->>>>>>                return cfqq->pid;
->>>>>>
->>>>>>        return -1;
->>>>>> }
->>>>>
->>>>> The actual user of these information is device driver. e.g.,
->>>>> drivers/mmc/card/block.c
->>>>> So it's not good to use cfq data structure at D/D. some time later
->>>>> these are also used at scsi device drivers.
->>>>
->>>> No, what I'm suggesting above is the CFQ implementation. You would need
->>>> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
->>>> If you notice, the above function does not take or output anything
->>>> related to CFQ in particular, it'll just return you the unique key you
->>>> need.
->>>>
->>>> It's either the above, or a field in the request that the schedulers
->>>> fill out. However, it'd be somewhat annoying to grow struct request for
->>>> something that has a narrow scope of use. Hence the suggestion to add a
->>>> strategy helper for this.
->>> Okay, I'll add new elevator function one for getting context or more hints.
->>> BTW, does it okay to call elevator function call at D/D?
->>>
->>> The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
->>>
->>>                struct elevator_queue *e = md->queue.queue->elevator;
->>>                int context = -1;
->>>
->>>                if (e->ops->elevator_get_req_hint_fn && req) {
->>>                        context = e->ops->elevator_get_req_hint_fn(req);
->> I'm wondering how the driver deal with elevator switch. A context id from
->> one elevator might just be garbage for another elevator.
->
-> Any request with sched private data is drained prior to switching over.
-> This problem isn't unique to this context id, we have other per-request
-> IO scheduler data structures associated with the request, too.
-what I'm afraid is the context id isn't consistent. Say in cfq, context id
-for app1 is 1, app2 2. Then switching to deadline, context id for app1
-is 2, app2 1. Will the driver be confused about this?
+Commit-ID:  fce8dc06423d6fb2709469dc5c55b04e09c1d126
+Gitweb:     http://git.kernel.org/tip/fce8dc06423d6fb2709469dc5c55b04e09c1d126
+Author:     Andy Lutomirski <luto@mit.edu>
+AuthorDate: Wed, 10 Aug 2011 11:15:31 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 10 Aug 2011 19:26:46 -0500
 
-Thanks,
-Shaohua
+x86-64: Wire up getcpu syscall
+
+getcpu is available as a vdso entry and an emulated vsyscall.
+Programs that for some reason don't want to use the vdso should
+still be able to call getcpu without relying on the slow emulated
+vsyscall.  It costs almost nothing to expose it as a real syscall.
+
+We also need this for the following patch in vsyscall=native mode.
+
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Link: http://lkml.kernel.org/r/6b19f55bdb06a0c32c2fa6dba9b6f222e1fde999.1312988155.git.luto@mit.edu
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/unistd_64.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index 705bf13..d92641c 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -681,6 +681,8 @@ __SYSCALL(__NR_syncfs, sys_syncfs)
+ __SYSCALL(__NR_sendmmsg, sys_sendmmsg)
+ #define __NR_setns				308
+ __SYSCALL(__NR_setns, sys_setns)
++#define __NR_getcpu				309
++__SYSCALL(__NR_getcpu, sys_getcpu)
+ 
+ #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
