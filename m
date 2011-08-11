@@ -1,30 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab1HKBIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 21:08:37 -0400
-Received: from fep20.mx.upcmail.net ([62.179.121.40]:58593 "EHLO
-	fep20.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755520Ab1HKBIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 21:08:36 -0400
-X-SourceIP: 115.184.28.118
-Reply-To: <mrleungcheung201@9.cn>
-From: "Mr.LEUNG CHEUNG" <info@hotmail.com>
-Subject: i need your assistance to transfer $22,5million dollars to your country
-Date: Thu, 11 Aug 2011 06:39:06 +0530
+	id S1755572Ab1HKBKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 21:10:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56830 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752633Ab1HKBKg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 21:10:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110811010832.PLNP1387.viefep20-int.chello.at@edge03.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=zlRBWuFCZaNL9+WHNm1pWLowY5Lx061w2zJBJiDkNAU= c=1 sm=0 a=Dyoqhi_TatcA:10 a=YJNKwMzILvEA:10 a=8uJ5MO_MQBgA:10 a=03BE8P92kNoA:10 a=8EU9Q7FnrCoA:10 a=YczH870gNG4A:10 a=Cfj4BQAnxiAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110810175829.a834d80f.rdunlap@xenotime.net>
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+ <20110810122304.96b8be67.rdunlap@xenotime.net> <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
+ <20110810175829.a834d80f.rdunlap@xenotime.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 10 Aug 2011 18:10:14 -0700
+Message-ID: <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
+Subject: Re: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Peng Tao <bergwolf@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-raid@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 10, 2011 at 5:58 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>
+> The blocklayout parts of NVS_V4_1 could depend on BLOCK.  or all of NVS_V4_1
+> can depend on BLOCK.
 
+Absolutely. Replace "could" by "should".
+
+There's no way I'll take a patch to make NFS "select BLOCK". If the
+block layer isn't enabled, then NFS obviously shouldn't be doing any
+pnfs stuff.
+
+                        Linus
