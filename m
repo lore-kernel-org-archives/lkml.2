@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab1HKDWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:22:38 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:54807
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753423Ab1HKDWf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:22:35 -0400
-X-SpamScore: -21
-X-BigFish: VPS-21(zzbb2dK9371K936eK1432N98dK4015Lzz1202hzz8275dhz32i668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LPQUPA-02-LGP-02
-X-M-MSG: 
-Subject: Re: Allocating buffers for USB transfers (again)
-From: Andiry Xu <andiry.xu@amd.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Daniel Mack <zonque@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Florian Mickler <florian@mickler.org>,
-        Oliver Neukum <oliver@neukum.org>, <linux-usb@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>,
-        Clemens Ladisch <clemens@ladisch.de>, <pedrib@gmail.com>,
-        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
-        <linux-kernel@vger.kernel.org>, Robert Hancock <hancockrwd@gmail.com>
-In-Reply-To: <20110810231552.GA7194@xanatos>
-References: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org>
-	 <4E42A4AE.4020008@gmail.com>  <20110810231552.GA7194@xanatos>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Aug 2011 11:22:21 +0800
-Message-ID: <1313032941.1918.8.camel@brienza-desktop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-OriginalArrivalTime: 11 Aug 2011 03:22:25.0341 (UTC) FILETIME=[E41936D0:01CC57D5]
-X-OriginatorOrg: amd.com
+	id S1754243Ab1HKDXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:23:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39024 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab1HKDX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 23:23:29 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=4Stzp0-EpPcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=tcGCEW8-2yqL9dmH9McA:9 a=b9hHhNdkK1YoWnzfdfMA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC PATCH][3.0] Tracepoint: dissociate from module mutex (v2)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <4E434928.9020304@hitachi.com>
+References: <20110810191839.GC8525@Krystal>  <4E434928.9020304@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Aug 2011 23:23:27 -0400
+Message-ID: <1313033007.18583.283.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 16:15 -0700, Sarah Sharp wrote:
-> On Wed, Aug 10, 2011 at 05:33:02PM +0200, Daniel Mack wrote:
-> > On 08/10/2011 04:32 PM, Alan Stern wrote:
-> > >Looking at the driver's current code, it appears that your patch
-> > >does not fix the bug properly.  Using discontiguous regions in the
-> > >transfer buffer is perfectly okay.  The real problem is later on,
-> > >where you do:
-> > >
-> > >if (send_it) { out->number_of_packets = FRAMES_PER_URB;
-> > >
-> > >This should be
-> > >
-> > >out->number_of_packets = outframe;
-> > >
-> > >The way it is now, the USB stack will try to use data from all the
-> > >frame descriptors, and the last few will be stale because the loop
-> > >doesn't set them.
+On Thu, 2011-08-11 at 12:14 +0900, Masami Hiramatsu wrote:
+> (2011/08/11 4:18), Mathieu Desnoyers wrote:
+> > Copy the information needed from struct module into a local module list
+> > held within tracepoint.c from within the module coming/going notifier.
 > > 
-> > That's actually true, even though it doesn't seem to cause any trouble.
-> > I tested everything here of course, and the output URBs return back from
-> > the USB stack with their length fields zeroed out, which then
-> > causes the stack to send packets with zero-length fields at the end.
+> > This vastly simplifies locking of tracepoint registration /
+> > unregistration, because we don't have to take the module mutex to
+> > register and unregister tracepoints anymore. Steven Rostedt ran into
+> > dependency problems related to modules mutex vs kprobes mutex vs ftrace
+> > mutex vs tracepoint mutex that seems to be hard to fix without removing
+> > this dependency between tracepoint and module mutex. (note: it should be
+> > investigated whether kprobes could benefit of being dissociated from the
+> > modules mutex too.)
 > 
-> Actually, it causes system hangs when the driver is loaded on a device
-> attached to a USB 3.0 port, as Alan Stern pointed out:
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=40702
-> 
-> Please don't submit zero-length transfers.  The xHCI driver just isn't
-> able to handle it.  Arguably, it probably should have just rejected your
-> URB when it found a zero length buffer, so I'll probably be submitting a
-> patch to fix that.
+> Thanks, it seems that kprobes has already mostly done that.
+> It holds module_mutex only in kprobe_optimizer. However,
+> it seems meaningless, because kprobe_mutex already protects
+> kprobe_optimizer against the kprobes module notifier.
+> Thus, a module removing will stays on the notifier until
+> the optimizer runs out. So I think we can remove that mutex lock.
 > 
 
-I think queue a zero-length TRB to xhci host is OK. I've not tested it,
-but the issue here seems is caused by td->last_trb = NULL. Check
-count_isoc_trbs_needed(), num_trbs will be 0 if the packet length is
-zero and (addr & (TRB_MAS_BUFF_SIZE - 1)) is zero. We can not return
-num_trbs as 0 to xhci_queue_isoc_tx(), which caused a td added to ep's
-td list, while it's not actually queued to ep ring and last_trb is not
-set.
+So should I change my patch 4/5 to just remove the module_mutex?
 
-In order to avoid this, we just make sure count_isoc_trbs_needed()
-always return 1 or larger numbers, instead of reject the urb. Is that
-feasible?
+[PATCH 4/5][RFC] kprobes: Inverse taking of module_mutex with kprobe_mutex
 
-Thanks,
-Andiry
+-- Steve
 
 
