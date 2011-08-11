@@ -1,149 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab1HKQE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 12:04:29 -0400
-Received: from gateway.hbm.com ([213.157.30.2]:10524 "EHLO hbmntx5.hbm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab1HKQE1 convert rfc822-to-8bit (ORCPT
+	id S1753172Ab1HKQFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 12:05:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39706 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab1HKQFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 12:04:27 -0400
-Thread-Index: AcxYQFfxPf3WADXhQGGuBFpe+ZpXlQ==
-Thread-Topic: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
-Content-class: urn:content-classes:message
-Importance: normal
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: "Peter Zijlstra" <peterz@infradead.org>
-Subject: Re: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
-Date: Thu, 11 Aug 2011 18:04:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>
-References: <1312580681.28695.44.camel@twins> <201108111330.28168.tim.sander@hbm.com> <1313066498.8491.1.camel@twins>
-In-Reply-To: <1313066498.8491.1.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201108111804.11136.tim.sander@hbm.com>
-X-OriginalArrivalTime: 11 Aug 2011 16:04:26.0223 (UTC) FILETIME=[57DE27F0:01CC5840]
+	Thu, 11 Aug 2011 12:05:11 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=aaAdOvpg3WkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=XP4Ko9G5nC1x_yysKeIA:9 a=1GwZeYR5M8FxURsr16QA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] 9p: remove CONFIG_NET_9P_DEBUG option
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Alex Ray <alexjray.ncsu@gmail.com>,
+        v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex Ray <ajray@ncsu.edu>
+In-Reply-To: <87k4ak54gn.fsf@skywalker.in.ibm.com>
+References: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
+	 <877h6l7hoj.fsf@skywalker.in.ibm.com>
+	 <CAFkjPT=y4jJTNEFrJLr=i9UVHfixqqGmYbVZf0B4AHk-AmOJdA@mail.gmail.com>
+	 <87wrel5gp8.fsf@skywalker.in.ibm.com>
+	 <CAFkjPT=ePtKi0Z-AjBm_W38VPTV3HbT6hWSMHOHezytoqAbNvQ@mail.gmail.com>
+	 <87k4ak54gn.fsf@skywalker.in.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 11 Aug 2011 12:05:08 -0400
+Message-ID: <1313078708.18583.314.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 11. August 2011, 14:41:38 schrieb Peter Zijlstra:
-> On Thu, 2011-08-11 at 14:02 +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-08-11 at 13:30 +0200, Tim Sander wrote:
-> > > The error does not occur  when configured with
-> > > CONFIG_PREEMPT_RT_FULL=y
-> > > but with
-> > > CONFIG_PREEMPT_RTB=y.
-> > > The same error also happens with
-> > > CONFIG_PREEMPT_LL=y. (A log is appended after the other log just
-> > > search for CONFIG_PREEMPT_LL
-> > > for starting point).
+On Thu, 2011-08-11 at 21:24 +0530, Aneesh Kumar K.V wrote:
+> On Wed, 10 Aug 2011 13:36:52 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+> > On Wed, Aug 10, 2011 at 12:17 PM, Aneesh Kumar K.V
+> > <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > > On Wed, 10 Aug 2011 07:24:56 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+> > >> On Wed, Aug 10, 2011 at 4:13 AM, Aneesh Kumar K.V
+> > >> <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > >> > On Mon,  1 Aug 2011 07:14:44 -0500, Alex Ray <alexjray.ncsu@gmail.com> wrote:
+> > >> >> Remove the CONFIG_NET_9P_DEBUG option, used to completely remove logging
+> > >> >> functionality from v9fs.  Logging is (already) controlled with the
+> > >> >> run-time debug= option, this gets rid of the compile-time option (which
+> > >> >> was being misunderstood and misused).
+> > >> >>
+> > >> >> Signed-off-by: Alex Ray <ajray@ncsu.edu>
+> > >> >
+> > >> > I see this merged to for-next.  Do we know whether enabling debug always have a
+> > >> > performance impact ?.
+> > >> >
+> > >>
+> > >> No clue, but without any debug it makes it impossible for user's to
+> > >> generate reasonable bug reports.  If I understand the tracepoint
+> > >> collection facility correctly, it incurs exactly the same overhead as
+> > >> a DPRINT when the debug mount option is set to 0 (although tracepoints
+> > >> are much lower overhead when actually collecting).
+> > >
+> > > I was worried about overhead when we are not collecting any debug info.
+> > >
 > > 
-> > Does the below (on top of -rt8) cure things for you? Shouldn't make a
-> > difference for PREEMPT_LL though, so maybe there's something else busted
-> > as well. But from what I can tell PREEMPT_BASE should be fine with such
-> > things disabling preemption..
-Yes it works for CONFIG_PREEMPT_RTB=y and as you say not for 
-CONFIG_PREEMPT_LL=y.
+> > I understand that.  But the overhead when not collecting is the
+> > conditional branch.
+> > According to Documentation/trace/tracepoints.txt this is the same for the
+> > tracepoints:
+> > 
+> > "When a tracepoint is "off" it has no effect, except for adding a tiny
+> > time penalty
+> > (checking a condition for a branch) and space penalty (adding a few
+> > bytes for the function call at the end of the instrumented function
+> > and adds a data structure in a separate section)."
+> > 
+> > So, since DPRINT is essentially if(p9_debug_level & level) == level)
+> > it should roughly amount to the same overhead, no?  I suppose we could
+> > get fancy and and prefix it with an unlikely.
+> > 
+> 
+> Is that true with jump label ? May be we should update tracepoints.txt ?
 
-However with the following patches on top of rt8:
+Correct, that should be updated. When jump labels are enabled, we have a
+nop and an unconditional branch over the trace code, which when enable
+will change the nop to call the trace code.
 
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index 44b3751..21ce185 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -22,7 +22,7 @@ static inline void raw_pagefault_enable(void)
-        preempt_check_resched();
- }
- 
--#ifndef CONFIG_PREEMPT_RT_FULL
-+#ifndef CONFIG_PREEMPT_RT_BASE
- static inline void pagefault_disable(void)
- {
-        raw_pagefault_disable();
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 71e2a1f..af63de3 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2040,7 +2040,7 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
-        char *kaddr;
-        size_t copied;
- 
--       BUG_ON(!current->pagefault_disabled);
-+       BUG_ON(!(in_atomic() || current->pagefault_disabled));
-        kaddr = kmap_atomic(page, KM_USER0);
-        if (likely(i->nr_segs == 1)) {
-                int left;
-diff --git a/mm/memory.c b/mm/memory.c
-index cf71bd9..1b5a116 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3382,7 +3382,7 @@ unlock:
-        return 0;
- }
- 
--#ifdef CONFIG_PREEMPT_RT_FULL
-+#ifdef CONFIG_PREEMPT_RT_BASE
- void pagefault_disable(void)
- {
-        migrate_disable();
+We do have a slight hit in icache, but nothing I have been able to
+measure. But if we do, I could even modify it to become even less of an
+impact (but will cause tracing to slow down, but we don't really care if
+it speeds up non tracing case ;)
 
-i get the following bug:
+-- Steve
 
-kernel BUG at kernel/posix-cpu-timers.c:1315!
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] *pgd=00000000
-Internal error: Oops: 817 [#1] PREEMPT
-Modules linked in: i2c_imx(+) netx netx_reset dspload fpgaload mxc_nand(+) nand nand_ids nand_ecc
-CPU: 0    Not tainted  (3.0.0-pmx-rt8-00009-g39305ab #167)
-PC is at __bug+0x24/0x30
-LR is at walk_stackframe+0x24/0x40
-pc : [<c002cbf0>]    lr : [<c002cbb0>]    psr: 60000113
-sp : c782ff40  ip : c782fe28  fp : c782ff4c
-r10: 00000001  r9 : 00000000  r8 : c78663c0
-r7 : c030463c  r6 : c782e000  r5 : 00000000  r4 : c78663c0
-r3 : 00000000  r2 : 00000001  r1 : c782fe58  r0 : 00000034
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 00c5387d  Table: 87b70008  DAC: 00000017
-Process posixcputmr/0 (pid: 6, stack limit = 0xc782e268)
-Stack: (0xc782ff40 to 0xc7830000)
-ff40: c782ff8c c782ff50 c005a5c0 c002cbd8 00000000 c782ff54 c782ff54 00000000
-ff60: 00000000 c78663c0 00000000 c782e000 c030463c c78663c0 00000000 00000001
-ff80: c782ffbc c782ff90 c005a88c c005a594 00000000 c7817f28 00000000 c782ffcc
-ffa0: c005a800 00000000 00000000 00000000 c782fff4 c782ffc0 c00570f0 c005a80c
-ffc0: c7817f28 00000000 00000000 00000000 c782ffd0 c782ffd0 c7817f28 c0057064
-ffe0: c0040868 00000013 00000000 c782fff8 c0040868 c0057070 cccdcd6c ffdec890
-Backtrace: 
-[<c002cbcc>] (__bug+0x0/0x30) from [<c005a5c0>] (__run_posix_cpu_timers+0x38/0x278)
-[<c005a588>] (__run_posix_cpu_timers+0x0/0x278) from [<c005a88c>] (posix_cpu_timers_thread+0x8c/0x124)
-[<c005a800>] (posix_cpu_timers_thread+0x0/0x124) from [<c00570f0>] (kthread+0x8c/0x94)
-[<c0057064>] (kthread+0x0/0x94) from [<c0040868>] (do_exit+0x0/0x2d8)
- r7:00000013 r6:c0040868 r5:c0057064 r4:c7817f28
-Code: e59f0010 e1a01003 eb086a88 e3a03000 (e5833000) 
----[ end trace d632afeaa11559d4 ]---
 
-Otherwise the system boots and works
+> 
+> Upstream commit:
+> bf5438fca2950b03c21ad868090cc1a8fcd49536
+> 8f7b50c514206211cc282a4247f7b12f18dee674
+> 
+> -aneesh
 
-Best regards
-Tim
-
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
-
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
-
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
 
