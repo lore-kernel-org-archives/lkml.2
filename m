@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1HKL1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:27:10 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:32793 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab1HKL1H (ORCPT
+	id S1755014Ab1HKL10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:27:26 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47637 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612Ab1HKL1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:27:07 -0400
-X-AuditID: b753bd60-a1c87ba000000655-0a-4e43bc88fd59
-X-AuditID: b753bd60-a1c87ba000000655-0a-4e43bc88fd59
+	Thu, 11 Aug 2011 07:27:19 -0400
+X-AuditID: b753bd60-a3089ba000000655-24-4e43bc951168
+X-AuditID: b753bd60-a3089ba000000655-24-4e43bc951168
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 6/9] [BUGFIX] perf probe: Fix to search local
- variables in appropriate scope
+Subject: [PATCH -tip v2 8/9] [BUGFIX] perf probe: Search concrete out-of-line
+ instances
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Thu, 11 Aug 2011 20:02:59 +0900
-Message-ID: <20110811110259.19900.85664.stgit@fedora15>
+Date: Thu, 11 Aug 2011 20:03:11 +0900
+Message-ID: <20110811110311.19900.63997.stgit@fedora15>
 In-Reply-To: <20110811110220.19900.54963.stgit@fedora15>
 References: <20110811110220.19900.54963.stgit@fedora15>
 User-Agent: StGIT/0.14.3
@@ -35,378 +34,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix perf probe to search local variables in appropriate local
-inlined function scope. For example, pre_schedule() has only
-2 local variables, as below;
+gcc 4.6 generates a concrete out-of-line instance when
+there is a function which is implicitly inlined somewhere
+but also has its own instance. The concrete out-of-line
+instance means that it has an abstract origin of the
+function which is referred by not only inlined-subroutines
+but also a concrete subprogram.
 
-$ perf probe -L pre_schedule
-<pre_schedule@/home/mhiramat/ksrc/linux-2.6/kernel/sched.c:0>
-      0  static inline void pre_schedule(struct rq *rq, struct task_struct *prev)
-         {
-      2         if (prev->sched_class->pre_schedule)
-      3                 prev->sched_class->pre_schedule(rq, prev);
-         }
+Since current dwarf_func_inline_instances() can find only
+instances of inlined-subroutines, this introduces new
+die_walk_instances() to find both of subprogram and
+inlined-subroutines.
 
-However, current perf probe shows 4 local variables on pre_schedule(),
-because it searches variables in the caller(schedule()) scope.
+e.g. without this,
+# perf probe -V sched_group_rt_period
+Available variables at sched_group_rt_period
+        @<cpu_rt_period_read_uint+9>
+                struct task_group*      tg
 
-$ perf probe -V pre_schedule
-Available variables at pre_schedule
-        @<schedule+445>
-                int     cpu
-                long unsigned int*      switch_count
-                struct rq*      rq
-                struct task_struct*     prev
+perf probe failed to find actual subprogram instance
+of sched_group_rt_period().
 
-This patch fixes this issue by searching variables in the local scope
-of the instance of inlined function. Here is the result.
+With this,
 
-$ perf probe -V pre_schedule
-Available variables at pre_schedule
-        @<schedule+445>
-                struct rq*      rq
-                struct task_struct*     prev
+# perf probe -V sched_group_rt_period
+Available variables at sched_group_rt_period
+        @<cpu_rt_period_read_uint+9>
+                struct task_group*      tg
+        @<sched_group_rt_period+0>
+                struct task_group*      tg
+
+Now it found the sched_group_rt_period() itself.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
 
- tools/perf/util/dwarf-aux.c    |   33 ++++++++++
- tools/perf/util/dwarf-aux.h    |    4 +
- tools/perf/util/probe-finder.c |  132 ++++++++++++++++++++++++++++++++--------
- tools/perf/util/probe-finder.h |    2 -
- 4 files changed, 144 insertions(+), 27 deletions(-)
+ tools/perf/util/dwarf-aux.c    |   58 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/dwarf-aux.h    |    4 +++
+ tools/perf/util/probe-finder.c |   56 ++++++++++++++-------------------------
+ 3 files changed, 83 insertions(+), 35 deletions(-)
 
 diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index d9b8ad0..425703a 100644
+index 425703a..d0f4048 100644
 --- a/tools/perf/util/dwarf-aux.c
 +++ b/tools/perf/util/dwarf-aux.c
-@@ -96,6 +96,39 @@ int cu_find_lineinfo(Dwarf_Die *cu_die, unsigned long addr,
- 	return *lineno ?: -ENOENT;
+@@ -453,6 +453,64 @@ Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 	return die_mem;
  }
  
-+static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data);
-+
-+/**
-+ * cu_walk_functions_at - Walk on function DIEs at given address
-+ * @cu_die: A CU DIE
-+ * @addr: An address
-+ * @callback: A callback which called with found DIEs
-+ * @data: A user data
-+ *
-+ * Walk on function DIEs at given @addr in @cu_die. Passed DIEs
-+ * should be subprogram or inlined-subroutines.
-+ */
-+int cu_walk_functions_at(Dwarf_Die *cu_die, Dwarf_Addr addr,
-+		    int (*callback)(Dwarf_Die *, void *), void *data)
-+{
-+	Dwarf_Die die_mem;
-+	Dwarf_Die *sc_die;
-+	int ret = -ENOENT;
-+
-+	/* Inlined function could be recursive. Trace it until fail */
-+	for (sc_die = die_find_realfunc(cu_die, addr, &die_mem);
-+	     sc_die != NULL;
-+	     sc_die = die_find_child(sc_die, __die_find_inline_cb, &addr,
-+				     &die_mem)) {
-+		ret = callback(sc_die, data);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+
-+}
-+
- /**
-  * die_compare_name - Compare diename and tname
-  * @dw_die: a DIE
-diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
-index c8e491b..6f46106 100644
---- a/tools/perf/util/dwarf-aux.h
-+++ b/tools/perf/util/dwarf-aux.h
-@@ -34,6 +34,10 @@ extern const char *cu_get_comp_dir(Dwarf_Die *cu_die);
- extern int cu_find_lineinfo(Dwarf_Die *cudie, unsigned long addr,
- 			    const char **fname, int *lineno);
- 
-+/* Walk on funcitons at given address */
-+extern int cu_walk_functions_at(Dwarf_Die *cu_die, Dwarf_Addr addr,
-+			int (*callback)(Dwarf_Die *, void *), void *data);
-+
- /* Compare diename and tname */
- extern bool die_compare_name(Dwarf_Die *dw_die, const char *tname);
- 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index d6d5768..5c83b7d 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -612,8 +612,8 @@ static int convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 	return ret;
- }
- 
--/* Find a variable in a subprogram die */
--static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
-+/* Find a variable in a scope DIE */
-+static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- {
- 	Dwarf_Die vr_die, *scopes;
- 	char buf[32], *ptr;
-@@ -655,11 +655,11 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	pr_debug("Searching '%s' variable in context.\n",
- 		 pf->pvar->var);
- 	/* Search child die for local variables and parameters. */
--	if (die_find_variable_at(sp_die, pf->pvar->var, pf->addr, &vr_die))
-+	if (die_find_variable_at(sc_die, pf->pvar->var, pf->addr, &vr_die))
- 		ret = convert_variable(&vr_die, pf);
- 	else {
- 		/* Search upper class */
--		nscopes = dwarf_getscopes_die(sp_die, &scopes);
-+		nscopes = dwarf_getscopes_die(sc_die, &scopes);
- 		ret = -ENOENT;
- 		while (nscopes-- > 1) {
- 			pr_debug("Searching variables in %s\n",
-@@ -717,26 +717,30 @@ static int convert_to_trace_point(Dwarf_Die *sp_die, Dwarf_Addr paddr,
- 	return 0;
- }
- 
--/* Call probe_finder callback with real subprogram DIE */
--static int call_probe_finder(Dwarf_Die *sp_die, struct probe_finder *pf)
-+/* Call probe_finder callback with scope DIE */
-+static int call_probe_finder(Dwarf_Die *sc_die, struct probe_finder *pf)
- {
--	Dwarf_Die die_mem;
- 	Dwarf_Attribute fb_attr;
- 	size_t nops;
- 	int ret;
- 
--	/* If no real subprogram, find a real one */
--	if (!sp_die || dwarf_tag(sp_die) != DW_TAG_subprogram) {
--		sp_die = die_find_realfunc(&pf->cu_die, pf->addr, &die_mem);
--		if (!sp_die) {
-+	if (!sc_die) {
-+		pr_err("Caller must pass a scope DIE. Program error.\n");
-+		return -EINVAL;
-+	}
-+
-+	/* If not a real subprogram, find a real one */
-+	if (dwarf_tag(sc_die) != DW_TAG_subprogram) {
-+		if (!die_find_realfunc(&pf->cu_die, pf->addr, &pf->sp_die)) {
- 			pr_warning("Failed to find probe point in any "
- 				   "functions.\n");
- 			return -ENOENT;
- 		}
--	}
-+	} else
-+		memcpy(&pf->sp_die, sc_die, sizeof(Dwarf_Die));
- 
--	/* Get the frame base attribute/ops */
--	dwarf_attr(sp_die, DW_AT_frame_base, &fb_attr);
-+	/* Get the frame base attribute/ops from subprogram */
-+	dwarf_attr(&pf->sp_die, DW_AT_frame_base, &fb_attr);
- 	ret = dwarf_getlocation_addr(&fb_attr, pf->addr, &pf->fb_ops, &nops, 1);
- 	if (ret <= 0 || nops == 0) {
- 		pf->fb_ops = NULL;
-@@ -754,7 +758,7 @@ static int call_probe_finder(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	}
- 
- 	/* Call finder's callback handler */
--	ret = pf->callback(sp_die, pf);
-+	ret = pf->callback(sc_die, pf);
- 
- 	/* *pf->fb_ops will be cached in libdw. Don't free it. */
- 	pf->fb_ops = NULL;
-@@ -762,17 +766,82 @@ static int call_probe_finder(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	return ret;
- }
- 
-+struct find_scope_param {
-+	const char *function;
-+	const char *file;
-+	int line;
-+	int diff;
-+	Dwarf_Die *die_mem;
-+	bool found;
++struct __instance_walk_param {
++	void    *addr;
++	int	(*callback)(Dwarf_Die *, void *);
++	void    *data;
++	int	retval;
 +};
 +
-+static int find_best_scope_cb(Dwarf_Die *fn_die, void *data)
++static int __die_walk_instances_cb(Dwarf_Die *inst, void *data)
 +{
-+	struct find_scope_param *fsp = data;
-+	const char *file;
-+	int lno;
++	struct __instance_walk_param *iwp = data;
++	Dwarf_Attribute attr_mem;
++	Dwarf_Die origin_mem;
++	Dwarf_Attribute *attr;
++	Dwarf_Die *origin;
 +
-+	/* Skip if declared file name does not match */
-+	if (fsp->file) {
-+		file = dwarf_decl_file(fn_die);
-+		if (!file || strcmp(fsp->file, file) != 0)
-+			return 0;
-+	}
-+	/* If the function name is given, that's what user expects */
-+	if (fsp->function) {
-+		if (die_compare_name(fn_die, fsp->function)) {
-+			memcpy(fsp->die_mem, fn_die, sizeof(Dwarf_Die));
-+			fsp->found = true;
-+			return 1;
-+		}
-+	} else {
-+		/* With the line number, find the nearest declared DIE */
-+		dwarf_decl_line(fn_die, &lno);
-+		if (lno < fsp->line && fsp->diff > fsp->line - lno) {
-+			/* Keep a candidate and continue */
-+			fsp->diff = fsp->line - lno;
-+			memcpy(fsp->die_mem, fn_die, sizeof(Dwarf_Die));
-+			fsp->found = true;
-+		}
-+	}
-+	return 0;
++	attr = dwarf_attr(inst, DW_AT_abstract_origin, &attr_mem);
++	if (attr == NULL)
++		return DIE_FIND_CB_CONTINUE;
++
++	origin = dwarf_formref_die(attr, &origin_mem);
++	if (origin == NULL || origin->addr != iwp->addr)
++		return DIE_FIND_CB_CONTINUE;
++
++	iwp->retval = iwp->callback(inst, iwp->data);
++
++	return (iwp->retval) ? DIE_FIND_CB_END : DIE_FIND_CB_CONTINUE;
 +}
 +
-+/* Find an appropriate scope fits to given conditions */
-+static Dwarf_Die *find_best_scope(struct probe_finder *pf, Dwarf_Die *die_mem)
++/**
++ * die_walk_instances - Walk on instances of given DIE
++ * @or_die: an abstract original DIE
++ * @callback: a callback function which is called with instance DIE
++ * @data: user data
++ *
++ * Walk on the instances of give @in_die. @in_die must be an inlined function
++ * declartion. This returns the return value of @callback if it returns
++ * non-zero value, or -ENOENT if there is no instance.
++ */
++int die_walk_instances(Dwarf_Die *or_die, int (*callback)(Dwarf_Die *, void *),
++		       void *data)
 +{
-+	struct find_scope_param fsp = {
-+		.function = pf->pev->point.function,
-+		.file = pf->fname,
-+		.line = pf->lno,
-+		.diff = INT_MAX,
-+		.die_mem = die_mem,
-+		.found = false,
++	Dwarf_Die cu_die;
++	Dwarf_Die die_mem;
++	struct __instance_walk_param iwp = {
++		.addr = or_die->addr,
++		.callback = callback,
++		.data = data,
++		.retval = -ENOENT,
 +	};
 +
-+	cu_walk_functions_at(&pf->cu_die, pf->addr, find_best_scope_cb, &fsp);
++	if (dwarf_diecu(or_die, &cu_die, NULL, NULL) == NULL)
++		return -ENOENT;
 +
-+	return fsp.found ? die_mem : NULL;
++	die_find_child(&cu_die, __die_walk_instances_cb, &iwp, &die_mem);
++
++	return iwp.retval;
 +}
 +
- static int probe_point_line_walker(const char *fname, int lineno,
- 				   Dwarf_Addr addr, void *data)
- {
- 	struct probe_finder *pf = data;
-+	Dwarf_Die *sc_die, die_mem;
- 	int ret;
+ /* Line walker internal parameters */
+ struct __line_walk_param {
+ 	bool recursive;
+diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+index 6f46106..6ce1717 100644
+--- a/tools/perf/util/dwarf-aux.h
++++ b/tools/perf/util/dwarf-aux.h
+@@ -80,6 +80,10 @@ extern Dwarf_Die *die_find_realfunc(Dwarf_Die *cu_die, Dwarf_Addr addr,
+ extern Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 				      Dwarf_Die *die_mem);
  
- 	if (lineno != pf->lno || strtailcmp(fname, pf->fname) != 0)
- 		return 0;
- 
- 	pf->addr = addr;
--	ret = call_probe_finder(NULL, pf);
-+	sc_die = find_best_scope(pf, &die_mem);
-+	if (!sc_die) {
-+		pr_warning("Failed to find scope of probe point.\n");
-+		return -ENOENT;
-+	}
++/* Walk on the instances of given DIE */
++extern int die_walk_instances(Dwarf_Die *in_die,
++			      int (*callback)(Dwarf_Die *, void *), void *data);
 +
-+	ret = call_probe_finder(sc_die, pf);
+ /* Walker on lines (Note: line number will not be sorted) */
+ typedef int (* line_walk_callback_t) (const char *fname, int lineno,
+ 				      Dwarf_Addr addr, void *data);
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 114542a..555fc38 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -924,42 +924,39 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	return die_walk_lines(sp_die, probe_point_lazy_walker, pf);
+ }
  
- 	/* Continue if no error, because the line will be in inline function */
- 	return ret < 0 ? ret : 0;
-@@ -826,6 +895,7 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
- 				   Dwarf_Addr addr, void *data)
+-/* Callback parameter with return value */
+-struct dwarf_callback_param {
+-	void *data;
+-	int retval;
+-};
+-
+ static int probe_point_inline_cb(Dwarf_Die *in_die, void *data)
  {
- 	struct probe_finder *pf = data;
-+	Dwarf_Die *sc_die, die_mem;
- 	int ret;
+-	struct dwarf_callback_param *param = data;
+-	struct probe_finder *pf = param->data;
++	struct probe_finder *pf = data;
+ 	struct perf_probe_point *pp = &pf->pev->point;
+ 	Dwarf_Addr addr;
++	int ret;
  
- 	if (!line_list__has_line(&pf->lcache, lineno) ||
-@@ -835,7 +905,14 @@ static int probe_point_lazy_walker(const char *fname, int lineno,
- 	pr_debug("Probe line found: line:%d addr:0x%llx\n",
- 		 lineno, (unsigned long long)addr);
- 	pf->addr = addr;
--	ret = call_probe_finder(NULL, pf);
-+	pf->lno = lineno;
-+	sc_die = find_best_scope(pf, &die_mem);
-+	if (!sc_die) {
-+		pr_warning("Failed to find scope of probe point.\n");
-+		return -ENOENT;
-+	}
+ 	if (pp->lazy_line)
+-		param->retval = find_probe_point_lazy(in_die, pf);
++		ret = find_probe_point_lazy(in_die, pf);
+ 	else {
+ 		/* Get probe address */
+ 		if (dwarf_entrypc(in_die, &addr) != 0) {
+ 			pr_warning("Failed to get entry address of %s.\n",
+ 				   dwarf_diename(in_die));
+-			param->retval = -ENOENT;
+-			return DWARF_CB_ABORT;
++			return -ENOENT;
+ 		}
+ 		pf->addr = addr;
+ 		pf->addr += pp->offset;
+ 		pr_debug("found inline addr: 0x%jx\n",
+ 			 (uintmax_t)pf->addr);
+ 
+-		param->retval = call_probe_finder(in_die, pf);
+-		if (param->retval < 0)
+-			return DWARF_CB_ABORT;
++		ret = call_probe_finder(in_die, pf);
+ 	}
+ 
+-	return DWARF_CB_OK;
++	return ret;
+ }
+ 
++/* Callback parameter with return value for libdw */
++struct dwarf_callback_param {
++	void *data;
++	int retval;
++};
 +
-+	ret = call_probe_finder(sc_die, pf);
+ /* Search function from function name */
+ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ {
+@@ -996,14 +993,10 @@ static int probe_point_search_cb(Dwarf_Die *sp_die, void *data)
+ 			/* TODO: Check the address in this function */
+ 			param->retval = call_probe_finder(sp_die, pf);
+ 		}
+-	} else {
+-		struct dwarf_callback_param _param = {.data = (void *)pf,
+-						      .retval = 0};
++	} else
+ 		/* Inlined function: search instances */
+-		dwarf_func_inline_instances(sp_die, probe_point_inline_cb,
+-					    &_param);
+-		param->retval = _param.retval;
+-	}
++		param->retval = die_walk_instances(sp_die,
++					probe_point_inline_cb, (void *)pf);
+ 
+ 	return DWARF_CB_ABORT; /* Exit; no same symbol in this CU. */
+ }
+@@ -1452,16 +1445,14 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 
+ static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
+ {
+-	struct dwarf_callback_param *param = data;
+-
+-	param->retval = find_line_range_by_line(in_die, param->data);
++	find_line_range_by_line(in_die, data);
  
  	/*
- 	 * Continue if no error, because the lazy pattern will match
-@@ -1059,7 +1136,7 @@ found:
+ 	 * We have to check all instances of inlined function, because
+ 	 * some execution paths can be optimized out depends on the
+ 	 * function argument of instances
+ 	 */
+-	return DWARF_CB_OK;
++	return 0;
  }
  
- /* Add a found probe point into trace event list */
--static int add_probe_trace_event(Dwarf_Die *sp_die, struct probe_finder *pf)
-+static int add_probe_trace_event(Dwarf_Die *sc_die, struct probe_finder *pf)
- {
- 	struct trace_event_finder *tf =
- 			container_of(pf, struct trace_event_finder, pf);
-@@ -1074,8 +1151,9 @@ static int add_probe_trace_event(Dwarf_Die *sp_die, struct probe_finder *pf)
+ /* Search function from function name */
+@@ -1489,15 +1480,10 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 		pr_debug("New line range: %d to %d\n", lf->lno_s, lf->lno_e);
+ 		lr->start = lf->lno_s;
+ 		lr->end = lf->lno_e;
+-		if (dwarf_func_inline(sp_die)) {
+-			struct dwarf_callback_param _param;
+-			_param.data = (void *)lf;
+-			_param.retval = 0;
+-			dwarf_func_inline_instances(sp_die,
+-						    line_range_inline_cb,
+-						    &_param);
+-			param->retval = _param.retval;
+-		} else
++		if (dwarf_func_inline(sp_die))
++			param->retval = die_walk_instances(sp_die,
++						line_range_inline_cb, lf);
++		else
+ 			param->retval = find_line_range_by_line(sp_die, lf);
+ 		return DWARF_CB_ABORT;
  	}
- 	tev = &tf->tevs[tf->ntevs++];
- 
--	ret = convert_to_trace_point(sp_die, pf->addr, pf->pev->point.retprobe,
--				     &tev->point);
-+	/* Trace point should be converted from subprogram DIE */
-+	ret = convert_to_trace_point(&pf->sp_die, pf->addr,
-+				     pf->pev->point.retprobe, &tev->point);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -1090,7 +1168,8 @@ static int add_probe_trace_event(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	for (i = 0; i < pf->pev->nargs; i++) {
- 		pf->pvar = &pf->pev->args[i];
- 		pf->tvar = &tev->args[i];
--		ret = find_variable(sp_die, pf);
-+		/* Variable should be found from scope DIE */
-+		ret = find_variable(sc_die, pf);
- 		if (ret != 0)
- 			return ret;
- 	}
-@@ -1158,7 +1237,7 @@ static int collect_variables_cb(Dwarf_Die *die_mem, void *data)
- }
- 
- /* Add a found vars into available variables list */
--static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
-+static int add_available_vars(Dwarf_Die *sc_die, struct probe_finder *pf)
- {
- 	struct available_var_finder *af =
- 			container_of(pf, struct available_var_finder, pf);
-@@ -1173,8 +1252,9 @@ static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	}
- 	vl = &af->vls[af->nvls++];
- 
--	ret = convert_to_trace_point(sp_die, pf->addr, pf->pev->point.retprobe,
--				     &vl->point);
-+	/* Trace point should be converted from subprogram DIE */
-+	ret = convert_to_trace_point(&pf->sp_die, pf->addr,
-+				     pf->pev->point.retprobe, &vl->point);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -1186,14 +1266,14 @@ static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	if (vl->vars == NULL)
- 		return -ENOMEM;
- 	af->child = true;
--	die_find_child(sp_die, collect_variables_cb, (void *)af, &die_mem);
-+	die_find_child(sc_die, collect_variables_cb, (void *)af, &die_mem);
- 
- 	/* Find external variables */
- 	if (!af->externs)
- 		goto out;
- 	/* Don't need to search child DIE for externs. */
- 	af->child = false;
--	nscopes = dwarf_getscopes_die(sp_die, &scopes);
-+	nscopes = dwarf_getscopes_die(sc_die, &scopes);
- 	while (nscopes-- > 1)
- 		die_find_child(&scopes[nscopes], collect_variables_cb,
- 			       (void *)af, &die_mem);
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index c478b42..1132c8f 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -57,7 +57,7 @@ struct probe_finder {
- 	struct perf_probe_event	*pev;		/* Target probe event */
- 
- 	/* Callback when a probe point is found */
--	int (*callback)(Dwarf_Die *sp_die, struct probe_finder *pf);
-+	int (*callback)(Dwarf_Die *sc_die, struct probe_finder *pf);
- 
- 	/* For function searching */
- 	int			lno;		/* Line number */
 
