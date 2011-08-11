@@ -1,85 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1HKPi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 11:38:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34408 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752343Ab1HKPi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 11:38:27 -0400
-Date: Thu, 11 Aug 2011 16:38:00 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "'Barry Song'" <21cnbao@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "weizeng.he@csr.com" <weizeng.he@csr.com>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Subject: L2x0 OF properties do not include interrupt #
-Message-ID: <20110811153800.GC5154@e102144-lin.cambridge.arm.com>
-References: <000201cc575b$c1229010$4367b030$@rutland@arm.com>
- <201108101624.27881.arnd@arndb.de>
- <20110810142808.GL10121@e102144-lin.cambridge.arm.com>
- <201108111505.11887.arnd@arndb.de>
- <20110811130910.GA10189@e102144-lin.cambridge.arm.com>
- <4E43F5F8.4060704@gmail.com>
+	id S1753143Ab1HKPjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 11:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab1HKPjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 11:39:08 -0400
+Date: Thu, 11 Aug 2011 11:39:04 -0400
+From: David Teigland <teigland@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Christine Caulfield <ccaulfie@redhat.com>
+Subject: Re: [PATCH 39/41] dlm: Remove another superfluous call to
+ recalc_sigpending()
+Message-ID: <20110811153904.GA9342@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
+ <1313071035-12047-40-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E43F5F8.4060704@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1313071035-12047-40-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 04:32:08PM +0100, Rob Herring wrote:
-> On 08/11/2011 08:09 AM, Will Deacon wrote:
-> > On Thu, Aug 11, 2011 at 02:05:11PM +0100, Arnd Bergmann wrote:
-> >> On Wednesday 10 August 2011, Will Deacon wrote:
-> >>> I was hoping that it was possible to have separate properties which describe
-> >>> the interrupt. So you could have something like pmu-interrupt <75> and
-> >>> abort-interrupt <76> rather than interrupts <75, 76>.
-> >>
-> >> Ok, I see.
-> >>
-> >>> I've not played with DT bindings before though, so if it's usually done with
-> >>> an ordered list then so be it!
-> >>
-> >> A lot of the code assumes that the property is called 'interrupts' and that
-> >> it contains a fixed-length array of interrupt numbers, each for one specific
-> >> purpose.
-> > 
-> > Ok, I wondered if something like that might be the case.
-> > 
-> >> Given that we have so many different meanings for the interrupts, I'm
-> >> not sure how this would work best in this case. According to
-> >> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0246f/CHDFHCFJ.html
-> >> this looks like a nested interrupt controller, i.e. the L2CC has its own mask
-> >> and status register with bits for each one of them. We could model these by
-> >> describing the l2cc interrupt controller with these registers and listing all
-> >> nine of the current inputs. I suspect however that it would be easier to just
-> >> assume that there is only one line for now, and treat the l2cc as a single
-> >> interrupt source with an internal status register.
-> > 
-> > Given that this binding is only for the l2x0 / pl310 and I don't know of any
-> > implementation where > 1 interrupt line is wired up, I'm happy to assume a
-> > single combined interrupt line for now.
-> > 
+On Thu, Aug 11, 2011 at 02:57:13PM +0100, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> I know of one. Although, we have the combined interrupt as well. The
-> binding should allow either way and specify the order. If the event
-> counter interrupt is 1st, then it should be the same to s/w.
+> recalc_sigpending() is called within sigprocmask(), so there is no
+> need call it again after sigprocmask() has returned. I must have
+> missed this call when removing the other recalc_sigpending() in commit
+> 4bcad6c1ef53 ("dlm: Remove superfluous call to recalc_sigpending())".
 
-You mean putting the combined interrupt first? If so, we may as well just
-specify that until somebody builds a platform that doesn't have it.
+ack
 
-Will
