@@ -1,147 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1HKWiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 18:38:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26866 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab1HKWiQ convert rfc822-to-8bit (ORCPT
+	id S1753926Ab1HKWqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 18:46:38 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58930
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753490Ab1HKWqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 18:38:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=cFLmvLdF58dfbsgKLA0C6NiTGSve/w1yq/m4ZozYo7AvZ+c2UBwgjAGudu5QPQew9
-	u3C336mvBsRuxa1Bxg1hg==
+	Thu, 11 Aug 2011 18:46:37 -0400
+Date: Thu, 11 Aug 2011 18:46:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Christoph Hellwig <hch@infradead.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH v3 1/3] drivers/block/mtip32xx: Adding header file and
+ source for pci and block related operation
+Message-ID: <20110811224629.GA10182@infradead.org>
+References: <22A973199D2C2F46933448F6E7990A3002C80025@ntxboimbx31.micron.com>
 MIME-Version: 1.0
-In-Reply-To: <1312765681.3938.1668.camel@minggr.sh.intel.com>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	<1310740503-15608-7-git-send-email-ming.m.lin@intel.com>
-	<CABPqkBRTw5mcHn29gba8OyeUfMuGU3mQcKsrADug1401n6j0kw@mail.gmail.com>
-	<1312673888.2664.18.camel@hp6530s>
-	<CABPqkBTp_R6RRUdkYwB5O6HN6i05V=4eV3Pb2NaS3KZUhBN7fg@mail.gmail.com>
-	<1312765681.3938.1668.camel@minggr.sh.intel.com>
-Date: Thu, 11 Aug 2011 15:38:12 -0700
-Message-ID: <CABPqkBTNoLybq7xu5qUwD1smfM5qb3qnNDD6omnpDQNdFZu-CQ@mail.gmail.com>
-Subject: Re: [PATCH v2 6/6] perf tool: Parse general/raw events from sysfs
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <22A973199D2C2F46933448F6E7990A3002C80025@ntxboimbx31.micron.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lin,
+On Thu, Aug 11, 2011 at 12:52:43PM -0600, Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR] wrote:
+> This is the first part of the new block driver,mtip32xx, for Micron
+> PCIe SSD, which contains the header file and source for pci and
+> block related operations.
 
-On Sun, Aug 7, 2011 at 6:08 PM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Mon, 2011-08-08 at 07:47 +0800, Stephane Eranian wrote:
->> On Sat, Aug 6, 2011 at 4:38 PM, Lin Ming <ming.m.lin@intel.com> wrote:
->> > On Sun, 2011-08-07 at 04:10 +0800, Stephane Eranian wrote:
->> >> Hi,
->> >>
->> >> On Fri, Jul 15, 2011 at 7:35 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> >> > PMU can export general events to sysfs, for example,
->> >> >
->> >> > /sys/bus/event_source/devices/uncore/events
->> >> > └── cycle
->> >> >
->> >> > Then specify the event as <pmu>:<event>,
->> >> >
->> >> > $ sudo perf stat -a -C 0 -e uncore:cycle
->> >>
->> >> I think this event syntax should be adjusted a bit.
->> >>
->> >> How would the tool differentiate:
->> >>        perf stat -e uncore:cycle
->> >> form:
->> >>       perf stat -e cycle:u
->> >>
->> >> It would have to scan sysfs for a 'cycle' PMU and conclude
->> >> there is none,  then resolve the 'cycle' event name. And if
->> >> you're unlucky and you have a event name that matches
->> >> the PMU name, you get into troubles.
->> >>
->> >> I think, one could instead do:
->> >>
->> >>     perf stat -e uncore::cycle:k
->> >>
->> >> That way, by virtue of the '::' separator, the tool would know
->> >> that it needs to first look into sysfs for an 'uncore' PMU, then
->> >> it needs to look for the 'cycle' event.
->> >
->> > Yes, I like this '::' separator too.
->> > Will update to use it.
->> >
->> >>
->> >> I also use the '::' notation in libpfm4 to separate the PMU model
->> >> form the event+umask+modifiers.
->> >>
->> >> I also suspect that with this sysfs interface for PMU models, you
->> >> would simply add a number to differentiate each instance of a PMU.
->> >> So for GPU, you would do:
->> >>     perf stat -e  gfx0::cycles
->> >>
->> >> Is that right?
->> >
->> > A number or other thing is OK.
->> >
->> > int perf_pmu_register(struct pmu *pmu, char *name, int type)
->> > will be called to register a PMU.
->> >
->> > So I think any name that can differentiate each instance is OK.
->> >
->> > Adding a number looks like the easiest way.
->> >
->> Well, there is something I am still missing here.
->>
->> Based on the current patch, it seems that each instance
->> of a PMU needs to register to get an ID and an entry in
->> sysfs.
->>
->> Suppose you have a system with two graphics cards. Then,
->> you would need two IDs and two entries in sysfs to correctly
->> name each gfx card.
->>
->> That means that the kernel would have to iterate over each instance
->> of a PMU and create a name for it, e.g., something like:
->>    for_each_gfx_card(i) {
->>        sprintf(name, "gfx%d", i);
->>       register_pmu(&pmu, name);
->>   }
->>
->> Is that what you are proposing?
->
-> Think this more closely. My previous reply was not correct.
->
-> We only need to register one pmu with two same graphics cards.
-> Then we can overload pid argument of sys_perf_event_open() to
-> differentiate each instance of graphic card.
->
-> Just like perf cgroup does.
->
-Some more thoughts on that.
+There should be not split between pci/block and hardware related
+functions, as there is no logical split either.  Please remove that
+layering and merge the files into one.  Also given that the hardware
+really just is AHCI with extensions please use the constants from
+include/linux/ata.h and drivers/ata/ahci.h instead of redefining them.
+The latter might need to be move to include/linux before merging the
+driver for that, but for the next iteration a hacky relative include
+might be enough.
 
-Cgroup is very specific. It can only work an an extension of system-wide mode.
-Thus, we know we can safely overload the PID argument with the cgroup fd. But
-then, we also need to tell the kernel that PID is a cgroup fd and for
-that we use
-a flag.
+Also please get rid of the MTIP_USE_TASKLET, if it really is worth it
+it needs to be seletable at runtime.
 
-I don't think you can do that with your PMU proposal.
+I can't see any point of the CONFIG_PCI_MSI ifdefs - all the functions
+called under it are properly stubbed out if it's not enabled.
 
-You can pass the PMU class in attr.config, but if you pass the PMU instance
-in PID, it means you predict that there will never be another PMU
-where per-thread
-mode will make sense. But even if that were to be true, you'd have to
-still have to
-pass an extra flag to denote that you are using a extended PMU with an instance
-in PID. Or the alternative it to rely on PERF_TYPE_MAX to detect a dynamically
-registered PMU. It's not too pretty. This whole thing makes me wonder
-what perf_type_id
-is meant for then....
