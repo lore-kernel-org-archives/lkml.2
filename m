@@ -1,132 +1,521 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1HKDMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:12:16 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:52040 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab1HKDMO (ORCPT
+	id S1753638Ab1HKDO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:14:56 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38347 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab1HKDOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:12:14 -0400
-Message-ID: <4E4345F1.9040501@ce.jp.nec.com>
-Date: Thu, 11 Aug 2011 12:01:05 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Wed, 10 Aug 2011 23:14:55 -0400
+X-AuditID: b753bd60-a3089ba000000655-4b-4e43492b12a8
+X-AuditID: b753bd60-a3089ba000000655-4b-4e43492b12a8
+Message-ID: <4E434928.9020304@hitachi.com>
+Date: Thu, 11 Aug 2011 12:14:48 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: jaxboe@fusionio.com, roland@purestorage.com, stern@rowland.harvard.edu,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-References: <4E420941.3080601@ce.jp.nec.com> <1313005933.2785.12.camel@mulgrave> <4E432122.9050101@ce.jp.nec.com>
-In-Reply-To: <4E432122.9050101@ce.jp.nec.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH][3.0] Tracepoint: dissociate from module mutex (v2)
+References: <20110810191839.GC8525@Krystal>
+In-Reply-To: <20110810191839.GC8525@Krystal>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+(2011/08/11 4:18), Mathieu Desnoyers wrote:
+> Copy the information needed from struct module into a local module list
+> held within tracepoint.c from within the module coming/going notifier.
+> 
+> This vastly simplifies locking of tracepoint registration /
+> unregistration, because we don't have to take the module mutex to
+> register and unregister tracepoints anymore. Steven Rostedt ran into
+> dependency problems related to modules mutex vs kprobes mutex vs ftrace
+> mutex vs tracepoint mutex that seems to be hard to fix without removing
+> this dependency between tracepoint and module mutex. (note: it should be
+> investigated whether kprobes could benefit of being dissociated from the
+> modules mutex too.)
 
-On 08/11/11 09:24, Jun'ichi Nomura wrote:
-> On 08/11/11 04:52, James Bottomley wrote:
->> On Wed, 2011-08-10 at 13:29 +0900, Jun'ichi Nomura wrote:
->>>   2) SCSI to call blk_cleanup_queue() from device's ->release() callback
->>>      (before 2.6.39, it used to work like this)
->>>      https://lkml.org/lkml/2011/7/2/106
->>
->> Well, they both have documented objections.  I asked why we destroy the
->> elevator in the del case and didn't get any traction, so let me show the
->> actual patch which should fix all of these issues.
->>
->> Is there a good reason for not doing this as a bug fix now?
-...
-> I think it doesn't work because elevator_exit() and
-> blk_throtl_exit() take &q->queue_lock, which may be freed
-> by LLD after blk_cleanup_queue, before blk_release_queue.
+Thanks, it seems that kprobes has already mostly done that.
+It holds module_mutex only in kprobe_optimizer. However,
+it seems meaningless, because kprobe_mutex already protects
+kprobe_optimizer against the kprobes module notifier.
+Thus, a module removing will stays on the notifier until
+the optimizer runs out. So I think we can remove that mutex lock.
 
-If the reason you moved scsi_free_queue into scsi_remove_device
-is marking the queue dead, how about the following patch?
-Do you think it's acceptable?
+> 
+> This also fixes module handling of tracepoint list iterators, because it
+> was expecting the list to be sorted by pointer address. Given we have
+> control on our own list now, it's OK to sort this list which has
+> tracepoints as its only purpose. The reason why this sorting is required
+> is to handle the fact that seq files (and any read() operation from
+> user-space) cannot hold the tracepoint mutex across multiple calls, so
+> list entries may vanish between calls. With sorting, the tracepoint
+> iterator becomes usable even if the list don't contain the exact item
+> pointed to by the iterator anymore.
 
-Jun'ichi Nomura, NEC Corporation
+Anyway, your patch also looks good to me too;)
+
+Thank you,
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Acked-by: Jason Baron <jbaron@redhat.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: tglx@linutronix.de
+> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>  include/linux/module.h     |   12 ---
+>  include/linux/tracepoint.h |   25 ++----
+>  kernel/module.c            |   47 ------------
+>  kernel/tracepoint.c        |  169 +++++++++++++++++++++++++++++++++++++++------
+>  4 files changed, 158 insertions(+), 95 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/linux/tracepoint.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/linux/tracepoint.h
+> +++ linux-2.6-lttng/include/linux/tracepoint.h
+> @@ -54,8 +54,18 @@ extern int tracepoint_probe_unregister_n
+>  						void *data);
+>  extern void tracepoint_probe_update_all(void);
+>  
+> +#ifdef CONFIG_MODULES
+> +struct tp_module {
+> +	struct list_head list;
+> +	unsigned int num_tracepoints;
+> +	struct tracepoint * const *tracepoints_ptrs;
+> +};
+> +#endif /* CONFIG_MODULES */
+> +
+>  struct tracepoint_iter {
+> -	struct module *module;
+> +#ifdef CONFIG_MODULES
+> +	struct tp_module *module;
+> +#endif /* CONFIG_MODULES */
+>  	struct tracepoint * const *tracepoint;
+>  };
+>  
+> @@ -63,8 +73,6 @@ extern void tracepoint_iter_start(struct
+>  extern void tracepoint_iter_next(struct tracepoint_iter *iter);
+>  extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
+>  extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
+> -extern int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+> -	struct tracepoint * const *begin, struct tracepoint * const *end);
+>  
+>  /*
+>   * tracepoint_synchronize_unregister must be called between the last tracepoint
+> @@ -78,17 +86,6 @@ static inline void tracepoint_synchroniz
+>  
+>  #define PARAMS(args...) args
+>  
+> -#ifdef CONFIG_TRACEPOINTS
+> -extern
+> -void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> -	struct tracepoint * const *end);
+> -#else
+> -static inline
+> -void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> -	struct tracepoint * const *end)
+> -{ }
+> -#endif /* CONFIG_TRACEPOINTS */
+> -
+>  #endif /* _LINUX_TRACEPOINT_H */
+>  
+>  /*
+> Index: linux-2.6-lttng/kernel/module.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/kernel/module.c
+> +++ linux-2.6-lttng/kernel/module.c
+> @@ -3421,50 +3421,3 @@ void module_layout(struct module *mod,
+>  }
+>  EXPORT_SYMBOL(module_layout);
+>  #endif
+> -
+> -#ifdef CONFIG_TRACEPOINTS
+> -void module_update_tracepoints(void)
+> -{
+> -	struct module *mod;
+> -
+> -	mutex_lock(&module_mutex);
+> -	list_for_each_entry(mod, &modules, list)
+> -		if (!mod->taints)
+> -			tracepoint_update_probe_range(mod->tracepoints_ptrs,
+> -				mod->tracepoints_ptrs + mod->num_tracepoints);
+> -	mutex_unlock(&module_mutex);
+> -}
+> -
+> -/*
+> - * Returns 0 if current not found.
+> - * Returns 1 if current found.
+> - */
+> -int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+> -{
+> -	struct module *iter_mod;
+> -	int found = 0;
+> -
+> -	mutex_lock(&module_mutex);
+> -	list_for_each_entry(iter_mod, &modules, list) {
+> -		if (!iter_mod->taints) {
+> -			/*
+> -			 * Sorted module list
+> -			 */
+> -			if (iter_mod < iter->module)
+> -				continue;
+> -			else if (iter_mod > iter->module)
+> -				iter->tracepoint = NULL;
+> -			found = tracepoint_get_iter_range(&iter->tracepoint,
+> -				iter_mod->tracepoints_ptrs,
+> -				iter_mod->tracepoints_ptrs
+> -					+ iter_mod->num_tracepoints);
+> -			if (found) {
+> -				iter->module = iter_mod;
+> -				break;
+> -			}
+> -		}
+> -	}
+> -	mutex_unlock(&module_mutex);
+> -	return found;
+> -}
+> -#endif
+> Index: linux-2.6-lttng/kernel/tracepoint.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/kernel/tracepoint.c
+> +++ linux-2.6-lttng/kernel/tracepoint.c
+> @@ -34,11 +34,16 @@ extern struct tracepoint * const __stop_
+>  static const int tracepoint_debug;
+>  
+>  /*
+> - * tracepoints_mutex nests inside module_mutex. Tracepoints mutex protects the
+> - * builtin and module tracepoints and the hash table.
+> + * Tracepoints mutex protects the builtin and module tracepoints and the hash
+> + * table, as well as the local module list.
+>   */
+>  static DEFINE_MUTEX(tracepoints_mutex);
+>  
+> +#ifdef CONFIG_MODULES
+> +/* Local list of struct module */
+> +static LIST_HEAD(tracepoint_module_list);
+> +#endif /* CONFIG_MODULES */
+> +
+>  /*
+>   * Tracepoint hash table, containing the active tracepoints.
+>   * Protected by tracepoints_mutex.
+> @@ -292,9 +297,10 @@ static void disable_tracepoint(struct tr
+>   * @end: end of the range
+>   *
+>   * Updates the probe callback corresponding to a range of tracepoints.
+> + * Called with tracepoints_mutex held.
+>   */
+> -void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> -				   struct tracepoint * const *end)
+> +static void tracepoint_update_probe_range(struct tracepoint * const *begin,
+> +					  struct tracepoint * const *end)
+>  {
+>  	struct tracepoint * const *iter;
+>  	struct tracepoint_entry *mark_entry;
+> @@ -302,7 +308,6 @@ void tracepoint_update_probe_range(struc
+>  	if (!begin)
+>  		return;
+>  
+> -	mutex_lock(&tracepoints_mutex);
+>  	for (iter = begin; iter < end; iter++) {
+>  		mark_entry = get_tracepoint((*iter)->name);
+>  		if (mark_entry) {
+> @@ -312,11 +317,27 @@ void tracepoint_update_probe_range(struc
+>  			disable_tracepoint(*iter);
+>  		}
+>  	}
+> -	mutex_unlock(&tracepoints_mutex);
+>  }
+>  
+> +#ifdef CONFIG_MODULES
+> +void module_update_tracepoints(void)
+> +{
+> +	struct tp_module *tp_mod;
+> +
+> +	list_for_each_entry(tp_mod, &tracepoint_module_list, list)
+> +		tracepoint_update_probe_range(tp_mod->tracepoints_ptrs,
+> +			tp_mod->tracepoints_ptrs + tp_mod->num_tracepoints);
+> +}
+> +#else /* CONFIG_MODULES */
+> +void module_update_tracepoints(void)
+> +{
+> +}
+> +#endif /* CONFIG_MODULES */
+> +
+> +
+>  /*
+>   * Update probes, removing the faulty probes.
+> + * Called with tracepoints_mutex held.
+>   */
+>  static void tracepoint_update_probes(void)
+>  {
+> @@ -359,11 +380,12 @@ int tracepoint_probe_register(const char
+>  
+>  	mutex_lock(&tracepoints_mutex);
+>  	old = tracepoint_add_probe(name, probe, data);
+> -	mutex_unlock(&tracepoints_mutex);
+> -	if (IS_ERR(old))
+> +	if (IS_ERR(old)) {
+> +		mutex_unlock(&tracepoints_mutex);
+>  		return PTR_ERR(old);
+> -
+> +	}
+>  	tracepoint_update_probes();		/* may update entry */
+> +	mutex_unlock(&tracepoints_mutex);
+>  	release_probes(old);
+>  	return 0;
+>  }
+> @@ -402,11 +424,12 @@ int tracepoint_probe_unregister(const ch
+>  
+>  	mutex_lock(&tracepoints_mutex);
+>  	old = tracepoint_remove_probe(name, probe, data);
+> -	mutex_unlock(&tracepoints_mutex);
+> -	if (IS_ERR(old))
+> +	if (IS_ERR(old)) {
+> +		mutex_unlock(&tracepoints_mutex);
+>  		return PTR_ERR(old);
+> -
+> +	}
+>  	tracepoint_update_probes();		/* may update entry */
+> +	mutex_unlock(&tracepoints_mutex);
+>  	release_probes(old);
+>  	return 0;
+>  }
+> @@ -489,9 +512,8 @@ void tracepoint_probe_update_all(void)
+>  	if (!list_empty(&old_probes))
+>  		list_replace_init(&old_probes, &release_probes);
+>  	need_update = 0;
+> -	mutex_unlock(&tracepoints_mutex);
+> -
+>  	tracepoint_update_probes();
+> +	mutex_unlock(&tracepoints_mutex);
+>  	list_for_each_entry_safe(pos, next, &release_probes, u.list) {
+>  		list_del(&pos->u.list);
+>  		call_rcu_sched(&pos->u.rcu, rcu_free_old_probes);
+> @@ -509,7 +531,7 @@ EXPORT_SYMBOL_GPL(tracepoint_probe_updat
+>   * Will return the first tracepoint in the range if the input tracepoint is
+>   * NULL.
+>   */
+> -int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+> +static int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
+>  	struct tracepoint * const *begin, struct tracepoint * const *end)
+>  {
+>  	if (!*tracepoint && begin != end) {
+> @@ -520,11 +542,12 @@ int tracepoint_get_iter_range(struct tra
+>  		return 1;
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(tracepoint_get_iter_range);
+>  
+> +#ifdef CONFIG_MODULES
+>  static void tracepoint_get_iter(struct tracepoint_iter *iter)
+>  {
+>  	int found = 0;
+> +	struct tp_module *iter_mod;
+>  
+>  	/* Core kernel tracepoints */
+>  	if (!iter->module) {
+> @@ -534,12 +557,43 @@ static void tracepoint_get_iter(struct t
+>  		if (found)
+>  			goto end;
+>  	}
+> -	/* tracepoints in modules. */
+> -	found = module_get_iter_tracepoints(iter);
+> +	/* Tracepoints in modules */
+> +	mutex_lock(&tracepoints_mutex);
+> +	list_for_each_entry(iter_mod, &tracepoint_module_list, list) {
+> +		/*
+> +		 * Sorted module list
+> +		 */
+> +		if (iter_mod < iter->module)
+> +			continue;
+> +		else if (iter_mod > iter->module)
+> +			iter->tracepoint = NULL;
+> +		found = tracepoint_get_iter_range(&iter->tracepoint,
+> +			iter_mod->tracepoints_ptrs,
+> +			iter_mod->tracepoints_ptrs
+> +				+ iter_mod->num_tracepoints);
+> +		if (found) {
+> +			iter->module = iter_mod;
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&tracepoints_mutex);
+>  end:
+>  	if (!found)
+>  		tracepoint_iter_reset(iter);
+>  }
+> +#else /* CONFIG_MODULES */
+> +static void tracepoint_get_iter(struct tracepoint_iter *iter)
+> +{
+> +	int found = 0;
+> +
+> +	/* Core kernel tracepoints */
+> +	found = tracepoint_get_iter_range(&iter->tracepoint,
+> +			__start___tracepoints_ptrs,
+> +			__stop___tracepoints_ptrs);
+> +	if (!found)
+> +		tracepoint_iter_reset(iter);
+> +}
+> +#endif /* CONFIG_MODULES */
+>  
+>  void tracepoint_iter_start(struct tracepoint_iter *iter)
+>  {
+> @@ -566,26 +620,98 @@ EXPORT_SYMBOL_GPL(tracepoint_iter_stop);
+>  
+>  void tracepoint_iter_reset(struct tracepoint_iter *iter)
+>  {
+> +#ifdef CONFIG_MODULES
+>  	iter->module = NULL;
+> +#endif /* CONFIG_MODULES */
+>  	iter->tracepoint = NULL;
+>  }
+>  EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+>  
+>  #ifdef CONFIG_MODULES
+> +static int tracepoint_module_coming(struct module *mod)
+> +{
+> +	struct tp_module *tp_mod, *iter;
+> +	int ret = 0;
+> +
+> +	/*
+> +	 * We skip modules that tain the kernel, especially those with different
+> +	 * module header (for forced load), to make sure we don't cause a crash.
+> +	 */
+> +	if (mod->taints)
+> +		return 0;
+> +	mutex_lock(&tracepoints_mutex);
+> +	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
+> +	if (!tp_mod) {
+> +		ret = -ENOMEM;
+> +		goto end;
+> +	}
+> +	tp_mod->num_tracepoints = mod->num_tracepoints;
+> +	tp_mod->tracepoints_ptrs = mod->tracepoints_ptrs;
+> +
+> +	/*
+> +	 * tracepoint_module_list is kept sorted by struct module pointer
+> +	 * address for iteration on tracepoints from a seq_file that can release
+> +	 * the mutex between calls.
+> +	 */
+> +	list_for_each_entry_reverse(iter, &tracepoint_module_list, list) {
+> +		BUG_ON(iter == tp_mod);	/* Should never be in the list twice */
+> +		if (iter < tp_mod) {
+> +			/* We belong to the location right after iter. */
+> +			list_add(&tp_mod->list, &iter->list);
+> +			goto module_added;
+> +		}
+> +	}
+> +	/* We belong to the beginning of the list */
+> +	list_add(&tp_mod->list, &tracepoint_module_list);
+> +module_added:
+> +	tracepoint_update_probe_range(mod->tracepoints_ptrs,
+> +		mod->tracepoints_ptrs + mod->num_tracepoints);
+> +end:
+> +	mutex_unlock(&tracepoints_mutex);
+> +	return ret;
+> +}
+> +
+> +static int tracepoint_module_going(struct module *mod)
+> +{
+> +	struct tp_module *pos;
+> +
+> +	mutex_lock(&tracepoints_mutex);
+> +	tracepoint_update_probe_range(mod->tracepoints_ptrs,
+> +		mod->tracepoints_ptrs + mod->num_tracepoints);
+> +	list_for_each_entry(pos, &tracepoint_module_list, list) {
+> +		if (pos->tracepoints_ptrs == mod->tracepoints_ptrs) {
+> +			list_del(&pos->list);
+> +			kfree(pos);
+> +			break;
+> +		}
+> +	}
+> +	/*
+> +	 * In the case of modules that were tainted at "coming", we'll simply
+> +	 * walk through the list without finding it. We cannot use the "tainted"
+> +	 * flag on "going", in case a module taints the kernel only after being
+> +	 * loaded.
+> +	 */
+> +	mutex_unlock(&tracepoints_mutex);
+> +	return 0;
+> +}
+>  
+>  int tracepoint_module_notify(struct notifier_block *self,
+>  			     unsigned long val, void *data)
+>  {
+>  	struct module *mod = data;
+> +	int ret = 0;
+>  
+>  	switch (val) {
+>  	case MODULE_STATE_COMING:
+> +		ret = tracepoint_module_coming(mod);
+> +		break;
+> +	case MODULE_STATE_LIVE:
+> +		break;
+>  	case MODULE_STATE_GOING:
+> -		tracepoint_update_probe_range(mod->tracepoints_ptrs,
+> -			mod->tracepoints_ptrs + mod->num_tracepoints);
+> +		ret = tracepoint_module_going(mod);
+>  		break;
+>  	}
+> -	return 0;
+> +	return ret;
+>  }
+>  
+>  struct notifier_block tracepoint_module_nb = {
+> @@ -598,7 +724,6 @@ static int init_tracepoints(void)
+>  	return register_module_notifier(&tracepoint_module_nb);
+>  }
+>  __initcall(init_tracepoints);
+> -
+>  #endif /* CONFIG_MODULES */
+>  
+>  #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
+> Index: linux-2.6-lttng/include/linux/module.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/linux/module.h
+> +++ linux-2.6-lttng/include/linux/module.h
+> @@ -578,9 +578,6 @@ int unregister_module_notifier(struct no
+>  
+>  extern void print_modules(void);
+>  
+> -extern void module_update_tracepoints(void);
+> -extern int module_get_iter_tracepoints(struct tracepoint_iter *iter);
+> -
+>  #else /* !CONFIG_MODULES... */
+>  #define EXPORT_SYMBOL(sym)
+>  #define EXPORT_SYMBOL_GPL(sym)
+> @@ -696,15 +693,6 @@ static inline int unregister_module_noti
+>  static inline void print_modules(void)
+>  {
+>  }
+> -
+> -static inline void module_update_tracepoints(void)
+> -{
+> -}
+> -
+> -static inline int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+> -{
+> -	return 0;
+> -}
+>  #endif /* CONFIG_MODULES */
+>  
+>  #ifdef CONFIG_SYSFS
+> 
 
 
-Add blk_kill_queue() for drivers which want to mark the queue dead early.
-
-blk_cleanup_queue() is an interface for LLD to notify block layer
-that LLD no longer needs the queue.
-Since q->queue_lock may point to a structure in LLD which is freed
-after blk_cleanup_queue, blk_cleanup_queue() frees subordinate structures
-like elevator, which uses q->queue_lock, to avoid invalid reference.
-
-OTOH, LLD like SCSI wants to just mark the queue dead earlier in tear
-down phase.
-
-So this patch factors out the early part of blk_cleanup_queue into
-blk_kill_queue for such drivers.
-
---- linux-3.1-rc1/include/linux/blkdev.h.orig	2011-08-11 11:19:52.585280223 +0900
-+++ linux-3.1-rc1/include/linux/blkdev.h	2011-08-11 11:20:09.482279763 +0900
-@@ -804,6 +804,7 @@ extern struct request_queue *blk_init_al
- extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
- extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
- 						      request_fn_proc *, spinlock_t *);
-+extern void blk_kill_queue(struct request_queue *);
- extern void blk_cleanup_queue(struct request_queue *);
- extern void blk_queue_make_request(struct request_queue *, make_request_fn *);
- extern void blk_queue_bounce_limit(struct request_queue *, u64);
---- linux-3.1-rc1/block/blk-core.c.orig	2011-08-10 09:46:06.014043123 +0900
-+++ linux-3.1-rc1/block/blk-core.c	2011-08-11 11:19:34.551280697 +0900
-@@ -347,6 +347,17 @@ void blk_put_queue(struct request_queue 
- }
- EXPORT_SYMBOL(blk_put_queue);
- 
-+void blk_kill_queue(struct request_queue *q)
-+{
-+	blk_sync_queue(q);
-+
-+	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
-+	mutex_lock(&q->sysfs_lock);
-+	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
-+	mutex_unlock(&q->sysfs_lock);
-+}
-+EXPORT_SYMBOL(blk_kill_queue);
-+
- /*
-  * Note: If a driver supplied the queue lock, it should not zap that lock
-  * unexpectedly as some queue cleanup components like elevator_exit() and
-@@ -360,12 +371,7 @@ void blk_cleanup_queue(struct request_qu
- 	 * are done before moving on. Going into this function, we should
- 	 * not have processes doing IO to this device.
- 	 */
--	blk_sync_queue(q);
--
--	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
--	mutex_lock(&q->sysfs_lock);
--	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
--	mutex_unlock(&q->sysfs_lock);
-+	blk_kill_queue(q);
- 
- 	if (q->elevator)
- 		elevator_exit(q->elevator);
---- linux-3.1-rc1/drivers/scsi/scsi_sysfs.c.orig	2011-08-09 18:48:13.676485115 +0900
-+++ linux-3.1-rc1/drivers/scsi/scsi_sysfs.c	2011-08-11 11:21:07.923277456 +0900
-@@ -322,6 +322,7 @@ static void scsi_device_dev_release_user
- 		kfree(evt);
- 	}
- 
-+	scsi_free_queue(sdev->request_queue);
- 	blk_put_queue(sdev->request_queue);
- 	/* NULL queue means the device can't be used */
- 	sdev->request_queue = NULL;
-@@ -937,7 +938,7 @@ void __scsi_remove_device(struct scsi_de
- 	sdev->request_queue->queuedata = NULL;
- 
- 	/* Freeing the queue signals to block that we're done */
--	scsi_free_queue(sdev->request_queue);
-+	blk_kill_queue(sdev->request_queue);
- 	put_device(dev);
- }
- 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
