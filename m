@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab1HKN70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:59:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60198 "EHLO
+	id S1752752Ab1HKN6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:58:39 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60179 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752786Ab1HKN6n (ORCPT
+	by vger.kernel.org with ESMTP id S1751821Ab1HKN6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:43 -0400
+	Thu, 11 Aug 2011 09:58:36 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>
-Subject: [PATCH 39/41] dlm: Remove another superfluous call to recalc_sigpending()
-Date: Thu, 11 Aug 2011 14:57:13 +0100
-Message-Id: <1313071035-12047-40-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Chris Zankel <chris@zankel.net>
+Subject: [PATCH 34/41] xtensa: No need to reset handler if SA_ONESHOT
+Date: Thu, 11 Aug 2011 14:57:08 +0100
+Message-Id: <1313071035-12047-35-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -23,30 +22,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-recalc_sigpending() is called within sigprocmask(), so there is no
-need call it again after sigprocmask() has returned. I must have
-missed this call when removing the other recalc_sigpending() in commit
-4bcad6c1ef53 ("dlm: Remove superfluous call to recalc_sigpending())".
+get_signal_to_deliver() already resets the signal handler if
+SA_ONESHOT is set in ka->sa.sa_flags, there's no need to do it again
+in handle_signal(). Furthermore, because we were modifying
+ka->sa.sa_handler without holding ->sighand->siglock there's the
+potential we can race with another thread if it modifies the signal
+handlers.
 
-Cc: Christine Caulfield <ccaulfie@redhat.com>
-Cc: David Teigland <teigland@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Zankel <chris@zankel.net>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- fs/dlm/user.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/xtensa/kernel/signal.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/fs/dlm/user.c b/fs/dlm/user.c
-index d8ea607..b38b122 100644
---- a/fs/dlm/user.c
-+++ b/fs/dlm/user.c
-@@ -678,7 +678,6 @@ static int device_close(struct inode *inode, struct file *file)
- 	   device_remove_lockspace() */
+diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
+index 4f53770..24655e3 100644
+--- a/arch/xtensa/kernel/signal.c
++++ b/arch/xtensa/kernel/signal.c
+@@ -536,9 +536,6 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset)
+ 		/* Set up the stack frame */
+ 		setup_frame(signr, &ka, &info, oldset, regs);
  
- 	sigprocmask(SIG_SETMASK, &tmpsig, NULL);
--	recalc_sigpending();
- 
- 	return 0;
- }
+-		if (ka.sa.sa_flags & SA_ONESHOT)
+-			ka.sa.sa_handler = SIG_DFL;
+-
+ 		spin_lock_irq(&current->sighand->siglock);
+ 		sigorsets(&current->blocked, &current->blocked, &ka.sa.sa_mask);
+ 		if (!(ka.sa.sa_flags & SA_NODEFER))
 -- 
 1.7.4.4
 
