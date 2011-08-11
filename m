@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259Ab1HKN6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:58:13 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60134 "EHLO
+	id S1752629Ab1HKOBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:01:11 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60158 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751682Ab1HKN6G (ORCPT
+	by vger.kernel.org with ESMTP id S1752332Ab1HKN6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:06 -0400
+	Thu, 11 Aug 2011 09:58:14 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH 24/41] score: Don't mask signals if we fail to setup signal stack
-Date: Thu, 11 Aug 2011 14:56:58 +0100
-Message-Id: <1313071035-12047-25-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 29/41] tile: Use set_current_blocked()
+Date: Thu, 11 Aug 2011 14:57:03 +0100
+Message-Id: <1313071035-12047-30-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -23,41 +23,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-If setup_rt_frame() returns -EFAULT then we must not block any signals
-in the current process.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check whether the signal we're about to block
+is pending in the shared queue.
 
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/score/kernel/signal.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+ arch/tile/kernel/compat_signal.c |    5 +----
+ arch/tile/kernel/signal.c        |   16 ++++++----------
+ 2 files changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/arch/score/kernel/signal.c b/arch/score/kernel/signal.c
-index aa57440..bf9e33e 100644
---- a/arch/score/kernel/signal.c
-+++ b/arch/score/kernel/signal.c
-@@ -272,12 +272,14 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
- 	 */
- 	ret = setup_rt_frame(ka, regs, sig, oldset, info);
+diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
+index a7869ad..77763cc 100644
+--- a/arch/tile/kernel/compat_signal.c
++++ b/arch/tile/kernel/compat_signal.c
+@@ -303,10 +303,7 @@ long compat_sys_rt_sigreturn(struct pt_regs *regs)
+ 		goto badframe;
  
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
 -	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked, sig);
+-	current->blocked = set;
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
-+	if (ret == 0) {
-+		spin_lock_irq(&current->sighand->siglock);
-+		sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
-+		if (!(ka->sa.sa_flags & SA_NODEFER))
-+			sigaddset(&current->blocked, sig);
-+		recalc_sigpending();
-+		spin_unlock_irq(&current->sighand->siglock);
-+	}
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
+index bedaf4e..6ddceec 100644
+--- a/arch/tile/kernel/signal.c
++++ b/arch/tile/kernel/signal.c
+@@ -97,10 +97,7 @@ SYSCALL_DEFINE1(rt_sigreturn, struct pt_regs *, regs)
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+@@ -286,13 +283,12 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
+ 		 * the work_pending path in the return-to-user code, and
+ 		 * either way we can re-enable interrupts unconditionally.
+ 		 */
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked,
+-			  &current->blocked, &ka->sa.sa_mask);
++		sigset_t blocked;
++
++		sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+ 		if (!(ka->sa.sa_flags & SA_NODEFER))
+-			sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
++			sigaddset(&blocked, sig);
++		set_current_blocked(&blocked);
+ 	}
  
  	return ret;
- }
 -- 
 1.7.4.4
 
