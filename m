@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab1HKN0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:26:39 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:56977 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab1HKN0h (ORCPT
+	id S1752060Ab1HKN1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:27:41 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:37025 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab1HKN1k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:26:37 -0400
-Message-ID: <4E43D88A.3060303@tilera.com>
-Date: Thu, 11 Aug 2011 09:26:34 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Thu, 11 Aug 2011 09:27:40 -0400
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Dean Hildebrand <dhildebz@umich.edu>
-Subject: Re: [PATCH] nfs: fix a couple of minor portability issues
-References: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com> <4E42FFDC.9090103@panasas.com>
-In-Reply-To: <4E42FFDC.9090103@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110811131610.GA21916@ucw.cz>
+References: <4E3C8B8A.3080007@zytor.com> <44eea096d708c5c3273e41ced354073ebd62a1d6.1312599769.git.luto@mit.edu>
+ <20110811131610.GA21916@ucw.cz>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 11 Aug 2011 09:27:20 -0400
+X-Google-Sender-Auth: sTQ24UdX8XMlrGiHtekJXui0AJo
+Message-ID: <CAObL_7GVaRu3+=3pWCXmUz6Drzh_Xm_fmZBZ5027xeDCZjqg7g@mail.gmail.com>
+Subject: Re: [RFC v2] x86-64: Allow emulated vsyscalls from user addresses
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, lueckintel@yahoo.com,
+        kimwooyoung@gmail.com, Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/10/2011 6:02 PM, Boaz Harrosh wrote:
-> On 08/10/2011 10:56 AM, Chris Metcalf wrote:
->> Building on tilepro revealed two minor portability issues: the
->> blocklayout.c file used prefetchw() without #include <linux/prefetch.h>,
->> and the nfs4filelayout.c file used do_div() on an s64 not a u64.
->> This change fixes those two issues so the NFS code builds on tilepro.
+On Thu, Aug 11, 2011 at 9:16 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> They trace control flow through the vsyscall page and recompile that
+>> code somewhere else.  Then they expect it to work.  DynamoRIO
+>> (http://dynamorio.org/) and Pin (http://www.pintool.org/) are
+>> affected.  They crash when tracing programs that use vsyscalls.
+>> Valgrind is smart enough not to cause problems.  It crashes on the
+>> getcpu vsyscall, but that has nothing to do with emulation.
 >>
->> [...] 
->> diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
->> index e8915d4..6976a72 100644
->> --- a/fs/nfs/nfs4filelayout.c
->> +++ b/fs/nfs/nfs4filelayout.c
->> @@ -48,13 +48,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
->>  			    loff_t offset)
->>  {
->>  	u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
->> -	u64 tmp;
->> +	u64 tmp, uoff;
->>  
->>  	offset -= flseg->pattern_offset;
->> -	tmp = offset;
->> +	tmp = uoff = offset;
->>  	do_div(tmp, stripe_width);
->>  
->> -	return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
->> +	return tmp * flseg->stripe_unit + do_div(uoff, flseg->stripe_unit);
-> For proper u64 divisions it is best to use the div_u64 (and div64_u64) and not
-> use do_div. (And please don't add an unnecessary variable, just use a cast)
+>> This patch makes each of the three vsyscall entries use a different
+>> vector so that they can work when relocated.  It assumes that the
+>> code that relocates them is okay with the int instruction acting
+>> like ret.  DynamoRIO at least appears to work.
+>
+> int acting as ret is seriously weird semantics. And no, invalid
+> syscall parameters will not cause segfault, just return of -EFAULT. So
+> ... can this be changed?
 
-You can't use a cast with do_div() or you get errors about non-lvalues.
+Can which be changed?  int acting as ret already was (in a different
+patch, now in tip/x86/vdso), although I still think that user code
+should do its best to make no assumptions about the vsyscall page.
 
-And the context here is that we want the remainder, not the divided result,
-so we'd need a temporary variable anyway if we were going to use a routine
-from math64.h, presumably div_u64_rem().  But that's just an inline wrapper
-around do_div() anyway, so it's no more efficient, and not obviously any
-less "cluttered" in the source code here.  The original code author (who
-I'm adding belatedly to this email) may have a stronger opinion.
+invalid syscall parameters do indeed return -EFAULT, but invalid
+*v*syscall parameters will segfault in 3.0 and before, since the
+vsyscall implementation is just user code and has no exception
+handling.
 
-I'm not the author or maintainer of this code, I just want it to compile
-without warning on 32-bit architectures :-)
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+--Andy
