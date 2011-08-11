@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1HKU2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:28:09 -0400
-Received: from claw.goop.org ([74.207.240.146]:40207 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab1HKU2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:28:08 -0400
-Message-ID: <4E443B52.3080609@goop.org>
-Date: Thu, 11 Aug 2011 13:28:02 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1753565Ab1HKUbR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:31:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:39834 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab1HKUbQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:31:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=iHsiq3DOYFoTUnXSd5Em4/bp/xyfB9u4fw0UXw1ggIgNscnOku2vAUaH830R2MCnn
+	aiiUgr8hzAK1l65iJUxRQ==
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        keir.xen@gmail.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
-References: <cover.1312378163.git.luto@mit.edu> <20110803135322.GC29501@dumpdata.com> <20110803135604.GA29761@dumpdata.com> <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
-In-Reply-To: <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
-X-Enigmail-Version: 1.2
+In-Reply-To: <1313094223.26866.15.camel@twins>
+References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
+	<1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+	<1313091323.8491.30.camel@twins>
+	<CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
+	<1313094223.26866.15.camel@twins>
+Date: Thu, 11 Aug 2011 13:31:13 -0700
+X-Google-Sender-Auth: YmVWWdBbB-C6RElh7RQ7owNMG3A
+Message-ID: <CAAuSN90CXXEdco_fNYrv-ZUZPr4nB4HYPM1NCgaSgGz+Z-jaRQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
+From: Alex Neronskiy <zakmagnus@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Don Zickus <dzickus@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2011 06:59 AM, Andrew Lutomirski wrote:
-> On Wed, Aug 3, 2011 at 9:56 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
->> On Wed, Aug 03, 2011 at 09:53:22AM -0400, Konrad Rzeszutek Wilk wrote:
->>> On Wed, Aug 03, 2011 at 09:31:48AM -0400, Andy Lutomirski wrote:
->>>> This fixes various problems that cropped up with the vdso patches.
->>>>
->>>>  - Patch 1 fixes an information leak to userspace.
->>>>  - Patches 2 and 3 fix the kernel build on gold.
->>>>  - Patches 4 and 5 fix Xen (I hope).
->>>>  - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
->>>>    make it easier to handle performance regression reports :)
->>> Hm, you seemed to have the x86 maintainers on your email..
->> I definitly need some coffee. What I meant was that you missing putting
->> the x86 maintainers on this patchset. They are the ones that will handle this.
->>
->> I put them on the To list for you.
-> Are you sure about that coffee?  I'm pretty sure I had x86@kernel.org in there.
+On Thu, Aug 11, 2011 at 1:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2011-08-11 at 13:10 -0700, Alex Neronskiy wrote:
+> Ah, right, yeah, stick another lock in there.. One does worry about the
+> whole writer concurrency thing though, isn't it likely all cpus will
+> tickle the thing in quick succession? Putting a global lock in that path
+> isn't good,.. always think of the poor sod with the 4096 cpu machine.
+Is it common to disable interrupts on all 4096 CPU's at once?
 
-What's the state of this series?  Has tip.git picked it up, or does it
-need another go-around?
-
-I just booted a Linus tree and got a backtrace that looks like this
-issue, though I haven't looked into it in detail yet.
-
-Thanks,
-    J
+> Also, is all of this really useful? The hardlockup watchdog is useful
+> when you mess up bad, but other than that I've never found it to be
+> useful at all.
+>
+> I mean, we're at the point where a PREEMPT=y kernel has a pretty decent
+> latency and the PREEMPT_RT kernels live at ~30us. So wth are you
+> measuring?
+Well, not all kernels have PREEMPT. Chromebook kernels don't, for example.
