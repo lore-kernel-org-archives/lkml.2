@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab1HKA5n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 20:57:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50602 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab1HKA5m convert rfc822-to-8bit (ORCPT
+	id S1755522Ab1HKA6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 20:58:34 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36528 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755329Ab1HKA6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 20:57:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110810231552.GA7194@xanatos>
-References: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org>
-	<4E42A4AE.4020008@gmail.com>
-	<20110810231552.GA7194@xanatos>
-Date: Thu, 11 Aug 2011 02:57:41 +0200
-Message-ID: <CACTFLAP9eRG6TVtFsNGO+oDu0U0gOUth-_TzLeW2yGb6Jxn2tA@mail.gmail.com>
-Subject: Re: Allocating buffers for USB transfers (again)
-From: Daniel Mack <zonque@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Florian Mickler <florian@mickler.org>,
-        Oliver Neukum <oliver@neukum.org>, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-        Clemens Ladisch <clemens@ladisch.de>, pedrib@gmail.com,
-        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Aug 2011 20:58:31 -0400
+Date: Wed, 10 Aug 2011 17:58:29 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-raid@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
+Message-Id: <20110810175829.a834d80f.rdunlap@xenotime.net>
+In-Reply-To: <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+	<20110810122304.96b8be67.rdunlap@xenotime.net>
+	<CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 1:15 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Wed, Aug 10, 2011 at 05:33:02PM +0200, Daniel Mack wrote:
->> On 08/10/2011 04:32 PM, Alan Stern wrote:
->> >Looking at the driver's current code, it appears that your patch
->> >does not fix the bug properly.  Using discontiguous regions in the
->> >transfer buffer is perfectly okay.  The real problem is later on,
->> >where you do:
->> >
->> >if (send_it) { out->number_of_packets = FRAMES_PER_URB;
->> >
->> >This should be
->> >
->> >out->number_of_packets = outframe;
->> >
->> >The way it is now, the USB stack will try to use data from all the
->> >frame descriptors, and the last few will be stale because the loop
->> >doesn't set them.
->>
->> That's actually true, even though it doesn't seem to cause any trouble.
->> I tested everything here of course, and the output URBs return back from
->> the USB stack with their length fields zeroed out, which then
->> causes the stack to send packets with zero-length fields at the end.
->
-> Actually, it causes system hangs when the driver is loaded on a device
-> attached to a USB 3.0 port, as Alan Stern pointed out:
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=40702
+On Thu, 11 Aug 2011 08:35:50 +0800 Peng Tao wrote:
 
-Yes, I've noticed this.
+> On Thu, Aug 11, 2011 at 3:23 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > When CONFIG_BLOCK is not enabled (x86_64):
+> >
+> > warning: (NFS_V4_1) selects MD which has unmet direct dependencies (BLOCK)
 
-> Please don't submit zero-length transfers.  The xHCI driver just isn't
-> able to handle it.  Arguably, it probably should have just rejected your
-> URB when it found a zero length buffer, so I'll probably be submitting a
-> patch to fix that.
+> MD depends on BLOCK but when MD is selected, it will not select BLOCK.
+> Selecting BLOCK at NFS_V4_1 can solve this but it's like resolving
+> dependency from top down.
+> 
+> Is MD designed to not be selected from the first place? If not, can we
+> change it to selecting BLOCK?
 
-According to the spec, sending zero-length frames should be fine, no?
-Is there any particular reason why XCHI can't handle this while EHCI
-can? And does my patch fix the driver for XHCI?
+Hopefully MD will not select BLOCK.
 
+The blocklayout parts of NVS_V4_1 could depend on BLOCK.  or all of NVS_V4_1
+can depend on BLOCK.
 
-Daniel
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
