@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1HKRJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:09:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35430 "EHLO mx2.suse.de"
+	id S1752479Ab1HKRJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:09:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23448 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab1HKRJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:09:36 -0400
-Date: Thu, 11 Aug 2011 09:56:19 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Tracey Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] misc/pti.c: Fix build error when PCI is not selected
-Message-ID: <20110811165619.GA11036@suse.de>
-References: <20110811162306.GA30710@tj-desktop>
- <20110811094520.4ee7819f.rdunlap@xenotime.net>
+	id S1752423Ab1HKRJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 13:09:42 -0400
+Message-ID: <4E4408D9.4050706@redhat.com>
+Date: Thu, 11 Aug 2011 12:52:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110811094520.4ee7819f.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/7] mm: vmscan: Remove dead code related to lumpy reclaim
+ waiting on pages under writeback
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de> <1312973240-32576-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1312973240-32576-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 09:45:20AM -0700, Randy Dunlap wrote:
-> On Thu, 11 Aug 2011 12:23:06 -0400 Tracey Dent wrote:
-> 
-> > When you try to build INTEL_MID_PTI without having PCI
-> > enabled. It fails like this-
-> > 
-> >  CC [M]  drivers/misc/pti.o
-> >  drivers/misc/pti.c: In function ‘pti_pci_remove’:
-> >  drivers/misc/pti.c:410: error: implicit declaration of function ‘pci_release_region’
-> >  drivers/misc/pti.c: In function ‘pti_pci_probe’:
-> >  drivers/misc/pti.c:859: error: implicit declaration of function ‘pci_request_region’
-> > 
-> > So make INTEL_MID_PTI depend on PCI to fix build error.
-> 
-> I think (hope) that Greg already has a patch like this queued.
-> Greg- are you planning to push some patches soon?
+On 08/10/2011 06:47 AM, Mel Gorman wrote:
+> Lumpy reclaim worked with two passes - the first which queued pages for
+> IO and the second which waited on writeback. As direct reclaim can no
+> longer write pages there is some dead code. This patch removes it but
+> direct reclaim will continue to wait on pages under writeback while in
+> synchronous reclaim mode.
+>
+> Signed-off-by: Mel Gorman<mgorman@suse.de>
 
-Yes, sorry, "real work" has been keeping me really busy at the moment,
-I'll get to pushing these to Linus soon.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-greg k-h
