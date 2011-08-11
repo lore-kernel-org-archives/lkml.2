@@ -1,79 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1HKBAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 21:00:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab1HKBAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 21:00:53 -0400
-Date: Wed, 10 Aug 2011 20:20:40 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: RFC: Use dynamic-debug with pr_debug when -DDEBUG is set
-Message-ID: <20110811002039.GA3552@redhat.com>
-References: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
- <1313020216.11924.129.camel@Joe-Laptop>
- <1313020897.11924.137.camel@Joe-Laptop>
+	id S1755516Ab1HKBBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 21:01:12 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46626 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab1HKBBJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 21:01:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313020897.11924.137.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH9JG2XTOOS5GGO7howP+SLbTkj0xUJHPisFYPZfkJddWeKQ4Q@mail.gmail.com>
+References: <20110809034724.GA22257@july>
+	<4E4181E4.3090704@kernel.dk>
+	<CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
+	<4E423C83.9090209@kernel.dk>
+	<CAH9JG2VhPg-mk36CO_Jh8D0O6SW3RnZyjnBRNH4UqT8SXXWULQ@mail.gmail.com>
+	<CANejiEVW69ihzpMYqvTZ5iW+uz3jUA2y60vL7xzyZidhSxj-0g@mail.gmail.com>
+	<4E424A0A.6090300@kernel.dk>
+	<CANejiEU+gG9wWb+=zqASj1M-CmcDhXi2kft=FpFJ8K6Tb+whrw@mail.gmail.com>
+	<CAH9JG2XTOOS5GGO7howP+SLbTkj0xUJHPisFYPZfkJddWeKQ4Q@mail.gmail.com>
+Date: Thu, 11 Aug 2011 09:01:08 +0800
+X-Google-Sender-Auth: 9ICDEGMxxDUHuj0jMwfoB6skM5c
+Message-ID: <CANejiEXE8r9+8bZ_YtLWq7dHzwxXbg6V961Y2+_OJjZ4rwBgFg@mail.gmail.com>
+Subject: Re: [RFC PATCH] request: teach the device more intelligent
+From: Shaohua Li <shli@kernel.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        jh80.chung@samsung.com, linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 05:01:37PM -0700, Joe Perches wrote:
-> On Wed, 2011-08-10 at 16:50 -0700, Joe Perches wrote:
-> > On Wed, 2011-08-10 at 15:06 -0600, Jim Cromie wrote:
-> > > scx200_acb has several pr_debugs, but theyre not available via dynamic-debug
-> > > Ive been unable to figure out why.
-> > > Any ideas ?
-> > -DDEBUG forces pr_debug to be output and doesn't
-> > allow dynamic_debug for those outputs.
-> > from drivers/i2c/busses/Makefile:
-> > ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-> > from printk.h:
-> > /* If you are writing a driver, please use dev_dbg instead */
-> > #if defined(DEBUG)
-> > #define pr_debug(fmt, ...) \
-> > 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-> > #elif defined(CONFIG_DYNAMIC_DEBUG)
-> > /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
-> > #define pr_debug(fmt, ...) \
-> > 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-> 
-> Perhaps another way to enable pr_debug use
-> is to reverse the order of dynamic_pr_debug
-> defines.
-> 
-> ie:  change printk.h:
-> 
-> #if defined(CONFIG_DYNAMIC_DEBUG)
-> /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
-> #define pr_debug(fmt, ...) \
-> 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-> #elif defined(DEBUG)
-> #define pr_debug(fmt, ...) \
-> 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-> 
-> and change dynamic_debug.h:
-> 
-> #define DPRINTK_FLAGS_DEFAULT 0
-> 
-> to:
-> 
-> #if defined DEBUG
-> #define DPRINTK_FLAGS_DEFAULT DPRINTK_FLAGS_PRINT
-> #else
-> #define DPRINT_FLAGS_DEFAULT 0
-> #endif
-> 
-> That seems pretty sensible to me.  Jason?
-> 
+2011/8/11 Kyungmin Park <kmpark@infradead.org>:
+> On Thu, Aug 11, 2011 at 9:29 AM, Shaohua Li <shli@kernel.org> wrote:
+>> 2011/8/10 Jens Axboe <axboe@kernel.dk>:
+>>> On 2011-08-10 10:47, Shaohua Li wrote:
+>>>> 2011/8/10 Kyungmin Park <kmpark@infradead.org>:
+>>>>> On Wed, Aug 10, 2011 at 5:08 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>> On 2011-08-10 01:43, Kyungmin Park wrote:
+>>>>>>> On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>>>> On 2011-08-09 05:47, Kyungmin Park wrote:
+>>>>>>>>> Hi Jens
+>>>>>>>>>
+>>>>>>>>> Now eMMC device requires the upper layer information to improve the data
+>>>>>>>>> performance and reliability.
+>>>>>>>>>
+>>>>>>>>> . Context ID
+>>>>>>>>> Using the context information, it can sort out the data internally and improve the performance.
+>>>>>>>>> The main problem is that it's needed to define "What's the context".
+>>>>>>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>>>>>>>>
+>>>>>>>>> . Data Tag
+>>>>>>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>>>>>>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>>>>>>>>
+>>>>>>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>>>>>>>>
+>>>>>>>>> Can you give your opinions and does it proper fields at requests?
+>>>>>>>>
+>>>>>>>> You need this to work on all IO schedulers, not just cfq.
+>>>>>>> Of course if the concept is acceptable, I'll add the other IO schedulers also.
+>>>>>>>
+>>>>>>>> And since that's the case, there's no need to add this field since you can just
+>>>>>>>> retrieve it if the driver asks for it. For CFQ, it could look like this:
+>>>>>>>>
+>>>>>>>> static int cfq_foo(struct request *rq)
+>>>>>>>> {
+>>>>>>>>        struct cfq_queue *cfqq = rq->elevator_private[1];
+>>>>>>>>
+>>>>>>>>        if (cfqq)
+>>>>>>>>                return cfqq->pid;
+>>>>>>>>
+>>>>>>>>        return -1;
+>>>>>>>> }
+>>>>>>>
+>>>>>>> The actual user of these information is device driver. e.g.,
+>>>>>>> drivers/mmc/card/block.c
+>>>>>>> So it's not good to use cfq data structure at D/D. some time later
+>>>>>>> these are also used at scsi device drivers.
+>>>>>>
+>>>>>> No, what I'm suggesting above is the CFQ implementation. You would need
+>>>>>> to wire up an elv_ops->get_foo() and have the IO schedulers fill it in.
+>>>>>> If you notice, the above function does not take or output anything
+>>>>>> related to CFQ in particular, it'll just return you the unique key you
+>>>>>> need.
+>>>>>>
+>>>>>> It's either the above, or a field in the request that the schedulers
+>>>>>> fill out. However, it'd be somewhat annoying to grow struct request for
+>>>>>> something that has a narrow scope of use. Hence the suggestion to add a
+>>>>>> strategy helper for this.
+>>>>> Okay, I'll add new elevator function one for getting context or more hints.
+>>>>> BTW, does it okay to call elevator function call at D/D?
+>>>>>
+>>>>> The quick-n-dirty call is like this at "drivers/mmc/card/block.c"
+>>>>>
+>>>>>                struct elevator_queue *e = md->queue.queue->elevator;
+>>>>>                int context = -1;
+>>>>>
+>>>>>                if (e->ops->elevator_get_req_hint_fn && req) {
+>>>>>                        context = e->ops->elevator_get_req_hint_fn(req);
+>>>> I'm wondering how the driver deal with elevator switch. A context id from
+>>>> one elevator might just be garbage for another elevator.
+>>>
+>>> Any request with sched private data is drained prior to switching over.
+>>> This problem isn't unique to this context id, we have other per-request
+>>> IO scheduler data structures associated with the request, too.
+>> what I'm afraid is the context id isn't consistent. Say in cfq, context id
+>> for app1 is 1, app2 2. Then switching to deadline, context id for app1
+>> is 2, app2 1. Will the driver be confused about this?
+>
+> No, no need to consistent. the context id id only valid when several
+> requests are request the I/O simultaneously
+> e.g.,
+> App1 requests A, B, C, D, ...
+> App2 requests a, b, c, d, ...
+> App2 requests 1, 2, 3, 4, 5, ...
+> with following order, A, B, a, 1, C, b, 2, ...
+>
+> The current eMMC can't handle these operation.
+>
+> Instead using context, it can teach the these operation comes from
+> using context ID. and finally can place the request in-order at card
+> internally.
+>
+> Open Context ID operation, perform I/O with context Id, ...., and
+> Close Context ID operation until queue is empty.
+so just sort the request according to context id in a small interval.
+Makes sense. Thanks for the explanation.
 
-cool idea. I like it.
-
--Jason
+Thanks,
+Shaohua
