@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab1HKP2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 11:28:48 -0400
-Received: from gateway.hbm.com ([213.157.30.2]:8858 "EHLO hbmntx5.hbm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1HKP2p convert rfc822-to-8bit (ORCPT
+	id S1752805Ab1HKPcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 11:32:13 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:61251 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab1HKPcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 11:28:45 -0400
-Thread-Index: AcxYO1tOU85hB7byS/G9s65ZGb0suA==
-Thread-Topic: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
-Content-class: urn:content-classes:message
-Importance: normal
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: "Peter Zijlstra" <peterz@infradead.org>
-Subject: Re: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
-Date: Thu, 11 Aug 2011 17:28:29 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>
-References: <1312580681.28695.44.camel@twins> <201108111330.28168.tim.sander@hbm.com> <1313064142.7144.1.camel@twins>
-In-Reply-To: <1313064142.7144.1.camel@twins>
+	Thu, 11 Aug 2011 11:32:12 -0400
+Message-ID: <4E43F5F8.4060704@gmail.com>
+Date: Thu, 11 Aug 2011 10:32:08 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201108111728.29405.tim.sander@hbm.com>
-X-OriginalArrivalTime: 11 Aug 2011 15:28:44.0385 (UTC) FILETIME=[5B3B9D10:01CC583B]
+To: Will Deacon <will.deacon@arm.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "weizeng.he@csr.com" <weizeng.he@csr.com>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "'Barry Song'" <21cnbao@gmail.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Olof Johansson'" <olof@lixom.net>
+Subject: Re: Subject: L2x0 OF properties do not include interrupt #
+References: <000201cc575b$c1229010$4367b030$@rutland@arm.com> <201108101624.27881.arnd@arndb.de> <20110810142808.GL10121@e102144-lin.cambridge.arm.com> <201108111505.11887.arnd@arndb.de> <20110811130910.GA10189@e102144-lin.cambridge.arm.com>
+In-Reply-To: <20110811130910.GA10189@e102144-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter
-> Does the below (on top of -rt8) cure things for you? Shouldn't make a
-> difference for PREEMPT_LL though, so maybe there's something else busted
-> as well. But from what I can tell PREEMPT_BASE should be fine with such
-> things disabling preemption..
+On 08/11/2011 08:09 AM, Will Deacon wrote:
+> On Thu, Aug 11, 2011 at 02:05:11PM +0100, Arnd Bergmann wrote:
+>> On Wednesday 10 August 2011, Will Deacon wrote:
+>>> I was hoping that it was possible to have separate properties which describe
+>>> the interrupt. So you could have something like pmu-interrupt <75> and
+>>> abort-interrupt <76> rather than interrupts <75, 76>.
+>>
+>> Ok, I see.
+>>
+>>> I've not played with DT bindings before though, so if it's usually done with
+>>> an ordered list then so be it!
+>>
+>> A lot of the code assumes that the property is called 'interrupts' and that
+>> it contains a fixed-length array of interrupt numbers, each for one specific
+>> purpose.
 > 
-> ---
-> Index: linux-2.6/include/linux/uaccess.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/uaccess.h
-> +++ linux-2.6/include/linux/uaccess.h
-> @@ -22,7 +22,7 @@ static inline void raw_pagefault_enable(
->  	preempt_check_resched();
->  }
+> Ok, I wondered if something like that might be the case.
 > 
-> -#ifndef CONFIG_PREEMPT_RT_FULL
-> +#ifndef CONFIG_PREEMPT_RT_BASE
->  static inline void pagefault_disable(void)
->  {
->  	raw_pagefault_disable();
-> Index: linux-2.6/mm/memory.c
-> ===================================================================
-> --- linux-2.6.orig/mm/memory.c
-> +++ linux-2.6/mm/memory.c
-> @@ -3438,7 +3438,7 @@ int handle_pte_fault(struct mm_struct *m
->  	return 0;
->  }
+>> Given that we have so many different meanings for the interrupts, I'm
+>> not sure how this would work best in this case. According to
+>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0246f/CHDFHCFJ.html
+>> this looks like a nested interrupt controller, i.e. the L2CC has its own mask
+>> and status register with bits for each one of them. We could model these by
+>> describing the l2cc interrupt controller with these registers and listing all
+>> nine of the current inputs. I suspect however that it would be easier to just
+>> assume that there is only one line for now, and treat the l2cc as a single
+>> interrupt source with an internal status register.
 > 
-> -#ifdef CONFIG_PREEMPT_RT_FULL
-> +#ifdef CONFIG_PREEMPT_RT_BASE
->  void pagefault_disable(void)
->  {
->  	migrate_disable();
-The patch fixes the problem for CONFIG_PREEMPT_RTB but not for 
-CONFIG_PREEMPT_LL. With the latter the error is still there.
+> Given that this binding is only for the l2x0 / pl310 and I don't know of any
+> implementation where > 1 interrupt line is wired up, I'm happy to assume a
+> single combined interrupt line for now.
+> 
 
-Thanks
-Tim
+I know of one. Although, we have the combined interrupt as well. The
+binding should allow either way and specify the order. If the event
+counter interrupt is 1st, then it should be the same to s/w.
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
-
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
-
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+Rob
 
