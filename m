@@ -1,182 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab1HKSga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:36:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55320 "EHLO mx1.redhat.com"
+	id S1752682Ab1HKSgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:36:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61678 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab1HKSg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:36:28 -0400
-Date: Thu, 11 Aug 2011 14:36:21 -0400
+	id S1750907Ab1HKSge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:36:34 -0400
+Date: Thu, 11 Aug 2011 14:36:29 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: gregkh@suse.de
 Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Message-Id: <b5c13500eac4e5dfa0ee960c6f186eeb1b4585b4.1313085588.git.jbaron@redhat.com>
+        linux-kernel@vger.kernel.org
+Message-Id: <2b7575709d419c3693af77534af4b67e5c20efb8.1313085588.git.jbaron@redhat.com>
 In-Reply-To: <cover.1313085588.git.jbaron@redhat.com>
 References: <cover.1313085588.git.jbaron@redhat.com>
-Subject: [PATCH 01/11] dynamic_debug: Add __dynamic_dev_dbg
+Subject: [PATCH 03/11] dynamic_debug: Remove uses of KERN_CONT in dynamic_emit_prefix
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Perches <joe@perches.com>
 
-Unlike dynamic_pr_debug, dynamic uses of dev_dbg can not
-currently add task_pid/KBUILD_MODNAME/__func__/__LINE__
-to selected debug output.
+Multiple printks with KERN_CONT can be interleaved by
+other printks.  Reduce the likelihood of that interleaving
+by consolidating multiple calls to printk.
 
-Add a new function similar to dynamic_pr_debug to
-optionally emit these prefixes.
-
-Cc: Aloisio Almeida <aloisio.almeida@openbossa.org>
-Noticed-by: Aloisio Almeida <aloisio.almeida@openbossa.org>
 Signed-off-by: Joe Perches <joe@perches.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- drivers/base/core.c           |    5 +++--
- include/linux/device.h        |    5 +++++
- include/linux/dynamic_debug.h |   10 ++++++++--
- lib/dynamic_debug.c           |   38 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 54 insertions(+), 4 deletions(-)
+ lib/dynamic_debug.c |   34 +++++++++++++++++++++++-----------
+ 1 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index bc8729d..82c8654 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1764,8 +1764,8 @@ void device_shutdown(void)
- 
- #ifdef CONFIG_PRINTK
- 
--static int __dev_printk(const char *level, const struct device *dev,
--			struct va_format *vaf)
-+int __dev_printk(const char *level, const struct device *dev,
-+		 struct va_format *vaf)
- {
- 	if (!dev)
- 		return printk("%s(NULL device *): %pV", level, vaf);
-@@ -1773,6 +1773,7 @@ static int __dev_printk(const char *level, const struct device *dev,
- 	return printk("%s%s %s: %pV",
- 		      level, dev_driver_string(dev), dev_name(dev), vaf);
- }
-+EXPORT_SYMBOL(__dev_printk);
- 
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-diff --git a/include/linux/device.h b/include/linux/device.h
-index c20dfbf..4639419 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -785,6 +785,8 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
-+extern int __dev_printk(const char *level, const struct device *dev,
-+			struct va_format *vaf);
- extern int dev_printk(const char *level, const struct device *dev,
- 		      const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
-@@ -805,6 +807,9 @@ extern int _dev_info(const struct device *dev, const char *fmt, ...)
- 
- #else
- 
-+static inline int __dev_printk(const char *level, const struct device *dev,
-+			       struct va_format *vaf)
-+	 { return 0; }
- static inline int dev_printk(const char *level, const struct device *dev,
- 		      const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index e747ecd..bdf1531 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -47,6 +47,13 @@ extern int ddebug_remove_module(const char *mod_name);
- extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	__attribute__ ((format (printf, 2, 3)));
- 
-+struct device;
-+
-+extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
-+			     const struct device *dev,
-+			     const char *fmt, ...)
-+	__attribute__ ((format (printf, 3, 4)));
-+
- #define dynamic_pr_debug(fmt, ...) do {					\
- 	static struct _ddebug descriptor				\
- 	__used								\
-@@ -57,7 +64,6 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
- 	} while (0)
- 
--
- #define dynamic_dev_dbg(dev, fmt, ...) do {				\
- 	static struct _ddebug descriptor				\
- 	__used								\
-@@ -65,7 +71,7 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
- 		_DPRINTK_FLAGS_DEFAULT };				\
- 	if (unlikely(descriptor.enabled))				\
--		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
-+		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
- #else
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 75ca78f..63b6f95 100644
+index 3721709..a3eb6ab 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -30,6 +30,7 @@
- #include <linux/jump_label.h>
- #include <linux/hardirq.h>
- #include <linux/sched.h>
-+#include <linux/device.h>
+@@ -430,23 +430,35 @@ static int ddebug_exec_query(char *query_string)
  
- extern struct _ddebug __start___verbose[];
- extern struct _ddebug __stop___verbose[];
-@@ -456,6 +457,43 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- }
- EXPORT_SYMBOL(__dynamic_pr_debug);
- 
-+int __dynamic_dev_dbg(struct _ddebug *descriptor,
-+		      const struct device *dev, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int res;
-+
-+	BUG_ON(!descriptor);
-+	BUG_ON(!fmt);
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	res = printk(KERN_DEBUG);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
-+		if (in_interrupt())
-+			res += printk(KERN_CONT "<intr> ");
-+		else
-+			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
-+	}
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-+		res += printk(KERN_CONT "%s:", descriptor->modname);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-+		res += printk(KERN_CONT "%s:", descriptor->function);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
-+		res += printk(KERN_CONT "%d ", descriptor->lineno);
-+
-+	res += __dev_printk(KERN_CONT, dev, &vaf);
-+
-+	va_end(args);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(__dynamic_dev_dbg);
-+
- static __initdata char ddebug_setup_string[1024];
- static __init int ddebug_setup_query(char *str)
+ static int dynamic_emit_prefix(const struct _ddebug *descriptor)
  {
+-	int res;
++	char tid[sizeof(int) + sizeof(int)/2 + 4];
++	char lineno[sizeof(int) + sizeof(int)/2];
+ 
+-	res = printk(KERN_DEBUG);
+ 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
+ 		if (in_interrupt())
+-			res += printk(KERN_CONT "<intr> ");
++			snprintf(tid, sizeof(tid), "%s", "<intr> ");
+ 		else
+-			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
++			snprintf(tid, sizeof(tid), "[%d] ",
++				 task_pid_vnr(current));
++	} else {
++		tid[0] = 0;
+ 	}
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+-		res += printk(KERN_CONT "%s:", descriptor->modname);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+-		res += printk(KERN_CONT "%s:", descriptor->function);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		res += printk(KERN_CONT "%d ", descriptor->lineno);
+ 
+-	return res;
++	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
++		snprintf(lineno, sizeof(lineno), "%d", descriptor->lineno);
++	else
++		lineno[0] = 0;
++
++	return printk(KERN_DEBUG "%s%s%s%s%s%s",
++		      tid,
++		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
++		      descriptor->modname : "",
++		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
++		      ":" : "",
++		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
++		      descriptor->function : "",
++		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
++		      ":" : "",
++		      lineno);
+ }
+ 
+ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
 -- 
 1.7.5.4
 
