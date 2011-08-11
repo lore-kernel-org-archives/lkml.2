@@ -1,203 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab1HKGlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 02:41:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:60490 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361Ab1HKGlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 02:41:04 -0400
-Date: Thu, 11 Aug 2011 16:40:59 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Linus Torvalds <torvalds@osdl.org>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org, agraf@suse.de,
-        kvm <kvm@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org
-Subject: Fix refcounting in hugetlbfs quota handling
-Message-ID: <20110811064059.GU6342@yookeroo.fritz.box>
-Mail-Followup-To: Linus Torvalds <torvalds@osdl.org>,
-	Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-	Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org,
-	agraf@suse.de, kvm <kvm@vger.kernel.org>,
-	Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754409Ab1HKGnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 02:43:17 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:34878 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab1HKGnP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 02:43:15 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk() issue in das1800.c
+Date: Thu, 11 Aug 2011 12:27:44 +0530
+Message-Id: <1313045864-20313-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix printk warning issue in das1800.c>
+References: <[PATCH]Staging: comedi: fix printk warning issue in das1800.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please apply
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-hugetlbfs tracks the current usage of hugepages per hugetlbfs
-mountpoint.  To correctly track this when hugepages are released, it
-must find the right hugetlbfs super_block from the struct page
-available in free_huge_page().
+This is a patch to the das1800.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
-It does this by storing a pointer to the hugepage's struct
-address_space in the page_private data.  The hugetlb_{get,put}_quota
-functions go from this mapping to the inode and thence to the
-super_block.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/das1800.c |   49 +++++++++++++----------------
+ 1 files changed, 22 insertions(+), 27 deletions(-)
 
-However, this usage is buggy, because nothing ensures that the
-address_space is not freed before all the hugepages that belonged to
-it are.  In practice that will usually be the case, but if extra page
-references have been taken by e.g. drivers or kvm doing
-get_user_pages() then the file, inode and address space may be
-destroyed before all the pages.
-
-In addition, the quota functions use the mapping only to get the inode
-then the super_block.  However, most of the callers already have the
-inode anyway and have to get the mapping from there.
-
-This patch, therefore, stores a pointer to the inode instead of the
-address_space in the page private data for hugepages.  More
-importantly it correctly adjusts the reference count on the inodes
-when they're added to the page private data.  This ensures that the
-inode (and therefore the super block) will not be freed before we use
-it from free_huge_page.
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-
-Index: working-2.6/fs/hugetlbfs/inode.c
-===================================================================
---- working-2.6.orig/fs/hugetlbfs/inode.c	2011-08-10 16:45:47.864758406 +1000
-+++ working-2.6/fs/hugetlbfs/inode.c	2011-08-10 17:22:21.899638039 +1000
-@@ -874,10 +874,10 @@ out_free:
- 	return -ENOMEM;
- }
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+index a6df30b..ee5f614 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -826,76 +826,71 @@ static int das1800_probe(struct comedi_device *dev)
+ 	int id;
+ 	int board;
  
--int hugetlb_get_quota(struct address_space *mapping, long delta)
-+int hugetlb_get_quota(struct inode *inode, long delta)
- {
- 	int ret = 0;
--	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-+	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
+-	id = (inb(dev->iobase + DAS1800_DIGITAL) >> 4) & 0xf;	/* get id bits */
++	/* get id bits */
++	id = (inb(dev->iobase + DAS1800_DIGITAL) >> 4) & 0xf;
+ 	board = ((struct das1800_board *)dev->board_ptr) - das1800_boards;
  
- 	if (sbinfo->free_blocks > -1) {
- 		spin_lock(&sbinfo->stat_lock);
-@@ -891,9 +891,9 @@ int hugetlb_get_quota(struct address_spa
- 	return ret;
- }
- 
--void hugetlb_put_quota(struct address_space *mapping, long delta)
-+void hugetlb_put_quota(struct inode *inode, long delta)
- {
--	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-+	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
- 
- 	if (sbinfo->free_blocks > -1) {
- 		spin_lock(&sbinfo->stat_lock);
-Index: working-2.6/include/linux/hugetlb.h
-===================================================================
---- working-2.6.orig/include/linux/hugetlb.h	2011-08-10 16:58:27.952527484 +1000
-+++ working-2.6/include/linux/hugetlb.h	2011-08-10 17:22:08.723572707 +1000
-@@ -171,8 +171,8 @@ extern const struct file_operations huge
- extern const struct vm_operations_struct hugetlb_vm_ops;
- struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
- 				struct user_struct **user, int creat_flags);
--int hugetlb_get_quota(struct address_space *mapping, long delta);
--void hugetlb_put_quota(struct address_space *mapping, long delta);
-+int hugetlb_get_quota(struct inode *inode, long delta);
-+void hugetlb_put_quota(struct inode *inode, long delta);
- 
- static inline int is_file_hugepages(struct file *file)
- {
-Index: working-2.6/mm/hugetlb.c
-===================================================================
---- working-2.6.orig/mm/hugetlb.c	2011-08-10 16:44:12.212284092 +1000
-+++ working-2.6/mm/hugetlb.c	2011-08-10 17:21:49.603477888 +1000
-@@ -533,10 +533,12 @@ static void free_huge_page(struct page *
- 	 */
- 	struct hstate *h = page_hstate(page);
- 	int nid = page_to_nid(page);
--	struct address_space *mapping;
-+	struct inode *inode;
- 
--	mapping = (struct address_space *) page_private(page);
-+	inode = (struct inode *) page_private(page);
- 	set_page_private(page, 0);
-+	iput(inode);
-+
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
-@@ -551,8 +553,8 @@ static void free_huge_page(struct page *
- 		enqueue_huge_page(h, page);
- 	}
- 	spin_unlock(&hugetlb_lock);
--	if (mapping)
--		hugetlb_put_quota(mapping, 1);
-+	if (inode)
-+		hugetlb_put_quota(inode, 1);
- }
- 
- static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-@@ -1035,7 +1037,7 @@ static struct page *alloc_huge_page(stru
- 	if (chg < 0)
- 		return ERR_PTR(-VM_FAULT_OOM);
- 	if (chg)
--		if (hugetlb_get_quota(inode->i_mapping, chg))
-+		if (hugetlb_get_quota(inode, chg))
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
- 
- 	spin_lock(&hugetlb_lock);
-@@ -1045,12 +1047,12 @@ static struct page *alloc_huge_page(stru
- 	if (!page) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
--			hugetlb_put_quota(inode->i_mapping, chg);
-+			hugetlb_put_quota(inode, chg);
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
+ 	switch (id) {
+ 	case 0x3:
+ 		if (board == das1801st_da || board == das1802st_da ||
+ 		    board == das1701st_da || board == das1702st_da) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
  		}
- 	}
- 
--	set_page_private(page, (unsigned long) mapping);
-+	set_page_private(page, (unsigned long) igrab(inode));
- 
- 	vma_commit_reservation(h, vma, addr);
- 
-@@ -2086,7 +2088,8 @@ static void hugetlb_vm_op_close(struct v
- 
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
--			hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-+			hugetlb_put_quota(vma->vm_file->f_mapping->host,
-+					  reserve);
+-		printk
+-		    (" Board model (probed, not recommended): das-1800st-da series\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800st-da series\n");
+ 		return das1801st;
+ 		break;
+ 	case 0x4:
+ 		if (board == das1802hr_da || board == das1702hr_da) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
  		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1802hr-da\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1802hr-da\n");
+ 		return das1802hr;
+ 		break;
+ 	case 0x5:
+ 		if (board == das1801ao || board == das1802ao ||
+ 		    board == das1701ao || board == das1702ao) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800ao series\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800ao series\n");
+ 		return das1801ao;
+ 		break;
+ 	case 0x6:
+ 		if (board == das1802hr || board == das1702hr) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk(" Board model (probed, not recommended): das-1802hr\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1802hr\n");
+ 		return das1802hr;
+ 		break;
+ 	case 0x7:
+ 		if (board == das1801st || board == das1802st ||
+ 		    board == das1701st || board == das1702st) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800st series\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800st series\n");
+ 		return das1801st;
+ 		break;
+ 	case 0x8:
+ 		if (board == das1801hc || board == das1802hc) {
+-			printk(" Board model: %s\n",
+-			       das1800_boards[board].name);
++			printk(KERN_DEBUG " Board model: %s\n",
++					das1800_boards[board].name);
+ 			return board;
+ 		}
+-		printk
+-		    (" Board model (probed, not recommended): das-1800hc series\n");
++		printk(KERN_DEBUG " Board model (probed, not recommended): das-1800hc series\n");
+ 		return das1801hc;
+ 		break;
+ 	default:
+-		printk
+-		    (" Board model: probe returned 0x%x (unknown, please report)\n",
+-		     id);
++		printk(KERN_DEBUG " Board model: probe returned 0x%x (unknown, please report)\n",
++				id);
+ 		return board;
+ 		break;
  	}
- }
-@@ -2884,7 +2887,7 @@ int hugetlb_reserve_pages(struct inode *
- 		return chg;
- 
- 	/* There must be enough filesystem quota for the mapping */
--	if (hugetlb_get_quota(inode->i_mapping, chg))
-+	if (hugetlb_get_quota(inode, chg))
- 		return -ENOSPC;
- 
- 	/*
-@@ -2893,7 +2896,7 @@ int hugetlb_reserve_pages(struct inode *
- 	 */
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
--		hugetlb_put_quota(inode->i_mapping, chg);
-+		hugetlb_put_quota(inode, chg);
- 		return ret;
- 	}
- 
-@@ -2922,7 +2925,7 @@ void hugetlb_unreserve_pages(struct inod
- 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
- 	spin_unlock(&inode->i_lock);
- 
--	hugetlb_put_quota(inode->i_mapping, (chg - freed));
-+	hugetlb_put_quota(inode, (chg - freed));
- 	hugetlb_acct_memory(h, -(chg - freed));
- }
- 
-
 -- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+1.6.5.2
+
