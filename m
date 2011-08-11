@@ -1,60 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1HKWCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 18:02:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:13754 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab1HKWCh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 18:02:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ALL35QqCXggHswc7V6Gv9ZDmCxnat8xbdcFX6qC84dkIdmMG9WMptNjN0nUXOstjN
-	w/Nb7IAyr0yhRzcmGbJgA==
-MIME-Version: 1.0
-In-Reply-To: <1313097475.26866.18.camel@twins>
-References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-	<1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
-	<1313091323.8491.30.camel@twins>
-	<CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
-	<1313094223.26866.15.camel@twins>
-	<CAAuSN90CXXEdco_fNYrv-ZUZPr4nB4HYPM1NCgaSgGz+Z-jaRQ@mail.gmail.com>
-	<1313097475.26866.18.camel@twins>
-Date: Thu, 11 Aug 2011 15:02:32 -0700
-X-Google-Sender-Auth: WUyxhDN2DSX7yXNph-ZodO8lcMg
-Message-ID: <CAAuSN916+7=Z-eFGRVMUydni=ougtFX_uvy6LXSUCPR0RtkcJQ@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
-From: Alex Neronskiy <zakmagnus@chromium.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753576Ab1HKWOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 18:14:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37387 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752933Ab1HKWOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 18:14:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,358,1309762800"; 
+   d="scan'208";a="37617596"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Subject: [RFC-PATCH] pstore: defer inserting OOPS entries into pstore
+Date: Thu, 11 Aug 2011 15:14:39 -0700
+Message-Id: <4e44544f155363ca3d@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 2:17 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2011-08-11 at 13:31 -0700, Alex Neronskiy wrote:
->>
->> > I mean, we're at the point where a PREEMPT=y kernel has a pretty decent
->> > latency and the PREEMPT_RT kernels live at ~30us. So wth are you
->> > measuring?
->> Well, not all kernels have PREEMPT. Chromebook kernels don't, for example.
->
-> Can one infer from that statement that the purpose is trying to measure
-> non preempt latency? Why not use the tracer build for that purpose?
->
-> Still the watchdog ticks at 1s intervals or so, anything that takes that
-> long, even on voluntary preemption kernels is quite insane.
-I think Don grasped the sentiment well about a month ago when he
-commented on the first version of the patch, so I'll just resend his
-words:
-On Wed, Jul 13, 2011 at 6:43 AM, Don Zickus <dzickus@redhat.com> wrote:
-> I like the idea of this patch.  It definitely helps with better statistics
-> when trying to set the appropriate values for a soft/hard lockup as
-> opposed to pulling numbers from the air.
+Life is simple for all the kernel terminating types of kmsg_dump
+call backs - pstore just saves the tail end of the console log. But
+for "oops" the situation is more complex - the kernel may carry on
+running (possibly for ever).  So we'd like to make the logged copy
+of the oops appear in the pstore filesystem - so that the user has
+a handle to clear the entry from the persistent backing store (if
+we don't, the store may fill with "oops" entries (that are also
+safely stashed in /var/log/messages) leaving no space for real
+errors.
+
+Current code calls pstore_mkfile() immediately. But this may
+not be safe. The oops could have happened with arbitrary locks
+held, or in interrupt or NMI context. So allocating memory and
+calling into generic filesystem code seems unwise.
+
+This patch attempts to defer making the entry appear. At the time
+of the oops, we merely set a flag "pstore_new_entry" noting that
+a new entry has been added. A periodic timer checks once a minute
+to see if the flag is set - if so, it schedules a work queue to
+rescan the backing store and make all new entries appear in the
+pstore filesystem.
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+
+Q: Is the "flag -> timer -> workqueue" indirection overkill? I was
+unsure whether it was safe to call schedule_work() while
+processing the OOPS.
+
+---
+
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 893b961..379a02d 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -24,6 +24,7 @@
+ #include <linux/highmem.h>
+ #include <linux/time.h>
+ #include <linux/init.h>
++#include <linux/list.h>
+ #include <linux/string.h>
+ #include <linux/mount.h>
+ #include <linux/ramfs.h>
+@@ -32,13 +33,18 @@
+ #include <linux/magic.h>
+ #include <linux/pstore.h>
+ #include <linux/slab.h>
++#include <linux/spinlock.h>
+ #include <linux/uaccess.h>
+ 
+ #include "internal.h"
+ 
+ #define	PSTORE_NAMELEN	64
+ 
++static DEFINE_SPINLOCK(allpstore_lock);
++static LIST_HEAD(allpstore);
++
+ struct pstore_private {
++	struct list_head list;
+ 	struct pstore_info *psi;
+ 	enum pstore_type_id type;
+ 	u64	id;
+@@ -81,8 +87,16 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+ 
+ static void pstore_evict_inode(struct inode *inode)
+ {
++	struct pstore_private	*p = inode->i_private;
++	unsigned long		flags;
++
+ 	end_writeback(inode);
+-	kfree(inode->i_private);
++	if (p) {
++		spin_lock_irqsave(&allpstore_lock, flags);
++		list_del(&p->list);
++		spin_unlock_irqrestore(&allpstore_lock, flags);
++		kfree(p);
++	}
+ }
+ 
+ static const struct inode_operations pstore_dir_inode_operations = {
+@@ -182,9 +196,23 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	struct dentry		*root = pstore_sb->s_root;
+ 	struct dentry		*dentry;
+ 	struct inode		*inode;
+-	int			rc;
++	int			rc = 0;
+ 	char			name[PSTORE_NAMELEN];
+-	struct pstore_private	*private;
++	struct pstore_private	*private, *pos;
++	unsigned long		flags;
++
++	spin_lock_irqsave(&allpstore_lock, flags);
++	list_for_each_entry(pos, &allpstore, list) {
++		if (pos->type == type &&
++		    pos->id == id &&
++		    pos->psi == psi) {
++			rc = -EEXIST;
++			break;
++		}
++	}
++	spin_unlock_irqrestore(&allpstore_lock, flags);
++	if (rc)
++		return rc;
+ 
+ 	rc = -ENOMEM;
+ 	inode = pstore_get_inode(pstore_sb, root->d_inode, S_IFREG | 0444, 0);
+@@ -229,6 +257,10 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 
+ 	d_add(dentry, inode);
+ 
++	spin_lock_irqsave(&allpstore_lock, flags);
++	list_add(&private->list, &allpstore);
++	spin_unlock_irqrestore(&allpstore_lock, flags);
++
+ 	mutex_unlock(&root->d_inode->i_mutex);
+ 
+ 	return 0;
+@@ -277,7 +309,7 @@ int pstore_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto fail;
+ 	}
+ 
+-	pstore_get_records();
++	pstore_get_records(0);
+ 
+ 	return 0;
+ fail:
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 611c1b3..3bde461 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -1,5 +1,5 @@
+ extern void	pstore_set_kmsg_bytes(int);
+-extern void	pstore_get_records(void);
++extern void	pstore_get_records(int);
+ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+ 			      char *data, size_t size,
+ 			      struct timespec time, struct pstore_info *psi);
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index c5300ec..ca60ebc 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -25,12 +25,29 @@
+ #include <linux/module.h>
+ #include <linux/pstore.h>
+ #include <linux/string.h>
++#include <linux/timer.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
++#include <linux/workqueue.h>
+ 
+ #include "internal.h"
+ 
+ /*
++ * We defer making "oops" entries appear in pstore - see
++ * whether the system is actually still running well enough
++ * to let someone see the entry
++ */
++#define	PSTORE_INTERVAL	(60 * HZ)
++
++static int pstore_new_entry;
++
++static void pstore_timefunc(unsigned long);
++static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
++
++static void pstore_dowork(struct work_struct *);
++static DECLARE_WORK(pstore_work, pstore_dowork);
++
++/*
+  * pstore_lock just protects "psinfo" during
+  * calls to pstore_register()
+  */
+@@ -100,9 +117,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		id = psinfo->write(PSTORE_TYPE_DMESG, part,
+ 				   hsize + l1_cpy + l2_cpy, psinfo);
+ 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+-			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
+-				      psinfo->buf, hsize + l1_cpy + l2_cpy,
+-				      CURRENT_TIME, psinfo);
++			pstore_new_entry = 1;
+ 		l1 -= l1_cpy;
+ 		l2 -= l2_cpy;
+ 		total += l1_cpy + l2_cpy;
+@@ -148,19 +163,24 @@ int pstore_register(struct pstore_info *psi)
+ 	}
+ 
+ 	if (pstore_is_mounted())
+-		pstore_get_records();
++		pstore_get_records(0);
+ 
+ 	kmsg_dump_register(&pstore_dumper);
+ 
++	pstore_timer.expires = jiffies + PSTORE_INTERVAL;
++	add_timer(&pstore_timer);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pstore_register);
+ 
+ /*
+- * Read all the records from the persistent store. Create and
+- * file files in our filesystem.
++ * Read all the records from the persistent store. Create
++ * files in our filesystem.  Don't warn about -EEXIST errors
++ * when we are re-scanning the backing store looking to add new
++ * error records.
+  */
+-void pstore_get_records(void)
++void pstore_get_records(int quiet)
+ {
+ 	struct pstore_info *psi = psinfo;
+ 	ssize_t			size;
+@@ -178,8 +198,9 @@ void pstore_get_records(void)
+ 		goto out;
+ 
+ 	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
+-		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
+-				  time, psi))
++		rc = pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
++				  time, psi);
++		if (rc && (rc != -EEXIST || !quiet))
+ 			failed++;
+ 	}
+ 	psi->close(psi);
+@@ -191,6 +212,21 @@ out:
+ 		       failed, psi->name);
+ }
+ 
++static void pstore_dowork(struct work_struct *work)
++{
++	pstore_get_records(1);
++}
++
++static void pstore_timefunc(unsigned long dummy)
++{
++	if (pstore_new_entry) {
++		pstore_new_entry = 0;
++		schedule_work(&pstore_work);
++	}
++
++	mod_timer(&pstore_timer, jiffies + PSTORE_INTERVAL);
++}
++
+ /*
+  * Call platform driver to write a record to the
+  * persistent store.
