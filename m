@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1HKTiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:38:09 -0400
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:40889 "EHLO
-	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab1HKTiG (ORCPT
+	id S1753412Ab1HKTi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:38:29 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:15409 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab1HKThr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:38:06 -0400
-Message-Id: <201108111938.p7BJc44U012947@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 11 Aug 2011 15:32:25 -0400
-Subject: [PATCH v2] nfs: fix a minor do_div portability issue
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Dean Hildebrand <dhildebz@umich.edu>
-In-Reply-To: <4E441F17.7090504@panasas.com>
-References: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com> <4E42FFDC.9090103@panasas.com> <4E43D88A.3060303@tilera.com> <4E441F17.7090504@panasas.com>
-X-OriginalArrivalTime: 11 Aug 2011 19:38:04.0934 (UTC) FILETIME=[306A3A60:01CC585E]
+	Thu, 11 Aug 2011 15:37:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=lrPe1Wm9bbCmOL6gywRZLfbzL5Mk0IUJewfQVZO60M6GKImKqJQ+qq7q/YIXk1IUM
+	TFsprE1PaqB6j1yNqA45A==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH 2/5] trace-cmd: Don't call exit from tracecmd_blk_hack()
+Date: Thu, 11 Aug 2011 12:37:36 -0700
+Message-Id: <1313091459-12049-2-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313091459-12049-1-git-send-email-vnagarnaik@google.com>
+References: <1313091459-12049-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change modifies filelayout_get_dense_offset() to use the functions
-in math64.h and thus avoid a 32-bit platform compile error trying to
-use do_div() on an s64 type.
+Commit 9e0fd22b14805a3a3219a99bc5eccebf70f5484a adds a hack to parse
+blktrace events. In tracecmd_blk_hack(), if the block trace events could
+not be parsed, it calls exit(0). Get rid of it and only return -1 to let
+the caller know that parsing failed.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- fs/nfs/nfs4filelayout.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ trace-blk-hack.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
-index e8915d4..3ecb14f 100644
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -49,12 +49,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
- {
- 	u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
- 	u64 tmp;
-+	u32 rem;
+diff --git a/trace-blk-hack.c b/trace-blk-hack.c
+index bdc9d13..b5b78e3 100644
+--- a/trace-blk-hack.c
++++ b/trace-blk-hack.c
+@@ -159,7 +159,5 @@ int tracecmd_blk_hack(struct tracecmd_input *handle)
+ 	return 0;
  
- 	offset -= flseg->pattern_offset;
--	tmp = offset;
--	do_div(tmp, stripe_width);
-+	tmp = div_u64(offset, stripe_width);
-+	div_u64_rem(offset, flseg->stripe_unit, &rem);
- 
--	return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
-+	return tmp * flseg->stripe_unit + rem;
+  fail:
+-	exit(0);
+-	printf("failed!\n");
+ 	return -1;
  }
- 
- /* This function is used by the layout driver to calculate the
 -- 
-1.6.5.2
+1.7.3.1
 
