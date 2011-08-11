@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1HKUmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:42:36 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35615 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab1HKUmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:42:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: Tree for Aug 11 (suspend_stats build error)
-Date: Thu, 11 Aug 2011 22:44:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-pm@lists.linux-foundation.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20110811162058.42b462bc80e67d7a80ecff93@canb.auug.org.au> <20110811115931.8007900d.rdunlap@xenotime.net>
-In-Reply-To: <20110811115931.8007900d.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108112244.12547.rjw@sisk.pl>
+	id S1753903Ab1HKUng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:43:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40504 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1HKUnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:43:33 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH v2 2/4] gpio/tegra: Implement gpio_chip.to_irq
+Date: Thu, 11 Aug 2011 14:43:22 -0600
+Message-Id: <1313095404-27858-2-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1313095404-27858-1-git-send-email-swarren@nvidia.com>
+References: <1313095404-27858-1-git-send-email-swarren@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 11, 2011, Randy Dunlap wrote:
-> On Thu, 11 Aug 2011 16:20:58 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> 
-> When CONFIG_PM_SLEEP is not enabled:
-> 
-> kernel/built-in.o: In function `suspend_stats_show':
-> main.c:(.text+0x40a25): undefined reference to `suspend_stats'
-> main.c:(.text+0x40a2c): undefined reference to `suspend_stats'
-> main.c:(.text+0x40a32): undefined reference to `suspend_stats'
-> main.c:(.text+0x40a73): undefined reference to `suspend_stats'
-> main.c:(.text+0x40a82): undefined reference to `suspend_stats'
-> kernel/built-in.o:main.c:(.text+0x40a91): more undefined references to `suspend_stats' follow
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/gpio/gpio-tegra.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Should be fixed in my tree now.
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index ecade29..df64536 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -134,7 +134,10 @@ static int tegra_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+ 	return 0;
+ }
+ 
+-
++static int tegra_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
++{
++	return TEGRA_GPIO_TO_IRQ(offset);
++}
+ 
+ static struct gpio_chip tegra_gpio_chip = {
+ 	.label			= "tegra-gpio",
+@@ -142,6 +145,7 @@ static struct gpio_chip tegra_gpio_chip = {
+ 	.get			= tegra_gpio_get,
+ 	.direction_output	= tegra_gpio_direction_output,
+ 	.set			= tegra_gpio_set,
++	.to_irq			= tegra_gpio_to_irq,
+ 	.base			= 0,
+ 	.ngpio			= TEGRA_NR_GPIOS,
+ };
+-- 
+1.7.0.4
 
-Thanks,
-Rafael
