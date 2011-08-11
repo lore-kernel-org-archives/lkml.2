@@ -1,225 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1HKSjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:39:35 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38893 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751853Ab1HKSjb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:39:31 -0400
+	id S1752387Ab1HKSk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:40:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52759 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1HKSk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:40:28 -0400
+Date: Thu, 11 Aug 2011 13:40:17 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: containers@lists.linux-foundation.org,
+        LXC Development <Lxc-devel@lists.sourceforge.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, daniel@peqn,
+        eric@peqn
+Subject: [PATCH] add pid->user_ns
+Message-ID: <20110811184017.GA13356@peqn>
+References: <4E4051A0.8030009@free.fr>
+ <20110810221028.2e0c8590@neptune.home>
+ <4E42EEE3.9050608@free.fr>
+ <20110811183027.49275b2d@neptune.home>
+ <4E44082F.6040606@free.fr>
+ <20110811190456.77ff9280@neptune.home>
+ <20110811181022.GA12307@peqn>
 MIME-Version: 1.0
-In-Reply-To: <20110811060622.GA2549@matterhorn1>
-References: <1313006614-28702-1-git-send-email-mturquette@ti.com>
- <1313006614-28702-2-git-send-email-mturquette@ti.com> <20110811060622.GA2549@matterhorn1>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 11 Aug 2011 11:39:03 -0700
-Message-ID: <CAJOA=zNyssmgoHXbX6maR=EM4T8A79YU-iwgy8oW2xMoVrQvZA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] cpumask: introduce cpumask for hotpluggable CPUs
-To: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, gregkh@suse.de,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811181022.GA12307@peqn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 11:06 PM, Amit Kucheria
-<amit.kucheria@linaro.org> wrote:
-> See comments inline.
->
-> On 11 Aug 10, Mike Turquette wrote:
->> On some platforms it is possible to have some CPUs which support CPU
->> hotplug and some which do not.  Currently the prescence of an 'online'
->> sysfs entry in userspace is adequate for applications to know that a CPU
->> supports hotplug, but there is no convenient way to make the same
->> determination in the kernel.
->>
->> To better model this relationship this patch introduces a new cpumask to
->> track CPUs that support CPU hotplug operations.
->>
->> This new cpumask is populated at boot-time and remains static for the
->> life of the machine.  Bits set in the mask indicate a CPU which supports
->> hotplug, but make no guarantees about whether that CPU is currently
->> online or not.  Likewise a cleared bit in the mask indicates either a
->> CPU which cannot hotplug or a lack of a populated CPU.
->>
->> The purpose of this new cpumask is to aid kernel code which uses CPU to
->> take CPUs online and offline.  Possible uses are as a thermal event
->> mitigation technique or as a power capping mechanism.
->>
->> Signed-off-by: Mike Turquette <mturquette@ti.com>
->> ---
->> Change log:
->> v2: fixed missing parentheses in cpumask_test_cpu and improved grammar
->>     in comments
->>
->>  include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
->>  kernel/cpu.c            |   18 ++++++++++++++++++
->>  2 files changed, 40 insertions(+), 5 deletions(-)
->>
->> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
->> index b24ac56..52e64a7 100644
->> --- a/include/linux/cpumask.h
->> +++ b/include/linux/cpumask.h
->> @@ -39,10 +39,11 @@ extern int nr_cpu_ids;
->>   * The following particular system cpumasks and operations manage
->>   * possible, present, active and online cpus.
->>   *
->> - *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
->> - *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
->> - *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
->> - *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
->> + *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
->> + *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
->> + *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
->> + *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
->> + *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
->>   *
->>   *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
->>   *
->> @@ -51,7 +52,11 @@ extern int nr_cpu_ids;
->>   *  life of that system boot.  The cpu_present_mask is dynamic(*),
->>   *  representing which CPUs are currently plugged in.  And
->>   *  cpu_online_mask is the dynamic subset of cpu_present_mask,
->> - *  indicating those CPUs available for scheduling.
->> + *  indicating those CPUs available for scheduling.  The
->> + *  cpu_hotpluggable_mask is also fixed at boot time as the set of CPU
->> + *  id's which are possible AND can hotplug.  Cleared bits in this mask
->> + *  mean that either the CPU is not possible, or it is possible but does
->> + *  not support CPU hotplug operations.
->>   *
->>   *  If HOTPLUG is enabled, then cpu_possible_mask is forced to have
->>   *  all NR_CPUS bits set, otherwise it is just the set of CPUs that
->> @@ -61,6 +66,9 @@ extern int nr_cpu_ids;
->>   *  depending on what ACPI reports as currently plugged in, otherwise
->>   *  cpu_present_mask is just a copy of cpu_possible_mask.
->>   *
->> + *  If HOTPLUG is not enabled then cpu_hotpluggable_mask is the empty
->> + *  set.
->> + *
->>   *  (*) Well, cpu_present_mask is dynamic in the hotplug case.  If not
->>   *      hotplug, it's a copy of cpu_possible_mask, hence fixed at boot.
->>   *
->> @@ -76,6 +84,7 @@ extern int nr_cpu_ids;
->>   */
->>
->>  extern const struct cpumask *const cpu_possible_mask;
->> +extern const struct cpumask *const cpu_hotpluggable_mask;
->>  extern const struct cpumask *const cpu_online_mask;
->>  extern const struct cpumask *const cpu_present_mask;
->>  extern const struct cpumask *const cpu_active_mask;
->> @@ -85,19 +94,23 @@ extern const struct cpumask *const cpu_active_mask;
->>  #define num_possible_cpus()  cpumask_weight(cpu_possible_mask)
->>  #define num_present_cpus()   cpumask_weight(cpu_present_mask)
->>  #define num_active_cpus()    cpumask_weight(cpu_active_mask)
->> +#define num_hotpluggable_cpus()      cpumask_weight(cpu_hotpluggable_mask)
->>  #define cpu_online(cpu)              cpumask_test_cpu((cpu), cpu_online_mask)
->>  #define cpu_possible(cpu)    cpumask_test_cpu((cpu), cpu_possible_mask)
->>  #define cpu_present(cpu)     cpumask_test_cpu((cpu), cpu_present_mask)
->>  #define cpu_active(cpu)              cpumask_test_cpu((cpu), cpu_active_mask)
->> +#define cpu_hotpluggable(cpu)        cpumask_test_cpu((cpu, cpu_hotpluggable_mask))
->
-> The bracket should be around cpu, like this (cpu) so that there are no
-> side-effects when passing anything to the macro. See the other #defines above.
+[ Here is the patch which you'd need to be able to add the boot
+check against pid_ns ]
 
-Wow, not sure how that happened...  will send in V3...
+This will allow us to check whether a task has privilege over the
+pid namespace.
 
->>  #else
->>  #define num_online_cpus()    1U
->>  #define num_possible_cpus()  1U
->>  #define num_present_cpus()   1U
->>  #define num_active_cpus()    1U
->> +#define num_hotpluggable_cpus()      0
->>  #define cpu_online(cpu)              ((cpu) == 0)
->>  #define cpu_possible(cpu)    ((cpu) == 0)
->>  #define cpu_present(cpu)     ((cpu) == 0)
->>  #define cpu_active(cpu)              ((cpu) == 0)
->> +#define cpu_hotpluggable(cpu)        0
->>  #endif
->>
->>  /* verify cpu argument to cpumask_* operators */
->> @@ -678,16 +691,20 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
->>  #define cpu_none_mask to_cpumask(cpu_bit_bitmap[0])
->>
->>  #define for_each_possible_cpu(cpu) for_each_cpu((cpu), cpu_possible_mask)
->> +#define for_each_hotpluggable_cpu(cpu) \
->> +                                for_each_cpu((cpu), cpu_hotpluggable_mask)
->>  #define for_each_online_cpu(cpu)   for_each_cpu((cpu), cpu_online_mask)
->>  #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
->>
->>  /* Wrappers for arch boot code to manipulate normally-constant masks */
->>  void set_cpu_possible(unsigned int cpu, bool possible);
->> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable);
->>  void set_cpu_present(unsigned int cpu, bool present);
->>  void set_cpu_online(unsigned int cpu, bool online);
->>  void set_cpu_active(unsigned int cpu, bool active);
->>  void init_cpu_present(const struct cpumask *src);
->>  void init_cpu_possible(const struct cpumask *src);
->> +void init_cpu_hotpluggable(const struct cpumask *src);
->>  void init_cpu_online(const struct cpumask *src);
->>
->>  /**
->> diff --git a/kernel/cpu.c b/kernel/cpu.c
->> index 12b7458..8c397c9 100644
->> --- a/kernel/cpu.c
->> +++ b/kernel/cpu.c
->> @@ -536,6 +536,11 @@ static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
->>  const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
->>  EXPORT_SYMBOL(cpu_possible_mask);
->>
->> +static DECLARE_BITMAP(cpu_hotpluggable_bits, CONFIG_NR_CPUS) __read_mostly;
->> +const struct cpumask *const cpu_hotpluggable_mask =
->> +                                     to_cpumask(cpu_hotpluggable_bits);
->> +EXPORT_SYMBOL(cpu_hotpluggable_mask);
->> +
->>  static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
->>  const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
->>  EXPORT_SYMBOL(cpu_online_mask);
->> @@ -556,6 +561,14 @@ void set_cpu_possible(unsigned int cpu, bool possible)
->>               cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
->>  }
->>
->> +void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable)
->> +{
->> +     if (hotpluggable)
->> +             cpumask_set_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
->> +     else
->> +             cpumask_clear_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
->> +}
->> +
->>  void set_cpu_present(unsigned int cpu, bool present)
->>  {
->>       if (present)
->> @@ -590,6 +603,11 @@ void init_cpu_possible(const struct cpumask *src)
->>       cpumask_copy(to_cpumask(cpu_possible_bits), src);
->>  }
->>
->> +void init_cpu_hotpluggable(const struct cpumask *src)
->> +{
->> +     cpumask_copy(to_cpumask(cpu_hotpluggable_bits), src);
->> +}
->> +
->
-> Just to be clear I understand this code, init_cpu_hotpluggable will be called
-> in arch code, right? e.g. arch/arm/kernel/smp.c or do you intend for it to be
-> called in platform-specific code?
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+---
+ include/linux/pid_namespace.h |    9 +++++++--
+ kernel/nsproxy.c              |    2 +-
+ kernel/pid.c                  |    1 +
+ kernel/pid_namespace.c        |   13 ++++++++++---
+ 4 files changed, 19 insertions(+), 6 deletions(-)
 
-It could be called in either, though I assume arch code is a better
-place to call this.
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 38d1032..c1b5a48 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -7,6 +7,9 @@
+ #include <linux/nsproxy.h>
+ #include <linux/kref.h>
+ 
++struct user_namespace;
++extern struct user_namespace init_user_ns;
++
+ struct pidmap {
+        atomic_t nr_free;
+        void *page;
+@@ -30,6 +33,7 @@ struct pid_namespace {
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+ #endif
++	struct user_namespace *user_ns;
+ };
+ 
+ extern struct pid_namespace init_pid_ns;
+@@ -42,7 +46,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+ 	return ns;
+ }
+ 
+-extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
++extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct task_struct *tsk);
+ extern void free_pid_ns(struct kref *kref);
+ extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
+ 
+@@ -61,8 +65,9 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+ }
+ 
+ static inline struct pid_namespace *
+-copy_pid_ns(unsigned long flags, struct pid_namespace *ns)
++copy_pid_ns(unsigned long flags, struct task_struct *tsk)
+ {
++	struct pid_namespace *ns = task_active_pid_ns(tsk);
+ 	if (flags & CLONE_NEWPID)
+ 		ns = ERR_PTR(-EINVAL);
+ 	return ns;
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 9aeab4b..97e21ea 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -84,7 +84,7 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		goto out_ipc;
+ 	}
+ 
+-	new_nsp->pid_ns = copy_pid_ns(flags, task_active_pid_ns(tsk));
++	new_nsp->pid_ns = copy_pid_ns(flags, tsk);
+ 	if (IS_ERR(new_nsp->pid_ns)) {
+ 		err = PTR_ERR(new_nsp->pid_ns);
+ 		goto out_pid;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e432057..4a1e66f 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -78,6 +78,7 @@ struct pid_namespace init_pid_ns = {
+ 	.last_pid = 0,
+ 	.level = 0,
+ 	.child_reaper = &init_task,
++	.user_ns = &init_user_ns,
+ };
+ EXPORT_SYMBOL_GPL(init_pid_ns);
+ 
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index e9c9adc..6818ea5 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -10,6 +10,7 @@
+ 
+ #include <linux/pid.h>
+ #include <linux/pid_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/syscalls.h>
+ #include <linux/err.h>
+ #include <linux/acct.h>
+@@ -69,7 +70,8 @@ err_alloc:
+ 	return NULL;
+ }
+ 
+-static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_pid_ns)
++static struct pid_namespace *create_pid_namespace(struct task_struct *tsk,
++			struct pid_namespace *parent_pid_ns)
+ {
+ 	struct pid_namespace *ns;
+ 	unsigned int level = parent_pid_ns->level + 1;
+@@ -97,6 +99,8 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+ 	for (i = 1; i < PIDMAP_ENTRIES; i++)
+ 		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
+ 
++	ns->user_ns = get_user_ns(task_cred_xxx(tsk, user)->user_ns);
++
+ 	err = pid_ns_prepare_proc(ns);
+ 	if (err)
+ 		goto out_put_parent_pid_ns;
+@@ -122,13 +126,15 @@ static void destroy_pid_namespace(struct pid_namespace *ns)
+ 	kmem_cache_free(pid_ns_cachep, ns);
+ }
+ 
+-struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *old_ns)
++struct pid_namespace *copy_pid_ns(unsigned long flags, struct task_struct *tsk)
+ {
++	struct pid_namespace *old_ns = task_active_pid_ns(tsk);
++
+ 	if (!(flags & CLONE_NEWPID))
+ 		return get_pid_ns(old_ns);
+ 	if (flags & (CLONE_THREAD|CLONE_PARENT))
+ 		return ERR_PTR(-EINVAL);
+-	return create_pid_namespace(old_ns);
++	return create_pid_namespace(tsk, old_ns);
+ }
+ 
+ void free_pid_ns(struct kref *kref)
+@@ -139,6 +145,7 @@ void free_pid_ns(struct kref *kref)
+ 
+ 	parent = ns->parent;
+ 	destroy_pid_namespace(ns);
++	put_user_ns(ns->user_ns);
+ 
+ 	if (parent != NULL)
+ 		put_pid_ns(parent);
+-- 
+1.7.5.4
 
-This call is made redundant by patch 2 which populates the
-hotpluggable bits in register_cpu, but some platforms might still need
-it so it is included for completeness sake.  x86 and ARM will not call
-this, for example.  In fact I could not find any users of the
-init_cpu_xxx cpumask helpers on any architectures.
-
-Thanks,
-Mike
-
->>  void init_cpu_online(const struct cpumask *src)
->>  {
->>       cpumask_copy(to_cpumask(cpu_online_bits), src);
->> --
->> 1.7.4.1
->
