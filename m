@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1HKOCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:02:45 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60129 "EHLO
+	id S1752576Ab1HKODC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:03:02 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60120 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752497Ab1HKN6F (ORCPT
+	by vger.kernel.org with ESMTP id S1752448Ab1HKN6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:05 -0400
+	Thu, 11 Aug 2011 09:58:01 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 23/41] powerpc: Use set_current_blocked()
-Date: Thu, 11 Aug 2011 14:56:57 +0100
-Message-Id: <1313071035-12047-24-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 21/41] OpenRISC: Use set_current_blocked()
+Date: Thu, 11 Aug 2011 14:56:55 +0100
+Message-Id: <1313071035-12047-22-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -30,72 +29,53 @@ incorrect as we need to check whether the signal we're about to block
 is pending in the shared queue.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Jonas Bonn <jonas@southpole.se>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/powerpc/kernel/signal.c    |   16 ++++++----------
- arch/powerpc/kernel/signal_32.c |   11 ++++++-----
- 2 files changed, 12 insertions(+), 15 deletions(-)
+ arch/openrisc/kernel/signal.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
-index 2300426..8f6731f 100644
---- a/arch/powerpc/kernel/signal.c
-+++ b/arch/powerpc/kernel/signal.c
-@@ -56,10 +56,7 @@ void __user * get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
- void restore_sigmask(sigset_t *set)
- {
- 	sigdelsetmask(set, ~_BLOCKABLE);
+diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
+index b0bdfda..50a5156 100644
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -108,10 +108,7 @@ asmlinkage long _sys_rt_sigreturn(struct pt_regs *regs)
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
 -	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = *set;
+-	current->blocked = set;
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(set);
- }
++	set_current_blocked(&set);
  
- static void check_syscall_restart(struct pt_regs *regs, struct k_sigaction *ka,
-@@ -167,13 +164,12 @@ static int do_signal_pending(sigset_t *oldset, struct pt_regs *regs)
- 
- 	regs->trap = 0;
- 	if (ret) {
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked, &current->blocked,
--			  &ka.sa.sa_mask);
-+		sigset_t blocked;
-+
-+		sigorsets(&blocked, &current->blocked, &ka.sa.sa_mask);
- 		if (!(ka.sa.sa_flags & SA_NODEFER))
--			sigaddset(&current->blocked, signr);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
-+			sigaddset(&blocked, signr);
-+		set_current_blocked(&blocked);
- 
- 		/*
- 		 * A signal was successfully delivered; the saved sigmask is in
-diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-index 78b76dc..5fc9d19 100644
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -242,12 +242,13 @@ static inline int restore_general_regs(struct pt_regs *regs,
-  */
- long sys_sigsuspend(old_sigset_t mask)
+ 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
+ 		goto badframe;
+@@ -266,19 +263,17 @@ handle_signal(unsigned long sig,
+ 	      siginfo_t *info, struct k_sigaction *ka,
+ 	      sigset_t *oldset, struct pt_regs *regs)
  {
--	mask &= _BLOCKABLE;
--	spin_lock_irq(&current->sighand->siglock);
 +	sigset_t blocked;
-+
- 	current->saved_sigmask = current->blocked;
--	siginitset(&current->blocked, mask);
+ 	int ret;
+ 
+ 	ret = setup_rt_frame(sig, ka, info, oldset, regs);
+ 	if (ret)
+ 		return ret;
+ 
+-	spin_lock_irq(&current->sighand->siglock);
+-	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
++	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+ 	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&current->blocked, sig);
 -	recalc_sigpending();
+-
 -	spin_unlock_irq(&current->sighand->siglock);
-+
-+	mask &= _BLOCKABLE;
-+	siginitset(&blocked, mask);
++		sigaddset(&blocked, sig);
 +	set_current_blocked(&blocked);
  
-  	current->state = TASK_INTERRUPTIBLE;
-  	schedule();
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
