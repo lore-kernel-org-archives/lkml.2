@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab1HKNOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:14:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48608 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab1HKNOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:14:48 -0400
-Message-ID: <4E43D5B8.1030200@ti.com>
-Date: Thu, 11 Aug 2011 14:14:32 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1755920Ab1HKNQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:16:23 -0400
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:45946 "EHLO
+	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab1HKNQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 09:16:22 -0400
+Date: Thu, 11 Aug 2011 15:16:10 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, lueckintel@yahoo.com,
+        kimwooyoung@gmail.com, Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [RFC v2] x86-64: Allow emulated vsyscalls from user addresses
+Message-ID: <20110811131610.GA21916@ucw.cz>
+References: <4E3C8B8A.3080007@zytor.com>
+ <44eea096d708c5c3273e41ced354073ebd62a1d6.1312599769.git.luto@mit.edu>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ASoC: omap: Update e-mail address of Jarkko Nikula
-References: <1313066697-18635-1-git-send-email-jarkko.nikula@bitmer.com> <1313068184.16663.12.camel@finisterre.wolfsonmicro.main>
-In-Reply-To: <1313068184.16663.12.camel@finisterre.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <44eea096d708c5c3273e41ced354073ebd62a1d6.1312599769.git.luto@mit.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/11 14:09, Mark Brown wrote:
-> On Thu, 2011-08-11 at 15:44 +0300, Jarkko Nikula wrote:
->> My gmail account got disabled and I'm not going to reopen it.
->>
->> Signed-off-by: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Hi!
+
+> They trace control flow through the vsyscall page and recompile that
+> code somewhere else.  Then they expect it to work.  DynamoRIO
+> (http://dynamorio.org/) and Pin (http://www.pintool.org/) are
+> affected.  They crash when tracing programs that use vsyscalls.
+> Valgrind is smart enough not to cause problems.  It crashes on the
+> getcpu vsyscall, but that has nothing to do with emulation.
 > 
-> Liam, I'm going to send a pull request to Takashi for 3.1 soonish -
-> should I just include this with that to save you having to bother?
-> 
+> This patch makes each of the three vsyscall entries use a different
+> vector so that they can work when relocated.  It assumes that the
+> code that relocates them is okay with the int instruction acting
+> like ret.  DynamoRIO at least appears to work.
 
-Yes please. I'm waiting on an Ack from Tony for the other stuff.
+int acting as ret is seriously weird semantics. And no, invalid
+syscall parameters will not cause segfault, just return of -EFAULT. So
+... can this be changed?
 
-Thanks
-
-Liam
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
