@@ -1,135 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab1HKUKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:10:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30568 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab1HKUKv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:10:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Gs+2uFTXVyTVCbFH8pnwevry1WZwrK9s5vFPg0ZsJwQqZB+yeqwvZdbd3wXc6c/bp
-	Go+v10rDowGnj3FKYdQcA==
+	id S1753535Ab1HKUOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:14:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:51351 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab1HKUOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:14:18 -0400
+Date: Thu, 11 Aug 2011 15:14:10 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de
+Cc: davej@redhat.com, yinghan@google.com, linux-kernel@vger.kernel.org,
+        mjg@redhat.com
+Subject: Re: [PATCH v3] x86: Reduce clock calibration time during slave cpu
+	startup
+Message-ID: <20110811201410.GA15975@sgi.com>
+References: <20110727140523.GA24206@redhat.com> <20110727141527.GA8453@sgi.com> <20110727155200.GA25381@redhat.com> <20110801184542.GA3939@sgi.com> <20110805104635.GB13055@elte.hu> <20110805131638.GA27779@sgi.com> <20110805213836.GB21114@elte.hu> <20110807003642.GA4442@srcf.ucam.org> <20110809150624.GG28228@elte.hu> <20110809151810.GA14795@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <1313091323.8491.30.camel@twins>
-References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-	<1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
-	<1313091323.8491.30.camel@twins>
-Date: Thu, 11 Aug 2011 13:10:48 -0700
-X-Google-Sender-Auth: RK6dYcCMNngn1L6r-8Zw5rq06Do
-Message-ID: <CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
-From: Alex Neronskiy <zakmagnus@chromium.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809151810.GA14795@srcf.ucam.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't send email to zakmagnus@chromium.com. That does not
-exist. The correct address is zakmagnus@chromium.org. I messed up my
-own email address somewhere somehow.
+Reduce the startup time for slave cpus.
 
-On Thu, Aug 11, 2011 at 12:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2011-08-10 at 11:02 -0700, Alex Neronskiy wrote:
->> @@ -210,22 +236,27 @@ void touch_softlockup_watchdog_sync(void)
->>  /* watchdog detector functions */
->>  static void update_hardstall(unsigned long stall, int this_cpu)
->>  {
->>         if (stall > hardstall_thresh && stall > worst_hardstall) {
->>                 unsigned long flags;
->> +               spin_lock_irqsave(&hardstall_write_lock, flags);
->> +               if (stall > worst_hardstall) {
->> +                       int write_ind = hard_read_ind;
->> +                       int locked = spin_trylock(&hardstall_locks[write_ind]);
->> +                       /* cannot wait, so if there's contention,
->> +                        * switch buffers */
->> +                       if (!locked)
->> +                               write_ind = !write_ind;
->> +
->>                         worst_hardstall = stall;
->> +                       hardstall_traces[write_ind].nr_entries = 0;
->> +                       save_stack_trace(&hardstall_traces[write_ind]);
->>
->> +                       /* tell readers to use the new buffer from now on */
->> +                       hard_read_ind = write_ind;
->> +                       if (locked)
->> +                               spin_unlock(&hardstall_locks[write_ind]);
->> +               }
->> +               spin_unlock_irqrestore(&hardstall_write_lock, flags);
->>         }
->>  }
->
-> That must be the most convoluted locking I've seen in a while.. OMG!
->
-> What's wrong with something like:
->
-> static void update_stall(struct stall *s, unsigned long stall)
-> {
->        if (stall <= s->worst)
->                return;
->
-> again:
->        if (!raw_spin_trylock(&s->lock[s->idx])) {
->                s->idx ^= 1;
->                goto again;
->        }
->
->        if (stall <= s->worst)
->                goto unlock;
->
->        s->worst = stall;
->        s->trace[s->idx].nr_entries = 0;
->        save_stack_trace(&s->trace[s->idx]);
->
-> unlock:
->        raw_spin_unlock(&s->lock[s->idx]);
-> }
->
->
-> And have your read side do:
->
->
-> static void show_stall_trace(struct seq_file *f, void *v)
-> {
->        struct stall *s = f->private;
->        int i, idx = ACCESS_ONCE(s->idx);
->
->        mutex_lock(&stall_mutex);
->
->        raw_spin_lock(&s->lock[idx]);
->        seq_printf(f, "stall: %d\n", s->worst);
->        for (i = 0; i < s->trace[idx].nr_entries; i++) {
->                seq_printf(f, "[<%pK>] %pS\n",
->                        (void *)s->trace->entries[i],
->                        (void *)s->trace->entries[i]);
->        }
->        raw_spin_unlock(&s->lock[idx]);
->
->        mutex_unlock(&stall_mutex);
-> }
->
->
-> Yes its racy on s->worst, but who cares (if you do care you can keep a
-> copy in s->delay[idx] or so). Also, it might be better to not do the
-> spinlock but simply use an atomic bitop to set an in-use flag, there is
-> no reason to disable preemption over the seq_printf() loop.
-One change here is to use raw_spin functions. Okay, sure. Another is
-to use a mutex instead of a spinlock among the readers. Makes a lot of
-sense.
+This patch adds hooks for an arch-specific function for clock calibration.
 
-Another change is to allow concurrent writers. The readers are
-serialized but the writers are concurrent; isn't that a strange
-design? The way the "main" index is changed also looks problematic. A
-writer will switch the index before anything useful is even known to
-be in the buffer, and then a reader can go ahead and get that lock and
-read something potentially very old and misleading. I don't think
-that's okay.
+These hooks are used on x86. If a newly started cpu has the same phys_proc_id
+as a core already active, uses the TSC for the delay loop and has a CONSTANT_TSC,
+use the already-calculated value of loops_per_jiffy.
+
+This patch reduces the time required to start slave cpus on a 4096 cpu system
+from:
+	465 sec  OLD
+	 62 sec NEW
+
+This reduces boot time on a 4096p system by almost 7 minutes.  Nice...
+
+
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+
+
+---
+V2 - remove assumption that all cores in a socket have the same core frequency.
+     the patch is enabled only if delay() uses the TSC & socket is CONSTANT_TSC.
+
+V3 - Update comments & patch description. No code changes.
+	[RESEND - failed to change V2 to V3 in previous posting.]
+
+     Not sure if this is acceptible or what needs to be done next. Pointers
+     appreciated.
+
+
+
+Also see https://lkml.org/lkml/2010/12/14/511 for a previous discussion
+for similar improvement. This patch gives almost equivalent performance
+and is less intrusive.
+
+
+ arch/x86/kernel/smpboot.c |   16 +++++++++++-----
+ arch/x86/kernel/tsc.c     |   19 +++++++++++++++++++
+ init/calibrate.c          |   15 +++++++++++++++
+ 3 files changed, 45 insertions(+), 5 deletions(-)
+
+Index: linux/arch/x86/kernel/smpboot.c
+===================================================================
+--- linux.orig/arch/x86/kernel/smpboot.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/smpboot.c	2011-08-08 15:21:47.919979997 -0500
+@@ -207,23 +207,29 @@ static void __cpuinit smp_callin(void)
+ 	 * Need to setup vector mappings before we enable interrupts.
+ 	 */
+ 	setup_vector_irq(smp_processor_id());
++
++	/*
++	 * Save our processor parameters. Note: this information
++	 * is needed for clock calibration.
++	 */
++	smp_store_cpu_info(cpuid);
++
+ 	/*
+ 	 * Get our bogomips.
++	 * Update loops_per_jiffy in cpu_data. Previous call to
++	 * smp_store_cpu_info() stored a value that is close but not as
++	 * accurate as the value just calculated.
+ 	 *
+ 	 * Need to enable IRQs because it can take longer and then
+ 	 * the NMI watchdog might kill us.
+ 	 */
+ 	local_irq_enable();
+ 	calibrate_delay();
++	cpu_data(cpuid).loops_per_jiffy = loops_per_jiffy;
+ 	local_irq_disable();
+ 	pr_debug("Stack at about %p\n", &cpuid);
+ 
+ 	/*
+-	 * Save our processor parameters
+-	 */
+-	smp_store_cpu_info(cpuid);
+-
+-	/*
+ 	 * This must be done before setting cpu_online_mask
+ 	 * or calling notify_cpu_starting.
+ 	 */
+Index: linux/arch/x86/kernel/tsc.c
+===================================================================
+--- linux.orig/arch/x86/kernel/tsc.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/tsc.c	2011-08-08 15:31:43.236111159 -0500
+@@ -995,3 +995,22 @@ void __init tsc_init(void)
+ 	check_system_tsc_reliable();
+ }
+ 
++/*
++ * If we have a constant TSC and are using the TSC for the delay loop,
++ * we can skip clock calibration if another cpu in the same socket has already
++ * been calibrated. This assumes that CONSTANT_TSC applies to all
++ * cpus in the socket - this should be a safe assumption.
++ */
++unsigned long __cpuinit calibrate_delay_is_known(void)
++{
++	int i, cpu = smp_processor_id();
++
++	if (!tsc_disabled && !cpu_has(&cpu_data(cpu), X86_FEATURE_CONSTANT_TSC))
++		return 0;
++
++	for_each_online_cpu(i)
++		if (cpu_data(i).phys_proc_id == cpu_data(cpu).phys_proc_id)
++			return cpu_data(i).loops_per_jiffy;
++	return 0;
++}
++
+Index: linux/init/calibrate.c
+===================================================================
+--- linux.orig/init/calibrate.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/init/calibrate.c	2011-08-08 15:33:17.003985763 -0500
+@@ -246,6 +246,19 @@ recalibrate:
+ 
+ static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+ 
++/*
++ * Check if cpu calibration delay is already known. For example,
++ * some processors with multi-core sockets may have all cores
++ * with the same calibration delay.
++ *
++ * Architectures should override this function if a faster calibration
++ * method is available.
++ */
++unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
++{
++	return 0;
++}
++
+ void __cpuinit calibrate_delay(void)
+ {
+ 	unsigned long lpj;
+@@ -265,6 +278,8 @@ void __cpuinit calibrate_delay(void)
+ 		lpj = lpj_fine;
+ 		pr_info("Calibrating delay loop (skipped), "
+ 			"value calculated using timer frequency.. ");
++	} else if ((lpj = calibrate_delay_is_known())) {
++		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+ 			pr_info("Calibrating delay using timer "
