@@ -1,171 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1HKIFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:05:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58619 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924Ab1HKIFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:05:02 -0400
-Date: Thu, 11 Aug 2011 10:05:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Arend van Spriel <arend@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2][cleanup] memcg: renaming of mem variable to memcg
-Message-ID: <20110811080500.GC8023@tiehlicka.suse.cz>
-References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com>
- <20110810172942.23280.99644.sendpatchset@oc5400248562.ibm.com>
+	id S1753172Ab1HKIF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:05:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:42128 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab1HKIFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 04:05:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6434"; a="109541149"
+X-IronPort-AV: E=Sophos;i="4.67,353,1309762800"; 
+   d="scan'208";a="97766754"
+Message-ID: <4E438D56.5020801@qca.qualcomm.com>
+Date: Thu, 11 Aug 2011 11:05:42 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110810172942.23280.99644.sendpatchset@oc5400248562.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (wireless
+ & staging trees related)
+References: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au>
+In-Reply-To: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.234.11.46]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-08-11 22:59:42, Raghavendra K T wrote:
->  The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses
->  "struct mem_cgroup *memcg". This patch renames all mem variables to memcg in header file.
+Hi Stephen,
 
-Any reason (other than that this is a different file) to have this as a
-separate patch?
-
+On 08/11/2011 08:55 AM, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 > 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 5633f51..fb1ed1c 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -88,8 +88,8 @@ extern void mem_cgroup_uncharge_end(void);
->  extern void mem_cgroup_uncharge_page(struct page *page);
->  extern void mem_cgroup_uncharge_cache_page(struct page *page);
->  
-> -extern void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask);
-> -int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *mem);
-> +extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
-> +int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
->  
->  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
->  extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
-> @@ -98,19 +98,19 @@ extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
->  static inline
->  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->  {
-> -	struct mem_cgroup *mem;
-> +	struct mem_cgroup *memcg;
->  	rcu_read_lock();
-> -	mem = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
->  	rcu_read_unlock();
-> -	return cgroup == mem;
-> +	return cgroup == memcg;
->  }
->  
-> -extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem);
-> +extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
->  
->  extern int
->  mem_cgroup_prepare_migration(struct page *page,
->  	struct page *newpage, struct mem_cgroup **ptr, gfp_t gfp_mask);
-> -extern void mem_cgroup_end_migration(struct mem_cgroup *mem,
-> +extern void mem_cgroup_end_migration(struct mem_cgroup *memcg,
->  	struct page *oldpage, struct page *newpage, bool migration_ok);
->  
->  /*
-> @@ -167,7 +167,7 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  						gfp_t gfp_mask,
->  						unsigned long *total_scanned);
-> -u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
-> +u64 mem_cgroup_get_limit(struct mem_cgroup *memcg);
->  
->  void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> @@ -263,18 +263,20 @@ static inline struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm
->  	return NULL;
->  }
->  
-> -static inline int mm_match_cgroup(struct mm_struct *mm, struct mem_cgroup *mem)
-> +static inline int mm_match_cgroup(struct mm_struct *mm,
-> +		struct mem_cgroup *memcg)
->  {
->  	return 1;
->  }
->  
->  static inline int task_in_mem_cgroup(struct task_struct *task,
-> -				     const struct mem_cgroup *mem)
-> +				     const struct mem_cgroup *memcg)
->  {
->  	return 1;
->  }
->  
-> -static inline struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem)
-> +static inline struct cgroup_subsys_state
-> +		*mem_cgroup_css(struct mem_cgroup *memcg)
->  {
->  	return NULL;
->  }
-> @@ -286,22 +288,22 @@ mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
->  	return 0;
->  }
->  
-> -static inline void mem_cgroup_end_migration(struct mem_cgroup *mem,
-> +static inline void mem_cgroup_end_migration(struct mem_cgroup *memcg,
->  		struct page *oldpage, struct page *newpage, bool migration_ok)
->  {
->  }
->  
-> -static inline int mem_cgroup_get_reclaim_priority(struct mem_cgroup *mem)
-> +static inline int mem_cgroup_get_reclaim_priority(struct mem_cgroup *memcg)
->  {
->  	return 0;
->  }
->  
-> -static inline void mem_cgroup_note_reclaim_priority(struct mem_cgroup *mem,
-> +static inline void mem_cgroup_note_reclaim_priority(struct mem_cgroup *memcg,
->  						int priority)
->  {
->  }
->  
-> -static inline void mem_cgroup_record_reclaim_priority(struct mem_cgroup *mem,
-> +static inline void mem_cgroup_record_reclaim_priority(struct mem_cgroup *memcg,
->  						int priority)
->  {
->  }
-> @@ -367,7 +369,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  }
->  
->  static inline
-> -u64 mem_cgroup_get_limit(struct mem_cgroup *mem)
-> +u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
->  {
->  	return 0;
->  }
+> drivers/staging/built-in.o: In function `aggr_recv_delba_req_evt':
+> (.opd+0x23a60): multiple definition of `aggr_recv_delba_req_evt'
+> drivers/net/built-in.o:(.opd+0x79980): first defined here
+> drivers/staging/built-in.o: In function `.wlan_node_reclaim':
+> (.text+0x303360): multiple definition of `.wlan_node_reclaim'
+> drivers/net/built-in.o:(.text+0xdd0618): first defined here
+> drivers/staging/built-in.o: In function `aggr_init':
+> (.opd+0x23a00): multiple definition of `aggr_init'
+> drivers/net/built-in.o:(.opd+0x79968): first defined here
+> drivers/staging/built-in.o: In function `.aggr_recv_delba_req_evt':
+> (.text+0x302614): multiple definition of `.aggr_recv_delba_req_evt'
+> drivers/net/built-in.o:(.text+0xdc8b60): first defined here
+> drivers/staging/built-in.o: In function `.wlan_node_table_cleanup':
+> (.text+0x303888): multiple definition of `.wlan_node_table_cleanup'
+> drivers/net/built-in.o:(.text+0xdd0a6c): first defined here
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> You get the idea. :-(  So, the ath6kl driver now exists in the wireless
+> tree and the staging tree.
+> 
+> I applied this patch for today (I have elided the part from "rm -rf
+> drivers/staging/ath6kl"):
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Oh man, sorry about this (again). I did compile both drivers at the same
+time, but only as modules and didn't realise the conflicts also with the
+staging driver.
+
+Yes, the cleaned up version of ath6kl is now in wireless-next and the
+staging version can be removed in 3.2. Greg, how do you want to handle
+removal of the staging version? Should I send a patch to you removing
+it? Or should I send the patch to John?
+
+Kalle
