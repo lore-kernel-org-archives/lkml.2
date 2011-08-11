@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab1HKPOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 11:14:42 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:50233 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751314Ab1HKPOl (ORCPT
+	id S1752608Ab1HKPPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 11:15:39 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57545 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1HKPPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 11:14:41 -0400
-Subject: Re: [PATCH 0/9] x86 EFI boot stub
-From: Matt Fleming <matt@console-pimps.org>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4E43D3AE.70901@gmail.com>
-References: <1313060386-4858-1-git-send-email-matt@console-pimps.org>
-	 <4E43D3AE.70901@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Aug 2011 16:14:38 +0100
-Message-ID: <1313075678.3436.69.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 11:15:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110811150840.GA14503@gondor.apana.org.au>
+References: <1311529994-7924-1-git-send-email-minipli@googlemail.com>
+ <1311529994-7924-3-git-send-email-minipli@googlemail.com> <20110804064436.GA16247@gondor.apana.org.au>
+ <4E43EC49.1040803@mit.edu> <20110811150840.GA14503@gondor.apana.org.au>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 11 Aug 2011 11:15:16 -0400
+X-Google-Sender-Auth: h9x9nv6nvfh6WZaS-UiAun6xk-I
+Message-ID: <CAObL_7GrFcqg3cBLQawUB0cnpDcHPBnRxedWsLkW_L48UNbx=A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] crypto, x86: SSSE3 based SHA1 implementation for x86-64
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Maxim Locktyukhin <maxim.locktyukhin@intel.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 15:05 +0200, Maarten Lankhorst wrote:
-> On 08/11/2011 12:59 PM, Matt Fleming wrote:
-> > From: Matt Fleming <matt.fleming@intel.com>
-> >
-> > This series adds support for an EFI boot stub, similar to the existing
-> > BIOS boot stub. The result is that you can boot a bzImage on an EFI
-> > machine without the use of a boot loader by making the bzImage appear
-> > to the EFI firmware to be an EFI application. Also, a single bzImage
-> > can be booted on either a BIOS or EFI machine.
-> >
-> > Using the EFI boot stub has the advantage that the kernel is
-> > responsible for configuring the machine to the point where we can
-> > fully boot the kernel, so we are no longer at the mercy of the boot
-> > loader.
-> >
-> Fails to boot here. I thought changing characteristics from 0x60500020 to 0xe0500020 would help, but no. :/
-> This change would make the code section writable.
+On Thu, Aug 11, 2011 at 11:08 AM, Herbert Xu
+<herbert@gondor.hengli.com.au> wrote:
+> On Thu, Aug 11, 2011 at 10:50:49AM -0400, Andy Lutomirski wrote:
+>>
+>>> This is pretty similar to the situation with the Intel AES code.
+>>> Over there they solved it by using the asynchronous interface and
+>>> deferring the processing to a work queue.
+>>
+>> I have vague plans to clean up extended state handling and make
+>> kernel_fpu_begin work efficiently from any context.  (i.e. the first
+>> kernel_fpu_begin after a context switch could take up to ~60 ns on Sandy
+>> Bridge, but further calls to kernel_fpu_begin would be a single branch.)
+>
+> This is all well and good but you still need to deal with the
+> case of !irq_fpu_usable.
 
-Thanks for testing out the patches Maarten!
+I think I can even get rid of that.  Of course, until that happens,
+code still needs to handle !irq_fpu_usable.
 
-> FileAlignment you use is probably wrong, I think it should be 0x200 not 0x2000 .
+(Also, calling these things kernel_fpu_begin() is dangerous.  It's not
+actually safe to use floating-point instructions after calling
+kernel_fpu_begin.  Integer SIMD instructions are okay, though.  The
+issue is that kernel_fpu_begin doesn't initialize MXCSR, and there are
+MXCSR values that will cause any floating-point instruction to trap
+regardless of its arguments.)
 
-Yep, thanks. That looks like a typo.
-
-> Maybe you need to add a data section and fix SizeOfInitializedData too?
-
-Hmm.. possibly. Is this on x86-64?
-
-> It just hangs on a blinking cursor, no idea if it actually started executing anything yet or not, since nothing is printed out.
-
-Hmm.. do you have early printk enabled? Can you hook up a serial console
-to this machine?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+--Andy
