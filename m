@@ -1,89 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab1HKVmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:42:01 -0400
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:50010 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220Ab1HKVmA convert rfc822-to-8bit (ORCPT
+	id S1754379Ab1HKVn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:43:58 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:38456 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754253Ab1HKVn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:42:00 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=n2W5COKzyCYKBlY96L0A3my6r0xTlngINTUh0kppeyk= c=1 sm=1
- a=y8pEDVWXUOsA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=oITwzJHm7LvCvV+zlaC6mA==:17 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8
- a=sPXDaBvKt7CecgPrsMgA:9 a=Q7txTkVjtaNhJU8iUYEA:7 a=CjuIK1q_8ugA:10
- a=x8gzFH9gYPwA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH] ext4: ext4_dx_add_entry should dirty directory metadata with the directory inode
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20110811211513.GL20655@tux1.beaverton.ibm.com>
-Date: Thu, 11 Aug 2011 15:41:59 -0600
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ED0259FB-A818-4CAA-A72A-9164CE3769D9@dilger.ca>
-References: <20110811211513.GL20655@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
+	Thu, 11 Aug 2011 17:43:56 -0400
+Date: Thu, 11 Aug 2011 14:43:54 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
+        peter honeyman <honey@citi.umich.edu>, <tao.peng@emc.com>,
+        <torvalds@linux-foundation.org>, <bergwolf@gmail.com>,
+        <Trond.Myklebust@netapp.com>, <linux-raid@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
+        "Welch, Brent" <welch@panasas.com>
+Subject: Re: [PATCH v2] pnfs: Automatically select blocks & objects layouts
+Message-Id: <20110811144354.c47a5c26.rdunlap@xenotime.net>
+In-Reply-To: <4E4449B5.3050309@panasas.com>
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+	<20110810122304.96b8be67.rdunlap@xenotime.net>
+	<CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
+	<20110810175829.a834d80f.rdunlap@xenotime.net>
+	<CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
+	<F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com>
+	<4E43AAD1.7090806@tonian.com>
+	<4E4422FD.3060706@panasas.com>
+	<4E444552.9030105@panasas.com>
+	<4E4449B5.3050309@panasas.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-11, at 3:15 PM, Darrick J. Wong wrote:
-> ext4_dx_add_entry manipulates bh2 and frames[0].bh, which are two buffer_heads
-> that point to directory blocks assigned to the directory inode.  However, the
-> function calls ext4_handle_dirty_metadata with the inode of the file that's
-> being added to the directory, not the directory inode itself.  Therefore,
-> correct the code to dirty the directory buffers with the directory inode, not
-> the file inode.
+On Thu, 11 Aug 2011 14:29:25 -0700 Boaz Harrosh wrote:
 
-Interesting.  For journaled filesystems this is purely cosmetic, since
-"handle" is valid and "inode" is unused in that case.  For non-journal
-filesystems it actually affects the correctness, since this buffer may
-not be sync'd to disk even when the directory is marked "dirsync".
+> 
+> Just like files-layout, blocks & objects layouts are part of the
+> NFS 4.1 protocol and should be automatically selected if NFS_4_1
+> is selected. The small problem is that these depend on other
+> Kernel support being present, while files only depends on NFS
+> itself.
+> 
+> This patch removes from the user choice the presence of objects
+> and blocks layout. But makes sure these are selected only if
+> the depended subsystems are present in the Kernel.
+> 
+> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 
-You can add my:
-Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+v1 applied & built OK for me.
+v2 didn't apply to linux-3.1-rc1 cleanly, but I think I got it right.
+Maybe not.  I got all of this from it:
 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+warning: (NFS_V4_1) selects MD which has unmet direct dependencies (BLOCK)
+  CC [M]  fs/nfs/blocklayout/blocklayout.o
+  CC [M]  fs/nfs/blocklayout/extents.o
+In file included from fs/nfs/blocklayout/blocklayout.h:35,
+                 from fs/nfs/blocklayout/extents.c:33:
+include/linux/device-mapper.h:49: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:49: warning: its scope is only this definition or declaration, which is probably not what you want
+include/linux/device-mapper.h:51: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:63: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:66: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:83: warning: 'struct bvec_merge_data' declared inside parameter list
+include/linux/device-mapper.h:95: warning: 'struct queue_limits' declared inside parameter list
+include/linux/device-mapper.h:300: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:301: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:475: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:476: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:477: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:478: warning: 'struct request_queue' declared inside parameter list
+In file included from fs/nfs/blocklayout/blocklayout.h:35,
+                 from fs/nfs/blocklayout/blocklayout.c:40:
+include/linux/device-mapper.h:49: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:49: warning: its scope is only this definition or declaration, which is probably not what you want
+include/linux/device-mapper.h:51: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:63: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:66: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:83: warning: 'struct bvec_merge_data' declared inside parameter list
+include/linux/device-mapper.h:95: warning: 'struct queue_limits' declared inside parameter list
+include/linux/device-mapper.h:300: warning: 'struct bio' declared inside parameter list
+include/linux/device-mapper.h:301: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:475: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:476: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:477: warning: 'struct request' declared inside parameter list
+include/linux/device-mapper.h:478: warning: 'struct request_queue' declared inside parameter list
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_submit_bio':
+fs/nfs/blocklayout/blocklayout.c:132: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:133: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:133: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:136: error: implicit declaration of function 'submit_bio'
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_alloc_init_bio':
+fs/nfs/blocklayout/blocklayout.c:148: error: implicit declaration of function 'bio_alloc'
+fs/nfs/blocklayout/blocklayout.c:148: warning: assignment makes pointer from integer without a cast
+fs/nfs/blocklayout/blocklayout.c:152: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:153: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:154: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:155: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_add_page_to_bio':
+fs/nfs/blocklayout/blocklayout.c:171: error: implicit declaration of function 'bio_add_page'
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_read':
+fs/nfs/blocklayout/blocklayout.c:192: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:193: error: 'BIO_UPTODATE' undeclared (first use in this function)
+fs/nfs/blocklayout/blocklayout.c:193: error: (Each undeclared identifier is reported only once
+fs/nfs/blocklayout/blocklayout.c:193: error: for each function it appears in.)
+fs/nfs/blocklayout/blocklayout.c:193: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:193: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:194: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:194: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:198: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:200: error: decrement of pointer to unknown structure
+fs/nfs/blocklayout/blocklayout.c:200: error: arithmetic on pointer to an incomplete type
+fs/nfs/blocklayout/blocklayout.c:200: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:201: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:204: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:210: error: implicit declaration of function 'bio_put'
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_write_zero':
+fs/nfs/blocklayout/blocklayout.c:355: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:356: error: 'BIO_UPTODATE' undeclared (first use in this function)
+fs/nfs/blocklayout/blocklayout.c:356: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:356: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:357: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:357: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:361: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:363: error: decrement of pointer to unknown structure
+fs/nfs/blocklayout/blocklayout.c:363: error: arithmetic on pointer to an incomplete type
+fs/nfs/blocklayout/blocklayout.c:363: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:364: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:368: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_write':
+fs/nfs/blocklayout/blocklayout.c:381: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:382: error: 'BIO_UPTODATE' undeclared (first use in this function)
+fs/nfs/blocklayout/blocklayout.c:382: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:382: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c: In function 'map_block':
+fs/nfs/blocklayout/blocklayout.c:440: error: implicit declaration of function 'set_buffer_mapped'
+fs/nfs/blocklayout/blocklayout.c:441: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:442: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:445: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c:445: error: dereferencing pointer to incomplete type
+fs/nfs/blocklayout/blocklayout.c: In function 'init_page_for_write':
+fs/nfs/blocklayout/blocklayout.c:469: error: implicit declaration of function 'alloc_page_buffers'
+fs/nfs/blocklayout/blocklayout.c:469: warning: assignment makes pointer from integer without a cast
+fs/nfs/blocklayout/blocklayout.c:477: error: implicit declaration of function 'bh_uptodate_or_lock'
+fs/nfs/blocklayout/blocklayout.c:478: error: implicit declaration of function 'bh_submit_read'
+fs/nfs/blocklayout/blocklayout.c:486: error: implicit declaration of function 'free_buffer_head'
+make[4]: *** [fs/nfs/blocklayout/blocklayout.o] Error 1
+
+and more errors in drivers/md/
+
+
 > ---
+>  fs/nfs/Kconfig |   18 ++++--------------
+>  1 files changed, 4 insertions(+), 14 deletions(-)
 > 
-> fs/ext4/namei.c |    4 ++--
-> 1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-> index b754b77..79ddc43 100644
-> --- a/fs/ext4/namei.c
-> +++ b/fs/ext4/namei.c
-> @@ -1589,7 +1589,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
-> 			dxtrace(dx_show_index("node", frames[1].entries));
-> 			dxtrace(dx_show_index("node",
-> 			       ((struct dx_node *) bh2->b_data)->entries));
-> -			err = ext4_handle_dirty_metadata(handle, inode, bh2);
-> +			err = ext4_handle_dirty_metadata(handle, dir, bh2);
-> 			if (err)
-> 				goto journal_error;
-> 			brelse (bh2);
-> @@ -1615,7 +1615,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
-> 			if (err)
-> 				goto journal_error;
-> 		}
-> -		err = ext4_handle_dirty_metadata(handle, inode, frames[0].bh);
-> +		err = ext4_handle_dirty_metadata(handle, dir, frames[0].bh);
-> 		if (err) {
-> 			ext4_std_error(inode->i_sb, err);
-> 			goto cleanup;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index 0d30613..dbcd821 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -89,24 +89,14 @@ config PNFS_FILE_LAYOUT
+>  	tristate
+>  
+>  config PNFS_BLOCK
+> -	tristate "Provide support for the pNFS Block Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
+> +	tristate
+>  	depends on NFS_FS && NFS_V4_1 && BLK_DEV_DM
+> -	help
+> -	  Say M here if you want your pNFS client to support the Block Layout Driver
+> -	  (RFC 5663). Requires Multiple devices driver support (DM) and Device mapper
+> -	  support (BLK_DEV_DM).
+> -
+> -	  If unsure, say N.
+> +	default m
+>  
+>  config PNFS_OBJLAYOUT
+> -	tristate "Provide support for the pNFS Objects Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
+> +	tristate
+>  	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
+> -	help
+> -	  Say M here if you want your pNFS client to support the Objects Layout Driver.
+> -	  Requires the SCSI osd initiator library (SCSI_OSD_INITIATOR) and
+> -	  upper level driver (SCSI_OSD_ULD).
+> -
+> -	  If unsure, say N.
+> +	default m
+>  
+>  config ROOT_NFS
+>  	bool "Root file system on NFS"
+> -- 
 
 
-Cheers, Andreas
-
-
-
-
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
