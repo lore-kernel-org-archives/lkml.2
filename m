@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1HKF0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 01:26:01 -0400
-Received: from nm22.bullet.mail.bf1.yahoo.com ([98.139.212.181]:27832 "HELO
-	nm22.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751260Ab1HKF0A convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 01:26:00 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 849948.4418.bm@omp1031.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=qKQAKSfRYQcQ1r9k02liwP3343sV4aXaGnczkDNZmoikz8CiW4GeACN+eWOc6JdUEeBX/m8LX4n1LTHSf5uJsqcpwHB1Ft7jRbeYd5R9A9hFTbpvF+JhY4ED65n4Z8mrfFVkPEAE6ZSkKaymPPfKRSa+HLWsr+UMYr2NQMoGWKs=;
-X-YMail-OSG: RK3.SUoVM1nDmhCs4vvM0Ct1CNlOVQ_XSDQ9mLfLxpobH5H
- dQ4DkwGQtIC6rXrDtcubWdA2SNKAHex6k5Qbcbr3ZRRGB2xKJslgZHB8cGFA
- F8yxDE9IxsJODBXFkbTfKkHhopMNMqKXCgI20vPRQbQy8cRbpgdGPQ0V.q2v
- K0BOQBMxq0TCouzkHWVgKePHPzcNCVUD0gd391WEs6aIs2IZR8BZtkkgCWTC
- 9kWz800S4g0irsdH5ua70OAXYkY9120x6q1lS7nuNcp6b2cJ9rqtEWzDgE3A
- PwhWbN0Bbupm3wb418819gH2pSXB2ViHSyHtoTJv39Zp4Cmk0_KnZFSOY8gK
- yiZdPyOzigfxK_wwfb8xonWZTQ2IU.Z94rzz_Xq1fJD9UaHINQP8q.91LFWT
- qmO34vY7QiuAgkSEm.L7bklhblxX7OlMQT6VBWzHGKvVLkouWxnhXsV0XLSJ
- Wtb_o3ISFjEDF03yajlSXhIt3RdIXMqHKed5f5cI8LgFxOgIf02JzU2r659K
- c7VBMzI3IwQHnZ_cEezXfc7pnKGidfUD6fkAiwBRRK3K86XE-
-X-Mailer: YahooMailWebService/0.8.113.313619
-References: <20110804143844.GQ19099@suse.de> <1312526302.37390.YahooMailNeo@web162009.mail.bf1.yahoo.com> <20110805080133.GS19099@suse.de>
-Message-ID: <1313040359.41174.YahooMailNeo@web162012.mail.bf1.yahoo.com>
-Date: Wed, 10 Aug 2011 22:25:59 -0700 (PDT)
-From: Pintu Agarwal <pintu_agarwal@yahoo.com>
-Reply-To: Pintu Agarwal <pintu_agarwal@yahoo.com>
-Subject: Re: MMTests 0.01
-To: Mel Gorman <mgorman@suse.de>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110805080133.GS19099@suse.de>
+	id S1751985Ab1HKFpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 01:45:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:42516 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab1HKFpS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 01:45:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+In-Reply-To: <1313024628.11924.139.camel@Joe-Laptop>
+References: <CAJfuBxwq3xw3MZU01rwzg0NAnnxNoLrC2x0QXnj+2pD-6gkR4g@mail.gmail.com>
+ <1313020216.11924.129.camel@Joe-Laptop> <1313020897.11924.137.camel@Joe-Laptop>
+ <20110811002039.GA3552@redhat.com> <1313024628.11924.139.camel@Joe-Laptop>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 10 Aug 2011 23:44:46 -0600
+Message-ID: <CAJfuBxyNBxs0hcTV=0N1UBYWnuXKsMUq3DC3GDgedRL5YX+34A@mail.gmail.com>
+Subject: Re: RFC: Use dynamic-debug with pr_debug when -DDEBUG is set
+To: Joe Perches <joe@perches.com>
+Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mel Gorman,
- 
-I found one problem in MMTests0.01/fraganalysis/Makefile
- 
-When I did "make install" here, I got the following error:
-install: cannot stat `record-buddyinfo': No such file or directory
-make: *** [install-script] Error 1
- 
-I think the following line in makefile need to be corrected:
-#####INSTALL_SCRIPT = pagealloc-extfrag show-buddyinfo slab-intfrag record-buddyinfo
+On Wed, Aug 10, 2011 at 7:03 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2011-08-10 at 20:20 -0400, Jason Baron wrote:
+>> On Wed, Aug 10, 2011 at 05:01:37PM -0700, Joe Perches wrote:
+>> > Perhaps another way to enable pr_debug use
+>> > is to reverse the order of dynamic_pr_debug
+>> > defines.
+>> > ie:  change printk.h:
+>> > #if defined(CONFIG_DYNAMIC_DEBUG)
+>> > /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+>> > #define pr_debug(fmt, ...) \
+>> >     dynamic_pr_debug(fmt, ##__VA_ARGS__)
+>> > #elif defined(DEBUG)
+>> > #define pr_debug(fmt, ...) \
+>> >     printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+>> > and change dynamic_debug.h:
+>> > #define DPRINTK_FLAGS_DEFAULT 0
+>> > to:
+>> > #if defined DEBUG
+>> > #define DPRINTK_FLAGS_DEFAULT DPRINTK_FLAGS_PRINT
+>> > #else
+>> > #define DPRINT_FLAGS_DEFAULT 0
+>> > #endif
+>> > That seems pretty sensible to me.  Jason?
+>> cool idea. I like it.
+>
+> You've got a bunch of patches ready to
+> be pulled/queued, so I think you should
+> do it.
+>
+> cheers, Joe
+>
 
-INSTALL_SCRIPT = pagealloc-extfrag show-buddyinfo slab-intfrag record-extfrag
- 
-I corrected this and it works now.
- 
- 
- 
-Thanks,
-Pintu
- 
- 
-From: Mel Gorman <mgorman@suse.de>
-To: Pintu Agarwal <pintu_agarwal@yahoo.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Sent: Friday, 5 August 2011 1:31 PM
-Subject: Re: MMTests 0.01
+Thanks Joe,
 
-On Thu, Aug 04, 2011 at 11:38:22PM -0700, Pintu Agarwal wrote:
-> Dear Mel Gorman,
->  
-> Thank you very much for this MMTest. 
-> It will be very helpful for me for all my needs.
-> I was looking forward for these kind of mm test utilities.
->  
-> Just wanted to know, if any of these utilities also covers
-> anti-fragmentation represent of the various page state in the form
-> of jpeg image?
+Ive just added this.  It works nicely, with one trivial change
+to add MODNAME, imitating the common non-dynamic-debug usage:
 
-No, that particular script was not included as it needs a kernel patch
-to be really useful and depends on parts of VM Regress that were very
-ugly. As I've said before, I generally use unusable free space index
-and fragmentation index if I'm trying to graph fragmentation-related
-information. To record it, I use the "extfrag" monitor in monitors/
-. It uses other helpers of which fraganalysis/show-buddyinfo is the
-most important as it is the one that can read either /proc/buddyinfo
-or use /proc/kpagefrags to build a more accurate picture.
+#if defined DEBUG
+#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT |
+_DPRINTK_FLAGS_INCL_MODNAME
 
--- 
-Mel Gorman
-SUSE Labs
+Ive tested the changes on scx200_acb, and changed
+the printks therein to corresponding pr_<foo>
+As I said, it works nicely.
 
---
-To unsubscribe, send a message with 'unsubscribe linux-mm' in
-the body to majordomo@kvack.org.  For more info on Linux MM,
-see: http://www.linux-mm.org/ .
-Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Ive added these 2 patches to my series, which I'll be posting shortly.
+In the meantime, its available at:
+
+git://github.com/jimc/linux-2.6.git
+in branch dyndbg-v4
