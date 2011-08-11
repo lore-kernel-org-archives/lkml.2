@@ -1,25 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab1HKMFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:05:36 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34164 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab1HKMFf (ORCPT
+	id S1755579Ab1HKMFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:05:44 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39397 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975Ab1HKMFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:05:35 -0400
-X-AuditID: b753bd60-a3cafba0000019f4-10-4e43c58dcd6f
-X-AuditID: b753bd60-a3cafba0000019f4-10-4e43c58dcd6f
+	Thu, 11 Aug 2011 08:05:42 -0400
+X-AuditID: b753bd60-a1c87ba000000655-04-4e43c59394bc
+X-AuditID: b753bd60-a1c87ba000000655-04-4e43c59394bc
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v3 0/5] perf script: add BTS analysis features
+Subject: [PATCH -tip v3 1/5] perf-script: unify the expressions indicate
+ "unknown"
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Ahern <dsahern@gmail.com>
 Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Thu, 11 Aug 2011 21:05:55 +0900
-Message-ID: <20110811120555.5900.23642.stgit@linux3>
+        yrl.pp-manager.tt@hitachi.com,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Thu, 11 Aug 2011 21:06:14 +0900
+Message-ID: <20110811120614.5900.33570.stgit@linux3>
+In-Reply-To: <20110811120555.5900.23642.stgit@linux3>
+References: <20110811120555.5900.23642.stgit@linux3>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,95 +39,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic, David,
-
-This patch series adds the functions to analyze BTS logs to perf-script and,
-makes perf-script more informative version 3.
-The patches add the following functions.
- - Unify the expression to "[unknown]"
- - Fix BTS record header to resolve DSOs and symbols of user-space
- - Resolve DSOs and symbols for BTS's branch_from addresses
- - Show the offset of symbols with the 'offs' field specifier.
- - Resolve the real path of [kernel.kallsym] using
-   '--show-kernel-path' option.
-
-Usage:
-First, get the BTS log with the following command.
-# perf record -e branches:u -c 1 -d <command>
-
-Second, analyze that trace data.
-# perf script -f ip,addr,sym,offs,dso [--show-kernel-path]
-This command's output format is:
-<branch_to addr> <branch_to function+offset> <branch_to DSO> <branch_from addr> <branch_from function+offset> <branch_from DSO>
-
-Output sample:
-# perf record -e branches:u -c 1 -d ls
-[snip]
-# perf script -f ip,addr,sym,dso,offs --show-kernel-path
-
-34308016b0 _start+0x0     (/lib64/ld-2.14.so) ffffffff81465a6d irq_return+0x0 (/lib/modules/3.0.0+/build/vmlinux)
-34308016b0 _start+0x0     (/lib64/ld-2.14.so) ffffffff81465a6d irq_return+0x0 (/lib/modules/3.0.0+/build/vmlinux)
-3430804b80 _dl_start+0x0  (/lib64/ld-2.14.so)       34308016b3 _start+0x3     (/lib64/ld-2.14.so)
-3430804b80 _dl_start+0x0  (/lib64/ld-2.14.so) ffffffff81465a6d irq_return+0x0 (/lib/modules/3.0.0+/build/vmlinux)
-3430804ba6 _dl_start+0x26 (/lib64/ld-2.14.so) ffffffff81465a6d irq_return+0x0 (/lib/modules/3.0.0+/build/vmlinux)
-3430804bad _dl_start+0x2d (/lib64/ld-2.14.so) ffffffff81465a6d irq_return+0x0 (/lib/modules/3.0.0+/build/vmlinux)
-3430804c1d _dl_start+0x9d (/lib64/ld-2.14.so)       3430804bfb _dl_start+0x7b (/lib64/ld-2.14.so)
-3430804c00 _dl_start+0x80 (/lib64/ld-2.14.so)       3430804c21 _dl_start+0xa1 (/lib64/ld-2.14.so)
-[snip]
-401fd0 main+0x0             (/root/bin/ls)       3430c21399 __libc_start_main+0xe9 (/lib64/libc-2.14.so)
-409ad0 set_program_name+0x0 (/root/bin/ls)           401ff3 main+0x23              (/root/bin/ls)
-409ad0 set_program_name+0x0 (/root/bin/ls) ffffffff81465a6d irq_return+0x0         (/lib/modules/3.0.0+/build/vmlinux)
-401ca8 strrchr@plt+0x0      (/root/bin/ls)           409ade set_program_name+0xe   (/root/bin/ls)
-401cae strrchr@plt+0x6      (/root/bin/ls)           401ca8 strrchr@plt+0x0        (/root/bin/ls)
-401a38 _init+0x18           (/root/bin/ls)           401cb3 strrchr@plt+0xb        (/root/bin/ls)
-3430813850 _dl_runtime_resolve+0x0 (/lib64/ld-2.14.so)           401a3e _init+0x1e (/root/bin/ls)
-[snip]
-
-It shows the tracee application's execution path.
-
-
-TODO:
- - add source code path field, line number field ...etc.
- - add record/report script to use easily and, show human-friendly output.
- - filtering kernel functions using scripts
+perf-script uses various expressions to indicate "unknown".
+It is unfriendly for user scripts to parse it. So, this patch unifies
+the expressions to "[unknown]".
 
 Changes in v3:
- - remove the bug fix patch already fixed.
- - unify the "[unknown]" expressions in perf-script.
- - fix perf_event_header of BTS events.
- - fix patch's descriptions
+ - unify all expressions to [unknown]
 
 Changes in v2:
- - add a bug fix patch that prints correct IP address
- - output the magic word "(unknown)" as symbol name when perf-script can't
-   resolve symbols.
- - output "[unknown]" as DSO name when perf-script can't resolve DSO path.
- - change the way to output offset of symbols from '--show-symbol-offset' to
-   'offs' field.
- - clean up codes.
+ - add this patch
 
-Thanks,
-
+Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
-Akihiro Nagai (5):
-      perf script: add option resolving vmlinux path
-      perf script: add the offset field specifier
-      perf script: enhance IP and ADDR correlate detection for BTS
-      perf: change perf_event_header.misc to PERF_RECORD_MISC_USER for BTS
-      perf-script: unify the expressions indicate "unknown"
+ tools/perf/builtin-script.c |   20 ++++++--------------
+ tools/perf/util/map.c       |   12 ++++++++++++
+ tools/perf/util/map.h       |    1 +
+ tools/perf/util/session.c   |   35 ++++++++++-------------------------
+ tools/perf/util/symbol.c    |   12 ++++++++++++
+ tools/perf/util/symbol.h    |    1 +
+ 6 files changed, 42 insertions(+), 39 deletions(-)
 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 09024ec..b3312ff 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -297,7 +297,7 @@ static void print_sample_start(struct perf_sample *sample,
+ 		} else
+ 			evname = __event_name(attr->type, attr->config);
+ 
+-		printf("%s: ", evname ? evname : "(unknown)");
++		printf("%s: ", evname ? evname : "[unknown]");
+ 	}
+ }
+ 
+@@ -320,7 +320,6 @@ static void print_sample_addr(union perf_event *event,
+ {
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+-	const char *symname, *dsoname;
+ 
+ 	printf("%16" PRIx64, sample->addr);
+ 
+@@ -340,21 +339,14 @@ static void print_sample_addr(union perf_event *event,
+ 		al.sym = map__find_symbol(al.map, al.addr, NULL);
+ 
+ 	if (PRINT_FIELD(SYM)) {
+-		if (al.sym && al.sym->name)
+-			symname = al.sym->name;
+-		else
+-			symname = "";
+-
+-		printf(" %16s", symname);
++		printf(" ");
++		symbol__print_symname(al.sym);
+ 	}
+ 
+ 	if (PRINT_FIELD(DSO)) {
+-		if (al.map && al.map->dso && al.map->dso->name)
+-			dsoname = al.map->dso->name;
+-		else
+-			dsoname = "";
+-
+-		printf(" (%s)", dsoname);
++		printf(" (");
++		map__print_dsoname(al.map);
++		printf(")");
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index a16ecab..530a5ea 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -200,6 +200,18 @@ size_t map__fprintf(struct map *self, FILE *fp)
+ 		       self->start, self->end, self->pgoff, self->dso->name);
+ }
+ 
++void map__print_dsoname(struct map *self)
++{
++	const char *dsoname;
++
++	if (self && self->dso && self->dso->name)
++		dsoname = self->dso->name;
++	else
++		dsoname = "[unknown]";
++
++	printf("%s", dsoname);
++}
++
+ /*
+  * objdump wants/reports absolute IPs for ET_EXEC, and RIPs for ET_DYN.
+  * map->dso->adjust_symbols==1 for ET_EXEC-like cases.
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index b397c03..6f452b9 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -112,6 +112,7 @@ void map__delete(struct map *self);
+ struct map *map__clone(struct map *self);
+ int map__overlap(struct map *l, struct map *r);
+ size_t map__fprintf(struct map *self, FILE *fp);
++void map__print_dsoname(struct map *self);
+ 
+ int map__load(struct map *self, symbol_filter_t filter);
+ struct symbol *map__find_symbol(struct map *self,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 72458d9..730fcd2 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1220,7 +1220,6 @@ void perf_session__print_ip(union perf_event *event,
+ 			    int print_sym, int print_dso)
+ {
+ 	struct addr_location al;
+-	const char *symname, *dsoname;
+ 	struct callchain_cursor *cursor = &session->callchain_cursor;
+ 	struct callchain_cursor_node *node;
+ 
+@@ -1248,20 +1247,13 @@ void perf_session__print_ip(union perf_event *event,
+ 
+ 			printf("\t%16" PRIx64, node->ip);
+ 			if (print_sym) {
+-				if (node->sym && node->sym->name)
+-					symname = node->sym->name;
+-				else
+-					symname = "";
+-
+-				printf(" %s", symname);
++				printf(" ");
++				symbol__print_symname(node->sym);
+ 			}
+ 			if (print_dso) {
+-				if (node->map && node->map->dso && node->map->dso->name)
+-					dsoname = node->map->dso->name;
+-				else
+-					dsoname = "";
+-
+-				printf(" (%s)", dsoname);
++				printf(" (");
++				map__print_dsoname(al.map);
++				printf(")");
+ 			}
+ 			printf("\n");
+ 
+@@ -1271,21 +1263,14 @@ void perf_session__print_ip(union perf_event *event,
+ 	} else {
+ 		printf("%16" PRIx64, sample->ip);
+ 		if (print_sym) {
+-			if (al.sym && al.sym->name)
+-				symname = al.sym->name;
+-			else
+-				symname = "";
+-
+-			printf(" %s", symname);
++			printf(" ");
++			symbol__print_symname(al.sym);
+ 		}
+ 
+ 		if (print_dso) {
+-			if (al.map && al.map->dso && al.map->dso->name)
+-				dsoname = al.map->dso->name;
+-			else
+-				dsoname = "";
+-
+-			printf(" (%s)", dsoname);
++			printf(" (");
++			map__print_dsoname(al.map);
++			printf(")");
+ 		}
+ 	}
+ }
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index eec1963..aa37485 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -175,6 +175,18 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
+ 		       sym->name);
+ }
+ 
++void symbol__print_symname(const struct symbol *sym)
++{
++	const char *symname;
++
++	if (sym && sym->name)
++		symname = sym->name;
++	else
++		symname = "[unknown]";
++
++	printf("%s", symname);
++}
++
+ void dso__set_long_name(struct dso *dso, char *name)
+ {
+ 	if (name == NULL)
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 325ee36..1ec17b4 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -238,6 +238,7 @@ void machines__destroy_guest_kernel_maps(struct rb_root *machines);
+ 
+ int symbol__init(void);
+ void symbol__exit(void);
++void symbol__print_symname(const struct symbol *sym);
+ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+ 
+ size_t machine__fprintf_vmlinux_path(struct machine *machine, FILE *fp);
 
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 +++++
- tools/perf/Documentation/perf-script.txt  |    5 +++
- tools/perf/builtin-script.c               |   44 +++++++++++++++++++----------
- tools/perf/util/map.c                     |   15 ++++++++++
- tools/perf/util/map.h                     |    1 +
- tools/perf/util/session.c                 |   38 +++++++++----------------
- tools/perf/util/session.h                 |    3 +-
- tools/perf/util/symbol.c                  |   20 +++++++++++++
- tools/perf/util/symbol.h                  |    4 +++
- 9 files changed, 96 insertions(+), 42 deletions(-)
-
--- 
-Akihiro Nagai (akihiro.nagai.hw@hitachi.com)
