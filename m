@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab1HKMGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:06:03 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49481 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755598Ab1HKMFx (ORCPT
+	id S1755650Ab1HKMGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:06:08 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34192 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab1HKMGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:05:53 -0400
-X-AuditID: b753bd60-a3c7dba0000050a4-72-4e43c59f0a43
-X-AuditID: b753bd60-a3c7dba0000050a4-72-4e43c59f0a43
+	Thu, 11 Aug 2011 08:06:05 -0400
+X-AuditID: b753bd60-a327cba0000050a4-83-4e43c5abb11b
+X-AuditID: b753bd60-a327cba0000050a4-83-4e43c5abb11b
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v3 3/5] perf script: enhance IP and ADDR correlate
- detection for BTS
+Subject: [PATCH -tip v3 5/5] perf script: add option resolving vmlinux path
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -26,8 +25,8 @@ Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Thu, 11 Aug 2011 21:06:26 +0900
-Message-ID: <20110811120626.5900.88562.stgit@linux3>
+Date: Thu, 11 Aug 2011 21:06:38 +0900
+Message-ID: <20110811120638.5900.72007.stgit@linux3>
 In-Reply-To: <20110811120555.5900.23642.stgit@linux3>
 References: <20110811120555.5900.23642.stgit@linux3>
 User-Agent: StGIT/0.14.3
@@ -39,17 +38,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTS records branch_from_addr and branch_to_addr in IP and ADDR field in perf_sample.
-This patch detects this correlation in perf-script.
+Add the option get the path of [kernel.kallsyms].
+Specify '--show-kernel-path' option to use this function.
+This patch enables other applications to use this output easily.
 
-# perf script -f ip,addr,dso,sym
-3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
-3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
-3f03e04b80 _dl_start (/lib64/ld-2.14.so)       3f03e016b3     _start (/lib64/ld-2.14.so)
-3f03e04b80 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
-3f03e04ba6 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
-3f03e04bad _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
-3f03e04c1d _dl_start (/lib64/ld-2.14.so)       3f03e04bfb  _dl_start (/lib64/ld-2.14.so)
+Without --show-kernel-path  option
+
+# perf script -f ip,dso
+ffffffff81467612 irq_return ([kernel.kallsyms])
+ffffffff81467612 irq_return ([kernel.kallsyms])
+    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
+[snip]
+
+With --show-kernel-path option
+
+# perf script -f ip,dso --show-kernel-path
+ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
+ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
+    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
 [snip]
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
@@ -62,24 +68,69 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- tools/perf/builtin-script.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-script.txt |    3 +++
+ tools/perf/builtin-script.c              |    2 ++
+ tools/perf/util/map.c                    |    9 ++++++---
+ tools/perf/util/symbol.h                 |    1 +
+ 4 files changed, 12 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index ee4d477..5383671 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -188,6 +188,9 @@ OPTIONS
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+ 	CPUs.
+ 
++--show-kernel-path::
++	Try to resolve the path of [kernel.kallsyms]
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-script-perl[1],
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index b3312ff..aeec5bc 100644
+index 78797b3..ba5d3bb 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -309,6 +309,12 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
- 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
- 		return true;
+@@ -1095,6 +1095,8 @@ static const struct option options[] = {
+ 		     "addr,offs",
+ 		     parse_output_fields),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
++		    "Show the path of [kernel.kallsyms]"),
  
-+	/* BTS Events */
-+	if ((attr->type == PERF_TYPE_HARDWARE) &&
-+	    (attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
-+	    (attr->sample_period == 1))
-+		return true;
-+
- 	return false;
- }
+ 	OPT_END()
+ };
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 530a5ea..6ba4909 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
+ {
+ 	const char *dsoname;
  
+-	if (self && self->dso && self->dso->name)
+-		dsoname = self->dso->name;
+-	else
++	if (self && self->dso && (self->dso->name || self->dso->long_name)) {
++		if (symbol_conf.show_kernel_path && self->dso->long_name)
++			dsoname = self->dso->long_name;
++		else if (self->dso->name)
++			dsoname = self->dso->name;
++	} else
+ 		dsoname = "[unknown]";
+ 
+ 	printf("%s", dsoname);
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 554b2fe..3a63c92 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -69,6 +69,7 @@ struct strlist;
+ struct symbol_conf {
+ 	unsigned short	priv_size;
+ 	bool		try_vmlinux_path,
++			show_kernel_path,
+ 			use_modules,
+ 			sort_by_name,
+ 			show_nr_samples,
 
