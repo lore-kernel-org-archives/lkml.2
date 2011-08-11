@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1HKL1A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:27:00 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47592 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab1HKL0z (ORCPT
+	id S1755390Ab1HKL1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:27:05 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:37517 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab1HKL1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:26:55 -0400
-X-AuditID: b753bd60-a327cba0000050a4-1c-4e43bc7c7274
-X-AuditID: b753bd60-a327cba0000050a4-1c-4e43bc7c7274
+	Thu, 11 Aug 2011 07:27:00 -0400
+X-AuditID: b753bd60-a1479ba0000050a4-2e-4e43bc8215ee
+X-AuditID: b753bd60-a1479ba0000050a4-2e-4e43bc8215ee
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 4/9] [BUGFIX] perf probe: Fix to walk all inline
- instances
+Subject: [PATCH -tip v2 5/9] [BUGFIX] perf probe: Warn when more than one line
+ are given
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
         yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Thu, 11 Aug 2011 20:02:47 +0900
-Message-ID: <20110811110247.19900.93702.stgit@fedora15>
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>
+Date: Thu, 11 Aug 2011 20:02:53 +0900
+Message-ID: <20110811110253.19900.96192.stgit@fedora15>
 In-Reply-To: <20110811110220.19900.54963.stgit@fedora15>
 References: <20110811110220.19900.54963.stgit@fedora15>
 User-Agent: StGIT/0.14.3
@@ -34,56 +35,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix line-range collector to walk all instances of inlined
-function, because some execution paths can be optimized out
-depends on the function argument of instances.
+Check multiple --lines option and print warning which
+warns only the first specified --line option is valid.
 
-E.g.)
-inline_func (arg) {
-	if (arg)
-		do_something;
-	else
-		do_another;
-}
+Changes from the 1st post:
+- Accept only the first option instead of the last.
+- Fix warning message according to David's comment.
+- Mark as a bugfix.
 
-func_A() {
-	inline_func(1)
-}
 
-func_B() {
-	inline_func(0)
-}
-
-In this case, func_A may have only do_something code and
-func_B may have only do_another.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
 ---
 
- tools/perf/util/probe-finder.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ tools/perf/builtin-probe.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 573c723..d6d5768 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1393,7 +1393,13 @@ static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
- 	struct dwarf_callback_param *param = data;
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 5f2a5c7..710ae3d 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -134,10 +134,18 @@ static int opt_show_lines(const struct option *opt __used,
+ {
+ 	int ret = 0;
  
- 	param->retval = find_line_range_by_line(in_die, param->data);
--	return DWARF_CB_ABORT;	/* No need to find other instances */
+-	if (str)
+-		ret = parse_line_range_desc(str, &params.line_range);
+-	INIT_LIST_HEAD(&params.line_range.line_list);
++	if (!str)
++		return 0;
 +
-+	/*
-+	 * We have to check all instances of inlined function, because
-+	 * some execution paths can be optimized out depends on the
-+	 * function argument of instances
-+	 */
-+	return DWARF_CB_OK;
- }
++	if (params.show_lines) {
++		pr_warning("Warning: more than one --line options are"
++			   " detected. Only the first one is valid.\n");
++		return 0;
++	}
++
+ 	params.show_lines = true;
++	ret = parse_line_range_desc(str, &params.line_range);
++	INIT_LIST_HEAD(&params.line_range.line_list);
  
- /* Search function from function name */
+ 	return ret;
+ }
 
