@@ -1,196 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1HKT4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:56:20 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:46070 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751914Ab1HKT4T (ORCPT
+	id S1753471Ab1HKT51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:57:27 -0400
+Received: from banach.math.auburn.edu ([131.204.45.3]:37809 "EHLO
+	banach.math.auburn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab1HKT5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:56:19 -0400
-From: Mike Turquette <mturquette@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@lists.linux-foundation.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, gregkh@suse.de, peterz@infradead.org,
-        amit.kucheria@linaro.org, Mike Turquette <mturquette@ti.com>
-Subject: [PATCH v3 1/2] cpumask: introduce cpumask for hotpluggable CPUs
-Date: Thu, 11 Aug 2011 12:54:46 -0700
-Message-Id: <1313092487-15858-1-git-send-email-mturquette@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1313006614-28702-1-git-send-email-mturquette@ti.com>
-References: <1313006614-28702-1-git-send-email-mturquette@ti.com>
+	Thu, 11 Aug 2011 15:57:25 -0400
+Date: Thu, 11 Aug 2011 15:01:30 -0500 (CDT)
+From: Theodore Kilgore <kilgota@banach.math.auburn.edu>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <Pine.LNX.4.44L0.1108111145360.1958-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LNX.2.00.1108111235400.27040@banach.math.auburn.edu>
+References: <Pine.LNX.4.44L0.1108111145360.1958-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms it is possible to have some CPUs which support CPU
-hotplug and some which do not.  Currently the prescence of an 'online'
-sysfs entry in userspace is adequate for applications to know that a CPU
-supports hotplug, but there is no convenient way to make the same
-determination in the kernel.
 
-To better model this relationship this patch introduces a new cpumask to
-track CPUs that support CPU hotplug operations.
 
-This new cpumask is populated at boot-time and remains static for the
-life of the machine.  Bits set in the mask indicate a CPU which supports
-hotplug, but make no guarantees about whether that CPU is currently
-online or not.  Likewise a cleared bit in the mask indicates either a
-CPU which cannot hotplug or a lack of a populated CPU.
+On Thu, 11 Aug 2011, Alan Stern wrote:
 
-The purpose of this new cpumask is to aid kernel code which uses CPU to
-take CPUs online and offline.  Possible uses are as a thermal event
-mitigation technique or as a power capping mechanism.
+> On Thu, 11 Aug 2011, Alan Cox wrote:
+> 
+> > Actually there are more issues than that - you've also got to worry about
+> > a security/permission model, and that is hard to get right, especially if
+> > you are not very careful that anything that can be retrieved which might
+> > violate the security model (eg the last frame on the capture) has been
+> > blanked before handover etc.
+> 
+> As far as I can tell, these same security issues exist today.  I don't 
+> see them getting any worse than they are now.
+> 
+> > And applications that are touching both video (even indirectly) and still
+> > camera may get surprise deadlocks if they accidentally reference both the
+> > still and video device even via some library or service.
+> 
+> No, not deadlocks.  Just -EBUSY errors.
+> 
+> > > > Well, a user program can assume that the kernel driver left the device
+> > > > in a clean state.  The reverse isn't always true, however -- it's one
+> > 
+> > Not it cannot - the user program doesn't know
+> > 
+> > a) if the kernel driver has ever been loaded
+> > b) the values the kernel driver leaves set (and those will change no
+> > doubt at times)
+> > c) if the camera has been plugged and unplugged and not yet had the
+> > kernel driver loaded
+> 
+> That's true.  The program can't assume that a kernel driver was ever 
+> bound to the device; all it can assume is that _if_ a kernel driver was 
+> bound then it left the device in a sane state -- whatever "sane" might 
+> mean in this context.
+> 
+> > To me it sounds like a recipe for disaster. For those tiny number of
+> > devices involved just use V4L and if need be some small V4L tweaks to
+> > handle still mode. In most cases the interface is basically identical and
+> > I'd bet much of the code is identical too.
+> 
+> I'm not against moving the whole thing into the kernel.  I'm just
+> pointing out that an easier-to-code-up solution will accomplish much
+> the same result.
+> 
+> Alan Stern
+> 
 
-Signed-off-by: Mike Turquette <mturquette@ti.com>
----
-Change log:
-v2: fixed missing parentheses in cpumask_test_cpu and improved grammar
-    in comments
-v3: really fixed the parentheses issue from v2
+Alan,
 
- include/linux/cpumask.h |   27 ++++++++++++++++++++++-----
- kernel/cpu.c            |   18 ++++++++++++++++++
- 2 files changed, 40 insertions(+), 5 deletions(-)
+As I said, I am agnostic, though leaning in the direction that Hans de 
+Goede is pointing. What he says about a single control mechanism seems to 
+make a lot of sense. If you can come up with an outline of the "easier to 
+code" solution, that would be interesting, though.
 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index b24ac56..9584807 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -39,10 +39,11 @@ extern int nr_cpu_ids;
-  * The following particular system cpumasks and operations manage
-  * possible, present, active and online cpus.
-  *
-- *     cpu_possible_mask- has bit 'cpu' set iff cpu is populatable
-- *     cpu_present_mask - has bit 'cpu' set iff cpu is populated
-- *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
-- *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
-+ *     cpu_possible_mask     - has bit 'cpu' set iff cpu is populatable
-+ *     cpu_hotpluggable_mask - has bit 'cpu' set iff cpu is hotpluggable
-+ *     cpu_present_mask      - has bit 'cpu' set iff cpu is populated
-+ *     cpu_online_mask       - has bit 'cpu' set iff cpu available to scheduler
-+ *     cpu_active_mask       - has bit 'cpu' set iff cpu available to migration
-  *
-  *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
-  *
-@@ -51,7 +52,11 @@ extern int nr_cpu_ids;
-  *  life of that system boot.  The cpu_present_mask is dynamic(*),
-  *  representing which CPUs are currently plugged in.  And
-  *  cpu_online_mask is the dynamic subset of cpu_present_mask,
-- *  indicating those CPUs available for scheduling.
-+ *  indicating those CPUs available for scheduling.  The
-+ *  cpu_hotpluggable_mask is also fixed at boot time as the set of CPU
-+ *  id's which are possible AND can hotplug.  Cleared bits in this mask
-+ *  mean that either the CPU is not possible, or it is possible but does
-+ *  not support CPU hotplug operations.
-  *
-  *  If HOTPLUG is enabled, then cpu_possible_mask is forced to have
-  *  all NR_CPUS bits set, otherwise it is just the set of CPUs that
-@@ -61,6 +66,9 @@ extern int nr_cpu_ids;
-  *  depending on what ACPI reports as currently plugged in, otherwise
-  *  cpu_present_mask is just a copy of cpu_possible_mask.
-  *
-+ *  If HOTPLUG is not enabled then cpu_hotpluggable_mask is the empty
-+ *  set.
-+ *
-  *  (*) Well, cpu_present_mask is dynamic in the hotplug case.  If not
-  *      hotplug, it's a copy of cpu_possible_mask, hence fixed at boot.
-  *
-@@ -76,6 +84,7 @@ extern int nr_cpu_ids;
-  */
- 
- extern const struct cpumask *const cpu_possible_mask;
-+extern const struct cpumask *const cpu_hotpluggable_mask;
- extern const struct cpumask *const cpu_online_mask;
- extern const struct cpumask *const cpu_present_mask;
- extern const struct cpumask *const cpu_active_mask;
-@@ -85,19 +94,23 @@ extern const struct cpumask *const cpu_active_mask;
- #define num_possible_cpus()	cpumask_weight(cpu_possible_mask)
- #define num_present_cpus()	cpumask_weight(cpu_present_mask)
- #define num_active_cpus()	cpumask_weight(cpu_active_mask)
-+#define num_hotpluggable_cpus()	cpumask_weight(cpu_hotpluggable_mask)
- #define cpu_online(cpu)		cpumask_test_cpu((cpu), cpu_online_mask)
- #define cpu_possible(cpu)	cpumask_test_cpu((cpu), cpu_possible_mask)
- #define cpu_present(cpu)	cpumask_test_cpu((cpu), cpu_present_mask)
- #define cpu_active(cpu)		cpumask_test_cpu((cpu), cpu_active_mask)
-+#define cpu_hotpluggable(cpu)	cpumask_test_cpu((cpu), cpu_hotpluggable_mask)
- #else
- #define num_online_cpus()	1U
- #define num_possible_cpus()	1U
- #define num_present_cpus()	1U
- #define num_active_cpus()	1U
-+#define num_hotpluggable_cpus()	0
- #define cpu_online(cpu)		((cpu) == 0)
- #define cpu_possible(cpu)	((cpu) == 0)
- #define cpu_present(cpu)	((cpu) == 0)
- #define cpu_active(cpu)		((cpu) == 0)
-+#define cpu_hotpluggable(cpu)	0
- #endif
- 
- /* verify cpu argument to cpumask_* operators */
-@@ -678,16 +691,20 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
- #define cpu_none_mask to_cpumask(cpu_bit_bitmap[0])
- 
- #define for_each_possible_cpu(cpu) for_each_cpu((cpu), cpu_possible_mask)
-+#define for_each_hotpluggable_cpu(cpu) \
-+				   for_each_cpu((cpu), cpu_hotpluggable_mask)
- #define for_each_online_cpu(cpu)   for_each_cpu((cpu), cpu_online_mask)
- #define for_each_present_cpu(cpu)  for_each_cpu((cpu), cpu_present_mask)
- 
- /* Wrappers for arch boot code to manipulate normally-constant masks */
- void set_cpu_possible(unsigned int cpu, bool possible);
-+void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable);
- void set_cpu_present(unsigned int cpu, bool present);
- void set_cpu_online(unsigned int cpu, bool online);
- void set_cpu_active(unsigned int cpu, bool active);
- void init_cpu_present(const struct cpumask *src);
- void init_cpu_possible(const struct cpumask *src);
-+void init_cpu_hotpluggable(const struct cpumask *src);
- void init_cpu_online(const struct cpumask *src);
- 
- /**
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 12b7458..8c397c9 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -536,6 +536,11 @@ static DECLARE_BITMAP(cpu_possible_bits, CONFIG_NR_CPUS) __read_mostly;
- const struct cpumask *const cpu_possible_mask = to_cpumask(cpu_possible_bits);
- EXPORT_SYMBOL(cpu_possible_mask);
- 
-+static DECLARE_BITMAP(cpu_hotpluggable_bits, CONFIG_NR_CPUS) __read_mostly;
-+const struct cpumask *const cpu_hotpluggable_mask =
-+					to_cpumask(cpu_hotpluggable_bits);
-+EXPORT_SYMBOL(cpu_hotpluggable_mask);
-+
- static DECLARE_BITMAP(cpu_online_bits, CONFIG_NR_CPUS) __read_mostly;
- const struct cpumask *const cpu_online_mask = to_cpumask(cpu_online_bits);
- EXPORT_SYMBOL(cpu_online_mask);
-@@ -556,6 +561,14 @@ void set_cpu_possible(unsigned int cpu, bool possible)
- 		cpumask_clear_cpu(cpu, to_cpumask(cpu_possible_bits));
- }
- 
-+void set_cpu_hotpluggable(unsigned int cpu, bool hotpluggable)
-+{
-+	if (hotpluggable)
-+		cpumask_set_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
-+	else
-+		cpumask_clear_cpu(cpu, to_cpumask(cpu_hotpluggable_bits));
-+}
-+
- void set_cpu_present(unsigned int cpu, bool present)
- {
- 	if (present)
-@@ -590,6 +603,11 @@ void init_cpu_possible(const struct cpumask *src)
- 	cpumask_copy(to_cpumask(cpu_possible_bits), src);
- }
- 
-+void init_cpu_hotpluggable(const struct cpumask *src)
-+{
-+	cpumask_copy(to_cpumask(cpu_hotpluggable_bits), src);
-+}
-+
- void init_cpu_online(const struct cpumask *src)
- {
- 	cpumask_copy(to_cpumask(cpu_online_bits), src);
--- 
-1.7.4.1
+I assume you are also going to be in Vancouver? If you will be there on 
+Monday, then Hans and I are already planning to meet and discuss. 
 
+BTW, as to using V4L with "tweaks" to handle still mode, it would probably 
+be more difficult than is imagined. For, though the operations required to 
+process still images and webcam frames are in principle similar, the 
+priorities and constraints are too different. Therefore, my understanding 
+is that the libgphoto2 image processing routines, not the libv4l image 
+processing routines, would still be used for still images.
+
+Theodore Kilgore
