@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab1HKSfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:35:41 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41943 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab1HKSfk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:35:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <201108081557.48504.philipp.reisner@linbit.com>
-References: <201108081557.48504.philipp.reisner@linbit.com>
-Date: Thu, 11 Aug 2011 20:34:57 +0200
-Message-ID: <CAJAFBLC+MpBRk29dX286G1mkobi_FnXAiQuF++eACZ8VUct2XQ@mail.gmail.com>
-Subject: Re: request for review - DRBD multi volume support for 3.2
-From: Fubo Chen <fubo.chen@gmail.com>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752578Ab1HKSgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:36:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35288 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab1HKSga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:36:30 -0400
+Date: Thu, 11 Aug 2011 14:36:25 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: gregkh@suse.de
+Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <93dc28522042e6fcd71f5bb0ca4997432b04900b.1313085588.git.jbaron@redhat.com>
+In-Reply-To: <cover.1313085588.git.jbaron@redhat.com>
+References: <cover.1313085588.git.jbaron@redhat.com>
+Subject: [PATCH 02/11] dynamic_debug: Consolidate prefix output to single routine
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 3:57 PM, Philipp Reisner
-<philipp.reisner@linbit.com> wrote:
-> This is a request for review of drbd-8.4. I intend to send a pull request
-> to Jens early next week, for his for-3.2/drivers branch.
->
-> I want to point out the idr_for_each_entry() macro, added to
-> include/linux/idr.h.  Though we use this macro extensively in the new DRBD
-> code, it is not DRBD specific. I intend to leave it in this patch series, as
-> the following patches depend on it.
->
-> The most noticeable change is the support for multiple replicated volumes in
-> a single DRBD connection.  Write-ordering is obeyed among all writes in all
-> volumes in a single connection.  This feature is really important for users
-> who DRBD for mirroring over longer distances. (Protocol A).
+From: Joe Perches <joe@perches.com>
 
-Does not build here. Is EXPORT_SYMBOL(lc_is_used) missing ?
+Adding dynamic_dev_dbg duplicated prefix output.
+Consolidate that output to a single routine.
 
-drivers/block/drbd/drbd_main.c: In function 'drbd_buildtag':
-drivers/block/drbd/drbd_main.c:3561:19: warning: the comparison will
-always evaluate as 'true' for the address of '__this_module' will
-never be NULL [-Waddress]
-drivers/block/drbd/drbd_nl.c:2463:12: warning: 'drbd_bmio_set_susp_al'
-defined but not used [-Wunused-function]
-ERROR: "lc_is_used" [drivers/block/drbd/drbd.ko] undefined!
-ERROR: "lc_try_lock" [drivers/block/drbd/drbd.ko] undefined!
-ERROR: "drbd_nla_parse_nested" [drivers/block/drbd/drbd.ko] undefined!
-ERROR: "drbd_nla_find_nested" [drivers/block/drbd/drbd.ko] undefined!
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ lib/dynamic_debug.c |   38 ++++++++++++++++++--------------------
+ 1 files changed, 18 insertions(+), 20 deletions(-)
 
-Fubo.
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 63b6f95..3721709 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -428,15 +428,10 @@ static int ddebug_exec_query(char *query_string)
+ 	return 0;
+ }
+ 
+-int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
++static int dynamic_emit_prefix(const struct _ddebug *descriptor)
+ {
+-	va_list args;
+ 	int res;
+ 
+-	BUG_ON(!descriptor);
+-	BUG_ON(!fmt);
+-
+-	va_start(args, fmt);
+ 	res = printk(KERN_DEBUG);
+ 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
+ 		if (in_interrupt())
+@@ -450,7 +445,23 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 		res += printk(KERN_CONT "%s:", descriptor->function);
+ 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
+ 		res += printk(KERN_CONT "%d ", descriptor->lineno);
++
++	return res;
++}
++
++int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	int res;
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	res = dynamic_emit_prefix(descriptor);
+ 	res += vprintk(fmt, args);
++
+ 	va_end(args);
+ 
+ 	return res;
+@@ -472,20 +483,7 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+ 
+-	res = printk(KERN_DEBUG);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
+-		if (in_interrupt())
+-			res += printk(KERN_CONT "<intr> ");
+-		else
+-			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
+-	}
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+-		res += printk(KERN_CONT "%s:", descriptor->modname);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+-		res += printk(KERN_CONT "%s:", descriptor->function);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		res += printk(KERN_CONT "%d ", descriptor->lineno);
+-
++	res = dynamic_emit_prefix(descriptor);
+ 	res += __dev_printk(KERN_CONT, dev, &vaf);
+ 
+ 	va_end(args);
+-- 
+1.7.5.4
+
