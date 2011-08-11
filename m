@@ -1,48 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1HKKB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 06:01:59 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:60638 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754817Ab1HKKB6 (ORCPT
+	id S1755067Ab1HKKDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 06:03:12 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34720 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab1HKKDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 06:01:58 -0400
-Message-ID: <4E43A808.4050105@metafoo.de>
-Date: Thu, 11 Aug 2011 11:59:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Mike Frysinger <vapier.adi@gmail.com>, alsa-devel@alsa-project.org,
-        Liam Girdwood <lrg@ti.com>, device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 1/4] ASoC: DAPM: Allow multiple mixer sources
- to be routed via the same switch
-References: <1312948364-2587-1-git-send-email-lars@metafoo.de> <20110811093140.GB18454@opensource.wolfsonmicro.com>
-In-Reply-To: <20110811093140.GB18454@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 06:03:10 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/2] Staging: comedi: fix printk() issue in das800.c
+Date: Thu, 11 Aug 2011 15:47:44 +0530
+Message-Id: <1313057864-5642-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi:fix printk warning issue in das800.c>
+References: <[PATCH]Staging: comedi:fix printk warning issue in das800.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 11:31 AM, Mark Brown wrote:
-> On Wed, Aug 10, 2011 at 05:52:41AM +0200, Lars-Peter Clausen wrote:
->> Currently it is only possible to route one source per switch into a mixer.
->> This patch modifies the code, so that it is possible to route multiple sources
->> into a mixer via the same switch. One use-case for this is routing a stereo
->> channel pair into a mono-mixer via the same switch.
->
-> I'd have thought the dapm_is_shared_control() stuff should handle this?
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
+This is a patch to the das800.c file that fixes up a printk() warning found by the checkpatch.pl tool
 
-The dapm_is_shared_control() stuff is about sharing kcontrols between multiple
-muxes. This is about sharing the same kcontrol between multiple paths of the
-same mixer.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/das800.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-i.e
+diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
+index 96d41ad..feda1be 100644
+--- a/drivers/staging/comedi/drivers/das800.c
++++ b/drivers/staging/comedi/drivers/das800.c
+@@ -466,42 +466,42 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	unsigned long irq_flags;
+ 	int board;
+ 
+-	printk("comedi%d: das800: io 0x%lx", dev->minor, iobase);
++	pr_info("comedi%d: das800: io 0x%lx", dev->minor, iobase);
+ 	if (irq)
+-		printk(", irq %u", irq);
+-	printk("\n");
++		pr_cont(", irq %u", irq);
++	pr_cont("\n");
+ 
+ 	/* allocate and initialize dev->private */
+ 	if (alloc_private(dev, sizeof(struct das800_private)) < 0)
+ 		return -ENOMEM;
+ 
+ 	if (iobase == 0) {
+-		printk("io base address required for das800\n");
++		pr_cont("io base address required for das800\n");
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, DAS800_SIZE, "das800")) {
+-		printk("I/O port conflict\n");
++		pr_cont("I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+ 
+ 	board = das800_probe(dev);
+ 	if (board < 0) {
+-		printk("unable to determine board type\n");
++		pr_cont("unable to determine board type\n");
+ 		return -ENODEV;
+ 	}
+ 	dev->board_ptr = das800_boards + board;
+ 
+ 	/* grab our IRQ */
+ 	if (irq == 1 || irq > 7) {
+-		printk("irq out of range\n");
++		pr_cont("irq out of range\n");
+ 		return -EINVAL;
+ 	}
+ 	if (irq) {
+ 		if (request_irq(irq, das800_interrupt, 0, "das800", dev)) {
+-			printk("unable to allocate irq %u\n", irq);
++			pr_cont("unable to allocate irq %u\n", irq);
+ 			return -EINVAL;
+ 		}
+ 	}
+@@ -557,7 +557,7 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ static int das800_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das800: remove\n", dev->minor);
++	pr_info("comedi%d: das800: remove\n", dev->minor);
+ 
+ 	/* only free stuff if it has been allocated by _attach */
+ 	if (dev->iobase)
+-- 
+1.6.5.2
 
-{ "Mono Mixer", "DAC", "Left DAC" },
-{ "Mono Mixer", "DAC", "Right DAC" },
-
-doesn't work without this patch.
