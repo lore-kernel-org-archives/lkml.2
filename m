@@ -1,118 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1HKDa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:30:26 -0400
-Received: from mexforward.lss.emc.com ([128.222.32.20]:23578 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab1HKDaZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:30:25 -0400
-From: <tao.peng@emc.com>
-To: <torvalds@linux-foundation.org>, <rdunlap@xenotime.net>
-CC: <bergwolf@gmail.com>, <Trond.Myklebust@netapp.com>,
-        <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-nfs@vger.kernel.org>
-Date: Wed, 10 Aug 2011 23:26:47 -0400
-Subject: RE: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
-Thread-Topic: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
-Thread-Index: AcxXw5LN5imK0v+lTwyhwH3R6YYvNAACBRXg
-Message-ID: <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com>
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
- <20110810122304.96b8be67.rdunlap@xenotime.net>
- <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
- <20110810175829.a834d80f.rdunlap@xenotime.net>
- <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
-In-Reply-To: <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1754278Ab1HKDmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:42:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42306 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab1HKDmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 23:42:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,354,1309762800"; 
+   d="scan'208";a="37303785"
+Date: Thu, 11 Aug 2011 11:42:30 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: dirty rate control
+Message-ID: <20110811034230.GA21470@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.878435971@intel.com>
+ <20110809145438.GC6482@redhat.com>
 MIME-Version: 1.0
-X-EMM-MHVC: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809145438.GC6482@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Randy and Linus
-
-> -----Original Message-----
-> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org]
-> On Behalf Of Linus Torvalds
-> Sent: Thursday, August 11, 2011 9:10 AM
-> To: Randy Dunlap
-> Cc: Peng Tao; Trond Myklebust; linux-raid@vger.kernel.org; Linux Kernel Mailing List;
-> linux-nfs@vger.kernel.org
-> Subject: Re: Linux 3.1-rc1 (nfs/pnfs and drivers/md)
+On Tue, Aug 09, 2011 at 10:54:38PM +0800, Vivek Goyal wrote:
+> On Sat, Aug 06, 2011 at 04:44:50PM +0800, Wu Fengguang wrote:
+> > It's all about bdi->dirty_ratelimit, which aims to be (write_bw / N)
+> > when there are N dd tasks.
+> > 
+> > On write() syscall, use bdi->dirty_ratelimit
+> > ============================================
+> > 
+> >     balance_dirty_pages(pages_dirtied)
+> >     {
+> >         pos_bw = bdi->dirty_ratelimit * bdi_position_ratio();
+> >         pause = pages_dirtied / pos_bw;
+> >         sleep(pause);
+> >     }
+> > 
+> > On every 200ms, update bdi->dirty_ratelimit
+> > ===========================================
+> > 
+> >     bdi_update_dirty_ratelimit()
+> >     {
+> >         bw = bdi->dirty_ratelimit;
+> >         ref_bw = bw * bdi_position_ratio() * write_bw / dirty_bw;
+> >         if (dirty pages unbalanced)
+> >              bdi->dirty_ratelimit = (bw * 3 + ref_bw) / 4;
+> >     }
+> > 
+> > Estimation of balanced bdi->dirty_ratelimit
+> > ===========================================
+> > 
+> > When started N dd, throttle each dd at
+> > 
+> >          task_ratelimit = pos_bw (any non-zero initial value is OK)
+> > 
+> > After 200ms, we got
+> > 
+> >          dirty_bw = # of pages dirtied by app / 200ms
+> >          write_bw = # of pages written to disk / 200ms
+> > 
+> > For aggressive dirtiers, the equality holds
+> > 
+> >          dirty_bw == N * task_ratelimit
+> >                   == N * pos_bw                      	(1)
+> > 
+> > The balanced throttle bandwidth can be estimated by
+> > 
+> >          ref_bw = pos_bw * write_bw / dirty_bw       	(2)
+> > 
+> > >From (1) and (2), we get equality
+> > 
+> >          ref_bw == write_bw / N                      	(3)
+> > 
+> > If the N dd's are all throttled at ref_bw, the dirty/writeback rates
+> > will match. So ref_bw is the balanced dirty rate.
 > 
-> On Wed, Aug 10, 2011 at 5:58 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> >
-> > The blocklayout parts of NVS_V4_1 could depend on BLOCK.  or all of NVS_V4_1
-> > can depend on BLOCK.
-> 
-> Absolutely. Replace "could" by "should".
-> 
-> There's no way I'll take a patch to make NFS "select BLOCK". If the
-> block layer isn't enabled, then NFS obviously shouldn't be doing any
-> pnfs stuff.
-I see. How about the following patch? We used to do like following for PNFS_BLOCK but it was changed during code review.
+> Hi Fengguang,
 
+Hi Vivek,
 
->From 833b59c1d24b43a9a4d47f777abab2cd9d041c68 Mon Sep 17 00:00:00 2001
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 10 Aug 2011 18:29:21 -0400
-Subject: [PATCH] NFS41: make PNFS_BLOCK selectable
+> So how much work it is to extend all this to handle the case of cgroups?
 
-PNFS_BLOCK needs BLK_DEV_DM/MD, which is not a dependency for other
-pnfs layout drivers. Seperate it out so others can still build when
-BLK_DEV_DM/MD is not enabled.
+Here is the simplest form.
 
-Also change select to depends on to avoid build failures.
+writeback: async write IO controllers
+http://git.kernel.org/?p=linux/kernel/git/wfg/writeback.git;a=blobdiff;f=mm/page-writeback.c;h=0b579e7fd338fd1f59cc36bf15fda06ff6260634;hp=34dff9f0d28d0f4f0794eb41187f71b4ade6b8a2;hb=1a58ad99ce1f6a9df6618a4b92fa4859cc3e7e90;hpb=5b6fcb3125ea52ff04a2fad27a51307842deb1a0
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Peng Tao <peng_tao@emc.com>
----
- fs/nfs/Kconfig |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+And an old email on this topic:
 
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index be02077..0d30613 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -79,12 +79,9 @@ config NFS_V4_1
- 	depends on NFS_FS && NFS_V4 && EXPERIMENTAL
- 	select SUNRPC_BACKCHANNEL
- 	select PNFS_FILE_LAYOUT
--	select PNFS_BLOCK
--	select MD
--	select BLK_DEV_DM
- 	help
- 	  This option enables support for minor version 1 of the NFSv4 protocol
--	  (RFC 5661 and RFC 5663) in the kernel's NFS client.
-+	  (RFC 5661) in the kernel's NFS client.
+https://lkml.org/lkml/2011/4/28/229
+
+> IOW, I would imagine that you shall have to keep track of per cgroup/per
+> bdi state of many of the variables. For example, write_bw will become
+> per cgroup/per bdi entity instead of per bdi entity only. Same should
+> be true for position ratio, dirty_bw etc?
  
- 	  If unsure, say N.
- 
-@@ -92,7 +89,14 @@ config PNFS_FILE_LAYOUT
- 	tristate
- 
- config PNFS_BLOCK
--	tristate
-+	tristate "Provide support for the pNFS Block Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
-+	depends on NFS_FS && NFS_V4_1 && BLK_DEV_DM
-+	help
-+	  Say M here if you want your pNFS client to support the Block Layout Driver
-+	  (RFC 5663). Requires Multiple devices driver support (DM) and Device mapper
-+	  support (BLK_DEV_DM).
-+
-+	  If unsure, say N.
- 
- config PNFS_OBJLAYOUT
- 	tristate "Provide support for the pNFS Objects Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
--- 
-1.7.4.2
+The dirty_bw, write_bw and dirty_ratelimit should be replicated,
+but not necessarily dirty pages and position ratio.
 
+The cgroup can just rely on the root cgroup's dirty pages position
+control if it does not care about its own dirty pages consumptions.
 
+> I am assuming that if some cgroup is low weight on end device, then
+> WRITE bandwidth of that cgroup should go down and that should be
+> accounted for at per bdi state and task throttling should happen
+> accordingly so that a lower weight cgroup tasks get throttled more
+> as compared to higher weight cgroup tasks?
 
+Sorry I don't quite catch your meaning, but the current
+->dirty_ratelimit adaptation scheme (detailed in another email) should
+handle all such rate/bw allocation issues automatically?
+
+Thanks,
+Fengguang
