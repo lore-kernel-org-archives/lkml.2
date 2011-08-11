@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab1HKHVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 03:21:12 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47953 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab1HKHVJ (ORCPT
+	id S1752576Ab1HKHVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 03:21:47 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36000 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1HKHVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 03:21:09 -0400
-Subject: [PATCH] mfd: twl6030-irq: Make sure to call request_irq before
- using the irq_num
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rajendra Nayak <rnayak@ti.com>, Balaji T K <balajitk@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Aug 2011 15:21:00 +0800
-Message-ID: <1313047260.27089.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 03:21:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E428740.3030106@suse.cz>
+References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
+	<4E428740.3030106@suse.cz>
+Date: Thu, 11 Aug 2011 09:21:44 +0200
+Message-ID: <CAHR064hY--=A+hQhBY5tMuW=iDzT81hG7k8JWh9oEvHq1cij0w@mail.gmail.com>
+Subject: Re: [PATCH] scripts: add extract-vmlinux
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dick Streefland <dick@streefland.net>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was trying to fix the error handling part because in the case of
-request_irq failure, it should call kthread_stop instead of free_irq.
-But it seems more reasonable to do request_irq before calling kthread_run.
+2011/8/10 Michal Marek <mmarek@suse.cz>:
+> On 4.8.2011 15:52, Corentin Chary wrote:
+>> This script can be used to extract vmlinux from a compressed
+>> kernel image (bzImage, etc..). It's inspired from (a subset of)
+>> extract-ikconfig.
+>
+> Nice.
+>
+>
+>> I don't know if this scripts really have this place in the kernel
+>> tree, but it's something a lot of people have been looking for (mainly
+>> people with xen < 4 that doesn't support bzImages at all).
+>
+> I think it makes sense to have it in the tree.
+>
+>
+>> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+>> ---
+>>  scripts/extract-vmlinux |   60 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 60 insertions(+), 0 deletions(-)
+>>  create mode 100755 scripts/extract-vmlinux
+>>
+>> diff --git a/scripts/extract-vmlinux b/scripts/extract-vmlinux
+>> new file mode 100755
+>> index 0000000..444f404
+>> --- /dev/null
+>> +++ b/scripts/extract-vmlinux
+>> @@ -0,0 +1,60 @@
+>> +#!/bin/sh
+>> +# ----------------------------------------------------------------------
+>> +# extract-vmlinux - Extract uncompressed vmlinux from a kernel image
+>> +#
+>> +# The obscure use of the "tr" filter is to work around older versions of
+>> +# "grep" that report the byte offset of the line instead of the pattern.
+>> +#
+>> +# Inspired from extract-ikconfig
+>> +# (c) 2009,2010 Dick Streefland <dick@streefland.net>
+>> +#
+>> +# (c) 2011      Corentin Chary <corentin.chary@gmail.com>
+>> +# Licensed under the terms of the GNU General Public License.
+>
+> I guess you want to use the version 2 of the GPL?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/twl6030-irq.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+Since it's heavily based on extract-ikconfig I'm not sure I can change
+the license.
+CCing previous authors of extract-ikconfig to see if they are ok with that.
 
-diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-index b57383b..e0baff8 100644
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -332,12 +332,6 @@ int twl6030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
- 
- 	/* install an irq handler to demultiplex the TWL6030 interrupt */
- 	init_completion(&irq_event);
--	task = kthread_run(twl6030_irq_thread, (void *)irq_num, "twl6030-irq");
--	if (IS_ERR(task)) {
--		pr_err("twl6030: could not create irq %d thread!\n", irq_num);
--		status = PTR_ERR(task);
--		goto fail_kthread;
--	}
- 
- 	status = request_irq(irq_num, handle_twl6030_pih, IRQF_DISABLED,
- 				"TWL6030-PIH", &irq_event);
-@@ -345,11 +339,19 @@ int twl6030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
- 		pr_err("twl6030: could not claim irq%d: %d\n", irq_num, status);
- 		goto fail_irq;
- 	}
-+
-+	task = kthread_run(twl6030_irq_thread, (void *)irq_num, "twl6030-irq");
-+	if (IS_ERR(task)) {
-+		pr_err("twl6030: could not create irq %d thread!\n", irq_num);
-+		status = PTR_ERR(task);
-+		goto fail_kthread;
-+	}
- 	return status;
--fail_irq:
--	free_irq(irq_num, &irq_event);
- 
- fail_kthread:
-+	free_irq(irq_num, &irq_event);
-+
-+fail_irq:
- 	for (i = irq_base; i < irq_end; i++)
- 		irq_set_chip_and_handler(i, NULL, NULL);
- 	return status;
+Thanks,
+
 -- 
-1.7.4.1
-
-
-
+Corentin Chary
+http://xf.iksaif.net
