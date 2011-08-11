@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab1HKMvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:51:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63255 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab1HKMvj (ORCPT
+	id S1755813Ab1HKMwr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:52:47 -0400
+Received: from gateway.hbm.com ([213.157.30.2]:54387 "EHLO hbmntx5.hbm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755153Ab1HKMwp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:51:39 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk issue in c6xdigio.c
-Date: Thu, 11 Aug 2011 18:36:07 +0530
-Message-Id: <1313067967-19408-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi:fix printk warning issue in c6xdigio.c>
-References: <[PATCH]Staging: comedi:fix printk warning issue in c6xdigio.c>
+	Thu, 11 Aug 2011 08:52:45 -0400
+Thread-Index: AcxYJZA8cDlIC54lRYyMkyVeXIxg6A==
+Thread-Topic: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-class: urn:content-classes:message
+Importance: normal
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Peter Zijlstra" <peterz@infradead.org>
+Subject: Re: [ANNOUNCE] 3.0.1-rt8 - Regression to 3.0-rt7
+Date: Thu, 11 Aug 2011 14:52:28 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+References: <1312580681.28695.44.camel@twins> <201108111330.28168.tim.sander@hbm.com> <1313064142.7144.1.camel@twins>
+In-Reply-To: <1313064142.7144.1.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/Plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201108111452.29075.tim.sander@hbm.com>
+X-OriginalArrivalTime: 11 Aug 2011 12:52:44.0256 (UTC) FILETIME=[90294600:01CC5825]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+Hi Peter
 
-This is a patch to the c6xdigio.c file that fixes up a printk() warning found by the checkpatch.pl tool
+Am Donnerstag, 11. August 2011, 14:02:22 schrieb Peter Zijlstra:
+> On Thu, 2011-08-11 at 13:30 +0200, Tim Sander wrote:
+> > The error does not occur  when configured with
+> > CONFIG_PREEMPT_RT_FULL=y
+> > but with
+> > CONFIG_PREEMPT_RTB=y.
+> > The same error also happens with
+> > CONFIG_PREEMPT_LL=y. (A log is appended after the other log just
+> > search for CONFIG_PREEMPT_LL
+> > for starting point).
+> 
+> Does the below (on top of -rt8) cure things for you? Shouldn't make a
+> difference for PREEMPT_LL though, so maybe there's something else busted
+> as well. But from what I can tell PREEMPT_BASE should be fine with such
+> things disabling preemption..
+I havent tested but i tested appling rt8 to 3.0 and then git diffstat.
+Kind of a manual bisecting. Since you still seem to be currently looking at 
+this: 
+The current remaining offenders on the list from 3.0-rt7 are:
+ git diff --stat rt8-test
+ kernel/ksysfs.c       |   12 ------
+ kernel/lockdep.c      |    5 ++-
+ kernel/sched_cpupri.c |   28 ++-------------
+ localversion-rt       |    2 +-
+ mm/memory.c           |    2 -
+ mm/slab.c             |   92 +++++++++++-------------------------------------
+ 6 files changed, 29 insertions(+), 112 deletions(-)
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/c6xdigio.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Will test the patch later on.
 
-diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
-index e0ac825..f566ee7 100644
---- a/drivers/staging/comedi/drivers/c6xdigio.c
-+++ b/drivers/staging/comedi/drivers/c6xdigio.c
-@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
- 				   struct comedi_subdevice *s,
- 				   struct comedi_insn *insn, unsigned int *data)
- {
--	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
-+	pr_debug("%s: %x\n", __func__, insn->n);
- 	return insn->n;
- }
- 
-@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
- 	struct comedi_subdevice *s;
- 
- 	iobase = it->options[0];
--	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
-+	pr_debug("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
- 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
--		printk("comedi%d: I/O port conflict\n", dev->minor);
-+		pr_warn("comedi%d: I/O port conflict\n", dev->minor);
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
- 
- 	irq = it->options[1];
- 	if (irq > 0)
--		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
-+		pr_warn("comedi%d: irq = %u ignored\n", dev->minor, irq);
- 	else if (irq == 0)
--		printk("comedi%d: no irq\n", dev->minor);
-+		pr_warn("comedi%d: no irq\n", dev->minor);
- 
- 	s = dev->subdevices + 0;
- 	/* pwm output subdevice */
-@@ -503,7 +503,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
- {
- 	/* board_halt(dev);  may not need this */
- 
--	printk("comedi%d: c6xdigio: remove\n", dev->minor);
-+	pr_debug("comedi%d: c6xdigio: remove\n", dev->minor);
- 
- 	if (dev->iobase)
- 		release_region(dev->iobase, C6XDIGIO_SIZE);
--- 
-1.6.5.2
+Best regards
+Tim
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
 
