@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab1HKWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 18:19:28 -0400
-Received: from merit-proxy01.merit.edu ([207.75.116.193]:38140 "EHLO
-	merit-proxy01.merit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab1HKWT1 (ORCPT
+	id S1753679Ab1HKWVE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 18:21:04 -0400
+Received: from mga07.intel.com ([143.182.124.22]:64257 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753437Ab1HKWVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 18:19:27 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 18:19:27 EDT
-Date: Thu, 11 Aug 2011 18:13:05 -0400
-From: Jim Rees <rees@umich.edu>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
-        peter honeyman <honey@citi.umich.edu>, tao.peng@emc.com,
-        torvalds@linux-foundation.org, rdunlap@xenotime.net,
-        bergwolf@gmail.com, Trond.Myklebust@netapp.com,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, "Welch, Brent" <welch@panasas.com>
-Subject: Re: [PATCH] pnfs: Automatically select blocks & objects layouts
-Message-ID: <20110811221305.GA8608@merit.edu>
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
- <20110810122304.96b8be67.rdunlap@xenotime.net>
- <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
- <20110810175829.a834d80f.rdunlap@xenotime.net>
- <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
- <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com>
- <4E43AAD1.7090806@tonian.com>
- <4E4422FD.3060706@panasas.com>
- <4E444552.9030105@panasas.com>
+	Thu, 11 Aug 2011 18:21:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E444552.9030105@panasas.com>
+In-Reply-To: <1313046710.27321.7.camel@sli10-conroe>
+References: <1313046710.27321.7.camel@sli10-conroe>
+Date: Thu, 11 Aug 2011 15:21:01 -0700
+Message-ID: <CABE8wwsND02NBMLpxhLAbYp==793uQFBwgaw05pQd84VkUw_uw@mail.gmail.com>
+Subject: Re: [patch]block: revert a patch
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, boyu.mt@taobao.com,
+        Christoph Hellwig <hch@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh wrote:
+On Thu, Aug 11, 2011 at 12:11 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> This patch reverts commit 35ae66e0a09ab70ed(block: Make rq_affinity = 1
+> work as expected). The purpose is to avoid an unnecessary IPI.
+> Let's take an example. My test box has cpu 0-7, one socket. Say request is
+> added from CPU 1, blk_complete_request() occurs at CPU 7. Without the reverted
+> patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU
+> 0, and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
+> CPU 7 have no difference from cache sharing point view and we can avoid an
+> ipi if doing it in CPU 7.
+> An immediate concern is this is just like QUEUE_FLAG_SAME_FORCE, but actually
+> not. blk_complete_request() is running in interrupt handler, and currently
+> I/O controller doesn't support multiple interrupts (I checked several LSI
+> cards and AHCI), so only one CPU can run blk_complete_request(). This is
+> still quite different as QUEUE_FLAG_SAME_FORCE.
+> Since only one CPU runs softirq, the only difference with below patch is
+> softirq not always runs at the first CPU of a group.
 
-  What about the below? based on v3.1-rc1
-  
-  ----
-  From: Boaz Harrosh <bharrosh@panasas.com>
-  Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
-  
-  Just like files-layout, blocks & objects layouts are part of the
-  NFS 4.1 protocol and should be automatically selected if NFS_4_1
-  is selected. The small problem is that these depend on other
-  Kernel support being present, while files only depends on NFS
-  itself.
-  
-  This patch removes from the user choice the presence of objects
-  and blocks layout. But makes sure these are selected only if
-  the depended subsystems are present in the Kernel.
-  
-  Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Ah, so I misinterpreted the initial implementation in a beneficial way.
 
-Acked-by: Jim Rees <rees@umich.edu>
+I suspect this might be the real root cause of the iops bump in the
+rq_affinity=1 case that we saw when testing this patch set [1].
+Because the hack [2] of looking at the state of ksoftirqd on 'ccpu'
+missed the 'waking' state of ksoftirqd, and when that was added
+performance did not improve it actually went down a bit.
 
-I think this is what we want.  There is no point allowing the user to pick
-and choose various layout drivers.  If they have selected nfs4.1 they should
-get all the layout drivers their kernel will support, based on the
-dependencies.
+--
+Dan
+
+[1]: https://lkml.org/lkml/2011/7/22/294
+[2]: https://lkml.org/lkml/2011/7/22/296
