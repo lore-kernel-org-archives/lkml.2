@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1HKIZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:25:46 -0400
-Received: from 229.72.64.86.rev.sfr.net ([86.64.72.229]:58583 "EHLO
-	hera.goobie.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753850Ab1HKIZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:25:42 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 04:25:42 EDT
-Message-ID: <4E439091.6090905@goobie.fr>
-Date: Thu, 11 Aug 2011 10:19:29 +0200
-From: Simon INIZAN <simon.inizan@goobie.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753235Ab1HKI0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:26:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60480 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753279Ab1HKI0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 04:26:43 -0400
+Date: Thu, 11 Aug 2011 10:26:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2][cleanup] memcg: renaming of mem variable to memcg
+Message-ID: <20110811082641.GD8023@tiehlicka.suse.cz>
+References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com>
+ <20110811075337.GA8023@tiehlicka.suse.cz>
+ <4E438FD3.7070000@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Barnes, Clifton A." <cabarnes@indesign-llc.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] w1: Add Maxim/Dallas DS2780 Stand-Alone Fuel Gauge
- IC support.
-References: <4DE3C363.2030503@goobie.fr> <A8DC7EA93EFCBD4498E3857AFE65E5F13A3DD762@IND07.indesign.net>
-In-Reply-To: <A8DC7EA93EFCBD4498E3857AFE65E5F13A3DD762@IND07.indesign.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E438FD3.7070000@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/05/2011 14:42, Barnes, Clifton A. wrote:
-> On Monday, May 30, 2011, Simon INIZAN wrote:
->
->> However from time to time I a getting stuck in the driver.
-> Getting stuck meaning a deadlock?  Is it during a read on a
-> sysfs file?  Are you using the driver compiled in or as a
-> module?
-I have tested the driver with the fix you provided me, I am not getting 
-a deadlock anymore.
+On Thu 11-08-11 13:46:19, Raghavendra K T wrote:
+> On 08/11/2011 01:23 PM, Michal Hocko wrote:
+> >On Wed 10-08-11 22:59:17, Raghavendra K T wrote:
+> >>Hi,
+> >>  This is the memcg cleanup patch for that was talked little ago to change the  "struct
+> >>  mem_cgroup *mem" variable to  "struct mem_cgroup *memcg".
+> >>
+> >>  The patch is though trivial, it is huge one.
+> >>  Testing : Compile tested with following configurations.
+> >>  1) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
+> >>  2) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
+> >>  3) CONFIG_CGROUP_MEM_RES_CTLR=n  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
+> >
+> >How exactly have you tested? Compiled and compared before/after binaries
+> >(it shouldn't change, right)?
+> Yes, But idea was to ensure that both #ifdef and #else part are hit
+> during compilation, which could expose some corrections needed.
 
->> FYI, I am using the GPIO 1-wire driver, and from time to time the gauge is not responding to the w1 queries.
-> Is this the same condition you're talking about above?  Does this mean that sometimes
-> the sysfs file returns and sometimes it hangs?
->
-It seems I am getting some flipped bits on the 1-wire bus (using the 
-w1-gpio master),
-this is not directly related to your driver but it makes the results not 
-very reliable
-on my platform (sometimes the rsgain is wrong, so are the currents).
-I am getting a 1-wire bus analyzer to investigate the issue.
+I am not sure I understand. You have used different combinations of
+configuration to trigger all #ifdefs but that doesn't change anything on
+the fact that the code should be exactly same before and after your
+patch, right?
 
-
-
-In the get_current function, you are returning:
-
-sense_res = 1000 / sense_res_raw;
-*current_uA = current_raw * (DS2780_CURRENT_UNITS / sense_res);
-
-
-Which means that we are getting current (in µA) = current_raw (in 
-µV/Ohms) * sense_res_raw (in Ohms).
-I have replaced it with
-
-sense_res = sense_res_raw;
-*current_uA = current_raw * (DS2780_CURRENT_UNITS / sense_res);
-
-
-Which gives me more consistent results with my measures.
-
-Simon
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
