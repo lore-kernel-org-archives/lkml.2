@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1HKIlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:41:19 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48676 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab1HKIlS (ORCPT
+	id S1754147Ab1HKImN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:42:13 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:36236 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab1HKImM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:41:18 -0400
-Message-ID: <4E43959D.9000803@linux.vnet.ibm.com>
-Date: Thu, 11 Aug 2011 14:11:01 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Thu, 11 Aug 2011 04:42:12 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/2][cleanup] memcg: renaming of mem variable to memcg
-References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com> <20110811075337.GA8023@tiehlicka.suse.cz> <4E438FD3.7070000@linux.vnet.ibm.com> <20110811082641.GD8023@tiehlicka.suse.cz>
-In-Reply-To: <20110811082641.GD8023@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAHR064hY--=A+hQhBY5tMuW=iDzT81hG7k8JWh9oEvHq1cij0w@mail.gmail.com>
+References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
+	<4E428740.3030106@suse.cz>
+	<CAHR064hY--=A+hQhBY5tMuW=iDzT81hG7k8JWh9oEvHq1cij0w@mail.gmail.com>
+Date: Thu, 11 Aug 2011 16:42:12 +0800
+Message-ID: <CAM_iQpUYeHJWMn+rP26kfXM9d3OiwELd1f5WN98iz6YWFfVU3A@mail.gmail.com>
+Subject: Re: [PATCH] scripts: add extract-vmlinux
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Dick Streefland <dick@streefland.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 01:56 PM, Michal Hocko wrote:
-> On Thu 11-08-11 13:46:19, Raghavendra K T wrote:
->> On 08/11/2011 01:23 PM, Michal Hocko wrote:
->>> On Wed 10-08-11 22:59:17, Raghavendra K T wrote:
->>>> Hi,
->>>>   This is the memcg cleanup patch for that was talked little ago to change the  "struct
->>>>   mem_cgroup *mem" variable to  "struct mem_cgroup *memcg".
->>>>
->>>>   The patch is though trivial, it is huge one.
->>>>   Testing : Compile tested with following configurations.
->>>>   1) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
->>>>   2) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
->>>>   3) CONFIG_CGROUP_MEM_RES_CTLR=n  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
->>>
->>> How exactly have you tested? Compiled and compared before/after binaries
->>> (it shouldn't change, right)?
->> Yes, But idea was to ensure that both #ifdef and #else part are hit
->> during compilation, which could expose some corrections needed.
+On Thu, Aug 11, 2011 at 3:21 PM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+> 2011/8/10 Michal Marek <mmarek@suse.cz>:
+>>
+>> I guess you want to use the version 2 of the GPL?
 >
-> I am not sure I understand. You have used different combinations of
-> configuration to trigger all #ifdefs but that doesn't change anything on
-> the fact that the code should be exactly same before and after your
-> patch, right?
+> Since it's heavily based on extract-ikconfig I'm not sure I can change
+> the license.
+> CCing previous authors of extract-ikconfig to see if they are ok with that.
 >
-Yes you are right again. No change in the code after the patch.
-It was just to exercise I have not missed any valid changes in both 
-paths, and it does not break compilation.
+
+I don't remember I wrote any code of extract-ikconfig, I did review
+the original patch. I am fine with this patch too.
+
+Thanks!
