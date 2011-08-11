@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab1HKUbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:31:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39834 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab1HKUbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:31:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=iHsiq3DOYFoTUnXSd5Em4/bp/xyfB9u4fw0UXw1ggIgNscnOku2vAUaH830R2MCnn
-	aiiUgr8hzAK1l65iJUxRQ==
-MIME-Version: 1.0
-In-Reply-To: <1313094223.26866.15.camel@twins>
-References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-	<1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
-	<1313091323.8491.30.camel@twins>
-	<CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
-	<1313094223.26866.15.camel@twins>
-Date: Thu, 11 Aug 2011 13:31:13 -0700
-X-Google-Sender-Auth: YmVWWdBbB-C6RElh7RQ7owNMG3A
-Message-ID: <CAAuSN90CXXEdco_fNYrv-ZUZPr4nB4HYPM1NCgaSgGz+Z-jaRQ@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
-From: Alex Neronskiy <zakmagnus@chromium.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1753626Ab1HKUdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:33:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752297Ab1HKUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:33:07 -0400
+From: Johannes Weiner <jweiner@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: [patch 1/2] mm: vmscan: fix force-scanning small targets without swap
+Date: Thu, 11 Aug 2011 22:31:54 +0200
+Message-Id: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 1:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2011-08-11 at 13:10 -0700, Alex Neronskiy wrote:
-> Ah, right, yeah, stick another lock in there.. One does worry about the
-> whole writer concurrency thing though, isn't it likely all cpus will
-> tickle the thing in quick succession? Putting a global lock in that path
-> isn't good,.. always think of the poor sod with the 4096 cpu machine.
-Is it common to disable interrupts on all 4096 CPU's at once?
+Without swap, anonymous pages are not scanned.  As such, they should
+not count when considering force-scanning a small target if there is
+no swap.
 
-> Also, is all of this really useful? The hardlockup watchdog is useful
-> when you mess up bad, but other than that I've never found it to be
-> useful at all.
->
-> I mean, we're at the point where a PREEMPT=y kernel has a pretty decent
-> latency and the PREEMPT_RT kernels live at ~30us. So wth are you
-> measuring?
-Well, not all kernels have PREEMPT. Chromebook kernels don't, for example.
+Otherwise, targets are not force-scanned even when their effective
+scan number is zero and the other conditions--kswapd/memcg--apply.
+
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Ying Han <yinghan@google.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/vmscan.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3153729..96061d7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1830,23 +1830,15 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 	u64 fraction[2], denominator;
+ 	enum lru_list l;
+ 	int noswap = 0;
+-	int force_scan = 0;
++	bool force_scan = false;
+ 	unsigned long nr_force_scan[2];
+ 
+-
+-	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+-	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+-		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+-
+-	if (((anon + file) >> priority) < SWAP_CLUSTER_MAX) {
+-		/* kswapd does zone balancing and need to scan this zone */
+-		if (scanning_global_lru(sc) && current_is_kswapd())
+-			force_scan = 1;
+-		/* memcg may have small limit and need to avoid priority drop */
+-		if (!scanning_global_lru(sc))
+-			force_scan = 1;
+-	}
++	/* kswapd does zone balancing and need to scan this zone */
++	if (scanning_global_lru(sc) && current_is_kswapd())
++		force_scan = true;
++	/* memcg may have small limit and need to avoid priority drop */
++	if (!scanning_global_lru(sc))
++		force_scan = true;
+ 
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+ 	if (!sc->may_swap || (nr_swap_pages <= 0)) {
+@@ -1859,6 +1851,11 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 		goto out;
+ 	}
+ 
++	anon  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_ANON) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
++	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
++		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
++
+ 	if (scanning_global_lru(sc)) {
+ 		free  = zone_page_state(zone, NR_FREE_PAGES);
+ 		/* If we have very few page cache pages,
+-- 
+1.7.6
+
