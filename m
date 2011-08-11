@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677Ab1HKO4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:56:07 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56853 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751329Ab1HKO4E (ORCPT
+	id S1752028Ab1HKO5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:57:23 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38074 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1HKO5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:56:04 -0400
-Date: Thu, 11 Aug 2011 10:56:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hans de Goede <hdegoede@redhat.com>
-cc: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <4E438F69.4030902@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1108111037240.1958-100000@iolanthe.rowland.org>
+	Thu, 11 Aug 2011 10:57:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4E43C363.3000103@suse.cz>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<4E4280BA.9050109@suse.cz>
+	<1312981658.2989.39.camel@i7.infradead.org>
+	<CACqU3MUJkM3Y2o2Jx1eQxZkW2T-Dby1JCaks6SqTz_FB17hSvw@mail.gmail.com>
+	<1312985888.2989.46.camel@i7.infradead.org>
+	<CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
+	<1312993987.2989.53.camel@i7.infradead.org>
+	<CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
+	<1312999168.2989.61.camel@i7.infradead.org>
+	<CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
+	<1313002322.2989.88.camel@i7.infradead.org>
+	<CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
+	<1313018232.2989.114.camel@i7.infradead.org>
+	<CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>
+	<1313052168.18037.9.camel@i7.infradead.org>
+	<4E4399B3.3020909@suse.cz>
+	<1313061012.18037.17.camel@i7.infradead.org>
+	<m3r54std0x.fsf@hase.home>
+	<1313062813.18037.24.camel@i7.infradead.org>
+	<4E43C363.3000103@suse.cz>
+Date: Thu, 11 Aug 2011 10:57:21 -0400
+Message-ID: <CACqU3MVUeHTZ+cQYucYd8TvGoUOrwVhpxVpho-fqz3MkBTCTMQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: David Woodhouse <dwmw2@infradead.org>, Andreas Schwab <schwab@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011, Hans de Goede wrote:
+Hi,
 
-> > The alternative seems to be to define a device-sharing protocol for USB
-> > drivers.  Kernel drivers would implement a new callback (asking them to
-> > give up control of the device), and usbfs would implement new ioctls by
-> > which a program could ask for and relinquish control of a device.  The
-> > amount of rewriting needed would be relatively small.
-> >
-> > A few loose ends would remain, such as how to handle suspends, resumes,
-> > resets, and disconnects.  Assuming usbfs is the only driver that will
-> > want to share a device in this way, we could handle them.
-> >
-> > Hans, what do you think?
-> >
-> 
-> First of all thanks for the constructive input!
-> 
-> When you say: "device-sharing protocol", do you mean 2 drivers been
-> attached, but only 1 being active. Or just some additional glue to make
-> hand-over between them work better?
+On Thu, Aug 11, 2011 at 7:56 AM, Michal Marek <mmarek@suse.cz> wrote:
+> On 11.8.2011 13:40, David Woodhouse wrote:
+>> On Thu, 2011-08-11 at 13:15 +0200, Andreas Schwab wrote:
+>>>> That would be cute, but I'm not sure how to undefine something set on
+>>>> the command line:
+>>>>
+>>>> $ cat > Makefile <<EOF
+>>>> undefine BAR
+>>>
+>>> override undefine BAR
+>>
+>> Thanks. So we don't really need to change the auto.conf syntax; we could
+>> just do:
+>>
+>> $(foreach var, $(filter CONFIG_%,$(.VARIABLES)), $(eval override undefine $(var)))
+>>
+>> But still I suspect we might *not* want that for options set on the
+>> command line. We *don't* want 'make CONFIG_FOO=y oldconfig bzImage' to
+>> say 'you can't enable CONFIG_FOO' and then build the bzImage anyway.
+>
+> If you do
+> $ echo 'CONFIG_FOO=y' >all.config
+> $ make allnoconfig bzImage
+> then it will also build bzImage even if kconfig wasn't able to set
+> CONFIG_FOO=y. IMO printing a warning that CONFIG_FOO could not be set is
+> sufficient, as long as CONFIG_FOO is consistently unset.
+>
+FWIW, this is the broken behavior I have been pointing all along...
 
-I was thinking that the webcam driver would always be attached, but 
-from time to time usbfs would ask to use the device.  When the webcam 
-driver gives away control, it remains bound to the device but does not 
-send any URBs.  If it needs to send an URB, first it has to ask usbfs 
-to give control back.
+If kconfig hard failed on such case, we would not need such Kbuild black-magic.
 
-> I've 2 concerns with this approach:
-> 1) Assuming we are going for the just make hand over work better solution
-> we will still have the whole disappear / reappear act of the /dev/video#
-> node, which I don't like at all.
+>From my point of view, if environment override there should be, it
+should behave the same as the all.config logic and hard fail when an
+override has not been met. Code wise, this would translate as backend
+code path being the same.
 
-That will not happen any more, because the webcam driver will always be 
-bound to the device.
-
-> If for example skype gets started it will say the user has no camera. If it
-> were to say the device is busy, the user just might make a link to some
-> application using the device in stillcam mode still being open.
-> 
-> 2) The whole notion of the device being in use is rather vague when it comes
-> to the userspace parts of this. Simply leaving say F-Spot running, or having
-> a gvfs libgphoto share mounted, should not lead to not being able to use the
-> device in webcam mode. But currently it will.
-
-That's true -- but it's true no matter what solution we adopt.  The
-various drivers (whether in the kernel or in userspace) will have to
-decide for themselves when they can give up control.
-
-> Fixing all users of libgphoto2 wrt this is unlikely to happen, and even if
-> we do that now, more broken ones will likely come along later. I estimate
-> 98% of all cameras are not dual mode cameras, so the average stillcam
-> application developer will not test for this.
-
-Not all users of libgphoto2 have to be changed; only those which manage
-dual-mode cameras.  Adding a few ioctls to ask for and give up control
-at the appropriate times must be a lot easier than porting the entire
-driver into the kernel.
-
-> That leaves us with fixing the busy notion inside libgphoto2, iow, release
-> the device as soon as an operation has completed. This will be quite slow,
-> since both drivers don't know anything about each other, they will just
-> know there is some $random_other_driver. So they need to assume the
-> device state is unclean and re-init the device from scratch each time.
-
-Well, a user program can assume that the kernel driver left the device
-in a clean state.  The reverse isn't always true, however -- it's one
-of the drawbacks of using a userspace driver.
-
-Besides, even though drivers don't always have to re-init the device
-from scratch every time, they do send all the current settings each
-time they use the device.  So maybe the extra overhead is tolerable.
-
-> Where as if we have both functions in one driver, that can remember the
-> actual device state and only make changes if needed, so downloading +
-> deleting 10 photos will lead to setting it to stillcam mode once, rather
-> then 20 times.
-
-Depends how the ask-for-control ioctl is implemented.  It might return
-a value indicating whether or not the webcam driver took control during
-the interval when the user program wasn't using the device.  If usbfs
-retained control the entire time, the program should be able to assume
-the device's state hasn't changed.
-
-I'm not claiming that this is a better solution than putting everything
-in the kernel.  Just that it is a workable alternative which would
-involve a lot less coding.
-
-Alan Stern
-
+ - Arnaud
