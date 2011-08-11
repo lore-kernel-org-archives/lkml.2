@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1HKN6o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:58:44 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60174 "EHLO
+	id S1752825Ab1HKN7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:59:16 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60190 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751625Ab1HKN6f (ORCPT
+	by vger.kernel.org with ESMTP id S1752802Ab1HKN6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:35 -0400
+	Thu, 11 Aug 2011 09:58:43 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Chris Zankel <chris@zankel.net>
-Subject: [PATCH 33/41] xtensa: Don't reimplement force_sigsegv()
-Date: Thu, 11 Aug 2011 14:57:07 +0100
-Message-Id: <1313071035-12047-34-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Petr Vandrovec <petr@vandrovec.name>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 40/41] ncpfs: Use set_current_blocked()
+Date: Thu, 11 Aug 2011 14:57:14 +0100
+Message-Id: <1313071035-12047-41-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -22,32 +23,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Instead of open coding the sequence from force_sigsegv() just call
-it. This also fixes a race because sa_handler was being modified
-without holding ->sighand->siglock.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check whether the signal we're about to block
+is pending in the shared queue.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Chris Zankel <chris@zankel.net>
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/xtensa/kernel/signal.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ fs/ncpfs/sock.c |   12 +++++-------
+ 1 files changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-index f2220b5..4f53770 100644
---- a/arch/xtensa/kernel/signal.c
-+++ b/arch/xtensa/kernel/signal.c
-@@ -425,9 +425,7 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	return;
+diff --git a/fs/ncpfs/sock.c b/fs/ncpfs/sock.c
+index 3a15872..883fdc3 100644
+--- a/fs/ncpfs/sock.c
++++ b/fs/ncpfs/sock.c
+@@ -749,7 +749,7 @@ static int ncp_do_request(struct ncp_server *server, int size,
+ 		return -EIO;
+ 	}
+ 	{
+-		sigset_t old_set;
++		sigset_t old_set, blocked;
+ 		unsigned long mask, flags;
  
- give_sigsegv:
--	if (sig == SIGSEGV)
--		ka->sa.sa_handler = SIG_DFL;
--	force_sig(SIGSEGV, current);
-+	force_sigsegv(sig, current);
- }
+ 		spin_lock_irqsave(&current->sighand->siglock, flags);
+@@ -769,16 +769,14 @@ static int ncp_do_request(struct ncp_server *server, int size,
+ 			if (current->sighand->action[SIGQUIT - 1].sa.sa_handler == SIG_DFL)
+ 				mask |= sigmask(SIGQUIT);
+ 		}
+-		siginitsetinv(&current->blocked, mask);
+-		recalc_sigpending();
++
++		siginitsetinv(&blocked, mask);
++		__set_task_blocked(current, &blocked);
+ 		spin_unlock_irqrestore(&current->sighand->siglock, flags);
+ 		
+ 		result = do_ncp_rpc_call(server, size, reply, max_reply_size);
  
- /*
+-		spin_lock_irqsave(&current->sighand->siglock, flags);
+-		current->blocked = old_set;
+-		recalc_sigpending();
+-		spin_unlock_irqrestore(&current->sighand->siglock, flags);
++		set_current_blocked(&old_set);
+ 	}
+ 
+ 	DDPRINTK("do_ncp_rpc_call returned %d\n", result);
 -- 
 1.7.4.4
 
