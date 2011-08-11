@@ -1,141 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1HKL1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:27:31 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37550 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755487Ab1HKL10 (ORCPT
+	id S1755442Ab1HKL2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:28:38 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:47403 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328Ab1HKL2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:27:26 -0400
-X-AuditID: b753bd60-a3089ba000000655-3a-4e43bc9bb956
-X-AuditID: b753bd60-a3089ba000000655-3a-4e43bc9bb956
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 9/9] [BUGFIX] perf probe: Filter out redundant
- inline-instances
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Thu, 11 Aug 2011 20:03:18 +0900
-Message-ID: <20110811110317.19900.59525.stgit@fedora15>
-In-Reply-To: <20110811110220.19900.54963.stgit@fedora15>
-References: <20110811110220.19900.54963.stgit@fedora15>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 11 Aug 2011 07:28:37 -0400
+Subject: Re: [PATCH] scripts: add extract-vmlinux
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Dick Streefland <dick@streefland.net>,
+        WANG Cong <xiyou.wangcong@gmail.com>
+In-Reply-To: <1313052783-27607-1-git-send-email-corentin.chary@gmail.com>
+References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
+	 <1313052783-27607-1-git-send-email-corentin.chary@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Aug 2011 13:28:21 +0200
+Message-ID: <1313062101.8300.23.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With gcc4.6, some instances of concrete inlined function
-looks redundant and broken, because it appears inside of a
-concrete instance and its call_file and call_line are same
-as the original abstruct's decl_file and decl_line respectively.
+On Thu, 2011-08-11 at 10:53 +0200, Corentin Chary wrote:
+> This script can be used to extract vmlinux from a compressed
+> kernel image (bzImage, etc..). It's inspired from (a subset of)
+> extract-ikconfig.
 
-e.g.
- [  d1aa]    subprogram
-             external             (flag) Yes
-             name                 (strp) "add_timer"
-             decl_file            (data1) 2		;here is original
-             decl_line            (data2) 847		;line and file
-             prototyped           (flag) Yes
-             inline               (data1) inlined (1)
-             sibling              (ref4) [  d1c6]
-...
- [ 11d84]    subprogram
-             abstract_origin      (ref4) [  d1aa]	; concrete instance
-             low_pc               (addr) .text+0x000000000000246f <add_timer>
-             high_pc              (addr) .text+0x000000000000248b <mod_timer_pending>
-             frame_base           (block1)               [   0] call_frame_cfa
-             sibling              (ref4) [ 11dd9]
- [ 11d9f]      formal_parameter
-               abstract_origin      (ref4) [  d1b9]
-               location             (data4) location list [  701b]
- [ 11da8]      inlined_subroutine
-               abstract_origin      (ref4) [  d1aa]	; redundant instance
-               low_pc               (addr) .text+0x000000000000247e <add_timer+0xf>
-               high_pc              (addr) .text+0x0000000000002480 <add_timer+0x11>
-               call_file            (data1) 2		; call line and file
-               call_line            (data2) 847		; are same as above
+This is more specific than what this scripts actually does, isn't it? At
+least when I tried to read this script my impression is that it does two
+things:
+- check whether the input file is a valid ELF file;
+- if not; try to find a compressed ELF file somewhere in the input file.
+
+There's no checking whether the input file is a kernel image and there's
+no checking whether the found ELF file actually is was a, well, vmlinux.
+Both checks are perhaps far from trivial. Anyhow, if that's correct this
+should be made more clear. Perhaps the script should even be called
+something like extract-elf.
+
+> It's something a lot of people have been looking for (mainly
+> people with xen < 4 that doesn't support bzImages at all).
+> 
+> Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+> [...]
+> +try_decompress()
+> +{
+> +	for	pos in `tr "$1\n$2" "\n$2=" < "$img" | grep -abo "^$2"`
+> +	do
+> +		pos=${pos%%:*}
+> +		tail -c+$pos "$img" | $3 > $tmp 2> /dev/null
+
+Perhaps a few comments on the above lines would be nice. Without those
+comments I must guess you're finding compressed data somewhere in the
+input file. It also seems you're looping through the entire input file.
+Or are (sequences of) commands like the above considered obvious?
+
+> +		check_elf $tmp
+> +	done
+> +}
+> +
+> [...]
+> +# Initial attempt for uncompressed images or objects:
+> +check_elf $img
+> +
+> +# That didn't work, so retry after decompression.
+> +try_decompress '\037\213\010' xy    gunzip
+> +try_decompress '\3757zXZ\000' abcde unxz
+> +try_decompress 'BZh'          xy    bunzip2
+> +try_decompress '\135\0\0\0'   xxx   unlzma
+> +try_decompress '\211\114\132' xy    'lzop -d'
+
+Perhaps you could first test whether these commands are available before
+running try_decompress() with them?
 
 
-Those redundant instances leads unwilling results;
-
-e.g. find probe points inside of functions even if we specify
-a function entry as below;
-
-$ perf probe -V add_timer
-Available variables at add_timer
-        @<add_timer+0>
-                struct timer_list*      timer
-        @<add_timer+15>
-                (No matched variables)
-
-So, this filters out those redundant instances based on
-call-site and decl-site information.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
-
- tools/perf/util/dwarf-aux.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index d0f4048..ee51e9b 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -307,6 +307,17 @@ static int die_get_call_fileno(Dwarf_Die *in_die)
- 		return -ENOENT;
- }
- 
-+/* Get the declared file index number in CU DIE */
-+static int die_get_decl_fileno(Dwarf_Die *pdie)
-+{
-+	Dwarf_Sword idx;
-+
-+	if (die_get_attr_sdata(pdie, DW_AT_decl_file, &idx) == 0)
-+		return (int)idx;
-+	else
-+		return -ENOENT;
-+}
-+
- /**
-  * die_get_call_file - Get callsite file name of inlined function instance
-  * @in_die: a DIE of an inlined function instance
-@@ -467,6 +478,7 @@ static int __die_walk_instances_cb(Dwarf_Die *inst, void *data)
- 	Dwarf_Die origin_mem;
- 	Dwarf_Attribute *attr;
- 	Dwarf_Die *origin;
-+	int tmp;
- 
- 	attr = dwarf_attr(inst, DW_AT_abstract_origin, &attr_mem);
- 	if (attr == NULL)
-@@ -476,6 +488,16 @@ static int __die_walk_instances_cb(Dwarf_Die *inst, void *data)
- 	if (origin == NULL || origin->addr != iwp->addr)
- 		return DIE_FIND_CB_CONTINUE;
- 
-+	/* Ignore redundant instances */
-+	if (dwarf_tag(inst) == DW_TAG_inlined_subroutine) {
-+		dwarf_decl_line(origin, &tmp);
-+		if (die_get_call_lineno(inst) == tmp) {
-+			tmp = die_get_decl_fileno(origin);
-+			if (die_get_call_fileno(inst) == tmp)
-+				return DIE_FIND_CB_CONTINUE;
-+		}
-+	}
-+
- 	iwp->retval = iwp->callback(inst, iwp->data);
- 
- 	return (iwp->retval) ? DIE_FIND_CB_END : DIE_FIND_CB_CONTINUE;
+Paul Bolle
 
