@@ -1,55 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1HKO1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:27:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58805 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab1HKO1V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:27:21 -0400
-Date: Thu, 21 Aug 2011 18:51:37 +0430
-From: Ali Gholami Rudi <ali@rudi.ir>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Keith Packard <keithp@keithp.com>,
-        Michel Alexandre Salim <salimma@fedoraproject.org>,
-        intel-gfx@lists.freedesktop.org, Ali Gholami Rudi <aliqrudi@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
-        Len Brown <lenb@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Sedat Dilek <sedat.dilek@googlemail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: missing acpi backlight bisected to 9661e92c10
-Message-ID: <20112108185137@lilem.mirepesht>
-In-Reply-To: <20110811141630.GA24704@srcf.ucam.org>
-References: <yunliv38ugd.fsf@aiko.keithp.com>
- <20110808213140.GA32504@srcf.ucam.org>
- <yunfwlb8qy4.fsf@aiko.keithp.com>
- <4E428421.1000605@fedoraproject.org>
- <yunipq5gvxd.fsf@aiko.keithp.com>
- <20110810191700.81c3a7ee.akpm@linux-foundation.org>
- <20112108083014@lilem.mirepesht>
- <20112108160718@lilem.mirepesht>
- <20110811123929.GA22409@srcf.ucam.org>
- <20112108181410@lilem.mirepesht>
-	<20110811141630.GA24704@srcf.ucam.org>
-User-Agent: git://repo.or.cz/mailx.git
+	id S1752578Ab1HKO0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:26:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752381Ab1HKO0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 10:26:14 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHv2 05/10] tracing/filter: Unify predicate tree walking, change check_pred_tree function to use it
+Date: Thu, 11 Aug 2011 16:25:49 +0200
+Message-Id: <1313072754-4620-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1313072754-4620-1-git-send-email-jolsa@redhat.com>
+References: <1313011535.18583.280.camel@gandalf.stny.rr.com>
+ <1313072754-4620-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg@redhat.com> wrote:
-> Well, that all looks fine. And I also can't see any way that this commit
-> could cause the backlight not to appear - all it does is set the parent 
-> if it's present. There's no new path that could cause it to return 
-> early. Does reverting this patch really make things work?
+Adding walk_pred_tree function to be used for walking throught
+the filter predicates.
 
-Yes.  I'm running the patched kernel right now.
+For each predicate the callback function is called, allowing
+users to add their own functionality or customize their way
+through the filter predicates.
 
-I can apply a debug patch on the unchanged kernel, if it helps?
+Changing check_pred_tree function to use walk_pred_tree.
 
-	Ali
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/trace_events_filter.c |  137 ++++++++++++++++++++++-------------
+ 1 files changed, 86 insertions(+), 51 deletions(-)
+
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 0948905..5b889d4 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -381,6 +381,63 @@ get_pred_parent(struct filter_pred *pred, struct filter_pred *preds,
+ 	return pred;
+ }
+ 
++enum walk_return {
++	WALK_PRED_ABORT,
++	WALK_PRED_PARENT,
++	WALK_PRED_DEFAULT,
++};
++
++typedef int (*filter_pred_walkcb_t) (enum move_type move,
++				     struct filter_pred *pred,
++				     int *err, void *data);
++
++static int walk_pred_tree(struct filter_pred *preds,
++			  struct filter_pred *root,
++			  filter_pred_walkcb_t cb, void *data)
++{
++	struct filter_pred *pred = root;
++	enum move_type move = MOVE_DOWN;
++	int done = 0;
++
++	if  (!preds)
++		return -EINVAL;
++
++	do {
++		int err = 0, ret;
++
++		ret = cb(move, pred, &err, data);
++		if (ret == WALK_PRED_ABORT)
++			return err;
++		if (ret == WALK_PRED_PARENT)
++			goto get_parent;
++
++		switch (move) {
++		case MOVE_DOWN:
++			if (pred->left != FILTER_PRED_INVALID) {
++				pred = &preds[pred->left];
++				continue;
++			}
++			goto get_parent;
++		case MOVE_UP_FROM_LEFT:
++			pred = &preds[pred->right];
++			move = MOVE_DOWN;
++			continue;
++		case MOVE_UP_FROM_RIGHT:
++ get_parent:
++			if (pred == root)
++				break;
++			pred = get_pred_parent(pred, preds,
++					       pred->parent,
++					       &move);
++			continue;
++		}
++		done = 1;
++	} while (!done);
++
++	/* We are fine. */
++	return 0;
++}
++
+ /*
+  * A series of AND or ORs where found together. Instead of
+  * climbing up and down the tree branches, an array of the
+@@ -1321,6 +1378,23 @@ static int count_preds(struct filter_parse_state *ps)
+ 	return n_preds;
+ }
+ 
++struct check_pred_data {
++	int count;
++	int max;
++};
++
++static int check_pred_tree_cb(enum move_type move, struct filter_pred *pred,
++			      int *err, void *data)
++{
++	struct check_pred_data *d = data;
++
++	if (WARN_ON(d->count++ > d->max)) {
++		*err = -EINVAL;
++		return WALK_PRED_ABORT;
++	}
++	return WALK_PRED_DEFAULT;
++}
++
+ /*
+  * The tree is walked at filtering of an event. If the tree is not correctly
+  * built, it may cause an infinite loop. Check here that the tree does
+@@ -1329,58 +1403,19 @@ static int count_preds(struct filter_parse_state *ps)
+ static int check_pred_tree(struct event_filter *filter,
+ 			   struct filter_pred *root)
+ {
+-	struct filter_pred *preds;
+-	struct filter_pred *pred;
+-	enum move_type move = MOVE_DOWN;
+-	int count = 0;
+-	int done = 0;
+-	int max;
+-
+-	/*
+-	 * The max that we can hit a node is three times.
+-	 * Once going down, once coming up from left, and
+-	 * once coming up from right. This is more than enough
+-	 * since leafs are only hit a single time.
+-	 */
+-	max = 3 * filter->n_preds;
+-
+-	preds = filter->preds;
+-	if  (!preds)
+-		return -EINVAL;
+-	pred = root;
+-
+-	do {
+-		if (WARN_ON(count++ > max))
+-			return -EINVAL;
+-
+-		switch (move) {
+-		case MOVE_DOWN:
+-			if (pred->left != FILTER_PRED_INVALID) {
+-				pred = &preds[pred->left];
+-				continue;
+-			}
+-			/* A leaf at the root is just a leaf in the tree */
+-			if (pred == root)
+-				break;
+-			pred = get_pred_parent(pred, preds,
+-					       pred->parent, &move);
+-			continue;
+-		case MOVE_UP_FROM_LEFT:
+-			pred = &preds[pred->right];
+-			move = MOVE_DOWN;
+-			continue;
+-		case MOVE_UP_FROM_RIGHT:
+-			if (pred == root)
+-				break;
+-			pred = get_pred_parent(pred, preds,
+-					       pred->parent, &move);
+-			continue;
+-		}
+-		done = 1;
+-	} while (!done);
++	struct check_pred_data data = {
++		/*
++		 * The max that we can hit a node is three times.
++		 * Once going down, once coming up from left, and
++		 * once coming up from right. This is more than enough
++		 * since leafs are only hit a single time.
++		 */
++		.max   = 3 * filter->n_preds,
++		.count = 0,
++	};
+ 
+-	/* We are fine. */
+-	return 0;
++	return walk_pred_tree(filter->preds, root,
++			      check_pred_tree_cb, &data);
+ }
+ 
+ static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
+-- 
+1.7.1
 
