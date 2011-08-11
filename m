@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab1HKHxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 03:53:32 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41238 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab1HKHxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 03:53:30 -0400
+	id S1752681Ab1HKHxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 03:53:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57961 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab1HKHxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 03:53:46 -0400
+Date: Thu, 11 Aug 2011 09:53:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Arend van Spriel <arend@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2][cleanup] memcg: renaming of mem variable to memcg
+Message-ID: <20110811075337.GA8023@tiehlicka.suse.cz>
+References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1311147490.10091.1.camel@phoenix>
-References: <1311147490.10091.1.camel@phoenix>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 11 Aug 2011 15:52:43 +0800
-Message-ID: <CAF+7xWmkegXQ6u+iVGgkiUuUxJJrAXArQfmq4-4y6ZZuOEqRPg@mail.gmail.com>
-Subject: Re: [PATCH] Input: mpu3050 - call input_free_device() in
- mpu3050_probe() error handling
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joseph Lai <joseph_lai@wistron.com>, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/20 Axel Lin <axel.lin@gmail.com>:
-> From 3dcc899388d98a68c22d14b3149d3cc472f8d2fa Mon Sep 17 00:00:00 2001
-> From: Axel Lin <axel.lin@gmail.com>
-> Date: Wed, 20 Jul 2011 15:34:33 +0800
-> Subject: [PATCH] Input: mpu3050 - correct call to input_free_device
->
-> input_free_device() should be used if input_register_device() was not called
-> yet or if it failed.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-hi Dmitry,
-Seems this fix is not yet upstream.
+On Wed 10-08-11 22:59:17, Raghavendra K T wrote:
+> Hi,
+>  This is the memcg cleanup patch for that was talked little ago to change the  "struct
+>  mem_cgroup *mem" variable to  "struct mem_cgroup *memcg".
+> 
+>  The patch is though trivial, it is huge one.
+>  Testing : Compile tested with following configurations.
+>  1) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
+>  2) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
+>  3) CONFIG_CGROUP_MEM_RES_CTLR=n  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
 
-Regards,
-Axel
+How exactly have you tested? Compiled and compared before/after binaries
+(it shouldn't change, right)?
+
+> 
+>  Also tested basic mounting with memcgroup.
+>  Raghu.
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
