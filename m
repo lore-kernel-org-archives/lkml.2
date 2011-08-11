@@ -1,44 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab1HKT7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:59:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45506 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab1HKT73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:59:29 -0400
-Message-ID: <4E44349D.9030809@profitbricks.com>
-Date: Thu, 11 Aug 2011 21:59:25 +0200
-From: Dongsu Park <dongsu.park@profitbricks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110627 Thunderbird/5.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Liu Yuan <namei.unix@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] vhost-blk: An in-kernel accelerator for virtio-blk
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <1311863346-4338-2-git-send-email-namei.unix@gmail.com> <20110728152244.GA31888@redhat.com>
-In-Reply-To: <20110728152244.GA31888@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753521Ab1HKUB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:01:27 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:44143 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038Ab1HKUBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:01:25 -0400
+Subject: Re: [PATCH] CIFS: remove local xattr definitions
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Eric Paris <eparis@parisplace.org>
+Cc: linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
+References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Aug 2011 16:00:47 -0400
+Message-ID: <1313092847.3122.13.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-08-11 at 15:29 -0400, Eric Paris wrote:
+> Not that this patch is wrong, but shouldn't cifs include xattr.h
+> directly rather than rely on such an obscure indirect callchain as
+> well?
+> 
+> -Eric
 
-On 07/28/2011 05:22 PM, Michael S. Tsirkin wrote:
-> On Thu, Jul 28, 2011 at 10:29:05PM +0800, Liu Yuan wrote:
->> +static struct miscdevice vhost_blk_misc = {
->> +	234,
->
-> Don't get a major unless you really must.
+True, updated below.
 
-the minor number 234 conflicts with that of BTRFS, in kernel 3.0 at least.
-Therefore you cannot load vhost_blk.ko if btrfs.ko was already loaded.
-Probably that number should be something else, with which you don't have 
-conflict with any minor number in include/linux/miscdevice.h.
+thanks,
 
+Mimi
+
+---
+Local XATTR_TRUSTED_PREFIX_LEN and XATTR_SECURITY_PREFIX_LEN definitions
+redefined ones in 'linux/xattr.h'. This was caused by commit 9d8f13ba3f48
+("security: new security_inode_init_security API adds function callback")
+including 'linux/xattr.h' in 'linux/security.h'.
+
+In file included from include/linux/security.h:39,
+                 from include/net/sock.h:54,
+                 from fs/cifs/cifspdu.h:25,
+                 from fs/cifs/xattr.c:26:
+
+This patch removes the local definitions.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+---
+ fs/cifs/xattr.c |   40 ++++++++++++++++++----------------------
+ 1 files changed, 18 insertions(+), 22 deletions(-)
+
+diff --git a/fs/cifs/xattr.c b/fs/cifs/xattr.c
+index 2a22fb2..c323088 100644
+--- a/fs/cifs/xattr.c
++++ b/fs/cifs/xattr.c
+@@ -22,6 +22,7 @@
+ #include <linux/fs.h>
+ #include <linux/posix_acl_xattr.h>
+ #include <linux/slab.h>
++#include <linux/xattr.h>
+ #include "cifsfs.h"
+ #include "cifspdu.h"
+ #include "cifsglob.h"
+@@ -31,16 +32,8 @@
+ #define MAX_EA_VALUE_SIZE 65535
+ #define CIFS_XATTR_DOS_ATTRIB "user.DosAttrib"
+ #define CIFS_XATTR_CIFS_ACL "system.cifs_acl"
+-#define CIFS_XATTR_USER_PREFIX "user."
+-#define CIFS_XATTR_SYSTEM_PREFIX "system."
+-#define CIFS_XATTR_OS2_PREFIX "os2."
+-#define CIFS_XATTR_SECURITY_PREFIX "security."
+-#define CIFS_XATTR_TRUSTED_PREFIX "trusted."
+-#define XATTR_TRUSTED_PREFIX_LEN  8
+-#define XATTR_SECURITY_PREFIX_LEN 9
+-/* BB need to add server (Samba e.g) support for security and trusted prefix */
+-
+ 
++/* BB need to add server (Samba e.g) support for security and trusted prefix */
+ 
+ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+ {
+@@ -76,8 +69,8 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+ 	}
+ 	if (ea_name == NULL) {
+ 		cFYI(1, "Null xattr names not supported");
+-	} else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5)
+-		&& (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4))) {
++	} else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
++		&& (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))) {
+ 		cFYI(1,
+ 		     "illegal xattr request %s (only user namespace supported)",
+ 		     ea_name);
+@@ -88,7 +81,7 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto remove_ea_exit;
+ 
+-		ea_name += 5; /* skip past user. prefix */
++		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+ 		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
+ 			(__u16)0, cifs_sb->local_nls,
+ 			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+@@ -149,21 +142,23 @@ int cifs_setxattr(struct dentry *direntry, const char *ea_name,
+ 
+ 	if (ea_name == NULL) {
+ 		cFYI(1, "Null xattr names not supported");
+-	} else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
++	} else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
++		   == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto set_ea_exit;
+ 		if (strncmp(ea_name, CIFS_XATTR_DOS_ATTRIB, 14) == 0)
+ 			cFYI(1, "attempt to set cifs inode metadata");
+ 
+-		ea_name += 5; /* skip past user. prefix */
++		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+ 		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+ 			(__u16)value_size, cifs_sb->local_nls,
+ 			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+-	} else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
++	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
++		   == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto set_ea_exit;
+ 
+-		ea_name += 4; /* skip past os2. prefix */
++		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+ 		rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
+ 			(__u16)value_size, cifs_sb->local_nls,
+ 			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+@@ -269,7 +264,8 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+ 	/* return alt name if available as pseudo attr */
+ 	if (ea_name == NULL) {
+ 		cFYI(1, "Null xattr names not supported");
+-	} else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
++	} else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
++		   == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto get_ea_exit;
+ 
+@@ -277,15 +273,15 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+ 			cFYI(1, "attempt to query cifs inode metadata");
+ 			/* revalidate/getattr then populate from inode */
+ 		} /* BB add else when above is implemented */
+-		ea_name += 5; /* skip past user. prefix */
++		ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
+ 		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+ 			buf_size, cifs_sb->local_nls,
+ 			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+-	} else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
++	} else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+ 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
+ 			goto get_ea_exit;
+ 
+-		ea_name += 4; /* skip past os2. prefix */
++		ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
+ 		rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
+ 			buf_size, cifs_sb->local_nls,
+ 			cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
+@@ -339,10 +335,10 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
+ 		cFYI(1, "Query CIFS ACL not supported yet");
+ #endif /* CONFIG_CIFS_ACL */
+ 	} else if (strncmp(ea_name,
+-		  CIFS_XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
++		  XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
+ 		cFYI(1, "Trusted xattr namespace not supported yet");
+ 	} else if (strncmp(ea_name,
+-		  CIFS_XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
++		  XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
+ 		cFYI(1, "Security xattr namespace not supported yet");
+ 	} else
+ 		cFYI(1,
 -- 
-Dongsu Park
-Email: dongsu.park@profitbricks.com
+1.7.3.4
+
