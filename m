@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab1HKTgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:36:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34586 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1HKTgD convert rfc822-to-8bit (ORCPT
+	id S1752517Ab1HKTgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:36:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14385 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab1HKTgE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:36:03 -0400
-Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Neronskiy <zakmagnus@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Alex Neronskiy <zakmagnus@chromium.com>
-Date: Thu, 11 Aug 2011 21:35:22 +0200
-In-Reply-To: <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
-References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-	 <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 11 Aug 2011 15:36:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 11 Aug 2011 12:35:43 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Colin Cross <ccross@google.com>
+CC: Ben Dooks <ben-linux@fluff.org>, Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Aug 2011 12:35:36 -0700
+Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
+ suspend_noirq/resume_noirq
+Thread-Topic: [PATCH] i2c/tegra: I2C driver uses the
+ suspend_noirq/resume_noirq
+Thread-Index: AcxUFZKaoNPjzeLARHaid/4iXWUrGAESBDzw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+ <CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+ <20110806084805.GA18098@sirena.org.uk>
+In-Reply-To: <20110806084805.GA18098@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1313091323.8491.30.camel@twins>
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 11:02 -0700, Alex Neronskiy wrote:
-> @@ -210,22 +236,27 @@ void touch_softlockup_watchdog_sync(void)
->  /* watchdog detector functions */
->  static void update_hardstall(unsigned long stall, int this_cpu)
->  {
->         if (stall > hardstall_thresh && stall > worst_hardstall) {
->                 unsigned long flags;
-> +               spin_lock_irqsave(&hardstall_write_lock, flags);
-> +               if (stall > worst_hardstall) {
-> +                       int write_ind = hard_read_ind;
-> +                       int locked = spin_trylock(&hardstall_locks[write_ind]);
-> +                       /* cannot wait, so if there's contention,
-> +                        * switch buffers */
-> +                       if (!locked)
-> +                               write_ind = !write_ind;
-> +
->                         worst_hardstall = stall;
-> +                       hardstall_traces[write_ind].nr_entries = 0;
-> +                       save_stack_trace(&hardstall_traces[write_ind]);
->  
-> +                       /* tell readers to use the new buffer from now on */
-> +                       hard_read_ind = write_ind;
-> +                       if (locked)
-> +                               spin_unlock(&hardstall_locks[write_ind]);
-> +               }
-> +               spin_unlock_irqrestore(&hardstall_write_lock, flags);
->         }
->  } 
+Mark Brown wrote at Saturday, August 06, 2011 2:48 AM:
+> On Fri, Aug 05, 2011 at 09:33:31PM -0700, Colin Cross wrote:
+...
+> > NAK - moving the suspend order around is not the correct way to solve
+> > this.  If wm8903 needs to talk to the i2c bus in its suspend handler,
+> > it needs to be child device on the i2c bus.  suspend_noirq is for
+>
+> WM8903 is an I2C device.  The problem is that it's suspended as part of
+> the ASoC suspend since the audio subsystem is composed of multiple
+> devices that all need to work together coherently.  I did start doing
+> some stuff to bodge around this like we do on probe but there are enough
+> system wide problems with this that it didn't seem worth the complexity
+> when the existing workarounds are so straightforward.
 
-That must be the most convoluted locking I've seen in a while.. OMG!
+Colin, given Mark's explanation, are you OK with the patch now?
 
-What's wrong with something like:
+Thanks.
 
-static void update_stall(struct stall *s, unsigned long stall)
-{
-	if (stall <= s->worst)
-		return;
-
-again:
-	if (!raw_spin_trylock(&s->lock[s->idx])) {
-		s->idx ^= 1;
-		goto again;
-	}
-
-	if (stall <= s->worst)
-		goto unlock;
-
-	s->worst = stall;
-	s->trace[s->idx].nr_entries = 0;
-	save_stack_trace(&s->trace[s->idx]);
-
-unlock:
-	raw_spin_unlock(&s->lock[s->idx]);
-}
-
-
-And have your read side do:
-
-
-static void show_stall_trace(struct seq_file *f, void *v)
-{
-	struct stall *s = f->private;
-	int i, idx = ACCESS_ONCE(s->idx);
-
-	mutex_lock(&stall_mutex);
-
-	raw_spin_lock(&s->lock[idx]);
-	seq_printf(f, "stall: %d\n", s->worst);
-	for (i = 0; i < s->trace[idx].nr_entries; i++) {
-		seq_printf(f, "[<%pK>] %pS\n", 
-			(void *)s->trace->entries[i],
-			(void *)s->trace->entries[i]);
-	}
-	raw_spin_unlock(&s->lock[idx]);
-
-	mutex_unlock(&stall_mutex);
-}
-
-
-Yes its racy on s->worst, but who cares (if you do care you can keep a
-copy in s->delay[idx] or so). Also, it might be better to not do the
-spinlock but simply use an atomic bitop to set an in-use flag, there is
-no reason to disable preemption over the seq_printf() loop.
-
+-- 
+nvpublic
 
