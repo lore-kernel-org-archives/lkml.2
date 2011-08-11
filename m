@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab1HKJbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 05:31:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44246 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753592Ab1HKJbu (ORCPT
+	id S1754829Ab1HKJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 05:32:26 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43337 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab1HKJcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 05:31:50 -0400
-Date: Thu, 11 Aug 2011 18:31:42 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH 1/4] ASoC: DAPM: Allow multiple mixer sources to be
- routed via the same switch
-Message-ID: <20110811093140.GB18454@opensource.wolfsonmicro.com>
-References: <1312948364-2587-1-git-send-email-lars@metafoo.de>
+	Thu, 11 Aug 2011 05:32:25 -0400
+Date: Thu, 11 Aug 2011 10:32:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCHv4 2/2] ARM: P2V: Remove ARM_PATCH_PHYS_VIRT_16BIT
+Message-ID: <20110811093204.GE4775@n2100.arm.linux.org.uk>
+References: <1311794355-26988-1-git-send-email-sboyd@codeaurora.org> <1311794355-26988-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312948364-2587-1-git-send-email-lars@metafoo.de>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1311794355-26988-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 05:52:41AM +0200, Lars-Peter Clausen wrote:
-> Currently it is only possible to route one source per switch into a mixer.
-> This patch modifies the code, so that it is possible to route multiple sources
-> into a mixer via the same switch. One use-case for this is routing a stereo
-> channel pair into a mono-mixer via the same switch.
+On Wed, Jul 27, 2011 at 12:19:15PM -0700, Stephen Boyd wrote:
+> From: Nicolas Pitre <nicolas.pitre@linaro.org>
+> 
+> This code can be removed now that MSM targets no longer need the 16-bit
+> offsets for P2V.
+> 
+> Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-I'd have thought the dapm_is_shared_control() stuff should handle this?
+Can you submit these two patches to the patch system so they can be
+integrated with the patch to enable by default the p2v patching please?
+
+You will need to update then against my for-next branch to account for
+that change - it should only be context changes in arch/arm/Kconfig.
+
+Thanks.
