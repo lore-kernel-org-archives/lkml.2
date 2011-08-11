@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab1HKBOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 21:14:46 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:57112 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab1HKBOo convert rfc822-to-8bit (ORCPT
+	id S1752006Ab1HKBpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 21:45:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45349 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1HKBpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 21:14:44 -0400
+	Wed, 10 Aug 2011 21:45:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANejiEXgsVW4qk3hwHvd6YzgRsZueAB3ZSh3Rvx3fz9tM7KHPw@mail.gmail.com>
-References: <20110811004216.GA24810@july>
-	<CANejiEXgsVW4qk3hwHvd6YzgRsZueAB3ZSh3Rvx3fz9tM7KHPw@mail.gmail.com>
-Date: Thu, 11 Aug 2011 09:14:43 +0800
-X-Google-Sender-Auth: 7kkk0IBWFxb3QSJ6qqwvvse2hQw
-Message-ID: <CANejiEUSU_hfex5i5znjAUU9Te2o-fgKuO=uD0UW+a4eaiU4Bw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] Add new elevator ops for request hint
-From: Shaohua Li <shli@kernel.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: jaxboe@fusionio.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        jh80.chung@samsung.com, linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAK7N6vqqsrodDGURQhASrWo=9oZHtxwAuXiXs514+iGT4NKw+Q@mail.gmail.com>
+References: <CAK7N6vqqsrodDGURQhASrWo=9oZHtxwAuXiXs514+iGT4NKw+Q@mail.gmail.com>
+Date: Thu, 11 Aug 2011 10:45:33 +0900
+Message-ID: <CAK7N6vqP6Fr0xxZ9h_r0RnzeQ-nB9TpefmnKR9Qqhv3C+_0DTA@mail.gmail.com>
+Subject: Re: Interrupt not getting re-enabled after handler is killed
+From: anish singh <anish198519851985@gmail.com>
+To: linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/11 Shaohua Li <shli@kernel.org>:
-> 2011/8/11 Kyungmin Park <kmpark@infradead.org>:
->> Hi Jens
->>
->> Now eMMC device requires the upper layer information to improve the data
->> performance and reliability.
->>
->> . Context ID
->> Using the context information, it can sort out the data internally and improve the performance.
->> The main problem is that it's needed to define "What's the context".
->> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
->>
->> . Data Tag
->> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
->> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
->>
->> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
->>
->> Sample usage is following in drivers/mmc/card/block.c
->>
->>        struct elevator_queue *e = md->queue.queue->elevator;
->>        struct request_hint hint;
->>        int ret;
->>
->>        if (e->ops->elevator_get_req_hint_fn && req)
->>                ret = e->ops->elevator_get_req_hint_fn(req, &hint);
-> please put this to blkdev.h or similar. directly using it here
-> is abnormal.
-BTW, we can add a (rq->cmd_flags & REQ_ELVPRIV) check here to make
-sure the request is at io scheduler.
+adding Linux Kernel in loop.
+
+On Wed, Aug 10, 2011 at 5:16 PM, anish singh
+<anish198519851985@gmail.com> wrote:
+> Intention:
+> Wanted to modify the behavior of threaded interrupt handler
+> not being called after the threaded_handler was killed.
+>
+> Reason:
+> Well there is no reason as such but just want to see what all
+> needs to be done to get this right.I know that what i am doing
+> is completely wrong as i would get a strom of irq's and device
+> will be unstable[1].
+>
+> Modification:
+> I thought if i remove the below line from exit_irq_thread function
+> set_bit(IRQTF_DIED, &tsk->irqaction->flags);
+> it would do.But nothing happened then i inspected closely i found that
+> in-case we need to do that we have to again create kthread
+> which i am not doing in-case we again receive the interrupt of the killed
+> threaded_handler.
+>
+> So i came to this conclusion:
+> Right now we need more that just setting the flag bit to get this right.
+> Is the above right ?Yes/no?
+>
+> Or
+>
+> if my understanding is not right then probably the interrupt controller
+> itself is not sending the interrupt after the thread is killed.If this is right
+> where is the code for that?
+> In my limited search i couldn't find where we are disabling the interrupt
+> once the threaded_handler is killed.
+>
+> Hope i am clear about what i want to know.
+>
+> [1] http://thread.gmane.org/gmane.linux.kernel/811061
+>
