@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1HKQFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 12:05:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39706 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab1HKQFL (ORCPT
+	id S1753170Ab1HKQG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 12:06:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:50762 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab1HKQG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 12:05:11 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=aaAdOvpg3WkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=XP4Ko9G5nC1x_yysKeIA:9 a=1GwZeYR5M8FxURsr16QA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] 9p: remove CONFIG_NET_9P_DEBUG option
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Alex Ray <alexjray.ncsu@gmail.com>,
-        v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alex Ray <ajray@ncsu.edu>
-In-Reply-To: <87k4ak54gn.fsf@skywalker.in.ibm.com>
-References: <1312200884-20110-1-git-send-email-ajray@ncsu.edu>
-	 <877h6l7hoj.fsf@skywalker.in.ibm.com>
-	 <CAFkjPT=y4jJTNEFrJLr=i9UVHfixqqGmYbVZf0B4AHk-AmOJdA@mail.gmail.com>
-	 <87wrel5gp8.fsf@skywalker.in.ibm.com>
-	 <CAFkjPT=ePtKi0Z-AjBm_W38VPTV3HbT6hWSMHOHezytoqAbNvQ@mail.gmail.com>
-	 <87k4ak54gn.fsf@skywalker.in.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 11 Aug 2011 12:05:08 -0400
-Message-ID: <1313078708.18583.314.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Thu, 11 Aug 2011 12:06:26 -0400
+Message-ID: <4E43FDFF.1080401@gmail.com>
+Date: Thu, 11 Aug 2011 11:06:23 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "'Barry Song'" <21cnbao@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "workgroup.linux@csr.com" <workgroup.linux@csr.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "weizeng.he@csr.com" <weizeng.he@csr.com>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Subject: L2x0 OF properties do not include interrupt #
+References: <000201cc575b$c1229010$4367b030$@rutland@arm.com> <201108101624.27881.arnd@arndb.de> <20110810142808.GL10121@e102144-lin.cambridge.arm.com> <201108111505.11887.arnd@arndb.de> <20110811130910.GA10189@e102144-lin.cambridge.arm.com> <4E43F5F8.4060704@gmail.com> <20110811153800.GC5154@e102144-lin.cambridge.arm.com>
+In-Reply-To: <20110811153800.GC5154@e102144-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 21:24 +0530, Aneesh Kumar K.V wrote:
-> On Wed, 10 Aug 2011 13:36:52 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> > On Wed, Aug 10, 2011 at 12:17 PM, Aneesh Kumar K.V
-> > <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > > On Wed, 10 Aug 2011 07:24:56 -0500, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> > >> On Wed, Aug 10, 2011 at 4:13 AM, Aneesh Kumar K.V
-> > >> <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > >> > On Mon,  1 Aug 2011 07:14:44 -0500, Alex Ray <alexjray.ncsu@gmail.com> wrote:
-> > >> >> Remove the CONFIG_NET_9P_DEBUG option, used to completely remove logging
-> > >> >> functionality from v9fs.  Logging is (already) controlled with the
-> > >> >> run-time debug= option, this gets rid of the compile-time option (which
-> > >> >> was being misunderstood and misused).
-> > >> >>
-> > >> >> Signed-off-by: Alex Ray <ajray@ncsu.edu>
-> > >> >
-> > >> > I see this merged to for-next.  Do we know whether enabling debug always have a
-> > >> > performance impact ?.
-> > >> >
-> > >>
-> > >> No clue, but without any debug it makes it impossible for user's to
-> > >> generate reasonable bug reports.  If I understand the tracepoint
-> > >> collection facility correctly, it incurs exactly the same overhead as
-> > >> a DPRINT when the debug mount option is set to 0 (although tracepoints
-> > >> are much lower overhead when actually collecting).
-> > >
-> > > I was worried about overhead when we are not collecting any debug info.
-> > >
-> > 
-> > I understand that.  But the overhead when not collecting is the
-> > conditional branch.
-> > According to Documentation/trace/tracepoints.txt this is the same for the
-> > tracepoints:
-> > 
-> > "When a tracepoint is "off" it has no effect, except for adding a tiny
-> > time penalty
-> > (checking a condition for a branch) and space penalty (adding a few
-> > bytes for the function call at the end of the instrumented function
-> > and adds a data structure in a separate section)."
-> > 
-> > So, since DPRINT is essentially if(p9_debug_level & level) == level)
-> > it should roughly amount to the same overhead, no?  I suppose we could
-> > get fancy and and prefix it with an unlikely.
-> > 
+On 08/11/2011 10:38 AM, Will Deacon wrote:
+> On Thu, Aug 11, 2011 at 04:32:08PM +0100, Rob Herring wrote:
+>> On 08/11/2011 08:09 AM, Will Deacon wrote:
+>>> On Thu, Aug 11, 2011 at 02:05:11PM +0100, Arnd Bergmann wrote:
+>>>> On Wednesday 10 August 2011, Will Deacon wrote:
+>>>>> I was hoping that it was possible to have separate properties which describe
+>>>>> the interrupt. So you could have something like pmu-interrupt <75> and
+>>>>> abort-interrupt <76> rather than interrupts <75, 76>.
+>>>>
+>>>> Ok, I see.
+>>>>
+>>>>> I've not played with DT bindings before though, so if it's usually done with
+>>>>> an ordered list then so be it!
+>>>>
+>>>> A lot of the code assumes that the property is called 'interrupts' and that
+>>>> it contains a fixed-length array of interrupt numbers, each for one specific
+>>>> purpose.
+>>>
+>>> Ok, I wondered if something like that might be the case.
+>>>
+>>>> Given that we have so many different meanings for the interrupts, I'm
+>>>> not sure how this would work best in this case. According to
+>>>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0246f/CHDFHCFJ.html
+>>>> this looks like a nested interrupt controller, i.e. the L2CC has its own mask
+>>>> and status register with bits for each one of them. We could model these by
+>>>> describing the l2cc interrupt controller with these registers and listing all
+>>>> nine of the current inputs. I suspect however that it would be easier to just
+>>>> assume that there is only one line for now, and treat the l2cc as a single
+>>>> interrupt source with an internal status register.
+>>>
+>>> Given that this binding is only for the l2x0 / pl310 and I don't know of any
+>>> implementation where > 1 interrupt line is wired up, I'm happy to assume a
+>>> single combined interrupt line for now.
+>>>
+>>
+>> I know of one. Although, we have the combined interrupt as well. The
+>> binding should allow either way and specify the order. If the event
+>> counter interrupt is 1st, then it should be the same to s/w.
 > 
-> Is that true with jump label ? May be we should update tracepoints.txt ?
-
-Correct, that should be updated. When jump labels are enabled, we have a
-nop and an unconditional branch over the trace code, which when enable
-will change the nop to call the trace code.
-
-We do have a slight hit in icache, but nothing I have been able to
-measure. But if we do, I could even modify it to become even less of an
-impact (but will cause tracing to slow down, but we don't really care if
-it speeds up non tracing case ;)
-
--- Steve
-
-
+> You mean putting the combined interrupt first? If so, we may as well just
+> specify that until somebody builds a platform that doesn't have it.
 > 
-> Upstream commit:
-> bf5438fca2950b03c21ad868090cc1a8fcd49536
-> 8f7b50c514206211cc282a4247f7b12f18dee674
-> 
-> -aneesh
 
+No, either you have 1 interrupt and it is the combined one. or you have
+the 9? separate interrupts.  Having both combined and separate hooked up
+is a bit dumb, so I would not worry about that case. I would just define
+the event counter interrupt 1st as that is probably the primary use.
+Also, I think that was the only interrupt on the L2x0 controllers IIRC.
 
+It's also conceivable that some of the interrupts get routed somewhere
+else rather than just into the GIC.
+
+Rob
