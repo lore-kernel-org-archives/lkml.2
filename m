@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1HKL4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 07:56:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50505 "EHLO mx1.redhat.com"
+	id S1755529Ab1HKL7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 07:59:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40090 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538Ab1HKL4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 07:56:40 -0400
-Date: Thu, 11 Aug 2011 13:56:35 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: achender@linux.vnet.ibm.com
-cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] loop: add discard support for loop devices
-In-Reply-To: <1313063143-14473-1-git-send-email-lczerner@redhat.com>
-Message-ID: <alpine.LFD.2.00.1108111348020.4160@dhcp-27-109.brq.redhat.com>
-References: <1313063143-14473-1-git-send-email-lczerner@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751864Ab1HKL7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 07:59:45 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Bart De Schuymer <bart.de.schuymer@pandora.be>
+Cc: kernel-janitors@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        davem@davemloft.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net/bridge/netfilter/ebtables.c: use available error handling code
+Date: Thu, 11 Aug 2011 13:59:38 +0200
+Message-Id: <1313063978-29400-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011, Lukas Czerner wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> This commit adds discard support for loop devices. Discard is usually
-> supported by SSD and thinly provisioned devices as a method for
-> reclaiming unused space. This is no different than trying to reclaim
-> back space which is not used by the file system on the image, but it
-> still occupies space on the host file system.
-> 
-> We can do the reclamation on file system which does support hole
-> punching. So when discard request gets to the loop driver we can
-> translate that to punch a hole to the underlying file, hence reclaim
-> the free space.
-> 
-> This is very useful for trimming down the size of the image to only what
-> is really used by the file system on that image. Fstrim may be used for
-> that purpose.
-> 
-> It has been tested on ext4, xfs and btrfs with the image file systems
-> ext4, ext3, xfs and btrfs. ext4, or ext6 image on ext4 file system has
-> some problems but it seems that ext4 punch hole implementation is
-> somewhat flawed and it is unrelated to this commit.
-> 
-> Also this is a very good method of validating file systems punch hole
-> implementation.
-> 
-> Note that when encryption is used, discard support is disabled, because
-> using it might leak some information useful for possible attacker.
+Free the locally allocated table and newinfo as done in adjacent error
+handling code.
 
-Hi Allison,
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-as I mentioned in the commit description I believe that I have
-seen problems with punch hole implementation. You can apply the
-commit to add discard support for loop device and then here is how
-to reproduce the problem:
+---
+ net/bridge/netfilter/ebtables.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
+index 2b5ca1a..5864cc4 100644
+--- a/net/bridge/netfilter/ebtables.c
++++ b/net/bridge/netfilter/ebtables.c
+@@ -1198,7 +1198,8 @@ ebt_register_table(struct net *net, const struct ebt_table *input_table)
+ 
+ 	if (table->check && table->check(newinfo, table->valid_hooks)) {
+ 		BUGPRINT("The table doesn't like its own initial data, lol\n");
+-		return ERR_PTR(-EINVAL);
++		ret = -EINVAL;
++		goto free_chainstack;
+ 	}
+ 
+ 	table->private = newinfo;
 
-# mkfs.ext4 /dev/sdd
-# mount /dev/sdd /mnt/test
-# dd if=/dev/zero of=/mnt/test/bigfil2 bs=4096 seek=100M count=1
-# mkfs.ext4 /mnt/test/bigfil2
-# mount -o loop /mnt/test/bigfil2 /mnt/test3/
-# fstrim -v /mnt/test3/
-422650347520 Bytes were trimmed
-
-# fsck.ext4 -fn /mnt/test1/bigfil2
-e2fsck 1.41.12 (17-May-2010)
-Pass 1: Checking inodes, blocks, and sizes
-Pass 2: Checking directory structure
-Pass 3: Checking directory connectivity
-Pass 4: Checking reference counts
-Pass 5: Checking group summary information
-Block bitmap differences:  +(524288--532511)
-Fix? no
-
-Free blocks count wrong for group #16 (24544, counted=32768).
-Fix? no
-
-Free blocks count wrong (103161576, counted=103169800).
-Fix? no
-
-
-/mnt/test1/bigfil2: ********** WARNING: Filesystem still has errors
-**********
-
-/mnt/test1/bigfil2: 11/26214400 files (0.0% non-contiguous),
-1696024/104857600 blocks
-
-And we also get corrupted file system on the ext3 image. I did
-not saw that for other file systems, but it is probably just the matter
-of how are blocks laid out in the file system format and there are more
-chunks of free blocks in ext[43] than xfs, or btrfs.
-
-Also you can find fstrim in latest util-inux-ng. And lastly I believe
-that this is great way to validate punch hole implementation. Just
-create an image on ext4 file system and run xfstest 251 (or stress.sh -
-oss.oracle.com/~mason/stress.sh) on it the image mounted with -o
-discard.
-
-Thanks!
--Lukas
