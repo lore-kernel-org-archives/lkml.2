@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab1HKPQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 11:16:20 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54588 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752238Ab1HKPQS (ORCPT
+	id S1752680Ab1HKPR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 11:17:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44066 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab1HKPR0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 11:16:18 -0400
-Date: Thu, 11 Aug 2011 11:16:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>, <jaxboe@fusionio.com>,
-        <roland@purestorage.com>, <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-In-Reply-To: <1313075131.4166.10.camel@mulgrave>
-Message-ID: <Pine.LNX.4.44L0.1108111112280.1958-100000@iolanthe.rowland.org>
+	Thu, 11 Aug 2011 11:17:26 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com>
+References: <201108101803.p7AI36eV008484@farm-0023.internal.tilera.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Thu, 11 Aug 2011 23:17:06 +0800
+Message-ID: <CA+a=Yy4PorPNqiBqakmHL2s5rWNR7nKN3mf5BbV++eXsBbL9Ow@mail.gmail.com>
+Subject: Re: [PATCH] nfs: fix a couple of minor portability issues
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011, James Bottomley wrote:
+On Thu, Aug 11, 2011 at 1:56 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> Building on tilepro revealed two minor portability issues: the
+> blocklayout.c file used prefetchw() without #include <linux/prefetch.h>,
+> and the nfs4filelayout.c file used do_div() on an s64 not a u64.
+> This change fixes those two issues so the NFS code builds on tilepro.
+>
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  fs/nfs/blocklayout/blocklayout.c |    1 +
+>  fs/nfs/nfs4filelayout.c          |    6 +++---
+>  2 files changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+> index e56564d..9561c8f 100644
+> --- a/fs/nfs/blocklayout/blocklayout.c
+> +++ b/fs/nfs/blocklayout/blocklayout.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/namei.h>
+>  #include <linux/bio.h>         /* struct bio */
+>  #include <linux/buffer_head.h> /* various write calls */
+> +#include <linux/prefetch.h>
+This is already fixed in Trond's nfs-for-next branch by commit 88c9e4219.
 
-> > > Well, it's just hiding the problem.  The essential problem is that only
-> > > block has the correctly refcounted knowledge to know the last release of
-> > > the queue reference.  Until that time, the holder of the reference can
-> > > use the queue regardless of whether blk_cleanup_queue() has been called.
-> > > This is the race you complain about since use of the queue involves the
-> > > lock which should be guarded by QUEUE_DEAD checks.
-> > > 
-> > > This is essentially unfixable with function calls.  The only way to fix
-> > > it is to have a callback model for freeing the external lock.
-> > 
-> > Assuming the queue is associated with a device, the queue could take a
-> > reference to the device, dropping that reference when the queue is
-> > freed.  Then the lock could safely be freed at the same time as the 
-> > device.
-> 
-> If that assumption is correct, there's no point refcounting the queue at
-> all because its use is entirely subordinated to the lifecycle of the
-> associated device.
+>
+>  #include "blocklayout.h"
+>
+> diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
+> index e8915d4..6976a72 100644
+> --- a/fs/nfs/nfs4filelayout.c
+> +++ b/fs/nfs/nfs4filelayout.c
+> @@ -48,13 +48,13 @@ filelayout_get_dense_offset(struct nfs4_filelayout_segment *flseg,
+>                            loff_t offset)
+>  {
+>        u32 stripe_width = flseg->stripe_unit * flseg->dsaddr->stripe_count;
+> -       u64 tmp;
+> +       u64 tmp, uoff;
+>
+>        offset -= flseg->pattern_offset;
+> -       tmp = offset;
+> +       tmp = uoff = offset;
+>        do_div(tmp, stripe_width);
+>
+> -       return tmp * flseg->stripe_unit + do_div(offset, flseg->stripe_unit);
+> +       return tmp * flseg->stripe_unit + do_div(uoff, flseg->stripe_unit);
+>  }
+>
+>  /* This function is used by the layout driver to calculate the
+> --
+> 1.6.5.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-That's true.  Why wasn't it done that way originally?  Are there queues 
-that aren't associated with devices?
 
->  Plus all the wittering about my previous patch is
-> pointless, because blk_cleanup_queue() has to do the final put of the
-> queue in the lock free path (otherwise the assumption is violated).
-> 
-> However, much as I'd like to accept this rosy view, the original oops
-> that started all of this in 2.6.38 was someone caught something with a
-> reference to a SCSI queue after the device release function had been
-> called.
 
-Not according to your commit log.  You wrote that the reference was
-taken after scsi_remove_device() had been called -- but the device
-release function is scsi_device_dev_release_usercontext().
-
-Alan Stern
-
+-- 
+Thanks,
+-Bergwolf
