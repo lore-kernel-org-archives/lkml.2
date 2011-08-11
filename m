@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1HKIjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:39:55 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:34961 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041Ab1HKIjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:39:52 -0400
-X-ASG-Debug-ID: 1313051991-03d6a510aa298220001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E439554.2070508@fusionio.com>
-Date: Thu, 11 Aug 2011 10:39:48 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753972Ab1HKIlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:41:19 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48676 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab1HKIlS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 04:41:18 -0400
+Message-ID: <4E43959D.9000803@linux.vnet.ibm.com>
+Date: Thu, 11 Aug 2011 14:11:01 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: "boyu.mt@taobao.com" <boyu.mt@taobao.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]block: revert a patch
-References: <1313046710.27321.7.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: [patch]block: revert a patch
-In-Reply-To: <1313046710.27321.7.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2][cleanup] memcg: renaming of mem variable to memcg
+References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com> <20110811075337.GA8023@tiehlicka.suse.cz> <4E438FD3.7070000@linux.vnet.ibm.com> <20110811082641.GD8023@tiehlicka.suse.cz>
+In-Reply-To: <20110811082641.GD8023@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1313051991
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.71438
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-11 09:11, Shaohua Li wrote:
-> This patch reverts commit 35ae66e0a09ab70ed(block: Make rq_affinity = 1
-> work as expected). The purpose is to avoid an unnecessary IPI.
-> Let's take an example. My test box has cpu 0-7, one socket. Say request is
-> added from CPU 1, blk_complete_request() occurs at CPU 7. Without the reverted
-> patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU
-> 0, and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
-> CPU 7 have no difference from cache sharing point view and we can avoid an
-> ipi if doing it in CPU 7.
-> An immediate concern is this is just like QUEUE_FLAG_SAME_FORCE, but actually
-> not. blk_complete_request() is running in interrupt handler, and currently
-> I/O controller doesn't support multiple interrupts (I checked several LSI
-> cards and AHCI), so only one CPU can run blk_complete_request(). This is
-> still quite different as QUEUE_FLAG_SAME_FORCE.
-> Since only one CPU runs softirq, the only difference with below patch is
-> softirq not always runs at the first CPU of a group.
-
-Thanks, I applied this but fixed up your subject line. You can't just
-call it 'revert a patch', does not carry a lot of meaning!
-
--- 
-Jens Axboe
-
+On 08/11/2011 01:56 PM, Michal Hocko wrote:
+> On Thu 11-08-11 13:46:19, Raghavendra K T wrote:
+>> On 08/11/2011 01:23 PM, Michal Hocko wrote:
+>>> On Wed 10-08-11 22:59:17, Raghavendra K T wrote:
+>>>> Hi,
+>>>>   This is the memcg cleanup patch for that was talked little ago to change the  "struct
+>>>>   mem_cgroup *mem" variable to  "struct mem_cgroup *memcg".
+>>>>
+>>>>   The patch is though trivial, it is huge one.
+>>>>   Testing : Compile tested with following configurations.
+>>>>   1) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
+>>>>   2) CONFIG_CGROUP_MEM_RES_CTLR=y  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
+>>>>   3) CONFIG_CGROUP_MEM_RES_CTLR=n  CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n
+>>>
+>>> How exactly have you tested? Compiled and compared before/after binaries
+>>> (it shouldn't change, right)?
+>> Yes, But idea was to ensure that both #ifdef and #else part are hit
+>> during compilation, which could expose some corrections needed.
+>
+> I am not sure I understand. You have used different combinations of
+> configuration to trigger all #ifdefs but that doesn't change anything on
+> the fact that the code should be exactly same before and after your
+> patch, right?
+>
+Yes you are right again. No change in the code after the patch.
+It was just to exercise I have not missed any valid changes in both 
+paths, and it does not break compilation.
