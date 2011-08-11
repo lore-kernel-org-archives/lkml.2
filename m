@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1HKAG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 20:06:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33157 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1HKAG5 (ORCPT
+	id S1755444Ab1HKAV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 20:21:58 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54686 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab1HKAV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 20:06:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 11 Aug 2011 08:59:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Arend van Spriel <arend@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+	Wed, 10 Aug 2011 20:21:56 -0400
+X-AuditID: b753bd60-9ea82ba000000655-d5-4e4320a09bb8
+X-AuditID: b753bd60-9ea82ba000000655-d5-4e4320a09bb8
+Message-ID: <4E43209D.7090104@hitachi.com>
+Date: Thu, 11 Aug 2011 09:21:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2][cleanup] memcg: renaming of mem variable to memcg
-Message-Id: <20110811085929.bd9919ef.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110810172942.23280.99644.sendpatchset@oc5400248562.ibm.com>
-References: <20110810172917.23280.9440.sendpatchset@oc5400248562.ibm.com>
-	<20110810172942.23280.99644.sendpatchset@oc5400248562.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on ftrace
+ nops
+References: <20110810162222.017387055@goodmis.org>
+In-Reply-To: <20110810162222.017387055@goodmis.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011 22:59:42 +0530
-Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+Hi Steven,
 
->  The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses
->  "struct mem_cgroup *memcg". This patch renames all mem variables to memcg in header file.
-> 
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Thanks for this nice feature!
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+(2011/08/11 1:22), Steven Rostedt wrote:
+> Hi All,
+>
+> I started working on adding the -mfentry switch to ftrace, which
+> allows us to remove the frame pointers requirement from function tracing
+> as well as makes mcount (fentry) work just better.
+>
+> But when I did this in another branch, I noticed that I broke kprobes
+> in its most common usage. The attaching a probe at the beginning of
+> a function to use get to its parameters.
+>
+> So I started this branch. This branch is to have kprobes use ftrace
+> directly when a probe is attached to a ftrace nop. Currently, kprobes
+> will just error when that happens. With this patch set, it will hook
+> into the ftrace infrastructure and use ftrace instead. This is more
+> like an optimized probe as no breakpoints need to be set. A call to
+> the function is done directly via the mcount trampoline. If ftrace
+> pt_regs is implemented for an arch, kprobes gets this feature for free.
 
+I agreed this idea, this looks good to me too :)
+With -fentry, this can improve dynamic trace events very much.
 
+BTW (OT), it seems that current kprobe data structure becomes a bit
+fat. Maybe what we need is just a "holder of hooking handler" as
+what ftrace provides, not a full storage data structure of copied
+instrucutions. Perhaps, we'd better diet the kprobe structure for
+transparency of hooking infrastructure.
+
+> The first patch is just a clean up that I need to push out to get rid
+> of the annoying compile warning about initialized variables that
+> gcc can't tell have been initialized.
+>
+> The next two patches have ftrace pass both the ftrace_ops structure
+> and the pt_regs to the callback function that is registered with ftrace.
+>
+> The last two patches have kprobes interact with ftrace and use the
+> ftrace infrastructure instead.
+>
+> I only did this for x86_64, and will do it for x86_32 and PPC64 if everyone
+> agrees with this approach. Then I could find people to do it for other
+> archs :)
+
+OK, I'll review this soon!
+
+Thank you!
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
