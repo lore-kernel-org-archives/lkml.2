@@ -1,133 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab1HKUZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 16:25:48 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:61300 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab1HKUZr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 16:25:47 -0400
+	id S1753524Ab1HKU2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 16:28:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:40207 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751509Ab1HKU2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 16:28:08 -0400
+Message-ID: <4E443B52.3080609@goop.org>
+Date: Thu, 11 Aug 2011 13:28:02 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:7ae7:d1ff:fe87:812a]
-In-Reply-To: <1313093946-24559-1-git-send-email-dianders@chromium.org>
-References: <1313093946-24559-1-git-send-email-dianders@chromium.org>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Thu, 11 Aug 2011 13:25:26 -0700
-X-Google-Sender-Auth: dewZKcuO2eVqhH4ck1zrrf_EFTE
-Message-ID: <CANVmJFmqyBjJvToZXV8wzs6ES9O49M=1ObHNjhp0dVbho8R8EQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: tegra: fix possible race condition after tx
-To: Doug Anderson <dianders@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        keir.xen@gmail.com, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
+References: <cover.1312378163.git.luto@mit.edu> <20110803135322.GC29501@dumpdata.com> <20110803135604.GA29761@dumpdata.com> <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
+In-Reply-To: <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
+X-Enigmail-Version: 1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Works nice on both real Tegra2 board and Qemu.
+On 08/03/2011 06:59 AM, Andrew Lutomirski wrote:
+> On Wed, Aug 3, 2011 at 9:56 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>> On Wed, Aug 03, 2011 at 09:53:22AM -0400, Konrad Rzeszutek Wilk wrote:
+>>> On Wed, Aug 03, 2011 at 09:31:48AM -0400, Andy Lutomirski wrote:
+>>>> This fixes various problems that cropped up with the vdso patches.
+>>>>
+>>>>  - Patch 1 fixes an information leak to userspace.
+>>>>  - Patches 2 and 3 fix the kernel build on gold.
+>>>>  - Patches 4 and 5 fix Xen (I hope).
+>>>>  - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
+>>>>    make it easier to handle performance regression reports :)
+>>> Hm, you seemed to have the x86 maintainers on your email..
+>> I definitly need some coffee. What I meant was that you missing putting
+>> the x86 maintainers on this patchset. They are the ones that will handle this.
+>>
+>> I put them on the To list for you.
+> Are you sure about that coffee?  I'm pretty sure I had x86@kernel.org in there.
 
-On Thu, Aug 11, 2011 at 13:19, Doug Anderson <dianders@chromium.org> wrote:
-> In tegra_i2c_fill_tx_fifo, once we have finished pushing all the bytes
-> to the I2C hardware controller, the interrupt might happen before we
-> have updated i2c_dev->msg_buf_remaining at the end of the function.
-> Then, in tegra_i2c_isr, we will call again tegra_i2c_fill_tx_fifo
-> triggering weird behaviour. This has been shown to happen under real
-> conditions.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+What's the state of this series?  Has tip.git picked it up, or does it
+need another go-around?
 
-Tested-by: Vincent Palatin <vpalatin@chromium.org>
+I just booted a Linus tree and got a backtrace that looks like this
+issue, though I haven't looked into it in detail yet.
 
-> ---
->  drivers/i2c/busses/i2c-tegra.c |   46 +++++++++++++++++++++++++++------------
->  1 files changed, 32 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 2440b74..9c5fb75 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -270,14 +270,30 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->
->        /* Rounds down to not include partial word at the end of buf */
->        words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
-> -       if (words_to_transfer > tx_fifo_avail)
-> -               words_to_transfer = tx_fifo_avail;
->
-> -       i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
-> -
-> -       buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> -       buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
-> -       tx_fifo_avail -= words_to_transfer;
-> +       /* It's very common to have < 4 bytes, so optimize that case. */
-> +       if (words_to_transfer) {
-> +               if (words_to_transfer > tx_fifo_avail)
-> +                       words_to_transfer = tx_fifo_avail;
-> +
-> +               /*
-> +                * Update state before writing to FIFO.  If this casues us
-> +                * to finish writing all bytes (AKA buf_remaining goes to 0) we
-> +                * have a potential for an interrupt (PACKET_XFER_COMPLETE is
-> +                * not maskable).  We need to make sure that the isr sees
-> +                * buf_remaining as 0 and doesn't call us back re-entrantly.
-> +                */
-> +               buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
-> +               tx_fifo_avail -= words_to_transfer;
-> +               i2c_dev->msg_buf_remaining = buf_remaining;
-> +               i2c_dev->msg_buf = buf +
-> +                       words_to_transfer * BYTES_PER_FIFO_WORD;
-> +               barrier();
-> +
-> +               i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
-> +
-> +               buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> +       }
->
->        /*
->         * If there is a partial word at the end of buf, handle it manually to
-> @@ -287,14 +303,15 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->        if (tx_fifo_avail > 0 && buf_remaining > 0) {
->                BUG_ON(buf_remaining > 3);
->                memcpy(&val, buf, buf_remaining);
-> +
-> +               /* Again update before writing to FIFO to make sure isr sees. */
-> +               i2c_dev->msg_buf_remaining = 0;
-> +               i2c_dev->msg_buf = NULL;
-> +               barrier();
-> +
->                i2c_writel(i2c_dev, val, I2C_TX_FIFO);
-> -               buf_remaining = 0;
-> -               tx_fifo_avail--;
->        }
->
-> -       BUG_ON(tx_fifo_avail > 0 && buf_remaining > 0);
-> -       i2c_dev->msg_buf_remaining = buf_remaining;
-> -       i2c_dev->msg_buf = buf;
->        return 0;
->  }
->
-> @@ -411,9 +428,10 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
->                        tegra_i2c_mask_irq(i2c_dev, I2C_INT_TX_FIFO_DATA_REQ);
->        }
->
-> -       if ((status & I2C_INT_PACKET_XFER_COMPLETE) &&
-> -                       !i2c_dev->msg_buf_remaining)
-> +       if (status & I2C_INT_PACKET_XFER_COMPLETE) {
-> +               BUG_ON(i2c_dev->msg_buf_remaining);
->                complete(&i2c_dev->msg_complete);
-> +       }
->
->        i2c_writel(i2c_dev, status, I2C_INT_STATUS);
->        if (i2c_dev->is_dvc)
-> --
-> 1.7.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Thanks,
+    J
