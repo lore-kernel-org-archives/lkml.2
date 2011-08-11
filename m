@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1HKNQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:16:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35881 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755888Ab1HKNQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:16:52 -0400
-Subject: Re: [PATCH 2/4] ASoC: Add ADAU1373 codec support
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>
-In-Reply-To: <4E43AACF.5060701@metafoo.de>
-References: <1312948364-2587-1-git-send-email-lars@metafoo.de>
-	 <1312948364-2587-2-git-send-email-lars@metafoo.de>
-	 <20110811092702.GA18454@opensource.wolfsonmicro.com>
-	 <4E43AACF.5060701@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Wolfson Microelectronics
-Date: Thu, 11 Aug 2011 22:16:30 +0900
-Message-ID: <1313068590.19990.2.camel@finisterre.wolfsonmicro.main>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1755935Ab1HKNSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:18:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49220 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755578Ab1HKNSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 09:18:14 -0400
+Date: Thu, 11 Aug 2011 15:18:13 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Switch NUMA_BUILD and COMPACTION_BUILD to new
+ IS_ENABLED() syntax
+Message-ID: <20110811131813.GL8023@tiehlicka.suse.cz>
+References: <1312989160-737-1-git-send-email-mmarek@suse.cz>
+ <20110811125133.GJ8023@tiehlicka.suse.cz>
+ <20110811130110.GK8023@tiehlicka.suse.cz>
+ <4E43D54D.8030202@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E43D54D.8030202@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 12:11 +0200, Lars-Peter Clausen wrote:
-> >> +	SOC_ENUM("Lineout1 Mono Stereo", adau1373_lineout1_mode_enum),
-> >> +	SOC_ENUM("Speaker Mono Stereo", adau1373_speaker_mode_enum),
+On Thu 11-08-11 15:12:45, Michal Marek wrote:
+> On 11.8.2011 15:01, Michal Hocko wrote:
+> > On Thu 11-08-11 14:51:33, Michal Hocko wrote:
+> >> On Wed 10-08-11 17:12:40, Michal Marek wrote:
+> >>> Introduced in 3.1-rc1, IS_ENABLED(CONFIG_NUMA) expands to a true value
+> >>> iff CONFIG_NUMA is set. This makes it easier to grep for code that
+> >>> depends on CONFIG_NUMA.
+> > 
+> > I have just looked closer at all available macros. Wouldn't it make more
+> > sense to use IS_BUILTIN instead? Both symbols can be only on or off.
+> > Not that it would make any difference in the end. I even like IS_ENABLED
+> > naming more.
+> 
+> IS_ENABLED() and IS_BUILTIN() are equivalent for boolean symbols.
+> IS_BUILTIN() and IS_MODULE() are meant for the (rare) case when someone
+> needs to distinguish between built in and module for tristate options in
+> the code.
 
-> > I'd expect these to be platform data/machine data rather than user
-> > control?  The speaker wiring isn't going to vary dynamically...
+Makes sense. Thanks for the clarification.
 
-> You still might want to switch, for whatever particular reason, between mono
-> and stereo at runtime.
+> 
+> Michal
 
-Sorry, what does this actually control? I guess I've been mislead but
-from the name of the control I'd expect it to control if the outputs
-were physically connected as mono or stereo outputs.
-
-> >> +	switch (freq / params_rate(params)) {
-> >> +	case 1024: /* fs */
-> >> +		div = 0;
-> >> +		break;
-> >> +	case 1536: /* 2/3 fs */
-> >> +		div = 1;
-> >> +		break;
-
-> > These comments look inaccuate, fs is the sample rate so a divide of 1
-> > would be fs.
-
-> div contains the register value representation of that particular divider.
-
-div isn't the issue here. The comments seem to indicate that the result
-of the divisions are some multiple of fs but fs usually means some
-multiple of the sample rate. For example 2/3fs for 44.1kHz would be
-29.4kHz.
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
