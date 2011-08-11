@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1HKV0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:26:07 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:5352 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab1HKV0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:26:05 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz1432N98dK4015Lzz1202hzzz32i668h839h944h65h)
-X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LPS8RT-02-E0Z-02
-X-M-MSG: 
-Date: Thu, 11 Aug 2011 23:23:54 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia@diku.dk>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Subject: Re: Missing put_cpu() in arch/s390/oprofile/hwsampler.c?
-Message-ID: <20110811212354.GD11702@erda.amd.com>
-References: <1312825916.5589.150.camel@localhost.localdomain>
+	id S1754176Ab1HKV1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:27:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35726 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034Ab1HKV1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 17:27:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-ext4@vger.kernel.org
+Subject: [PATCH]
+Date: Thu, 11 Aug 2011 23:29:22 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1312825916.5589.150.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108112329.23043.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.08.11 13:51:53, Thomas Meyer wrote:
-> The function hws_oom_callback() seems to miss a corresponding put_cpu().
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: fs / ext3: Always unlock updates in ext3_freeze()
 
-Yes, it looks broken.
+In analogy with ext4 make ext3_freeze() always call
+journal_unlock_updates() to prevent it from leaving a locked mutex
+behind.  Accordingly, modify ext3_unfreeze() so that it doesn't
+call journal_unlock_updates() any more.
 
-Heinz, can you send a fix please?
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ fs/ext3/super.c |   39 ++++++++++++++++++---------------------
+ 1 file changed, 18 insertions(+), 21 deletions(-)
 
-Thanks,
-
--Robert
-
-> 
-> Or is this done in another function? I didn't find it.
-> 
-> thomas
-> 
-> ---
-> 
->  Check for get/put_cpu() imbalances
-> 
->  The simplified semantic patch that makes this report is:
-> 
-> * get_cpu()
-> ... when != put_cpu()
-> ? get_cpu()
-> 
-> drivers/crypto/n2_core.c:986:25-26: WARNING: Possible missing put_cpu()!
-> drivers/crypto/n2_core.c:1041:25-26: WARNING: Possible missing put_cpu()!
-> drivers/scsi/fcoe/fcoe.c:1163:29-30: WARNING: Possible missing put_cpu()!
-> drivers/scsi/fcoe/fcoe.c:1630:47-48: WARNING: Possible missing put_cpu()!
-> arch/um/sys-i386/ldt.c:53:17-18: WARNING: Possible missing put_cpu()!
-> arch/powerpc/kernel/machine_kexec_64.c:188:18-19: WARNING: Possible missing put_cpu()!
-> arch/ia64/sn/kernel/sn2/sn_hwperf.c:618:52-53: WARNING: Possible missing put_cpu()!
-> arch/s390/oprofile/hwsampler.c:553:16-17: WARNING: Possible missing put_cpu()!
-> arch/s390/kernel/vtime.c:430:22-23: WARNING: Possible missing put_cpu()!
-> arch/s390/kernel/vtime.c:473:15-16: WARNING: Possible missing put_cpu()!
-> arch/blackfin/kernel/cplbinfo.c:89:9-10: WARNING: Possible missing put_cpu()!
-> 
-> This list contains some false positives.
-> 
-> Thanks to Julia for the semantic patch to find these kind of errors!
-> 
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Index: linux/fs/ext3/super.c
+===================================================================
+--- linux.orig/fs/ext3/super.c
++++ linux/fs/ext3/super.c
+@@ -2535,30 +2535,28 @@ static int ext3_sync_fs(struct super_blo
+  */
+ static int ext3_freeze(struct super_block *sb)
+ {
+-	int error = 0;
++	int error;
+ 	journal_t *journal;
+ 
+-	if (!(sb->s_flags & MS_RDONLY)) {
+-		journal = EXT3_SB(sb)->s_journal;
++	if (sb->s_flags & MS_RDONLY)
++		return 0;
+ 
+-		/* Now we set up the journal barrier. */
+-		journal_lock_updates(journal);
++	journal = EXT3_SB(sb)->s_journal;
+ 
+-		/*
+-		 * We don't want to clear needs_recovery flag when we failed
+-		 * to flush the journal.
+-		 */
+-		error = journal_flush(journal);
+-		if (error < 0)
+-			goto out;
+-
+-		/* Journal blocked and flushed, clear needs_recovery flag. */
+-		EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+-		error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+-		if (error)
+-			goto out;
+-	}
+-	return 0;
++	/* Now we set up the journal barrier. */
++	journal_lock_updates(journal);
++
++	/*
++	 * We don't want to clear needs_recovery flag when we failed
++	 * to flush the journal.
++	 */
++	error = journal_flush(journal);
++	if (error < 0)
++		goto out;
++
++	/* Journal blocked and flushed, clear needs_recovery flag. */
++	EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
++	error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+ 
+ out:
+ 	journal_unlock_updates(journal);
+@@ -2577,7 +2575,6 @@ static int ext3_unfreeze(struct super_bl
+ 		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+ 		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+ 		unlock_super(sb);
+-		journal_unlock_updates(EXT3_SB(sb)->s_journal);
+ 	}
+ 	return 0;
+ }
