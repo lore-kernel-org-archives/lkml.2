@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751133Ab1HKEKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 00:10:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7383 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1HKEKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 00:10:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=RWLQxXl9tY/WkKa0Wler/yUT6m9K7SUdeyy5K0k/XzflJrJx0JGz3wDUBv0Vx3WU2
-	fywc1HZmzFLpi4DTMA94Q==
-Date: Wed, 10 Aug 2011 21:09:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-cc: Randy Dunlap <rdunlap@xenotime.net>,
-        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: running of out memory => kernel crash
-In-Reply-To: <1312964098.7449.YahooMailNeo@web111712.mail.gq1.yahoo.com>
-Message-ID: <alpine.DEB.2.00.1108102106410.14230@chino.kir.corp.google.com>
-References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com> <1db776d865939be598cdb80054cf5d93.squirrel@xenotime.net> <1312874259.89770.YahooMailNeo@web111704.mail.gq1.yahoo.com> <alpine.DEB.2.00.1108090900170.30199@chino.kir.corp.google.com>
- <1312964098.7449.YahooMailNeo@web111712.mail.gq1.yahoo.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-2005623161-1313035801=:14230"
-X-System-Of-Record: true
+	id S1751198Ab1HKEXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 00:23:08 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:51787 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab1HKEXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 00:23:06 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-security-module@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH 1/2] evm: building without EVM enabled fixes
+Date: Thu, 11 Aug 2011 00:22:51 -0400
+Message-Id: <1313036572-27122-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+- Missing 'inline' on evm_inode_setattr() definition.
+Introduced by commit 817b54aa45db ("evm: add evm_inode_setattr to prevent
+updating an invalid security.evm").
 
---397155492-2005623161-1313035801=:14230
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+- Missing security_old_inode_init_security() stub function definition.
+Caused by commit 9d8f13ba3f48 ("security: new security_inode_init_security
+API adds function callback").
 
-On Wed, 10 Aug 2011, Mahmood Naderan wrote:
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+---
+ include/linux/evm.h      |    2 +-
+ include/linux/security.h |    7 +++++++
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-> >If you're using cpusets or mempolicies, you must ensure that all tasks 
-> >attached to either of them are not set to OOM_DISABLE.  It seems unlikely 
-> >that you're using those, so it seems like a system-wide oom condition.
->  
-> I didn't do that manually. What is the default behaviour? Does oom
-> working or not?
-> 
+diff --git a/include/linux/evm.h b/include/linux/evm.h
+index db5556d..62deb65 100644
+--- a/include/linux/evm.h
++++ b/include/linux/evm.h
+@@ -45,7 +45,7 @@ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
+ }
+ #endif
+ 
+-static int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
++static inline int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
+ {
+ 	return 0;
+ }
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 1c528b1..f399cf1 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -2048,6 +2048,13 @@ static inline int security_inode_init_security(struct inode *inode,
+ 	return -EOPNOTSUPP;
+ }
+ 
++int security_old_inode_init_security(struct inode *inode, struct inode *dir,
++				     const struct qstr *qstr, char **name,
++				     void **value, size_t *len)
++{
++	return -EOPNOTSUPP;
++}
++
+ static inline int security_inode_create(struct inode *dir,
+ 					 struct dentry *dentry,
+ 					 int mode)
+-- 
+1.7.3.4
 
-The default behavior is to kill all eligible and unkillable threads until 
-there are none left to sacrifice (i.e. all kthreads and OOM_DISABLE).
-
-> For a user process:
-> 
-> root@srv:~# cat /proc/18564/oom_score
-> 9198
-> root@srv:~# cat /proc/18564/oom_adj
-> 0
-> 
-
-Ok, so you don't have a /proc/pid/oom_score_adj, so you're using a kernel 
-that predates 2.6.36.
-
-> And for "init" process:
-> 
-> root@srv:~# cat /proc/1/oom_score
-> 17509
-> root@srv:~# cat /proc/1/oom_adj
-> 0
-> 
-> Based on my understandings, in an out of memory condition (oom),
-> the init process is more eligible to be killed!!!!!!! Is that right?
-> 
-
-init is exempt from oom killing, it's oom_score is meaningless.
-
-> Again I didn't get my answer yet:
-> What is the default behavior of linux in an oom condition? If the default is,
-> crash (kernel panic), then how can I change that in such a way to kill
-> the hungry process?
-> 
-
-You either have /proc/sys/vm/panic_on_oom set or it's killing a thread 
-that is taking down the entire machine.  If it's the latter, then please 
-capture the kernel log and post it as Randy suggested.
---397155492-2005623161-1313035801=:14230--
