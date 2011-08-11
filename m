@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab1HKVL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:11:29 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:35813 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab1HKVL1 (ORCPT
+	id S1754175Ab1HKVLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:11:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:57758 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab1HKVLe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:11:27 -0400
-Message-ID: <4E444552.9030105@panasas.com>
-Date: Thu, 11 Aug 2011 14:10:42 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Thu, 11 Aug 2011 17:11:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=MS+I7649odS9H+ig6twgu/DzEPo5EI8p5L1UgYW/e1jhCxPMfOJRv9H3Z+CDYiBz+
+	lCZc/jsY9LH6rh/rSWGXg==
 MIME-Version: 1.0
-To: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
-        peter honeyman <honey@citi.umich.edu>
-CC: <tao.peng@emc.com>, <torvalds@linux-foundation.org>,
-        <rdunlap@xenotime.net>, <bergwolf@gmail.com>,
-        <Trond.Myklebust@netapp.com>, <linux-raid@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        "Welch, Brent" <welch@panasas.com>
-Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com> <20110810122304.96b8be67.rdunlap@xenotime.net> <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com> <20110810175829.a834d80f.rdunlap@xenotime.net> <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com> <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com> <4E43AAD1.7090806@tonian.com> <4E4422FD.3060706@panasas.com>
-In-Reply-To: <4E4422FD.3060706@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
+References: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 11 Aug 2011 15:11:10 -0600
+Message-ID: <CAErSpo6Fh+zTMiSG+mjkNuA03cCEK7bej9y2oX+HfsScSYGFsw@mail.gmail.com>
+Subject: Re: [PATCH] pnp: replace deprecated __check_region to request_region
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, abelay@mit.edu,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What about the below? based on v3.1-rc1
+On Mon, Aug 8, 2011 at 9:38 AM,  <stufever@gmail.com> wrote:
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>
+> The function __check_region is deprecated, use proper function request_region to replace it.
+>
+> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> ---
+>  drivers/pnp/resource.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+> index b0ecacb..b1d8cae 100644
+> --- a/drivers/pnp/resource.c
+> +++ b/drivers/pnp/resource.c
+> @@ -179,7 +179,7 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
+>        /* check if the resource is already in use, skip if the
+>         * device is active because it itself may be in use */
+>        if (!dev->active) {
+> -               if (__check_region(&ioport_resource, *port, length(port, end)))
+> +               if (!request_region(*port, length(port, end), "pnp"))
+>                        return 0;
+>        }
+>
+> --
 
-----
-From: Boaz Harrosh <bharrosh@panasas.com>
-Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
+We usually funnel PNP stuff through the linux-acpi@vger.kernel.org
+mailing list, so I added a cc: to it.
 
-Just like files-layout, blocks & objects layouts are part of the
-NFS 4.1 protocol and should be automatically selected if NFS_4_1
-is selected. The small problem is that these depend on other
-Kernel support being present, while files only depends on NFS
-itself.
+request_region() is not a drop-in replacement for __check_region()
+because __check_region() releases the resource before it returns
+success.  I agree that it would be good to get rid of
+__check_region(), but I think it's a little more work than just this.
 
-This patch removes from the user choice the presence of objects
-and blocks layout. But makes sure these are selected only if
-the depended subsystems are present in the Kernel.
+I suppose you could just do the release_resource() in
+pnp_check_port(), after request_region() was successful.  But the
+problem with __check_region() is that it's racy, and moving the
+release_resource() into pnp_check_port() doesn't remove the race.  It
+just moves the problem from __check_region() (which is easy to grep
+for) into PNP (where it's not so obvious).
 
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
----
- fs/nfs/Kconfig |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+Part of the problem is that the PNP core doesn't actually request any
+of the resources used by PNP devices.  The PCI core *does* reserve
+resources, independent of any drivers, and it would certainly be
+reasonable to expect the PNP core to do the same, but it doesn't.
+This is mostly because there are a bunch of hardcoded legacy resources
+that conflict with PNP devices, and we haven't figured out a good way
+to resolve the conflicts.
 
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index be02077..1b951cd 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -79,9 +79,6 @@ config NFS_V4_1
- 	depends on NFS_FS && NFS_V4 && EXPERIMENTAL
- 	select SUNRPC_BACKCHANNEL
- 	select PNFS_FILE_LAYOUT
--	select PNFS_BLOCK
--	select MD
--	select BLK_DEV_DM
- 	help
- 	  This option enables support for minor version 1 of the NFSv4 protocol
- 	  (RFC 5661 and RFC 5663) in the kernel's NFS client.
-@@ -93,16 +90,13 @@ config PNFS_FILE_LAYOUT
- 
- config PNFS_BLOCK
- 	tristate
-+	depends on NFS_FS && NFS_V4_1 && MD && BLK_DEV_DM
-+	default m
- 
- config PNFS_OBJLAYOUT
--	tristate "Provide support for the pNFS Objects Layout Driver for NFSv4.1 pNFS (EXPERIMENTAL)"
-+	tristate
- 	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
--	help
--	  Say M here if you want your pNFS client to support the Objects Layout Driver.
--	  Requires the SCSI osd initiator library (SCSI_OSD_INITIATOR) and
--	  upper level driver (SCSI_OSD_ULD).
--
--	  If unsure, say N.
-+	default m
- 
- config ROOT_NFS
- 	bool "Root file system on NFS"
--- 
-1.7.6
-
-
+Bjorn
