@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab1HKTuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:50:11 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16076 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214Ab1HKTuJ convert rfc822-to-8bit (ORCPT
+	id S1753381Ab1HKTus (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:50:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60641 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214Ab1HKTur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:50:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 11 Aug 2011 12:49:54 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Bergmann <arnd@arndb.de>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Aug 2011 12:49:47 -0700
-Subject: RE: [PATCH] ARM: tegra: Fix <mach/gpio.h> to have necessary
- #includes
-Thread-Topic: [PATCH] ARM: tegra: Fix <mach/gpio.h> to have necessary
- #includes
-Thread-Index: AcxYXw7WmPKMv0K1TpqJcXhal8LApA==
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CD0@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 15:50:47 -0400
+Date: Thu, 11 Aug 2011 23:50:34 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Hutchings <ben@decadent.org.uk>,
+        Christian Ohm <chr.ohm@gmx.net>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: re: perf tools: Check $HOME/.perfconfig ownership
+Message-ID: <20110811195033.GA17313@albatros>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King wrote at Thursday, August 11, 2011 1:36 PM:
-> On Thu, Aug 11, 2011 at 12:05:52PM -0600, Stephen Warren wrote:
-> > Without this, EINVAL isn't defined, and type bool isn't declared.
-> > This leads to compilation failures.
-> 
-> An alternative approach would be to convert tegra to be able to use
-> the gpiolib __gpio_to_irq() for the on-SoC stuff, and eliminate
-> irq_to_gpio().
-> 
-> Would it be possible to do that instead?
+Hi,
 
-That should work too.
+The commit 069e3725dd9be3b759a98e8c80ac5fc38b392b23 introduced a check
+whether $HOME/.perfconfig file is owned by the user.  Three comments here:
 
-I posted a couple patches last Friday to remove irq_to_gpio:
+1) How other user may create a file in other user's home directory?  If
+we assume he may do it, the situation is bad without any perf :(
 
-https://lkml.org/lkml/2011/8/5/343
-https://lkml.org/lkml/2011/8/5/342
+2) If we assume (1) is somehow possible (e.g. other user may manipulate
+this file only), there is a race against file creation/deletion and stat.
 
-Later in the thread, you said you would merge them into your branch to
-avoid merge conflicts with the other GPIO work you were doing.
+3) .perfconfig can be a symlink, so stat(2) should be changed to
+lstat(2).
 
-For gpio_to_irq, yes, I believe we get rid of it pretty easily; we'd
-just need to implement gpio-tegra.c's gpio_chip.to_irq function. Should
-I cook up a patch based on top of linux-next plus the two patches above
-to do that instead?
 
-Thanks.
+Thanks,
 
 -- 
-nvpublic
-
+Vasiliy
