@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab1HKMGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:06:08 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34192 "EHLO
+	id S1755682Ab1HKMGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:06:33 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34182 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab1HKMGF (ORCPT
+	with ESMTP id S1755619Ab1HKMGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:06:05 -0400
-X-AuditID: b753bd60-a327cba0000050a4-83-4e43c5abb11b
-X-AuditID: b753bd60-a327cba0000050a4-83-4e43c5abb11b
+	Thu, 11 Aug 2011 08:06:00 -0400
+X-AuditID: b753bd60-a1286ba000000655-24-4e43c5a59ee2
+X-AuditID: b753bd60-a1286ba000000655-24-4e43c5a59ee2
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v3 5/5] perf script: add option resolving vmlinux path
+Subject: [PATCH -tip v3 4/5] perf script: add the offset field specifier
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -25,8 +25,8 @@ Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Thu, 11 Aug 2011 21:06:38 +0900
-Message-ID: <20110811120638.5900.72007.stgit@linux3>
+Date: Thu, 11 Aug 2011 21:06:32 +0900
+Message-ID: <20110811120632.5900.16933.stgit@linux3>
 In-Reply-To: <20110811120555.5900.23642.stgit@linux3>
 References: <20110811120555.5900.23642.stgit@linux3>
 User-Agent: StGIT/0.14.3
@@ -38,25 +38,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the option get the path of [kernel.kallsyms].
-Specify '--show-kernel-path' option to use this function.
-This patch enables other applications to use this output easily.
+Add the offset field specifier 'offs' to show the offset from
+the symbols in the output of perf-script. We can get the more
+detailed address information.
 
-Without --show-kernel-path  option
-
-# perf script -f ip,dso
-ffffffff81467612 irq_return ([kernel.kallsyms])
-ffffffff81467612 irq_return ([kernel.kallsyms])
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
+Output sample:
+# perf script -f ip,addr,sym,offs
+301ec016b0            _start+0x0 ffffffff81467612 irq_return+0x0
+301ec016b0            _start+0x0 ffffffff81467612 irq_return+0x0
+301ec04b70         _dl_start+0x0       301ec016b3 _start+0x3
+301ec04b70         _dl_start+0x0 ffffffff81467612 irq_return+0x0
+301ec04b96        _dl_start+0x26 ffffffff81467612 irq_return+0x0
+301ec04b9d        _dl_start+0x2d ffffffff81467612 irq_return+0x0
+301ec04c0d        _dl_start+0x9d       301ec04beb _dl_start+0x7b
+301ec04bf0        _dl_start+0x80       301ec04c11 _dl_start+0xa1
 [snip]
 
-With --show-kernel-path option
-
-# perf script -f ip,dso --show-kernel-path
-ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
-ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-[snip]
+Changes in v2:
+ - change the way to output offset from '--show-symbol-offset' to
+   'offs' field.
+ - clean up codes.
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -68,69 +69,179 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- tools/perf/Documentation/perf-script.txt |    3 +++
- tools/perf/builtin-script.c              |    2 ++
- tools/perf/util/map.c                    |    9 ++++++---
- tools/perf/util/symbol.h                 |    1 +
- 4 files changed, 12 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-script.txt |    2 +-
+ tools/perf/builtin-script.c              |   20 +++++++++++++++++---
+ tools/perf/util/session.c                |    7 +++++--
+ tools/perf/util/session.h                |    3 ++-
+ tools/perf/util/symbol.c                 |   22 +++++++++++++++-------
+ tools/perf/util/symbol.h                 |    2 ++
+ 6 files changed, 42 insertions(+), 14 deletions(-)
 
 diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index ee4d477..5383671 100644
+index db01786..ee4d477 100644
 --- a/tools/perf/Documentation/perf-script.txt
 +++ b/tools/perf/Documentation/perf-script.txt
-@@ -188,6 +188,9 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+--show-kernel-path::
-+	Try to resolve the path of [kernel.kallsyms]
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
+@@ -115,7 +115,7 @@ OPTIONS
+ -f::
+ --fields::
+         Comma separated list of fields to print. Options are:
+-        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr.
++        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr, offs.
+         Field list can be prepended with the type, trace, sw or hw,
+         to indicate to which event type the field list applies.
+         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 78797b3..ba5d3bb 100644
+index aeec5bc..78797b3 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -1095,6 +1095,8 @@ static const struct option options[] = {
- 		     "addr,offs",
+@@ -37,6 +37,7 @@ enum perf_output_field {
+ 	PERF_OUTPUT_SYM             = 1U << 8,
+ 	PERF_OUTPUT_DSO             = 1U << 9,
+ 	PERF_OUTPUT_ADDR            = 1U << 10,
++	PERF_OUTPUT_OFFSET          = 1U << 11,
+ };
+ 
+ struct output_option {
+@@ -54,6 +55,7 @@ struct output_option {
+ 	{.str = "sym",   .field = PERF_OUTPUT_SYM},
+ 	{.str = "dso",   .field = PERF_OUTPUT_DSO},
+ 	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
++	{.str = "offs",  .field = PERF_OUTPUT_OFFSET},
+ };
+ 
+ /* default set to maintain compatibility with current format */
+@@ -190,6 +192,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		       "to symbols.\n");
+ 		return -EINVAL;
+ 	}
++	if (PRINT_FIELD(OFFSET) && !PRINT_FIELD(SYM)) {
++		pr_err("Display of offsets requested but symbol is not"
++		       "selected.\n");
++		return -EINVAL;
++	}
+ 	if (PRINT_FIELD(DSO) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
+ 		pr_err("Display of DSO requested but neither sample IP nor "
+ 			   "sample address\nis selected. Hence, no addresses to convert "
+@@ -346,7 +353,10 @@ static void print_sample_addr(union perf_event *event,
+ 
+ 	if (PRINT_FIELD(SYM)) {
+ 		printf(" ");
+-		symbol__print_symname(al.sym);
++		if (PRINT_FIELD(OFFSET))
++			symbol__print_symname_offs(al.sym, &al);
++		else
++			symbol__print_symname(al.sym);
+ 	}
+ 
+ 	if (PRINT_FIELD(DSO)) {
+@@ -382,7 +392,8 @@ static void process_event(union perf_event *event __unused,
+ 		else
+ 			printf("\n");
+ 		perf_session__print_ip(event, sample, session,
+-					      PRINT_FIELD(SYM), PRINT_FIELD(DSO));
++				       PRINT_FIELD(SYM), PRINT_FIELD(DSO),
++				       PRINT_FIELD(OFFSET));
+ 	}
+ 
+ 	printf("\n");
+@@ -1078,7 +1089,10 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+-		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
++		     "comma separated output fields prepend with 'type:'. "
++		     "Valid types: hw,sw,trace,raw. "
++		     "Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,"
++		     "addr,offs",
  		     parse_output_fields),
  	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
-+		    "Show the path of [kernel.kallsyms]"),
  
- 	OPT_END()
- };
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 530a5ea..6ba4909 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 730fcd2..51d0a28 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1217,7 +1217,7 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ void perf_session__print_ip(union perf_event *event,
+ 			    struct perf_sample *sample,
+ 			    struct perf_session *session,
+-			    int print_sym, int print_dso)
++			    int print_sym, int print_dso, int print_offset)
  {
- 	const char *dsoname;
+ 	struct addr_location al;
+ 	struct callchain_cursor *cursor = &session->callchain_cursor;
+@@ -1264,7 +1264,10 @@ void perf_session__print_ip(union perf_event *event,
+ 		printf("%16" PRIx64, sample->ip);
+ 		if (print_sym) {
+ 			printf(" ");
+-			symbol__print_symname(al.sym);
++			if (print_offset)
++				symbol__print_symname_offs(al.sym, &al);
++			else
++				symbol__print_symname(al.sym);
+ 		}
  
--	if (self && self->dso && self->dso->name)
--		dsoname = self->dso->name;
+ 		if (print_dso) {
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 170601e..2689017 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -171,7 +171,8 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ void perf_session__print_ip(union perf_event *event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_session *session,
+-				 int print_sym, int print_dso);
++				 int print_sym, int print_dso,
++				 int print_offset);
+ 
+ int perf_session__cpu_bitmap(struct perf_session *session,
+ 			     const char *cpu_list, unsigned long *cpu_bitmap);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index aa37485..28e14be 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -175,16 +175,24 @@ static size_t symbol__fprintf(struct symbol *sym, FILE *fp)
+ 		       sym->name);
+ }
+ 
+-void symbol__print_symname(const struct symbol *sym)
++void symbol__print_symname_offs(const struct symbol *sym,
++				const struct addr_location *al)
+ {
+-	const char *symname;
++	unsigned long offset;
+ 
+-	if (sym && sym->name)
+-		symname = sym->name;
 -	else
-+	if (self && self->dso && (self->dso->name || self->dso->long_name)) {
-+		if (symbol_conf.show_kernel_path && self->dso->long_name)
-+			dsoname = self->dso->long_name;
-+		else if (self->dso->name)
-+			dsoname = self->dso->name;
+-		symname = "[unknown]";
++	if (sym && sym->name) {
++		printf("%s", sym->name);
++		if (al) {
++			offset = al->addr - sym->start;
++			printf("+0x%lx", offset);
++		}
 +	} else
- 		dsoname = "[unknown]";
++		printf("[unknown]");
++}
  
- 	printf("%s", dsoname);
+-	printf("%s", symname);
++void symbol__print_symname(const struct symbol *sym)
++{
++	symbol__print_symname_offs(sym, NULL);
+ }
+ 
+ void dso__set_long_name(struct dso *dso, char *name)
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 554b2fe..3a63c92 100644
+index 1ec17b4..554b2fe 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -69,6 +69,7 @@ struct strlist;
- struct symbol_conf {
- 	unsigned short	priv_size;
- 	bool		try_vmlinux_path,
-+			show_kernel_path,
- 			use_modules,
- 			sort_by_name,
- 			show_nr_samples,
+@@ -238,6 +238,8 @@ void machines__destroy_guest_kernel_maps(struct rb_root *machines);
+ 
+ int symbol__init(void);
+ void symbol__exit(void);
++void symbol__print_symname_offs(const struct symbol *sym,
++				const struct addr_location *al);
+ void symbol__print_symname(const struct symbol *sym);
+ bool symbol_type__is_a(char symbol_type, enum map_type map_type);
+ 
 
