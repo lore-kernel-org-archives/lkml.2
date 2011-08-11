@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1HKVAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 17:00:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab1HKVAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 17:00:32 -0400
-Date: Thu, 11 Aug 2011 17:00:08 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
-Message-ID: <20110811210008.GI8552@redhat.com>
-References: <20110806084447.388624428@intel.com>
- <20110809020127.GA3700@redhat.com>
- <20110811032143.GB11404@localhost>
- <20110811204255.GH8552@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110811204255.GH8552@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753975Ab1HKVDC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 17:03:02 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:48180 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753840Ab1HKVDA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 17:03:00 -0400
+Date: Thu, 11 Aug 2011 14:02:57 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Ralf Thielow <ralf.thielow@googlemail.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: SubmittingDrivers: Update Linus' git
+ repository
+Message-Id: <20110811140257.7c145298.rdunlap@xenotime.net>
+In-Reply-To: <1313082825-3162-1-git-send-email-ralf.thielow@googlemail.com>
+References: <1313082825-3162-1-git-send-email-ralf.thielow@googlemail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 04:42:55PM -0400, Vivek Goyal wrote:
+On Thu, 11 Aug 2011 19:13:45 +0200 Ralf Thielow wrote:
 
-[..]
-> So I see following immediate extension of your scheme possible.
+> Change resource URL to new git tree -
+> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git).
 > 
-> - Inherit ioprio from iocontext and provide buffered write service
->   differentiation for writers.
+> Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
+> ---
+>  Documentation/SubmittingDrivers |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> - Create a per task buffered write throttling interface and do
->   absolute throttling of task.
-> 
-> - We can possibly do the idea of throttling group wide buffered
->   writes only control at this layer using this mechanism.
+> diff --git a/Documentation/SubmittingDrivers b/Documentation/SubmittingDrivers
+> index 319baa8..36d16bb 100644
+> --- a/Documentation/SubmittingDrivers
+> +++ b/Documentation/SubmittingDrivers
+> @@ -130,7 +130,7 @@ Linux kernel master tree:
+>  	ftp.??.kernel.org:/pub/linux/kernel/...
+>  	?? == your country code, such as "us", "uk", "fr", etc.
+>  
+> -	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git
+> +	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git
+>  
+>  Linux kernel mailing list:
+>  	linux-kernel@vger.kernel.org
+> -- 
 
-Though personally I like the idea of absolute throttling at page cache
-level as it can help a bit with problem of buffered WRITES impacting
-the latency of everything else in the system. CFQ helps a lot but
-it idles enough that cost of this isolation is very high on faster
-storage.
+Applied, thanks.
 
-Deadline and noop really do not do much about protection from WRITEs.
-
-So it is not perfect but might prove to be good enough for some use
-cases.
-
-Thanks
-Vivek
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
