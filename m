@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab1HKN6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 09:58:47 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60190 "EHLO
+	id S1752843Ab1HKN7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 09:59:00 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:60205 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab1HKN6l (ORCPT
+	by vger.kernel.org with ESMTP id S1751625Ab1HKN6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 09:58:41 -0400
+	Thu, 11 Aug 2011 09:58:45 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>
-Subject: [PATCH 37/41] autofs4: Use set_current_blocked()
-Date: Thu, 11 Aug 2011 14:57:11 +0100
-Message-Id: <1313071035-12047-38-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 41/41] exit: Use __set_task_blocked()
+Date: Thu, 11 Aug 2011 14:57:15 +0100
+Message-Id: <1313071035-12047-42-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
 References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
@@ -28,43 +29,42 @@ incorrect as we need to check whether the signal we're about to block
 is pending in the shared queue.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Ian Kent <raven@themaw.net>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- fs/autofs4/waitq.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ kernel/exit.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index e1fbdee..64ff15a 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -458,21 +458,16 @@ int autofs4_wait(struct autofs_sb_info *sbi, struct dentry *dentry,
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 2913b35..a47c0f3 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -369,19 +369,22 @@ static void set_special_pids(struct pid *pid)
+  */
+ int allow_signal(int sig)
+ {
++	sigset_t blocked;
++
+ 	if (!valid_signal(sig) || sig < 1)
+ 		return -EINVAL;
+ 
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	/* This is only needed for daemonize()'ed kthreads */
+-	sigdelset(&current->blocked, sig);
++	siginitset(&blocked, current->blocked);
++	sigdelset(&blocked, sig);
+ 	/*
+ 	 * Kernel threads handle their own signals. Let the signal code
+ 	 * know it'll be handled, so that they don't get converted to
+ 	 * SIGKILL or just silently dropped.
  	 */
- 	if (wq->name.name) {
- 		/* Block all but "shutdown" signals while waiting */
--		sigset_t oldset;
-+		sigset_t oldset, blocked;
- 		unsigned long irqflags;
- 
--		spin_lock_irqsave(&current->sighand->siglock, irqflags);
- 		oldset = current->blocked;
--		siginitsetinv(&current->blocked, SHUTDOWN_SIGS & ~oldset.sig[0]);
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
-+		siginitsetinv(&blocked, SHUTDOWN_SIGS & ~oldset.sig[0]);
-+		set_current_blocked(&blocked);
- 
- 		wait_event_interruptible(wq->queue, wq->name.name == NULL);
--
--		spin_lock_irqsave(&current->sighand->siglock, irqflags);
--		current->blocked = oldset;
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
-+		
-+		set_current_blocked(&oldset);
- 	} else {
- 		DPRINTK("skipped sleeping");
- 	}
+ 	current->sighand->action[(sig)-1].sa.sa_handler = (void __user *)2;
+-	recalc_sigpending();
++	__set_task_blocked(current, &blocked);
+ 	spin_unlock_irq(&current->sighand->siglock);
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
