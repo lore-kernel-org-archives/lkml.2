@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab1HKIu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 04:50:29 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:36621 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab1HKIuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 04:50:25 -0400
-From: Corentin Chary <corentin.chary@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, Dick Streefland <dick@streefland.net>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: [PATCH] scripts: add extract-vmlinux
-Date: Thu, 11 Aug 2011 10:53:03 +0200
-Message-Id: <1313052783-27607-1-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
-References: <1312465977-12388-1-git-send-email-corentin.chary@gmail.com>
+	id S1754390Ab1HKI4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 04:56:25 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53845 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab1HKI4X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 04:56:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E439189.1030905@fusionio.com>
+References: <20110811004216.GA24810@july>
+	<CANejiEXgsVW4qk3hwHvd6YzgRsZueAB3ZSh3Rvx3fz9tM7KHPw@mail.gmail.com>
+	<CANejiEUSU_hfex5i5znjAUU9Te2o-fgKuO=uD0UW+a4eaiU4Bw@mail.gmail.com>
+	<4E439189.1030905@fusionio.com>
+Date: Thu, 11 Aug 2011 17:56:22 +0900
+X-Google-Sender-Auth: bay_5Tv9zgh1UVSRvWHPRO6esyg
+Message-ID: <CAH9JG2WOrB5HTh2JiuVfPsXN2Z+R0gDGQeEoecxrrj9FpGSR+g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] Add new elevator ops for request hint
+From: Kyungmin Park <kmpark@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Shaohua Li <shli@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "jh80.chung@samsung.com" <jh80.chung@samsung.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This script can be used to extract vmlinux from a compressed
-kernel image (bzImage, etc..). It's inspired from (a subset of)
-extract-ikconfig.
+On Thu, Aug 11, 2011 at 5:23 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On 2011-08-11 03:14, Shaohua Li wrote:
+>> 2011/8/11 Shaohua Li <shli@kernel.org>:
+>>> 2011/8/11 Kyungmin Park <kmpark@infradead.org>:
+>>>> Hi Jens
+>>>>
+>>>> Now eMMC device requires the upper layer information to improve the data
+>>>> performance and reliability.
+>>>>
+>>>> . Context ID
+>>>> Using the context information, it can sort out the data internally and improve the performance.
+>>>> The main problem is that it's needed to define "What's the context".
+>>>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>>>
+>>>> . Data Tag
+>>>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>>>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>>>
+>>>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>>>
+>>>> Sample usage is following in drivers/mmc/card/block.c
+>>>>
+>>>>        struct elevator_queue *e = md->queue.queue->elevator;
+>>>>        struct request_hint hint;
+>>>>        int ret;
+>>>>
+>>>>        if (e->ops->elevator_get_req_hint_fn && req)
+>>>>                ret = e->ops->elevator_get_req_hint_fn(req, &hint);
+>>> please put this to blkdev.h or similar. directly using it here
+>>> is abnormal.
+>> BTW, we can add a (rq->cmd_flags & REQ_ELVPRIV) check here to make
+>> sure the request is at io scheduler.
+>
+> Yep, that should all go inside elv_get_request_context() or whatever is
+> a good name. I don't want the hint structure, the caller can just check
+> the request flags himself.
+Okay I see, it has to modify the filesystem to send the meta request,
+REQ_META flags to know it from device drivers.
+>
+> So something like:
+>
+> int elv_get_request_context(struct request_queue *q, struct request *rq)
+> {
+>        struct elevator_queue *e = q->elevator;
+>
+>        if (!(rq->cmd_flags & REQ_ELVPRIV))
+>                return -1;
+Also need to check the !rq case, mmc send the NULL request to wait the
+previous request wait.
+>
+>        if (e->ops->elevator_get_req_context_fn)
+>                return e->ops->elevator_get_req_context_fn(q, rq);
+>
+>        return -1;
+> }
+>
+> and then cfq/others adding that helper to provide the mapping.
+>
+> Context is a bad name, but so is hint. Perhaps app_key would be better,
+> as it more direcly infers what is being returned.
 
-It's something a lot of people have been looking for (mainly
-people with xen < 4 that doesn't support bzImages at all).
+I'll send the new version as you suggested.
 
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
----
- scripts/extract-vmlinux |   60 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 60 insertions(+), 0 deletions(-)
- create mode 100755 scripts/extract-vmlinux
-
-diff --git a/scripts/extract-vmlinux b/scripts/extract-vmlinux
-new file mode 100755
-index 0000000..615d31a
---- /dev/null
-+++ b/scripts/extract-vmlinux
-@@ -0,0 +1,60 @@
-+#!/bin/sh
-+# ----------------------------------------------------------------------
-+# extract-vmlinux - Extract uncompressed vmlinux from a kernel image
-+#
-+# The obscure use of the "tr" filter is to work around older versions of
-+# "grep" that report the byte offset of the line instead of the pattern.
-+#
-+# Inspired from extract-ikconfig
-+# (c) 2009,2010 Dick Streefland <dick@streefland.net>
-+#
-+# (c) 2011      Corentin Chary <corentin.chary@gmail.com>
-+#
-+# Licensed under the GNU General Public License, version 2 (GPLv2).
-+# ----------------------------------------------------------------------
-+
-+check_elf()
-+{
-+	# Use readelf to check if it's a valid ELF
-+	# There is probably a better way to do that...
-+	readelf -h $1 > /dev/null 2>&1 || return 1
-+
-+	cat $1
-+	exit 0
-+}
-+
-+try_decompress()
-+{
-+	for	pos in `tr "$1\n$2" "\n$2=" < "$img" | grep -abo "^$2"`
-+	do
-+		pos=${pos%%:*}
-+		tail -c+$pos "$img" | $3 > $tmp 2> /dev/null
-+		check_elf $tmp
-+	done
-+}
-+
-+# Check invocation:
-+me=${0##*/}
-+img=$1
-+if	[ $# -ne 1 -o ! -s "$img" ]
-+then
-+	echo "Usage: $me <kernel-image>" >&2
-+	exit 2
-+fi
-+
-+# Prepare temp files:
-+tmp=$(mktemp /tmp/vmlinux-XXX)
-+trap "rm -f $tmp" 0
-+
-+# Initial attempt for uncompressed images or objects:
-+check_elf $img
-+
-+# That didn't work, so retry after decompression.
-+try_decompress '\037\213\010' xy    gunzip
-+try_decompress '\3757zXZ\000' abcde unxz
-+try_decompress 'BZh'          xy    bunzip2
-+try_decompress '\135\0\0\0'   xxx   unlzma
-+try_decompress '\211\114\132' xy    'lzop -d'
-+
-+# Bail out:
-+echo "$me: Cannot find vmlinux." >&2
--- 
-1.7.3.4
-
+Thank you,
+Kyungmin Park
+>
+> --
+> Jens Axboe
+>
+>
