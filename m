@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1HKXQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 19:16:17 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34498 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab1HKXQQ convert rfc822-to-8bit (ORCPT
+	id S1754096Ab1HKXUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 19:20:09 -0400
+Received: from eastrmfepi102.cox.net ([68.230.241.198]:43263 "EHLO
+	eastrmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab1HKXUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 19:16:16 -0400
+	Thu, 11 Aug 2011 19:20:07 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 19:20:06 EDT
+X-CT-Class: Bulk
+X-CT-Score: 5.00
+X-CT-RefID: str=0001.0A020208.4E445724.0085,ss=3,sh,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=aUFDW8FZeteuO/fxyvToEy2C7OWB/cKxsZjvUqUod7E=
+ c=1 sm=1 a=xht8ncfFzEoA:10 a=G8Uczd0VNMoA:10 a=02wuu-GNLhcA:10
+ a=IkcTkHD0fZMA:10 a=mwbUbT5rpIF1zmaOn3pKzQ==:17 a=ie2X5EbEsFCt2l5DnokA:9
+ a=QEXdDO2ut3YA:10 a=LNC2MLcbCfFaTYpT:21 a=ghCt11yAFSiRHJrO:21
+ a=mwbUbT5rpIF1zmaOn3pKzQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110811191345.QM0ZR.226688.imail@eastrmwml38>
+Date: Thu, 11 Aug 2011 19:13:45 -0400
+From: Wins <nmhhjth@cox.net>
+Reply-To: charitydonation101@qatar.io
+Subject: Worldwide Donation Program "helping one to help others...."
 MIME-Version: 1.0
-In-Reply-To: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
-References: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
-Date: Fri, 12 Aug 2011 08:16:15 +0900
-Message-ID: <CAEwNFnBAHTTqJnzjpB9eAqUu=3SdP5r+DKJ6+kzcwxhc9fH-6g@mail.gmail.com>
-Subject: Re: [patch 1/2] mm: vmscan: fix force-scanning small targets without swap
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 5:31 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> Without swap, anonymous pages are not scanned.  As such, they should
-> not count when considering force-scanning a small target if there is
-> no swap.
->
-> Otherwise, targets are not force-scanned even when their effective
-> scan number is zero and the other conditions--kswapd/memcg--apply.
->
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-
-Good catch!
-
-
--- 
-Kind regards,
-Minchan Kim
+ECOWAS in conjunction with the society for family   Health (SFH) and the European Union (EU), is   Giving out a yearly donation of US$$1,000,000.00   for claims directives.   send this details  _________________________Name:   ___________Contact Address:   _________Country:   _________________Sex:   ____________Direct Tel
