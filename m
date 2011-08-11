@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751131Ab1HKQWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 12:22:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41329 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab1HKQWv (ORCPT
+	id S1751514Ab1HKQXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 12:23:12 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37187 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab1HKQXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 12:22:51 -0400
-Date: Thu, 11 Aug 2011 18:22:45 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] make vfork killable/restartable/traceable
-Message-ID: <20110811162245.GL23842@htj.dyndns.org>
-References: <20110727163159.GA23785@redhat.com>
- <20110810214444.GD9320@atrey.karlin.mff.cuni.cz>
- <20110811160914.GA8985@redhat.com>
+	Thu, 11 Aug 2011 12:23:10 -0400
+Date: Thu, 11 Aug 2011 12:23:06 -0400
+From: Tracey Dent <tdent48227@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, gregkh@suse.de, tdent48227@gmail.com
+Subject: [PATCH 1/1] misc/pti.c: Fix build error when PCI is not selected
+Message-ID: <20110811162306.GA30710@tj-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110811160914.GA8985@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+When you try to build INTEL_MID_PTI without having PCI
+enabled. It fails like this-
 
-On Thu, Aug 11, 2011 at 06:09:14PM +0200, Oleg Nesterov wrote:
-> On 08/10, Pavel Machek wrote:
-> >
-> > > CLONE_VFORK sleeps in TASK_INTERRUPTIBLE until the child exits/execs.
-> > > This is obviously not good, it is sooo simple to create the task which
-> > > doesn't react to SIGKILL/SIGSTOP.
-> > >
-> > > Questions:
-> > >
-> > > 	- do we really need this?
-> > >
-> > I believe we should fix it. I was always claiming "if it does not
-> > react to SIGKILL, it is a kernel bug" and well, this just proved me
-> > wrong...
-> 
-> Agreed.
-> 
-> Just in case... sorry to all for delay, I am busy. I'll try to resend
-> the simplified version "soon", at least the "unkillable" part. And
-> we also have the pending oom issues...
+ CC [M]  drivers/misc/pti.o
+ drivers/misc/pti.c: In function ‘pti_pci_remove’:
+ drivers/misc/pti.c:410: error: implicit declaration of function ‘pci_release_region’
+ drivers/misc/pti.c: In function ‘pti_pci_probe’:
+ drivers/misc/pti.c:859: error: implicit declaration of function ‘pci_request_region’
 
-I'm currently trying to handle both vfork and cgroup freezes as jobctl
-stop so that all three different stop modes - group stop, vfork wait
-and cgroup freeze - share the same characteristics.  I'm currently
-somewhat stuck with some freezer and kthread issues I discovered in
-the process and it seems like it would take some time.
+So make INTEL_MID_PTI depend on PCI to fix build error.
 
-Thanks.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/misc/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 0a4d86c..2d6423c 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -146,6 +146,7 @@ config PHANTOM
+ 
+ config INTEL_MID_PTI
+ 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
++	depends on PCI
+ 	default n
+ 	help
+ 	  The PTI (Parallel Trace Interface) driver directs
 -- 
-tejun
+1.7.6.433.g1421f
+
