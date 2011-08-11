@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab1HKROX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 13:14:23 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4259 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1HKROV convert rfc822-to-8bit (ORCPT
+	id S1751348Ab1HKRPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 13:15:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42422 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1HKRPi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 13:14:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 11 Aug 2011 10:14:18 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Date: Thu, 11 Aug 2011 10:14:17 -0700
-Subject: RE: [PATCH RESEND] Input: tegra-kbc - correct call to
- input_free_device
-Thread-Topic: [PATCH RESEND] Input: tegra-kbc - correct call to
- input_free_device
-Thread-Index: AcxYRvIVbs1dLHOETUiVTZGkcRvzHwAAwnjQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24C2F@HQMAIL01.nvidia.com>
-References: <1313052569.2139.1.camel@phoenix>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24C0A@HQMAIL01.nvidia.com>
- <20110811165134.GA24861@core.coreip.homeip.net>
-In-Reply-To: <20110811165134.GA24861@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 13:15:38 -0400
 MIME-Version: 1.0
+In-Reply-To: <4E43D4AD.6080702@windriver.com>
+References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
+ <CA+55aFwtyfzaFABHKD+OMWsojGov0JLmnrZimhVaOcrer=tJjQ@mail.gmail.com>
+ <20110802183019.GB8393@windriver.com> <CAMjpGUcOagn-o_mETLDr-=pa-3sxq_iDjF=A8OGhdJg5+9ewpA@mail.gmail.com>
+ <4E42D769.8030704@windriver.com> <CAMjpGUcTMwYs99Nu02u+Sbg99RuJvRDpjvY6ChDLUEASf1wUrA@mail.gmail.com>
+ <4E43D4AD.6080702@windriver.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 11 Aug 2011 13:15:17 -0400
+Message-ID: <CAMjpGUch3O_DWKv39A_H91bU5ypSxSgHjSVX8WYDnGxKVBPZLQ@mail.gmail.com>
+Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-arch@vger.kernel.org, sfr@canb.auug.org.au
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote at Thursday, August 11, 2011 10:52 AM:
-> On Thu, Aug 11, 2011 at 09:42:54AM -0700, Stephen Warren wrote:
-> > Axel Lin wrote at Thursday, August 11, 2011 2:49 AM:
-> > > If kzalloc for kbc fails, then we have NULL pointer dereference while
-> > > calling input_free_device(kbc->idev) in the error handling.
-> > > So it is safer to always use the original name, input_dev.
-> > >
-> > > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> >
-> > Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Gah, sorry, already pushed into my public branch so won't be able so
-> add your reviewed-by...
+On Thu, Aug 11, 2011 at 09:10, Paul Gortmaker wrote:
+> On 11-08-11 12:34 AM, Mike Frysinger wrote:
+>> On Wed, Aug 10, 2011 at 15:09, Paul Gortmaker wrote:
+>>> Have you thought about getting at least one blackfin defconfig in
+>>> the linux-next build coverage?  Gives you a better chance of
+>>> having people see when they've broken it.
+>>
+>> all of the blackfin defconfigs get tested nightly in linux-next by an
+>> ADI build machine.  i just didnt have a chance to review the logs as i
+>> was traveling.
+>
+> That is good, but as you've noted, it isn't something that anyone
+> else can see when they are combing the normal linux-next build
+> results below looking to see if they broke anything.
+>
+> http://kisskb.ellerman.id.au/kisskb/branch/9/
 
-No worries; you had no reason to expect anyone to review it!
-
--- 
-nvpublic
-
+ive never heard of this site before, and there doesnt appear to be any
+documentation on that site about it
+-mike
