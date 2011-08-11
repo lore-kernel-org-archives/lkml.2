@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab1HKSk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:40:56 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:34402 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1HKSky (ORCPT
+	id S1752802Ab1HKSlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:41:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58957 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab1HKSlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:40:54 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 11 Aug 2011 20:40:42 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: linux1394-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] firewire: ohci: fix DMA unmapping in an error path
-Message-ID: <20110811204042.35ec6f32@stein>
-In-Reply-To: <20110811085159.42522d39@stein>
-References: <20110810164515.78a8f06d@stein>
-	<20110811085159.42522d39@stein>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 14:41:15 -0400
+From: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk,
+        linux@arm.linux.org.uk
+Cc: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
+Subject: [PATCH] mach-ixp4xx: made gpio functions atomic
+Date: Thu, 11 Aug 2011 20:39:02 +0200
+Message-Id: <1313087942-2335-1-git-send-email-fransmeulenbroeks@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If request_irq failed, we would pass wrong arguments to
-dma_free_coherent.  https://bugzilla.redhat.com/show_bug.cgi?id=728185
+gpio_line_set and gpio_line config on ixp4xx were not atomic
+This patch fixes this by surrounding them with local_irq_save and
+local_irq_restore calls, similar to the way Lennert Buytenhek
+implemented this for iop. (see arch/arm/plat-iop/gpio.c)
 
-Reported-by: Mads Kiilerich
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Frans Meulenbroeks <fransmeulenbroeks@gmail.com>
 ---
- drivers/firewire/ohci.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
 
-Index: b/drivers/firewire/ohci.c
-===================================================================
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2181,8 +2181,13 @@ static int ohci_enable(struct fw_card *c
- 			ohci_driver_name, ohci)) {
- 		fw_error("Failed to allocate interrupt %d.\n", dev->irq);
- 		pci_disable_msi(dev);
--		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
--				  ohci->config_rom, ohci->config_rom_bus);
-+
-+		if (config_rom) {
-+			dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
-+					  ohci->next_config_rom,
-+					  ohci->next_config_rom_bus);
-+			ohci->next_config_rom = NULL;
-+		}
- 		return -EIO;
- 	}
+Note: an alternative solution would be to use the set_bit and 
+clear_bit atomic functions, but I felt it better to do things
+the same way as Lennert did. Also it could be that this is a few
+bytes smaller. Didn't check that.
+
+PS: please Cc me as I am not on the list
+
+--- git/arch/arm/mach-ixp4xx/include/mach/platform.h.orig	2011-08-09 19:16:52.645482269 +0200
++++ git/arch/arm/mach-ixp4xx/include/mach/platform.h	2011-08-09 19:17:39.915482235 +0200
+@@ -14,6 +14,8 @@
+ #ifndef __ASSEMBLY__
  
-
-
--- 
-Stefan Richter
--=====-==-== =--- -=-==
-http://arcgraph.de/sr/
+ #include <asm/types.h>
++#include <asm/system.h>
++#include <linux/kernel.h>
+ 
+ #ifndef	__ARMEB__
+ #define	REG_OFFSET	0
+@@ -150,10 +152,14 @@
+ 
+ static inline void gpio_line_config(u8 line, u32 direction)
+ {
++	unsigned long flags;
++
++	local_irq_save(flags);
+ 	if (direction == IXP4XX_GPIO_IN)
+ 		*IXP4XX_GPIO_GPOER |= (1 << line);
+ 	else
+ 		*IXP4XX_GPIO_GPOER &= ~(1 << line);
++	local_irq_restore(flags);
+ }
+ 
+ static inline void gpio_line_get(u8 line, int *value)
+@@ -163,10 +169,14 @@
+ 
+ static inline void gpio_line_set(u8 line, int value)
+ {
++	unsigned long flags;
++
++	local_irq_save(flags);
+ 	if (value == IXP4XX_GPIO_HIGH)
+ 	    *IXP4XX_GPIO_GPOUTR |= (1 << line);
+ 	else if (value == IXP4XX_GPIO_LOW)
+ 	    *IXP4XX_GPIO_GPOUTR &= ~(1 << line);
++	local_irq_restore(flags);
+ }
+ 
+ #endif // __ASSEMBLY__
