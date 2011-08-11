@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab1HKSau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:30:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48687 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab1HKSat convert rfc822-to-8bit (ORCPT
+	id S1751622Ab1HKSfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:35:41 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41943 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab1HKSfk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:30:49 -0400
-Subject: Re: [PATCH v2 0/2] new cpumask for hotpluggable CPUs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, gregkh@suse.de
-Date: Thu, 11 Aug 2011 20:30:23 +0200
-In-Reply-To: <1313006614-28702-1-git-send-email-mturquette@ti.com>
-References: <1313006614-28702-1-git-send-email-mturquette@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 11 Aug 2011 14:35:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <201108081557.48504.philipp.reisner@linbit.com>
+References: <201108081557.48504.philipp.reisner@linbit.com>
+Date: Thu, 11 Aug 2011 20:34:57 +0200
+Message-ID: <CAJAFBLC+MpBRk29dX286G1mkobi_FnXAiQuF++eACZ8VUct2XQ@mail.gmail.com>
+Subject: Re: request for review - DRBD multi volume support for 3.2
+From: Fubo Chen <fubo.chen@gmail.com>
+To: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1313087423.8491.11.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 13:03 -0700, Mike Turquette wrote:
-> This patch series introduces a new cpumask which tracks CPUs that
-> support hotplugging.  The purpose of this patch series is to provide a
-> simple method for kernel code to know which CPUs can be hotplugged and
-> which ones cannot.  Potential users of this code might be a thermal
-> mitigation technique which uses hotplug to lower temperature, or a power
-> capping mechanism which uses hotplug to lower power consumption.
-> 
-> All the of usual cpumask helper functions are created for this new mask.
-> The second patch in this series simply sets the bit for elligible CPUs
-> while they are being registered.  The cpumask itself is static after
-> boot and should not change (like the possbile mask).
+On Mon, Aug 8, 2011 at 3:57 PM, Philipp Reisner
+<philipp.reisner@linbit.com> wrote:
+> This is a request for review of drbd-8.4. I intend to send a pull request
+> to Jens early next week, for his for-3.2/drivers branch.
+>
+> I want to point out the idr_for_each_entry() macro, added to
+> include/linux/idr.h.  Though we use this macro extensively in the new DRBD
+> code, it is not DRBD specific. I intend to leave it in this patch series, as
+> the following patches depend on it.
+>
+> The most noticeable change is the support for multiple replicated volumes in
+> a single DRBD connection.  Write-ordering is obeyed among all writes in all
+> volumes in a single connection.  This feature is really important for users
+> who DRBD for mirroring over longer distances. (Protocol A).
 
-I still most strongly object to people using hotplug for these goals.
+Does not build here. Is EXPORT_SYMBOL(lc_is_used) missing ?
 
-Why do you need to go through the entire dance of hotplug just to idle a
-cpu? Hotplug not only idles the cpu but tears down (and rebuilds) an
-insane amount of resources associated with the cpu.
+drivers/block/drbd/drbd_main.c: In function 'drbd_buildtag':
+drivers/block/drbd/drbd_main.c:3561:19: warning: the comparison will
+always evaluate as 'true' for the address of '__this_module' will
+never be NULL [-Waddress]
+drivers/block/drbd/drbd_nl.c:2463:12: warning: 'drbd_bmio_set_susp_al'
+defined but not used [-Wunused-function]
+ERROR: "lc_is_used" [drivers/block/drbd/drbd.ko] undefined!
+ERROR: "lc_try_lock" [drivers/block/drbd/drbd.ko] undefined!
+ERROR: "drbd_nla_parse_nested" [drivers/block/drbd/drbd.ko] undefined!
+ERROR: "drbd_nla_find_nested" [drivers/block/drbd/drbd.ko] undefined!
 
-Nacked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Fubo.
