@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab1HKOdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:33:53 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57887 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751217Ab1HKOdu (ORCPT
+	id S1751951Ab1HKOgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:36:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50343 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750741Ab1HKOgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:33:50 -0400
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: jaxboe@fusionio.com, roland@purestorage.com, stern@rowland.harvard.edu,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-In-Reply-To: <4E4345F1.9040501@ce.jp.nec.com>
-References: <4E420941.3080601@ce.jp.nec.com>
-	 <1313005933.2785.12.camel@mulgrave> <4E432122.9050101@ce.jp.nec.com>
-	 <4E4345F1.9040501@ce.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Aug 2011 09:33:47 -0500
-Message-ID: <1313073227.4166.6.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1+jejb.1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 10:36:48 -0400
+Date: Thu, 11 Aug 2011 10:36:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andiry Xu <andiry.xu@amd.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Daniel Mack <zonque@gmail.com>, Florian Mickler <florian@mickler.org>,
+        Oliver Neukum <oliver@neukum.org>, <linux-usb@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, Takashi Iwai <tiwai@suse.de>,
+        Clemens Ladisch <clemens@ladisch.de>, <pedrib@gmail.com>,
+        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
+        <linux-kernel@vger.kernel.org>, Robert Hancock <hancockrwd@gmail.com>
+Subject: Re: Allocating buffers for USB transfers (again)
+In-Reply-To: <1313032941.1918.8.camel@brienza-desktop>
+Message-ID: <Pine.LNX.4.44L0.1108111027520.1958-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 12:01 +0900, Jun'ichi Nomura wrote:
-> Hi James,
-> 
-> On 08/11/11 09:24, Jun'ichi Nomura wrote:
-> > On 08/11/11 04:52, James Bottomley wrote:
-> >> On Wed, 2011-08-10 at 13:29 +0900, Jun'ichi Nomura wrote:
-> >>>   2) SCSI to call blk_cleanup_queue() from device's ->release() callback
-> >>>      (before 2.6.39, it used to work like this)
-> >>>      https://lkml.org/lkml/2011/7/2/106
-> >>
-> >> Well, they both have documented objections.  I asked why we destroy the
-> >> elevator in the del case and didn't get any traction, so let me show the
-> >> actual patch which should fix all of these issues.
-> >>
-> >> Is there a good reason for not doing this as a bug fix now?
-> ...
-> > I think it doesn't work because elevator_exit() and
-> > blk_throtl_exit() take &q->queue_lock, which may be freed
-> > by LLD after blk_cleanup_queue, before blk_release_queue.
-> 
-> If the reason you moved scsi_free_queue into scsi_remove_device
-> is marking the queue dead, how about the following patch?
-> Do you think it's acceptable?
+On Thu, 11 Aug 2011, Andiry Xu wrote:
 
-Well, it's just hiding the problem.  The essential problem is that only
-block has the correctly refcounted knowledge to know the last release of
-the queue reference.  Until that time, the holder of the reference can
-use the queue regardless of whether blk_cleanup_queue() has been called.
-This is the race you complain about since use of the queue involves the
-lock which should be guarded by QUEUE_DEAD checks.
+> > Please don't submit zero-length transfers.  The xHCI driver just isn't
+> > able to handle it.  Arguably, it probably should have just rejected your
+> > URB when it found a zero length buffer, so I'll probably be submitting a
+> > patch to fix that.
+> > 
+> 
+> I think queue a zero-length TRB to xhci host is OK. I've not tested it,
+> but the issue here seems is caused by td->last_trb = NULL. Check
+> count_isoc_trbs_needed(), num_trbs will be 0 if the packet length is
+> zero and (addr & (TRB_MAS_BUFF_SIZE - 1)) is zero. We can not return
+> num_trbs as 0 to xhci_queue_isoc_tx(), which caused a td added to ep's
+> td list, while it's not actually queued to ep ring and last_trb is not
+> set.
+> 
+> In order to avoid this, we just make sure count_isoc_trbs_needed()
+> always return 1 or larger numbers, instead of reject the urb. Is that
+> feasible?
 
-This is essentially unfixable with function calls.  The only way to fix
-it is to have a callback model for freeing the external lock.
+I just looked for the first time at the code in 
+count_isoc_trbs_needed().  It does seem rather sub-optimal.
+
+The basic idea is that you need to know how many TRB buffers can cover 
+the memory area spanned by the packet data, where a TRB buffer's size 
+cannot be larger than TRB_MAX_BUFF_SIZE and all but the first buffer 
+must be aligned on a TRB_MAX_BUFF_SIZE boundary, right?  With a slight 
+adjustment in the case of a zero-length packet, since you always need 
+at least one TRB.
+
+Given that the packet data starts at addr and has length td_len, the 
+number of TRBs should be calculated as follows:
+
+	num = DIV_ROUND_UP(td_len + (addr & (TRB_MAX_BUFF_SIZE - 1))), 
+			TRB_MAX_BUFF_SIZE);
+	num += (num == 0);
+
+No need for a running_total or a loop.
+
+Alan Stern
 
