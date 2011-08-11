@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1HKOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:51:25 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:37695 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab1HKOvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:51:24 -0400
-From: slyich@gmail.com
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Alpha: unbreak osf_setsysinfo(SSI_NVPAIRS, [SSIN_UACPROC, UAC_SIGBUS])
-Date: Thu, 11 Aug 2011 17:54:36 +0300
-Message-Id: <1313074476-3415-1-git-send-email-slyich@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751677Ab1HKO4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:56:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56853 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751329Ab1HKO4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 10:56:04 -0400
+Date: Thu, 11 Aug 2011 10:56:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <4E438F69.4030902@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1108111037240.1958-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Trofimovich <slyfox@gentoo.org>
+On Thu, 11 Aug 2011, Hans de Goede wrote:
 
-Update 'UAC_SHIFT' to match 'ALPHA_UAC_SHIFT'.
+> > The alternative seems to be to define a device-sharing protocol for USB
+> > drivers.  Kernel drivers would implement a new callback (asking them to
+> > give up control of the device), and usbfs would implement new ioctls by
+> > which a program could ask for and relinquish control of a device.  The
+> > amount of rewriting needed would be relatively small.
+> >
+> > A few loose ends would remain, such as how to handle suspends, resumes,
+> > resets, and disconnects.  Assuming usbfs is the only driver that will
+> > want to share a device in this way, we could handle them.
+> >
+> > Hans, what do you think?
+> >
+> 
+> First of all thanks for the constructive input!
+> 
+> When you say: "device-sharing protocol", do you mean 2 drivers been
+> attached, but only 1 being active. Or just some additional glue to make
+> hand-over between them work better?
 
-I don't know why kernel maintains 2 copies of the same constant.
-One (UAC_SHIFT) is used to shift bits in syscall definition, and
-another is in trap handler (ALPHA_UAC_SHIFT).
+I was thinking that the webcam driver would always be attached, but 
+from time to time usbfs would ask to use the device.  When the webcam 
+driver gives away control, it remains bound to the device but does not 
+send any URBs.  If it needs to send an URB, first it has to ask usbfs 
+to give control back.
 
-Was broken by
-> commit 745dd2405e281d96c0a449103bdf6a895048f28c
-> Author: Michael Cree <mcree@orcon.net.nz>
-> Date:   Mon Nov 30 22:44:40 2009 -0500
->
->    Alpha: Rearrange thread info flags fixing two regressions
->
->    Both regressions fixed by (1) rearranging TIF_NOTIFY_RESUME flag to be
->    in lower 8 bits of the thread info flags, and (2) making sure that
->    ALPHA_UAC_SHIFT matches the rearrangement of the thread info flags.
->
->    Signed-off-by: Michael Cree <mcree@orcon.net.nz>
->    Cc: Richard Henderson <rth@twiddle.net>
->    Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
->    Cc: David Howells <dhowells@redhat.com>,
->    Signed-off-by: Matt Turner <mattst88@gmail.com>
+> I've 2 concerns with this approach:
+> 1) Assuming we are going for the just make hand over work better solution
+> we will still have the whole disappear / reappear act of the /dev/video#
+> node, which I don't like at all.
 
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-Cc: Michael Cree <mcree@orcon.net.nz>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: David Howells <dhowells@redhat.com>,
-Cc: Matt Turner <mattst88@gmail.com>
----
- arch/alpha/include/asm/sysinfo.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+That will not happen any more, because the webcam driver will always be 
+bound to the device.
 
-diff --git a/arch/alpha/include/asm/sysinfo.h b/arch/alpha/include/asm/sysinfo.h
-index 086aba2..42b3edc 100644
---- a/arch/alpha/include/asm/sysinfo.h
-+++ b/arch/alpha/include/asm/sysinfo.h
-@@ -32,7 +32,7 @@
- 
- /* This is the shift that is applied to the UAC bits as stored in the
-    per-thread flags.  See thread_info.h.  */
--#define UAC_SHIFT			6
-+#define UAC_SHIFT			10
- 
- #endif
- 
--- 
-1.7.3.4
+> If for example skype gets started it will say the user has no camera. If it
+> were to say the device is busy, the user just might make a link to some
+> application using the device in stillcam mode still being open.
+> 
+> 2) The whole notion of the device being in use is rather vague when it comes
+> to the userspace parts of this. Simply leaving say F-Spot running, or having
+> a gvfs libgphoto share mounted, should not lead to not being able to use the
+> device in webcam mode. But currently it will.
+
+That's true -- but it's true no matter what solution we adopt.  The
+various drivers (whether in the kernel or in userspace) will have to
+decide for themselves when they can give up control.
+
+> Fixing all users of libgphoto2 wrt this is unlikely to happen, and even if
+> we do that now, more broken ones will likely come along later. I estimate
+> 98% of all cameras are not dual mode cameras, so the average stillcam
+> application developer will not test for this.
+
+Not all users of libgphoto2 have to be changed; only those which manage
+dual-mode cameras.  Adding a few ioctls to ask for and give up control
+at the appropriate times must be a lot easier than porting the entire
+driver into the kernel.
+
+> That leaves us with fixing the busy notion inside libgphoto2, iow, release
+> the device as soon as an operation has completed. This will be quite slow,
+> since both drivers don't know anything about each other, they will just
+> know there is some $random_other_driver. So they need to assume the
+> device state is unclean and re-init the device from scratch each time.
+
+Well, a user program can assume that the kernel driver left the device
+in a clean state.  The reverse isn't always true, however -- it's one
+of the drawbacks of using a userspace driver.
+
+Besides, even though drivers don't always have to re-init the device
+from scratch every time, they do send all the current settings each
+time they use the device.  So maybe the extra overhead is tolerable.
+
+> Where as if we have both functions in one driver, that can remember the
+> actual device state and only make changes if needed, so downloading +
+> deleting 10 photos will lead to setting it to stillcam mode once, rather
+> then 20 times.
+
+Depends how the ask-for-control ioctl is implemented.  It might return
+a value indicating whether or not the webcam driver took control during
+the interval when the user program wasn't using the device.  If usbfs
+retained control the entire time, the program should be able to assume
+the device's state hasn't changed.
+
+I'm not claiming that this is a better solution than putting everything
+in the kernel.  Just that it is a workable alternative which would
+involve a lot less coding.
+
+Alan Stern
 
