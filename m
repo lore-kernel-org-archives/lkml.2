@@ -1,65 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1HKShN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 14:37:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7444 "EHLO mx1.redhat.com"
+	id S1753224Ab1HKShY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 14:37:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34022 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab1HKShJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 14:37:09 -0400
-Date: Thu, 11 Aug 2011 14:37:03 -0400
+	id S1753173Ab1HKShN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 14:37:13 -0400
+Date: Thu, 11 Aug 2011 14:37:08 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: gregkh@suse.de
 Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
         linux-kernel@vger.kernel.org
-Message-Id: <2ab7f07a9170aff303c7edda86544981d9b8bda8.1313085588.git.jbaron@redhat.com>
+Message-Id: <30d80120f2c6bf2df8ad63d704592c532c290cea.1313085588.git.jbaron@redhat.com>
 In-Reply-To: <cover.1313085588.git.jbaron@redhat.com>
 References: <cover.1313085588.git.jbaron@redhat.com>
-Subject: [PATCH 10/11] dynamic_debug: remove num_enabled accounting
+Subject: [PATCH 11/11] dynamic_debug: use a single printk() to emit msgs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Baron <jbaron@redhat.com>
 
-The num_enabled accouting aren't actually used anywhere - remove them.
+We were using KERN_CONT to combine msgs with their prefix. However,
+KERN_CONT is not smp safe, in the sense that it can interleave messages.
+This interleaving can result in printks coming out at the wrong loglevel.
+With the high frequency of printks, that dynamic debug can produce, this
+is not desirable.
+
+Thus, make dynamic_emit_prefix(), fill a char buf[64], instead
+of doing a printk directly. If we enable printing out of
+function, module, line, or pid info, they are placed in this
+64 byte buffer. In my testing 64 bytes was enough size to fulfill
+all requests. Even if its not, we can match up the printk itself
+to see where its from, so to me this is no big deal.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- lib/dynamic_debug.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ lib/dynamic_debug.c |   66 +++++++++++++++++++++------------------------------
+ 1 files changed, 27 insertions(+), 39 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index ee3b9ba..198d2af 100644
+index 198d2af..1f11978 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -42,7 +42,6 @@ struct ddebug_table {
- 	struct list_head link;
- 	char *mod_name;
- 	unsigned int num_ddebugs;
--	unsigned int num_enabled;
- 	struct _ddebug *ddebugs;
- };
+@@ -422,52 +422,46 @@ static int ddebug_exec_query(char *query_string)
+ 	return 0;
+ }
  
-@@ -152,11 +151,6 @@ static void ddebug_change(const struct ddebug_query *query,
- 			newflags = (dp->flags & mask) | flags;
- 			if (newflags == dp->flags)
- 				continue;
--
--			if (!newflags)
--				dt->num_enabled--;
--			else if (!dp->flags)
--				dt->num_enabled++;
- 			dp->flags = newflags;
- 			if (newflags)
- 				dp->enabled = 1;
-@@ -764,7 +758,6 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+-static int dynamic_emit_prefix(const struct _ddebug *descriptor)
++#define PREFIX_SIZE 64
++#define LEFT(wrote) ((PREFIX_SIZE - wrote) > 0) ? (PREFIX_SIZE - wrote) : 0
++
++static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
+ {
+-	char tid[sizeof(int) + sizeof(int)/2 + 4];
+-	char lineno[sizeof(int) + sizeof(int)/2];
++	int pos = 0;
+ 
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
++	pos += snprintf(buf + pos, LEFT(pos), "%s", KERN_DEBUG);
++	if (desc->flags & _DPRINTK_FLAGS_INCL_TID) {
+ 		if (in_interrupt())
+-			snprintf(tid, sizeof(tid), "%s", "<intr> ");
++			pos += snprintf(buf + pos, LEFT(pos), "%s ",
++						"<intr>");
+ 		else
+-			snprintf(tid, sizeof(tid), "[%d] ",
+-				 task_pid_vnr(current));
+-	} else {
+-		tid[0] = 0;
++			pos += snprintf(buf + pos, LEFT(pos), "[%d] ",
++						task_pid_vnr(current));
  	}
- 	dt->mod_name = new_name;
- 	dt->num_ddebugs = n;
--	dt->num_enabled = 0;
- 	dt->ddebugs = tab;
++	if (desc->flags & _DPRINTK_FLAGS_INCL_MODNAME)
++		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->modname);
++	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
++		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
++	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
++		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
  
- 	mutex_lock(&ddebug_lock);
+-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
+-		snprintf(lineno, sizeof(lineno), "%d", descriptor->lineno);
+-	else
+-		lineno[0] = 0;
+-
+-	return printk(KERN_DEBUG "%s%s%s%s%s%s",
+-		      tid,
+-		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
+-		      descriptor->modname : "",
+-		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
+-		      ":" : "",
+-		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
+-		      descriptor->function : "",
+-		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
+-		      ":" : "",
+-		      lineno);
++	return buf;
+ }
+ 
+ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ {
+ 	va_list args;
+ 	int res;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
+ 
+ 	BUG_ON(!descriptor);
+ 	BUG_ON(!fmt);
+ 
+ 	va_start(args, fmt);
+-
+-	res = dynamic_emit_prefix(descriptor);
+-	res += vprintk(fmt, args);
+-
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	res = printk("%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
+ 	va_end(args);
+ 
+ 	return res;
+@@ -480,18 +474,15 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
+ 	struct va_format vaf;
+ 	va_list args;
+ 	int res;
++	char buf[PREFIX_SIZE];
+ 
+ 	BUG_ON(!descriptor);
+ 	BUG_ON(!fmt);
+ 
+ 	va_start(args, fmt);
+-
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-
+-	res = dynamic_emit_prefix(descriptor);
+-	res += __dev_printk(KERN_CONT, dev, &vaf);
+-
++	res = __dev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
+ 	va_end(args);
+ 
+ 	return res;
+@@ -504,18 +495,15 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+ 	struct va_format vaf;
+ 	va_list args;
+ 	int res;
++	char buf[PREFIX_SIZE];
+ 
+ 	BUG_ON(!descriptor);
+ 	BUG_ON(!fmt);
+ 
+ 	va_start(args, fmt);
+-
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-
+-	res = dynamic_emit_prefix(descriptor);
+-	res += __netdev_printk(KERN_CONT, dev, &vaf);
+-
++	res = __netdev_printk(dynamic_emit_prefix(descriptor, buf), dev, &vaf);
+ 	va_end(args);
+ 
+ 	return res;
 -- 
 1.7.5.4
 
