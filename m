@@ -1,174 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1HKT3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:29:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50324 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab1HKT3f convert rfc822-to-8bit (ORCPT
+	id S1751830Ab1HKTgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:36:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34586 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab1HKTgD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:29:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
-Date: Thu, 11 Aug 2011 15:29:34 -0400
-Message-ID: <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-From: Eric Paris <eparis@parisplace.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Aug 2011 15:36:03 -0400
+Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Neronskiy <zakmagnus@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Don Zickus <dzickus@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Alex Neronskiy <zakmagnus@chromium.com>
+Date: Thu, 11 Aug 2011 21:35:22 +0200
+In-Reply-To: <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
+	 <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313091323.8491.30.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not that this patch is wrong, but shouldn't cifs include xattr.h
-directly rather than rely on such an obscure indirect callchain as
-well?
+On Wed, 2011-08-10 at 11:02 -0700, Alex Neronskiy wrote:
+> @@ -210,22 +236,27 @@ void touch_softlockup_watchdog_sync(void)
+>  /* watchdog detector functions */
+>  static void update_hardstall(unsigned long stall, int this_cpu)
+>  {
+>         if (stall > hardstall_thresh && stall > worst_hardstall) {
+>                 unsigned long flags;
+> +               spin_lock_irqsave(&hardstall_write_lock, flags);
+> +               if (stall > worst_hardstall) {
+> +                       int write_ind = hard_read_ind;
+> +                       int locked = spin_trylock(&hardstall_locks[write_ind]);
+> +                       /* cannot wait, so if there's contention,
+> +                        * switch buffers */
+> +                       if (!locked)
+> +                               write_ind = !write_ind;
+> +
+>                         worst_hardstall = stall;
+> +                       hardstall_traces[write_ind].nr_entries = 0;
+> +                       save_stack_trace(&hardstall_traces[write_ind]);
+>  
+> +                       /* tell readers to use the new buffer from now on */
+> +                       hard_read_ind = write_ind;
+> +                       if (locked)
+> +                               spin_unlock(&hardstall_locks[write_ind]);
+> +               }
+> +               spin_unlock_irqrestore(&hardstall_write_lock, flags);
+>         }
+>  } 
 
--Eric
+That must be the most convoluted locking I've seen in a while.. OMG!
 
-On Thu, Aug 11, 2011 at 3:14 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> Local XATTR_TRUSTED_PREFIX_LEN and XATTR_SECURITY_PREFIX_LEN definitions
-> redefined ones in 'linux/xattr.h'. This was caused by commit 9d8f13ba3f48
-> ("security: new security_inode_init_security API adds function callback")
-> including 'linux/xattr.h' in 'linux/security.h'.
->
-> In file included from include/linux/security.h:39,
->                 from include/net/sock.h:54,
->                 from fs/cifs/cifspdu.h:25,
->                 from fs/cifs/xattr.c:26:
->
-> This patch removes the local definitions.
->
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> ---
->  fs/cifs/xattr.c |   39 +++++++++++++++++----------------------
->  1 files changed, 17 insertions(+), 22 deletions(-)
->
-> diff --git a/fs/cifs/xattr.c b/fs/cifs/xattr.c
-> index 2a22fb2..7f23f3c 100644
-> --- a/fs/cifs/xattr.c
-> +++ b/fs/cifs/xattr.c
-> @@ -31,16 +31,8 @@
->  #define MAX_EA_VALUE_SIZE 65535
->  #define CIFS_XATTR_DOS_ATTRIB "user.DosAttrib"
->  #define CIFS_XATTR_CIFS_ACL "system.cifs_acl"
-> -#define CIFS_XATTR_USER_PREFIX "user."
-> -#define CIFS_XATTR_SYSTEM_PREFIX "system."
-> -#define CIFS_XATTR_OS2_PREFIX "os2."
-> -#define CIFS_XATTR_SECURITY_PREFIX "security."
-> -#define CIFS_XATTR_TRUSTED_PREFIX "trusted."
-> -#define XATTR_TRUSTED_PREFIX_LEN  8
-> -#define XATTR_SECURITY_PREFIX_LEN 9
-> -/* BB need to add server (Samba e.g) support for security and trusted prefix */
-> -
->
-> +/* BB need to add server (Samba e.g) support for security and trusted prefix */
->
->  int cifs_removexattr(struct dentry *direntry, const char *ea_name)
->  {
-> @@ -76,8 +68,8 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
->        }
->        if (ea_name == NULL) {
->                cFYI(1, "Null xattr names not supported");
-> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5)
-> -               && (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4))) {
-> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> +               && (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))) {
->                cFYI(1,
->                     "illegal xattr request %s (only user namespace supported)",
->                     ea_name);
-> @@ -88,7 +80,7 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
->                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
->                        goto remove_ea_exit;
->
-> -               ea_name += 5; /* skip past user. prefix */
-> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
->                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
->                        (__u16)0, cifs_sb->local_nls,
->                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> @@ -149,21 +141,23 @@ int cifs_setxattr(struct dentry *direntry, const char *ea_name,
->
->        if (ea_name == NULL) {
->                cFYI(1, "Null xattr names not supported");
-> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
-> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> +                  == 0) {
->                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
->                        goto set_ea_exit;
->                if (strncmp(ea_name, CIFS_XATTR_DOS_ATTRIB, 14) == 0)
->                        cFYI(1, "attempt to set cifs inode metadata");
->
-> -               ea_name += 5; /* skip past user. prefix */
-> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
->                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
->                        (__u16)value_size, cifs_sb->local_nls,
->                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
-> +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
-> +                  == 0) {
->                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
->                        goto set_ea_exit;
->
-> -               ea_name += 4; /* skip past os2. prefix */
-> +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
->                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
->                        (__u16)value_size, cifs_sb->local_nls,
->                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> @@ -269,7 +263,8 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
->        /* return alt name if available as pseudo attr */
->        if (ea_name == NULL) {
->                cFYI(1, "Null xattr names not supported");
-> -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
-> +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> +                  == 0) {
->                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
->                        goto get_ea_exit;
->
-> @@ -277,15 +272,15 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
->                        cFYI(1, "attempt to query cifs inode metadata");
->                        /* revalidate/getattr then populate from inode */
->                } /* BB add else when above is implemented */
-> -               ea_name += 5; /* skip past user. prefix */
-> +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
->                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
->                        buf_size, cifs_sb->local_nls,
->                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
-> +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
->                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
->                        goto get_ea_exit;
->
-> -               ea_name += 4; /* skip past os2. prefix */
-> +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
->                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
->                        buf_size, cifs_sb->local_nls,
->                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> @@ -339,10 +334,10 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
->                cFYI(1, "Query CIFS ACL not supported yet");
->  #endif /* CONFIG_CIFS_ACL */
->        } else if (strncmp(ea_name,
-> -                 CIFS_XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
-> +                 XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
->                cFYI(1, "Trusted xattr namespace not supported yet");
->        } else if (strncmp(ea_name,
-> -                 CIFS_XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
-> +                 XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
->                cFYI(1, "Security xattr namespace not supported yet");
->        } else
->                cFYI(1,
-> --
-> 1.7.3.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+What's wrong with something like:
+
+static void update_stall(struct stall *s, unsigned long stall)
+{
+	if (stall <= s->worst)
+		return;
+
+again:
+	if (!raw_spin_trylock(&s->lock[s->idx])) {
+		s->idx ^= 1;
+		goto again;
+	}
+
+	if (stall <= s->worst)
+		goto unlock;
+
+	s->worst = stall;
+	s->trace[s->idx].nr_entries = 0;
+	save_stack_trace(&s->trace[s->idx]);
+
+unlock:
+	raw_spin_unlock(&s->lock[s->idx]);
+}
+
+
+And have your read side do:
+
+
+static void show_stall_trace(struct seq_file *f, void *v)
+{
+	struct stall *s = f->private;
+	int i, idx = ACCESS_ONCE(s->idx);
+
+	mutex_lock(&stall_mutex);
+
+	raw_spin_lock(&s->lock[idx]);
+	seq_printf(f, "stall: %d\n", s->worst);
+	for (i = 0; i < s->trace[idx].nr_entries; i++) {
+		seq_printf(f, "[<%pK>] %pS\n", 
+			(void *)s->trace->entries[i],
+			(void *)s->trace->entries[i]);
+	}
+	raw_spin_unlock(&s->lock[idx]);
+
+	mutex_unlock(&stall_mutex);
+}
+
+
+Yes its racy on s->worst, but who cares (if you do care you can keep a
+copy in s->delay[idx] or so). Also, it might be better to not do the
+spinlock but simply use an atomic bitop to set an in-use flag, there is
+no reason to disable preemption over the seq_printf() loop.
+
+
