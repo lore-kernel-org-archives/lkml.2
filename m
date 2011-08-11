@@ -1,27 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091Ab1HKEDb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 00:03:31 -0400
-Received: from mail.ardalsnett.no ([193.214.59.129]:4411 "EHLO
-	aanweb01.ardalsnett.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab1HKED3 convert rfc822-to-8bit (ORCPT
+	id S1751133Ab1HKEKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 00:10:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:7383 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1HKEKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 00:03:29 -0400
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 00:03:28 EDT
-Message-ID: <380-220118411337545@hondapromo.com>
-X-Priority: 3
-Reply-To: richard_hcuk106@pkuit.com
-From: "HONDA COMPANY" <honda@hondapromo.com>
-Subject: 2011 HONDA PROMOTION
-Date: Thu, 11 Aug 2011 05:37:54 +0200
+	Thu, 11 Aug 2011 00:10:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=RWLQxXl9tY/WkKa0Wler/yUT6m9K7SUdeyy5K0k/XzflJrJx0JGz3wDUBv0Vx3WU2
+	fywc1HZmzFLpi4DTMA94Q==
+Date: Wed, 10 Aug 2011 21:09:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+cc: Randy Dunlap <rdunlap@xenotime.net>,
+        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: running of out memory => kernel crash
+In-Reply-To: <1312964098.7449.YahooMailNeo@web111712.mail.gq1.yahoo.com>
+Message-ID: <alpine.DEB.2.00.1108102106410.14230@chino.kir.corp.google.com>
+References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com> <1db776d865939be598cdb80054cf5d93.squirrel@xenotime.net> <1312874259.89770.YahooMailNeo@web111704.mail.gq1.yahoo.com> <alpine.DEB.2.00.1108090900170.30199@chino.kir.corp.google.com>
+ <1312964098.7449.YahooMailNeo@web111712.mail.gq1.yahoo.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-2005623161-1313035801=:14230"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Your email address has luckily won you 1,750,000.00 GBP.
+--397155492-2005623161-1313035801=:14230
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
+On Wed, 10 Aug 2011, Mahmood Naderan wrote:
+
+> >If you're using cpusets or mempolicies, you must ensure that all tasks 
+> >attached to either of them are not set to OOM_DISABLE.  It seems unlikely 
+> >that you're using those, so it seems like a system-wide oom condition.
+>  
+> I didn't do that manually. What is the default behaviour? Does oom
+> working or not?
+> 
+
+The default behavior is to kill all eligible and unkillable threads until 
+there are none left to sacrifice (i.e. all kthreads and OOM_DISABLE).
+
+> For a user process:
+> 
+> root@srv:~# cat /proc/18564/oom_score
+> 9198
+> root@srv:~# cat /proc/18564/oom_adj
+> 0
+> 
+
+Ok, so you don't have a /proc/pid/oom_score_adj, so you're using a kernel 
+that predates 2.6.36.
+
+> And for "init" process:
+> 
+> root@srv:~# cat /proc/1/oom_score
+> 17509
+> root@srv:~# cat /proc/1/oom_adj
+> 0
+> 
+> Based on my understandings, in an out of memory condition (oom),
+> the init process is more eligible to be killed!!!!!!! Is that right?
+> 
+
+init is exempt from oom killing, it's oom_score is meaningless.
+
+> Again I didn't get my answer yet:
+> What is the default behavior of linux in an oom condition? If the default is,
+> crash (kernel panic), then how can I change that in such a way to kill
+> the hungry process?
+> 
+
+You either have /proc/sys/vm/panic_on_oom set or it's killing a thread 
+that is taking down the entire machine.  If it's the latter, then please 
+capture the kernel log and post it as Randy suggested.
+--397155492-2005623161-1313035801=:14230--
