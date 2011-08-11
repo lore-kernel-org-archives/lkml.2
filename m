@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1HKDLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 23:11:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53169 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751144Ab1HKDLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 23:11:42 -0400
-Date: Thu, 11 Aug 2011 13:11:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20110811131129.f0d6226079d86e8f4a5ae920@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__11_Aug_2011_13_11_29_+1000_uHLsX+uK_.xNv39B"
+	id S1753650Ab1HKDMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 23:12:16 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:52040 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab1HKDMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Aug 2011 23:12:14 -0400
+Message-ID: <4E4345F1.9040501@ce.jp.nec.com>
+Date: Thu, 11 Aug 2011 12:01:05 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: jaxboe@fusionio.com, roland@purestorage.com, stern@rowland.harvard.edu,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Subject: Re: [BUG] Oops when SCSI device under multipath is removed
+References: <4E420941.3080601@ce.jp.nec.com> <1313005933.2785.12.camel@mulgrave> <4E432122.9050101@ce.jp.nec.com>
+In-Reply-To: <4E432122.9050101@ce.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__11_Aug_2011_13_11_29_+1000_uHLsX+uK_.xNv39B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi James,
 
-Hi all,
+On 08/11/11 09:24, Jun'ichi Nomura wrote:
+> On 08/11/11 04:52, James Bottomley wrote:
+>> On Wed, 2011-08-10 at 13:29 +0900, Jun'ichi Nomura wrote:
+>>>   2) SCSI to call blk_cleanup_queue() from device's ->release() callback
+>>>      (before 2.6.39, it used to work like this)
+>>>      https://lkml.org/lkml/2011/7/2/106
+>>
+>> Well, they both have documented objections.  I asked why we destroy the
+>> elevator in the del case and didn't get any traction, so let me show the
+>> actual patch which should fix all of these issues.
+>>
+>> Is there a good reason for not doing this as a bug fix now?
+...
+> I think it doesn't work because elevator_exit() and
+> blk_throtl_exit() take &q->queue_lock, which may be freed
+> by LLD after blk_cleanup_queue, before blk_release_queue.
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+If the reason you moved scsi_free_queue into scsi_remove_device
+is marking the queue dead, how about the following patch?
+Do you think it's acceptable?
 
-sound/soc/codecs/snd-soc-wm8750: struct spi_device_id is 40 bytes.  The las=
-t of 2 is:
-0x77 0x6d 0x38 0x39 0x38 0x37 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 =
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 =
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00=20
-FATAL: sound/soc/codecs/snd-soc-wm8750: struct spi_device_id is not termina=
-ted with a NULL entry!
+Jun'ichi Nomura, NEC Corporation
 
-Caused by commit 40045a85df0e ("ASoC: Fix SPI driver binding for WM8987").
 
-I have used the sound-asoc tree from next-20110809 again for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Add blk_kill_queue() for drivers which want to mark the queue dead early.
 
---Signature=_Thu__11_Aug_2011_13_11_29_+1000_uHLsX+uK_.xNv39B
-Content-Type: application/pgp-signature
+blk_cleanup_queue() is an interface for LLD to notify block layer
+that LLD no longer needs the queue.
+Since q->queue_lock may point to a structure in LLD which is freed
+after blk_cleanup_queue, blk_cleanup_queue() frees subordinate structures
+like elevator, which uses q->queue_lock, to avoid invalid reference.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+OTOH, LLD like SCSI wants to just mark the queue dead earlier in tear
+down phase.
 
-iQEcBAEBAgAGBQJOQ0hhAAoJEDMEi1NhKgbsHy8H+QG0O92tms5Kysc8RWH9W/zM
-9Ov/LspxMnmZFrfJqUy0UFCcZhPxPgEZK08rMSuow6kgHcIY3nruV8u5TeA8HQZ+
-OO49UfsS4x+gcCp2jO4H0fJer0JM601gbK+Fuj9XBXtz6WpwKwccjdmyMBND6Kgf
-jGayRQpdoE15Vnd9TuoZunmeu/bEQgN+o7TBdHpZC6GMnzhVVflZygOS169k32uO
-aWL3TH4xCDMmiRQ4RthmlwV74tYJoe5zQwrLOkx7psbDS36ONi7loRs9ibsd+6d9
-4dvwPCkmlx1DBRFBhSTuds4MZXhC4qhIneLELoE0OAtzfJyU21TDlf+KnxFYp7E=
-=C+DH
------END PGP SIGNATURE-----
+So this patch factors out the early part of blk_cleanup_queue into
+blk_kill_queue for such drivers.
 
---Signature=_Thu__11_Aug_2011_13_11_29_+1000_uHLsX+uK_.xNv39B--
+--- linux-3.1-rc1/include/linux/blkdev.h.orig	2011-08-11 11:19:52.585280223 +0900
++++ linux-3.1-rc1/include/linux/blkdev.h	2011-08-11 11:20:09.482279763 +0900
+@@ -804,6 +804,7 @@ extern struct request_queue *blk_init_al
+ extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+ extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+ 						      request_fn_proc *, spinlock_t *);
++extern void blk_kill_queue(struct request_queue *);
+ extern void blk_cleanup_queue(struct request_queue *);
+ extern void blk_queue_make_request(struct request_queue *, make_request_fn *);
+ extern void blk_queue_bounce_limit(struct request_queue *, u64);
+--- linux-3.1-rc1/block/blk-core.c.orig	2011-08-10 09:46:06.014043123 +0900
++++ linux-3.1-rc1/block/blk-core.c	2011-08-11 11:19:34.551280697 +0900
+@@ -347,6 +347,17 @@ void blk_put_queue(struct request_queue 
+ }
+ EXPORT_SYMBOL(blk_put_queue);
+ 
++void blk_kill_queue(struct request_queue *q)
++{
++	blk_sync_queue(q);
++
++	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
++	mutex_lock(&q->sysfs_lock);
++	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
++	mutex_unlock(&q->sysfs_lock);
++}
++EXPORT_SYMBOL(blk_kill_queue);
++
+ /*
+  * Note: If a driver supplied the queue lock, it should not zap that lock
+  * unexpectedly as some queue cleanup components like elevator_exit() and
+@@ -360,12 +371,7 @@ void blk_cleanup_queue(struct request_qu
+ 	 * are done before moving on. Going into this function, we should
+ 	 * not have processes doing IO to this device.
+ 	 */
+-	blk_sync_queue(q);
+-
+-	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+-	mutex_lock(&q->sysfs_lock);
+-	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+-	mutex_unlock(&q->sysfs_lock);
++	blk_kill_queue(q);
+ 
+ 	if (q->elevator)
+ 		elevator_exit(q->elevator);
+--- linux-3.1-rc1/drivers/scsi/scsi_sysfs.c.orig	2011-08-09 18:48:13.676485115 +0900
++++ linux-3.1-rc1/drivers/scsi/scsi_sysfs.c	2011-08-11 11:21:07.923277456 +0900
+@@ -322,6 +322,7 @@ static void scsi_device_dev_release_user
+ 		kfree(evt);
+ 	}
+ 
++	scsi_free_queue(sdev->request_queue);
+ 	blk_put_queue(sdev->request_queue);
+ 	/* NULL queue means the device can't be used */
+ 	sdev->request_queue = NULL;
+@@ -937,7 +938,7 @@ void __scsi_remove_device(struct scsi_de
+ 	sdev->request_queue->queuedata = NULL;
+ 
+ 	/* Freeing the queue signals to block that we're done */
+-	scsi_free_queue(sdev->request_queue);
++	blk_kill_queue(sdev->request_queue);
+ 	put_device(dev);
+ }
+ 
