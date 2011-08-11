@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab1HKMFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 08:05:54 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39408 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab1HKMFt (ORCPT
+	id S1755632Ab1HKMGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 08:06:03 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49481 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598Ab1HKMFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 08:05:49 -0400
-X-AuditID: b753bd60-a1eacba0000019f4-2b-4e43c5995c84
-X-AuditID: b753bd60-a1eacba0000019f4-2b-4e43c5995c84
+	Thu, 11 Aug 2011 08:05:53 -0400
+X-AuditID: b753bd60-a3c7dba0000050a4-72-4e43c59f0a43
+X-AuditID: b753bd60-a3c7dba0000050a4-72-4e43c59f0a43
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip v3 2/5] perf: change perf_event_header.misc to
- PERF_RECORD_MISC_USER for BTS
+Subject: [PATCH -tip v3 3/5] perf script: enhance IP and ADDR correlate
+ detection for BTS
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -26,8 +26,8 @@ Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Thu, 11 Aug 2011 21:06:20 +0900
-Message-ID: <20110811120620.5900.50427.stgit@linux3>
+Date: Thu, 11 Aug 2011 21:06:26 +0900
+Message-ID: <20110811120626.5900.88562.stgit@linux3>
 In-Reply-To: <20110811120555.5900.23642.stgit@linux3>
 References: <20110811120555.5900.23642.stgit@linux3>
 User-Agent: StGIT/0.14.3
@@ -39,9 +39,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change perf_event_headder.misc to PERF_RECORD_MISC_USER for
-BTS records, because BTS traces both kernel and user spaces
-nevertheless perf specifies to trace only kernel or user space.
+BTS records branch_from_addr and branch_to_addr in IP and ADDR field in perf_sample.
+This patch detects this correlation in perf-script.
+
+# perf script -f ip,addr,dso,sym
+3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e016b0    _start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04b80 _dl_start (/lib64/ld-2.14.so)       3f03e016b3     _start (/lib64/ld-2.14.so)
+3f03e04b80 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04ba6 _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04bad _dl_start (/lib64/ld-2.14.so) ffffffff814675d2 irq_return ([kernel.kallsyms])
+3f03e04c1d _dl_start (/lib64/ld-2.14.so)       3f03e04bfb  _dl_start (/lib64/ld-2.14.so)
+[snip]
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -53,26 +62,24 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ tools/perf/builtin-script.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 1b1ef3a..323f3f0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -340,6 +340,14 @@ static int intel_pmu_drain_bts_buffer(void)
- 	 */
- 	perf_prepare_sample(&header, &data, event, &regs);
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index b3312ff..aeec5bc 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -309,6 +309,12 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
+ 		return true;
  
-+	/*
-+	 * Since BTS can not trace kernel and user space separately, set
-+	 * PERF_RECORD_MISC_USER in header.misc to resolve both kernel and
-+	 * user DSOs and symbols.
-+	 */
-+	header.misc &= ~PERF_RECORD_MISC_CPUMODE_MASK;
-+	header.misc |= PERF_RECORD_MISC_USER;
++	/* BTS Events */
++	if ((attr->type == PERF_TYPE_HARDWARE) &&
++	    (attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
++	    (attr->sample_period == 1))
++		return true;
 +
- 	if (perf_output_begin(&handle, event, header.size * (top - at)))
- 		return 1;
+ 	return false;
+ }
  
 
