@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab1HKPvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 11:51:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55805 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1HKPvA (ORCPT
+	id S1752974Ab1HKPvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 11:51:09 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12759 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab1HKPvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 11:51:00 -0400
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: David Woodhouse <dwmw2@infradead.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Andreas Schwab <schwab@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Date: Thu, 11 Aug 2011 16:50:34 +0100
-In-Reply-To: <4E43F413.5000104@suse.cz>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	  <1312985888.2989.46.camel@i7.infradead.org>
-	  <CACqU3MXozgu0kr-4w=bGejcEi8MrxH-PhKa0Ji0zrLu7ZEFomg@mail.gmail.com>
-	  <1312993987.2989.53.camel@i7.infradead.org>
-	  <CACqU3MXC_eDqgWDwnVe8KsqoAMTPQNiP6YMHD5G+1sMBhMwXzA@mail.gmail.com>
-	  <1312999168.2989.61.camel@i7.infradead.org>
-	  <CACqU3MWB+4n5Acd-GboH5WbCzfZFiAc0wNvOkn_5O+--7jLE8A@mail.gmail.com>
-	  <1313002322.2989.88.camel@i7.infradead.org>
-	  <CACqU3MU2J25q-wWJ8LNcMkwi3uMigz_+0=XcrNiPC0TGiJHZqA@mail.gmail.com>
-	  <1313018232.2989.114.camel@i7.infradead.org>
-	  <CACqU3MVyjzr47N9v23SGaSjiEOGoEaP1-TZ4Z_RyVNgVXgPEwg@mail.gmail.com>
-	  <1313052168.18037.9.camel@i7.infradead.org> <4E4399B3.3020909@suse.cz>
-	  <1313061012.18037.17.camel@i7.infradead.org> <m3r54std0x.fsf@hase.home>
-	  <1313062813.18037.24.camel@i7.infradead.org> <4E43C363.3000103@suse.cz>
-	  <CACqU3MVUeHTZ+cQYucYd8TvGoUOrwVhpxVpho-fqz3MkBTCTMQ@mail.gmail.com>
-	 <1313075243.5632.6.camel@macbook.infradead.org> <4E43F413.5000104@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1313077836.18037.34.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 11 Aug 2011 11:51:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6434"; a="109646823"
+X-IronPort-AV: E=Sophos;i="4.67,356,1309762800"; 
+   d="scan'208";a="59540925"
+Message-ID: <4E43FA61.1010301@qca.qualcomm.com>
+Date: Thu, 11 Aug 2011 18:50:57 +0300
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree (wireless
+ & staging trees related)
+References: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au> <4E438D56.5020801@qca.qualcomm.com> <20110811141604.GA14763@suse.de>
+In-Reply-To: <20110811141604.GA14763@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.234.11.68]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 17:24 +0200, Michal Marek wrote:
+On 08/11/2011 05:16 PM, Greg KH wrote:
+> On Thu, Aug 11, 2011 at 11:05:42AM +0300, Kalle Valo wrote:
+>
+>> Yes, the cleaned up version of ath6kl is now in wireless-next and the
+>> staging version can be removed in 3.2. Greg, how do you want to handle
+>> removal of the staging version? Should I send a patch to you removing
+>> it? Or should I send the patch to John?
 > 
-> One of my use cases for all.config is
-> 
-> $ cp .../older-working-config all.config
-> $ make KCONFIG_ALLCONFIG=1 allmodconfig
-> 
-> i.e. reuse what is possible from an older config and enable all new
-> options. Surely it sometimes results in suboptimal configuration with
-> unwanted debug options enabled, but most of the time it works. I won't
-> be happy if you make it hard fail because of renamed or removed config
-> options. 
+> Just tell me.  Should I really delete drivers/staging/ath6kl/ for the
+> 3.2 kernel release?  If so, I'll gladly do so in my tree so linux-next
+> will be fine for issues like this in the future.
 
-On the other hand, 'make CONFIG_FOO=y oldconfig' probably *should* fail.
-Perhaps it should set what it *can*, if you try to set multiple options
-at once — but if it can't set all of them, it should exit with failure
-status... which will mean that no subsequent build target will happen.
+Yes, please delete ath6kl from staging for the 3.2 release as the
+cleanup version is now in wireless-next.
 
--- 
-dwmw2
+Thank you everyone and sorry for the mess.
 
+Kalle
