@@ -1,264 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab1HKWOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 18:14:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37387 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933Ab1HKWOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 18:14:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,358,1309762800"; 
-   d="scan'208";a="37617596"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: linux-kernel@vger.kernel.org
-Subject: [RFC-PATCH] pstore: defer inserting OOPS entries into pstore
-Date: Thu, 11 Aug 2011 15:14:39 -0700
-Message-Id: <4e44544f155363ca3d@agluck-desktop.sc.intel.com>
+	id S1753638Ab1HKWT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 18:19:28 -0400
+Received: from merit-proxy01.merit.edu ([207.75.116.193]:38140 "EHLO
+	merit-proxy01.merit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab1HKWT1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 18:19:27 -0400
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 18:19:27 EDT
+Date: Thu, 11 Aug 2011 18:13:05 -0400
+From: Jim Rees <rees@umich.edu>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@tonian.com>, Sorin Faibish <sfaibish@emc.com>,
+        peter honeyman <honey@citi.umich.edu>, tao.peng@emc.com,
+        torvalds@linux-foundation.org, rdunlap@xenotime.net,
+        bergwolf@gmail.com, Trond.Myklebust@netapp.com,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "Welch, Brent" <welch@panasas.com>
+Subject: Re: [PATCH] pnfs: Automatically select blocks & objects layouts
+Message-ID: <20110811221305.GA8608@merit.edu>
+References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
+ <20110810122304.96b8be67.rdunlap@xenotime.net>
+ <CA+a=Yy5izxiyvW5eYiWuute9E1vXwNTj4frdzNeEwsLDrszesg@mail.gmail.com>
+ <20110810175829.a834d80f.rdunlap@xenotime.net>
+ <CA+55aFzcSLrhkexEn=J7BN8F3P3Vy+EAjwgGwMQPdeoYoQG+Bw@mail.gmail.com>
+ <F19688880B763E40B28B2B462677FBF805BF0EAC8A@MX09A.corp.emc.com>
+ <4E43AAD1.7090806@tonian.com>
+ <4E4422FD.3060706@panasas.com>
+ <4E444552.9030105@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E444552.9030105@panasas.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Life is simple for all the kernel terminating types of kmsg_dump
-call backs - pstore just saves the tail end of the console log. But
-for "oops" the situation is more complex - the kernel may carry on
-running (possibly for ever).  So we'd like to make the logged copy
-of the oops appear in the pstore filesystem - so that the user has
-a handle to clear the entry from the persistent backing store (if
-we don't, the store may fill with "oops" entries (that are also
-safely stashed in /var/log/messages) leaving no space for real
-errors.
+Boaz Harrosh wrote:
 
-Current code calls pstore_mkfile() immediately. But this may
-not be safe. The oops could have happened with arbitrary locks
-held, or in interrupt or NMI context. So allocating memory and
-calling into generic filesystem code seems unwise.
+  What about the below? based on v3.1-rc1
+  
+  ----
+  From: Boaz Harrosh <bharrosh@panasas.com>
+  Subject: [PATCH] pnfs: Automatically select blocks & objects layouts
+  
+  Just like files-layout, blocks & objects layouts are part of the
+  NFS 4.1 protocol and should be automatically selected if NFS_4_1
+  is selected. The small problem is that these depend on other
+  Kernel support being present, while files only depends on NFS
+  itself.
+  
+  This patch removes from the user choice the presence of objects
+  and blocks layout. But makes sure these are selected only if
+  the depended subsystems are present in the Kernel.
+  
+  Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 
-This patch attempts to defer making the entry appear. At the time
-of the oops, we merely set a flag "pstore_new_entry" noting that
-a new entry has been added. A periodic timer checks once a minute
-to see if the flag is set - if so, it schedules a work queue to
-rescan the backing store and make all new entries appear in the
-pstore filesystem.
+Acked-by: Jim Rees <rees@umich.edu>
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-
-Q: Is the "flag -> timer -> workqueue" indirection overkill? I was
-unsure whether it was safe to call schedule_work() while
-processing the OOPS.
-
----
-
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 893b961..379a02d 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -24,6 +24,7 @@
- #include <linux/highmem.h>
- #include <linux/time.h>
- #include <linux/init.h>
-+#include <linux/list.h>
- #include <linux/string.h>
- #include <linux/mount.h>
- #include <linux/ramfs.h>
-@@ -32,13 +33,18 @@
- #include <linux/magic.h>
- #include <linux/pstore.h>
- #include <linux/slab.h>
-+#include <linux/spinlock.h>
- #include <linux/uaccess.h>
- 
- #include "internal.h"
- 
- #define	PSTORE_NAMELEN	64
- 
-+static DEFINE_SPINLOCK(allpstore_lock);
-+static LIST_HEAD(allpstore);
-+
- struct pstore_private {
-+	struct list_head list;
- 	struct pstore_info *psi;
- 	enum pstore_type_id type;
- 	u64	id;
-@@ -81,8 +87,16 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
- 
- static void pstore_evict_inode(struct inode *inode)
- {
-+	struct pstore_private	*p = inode->i_private;
-+	unsigned long		flags;
-+
- 	end_writeback(inode);
--	kfree(inode->i_private);
-+	if (p) {
-+		spin_lock_irqsave(&allpstore_lock, flags);
-+		list_del(&p->list);
-+		spin_unlock_irqrestore(&allpstore_lock, flags);
-+		kfree(p);
-+	}
- }
- 
- static const struct inode_operations pstore_dir_inode_operations = {
-@@ -182,9 +196,23 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 	struct dentry		*root = pstore_sb->s_root;
- 	struct dentry		*dentry;
- 	struct inode		*inode;
--	int			rc;
-+	int			rc = 0;
- 	char			name[PSTORE_NAMELEN];
--	struct pstore_private	*private;
-+	struct pstore_private	*private, *pos;
-+	unsigned long		flags;
-+
-+	spin_lock_irqsave(&allpstore_lock, flags);
-+	list_for_each_entry(pos, &allpstore, list) {
-+		if (pos->type == type &&
-+		    pos->id == id &&
-+		    pos->psi == psi) {
-+			rc = -EEXIST;
-+			break;
-+		}
-+	}
-+	spin_unlock_irqrestore(&allpstore_lock, flags);
-+	if (rc)
-+		return rc;
- 
- 	rc = -ENOMEM;
- 	inode = pstore_get_inode(pstore_sb, root->d_inode, S_IFREG | 0444, 0);
-@@ -229,6 +257,10 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
- 
- 	d_add(dentry, inode);
- 
-+	spin_lock_irqsave(&allpstore_lock, flags);
-+	list_add(&private->list, &allpstore);
-+	spin_unlock_irqrestore(&allpstore_lock, flags);
-+
- 	mutex_unlock(&root->d_inode->i_mutex);
- 
- 	return 0;
-@@ -277,7 +309,7 @@ int pstore_fill_super(struct super_block *sb, void *data, int silent)
- 		goto fail;
- 	}
- 
--	pstore_get_records();
-+	pstore_get_records(0);
- 
- 	return 0;
- fail:
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 611c1b3..3bde461 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -1,5 +1,5 @@
- extern void	pstore_set_kmsg_bytes(int);
--extern void	pstore_get_records(void);
-+extern void	pstore_get_records(int);
- extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      char *data, size_t size,
- 			      struct timespec time, struct pstore_info *psi);
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index c5300ec..ca60ebc 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -25,12 +25,29 @@
- #include <linux/module.h>
- #include <linux/pstore.h>
- #include <linux/string.h>
-+#include <linux/timer.h>
- #include <linux/slab.h>
- #include <linux/uaccess.h>
-+#include <linux/workqueue.h>
- 
- #include "internal.h"
- 
- /*
-+ * We defer making "oops" entries appear in pstore - see
-+ * whether the system is actually still running well enough
-+ * to let someone see the entry
-+ */
-+#define	PSTORE_INTERVAL	(60 * HZ)
-+
-+static int pstore_new_entry;
-+
-+static void pstore_timefunc(unsigned long);
-+static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
-+
-+static void pstore_dowork(struct work_struct *);
-+static DECLARE_WORK(pstore_work, pstore_dowork);
-+
-+/*
-  * pstore_lock just protects "psinfo" during
-  * calls to pstore_register()
-  */
-@@ -100,9 +117,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		id = psinfo->write(PSTORE_TYPE_DMESG, part,
- 				   hsize + l1_cpy + l2_cpy, psinfo);
- 		if (reason == KMSG_DUMP_OOPS && pstore_is_mounted())
--			pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id,
--				      psinfo->buf, hsize + l1_cpy + l2_cpy,
--				      CURRENT_TIME, psinfo);
-+			pstore_new_entry = 1;
- 		l1 -= l1_cpy;
- 		l2 -= l2_cpy;
- 		total += l1_cpy + l2_cpy;
-@@ -148,19 +163,24 @@ int pstore_register(struct pstore_info *psi)
- 	}
- 
- 	if (pstore_is_mounted())
--		pstore_get_records();
-+		pstore_get_records(0);
- 
- 	kmsg_dump_register(&pstore_dumper);
- 
-+	pstore_timer.expires = jiffies + PSTORE_INTERVAL;
-+	add_timer(&pstore_timer);
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(pstore_register);
- 
- /*
-- * Read all the records from the persistent store. Create and
-- * file files in our filesystem.
-+ * Read all the records from the persistent store. Create
-+ * files in our filesystem.  Don't warn about -EEXIST errors
-+ * when we are re-scanning the backing store looking to add new
-+ * error records.
-  */
--void pstore_get_records(void)
-+void pstore_get_records(int quiet)
- {
- 	struct pstore_info *psi = psinfo;
- 	ssize_t			size;
-@@ -178,8 +198,9 @@ void pstore_get_records(void)
- 		goto out;
- 
- 	while ((size = psi->read(&id, &type, &time, psi)) > 0) {
--		if (pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
--				  time, psi))
-+		rc = pstore_mkfile(type, psi->name, id, psi->buf, (size_t)size,
-+				  time, psi);
-+		if (rc && (rc != -EEXIST || !quiet))
- 			failed++;
- 	}
- 	psi->close(psi);
-@@ -191,6 +212,21 @@ out:
- 		       failed, psi->name);
- }
- 
-+static void pstore_dowork(struct work_struct *work)
-+{
-+	pstore_get_records(1);
-+}
-+
-+static void pstore_timefunc(unsigned long dummy)
-+{
-+	if (pstore_new_entry) {
-+		pstore_new_entry = 0;
-+		schedule_work(&pstore_work);
-+	}
-+
-+	mod_timer(&pstore_timer, jiffies + PSTORE_INTERVAL);
-+}
-+
- /*
-  * Call platform driver to write a record to the
-  * persistent store.
+I think this is what we want.  There is no point allowing the user to pick
+and choose various layout drivers.  If they have selected nfs4.1 they should
+get all the layout drivers their kernel will support, based on the
+dependencies.
