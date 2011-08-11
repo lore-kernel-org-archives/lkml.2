@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1HKXUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 19:20:09 -0400
-Received: from eastrmfepi102.cox.net ([68.230.241.198]:43263 "EHLO
-	eastrmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab1HKXUH (ORCPT
+	id S1754144Ab1HKXaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 19:30:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48677 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab1HKX36 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 19:20:07 -0400
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Aug 2011 19:20:06 EDT
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020208.4E445724.0085,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=aUFDW8FZeteuO/fxyvToEy2C7OWB/cKxsZjvUqUod7E=
- c=1 sm=1 a=xht8ncfFzEoA:10 a=G8Uczd0VNMoA:10 a=02wuu-GNLhcA:10
- a=IkcTkHD0fZMA:10 a=mwbUbT5rpIF1zmaOn3pKzQ==:17 a=ie2X5EbEsFCt2l5DnokA:9
- a=QEXdDO2ut3YA:10 a=LNC2MLcbCfFaTYpT:21 a=ghCt11yAFSiRHJrO:21
- a=mwbUbT5rpIF1zmaOn3pKzQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110811191345.QM0ZR.226688.imail@eastrmwml38>
-Date: Thu, 11 Aug 2011 19:13:45 -0400
-From: Wins <nmhhjth@cox.net>
-Reply-To: charitydonation101@qatar.io
-Subject: Worldwide Donation Program "helping one to help others...."
+	Thu, 11 Aug 2011 19:29:58 -0400
+From: =?utf-8?B?TWF0xJtq?= Laitl <matej@laitl.cz>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Mickler <florian@mickler.org>,
+        Oliver Neukum <oliver@neukum.org>, linux-usb@vger.kernel.org,
+        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        Clemens Ladisch <clemens@ladisch.de>, pedrib@gmail.com,
+        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>
+Subject: Re: Allocating buffers for USB transfers (again)
+Date: Fri, 12 Aug 2011 01:29:53 +0200
+Message-ID: <3166003.Y8gKYdUrh9@edgy>
+Organization: FJFI =?UTF-8?B?xIxWVVQ=?=
+User-Agent: KMail/4.7.0  (Linux/3.1.0-rc1-00043-ge61d19b; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <CACTFLAMcOMv4D8k-P24TAkPwLRgYps4hoO-vC1NH+cibcsrUFQ@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org> <20110811180507.GC5884@xanatos> <CACTFLAMcOMv4D8k-P24TAkPwLRgYps4hoO-vC1NH+cibcsrUFQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ECOWAS in conjunction with the society for family   Health (SFH) and the European Union (EU), is   Giving out a yearly donation of US$$1,000,000.00   for claims directives.   send this details  _________________________Name:   ___________Contact Address:   _________Country:   _________________Sex:   ____________Direct Tel
+On 11. 8. 2011 Daniel Mack wrote:
+> On Thu, Aug 11, 2011 at 8:05 PM, Sarah Sharp
+> > Because according to Matej, he applied that patch, plus my patch to
+> > reject zero-length buffers[1], and he saw debugging that indicated he
+> > *did* see zero-length buffers.  Is there any chance your driver might
+> > submit a zero-length buffer in the middle of the isochronous URB
+> > transfer array?
+> 
+> Hmm, judging from the code, this can only ever happen if we receive an
+> inbound iso frame which has a valid status and an actual_length of
+> zero. Also, it was not neccessary to catch this case for EHCI.
+> 
+> Maetj, does this patch make any difference?
+
+This patch actually makes the sound playback _worse_. Now I get strange 
+squawks where previously at least first seconds of a song sounded normally.
+
+However, I no longer get "zero length buffer submitted" or that "... Weird." 
+debug messages, only several megabytes of: (should I post these somewhere?)
+
+xhci_hcd 0000:05:00.0: Giveback URB ffff880114cec000, len = 880, expected = 
+1000, status = -115
+xhci_hcd 0000:05:00.0: Giveback URB ffff880114740000, len = 352, expected = 
+1000, status = -115
+xhci_hcd 0000:05:00.0: underrun event on endpoint
+
+Regards,
+                 Matej
