@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab1HKC3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Aug 2011 22:29:54 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:38670 "EHLO
+	id S1753439Ab1HKCaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Aug 2011 22:30:15 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:38683 "EHLO
 	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab1HKC3s (ORCPT
+	with ESMTP id S1752333Ab1HKC3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Aug 2011 22:29:48 -0400
-X-ASG-Debug-ID: 1313029787-082c18a80001-xx1T2L
+	Wed, 10 Aug 2011 22:29:49 -0400
+X-ASG-Debug-ID: 1313029788-082b18a10001-xx1T2L
 X-Barracuda-Envelope-From: leoy@marvell.com
 From: Leo Yan <leoy@marvell.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         hzhuang1@marvell.com, nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
         plagnioj@jcrosoft.com
 Cc: Leo Yan <leoy@marvell.com>
-X-ASG-Orig-Subj: [PATCH 1/2] ARM: mmp: add sram allocator
-Subject: [PATCH 1/2] ARM: mmp: add sram allocator
-Date: Thu, 11 Aug 2011 10:32:00 +0800
-X-ASG-Orig-Subj: [PATCH 1/2] ARM: mmp: add sram allocator
-Message-Id: <1313029921-32227-2-git-send-email-leoy@marvell.com>
+X-ASG-Orig-Subj: [PATCH 2/2] ARM: mmp: register audio sram bank
+Subject: [PATCH 2/2] ARM: mmp: register audio sram bank
+Date: Thu, 11 Aug 2011 10:32:01 +0800
+X-ASG-Orig-Subj: [PATCH 2/2] ARM: mmp: register audio sram bank
+Message-Id: <1313029921-32227-3-git-send-email-leoy@marvell.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1313029921-32227-1-git-send-email-leoy@marvell.com>
 References: <1313029921-32227-1-git-send-email-leoy@marvell.com>
 X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1313029787
+X-Barracuda-Start-Time: 1313029788
 X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
 X-Barracuda-Spam-Score: -1002.00
 X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
@@ -31,266 +31,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On mmp platform, there have serveral sram banks;
-these banks are mainly for audio, video and PM.
-So add the sram allocator using genalloc to manage them.
-
-Every sram bank will register its own platform device
-info, after the sram allocator create the generic pool
-for the sram bank, the user module can use the pool's
-name to get the pool handler; then it can use the handler
-to alloc/free memory with genalloc APIs.
+MMP platform has sram for the audio island;
+Add the device structure for the audio sram,
+and register the audio sram device at init phase.
 
 Signed-off-by: Leo Yan <leoy@marvell.com>
 ---
- arch/arm/Kconfig                      |    1 +
- arch/arm/mach-mmp/Makefile            |    2 +-
- arch/arm/mach-mmp/include/mach/sram.h |   35 +++++++
- arch/arm/mach-mmp/sram.c              |  168 +++++++++++++++++++++++++++++++++
- 4 files changed, 205 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
- create mode 100644 arch/arm/mach-mmp/sram.c
+ arch/arm/mach-mmp/brownstone.c        |    5 +++++
+ arch/arm/mach-mmp/include/mach/mmp2.h |    7 +++++++
+ arch/arm/mach-mmp/mmp2.c              |    1 +
+ 3 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2c71a8f..c7545d1 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -559,6 +559,7 @@ config ARCH_MMP
- 	select TICK_ONESHOT
- 	select PLAT_PXA
- 	select SPARSE_IRQ
-+	select GENERIC_ALLOCATOR
- 	help
- 	  Support for Marvell's PXA168/PXA910(MMP) and MMP2 processor line.
+diff --git a/arch/arm/mach-mmp/brownstone.c b/arch/arm/mach-mmp/brownstone.c
+index c79162a..db4b5fd 100644
+--- a/arch/arm/mach-mmp/brownstone.c
++++ b/arch/arm/mach-mmp/brownstone.c
+@@ -186,6 +186,10 @@ static struct sdhci_pxa_platdata mmp2_sdh_platdata_mmc2 = {
+ 		| PXA_FLAG_SD_8_BIT_CAPABLE_SLOT,
+ };
  
-diff --git a/arch/arm/mach-mmp/Makefile b/arch/arm/mach-mmp/Makefile
-index b0ac942..169c674 100644
---- a/arch/arm/mach-mmp/Makefile
-+++ b/arch/arm/mach-mmp/Makefile
-@@ -7,7 +7,7 @@ obj-y				+= common.o clock.o devices.o time.o
- # SoC support
- obj-$(CONFIG_CPU_PXA168)	+= pxa168.o irq-pxa168.o
- obj-$(CONFIG_CPU_PXA910)	+= pxa910.o irq-pxa168.o
--obj-$(CONFIG_CPU_MMP2)		+= mmp2.o irq-mmp2.o
-+obj-$(CONFIG_CPU_MMP2)		+= mmp2.o irq-mmp2.o sram.o
++static struct sram_platdata mmp2_asram_platdata = {
++	.pool_name	= "asram",
++	.granularity	= SRAM_GRANULARITY,
++};
  
- # board support
- obj-$(CONFIG_MACH_ASPENITE)	+= aspenite.o
-diff --git a/arch/arm/mach-mmp/include/mach/sram.h b/arch/arm/mach-mmp/include/mach/sram.h
-new file mode 100644
-index 0000000..bedd2c4
---- /dev/null
-+++ b/arch/arm/mach-mmp/include/mach/sram.h
-@@ -0,0 +1,35 @@
-+/*
-+ *  linux/arch/arm/mach-mmp/include/mach/sram.h
-+ *
-+ *  SRAM Memory Management
-+ *
-+ *  Copyright (c) 2011 Marvell Semiconductors Inc.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __ASM_ARCH_SRAM_H
-+#define __ASM_ARCH_SRAM_H
-+
-+#include <linux/genalloc.h>
-+
-+/* ARBITRARY:  SRAM allocations are multiples of this 2^N size */
-+#define SRAM_GRANULARITY	512
-+
-+enum sram_type {
-+	MMP_DMA_UNDEFINED = 0,
-+	MMP_ASRAM,
-+	MMP_VSRAM,
-+};
-+
-+struct sram_platdata {
-+	char *pool_name;
-+	int granularity;
-+};
-+
-+extern struct gen_pool *sram_get_gpool(char *pool_name);
-+
-+#endif /* __ASM_ARCH_SRAM_H */
-diff --git a/arch/arm/mach-mmp/sram.c b/arch/arm/mach-mmp/sram.c
-new file mode 100644
-index 0000000..19ba19e
---- /dev/null
-+++ b/arch/arm/mach-mmp/sram.c
-@@ -0,0 +1,168 @@
-+/*
-+ *  linux/arch/arm/mach-mmp/sram.c
-+ *
-+ *  based on mach-davinci/sram.c - DaVinci simple SRAM allocator
-+ *
-+ *  Copyright (c) 2011 Marvell Semiconductors Inc.
-+ *  All Rights Reserved
-+ *
-+ *  Add for mmp sram support - Leo Yan <leoy@marvell.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/genalloc.h>
-+
+ static void __init brownstone_init(void)
+ {
+@@ -197,6 +201,7 @@ static void __init brownstone_init(void)
+ 	mmp2_add_twsi(1, NULL, ARRAY_AND_SIZE(brownstone_twsi1_info));
+ 	mmp2_add_sdhost(0, &mmp2_sdh_platdata_mmc0); /* SD/MMC */
+ 	mmp2_add_sdhost(2, &mmp2_sdh_platdata_mmc2); /* eMMC */
++	mmp2_add_asram(&mmp2_asram_platdata);
+ 
+ 	/* enable 5v regulator */
+ 	platform_device_register(&brownstone_v_5vp_device);
+diff --git a/arch/arm/mach-mmp/include/mach/mmp2.h b/arch/arm/mach-mmp/include/mach/mmp2.h
+index de7b888..c227328 100644
+--- a/arch/arm/mach-mmp/include/mach/mmp2.h
++++ b/arch/arm/mach-mmp/include/mach/mmp2.h
+@@ -13,6 +13,7 @@ extern void mmp2_clear_pmic_int(void);
+ #include <linux/i2c.h>
+ #include <linux/i2c/pxa-i2c.h>
+ #include <mach/devices.h>
 +#include <mach/sram.h>
-+
-+struct sram_bank_info {
-+	char *pool_name;
-+	struct gen_pool *gpool;
-+	int granularity;
-+
-+	phys_addr_t sram_phys;
-+	void __iomem *sram_virt;
-+	u32 sram_size;
-+
-+	struct list_head node;
-+};
-+
-+static DEFINE_MUTEX(sram_lock);
-+static LIST_HEAD(sram_bank_list);
-+
-+struct gen_pool *sram_get_gpool(char *pool_name)
+ 
+ extern struct pxa_device_desc mmp2_device_uart1;
+ extern struct pxa_device_desc mmp2_device_uart2;
+@@ -28,6 +29,7 @@ extern struct pxa_device_desc mmp2_device_sdh0;
+ extern struct pxa_device_desc mmp2_device_sdh1;
+ extern struct pxa_device_desc mmp2_device_sdh2;
+ extern struct pxa_device_desc mmp2_device_sdh3;
++extern struct pxa_device_desc mmp2_device_asram;
+ 
+ static inline int mmp2_add_uart(int id)
+ {
+@@ -85,5 +87,10 @@ static inline int mmp2_add_sdhost(int id, struct sdhci_pxa_platdata *data)
+ 	return pxa_register_device(d, data, sizeof(*data));
+ }
+ 
++static inline int mmp2_add_asram(struct sram_platdata *data)
 +{
-+	struct sram_bank_info *info = NULL;
-+
-+	if (!pool_name)
-+		return NULL;
-+
-+	mutex_lock(&sram_lock);
-+
-+	list_for_each_entry(info, &sram_bank_list, node)
-+		if (!strcmp(pool_name, info->pool_name))
-+			break;
-+
-+	mutex_unlock(&sram_lock);
-+
-+	if (&info->node == &sram_bank_list)
-+		return NULL;
-+
-+	return info->gpool;
-+}
-+EXPORT_SYMBOL(sram_get_gpool);
-+
-+static int __devinit sram_probe(struct platform_device *pdev)
-+{
-+	struct sram_platdata *pdata = pdev->dev.platform_data;
-+	struct sram_bank_info *info;
-+	struct resource *res;
-+	int ret = 0;
-+
-+	if (!pdata && !pdata->pool_name)
-+		return -ENODEV;
-+
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res == NULL) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	if (!resource_size(res))
-+		return 0;
-+
-+	info->sram_phys   = (phys_addr_t)res->start;
-+	info->sram_size   = resource_size(res);
-+	info->sram_virt   = ioremap(info->sram_phys, info->sram_size);
-+	info->pool_name	  = kstrdup(pdata->pool_name, GFP_KERNEL);
-+	info->granularity = pdata->granularity;
-+
-+	info->gpool = gen_pool_create(ilog2(info->granularity), -1);
-+	if (!info->gpool) {
-+		dev_err(&pdev->dev, "create pool failed\n");
-+		ret = -ENOMEM;
-+		goto create_pool_err;
-+	}
-+
-+	ret = gen_pool_add_virt(info->gpool, (unsigned long)info->sram_virt,
-+				info->sram_phys, info->sram_size, -1);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "add new chunk failed\n");
-+		ret = -ENOMEM;
-+		goto add_chunk_err;
-+	}
-+
-+	mutex_lock(&sram_lock);
-+	list_add(&info->node, &sram_bank_list);
-+	mutex_unlock(&sram_lock);
-+
-+	platform_set_drvdata(pdev, info);
-+
-+	dev_info(&pdev->dev, "initialized\n");
-+	return 0;
-+
-+add_chunk_err:
-+	gen_pool_destroy(info->gpool);
-+create_pool_err:
-+	iounmap(info->sram_virt);
-+	kfree(info->pool_name);
-+out:
-+	kfree(info);
-+	return ret;
++	return pxa_register_device(&mmp2_device_asram, data, sizeof(*data));
 +}
 +
-+static int __devexit sram_remove(struct platform_device *pdev)
-+{
-+	struct sram_bank_info *info;
-+
-+	info = platform_get_drvdata(pdev);
-+	if (info == NULL)
-+		return -ENODEV;
-+
-+	mutex_lock(&sram_lock);
-+	list_del(&info->node);
-+	mutex_unlock(&sram_lock);
-+
-+	gen_pool_destroy(info->gpool);
-+	iounmap(info->sram_virt);
-+	kfree(info->pool_name);
-+	kfree(info);
-+	return 0;
-+}
-+
-+static const struct platform_device_id sram_id_table[] = {
-+	{ "asram", MMP_ASRAM },
-+	{ "vsram", MMP_VSRAM },
-+	{ }
-+};
-+
-+static struct platform_driver sram_driver = {
-+	.probe		= sram_probe,
-+	.remove		= sram_remove,
-+	.driver		= {
-+		.name	= "mmp-sram",
-+	},
-+	.id_table	= sram_id_table,
-+};
-+
-+static int __init sram_init(void)
-+{
-+	return platform_driver_register(&sram_driver);
-+}
-+core_initcall(sram_init);
-+
-+MODULE_LICENSE("GPL");
+ #endif /* __ASM_MACH_MMP2_H */
+ 
+diff --git a/arch/arm/mach-mmp/mmp2.c b/arch/arm/mach-mmp/mmp2.c
+index 079c188..9d00754 100644
+--- a/arch/arm/mach-mmp/mmp2.c
++++ b/arch/arm/mach-mmp/mmp2.c
+@@ -226,4 +226,5 @@ MMP2_DEVICE(sdh0, "sdhci-pxav3", 0, MMC, 0xd4280000, 0x120);
+ MMP2_DEVICE(sdh1, "sdhci-pxav3", 1, MMC2, 0xd4280800, 0x120);
+ MMP2_DEVICE(sdh2, "sdhci-pxav3", 2, MMC3, 0xd4281000, 0x120);
+ MMP2_DEVICE(sdh3, "sdhci-pxav3", 3, MMC4, 0xd4281800, 0x120);
++MMP2_DEVICE(asram, "asram", -1, NONE, 0xe0000000, 0x4000);
+ 
 -- 
 1.7.4.1
 
