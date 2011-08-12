@@ -1,243 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab1HLKfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 06:35:11 -0400
-Received: from cernmx30.cern.ch ([137.138.144.177]:25699 "EHLO
-	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1HLKeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 06:34:15 -0400
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: <martyn.welch@ge.com>
-CC: <gregkh@suse.de>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
-Subject: [PATCH 1/5] staging: vme: make [alloc|free]_consistent bridge specific
-Date: Fri, 12 Aug 2011 12:30:47 +0200
-Message-ID: <1313145051-13397-2-git-send-email-manohar.vanga@cern.ch>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch>
-References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch>
+	id S1753412Ab1HLKf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 06:35:57 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57870 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab1HLKfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 06:35:55 -0400
+Date: Fri, 12 Aug 2011 12:34:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sam wang <linux.swang@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch] perf: ARMv7 wrong "branches" generalized instruction
+Message-ID: <20110812103426.GA32262@elte.hu>
+References: <alpine.DEB.2.00.1108101328440.22769@cl320.eecs.utk.edu>
+ <20110810183306.GA32695@e102144-lin.cambridge.arm.com>
+ <alpine.DEB.2.00.1108101452510.25186@cl320.eecs.utk.edu>
+ <20110810220727.GA5270@e102144-lin.cambridge.arm.com>
+ <20110811081525.GA3802@elte.hu>
+ <20110811091658.GB25103@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811091658.GB25103@e102144-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make PCI dependent functions ([alloc|free]_consistent() in
-'vme.c') bridge specific. By removing the dependency of the
-VME bridge framework on PCI, this patch allows for addition of
-non-PCI based VME bridges.
 
-Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
----
- drivers/staging/vme/bridges/vme_ca91cx42.c |   24 ++++++++++++++++++
- drivers/staging/vme/bridges/vme_tsi148.c   |   24 ++++++++++++++++++
- drivers/staging/vme/vme.c                  |   36 ++++++++++++++++-----------
- drivers/staging/vme/vme_bridge.h           |   10 +++++--
- 4 files changed, 76 insertions(+), 18 deletions(-)
+* Will Deacon <will.deacon@arm.com> wrote:
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 5122c13..0e4feac 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -1500,6 +1500,28 @@ static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
- 
- }
- 
-+void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
-+	dma_addr_t *dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	return pci_alloc_consistent(pdev, size, dma);
-+}
-+
-+void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
-+	dma_addr_t dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	pci_free_consistent(pdev, size, vaddr, dma);
-+}
-+
- static int __init ca91cx42_init(void)
- {
- 	return pci_register_driver(&ca91cx42_driver);
-@@ -1769,6 +1791,8 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	ca91cx42_bridge->lm_attach = ca91cx42_lm_attach;
- 	ca91cx42_bridge->lm_detach = ca91cx42_lm_detach;
- 	ca91cx42_bridge->slot_get = ca91cx42_slot_get;
-+	ca91cx42_bridge->alloc_consistent = ca91cx42_alloc_consistent;
-+	ca91cx42_bridge->free_consistent = ca91cx42_free_consistent;
- 
- 	data = ioread32(ca91cx42_device->base + MISC_CTL);
- 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index 9c53951..6c1167c 100644
---- a/drivers/staging/vme/bridges/vme_tsi148.c
-+++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -2114,6 +2114,28 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
- 	return (int)slot;
- }
- 
-+void *tsi148_alloc_consistent(struct device *parent, size_t size,
-+	dma_addr_t *dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	return pci_alloc_consistent(pdev, size, dma);
-+}
-+
-+void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
-+	dma_addr_t dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	pci_free_consistent(pdev, size, vaddr, dma);
-+}
-+
- static int __init tsi148_init(void)
- {
- 	return pci_register_driver(&tsi148_driver);
-@@ -2443,6 +2465,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	tsi148_bridge->lm_attach = tsi148_lm_attach;
- 	tsi148_bridge->lm_detach = tsi148_lm_detach;
- 	tsi148_bridge->slot_get = tsi148_slot_get;
-+	tsi148_bridge->alloc_consistent = tsi148_alloc_consistent;
-+	tsi148_bridge->free_consistent = tsi148_free_consistent;
- 
- 	data = ioread32be(tsi148_device->base + TSI148_LCSR_VSTAT);
- 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index c078ce3..d243a4a 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -83,15 +83,11 @@ static struct vme_bridge *find_bridge(struct vme_resource *resource)
- /*
-  * Allocate a contiguous block of memory for use by the driver. This is used to
-  * create the buffers for the slave windows.
-- *
-- * XXX VME bridges could be available on buses other than PCI. At the momment
-- *     this framework only supports PCI devices.
-  */
- void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
- 	dma_addr_t *dma)
- {
- 	struct vme_bridge *bridge;
--	struct pci_dev *pdev;
- 
- 	if (resource == NULL) {
- 		printk(KERN_ERR "No resource\n");
-@@ -104,28 +100,29 @@ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
- 		return NULL;
- 	}
- 
--	/* Find pci_dev container of dev */
- 	if (bridge->parent == NULL) {
--		printk(KERN_ERR "Dev entry NULL\n");
-+		printk(KERN_ERR "Dev entry NULL for bridge %s\n",
-+			bridge->name);
-+		return NULL;
-+	}
-+
-+	if (bridge->alloc_consistent == NULL) {
-+		pr_err("alloc_consistent not supported by bridge %s\n",
-+			bridge->name);
- 		return NULL;
- 	}
--	pdev = container_of(bridge->parent, struct pci_dev, dev);
- 
--	return pci_alloc_consistent(pdev, size, dma);
-+	return bridge->alloc_consistent(bridge->parent, size, dma);
- }
- EXPORT_SYMBOL(vme_alloc_consistent);
- 
- /*
-  * Free previously allocated contiguous block of memory.
-- *
-- * XXX VME bridges could be available on buses other than PCI. At the momment
-- *     this framework only supports PCI devices.
-  */
- void vme_free_consistent(struct vme_resource *resource, size_t size,
- 	void *vaddr, dma_addr_t dma)
- {
- 	struct vme_bridge *bridge;
--	struct pci_dev *pdev;
- 
- 	if (resource == NULL) {
- 		printk(KERN_ERR "No resource\n");
-@@ -138,10 +135,19 @@ void vme_free_consistent(struct vme_resource *resource, size_t size,
- 		return;
- 	}
- 
--	/* Find pci_dev container of dev */
--	pdev = container_of(bridge->parent, struct pci_dev, dev);
-+	if (bridge->parent == NULL) {
-+		printk(KERN_ERR "Dev entry NULL for bridge %s\n",
-+			bridge->name);
-+		return;
-+	}
-+
-+	if (bridge->free_consistent == NULL) {
-+		pr_err("free_consistent not supported by bridge %s\n",
-+			bridge->name);
-+		return;
-+	}
- 
--	pci_free_consistent(pdev, size, vaddr, dma);
-+	bridge->free_consistent(bridge->parent, size, vaddr, dma);
- }
- EXPORT_SYMBOL(vme_free_consistent);
- 
-diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-index 4c6ec31..a9084f0 100644
---- a/drivers/staging/vme/vme_bridge.h
-+++ b/drivers/staging/vme/vme_bridge.h
-@@ -98,8 +98,6 @@ struct vme_irq {
- /* This structure stores all the information about one bridge
-  * The structure should be dynamically allocated by the driver and one instance
-  * of the structure should be present for each VME chip present in the system.
-- *
-- * Currently we assume that all chips are PCI-based
-  */
- struct vme_bridge {
- 	char name[VMENAMSIZ];
-@@ -112,7 +110,7 @@ struct vme_bridge {
- 	struct list_head vme_errors;	/* List for errors generated on VME */
- 
- 	/* Bridge Info - XXX Move to private structure? */
--	struct device *parent;	/* Generic device struct (pdev->dev for PCI) */
-+	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
- 	void *driver_priv;	/* Private pointer for the bridge driver */
- 
- 	struct device dev[VME_SLOTS_MAX];	/* Device registered with
-@@ -165,6 +163,12 @@ struct vme_bridge {
- 
- 	/* CR/CSR space functions */
- 	int (*slot_get) (struct vme_bridge *);
-+
-+	/* Bridge parent interface */
-+	void *(*alloc_consistent)(struct device *dev, size_t size,
-+		dma_addr_t *dma);
-+	void (*free_consistent)(struct device *dev, size_t size,
-+		void *vaddr, dma_addr_t dma);
- };
- 
- void vme_irq_handler(struct vme_bridge *, int, int);
--- 
-1.7.4.1
+> Hi Ingo,
+> 
+> Thanks for your input on this.
+> 
+> On Thu, Aug 11, 2011 at 09:15:25AM +0100, Ingo Molnar wrote:
+> > 
+> > * Will Deacon <will.deacon@arm.com> wrote:
+> > 
+> > > [...] From what I've seen of perf users on ARM, they start with the 
+> > > ABI events, get some nonsensical results and then switch 
+> > > exclusively to raw events from then on.
+> > 
+> > Could you give a specific example of such nonsensical output on ARM? 
+> > Bugs should be fixed and yes i can that see if ARM produces 
+> > nonsencial output then people won't use that nonsensical output 
+> > (duh). Please fix or improve the nonsensical output.
+> 
+> Sure. On Cortex-A9 I see this:
+> 
+> 
+> Performance counter stats for 'ls':
+> 
+>               2862 cache-references
+>              20658 cache-misses              #  721.803 % of all cache refs
 
+Well, you said 'instructions' in your mail:
+
+>> Right, but as I say, `instructions' on one core might not be 
+>> `instructions' on another core. Just removing the ABI types from 
+>> ARM will at least stop people using them. [...]
+
+So can we agree that cycles, instructions and branches are fine on 
+ARM?
+
+Even discounting hits/misses/references restrictions that you are 
+running into, cache events are approximate on x86 too - most PMUs 
+have random restrictions on what can be measured and what not - the 
+cache access critical path gate count is not something you want to 
+lengthen with much PMU complexity ...
+
+>        0.019123136 seconds time elapsed
+> 
+> This is because we're actually reporting cache hits for 
+> cache-references in an attempt to provide something remotely 
+> similar. I agree that this is broken, which is why I'm leaning 
+> towards a more liberal use of HW_OP_UNSUPPORTED.
+
+If there's no 'references' event on that CPU then there's several 
+solutions would could do.
+
+Firstly, we could extend:
+
+enum perf_hw_cache_op_result_id {
+        PERF_COUNT_HW_CACHE_RESULT_ACCESS       = 0,
+        PERF_COUNT_HW_CACHE_RESULT_MISS         = 1,
+
+        PERF_COUNT_HW_CACHE_RESULT_MAX,         /* non-ABI */
+};
+
+with a third, RESULT_HIT variant, and the architecture could fill in 
+whichever events it can count. User-space could then request all 
+three and do the trivial arithmetics when one of them is missing as 
+'not counted'.
+
+Secondly, we could let the kernel do the arithmetics: when 'accesses' 
+and 'misses' are requested, the kernel could start a 'hits' and 
+'misses' event and do the addition internally. This couples the 
+events though, in a way not visible to user-space, which might 
+complicate things.
+
+A third variant would be a variation of the second solution: to 
+create a standalone 'compound' event by running two hw events (hits 
+and misses), when user-space requests 'references'.
+
+> > Btw., i have a pretty different experience from you: people will 
+> > use most of the (default) generic events pretty happily because 
+> > most developers have an adequate notion of 'cycles, branches, 
+> > instructions' and they will *STOP* at the boundary of having to 
+> > go into CPU microarchitecture specific details ...
+> 
+> Ok, perhaps my experience comes my sheltered life in the company of 
+> micro-architecture nerds :) [...]
+
+That's an excusable sin, happens to most folks who specialize in PMU 
+fun - they just don't get the point of "dumbing down" all those 
+nifty, totally exciting microarchitectural details ;-)
+
+Many times 'as many details as possible' is my preference as well - i 
+like 'perf stat -ddd' output a lot (after first getting a simplified 
+overview run). So successive runs of:
+
+  perf stat
+  perf stat -d
+  perf stat -dd
+  perf stat -ddd
+
+... tell the same fundamental story with increasing 'resolution' and 
+detail of analysis.
+
+That does not mean that my admittedly odd and occasionally extreme 
+preferences as an expert are what should dictate the design though.
+
+> [...] Although, I think that if the generic events were more 
+> applicable to ARM I would be seeing what you see.
+> 
+> > People just use the tool defaults in most cases, only a select 
+> > few will bother with model specific events. Life is short and 
+> > learning CPU microarchitecture specific details is a long and 
+> > difficult process that is not justified for most users/developers 
+> > - not in small part because the juicy bits of how specific CPUs 
+> > really work (and what raw events correspond to those details) are 
+> > behind an NDA protected curtain, only accessible to a few 
+> > privileged people ...
+> > 
+> > That is not what Linux interfaces are about in my opinion.
+> 
+> I completely agree with you on avoiding these interfaces in 
+> general. However, the ARM event numbers aren't under NDA and even 
+> if we could put them in the kernel, there's no way of communicating 
+> that to the user because the events don't match up well with what 
+> the ABI expects.
+
+Well, can you see other problems beyond the hits/misses/references 
+problem? I think we can solve that one.
+
+> For example, an event that may be useful on A15 is:
+> 
+>   0x6d: Exclusive instruction speculatively executed - STREX pass
+> 
+>   (this could be used for investigating lock contention)
+> 
+> yet users are currently forced to use a raw event for this anyway.
+> This is fine for the more esoteric events like
+> 
+>   0x40: Counts the number of Java bytecodes being decoded, including
+>         speculative ones.
+> 
+> where only a select few will care about it.
+
+We could certainly extend the number of generic events. What are 
+'exclusive instructions' on ARM - ones that do atomic operations?
+
+With any generalization, there will be a somewhat fuzzy boundary 
+between events that are best kept raw and events that are worth 
+generalizing. So the fact that you can find esoteric sounding but 
+useful events that probably only apply to ARM does not invalidate the 
+general idea of abstracting out cross-CPU concepts.
+
+I personally would rather err on the side of generalizing too many 
+than too few events:
+
+- If a given event cannot be expressed on a CPU model then that's not 
+  a big problem: it literally does not exist on that CPU and nothing
+  we can do will create it out of thin air. It will remain obscure 
+  and we can live with that.
+
+- But if a useful event is only accessible via the raw ABI, and it 
+  turns out to be present on other CPUs as well and tools would like 
+  to make use of it, then it would be actively harmful if tools used 
+  the raw ABI. If generalized it can be used more widely.
+
+
+> > So what you and Vince are suggesting, to dumb down the kernel 
+> > parts of perf and force users into raw or microarchitecture 
+> > specific events actually *reduces* the user-base very 
+> > significantly - while in practice even just cycles, instructions 
+> > and branches level analysis handles 99% of the everyday 
+> > performance analysis needs ...
+> 
+> No. I don't think that the kernel part should be dumbed down, nor 
+> do I think that the user should have to play with hex numbers. I 
+> just think that we should allow a way to communicate named 
+> CPU-specific events to the user. We have userspace libraries that 
+> do this, but if you want to avoid the OProfile mess then we could 
+> look at putting this into the kernel (although I worry that these 
+> tables will become large).
+
+Size is not an issue.
+
+
+> > We saw how the "push CPU specific events to users and tooling" 
+> > concept didn't work with oprofile - why do we have to re-discuss 
+> > this part of failed Linux history again and again?
+> > 
+> > The approach Vince and you are suggesting is literally 
+> > sacrificing 99% of utility for 1% of the users - a not very smart 
+> > approach. I don't mind accomodating the needs of 1% of 
+> > power-users (at all), but:
+> > 
+> >    *NOT AT THE EXPENSE OF THE COMMON CASE*.
+> > 
+> > doh.
+> 
+> So let's leave the common-case as a `best effort' attempt to match 
+> the ABI events to whatever we have on the running CPU and come up 
+> with a way to augment the set of named events provided by perf.
+
+Correct - as long as 'best effort' is still statistically equivalent 
+to the real, 'ideal' event.
+
+For the specific cache hits/misses/references example you cited i 
+think we need to do better than what we have currently: clearly we 
+don't want 'references' to be a smaller integer value than 'misses'.
+
+> > > Right, but as I say, `instructions' on one core might not be 
+> > > `instructions' on another core. Just removing the ABI types 
+> > > from ARM will at least stop people using them. [...]
+> > 
+> > What are you talking about? Sure ARM Cortex 9 will execute 
+> > instructions of a user-space application just as much as do other 
+> > ARM CPUs. Sure as it executes that app it will execute 
+> > instructions, you can single-step through it and thus you can 
+> > count how many instructions it has executed, right?
+> 
+> On A9:
+> 
+> instructions (0x68):
+> 	Instructions coming out of the core renaming stage
+> 
+> 	Counts the number of instructions going through the Register Renaming
+> 	stage. This number is an approximate number of the total number of
+> 	instructions speculatively executed, and even more approximate of
+> 	the total number of instructions architecturally executed. The
+> 	approximation depends mainly on the branch misprediction rate.
+> 
+> On A8:
+> 
+> instructions (0x08):
+> 	Instruction architecturally executed
+> 
+> The problem being that the A9 PMU event really doesn't tie back to 
+> the programmer's model. It's an approximation though, so it's 
+> alright provided you don't try to compare it between CPUs.
+
+ok - i think this is an example where the definition is statistically 
+equivalent - i.e. 'good enough'.
+
+Cross-CPU comparisons are never obvious in any case: compilers 
+generate different code on different CPUs and different systems tend 
+to have different user-space.
+
+99% of the comparisons are done in the same system, just with 
+different versions of the software running on it.
+
+
+> > If you think about it that is a pretty unambiguous definition: 
+> > each ARM core will execute user-space applications and the same 
+> > (compatible) assembly routine results in the same end result, in 
+> > the same number of visible assembly instructions, right?
+> 
+> Yes, from the programmer's model it's the same, but the event 
+> counts might not correlate so well with that. [...]
+
+Right.
+
+> [...] Sometimes you may need to have two event counters and sum the 
+> total, for example (the earlier cache-references should be hits + 
+> misses).
+
+Yes - and i think the cache event artifacts are well beyond the 
+'statistically equivalent' noise and we need to fix that imprecision.
+
+> > In practice most people will use the default event: cycles for 
+> > perf stat/top and the default 'perf stat' output.
+> 
+> We have a dedicated cycle counter, so no issues there.
+
+Good - this makes 90% of the users happy already ;-)
+
+> > We've also had numerous cases where kernel developers went way 
+> > beyond those metrics and apprecitated that tooling would provide 
+> > good approximations for all those events regardless of what CPU 
+> > type the workload was running on (and sometimes even documented 
+> > this in the changelog).
+> > 
+> > So having generic events is not some fancy, unused property, but 
+> > a pretty important measurement aspect of perf.
+> 
+> Ok, but how can we expose the rest of the CPU events without using 
+> raw events?
+
+I think Corey sent a patch some time ago (a year ago?) that allowed 
+CPU specific events to be defined by the kernel. I think it would be 
+useful - i think we've generalized most of the core stuff that's 
+worth generalizing so we can start populating the more esoteric 
+tables as well.
+
+These events could be used via some self-explanatory syntax, such as:
+
+	-e cpu::instr_strex
+
+or so - and would map to 0x6d on A9. Hm?
+
+Thanks,
+
+	Ingo
