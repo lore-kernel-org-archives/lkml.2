@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab1HLFRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 01:17:47 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:37353 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1HLFRq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 01:17:46 -0400
-Subject: Re: [PATCH] perf: fix temporary file ownership check
-From: Pekka Enberg <penberg@kernel.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20110811205537.GA22864@albatros>
-References: <20110811205537.GA22864@albatros>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 12 Aug 2011 08:17:43 +0300
-Message-ID: <1313126263.29737.21.camel@jaguar>
+	id S1754560Ab1HLFXL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 01:23:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55046 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab1HLFXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 01:23:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
+   d="asc'?scan'208";a="37717619"
+Subject: Re: linux-next: build failure after merge of the net tree
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Aug 2011 22:22:54 -0700
+In-Reply-To: <20110812143418.4fe084a6926f9f6258b596fd@canb.auug.org.au>
+References: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
+	 <1313116296.2057.30.camel@jtkirshe-mobl>
+	 <20110811.195150.1070520107072994432.davem@davemloft.net>
+	 <1313118339.2029.1.camel@jtkirshe-mobl>
+	 <20110812143418.4fe084a6926f9f6258b596fd@canb.auug.org.au>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-o4kLr+N5ULNXa1Rc6NZq"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313126585.4588.1.camel@jtkirshe-mobl>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 00:55 +0400, Vasiliy Kulikov wrote:
-> A file in /tmp/ might be a symlink, so lstat() should be used
-> instead of stat().
-> 
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+--=-o4kLr+N5ULNXa1Rc6NZq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  tools/perf/util/symbol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index a8b5371..5db39f6 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1506,7 +1506,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
->  	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
->  		struct stat st;
->  
-> -		if (stat(dso->name, &st) < 0)
-> +		if (lstat(dso->name, &st) < 0)
->  			return -1;
->  
->  		if (st.st_uid && (st.st_uid != geteuid())) {
+On Thu, 2011-08-11 at 21:34 -0700, Stephen Rothwell wrote:
+> Hi Jeff,
+>=20
+> On Thu, 11 Aug 2011 20:05:25 -0700 Jeff Kirsher <jeffrey.t.kirsher@intel.=
+com> wrote:
+> >
+> > I am working on a patch now to fix this.
+> >=20
+> > Stephen - if you could compile test it, I would greatly appreciate.
+>=20
+> Sure, send it over.  With master.kernel.org down, its not like I can
+> releease linux-next anyway :-)
+>=20
 
+That explains why I was having issues connecting to
+master.kernel.org. :)  Good to know it was not just me.
+
+--=-o4kLr+N5ULNXa1Rc6NZq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJORLiuAAoJECTsCADr/EWUoSoH/ivDl6UdF9/ZL0K/z5qRaLbj
+PLqsoT96ub1MD3T1V0xRCUpCLPB93RDpRcETxWhoD4/SK/DxRKJGJ9yLHnlh+NiU
+Pc/2CAQ51Tibuy0iwXzINgdcxgvEtttrRVhIkW/RWdhusUeFLbHxi16Buq+jHu6u
+jKWYe/X0laLKNu7RdXsSaOu8xREKJdXUtssLCmErDYTVDiF+3+viE7vr6RrEukH5
+Pl9pqLaXyn2QzJR3zyhlr+1LQDLKNAA8cBG5q53HwiC9nctSGC0VcyFuegr9ZYJo
+ZrSx+SwXuqehdgsUkfJQI/yF1XeMDPOA2aDbDuMUD6S5NUgsD82Aclm+YpoAiY4=
+=AcrO
+-----END PGP SIGNATURE-----
+
+--=-o4kLr+N5ULNXa1Rc6NZq--
 
