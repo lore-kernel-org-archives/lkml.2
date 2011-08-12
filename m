@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1HLI2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:28:35 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:46844 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752661Ab1HLI2a (ORCPT
+	id S1752855Ab1HLI2o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:28:44 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:54302 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752661Ab1HLI2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:28:30 -0400
+	Fri, 12 Aug 2011 04:28:39 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 06/23] mfd/db8500-prcmu: add accessors for PLL and SGA clock
-Date: Fri, 12 Aug 2011 10:28:18 +0200
-Message-ID: <1313137698-30782-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 07/23] mfd/db8500-prcmu: hwacc power state accessor
+Date: Fri, 12 Aug 2011 10:28:25 +0200
+Message-ID: <1313137705-30815-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,137 +22,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-This extends the DB8500 PRCMU driver with accessor calls for the
-PRCMU PLL and SGA clocks.
+This implements the accessor function for hardware accelerator
+power state settings.
 
-Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db8500-prcmu.c |   83 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 82 insertions(+), 1 deletions(-)
+ drivers/mfd/db8500-prcmu.c |  126 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 126 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index cea8145..af36999 100644
+index af36999..28a6090 100644
 --- a/drivers/mfd/db8500-prcmu.c
 +++ b/drivers/mfd/db8500-prcmu.c
-@@ -459,6 +459,35 @@ struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
- 	CLK_MGT_ENTRY(UICCCLK),
- };
- 
-+static struct regulator *hwacc_regulator[NUM_HW_ACC];
-+static struct regulator *hwacc_ret_regulator[NUM_HW_ACC];
-+
-+static bool hwacc_enabled[NUM_HW_ACC];
-+static bool hwacc_ret_enabled[NUM_HW_ACC];
-+
-+static const char *hwacc_regulator_name[NUM_HW_ACC] = {
-+	[HW_ACC_SVAMMDSP]	= "hwacc-sva-mmdsp",
-+	[HW_ACC_SVAPIPE]	= "hwacc-sva-pipe",
-+	[HW_ACC_SIAMMDSP]	= "hwacc-sia-mmdsp",
-+	[HW_ACC_SIAPIPE]	= "hwacc-sia-pipe",
-+	[HW_ACC_SGA]		= "hwacc-sga",
-+	[HW_ACC_B2R2]		= "hwacc-b2r2",
-+	[HW_ACC_MCDE]		= "hwacc-mcde",
-+	[HW_ACC_ESRAM1]		= "hwacc-esram1",
-+	[HW_ACC_ESRAM2]		= "hwacc-esram2",
-+	[HW_ACC_ESRAM3]		= "hwacc-esram3",
-+	[HW_ACC_ESRAM4]		= "hwacc-esram4",
-+};
-+
-+static const char *hwacc_ret_regulator_name[NUM_HW_ACC] = {
-+	[HW_ACC_SVAMMDSP]	= "hwacc-sva-mmdsp-ret",
-+	[HW_ACC_SIAMMDSP]	= "hwacc-sia-mmdsp-ret",
-+	[HW_ACC_ESRAM1]		= "hwacc-esram1-ret",
-+	[HW_ACC_ESRAM2]		= "hwacc-esram2-ret",
-+	[HW_ACC_ESRAM3]		= "hwacc-esram3-ret",
-+	[HW_ACC_ESRAM4]		= "hwacc-esram4-ret",
-+};
-+
- /*
- * Used by MCDE to setup all necessary PRCMU registers
- */
-@@ -1023,6 +1052,34 @@ int prcmu_release_usb_wakeup_state(void)
- 	return r;
+@@ -1081,6 +1081,132 @@ static int request_pll(u8 clock, bool enable)
  }
  
-+static int request_pll(u8 clock, bool enable)
+ /**
++ * prcmu_set_hwacc - set the power state of a h/w accelerator
++ * @hwacc_dev: The hardware accelerator (enum hw_acc_dev).
++ * @state: The new power state (enum hw_acc_state).
++ *
++ * This function sets the power state of a hardware accelerator.
++ * This function should not be called from interrupt context.
++ *
++ * NOTE! Deprecated, to be removed when all users switched over to use the
++ * regulator framework API.
++ */
++int prcmu_set_hwacc(u16 hwacc_dev, u8 state)
 +{
 +	int r = 0;
++	bool ram_retention = false;
++	bool enable, enable_ret;
 +
-+	if (clock == PRCMU_PLLSOC1)
-+		clock = (enable ? PLL_SOC1_ON : PLL_SOC1_OFF);
-+	else
-+		return -EINVAL;
++	/* check argument */
++	BUG_ON(hwacc_dev >= NUM_HW_ACC);
 +
-+	mutex_lock(&mb1_transfer.lock);
++	/* get state of switches */
++	enable = hwacc_enabled[hwacc_dev];
++	enable_ret = hwacc_ret_enabled[hwacc_dev];
 +
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
-+		cpu_relax();
++	/* set flag if retention is possible */
++	switch (hwacc_dev) {
++	case HW_ACC_SVAMMDSP:
++	case HW_ACC_SIAMMDSP:
++	case HW_ACC_ESRAM1:
++	case HW_ACC_ESRAM2:
++	case HW_ACC_ESRAM3:
++	case HW_ACC_ESRAM4:
++		ram_retention = true;
++		break;
++	}
 +
-+	writeb(MB1H_PLL_ON_OFF, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
-+	writeb(clock, (tcdm_base + PRCM_REQ_MB1_PLL_ON_OFF));
++	/* check argument */
++	BUG_ON(state > HW_ON);
++	BUG_ON(state == HW_OFF_RAMRET && !ram_retention);
 +
-+	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
-+	wait_for_completion(&mb1_transfer.work);
++	/* modify enable flags */
++	switch (state) {
++	case HW_OFF:
++		enable_ret = false;
++		enable = false;
++		break;
++	case HW_ON:
++		enable = true;
++		break;
++	case HW_OFF_RAMRET:
++		enable_ret = true;
++		enable = false;
++		break;
++	}
 +
-+	if (mb1_transfer.ack.header != MB1H_PLL_ON_OFF)
-+		r = -EIO;
++	/* get regulator (lazy) */
++	if (hwacc_regulator[hwacc_dev] == NULL) {
++		hwacc_regulator[hwacc_dev] = regulator_get(NULL,
++			hwacc_regulator_name[hwacc_dev]);
++		if (IS_ERR(hwacc_regulator[hwacc_dev])) {
++			pr_err("prcmu: failed to get supply %s\n",
++				hwacc_regulator_name[hwacc_dev]);
++			r = PTR_ERR(hwacc_regulator[hwacc_dev]);
++			goto out;
++		}
++	}
 +
-+	mutex_unlock(&mb1_transfer.lock);
++	if (ram_retention) {
++		if (hwacc_ret_regulator[hwacc_dev] == NULL) {
++			hwacc_ret_regulator[hwacc_dev] = regulator_get(NULL,
++				hwacc_ret_regulator_name[hwacc_dev]);
++			if (IS_ERR(hwacc_ret_regulator[hwacc_dev])) {
++				pr_err("prcmu: failed to get supply %s\n",
++					hwacc_ret_regulator_name[hwacc_dev]);
++				r = PTR_ERR(hwacc_ret_regulator[hwacc_dev]);
++				goto out;
++			}
++		}
++	}
 +
++	/* set regulators */
++	if (ram_retention) {
++		if (enable_ret && !hwacc_ret_enabled[hwacc_dev]) {
++			r = regulator_enable(hwacc_ret_regulator[hwacc_dev]);
++			if (r < 0) {
++				pr_err("prcmu_set_hwacc: ret enable failed\n");
++				goto out;
++			}
++			hwacc_ret_enabled[hwacc_dev] = true;
++		}
++	}
++
++	if (enable && !hwacc_enabled[hwacc_dev]) {
++		r = regulator_enable(hwacc_regulator[hwacc_dev]);
++		if (r < 0) {
++			pr_err("prcmu_set_hwacc: enable failed\n");
++			goto out;
++		}
++		hwacc_enabled[hwacc_dev] = true;
++	}
++
++	if (!enable && hwacc_enabled[hwacc_dev]) {
++		r = regulator_disable(hwacc_regulator[hwacc_dev]);
++		if (r < 0) {
++			pr_err("prcmu_set_hwacc: disable failed\n");
++			goto out;
++		}
++		hwacc_enabled[hwacc_dev] = false;
++	}
++
++	if (ram_retention) {
++		if (!enable_ret && hwacc_ret_enabled[hwacc_dev]) {
++			r = regulator_disable(hwacc_ret_regulator[hwacc_dev]);
++			if (r < 0) {
++				pr_err("prcmu_set_hwacc: ret disable failed\n");
++				goto out;
++			}
++			hwacc_ret_enabled[hwacc_dev] = false;
++		}
++	}
++
++out:
 +	return r;
 +}
++EXPORT_SYMBOL(prcmu_set_hwacc);
 +
- /**
++/**
   * db8500_prcmu_set_epod - set the state of a EPOD (power domain)
   * @epod_id: The EPOD to set
-@@ -1220,6 +1277,26 @@ static int request_reg_clock(u8 clock, bool enable)
- 	return 0;
- }
- 
-+static int request_sga_clock(u8 clock, bool enable)
-+{
-+	u32 val;
-+	int ret;
-+
-+	if (enable) {
-+		val = readl(PRCM_CGATING_BYPASS);
-+		writel(val | PRCM_CGATING_BYPASS_ICN2, PRCM_CGATING_BYPASS);
-+	}
-+
-+	ret = request_reg_clock(clock, enable);
-+
-+	if (!ret && !enable) {
-+		val = readl(PRCM_CGATING_BYPASS);
-+		writel(val & ~PRCM_CGATING_BYPASS_ICN2, PRCM_CGATING_BYPASS);
-+	}
-+
-+	return ret;
-+}
-+
- /**
-  * db8500_prcmu_request_clock() - Request for a clock to be enabled or disabled.
-  * @clock:      The clock for which the request is made.
-@@ -1230,12 +1307,16 @@ static int request_reg_clock(u8 clock, bool enable)
-  */
- int db8500_prcmu_request_clock(u8 clock, bool enable)
- {
--	if (clock < PRCMU_NUM_REG_CLOCKS)
-+	if (clock == PRCMU_SGACLK)
-+		return request_sga_clock(clock, enable);
-+	else if (clock < PRCMU_NUM_REG_CLOCKS)
- 		return request_reg_clock(clock, enable);
- 	else if (clock == PRCMU_TIMCLK)
- 		return request_timclk(enable);
- 	else if (clock == PRCMU_SYSCLK)
- 		return request_sysclk(enable);
-+	else if (clock == PRCMU_PLLSOC1)
-+		return request_pll(clock, enable);
- 	else
- 		return -EINVAL;
- }
+  * @epod_state: The new EPOD state
 -- 
 1.7.3.2
 
