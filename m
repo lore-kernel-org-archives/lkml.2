@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab1HLJlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 05:41:36 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:40156 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128Ab1HLJle (ORCPT
+	id S1752463Ab1HLJqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 05:46:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58740 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab1HLJqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 05:41:34 -0400
-Date: Fri, 12 Aug 2011 12:41:30 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Per Forlin <per.forlin@stericsson.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        Per Forlin <per.forlin@linaro.org>
-Subject: Re: [PATCH v2] usb: musb: ux500: optimize DMA callback routine
-Message-ID: <20110812094129.GO19467@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1312801266-11888-1-git-send-email-per.forlin@stericsson.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NT59pYSnj1ZLVgEN"
-Content-Disposition: inline
-In-Reply-To: <1312801266-11888-1-git-send-email-per.forlin@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Aug 2011 05:46:30 -0400
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Aug 2011 11:45:33 +0200
+In-Reply-To: <20110812054528.GA10524@localhost>
+References: <20110806084447.388624428@intel.com>
+	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
+	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
+	 <20110808230535.GC7176@localhost> <1313103367.26866.39.camel@twins>
+	 <20110812024353.GA11606@localhost> <20110812054528.GA10524@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313142333.6576.8.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-08-12 at 13:45 +0800, Wu Fengguang wrote:
+> Code is
+> 
+>         unsigned long freerun = (thresh + bg_thresh) / 2;
+> 
+>         setpoint = (limit + freerun) / 2;
+>         pos_ratio = abs(dirty - setpoint);
+>         pos_ratio <<= BANDWIDTH_CALC_SHIFT;
+>         do_div(pos_ratio, limit - setpoint + 1);
 
---NT59pYSnj1ZLVgEN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why do you use do_div()? from the code those things are unsigned long,
+and you can divide that just fine.
 
-Hi,
+Also, there's div64_s64 that can do signed divides for s64 types.
+That'll loose the extra conditionals you used for abs and putting the
+sign back.
 
-On Mon, Aug 08, 2011 at 01:01:06PM +0200, Per Forlin wrote:
-> From: Per Forlin <per.forlin@linaro.org>
->=20
-> Skip the use of work queue and call musb_dma_completion() directly from
-> DMA callback context.
->=20
-> Here follows measurements on a Snowball board with ondemand governor acti=
-ve.
->=20
-> Performance using work queue:
-> (105 MB) copied, 6.23758 s, 16.8 MB/s
-> (105 MB) copied, 5.7151 s, 18.3 MB/s
-> (105 MB) copied, 5.83583 s, 18.0 MB/s
-> (105 MB) copied, 5.93611 s, 17.7 MB/s
->=20
-> Performance without work queue
-> (105 MB) copied, 5.62173 s, 18.7 MB/s
-> (105 MB) copied, 5.61811 s, 18.7 MB/s
-> (105 MB) copied, 5.57817 s, 18.8 MB/s
-> (105 MB) copied, 5.58549 s, 18.8 MB/s
->=20
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
-> Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+>         x = pos_ratio;
+>         pos_ratio = pos_ratio * x >> BANDWIDTH_CALC_SHIFT;
+>         pos_ratio = pos_ratio * x >> BANDWIDTH_CALC_SHIFT;
 
-this patch doesn't apply anymore:
+So on 32bit with unsigned long that gets 32=2*(10+b) bits for x, that
+solves to 6, which isn't going to be enough I figure since
+(dirty-setpoint) !< 64.
 
-$ patch -p1 --dry-run < ~/apply.diff=20
-patching file drivers/usb/musb/ux500_dma.c
-Hunk #2 FAILED at 55.
-Hunk #3 succeeded at 325 (offset -4 lines).
-Hunk #4 succeeded at 341 (offset -4 lines).
-Hunk #5 succeeded at 367 (offset -4 lines).
-1 out of 5 hunks FAILED -- saving rejects to file drivers/usb/musb/ux500_dm=
-a.c.rej
+So you really need to use u64/s64 types here, unsigned long just won't
+do, with u64 you have 64=2(10+b) 22 bits for x, which should fit.
 
-care to rebase on top of 3.1-rc1. Thanks
 
---=20
-balbi
+>         if (dirty > setpoint)
+>                 pos_ratio = -pos_ratio;
+>         pos_ratio += 1 << BANDWIDTH_CALC_SHIFT; 
 
---NT59pYSnj1ZLVgEN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJORPVJAAoJEAv8Txj19kN1HukH/1K3jK9Y8h/GgevPF3VC7KKp
-+GC7xC2xPFW1gpls2jjdUQjitiha+gP6f0bjRSbdizdHjJadNLQD4EEEX16aK6nj
-m2zbEnWPlIPi9VgImyy8dwk21aaTI/8ujy8jJLUDg8X9v8kYjXBR1830U8ud0j1s
-jdPX4UT8KlrOF9VaklWMVAk4aF0bTPMuh8iRhfFk6T9g75Z1Ei0C1dmhGnPYfmpQ
-w9hWM9petHEXKJNw5/UkiCwX4H5WtWbmUN5Wt7LbM8EcnXy8X3eX164IfAqHzXaP
-MjW/yXEBY9W+ycn7d/a3lStdzBO1kG+NhNjc+f71aL/7JpkaTyyo1CZByfH3a5k=
-=ozkC
------END PGP SIGNATURE-----
-
---NT59pYSnj1ZLVgEN--
