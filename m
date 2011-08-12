@@ -1,80 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab1HKTKW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 15:10:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51050 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1HKTKV convert rfc822-to-8bit (ORCPT
+	id S1752622Ab1HKTLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 15:11:46 -0400
+Received: from mail.trabajo.gob.hn ([207.42.179.137]:42003 "EHLO
+	mail.trabajo.gob.hn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036Ab1HKTLp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 15:10:21 -0400
-Subject: Re: [PATCH v6 1/2] Track hard and soft "short lockups" or "stalls."
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Neronskiy <zakmagnus@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Alex Neronskiy <zakmagnus@chromium.com>
-Date: Thu, 11 Aug 2011 21:09:56 +0200
-In-Reply-To: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1313089796.8491.14.camel@twins>
-Mime-Version: 1.0
+	Thu, 11 Aug 2011 15:11:45 -0400
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: RE:THANKS
+To: Recipients <info@mail.com>
+From: Song Li <info@mail.com>
+Date: Fri, 12 Aug 2011 03:14:24 -0700
+Reply-To: songlil@w.cn
+Message-Id: <20110811191616.1C8E47FE280@mail.trabajo.gob.hn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 11:02 -0700, Alex Neronskiy wrote:
-> @@ -767,7 +767,23 @@ static struct ctl_table kern_table[] = {
->                 .extra1         = &zero,
->                 .extra2         = &one,
->         },
-> -#endif
-> +       {
-> +               .procname       = "softstall_worst",
-> +               .data           = &worst_softstall,
-> +               .maxlen         = sizeof(unsigned long),
-> +               .mode           = 0644,
-> +               .proc_handler   = proc_doulongvec_minmax,
-> +       },
-> +#ifdef CONFIG_HARDLOCKUP_DETECTOR
-> +       {
-> +               .procname       = "hardstall_worst",
-> +               .data           = &worst_hardstall,
-> +               .maxlen         = sizeof(unsigned long),
-> +               .mode           = 0644,
-> +               .proc_handler   = proc_doulongvec_minmax,
-> +       },
-> +#endif /* CONFIG_HARDLOCKUP_DETECTOR */
-> +#endif /* CONFIG_LOCKUP_DETECTOR */ 
-
-And patch 2 does:
-
-
-> +++ b/kernel/sysctl.c
-> @@ -767,22 +767,6 @@ static struct ctl_table kern_table[] = {
->                 .extra1         = &zero,
->                 .extra2         = &one,
->         },
-> -       {
-> -               .procname       = "softstall_worst",
-> -               .data           = &worst_softstall,
-> -               .maxlen         = sizeof(unsigned long),
-> -               .mode           = 0644,
-> -               .proc_handler   = proc_doulongvec_minmax,
-> -       },
-> -#ifdef CONFIG_HARDLOCKUP_DETECTOR
-> -       {
-> -               .procname       = "hardstall_worst",
-> -               .data           = &worst_hardstall,
-> -               .maxlen         = sizeof(unsigned long),
-> -               .mode           = 0644,
-> -               .proc_handler   = proc_doulongvec_minmax,
-> -       },
-> -#endif /* CONFIG_HARDLOCKUP_DETECTOR */
->  #endif /* CONFIG_LOCKUP_DETECTOR */
-> 
-
-Makes one wonder wtf patch 1 exists for..
+l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
+together in transferring $19,500,000.USD from my bank to you account.
+Finally if you are interested I shall provide you with more details.
+Email: songlil@w.cn
