@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1HLC5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:57:08 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45262 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab1HLC5H (ORCPT
+	id S1753720Ab1HLC7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:59:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:46572 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab1HLC7a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:57:07 -0400
-X-AuditID: b753bd60-a1479ba0000050a4-a1-4e44967fab81
-X-AuditID: b753bd60-a1479ba0000050a4-a1-4e44967fab81
-Message-ID: <4E44967C.1090101@hitachi.com>
-Date: Fri, 12 Aug 2011 11:57:00 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Thu, 11 Aug 2011 22:59:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=OAxEQ39jWFkFTG/RafCVtZY26ORx1hJwgWsFDze54fXOsKI51soImtijqq50gLdn2
+	frxg4+kgcg3ujYOnkb5fg==
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on ftrace
- nops
-References: <20110810162222.017387055@goodmis.org>  <4E43209D.7090104@hitachi.com>  <1313022842.18583.282.camel@gandalf.stny.rr.com>  <4E43769C.9000901@hitachi.com> <1313067691.18583.290.camel@gandalf.stny.rr.com>
-In-Reply-To: <1313067691.18583.290.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+	<CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+	<20110806084805.GA18098@sirena.org.uk>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+	<CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+	<CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
+	<1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
+Date: Thu, 11 Aug 2011 19:59:27 -0700
+Message-ID: <CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
+From: Colin Cross <ccross@google.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Ben Dooks <ben-linux@fluff.org>,
+        Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/08/11 22:01), Steven Rostedt wrote:
-> On Thu, 2011-08-11 at 15:28 +0900, Masami Hiramatsu wrote:
->> (2011/08/11 9:34), Steven Rostedt wrote:
->>> On Thu, 2011-08-11 at 09:21 +0900, Masami Hiramatsu wrote:
->>>> Hi Steven,
->>>>
->>>> Thanks for this nice feature!
->>>>
->>>> (2011/08/11 1:22), Steven Rostedt wrote:
->>>>> Hi All,
->>>>>
->>>>> I started working on adding the -mfentry switch to ftrace, which
->>>>> allows us to remove the frame pointers requirement from function tracing
->>>>> as well as makes mcount (fentry) work just better.
->>>>>
->>>>> But when I did this in another branch, I noticed that I broke kprobes
->>>>> in its most common usage. The attaching a probe at the beginning of
->>>>> a function to use get to its parameters.
->>>>>
->>>>> So I started this branch. This branch is to have kprobes use ftrace
->>>>> directly when a probe is attached to a ftrace nop. Currently, kprobes
->>>>> will just error when that happens. With this patch set, it will hook
->>>>> into the ftrace infrastructure and use ftrace instead. This is more
->>>>> like an optimized probe as no breakpoints need to be set. A call to
->>>>> the function is done directly via the mcount trampoline. If ftrace
->>>>> pt_regs is implemented for an arch, kprobes gets this feature for free.
->>>>
->>>> I agreed this idea, this looks good to me too :)
->>>> With -fentry, this can improve dynamic trace events very much.
->>>>
->>>> BTW (OT), it seems that current kprobe data structure becomes a bit
->>>> fat. Maybe what we need is just a "holder of hooking handler" as
->>>> what ftrace provides, not a full storage data structure of copied
->>>> instrucutions. Perhaps, we'd better diet the kprobe structure for
->>>> transparency of hooking infrastructure.
->>>
->>> Sure, I can make the ftrace_ops field in kprobes dynamically allocated
->>> instead. That shouldn't be an issue.
->>
->> By the way (again), perhaps, much simpler solution is using ftrace
->> not in kprobe, but in the trace_kprobe. Of course, there are several
->> pros and cons...
->>
->> The pros:
->> - Arch independent solution (anyway, ftrace still needs passing pt_regs
->>  to their handler)
->> - Don't need to introduce more complexity into kprobes itself.
->> - Maybe systemtap also can catch up with this as using same method.
+On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, 2011-08-11 at 14:43 -0700, Colin Cross wrote:
+>> On Thu, Aug 11, 2011 at 2:09 PM, Stephen Warren <swarren@nvidia.com> wrote:
 >
-> Note that systemtap and others will be hooking into kprobes version, not
-> the trace_kprobe one. If we do it in trace_kprobe, then everyone else
-> needs to reimplement it too.  I have bigger ideas for the future of
-> this, and I really want to get this working. If it doesn't work for
-> kprobes, then it won't work for anything else.
-
-I don't think it won't work. It can work but on a long way.
-Could you tell me your "bigger ideas"? Perhaps, we are on the different
-way but aim to same goal.
-
->> The cons:
->> - Native kprobes users will be disappointed... anyway, they just need to
->>   move their probes to the next instruction (usually addr+=5 is OK).
+>> > Well, while that's true, the thing is the right way to handle it doesn't
+>> > appear to exist at present.
 >
-> I've been told that doing the addr+=5 (which is also arch specific) can
-> break things for other tools.
+>> Yes, but the maintainers have been asked to stop using one-off hacks
+>> to fix everything that isn't supported in common code, and work
+>> towards getting the common code fixed instead.  If the common code
+>> maintainers say this is the best way to fix it for now, fine, but I'd
+>> like to hear an opinion first.
+>
+> We've been through this quite a few times already at the driver core
+> level, mostly in the context of PMIC probing. Fixing this properly
+> requires some surgery on the core device model infrastructure which it's
+> not realistic to expect driver authors to implement.
+>
+>> > So, in other words, how do you suggest I proceed with this?
+>
+>> device_pm_move_after(deva, devb) makes should make deva suspend before
+>> devb.  Maybe subsystems that link multiple devices together should
+>> call device_pm_move_after() to make sure that all of their devices
+>> suspend before the parents of any of their devices?
+>
+> This wouldn't be a robust solution for bus independent subsystems as it
+> doesn't maintain any sort of sorting - it just does a direct move so
+> it'll only capture the last dependency we saw. If you've got two
+> dependencies we could easily end up breaking things.
+>
+> For example with ASoC we'd sort all the components before the ASoC card
+> without regard for their bus dependencies or any other dependencies they
+> have (eg, their regulators). Since the ASoC card is a platform device
+> it's likely to have registered early with no regard for where the buses
+> the card needs are registered. I'd expect there's a reasonable chance
+> it'll actually make things worse in the short term.
 
-As I told in previous mail, I think kprobes can do that transparently.
+You can't just move everything after the card, you have to move
+everything after the last device that was probed, and it only works if
+nothing depends on any of the devices that are moved.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> I'll mail Ted and see if we can get this on the topic for KS, it's
+> getting more and more serious.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
