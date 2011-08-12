@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1HLUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:48:16 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:50689 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab1HLUsN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:48:13 -0400
+	id S1751596Ab1HLUwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:52:30 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:60957 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912Ab1HLUw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:52:29 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201108122052.p7CKqPMl022987@stout.americas.sgi.com>
+Date: Fri, 12 Aug 2011 15:52:24 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.1-rc2
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-In-Reply-To: <1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
-References: <4E457682.5020107@codeaurora.org>
-	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
-Date: Fri, 12 Aug 2011 16:48:12 -0400
-Message-ID: <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus, please pull the following updates for XFS for 3.1-rc2.
 
-On Fri, Aug 12, 2011 at 3:00 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> lib1funcs.S is reshipped even though the file hasn't changed
-> because the make rule is marked with FORCE. According to Sam
-> Ravnborg:
->
->        The FORCE prerequisite will tell make to always execute
->        the command.
->        But we only want to execute the command if:
->        1) $(obj)/lib1funcs.S is missing
->        2) or $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S is not
->        older then $(obj)/lib1funcs.S
->
->        So dropping FORCE should be a safe thing to do.
->
-> This fixes the shipped problem, but we still have to reassemble
-> lib1funcs.S because it isn't part of $targets. Add
-> lib1funcs.{S,o} to $targets to avoid relinking the compressed
-> vmlinux if nothing changes.
->
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> ---
->  arch/arm/boot/compressed/Makefile |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-> index 0c74a6f..937fd26 100644
-> --- a/arch/arm/boot/compressed/Makefile
-> +++ b/arch/arm/boot/compressed/Makefile
-> @@ -91,7 +91,7 @@ suffix_$(CONFIG_KERNEL_LZMA) = lzma
->
->  targets       := vmlinux vmlinux.lds \
->                 piggy.$(suffix_y) piggy.$(suffix_y).o \
-> -                font.o font.c head.o misc.o $(OBJS)
-> +                font.o font.c head.o misc.o lib1funcs.o lib1funcs.S $(OBJS)
->
->  # Make sure files are removed during clean
->  extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
-> @@ -121,9 +121,7 @@ LDFLAGS_vmlinux += -X
->  LDFLAGS_vmlinux += -T
->
->  # For __aeabi_uidivmod
-> -lib1funcs = $(obj)/lib1funcs.o
-> -
-> -$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S FORCE
-> +$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S
->        $(call cmd,shipped)
->
-You should be able to avoid the extra copy altogether by doing something ala:
+FYI  We are eliminating the subdirectory structure under fs/xfs/.
+The changes are simple but I'm holding off sending them until next
+week sometime (unless you have another preference).
 
-$(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
-        $(call cmd,as_o_S)
+Thanks.
 
-note that I also remove the $(SRCARCH), as there is no other
-`arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
+					-Alex
 
- - Arnaud
+The following changes since commit 72fa59970f8698023045ab0713d66f3f4f96945c:
 
->  # We need to prevent any GOTOFF relocs being used with references
-> @@ -140,7 +138,7 @@ bad_syms=$$($(CROSS_COMPILE)nm $@ | sed -n 's/^.\{8\} [bc] \(.*\)/\1/p') && \
->     echo "$$bad_syms" >&2; rm -f $@; false )
->
->  $(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/$(HEAD) $(obj)/piggy.$(suffix_y).o \
-> -               $(addprefix $(obj)/, $(OBJS)) $(lib1funcs) FORCE
-> +               $(addprefix $(obj)/, $(OBJS)) $(obj)/lib1funcs.o FORCE
->        $(call if_changed,ld)
->        @$(check_for_bad_syms)
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+  move RLIMIT_NPROC check from set_user() to do_execve_common() (2011-08-11 11:24:42 -0700)
+
+are available in the git repository at:
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Ajeet Yadav (1):
+      "xfs: fix error handling for synchronous writes" revisited
+
+Alex Elder (2):
+      Merge branch 'master' of git://git.kernel.org/.../torvalds/linux
+      xfs: set cursor in xfs_ail_splice() even when AIL was empty
+
+Chandra Seetharaman (13):
+      xfs: Remove the macro XFS_BUF_BFLAGS
+      xfs: Remove the macro XFS_BUF_ERROR and family
+      xfs: Remove macro XFS_BUF_BUSY and family
+      xfs: Remove macro XFS_BUF_HOLD
+      xfs: Remove macro XFS_BUF_SET_START
+      xfs: Remove the macro XFS_BUF_PTR
+      xfs: Remove the macro XFS_BUF_SET_PTR
+      Replace the macro XFS_BUF_ISPINNED with helper xfs_buf_ispinned
+      xfs: Remove the macro XFS_BUF_SET_TARGET
+      xfs: Remove the macro XFS_BUF_TARGET
+      xfs: Remove the macro XFS_BUFTARG_NAME
+      xfs: Check the return value of xfs_buf_read() for NULL
+      xfs: replace xfs_buf_geterror() with bp->b_error
+
+ fs/xfs/linux-2.6/xfs_buf.c  |   15 ++++-----
+ fs/xfs/linux-2.6/xfs_buf.h  |   32 +++++++-------------
+ fs/xfs/linux-2.6/xfs_sync.c |    2 +-
+ fs/xfs/quota/xfs_dquot.c    |   16 ++++------
+ fs/xfs/quota/xfs_qm.c       |    2 +-
+ fs/xfs/xfs_ag.h             |    6 ++--
+ fs/xfs/xfs_alloc.c          |    7 ++--
+ fs/xfs/xfs_attr.c           |    3 +-
+ fs/xfs/xfs_bmap.c           |    3 +-
+ fs/xfs/xfs_btree.c          |   17 ++++-------
+ fs/xfs/xfs_btree.h          |    2 +-
+ fs/xfs/xfs_buf_item.c       |   24 ++++++---------
+ fs/xfs/xfs_da_btree.c       |   12 ++++----
+ fs/xfs/xfs_dinode.h         |    2 +-
+ fs/xfs/xfs_ialloc.c         |    5 +--
+ fs/xfs/xfs_inode.c          |    4 +-
+ fs/xfs/xfs_log.c            |   14 +++------
+ fs/xfs/xfs_log_recover.c    |   38 ++++++++++++------------
+ fs/xfs/xfs_mount.c          |    4 +-
+ fs/xfs/xfs_rtalloc.c        |   32 ++++++++++----------
+ fs/xfs/xfs_rtalloc.h        |    2 +-
+ fs/xfs/xfs_rw.c             |    8 ++--
+ fs/xfs/xfs_sb.h             |    2 +-
+ fs/xfs/xfs_trans_ail.c      |   67 ++++++++++++++++++------------------------
+ fs/xfs/xfs_trans_buf.c      |   28 ++++++------------
+ fs/xfs/xfs_vnodeops.c       |   12 ++++---
+ 26 files changed, 155 insertions(+), 204 deletions(-)
