@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab1HLU1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:27:54 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:52876 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751196Ab1HLU1x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:27:53 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=wSWQpAr6UJYA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=J1mbgZyY04IlwC6AL_EA:9 a=CjuIK1q_8ugA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 24.153.165.185
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
-Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
-        <linux@horizon.com>, <linux-kernel@vger.kernel.org>
-References: <014801cc584f$5ff90e00$1feb2a00$@systemfabricworks.com> <OF79B4FA74.153E98FD-ONC12578EA.0021A784-C12578EA.0024990B@transmode.se>
-In-Reply-To: <OF79B4FA74.153E98FD-ONC12578EA.0021A784-C12578EA.0024990B@transmode.se>
-Subject: RE: [patch v5 resending 0/8] Add slicing-by-8 to crc32
-Date: Fri, 12 Aug 2011 15:27:50 -0500
-Message-ID: <02c501cc592e$4f5f6000$ee1e2000$@systemfabricworks.com>
+	id S1751536Ab1HLUjB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:39:01 -0400
+Received: from smtp19.mail.ru ([94.100.176.156]:55678 "EHLO smtp19.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751218Ab1HLUjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:39:00 -0400
+Date: Sat, 13 Aug 2011 00:38:25 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Ian Dobson <i.dobson@planet-ian.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] hwmon: add caseopen detection to w83627ehf driver
+Message-ID: <20110812203824.GB32369@rainbow>
+References: <1313009786-29885-1-git-send-email-mad_soft@inbox.ru>
+ <1313084814.2214.100.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQB1TE/iCpDUaKMDJaAWrgI6YSoYCwKURzh8l7MgHkA=
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313084814.2214.100.camel@groeck-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I am not even going to try. After a quick look they still look broken
+On 10:46 Thu 11 Aug     , Guenter Roeck wrote:
+> Hi Dmitry,
+> 
+> please consider the changes suggested below.
 
-You are right, of course ;-) Patches 2, 6 and 7 each had one line in the
-original with trailing whitespace.
-Something in the process I used stripped the whitespace from the patch. I
-will make another attempt and check them first. I miss the old days when I
-could cat a file to sendmail. Thunderbird is hell and outlook which I am
-required to use for most things is worse.
+[...]
 
-Thank you for your patience.
+> > +static struct sensor_device_attribute sda_caseopen[] = {
+> > +	SENSOR_ATTR(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
+> > +			clear_caseopen, 0),
+> > +	SENSOR_ATTR(intrusion1_alarm, S_IWUSR | S_IRUGO, show_caseopen,
+> > +			clear_caseopen, 1),
+> 
+> 	SENSOR_ATTR_2(intrusion0_alarm, S_IWUSR | S_IRUGO,
+> 			show_caseopen, clear_caseopen, 0x80, 0x10),
+> 	SENSOR_ATTR_2(intrusion1_alarm, S_IWUSR | S_IRUGO,
+> 			show_caseopen, clear_caseopen, 0x40, 0x40),
+> 
 
-Bob
+Oh, yeah! That's much neater with SENSOR_ATTR_2 - thanks for suggestion!
+I've seen it while looking to other hwmon drivers, but missed the difference
+from plain SENSOR_ATTR...
+
+I've incorporated your suggested changes into v3 of the patch - it will follow
+this mail.
+
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
 
