@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1HLIOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:14:35 -0400
-Received: from lucidpixels.com ([72.73.18.11]:45686 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab1HLIOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:14:32 -0400
-Date: Fri, 12 Aug 2011 04:14:31 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
+	id S1752133Ab1HLI0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:26:10 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:41639 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1HLI0H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 04:26:07 -0400
+Subject: [PATCH] [ARM] Orion: gpio: add missing include of linux/types.h
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Subject: Re: 3.0: BUG: soft lockup - CPU#7 stuck for 23s!
-In-Reply-To: <alpine.DEB.2.02.1108120401160.21591@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1108120414190.21591@p34.internal.lan>
-References: <alpine.DEB.2.02.1108120401160.21591@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Cc: Lennert Buytenhek <kernel@wantstofly.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Aug 2011 16:25:56 +0800
+Message-ID: <1313137556.24918.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds missing include of linux/types.h to fix below build error.
+
+  CC      arch/arm/mach-mv78xx0/mpp.o
+In file included from arch/arm/mach-mv78xx0/include/mach/gpio.h:9,
+                 from /home/axel/repos/git/linux-2.6/arch/arm/include/asm/gpio.h:5,
+                 from include/linux/gpio.h:18,
+                 from arch/arm/mach-mv78xx0/mpp.c:10:
+arch/arm/plat-orion/include/plat/gpio.h:28: error: expected declaration specifiers or '...' before 'u32'
+make[1]: *** [arch/arm/mach-mv78xx0/mpp.o] Error 1
+make: *** [arch/arm/mach-mv78xx0] Error 2
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next tree ( next-20110811 ).
+
+ arch/arm/plat-orion/include/plat/gpio.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-orion/include/plat/gpio.h b/arch/arm/plat-orion/include/plat/gpio.h
+index f7d76308..3abf304 100644
+--- a/arch/arm/plat-orion/include/plat/gpio.h
++++ b/arch/arm/plat-orion/include/plat/gpio.h
+@@ -12,6 +12,7 @@
+ #define __PLAT_GPIO_H
+ 
+ #include <linux/init.h>
++#include <linux/types.h>
+ 
+ /*
+  * Orion-specific GPIO API extensions.
+-- 
+1.7.4.1
 
 
-On Fri, 12 Aug 2011, Justin Piszcz wrote:
-
-> Hi,
->
-> Can anyone explain what is the cause of this problem?
->
-> 75 [330509.718763] Call Trace:
-> 76 [330509.718771]  [<ffffffff81089e15>] ? pagevec_lookup+0x15/0x20
-> 77 [330509.718776]  [<ffffffff8108b905>] ? 
-> invalidate_mapping_pages+0x55/0x130
-> 78 [330509.718784]  [<ffffffff810d6835>] ? shrink_icache_memory+0x2c5/0x310
-> 79 [330509.718788]  [<ffffffff8108c254>] ? shrink_slab+0x104/0x170
-> 80 [330509.718793]  [<ffffffff8108eda2>] ? balance_pgdat+0x492/0x600
-> 81 [330509.718798]  [<ffffffff8108efbc>] ? kswapd+0xac/0x250
-> 82 [330509.718803]  [<ffffffff81050fd0>] ? abort_exclusive_wait+0xb0/0xb0
-> 83 [330509.718807]  [<ffffffff8108ef10>] ? balance_pgdat+0x600/0x600
-> 84 [330509.718811]  [<ffffffff8105082e>] ? kthread+0x7e/0x90
-> 85 [330509.718818]  [<ffffffff815b4e14>] ? kernel_thread_helper+0x4/0x10
-> 86 [330509.718822]  [<ffffffff810507b0>] ? kthread_worker_fn+0x120/0x120
-> 87 [330509.718825]  [<ffffffff815b4e10>] ? gs_change+0xb/0xb
->
-> Also:
->
-> [330514.882885] Call Trace:
-> [330514.882894]  [<ffffffff8147de53>] ? cpuidle_idle_call+0x73/0xe0
-> [330514.882901]  [<ffffffff810007e6>] ? cpu_idle+0x56/0xb0
-> [330514.882906] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48 89 d1 
-> 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 48 89 e8 0f 01 c9 
-> <e8> cd da d3 ff 4c 29 e0 48 89 c7 e8 92 fa d1 ff 48 69 e8 40 42
-> [330514.882972] Call Trace:
-> [330514.882979]  [<ffffffff8147de53>] ? cpuidle_idle_call+0x73/0xe0
-> [330514.882992]  [<ffffffff810007e6>] ? cpu_idle+0x56/0xb0
-> [330514.883001] NMI backtrace for cpu 19
-> [330514.883008] CPU 19
->
-> Full output here:
->
-> http://home.comcast.net/~jpiszcz/20110812/3.0-error.txt
->
-> Justin.
->
->
-
-Could it be from these NFS errros?
-
-[25753.885236] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 14226
-[25769.833676] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 30440
-[25773.729444] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 30440
-[47314.413341] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 178016
-[50913.846798] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 6848
-[54498.758217] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 24101
-[112018.790234] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 97155
-[112021.938448] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 7200
-[112024.318213] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 9076
-[112041.079391] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 26631
-[112041.451630] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 26631
-[112050.037165] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 36654
-[112065.776352] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 111376
-[112078.973627] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 125587
-[112091.763116] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 139456
-[112103.410142] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 152678
-[112114.910136] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 165151
-[112125.737385] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 176737
-[126385.403115] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 3424
-[198276.128284] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 3424
-[198276.427155] NFS: directory motion/cam5 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 3424
-[198285.877935] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 4193
-[198301.261320] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 106126
-[198322.855898] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 36704
-[198340.080163] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 66195
-[264331.665375] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 23964
-[268319.266621] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 6848
-
-
-Justin.
 
