@@ -1,97 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1HLDBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:01:54 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53220 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1HLDBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:01:52 -0400
-From: stufever@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, davem@davemloft.net, sebastian.poehn@belden.com,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Subject: [PATCH RESEND] gianfar: reduce stack usage in gianfar_ethtool.c
-Date: Fri, 12 Aug 2011 11:07:25 +0800
-Message-Id: <1313118445-25594-1-git-send-email-wangshaoyan.pt@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753802Ab1HLDFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 23:05:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23706 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab1HLDFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 23:05:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
+   d="asc'?scan'208";a="38569515"
+Subject: Re: linux-next: build failure after merge of the net tree
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: David Miller <davem@davemloft.net>
+Cc: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Aug 2011 20:05:25 -0700
+In-Reply-To: <20110811.195150.1070520107072994432.davem@davemloft.net>
+References: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
+	 <1313116296.2057.30.camel@jtkirshe-mobl>
+	 <20110811.195150.1070520107072994432.davem@davemloft.net>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-M2yiEpagJgF9JDRMOBtn"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313118339.2029.1.camel@jtkirshe-mobl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-  drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
+--=-M2yiEpagJgF9JDRMOBtn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Reviewed-and-tested-by: Sebastian Pöhn <sebastian.poehn@belden.com>
----
- drivers/net/gianfar_ethtool.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+On Thu, 2011-08-11 at 19:51 -0700, David Miller wrote:
+> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Date: Thu, 11 Aug 2011 19:31:35 -0700
+>=20
+> > I am curious, can you compile the Sun GEM support driver?  and if so,
+> > does the Spider Net driver compile?
+>=20
+> I'm pretty sure you cannot reference object targets outside of
+> the current directory and expect it to work.
+>=20
+> You can only reference things in the current directory (objects,
+> directories to traverse down into, etc.) as targets
+>=20
+> So when there is a common piece of infrastructure shared by
+> two drivers, you're really going to have to cope with them
+> at the same time.
 
-diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-index 6e35069..25a8c2a 100644
---- a/drivers/net/gianfar_ethtool.c
-+++ b/drivers/net/gianfar_ethtool.c
-@@ -686,10 +686,21 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- {
- 	unsigned int last_rule_idx = priv->cur_filer_idx;
- 	unsigned int cmp_rqfpr;
--	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
--	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
-+	unsigned int *local_rqfpr;
-+	unsigned int *local_rqfcr;
- 	int i = 0x0, k = 0x0;
- 	int j = MAX_FILER_IDX, l = 0x0;
-+	int ret = 1;
-+
-+	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	if (!local_rqfpr || !local_rqfcr) {
-+		pr_err("Out of memory\n");
-+		ret = 0;
-+		goto err;
-+	}
- 
- 	switch (class) {
- 	case TCP_V4_FLOW:
-@@ -706,7 +717,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 		break;
- 	default:
- 		pr_err("Right now this class is not supported\n");
--		return 0;
-+		ret = 0;
-+		goto err;
- 	}
- 
- 	for (i = 0; i < MAX_FILER_IDX + 1; i++) {
-@@ -721,7 +733,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 
- 	if (i == MAX_FILER_IDX + 1) {
- 		pr_err("No parse rule found, can't create hash rules\n");
--		return 0;
-+		ret = 0;
-+		goto err;
- 	}
- 
- 	/* If a match was found, then it begins the starting of a cluster rule
-@@ -765,7 +778,10 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 		priv->cur_filer_idx = priv->cur_filer_idx - 1;
- 	}
- 
--	return 1;
-+err:
-+	kfree(local_rqfcr);
-+	kfree(local_rqfpr);
-+	return ret;
- }
- 
- static int gfar_set_hash_opts(struct gfar_private *priv, struct ethtool_rxnfc *cmd)
--- 
-1.7.4.1
+I am working on a patch now to fix this.
+
+Stephen - if you could compile test it, I would greatly appreciate.
+
+--=-M2yiEpagJgF9JDRMOBtn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJORJh1AAoJECTsCADr/EWUdLgH/1cBztEYeR8BHUyHidsWeHH5
+NIcnihy20vrclE9KV4hWPpQ6alOfrYCuNpC9OqpeqGppZSpIsb0xMWrbMIjSu9n3
+jjh0VgZIWQg7n2kdV6s4WtoPxlZv80roeL9lmYSOoP1FIS/18r4GZW05mHFv51uK
+0T4mNFoLohqm5xT4onnzMIiA4uAEOi0eiQiSkQ9SE0angzSLla3J9huXjx6vFZEX
+21vxNk2THiekPl7jwbfQ3OB8qV13zH6gBCH7PvzbBTG5nIxKHs58HJBzG1sR56CM
+e+RJdQa2VmBmqAX26sNV5LjhcXLCHT9KlcQu2Ncjy9Kso2zCIbfEMCbUvMEncrE=
+=7usg
+-----END PGP SIGNATURE-----
+
+--=-M2yiEpagJgF9JDRMOBtn--
 
