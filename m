@@ -1,163 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1HLCoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:44:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59179 "EHLO mga03.intel.com"
+	id S1753799Ab1HLCpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:45:09 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55426 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632Ab1HLCn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:43:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
-   d="scan'208";a="37687369"
-Date: Fri, 12 Aug 2011 10:43:54 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110812024353.GA11606@localhost>
-References: <20110806084447.388624428@intel.com>
- <20110806094526.733282037@intel.com>
- <1312811193.10488.33.camel@twins>
- <20110808141128.GA22080@localhost>
- <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313103367.26866.39.camel@twins>
+	id S1752511Ab1HLCpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 22:45:07 -0400
+Date: Fri, 12 Aug 2011 12:44:55 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Steve French <smfrench@gmail.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH] CIFS: remove local xattr definitions
+In-Reply-To: <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
+Message-ID: <alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
+References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com> <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com> <1313092847.3122.13.camel@localhost.localdomain> <CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
+ <alpine.LRH.2.00.1108121047540.14215@tundra.namei.org> <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313103367.26866.39.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 06:56:06AM +0800, Peter Zijlstra wrote:
-> On Tue, 2011-08-09 at 19:20 +0200, Peter Zijlstra wrote:
-> > So going by:
-> > 
-> >                                          write_bw
-> >   ref_bw = dirty_ratelimit * pos_ratio * --------
-> >                                          dirty_bw
-> > 
-> > pos_ratio seems to be the feedback on the deviation of the dirty pages
-> > around its setpoint. So we adjust the reference bw (or rather ratelimit)
-> > to take account of the shift in output vs input capacity as well as the
-> > shift in dirty pages around its setpoint.
-> > 
-> > From that we derive the condition that: 
-> > 
-> >   pos_ratio(setpoint) := 1
-> > 
-> > Now in order to create a linear function we need one more condition. We
-> > get one from the fact that once we hit the limit we should hard throttle
-> > our writers. We get that by setting the ratelimit to 0, because, after
-> > all, pause = nr_dirtied / ratelimit would yield inf. in that case. Thus:
-> > 
-> >   pos_ratio(limit) := 0
-> > 
-> > Using these two conditions we can solve the equations and get your:
-> > 
-> >                         limit - dirty
-> >   pos_ratio(dirty) =  ----------------
-> >                       limit - setpoint
-> > 
-> > Now, for some reason you chose not to use limit, but something like
-> > min(limit, 4*thresh) something to do with the slope affecting the rate
-> > of adjustment. This wants a comment someplace. 
-> 
-> Ok, so I think that pos_ratio(limit) := 0, is a stronger condition than
-> your negative slope (df/dx < 0), simply because it implies your
-> condition and because it expresses our hard stop at limit.
+On Fri, 12 Aug 2011, Stephen Rothwell wrote:
 
-Right. That's good point.
+> Except then that could leave Linus' tree broken during the next merge
+> window depending on the order he merges the cifs and security-testing
+> trees.  Unless that patch is sent to Linus as a fix patch before the next
+> merge window, of course.
+> 
+> I will add this patch as a merge fixup to the merge of the
+> security-testing tree for today.  And will remove my copy when one of the
+> trees gets fixed.
 
-> Also, while I know this is totally over the top, but..
-> 
-> I saw you added a ramp and brake area in future patches, so have you
-> considered using a third order polynomial instead?
+I'll put it in my tree, then.
 
-No I have not ;)
+> James: maybe I should change the name of your tree in -next to just
+> "security"?
 
-The 3 lines/curves should be a bit more flexible/configurable than the
-single 3rd order polynomial.  However the 3rd order polynomial is sure
-much more simple and consistent by removing the explicit rampup/brake
-areas and curves.
+Sure.
 
-> The simple:
-> 
->  f(x) = -x^3 
-> 
-> has the 'right' shape, all we need is move it so that:
-> 
->  f(s) = 1
-> 
-> and stretch it to put the single root at our limit. You'd get something
-> like:
-> 
->                s - x 3
->  f(x) :=  1 + (-----)
->                  d
-> 
-> Which, as required, is 1 at our setpoint and the factor d stretches the
-> middle bit. Which has a single (real) root at: 
-> 
->   x = s + d, 
-> 
-> by setting that to our limit, we get:
-> 
->   d = l - s
-> 
-> Making our final function look like:
-> 
->                s - x 3
->  f(x) :=  1 + (-----)
->                l - s
 
-Very intuitive reasoning, thanks!
-
-I substituted real numbers to the function assuming a mem=2GB system.
-
-with limit=thresh:
-
-        gnuplot> set xrange [60000:80000]
-        gnuplot> plot 1 +  (70000.0 - x)**3/(80000-70000.0)**3
-
-with limit=thresh+thresh/DIRTY_SCOPE
-
-        gnuplot> set xrange [60000:90000]
-        gnuplot> plot 1 +  (70000.0 - x)**3/(90000-70000.0)**3
-
-Figures attached.  The latter produces reasonably flat slope and I'll
-give it a spin in the dd tests :)
- 
-> You can clamp it at [0,2] or so.
-
-Looking at the figures, we may even do without the clamp because it's
-already inside the range [0, 2].
-
-> The implementation wouldn't be too horrid either, something like:
-> 
-> unsigned long bdi_pos_ratio(..)
-> {
-> 	if (dirty > limit)
-> 		return 0;
-> 
-> 	if (dirty < 2*setpoint - limit)
-> 		return 2 * SCALE;
-> 
-> 	x = SCALE * (setpoint - dirty) / (limit - setpoint);
-> 	xx = (x * x) / SCALE;
-> 	xxx = (xx * x) / SCALE;
-> 
-> 	return xxx;
-> }
-
-Looks very neat, much simpler than the three curves solution!
-
-Thanks,
-Fengguang
+-- 
+James Morris
+<jmorris@namei.org>
