@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab1HNQKl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:10:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36980 "EHLO mx2.suse.de"
+	id S1754869Ab1HNQLG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:11:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37001 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab1HNQKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:38 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
-Message-Id: <20110812210559.856398666@clark.kroah.org>
+	id S1754841Ab1HNQKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:44 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:06:00 2011
+Message-Id: <20110812210600.032018809@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:13 -0700
+Date: Fri, 12 Aug 2011 14:05:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Hacker <hacker@epn.ru>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [88/90] ath9k: fix a misprint which leads to incorrect calibration
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Howells <dhowells@redhat.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: [90/90] mm: Fix fixup_user_fault() for MMU=n
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Hacker <hacker@epn.ru>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 118c9db51e7acaf8f16deae8311cce6588b83e31 upstream.
+commit 5c723ba5b7886909b2e430f2eae454c33f7fe5c6 upstream.
 
-This patch addresses an issue with incorrect HW register
-AR_PHY_TX_IQCAL_CORR_COEFF_B1 definition which leads to incorrect clibration.
+In commit 2efaca927f5c ("mm/futex: fix futex writes on archs with SW
+tracking of dirty & young") we forgot about MMU=n.  This patch fixes
+that.
 
-Signed-off-by: Alex Hacker <hacker@epn.ru>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: David Howells <dhowells@redhat.com>
+Link: http://lkml.kernel.org/r/1311761831.24752.413.camel@twins
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mm.h |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-@@ -848,7 +848,7 @@
- #define AR_PHY_TPC_11_B1         (AR_SM1_BASE + 0x220)
- #define AR_PHY_PDADC_TAB_1       (AR_SM1_BASE + 0x240)
- #define AR_PHY_TX_IQCAL_STATUS_B1   (AR_SM1_BASE + 0x48c)
--#define AR_PHY_TX_IQCAL_CORR_COEFF_B1(_i)    (AR_SM_BASE + 0x450 + ((_i) << 2))
-+#define AR_PHY_TX_IQCAL_CORR_COEFF_B1(_i)    (AR_SM1_BASE + 0x450 + ((_i) << 2))
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -959,6 +959,8 @@ int invalidate_inode_page(struct page *p
+ #ifdef CONFIG_MMU
+ extern int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, unsigned int flags);
++extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
++			    unsigned long address, unsigned int fault_flags);
+ #else
+ static inline int handle_mm_fault(struct mm_struct *mm,
+ 			struct vm_area_struct *vma, unsigned long address,
+@@ -968,6 +970,14 @@ static inline int handle_mm_fault(struct
+ 	BUG();
+ 	return VM_FAULT_SIGBUS;
+ }
++static inline int fixup_user_fault(struct task_struct *tsk,
++		struct mm_struct *mm, unsigned long address,
++		unsigned int fault_flags)
++{
++	/* should never happen if there's no MMU */
++	BUG();
++	return -EFAULT;
++}
+ #endif
  
- /*
-  * Channel 2 Register Map
+ extern int make_pages_present(unsigned long addr, unsigned long end);
+@@ -985,8 +995,6 @@ int get_user_pages(struct task_struct *t
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
+-extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+-			    unsigned long address, unsigned int fault_flags);
+ 
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
 
 
