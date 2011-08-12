@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab1HNQ24 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:28:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36323 "EHLO mx2.suse.de"
+	id S1753781Ab1HNQGS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:06:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36303 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab1HNQG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:06:26 -0400
+	id S1753546Ab1HNQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:06:15 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:53 2011
-Message-Id: <20110812210553.429837808@clark.kroah.org>
+Message-Id: <20110812210553.171257915@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:00 -0700
+Date: Fri, 12 Aug 2011 14:03:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [15/90] net: sendmmsg should only return an error if no messages were sent
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [12/90] iwlegacy: set tx power after rxon_assoc
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 728ffb86f10873aaf4abd26dde691ee40ae731fe upstream.
+commit 17e859a899712d16c3e70b045d61ad9e02c53f8a upstream.
 
-sendmmsg uses a similar error return strategy as recvmmsg but it
-turns out to be a confusing way to communicate errors.
+If settings of tx power was deferred during scan or changing channel we
+have to setup them during commit rxon. Fix problem on 3945 (4965 already
+has this fix).
 
-The current code stores the error code away and returns it on the next
-sendmmsg call. This means a call with completely valid arguments could
-get an error from a previous call.
+Optimize code to apply tx settings only when tx power was actually
+changed.
 
-Change things so we only return an error if no datagrams could be sent.
-If less than the requested number of messages were sent, the application
-must retry starting at the first failed one and if the problem is
-persistent the error will be returned.
-
-This matches the behaviour of other syscalls like read/write - it
-is not an error if less than the requested number of elements are sent.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/socket.c |   27 +++------------------------
- 1 file changed, 3 insertions(+), 24 deletions(-)
+ drivers/net/wireless/iwlegacy/iwl-3945.c |    6 +++++-
+ drivers/net/wireless/iwlegacy/iwl-4965.c |    8 ++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -2005,12 +2005,9 @@ int __sys_sendmmsg(int fd, struct mmsghd
- 	if (!sock)
- 		return err;
+--- a/drivers/net/wireless/iwlegacy/iwl-3945.c
++++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
+@@ -1747,7 +1747,11 @@ int iwl3945_commit_rxon(struct iwl_priv
+ 		}
  
--	err = sock_error(sock->sk);
--	if (err)
--		goto out_put;
+ 		memcpy(active_rxon, staging_rxon, sizeof(*active_rxon));
 -
- 	entry = mmsg;
- 	compat_entry = (struct compat_mmsghdr __user *)mmsg;
-+	err = 0;
- 
- 	while (datagrams < vlen) {
- 		/*
-@@ -2037,29 +2034,11 @@ int __sys_sendmmsg(int fd, struct mmsghd
- 		++datagrams;
++		/*
++		 * We do not commit tx power settings while channel changing,
++		 * do it now if tx power changed.
++		 */
++		iwl_legacy_set_tx_power(priv, priv->tx_power_next, false);
+ 		return 0;
  	}
  
--out_put:
- 	fput_light(sock->file, fput_needed);
+--- a/drivers/net/wireless/iwlegacy/iwl-4965.c
++++ b/drivers/net/wireless/iwlegacy/iwl-4965.c
+@@ -1237,7 +1237,12 @@ static int iwl4965_commit_rxon(struct iw
  
--	if (err == 0)
--		return datagrams;
--
--	if (datagrams != 0) {
--		/*
--		 * We may send less entries than requested (vlen) if the
--		 * sock is non blocking...
--		 */
--		if (err != -EAGAIN) {
--			/*
--			 * ... or if sendmsg returns an error after we
--			 * send some datagrams, where we record the
--			 * error to return on the next call or if the
--			 * app asks about it using getsockopt(SO_ERROR).
--			 */
--			sock->sk->sk_err = -err;
--		}
--
-+	/* We only return an error if no datagrams were able to be sent */
-+	if (datagrams != 0)
- 		return datagrams;
--	}
+ 		memcpy(active_rxon, &ctx->staging, sizeof(*active_rxon));
+ 		iwl_legacy_print_rx_config_cmd(priv, ctx);
+-		goto set_tx_power;
++		/*
++		 * We do not commit tx power settings while channel changing,
++		 * do it now if tx power changed.
++		 */
++		iwl_legacy_set_tx_power(priv, priv->tx_power_next, false);
++		return 0;
+ 	}
  
- 	return err;
- }
+ 	/* If we are currently associated and the new config requires
+@@ -1317,7 +1322,6 @@ static int iwl4965_commit_rxon(struct iw
+ 
+ 	iwl4965_init_sensitivity(priv);
+ 
+-set_tx_power:
+ 	/* If we issue a new RXON command which required a tune then we must
+ 	 * send a new TXPOWER command or we won't be able to Tx any frames */
+ 	ret = iwl_legacy_set_tx_power(priv, priv->tx_power_next, true);
 
 
