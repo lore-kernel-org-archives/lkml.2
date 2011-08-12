@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab1HLK6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 06:58:39 -0400
+	id S1753986Ab1HLK6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 06:58:53 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:50039 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1HLK6h (ORCPT
+	with ESMTP id S1753679Ab1HLK6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 06:58:37 -0400
-Date: Fri, 12 Aug 2011 12:58:24 +0200
+	Fri, 12 Aug 2011 06:58:47 -0400
+Date: Fri, 12 Aug 2011 12:58:31 +0200
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 2/9] mm: alloc_contig_freed_pages() added
+Subject: [PATCH 9/9] ARM: S5PV210: example of CMA private area for FIMC device
+ on Goni board
 In-reply-to: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -26,7 +27,7 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Jonathan Corbet <corbet@lwn.net>,
         Shariq Hasnain <shariq.hasnain@linaro.org>,
         Chunsang Jeong <chunsang.jeong@linaro.org>
-Message-id: <1313146711-1767-3-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1313146711-1767-10-git-send-email-m.szyprowski@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.5.4
 Content-type: TEXT/PLAIN
@@ -36,101 +37,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+This patch is an example how device private CMA area can be activated.
+It creates one CMA region and assigns it to the first s5p-fimc device on
+Samsung Goni S5PC110 board.
 
-This commit introduces alloc_contig_freed_pages() function
-which allocates (ie. removes from buddy system) free pages
-in range.  Caller has to guarantee that all pages in range
-are in buddy system.
-
-Along with this function, a free_contig_pages() function is
-provided which frees all (or a subset of) pages allocated
-with alloc_contig_free_pages().
-
-Michal Nazarewicz has modified the function to make it easier
-to allocate not MAX_ORDER_NR_PAGES aligned pages by making it
-return pfn of one-past-the-last allocated page.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- include/linux/page-isolation.h |    3 ++
- mm/page_alloc.c                |   44 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+), 0 deletions(-)
+ arch/arm/mach-s5pv210/Kconfig     |    1 +
+ arch/arm/mach-s5pv210/mach-goni.c |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 58cdbac..f1417ed 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -32,6 +32,9 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-  */
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
-+extern unsigned long alloc_contig_freed_pages(unsigned long start,
-+					      unsigned long end, gfp_t flag);
-+extern void free_contig_pages(struct page *page, int nr_pages);
+diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
+index 69dd87c..697a5be 100644
+--- a/arch/arm/mach-s5pv210/Kconfig
++++ b/arch/arm/mach-s5pv210/Kconfig
+@@ -64,6 +64,7 @@ menu "S5PC110 Machines"
+ config MACH_AQUILA
+ 	bool "Aquila"
+ 	select CPU_S5PV210
++	select CMA
+ 	select S3C_DEV_FB
+ 	select S5P_DEV_FIMC0
+ 	select S5P_DEV_FIMC1
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index 85c2d51..665c4ae 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -26,6 +26,7 @@
+ #include <linux/input.h>
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
++#include <linux/dma-contiguous.h>
  
- /*
-  * For migration.
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e8ecb6..ad6ae3f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5668,6 +5668,50 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -848,6 +849,9 @@ static void __init goni_map_io(void)
+ static void __init goni_reserve(void)
+ {
+ 	s5p_mfc_reserve_mem(0x43000000, 8 << 20, 0x51000000, 8 << 20);
++
++	/* Create private 16MiB contiguous memory area for s5p-fimc.0 device */
++	dma_declare_contiguous(&s5p_device_fimc0.dev, 16*SZ_1M, 0);
  }
  
-+unsigned long alloc_contig_freed_pages(unsigned long start, unsigned long end,
-+				       gfp_t flag)
-+{
-+	unsigned long pfn = start, count;
-+	struct page *page;
-+	struct zone *zone;
-+	int order;
-+
-+	VM_BUG_ON(!pfn_valid(start));
-+	zone = page_zone(pfn_to_page(start));
-+
-+	spin_lock_irq(&zone->lock);
-+
-+	page = pfn_to_page(pfn);
-+	for (;;) {
-+		VM_BUG_ON(page_count(page) || !PageBuddy(page));
-+		list_del(&page->lru);
-+		order = page_order(page);
-+		zone->free_area[order].nr_free--;
-+		rmv_page_order(page);
-+		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
-+		pfn  += 1 << order;
-+		if (pfn >= end)
-+			break;
-+		VM_BUG_ON(!pfn_valid(pfn));
-+		page += 1 << order;
-+	}
-+
-+	spin_unlock_irq(&zone->lock);
-+
-+	/* After this, pages in the range can be freed one be one */
-+	page = pfn_to_page(start);
-+	for (count = pfn - start; count; --count, ++page)
-+		prep_new_page(page, 0, flag);
-+
-+	return pfn;
-+}
-+
-+void free_contig_pages(struct page *page, int nr_pages)
-+{
-+	for (; nr_pages; --nr_pages, ++page)
-+		__free_page(page);
-+}
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
+ static void __init goni_machine_init(void)
 -- 
 1.7.1.569.g6f426
 
