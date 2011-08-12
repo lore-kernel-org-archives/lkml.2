@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1HLWzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 18:55:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37317 "EHLO
+	id S1753134Ab1HLWzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 18:55:47 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35393 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab1HLWzY (ORCPT
+	with ESMTP id S1752821Ab1HLWzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 18:55:24 -0400
+	Fri, 12 Aug 2011 18:55:20 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH 09/12] arm/tegra: Convert pinmux driver to a platform device
-Date: Fri, 12 Aug 2011 16:54:54 -0600
-Message-Id: <1313189697-21287-10-git-send-email-swarren@nvidia.com>
+Subject: [RFC PATCH 07/12] gpio/tegra: Convert to a platform device
+Date: Fri, 12 Aug 2011 16:54:52 -0600
+Message-Id: <1313189697-21287-8-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
 References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
@@ -26,48 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/mach-tegra/pinmux.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-tegra.c |   25 ++++++++++++++-----------
+ 1 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-index f80d507..05fa1a3 100644
---- a/arch/arm/mach-tegra/pinmux.c
-+++ b/arch/arm/mach-tegra/pinmux.c
-@@ -20,6 +20,7 @@
- #include <linux/errno.h>
- #include <linux/spinlock.h>
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index df64536..4da4839 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -20,10 +20,10 @@
+ #include <linux/init.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
+-
  #include <linux/io.h>
+ #include <linux/gpio.h>
+ #include <linux/of.h>
 +#include <linux/platform_device.h>
  
- #include <mach/iomap.h>
- #include <mach/pinmux.h>
-@@ -665,6 +666,26 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+ #include <asm/mach/irq.h>
+ 
+@@ -332,7 +332,7 @@ static struct irq_chip tegra_gpio_irq_chip = {
+  */
+ static struct lock_class_key gpio_lock_class;
+ 
+-static int __init tegra_gpio_init(void)
++static int __init tegra_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct tegra_gpio_bank *bank;
+ 	int gpio;
+@@ -346,15 +346,6 @@ static int __init tegra_gpio_init(void)
+ 		}
  	}
+ 
+-#ifdef CONFIG_OF_GPIO
+-	/*
+-	 * This isn't ideal, but it gets things hooked up until this
+-	 * driver is converted into a platform_device
+-	 */
+-	tegra_gpio_chip.of_node = of_find_compatible_node(NULL, NULL,
+-						"nvidia,tegra20-gpio");
+-#endif /* CONFIG_OF_GPIO */
+-
+ 	gpiochip_add(&tegra_gpio_chip);
+ 
+ 	for (gpio = 0; gpio < TEGRA_NR_GPIOS; gpio++) {
+@@ -383,6 +374,18 @@ static int __init tegra_gpio_init(void)
+ 	return 0;
  }
  
-+static int __init tegra_pinmux_probe(struct platform_device *pdev)
-+{
-+	return 0;
-+}
-+
-+static struct platform_driver tegra_pinmux_driver = {
++static struct platform_driver tegra_gpio_driver = {
 +	.driver		= {
-+		.name	= "tegra-pinmux",
++		.name	= "tegra-gpio",
 +		.owner	= THIS_MODULE,
 +	},
-+	.probe		= tegra_pinmux_probe,
++	.probe		= tegra_gpio_probe,
 +};
 +
-+static int __init tegra_pinmux_init(void)
++static int __init tegra_gpio_init(void)
 +{
-+	return platform_driver_register(&tegra_pinmux_driver);
++	return platform_driver_register(&tegra_gpio_driver);
 +}
-+postcore_initcall(tegra_pinmux_init);
-+
-+
- #ifdef	CONFIG_DEBUG_FS
+ postcore_initcall(tegra_gpio_init);
  
- #include <linux/debugfs.h>
+ void __init tegra_gpio_config(struct tegra_gpio_table *table, int num)
 -- 
 1.7.0.4
 
