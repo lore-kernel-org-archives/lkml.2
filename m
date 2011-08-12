@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1HLVLV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 17:11:21 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48302 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751956Ab1HLVLB (ORCPT
+	id S1752194Ab1HLVLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:11:45 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41324 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab1HLVLl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 17:11:01 -0400
-X-Sasl-enc: 2hNo7W6b8TUcmhJhCC643Ir9JPZ9b9nJYR66VR7f6fOz 1313183461
-Date: Fri, 12 Aug 2011 14:10:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [0/6] 2.6.33.18-longterm review
-Message-ID: <20110812211045.GA6497@kroah.com>
+	Fri, 12 Aug 2011 17:11:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110801161900.1fe24b76.akpm@linux-foundation.org>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <20110801161900.1fe24b76.akpm@linux-foundation.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Fri, 12 Aug 2011 14:11:18 -0700
+X-Google-Sender-Auth: VbXui_mS0ba92Qn6gWwH5-dMwzo
+Message-ID: <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com>
+Subject: Re: [PATCH 0/8 v3] cgroups: Task counter subsystem (was: New max
+ number of tasks subsystem)
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.33.18 release.
-There are 6 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On Mon, Aug 1, 2011 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 29 Jul 2011 18:13:22 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>
+>> Reminder:
+>>
+>> This patchset is aimed at reducing the impact of a forkbomb to a
+>> cgroup boundaries, thus minimizing the consequences of such an attack
+>> against the rest of the system.
+>>
+>> This can be useful when cgroups are used to stage some processes or run
+>> untrustees.
+>
+> Really?  How useful?  Why is it useful enough to justify adding code
+> such as this to the kernel?
+>
+> Is forkbomb-prevention the only use?  Others have proposed different
+> ways of preventing forkbombs which were independent of cgroups - is
+> this way better and if so, why?
 
-Responses should be made by Monday, August 15, 2011, 20:00:00 UTC.
-Anything received after that time might be too late.
+I certainly want this for exactly the proposed use - putting a bounds
+on threads/tasks per container.  It's rlimits but more useful.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.19-rc1.gz
-and the diffstat can be found below.
+IMHO, most every limit that can be set at a system level should be
+settable at a cgroup level.  This is just one more isolation leak.
 
-thanks,
+>>  block/blk-cgroup.c            |   10 ++-
+>>  include/linux/cgroup.h        |   15 +++-
+>>  include/linux/cgroup_subsys.h |    8 ++
+>>  include/linux/res_counter.h   |   12 +++
+>>  init/Kconfig                  |    7 ++
+>>  kernel/Makefile               |    1 +
+>>  kernel/cgroup.c               |   25 ++++--
+>>  kernel/cgroup_freezer.c       |    3 +-
+>>  kernel/cgroup_task_counter.c  |  176 +++++++++++++++++++++++++++++++++++++++++
+>>  kernel/cpuset.c               |    6 +-
+>>  kernel/events/core.c          |    5 +-
+>>  kernel/fork.c                 |    4 +
+>>  kernel/res_counter.c          |   81 ++++++++++++++++---
+>>  kernel/sched.c                |    6 +-
+>
+> The patch forgot to document the feature: how it works, what it's
+> useful for, what behaviour users can expect to see, when they should
+> consider using it, what the userspace control interface is and how to
+> configure it, etc.  Documentation/cgroups/ is the place for that.
 
-greg k-h
++1 - I am not very familiar with the cgroups code, so I am disinclined
+to learn it all just to evaluate the functionality and API of this
+patch.  Design doc, please?
 
- Makefile                                 |    2 +-
- arch/powerpc/kernel/prom_init.c          |    6 +-
- arch/powerpc/platforms/pseries/lpar.c    |    2 +-
- crypto/md5.c                             |   92 +--------
- drivers/char/random.c                    |  334 +-----------------------------
- include/linux/cryptohash.h               |    5 +
- include/linux/random.h                   |   11 -
- include/net/secure_seq.h                 |   20 ++
- lib/Makefile                             |    2 +-
- lib/md5.c                                |   95 +++++++++
- net/core/Makefile                        |    2 +-
- net/core/secure_seq.c                    |  184 ++++++++++++++++
- net/dccp/ipv4.c                          |    1 +
- net/dccp/ipv6.c                          |    9 +-
- net/ipv4/inet_hashtables.c               |    1 +
- net/ipv4/inetpeer.c                      |    1 +
- net/ipv4/netfilter/nf_nat_proto_common.c |    1 +
- net/ipv4/route.c                         |    1 +
- net/ipv4/tcp_ipv4.c                      |    1 +
- net/ipv6/inet6_hashtables.c              |    1 +
- net/ipv6/tcp_ipv6.c                      |    1 +
- sound/core/timer.c                       |    2 +
- sound/usb/caiaq/input.c                  |    2 +-
- 23 files changed, 333 insertions(+), 443 deletions(-)
+Tim
