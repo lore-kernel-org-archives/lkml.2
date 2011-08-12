@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab1HLI3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:29:21 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:57123 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751317Ab1HLI3S (ORCPT
+	id S1753184Ab1HLI3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:29:35 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:40895 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab1HLI3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:29:18 -0400
+	Fri, 12 Aug 2011 04:29:32 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 11/23] mfd/db8500-prcmu: voltage domain consumers
-Date: Fri, 12 Aug 2011 10:29:02 +0200
-Message-ID: <1313137742-30948-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 09/23] mfd/db8500-prcmu: tweak for modem wakeup
+Date: Fri, 12 Aug 2011 10:28:43 +0200
+Message-ID: <1313137723-30881-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,132 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 
-This rectifies the device name of the MCDE voltage domain
-regulator consumer and adds a number of other consumers to
-the voltage domains.
+This is a tweak for the case where the modem goes to sleep while
+emitting the AC_WAKE_ACK anyway. Also print the modem errors as
+critical, since they jeopardize the entire platform when they
+occur.
 
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db8500-prcmu.c |   52 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 51 insertions(+), 1 deletions(-)
+ drivers/mfd/db8500-prcmu.c |   32 ++++++++++++++++++++++++++++----
+ 1 files changed, 28 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 6fd4e29..91a5e8c 100644
+index 95498f8..cb58e44 100644
 --- a/drivers/mfd/db8500-prcmu.c
 +++ b/drivers/mfd/db8500-prcmu.c
-@@ -2199,7 +2199,42 @@ static struct regulator_consumer_supply db8500_vsmps2_consumers[] = {
+@@ -1745,6 +1745,7 @@ int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
+ void prcmu_ac_wake_req(void)
+ {
+ 	u32 val;
++	u32 status;
  
- static struct regulator_consumer_supply db8500_b2r2_mcde_consumers[] = {
- 	REGULATOR_SUPPLY("vsupply", "b2r2.0"),
--	REGULATOR_SUPPLY("vsupply", "mcde.0"),
-+	REGULATOR_SUPPLY("vsupply", "mcde"),
-+};
-+
-+/* SVA MMDSP regulator switch */
-+static struct regulator_consumer_supply db8500_svammdsp_consumers[] = {
-+	REGULATOR_SUPPLY("sva-mmdsp", "cm_control"),
-+};
-+
-+/* SVA pipe regulator switch */
-+static struct regulator_consumer_supply db8500_svapipe_consumers[] = {
-+	REGULATOR_SUPPLY("sva-pipe", "cm_control"),
-+};
-+
-+/* SIA MMDSP regulator switch */
-+static struct regulator_consumer_supply db8500_siammdsp_consumers[] = {
-+	REGULATOR_SUPPLY("sia-mmdsp", "cm_control"),
-+};
-+
-+/* SIA pipe regulator switch */
-+static struct regulator_consumer_supply db8500_siapipe_consumers[] = {
-+	REGULATOR_SUPPLY("sia-pipe", "cm_control"),
-+};
-+
-+static struct regulator_consumer_supply db8500_sga_consumers[] = {
-+	REGULATOR_SUPPLY("v-mali", NULL),
-+};
-+
-+/* ESRAM1 and 2 regulator switch */
-+static struct regulator_consumer_supply db8500_esram12_consumers[] = {
-+	REGULATOR_SUPPLY("esram12", "cm_control"),
-+};
-+
-+/* ESRAM3 and 4 regulator switch */
-+static struct regulator_consumer_supply db8500_esram34_consumers[] = {
-+	REGULATOR_SUPPLY("v-esram34", "mcde"),
-+	REGULATOR_SUPPLY("esram34", "cm_control"),
- };
+ 	mutex_lock(&mb0_transfer.ac_wake_lock);
  
- static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
-@@ -2261,6 +2296,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-sva-mmdsp",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_svammdsp_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_svammdsp_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_SVAMMDSPRET] = {
- 		.constraints = {
-@@ -2275,6 +2312,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-sva-pipe",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_svapipe_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_svapipe_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_SIAMMDSP] = {
- 		.supply_regulator = "db8500-vape",
-@@ -2282,6 +2321,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-sia-mmdsp",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_siammdsp_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_siammdsp_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_SIAMMDSPRET] = {
- 		.constraints = {
-@@ -2295,6 +2336,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-sia-pipe",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_siapipe_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_siapipe_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_SGA] = {
- 		.supply_regulator = "db8500-vape",
-@@ -2302,6 +2345,9 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-sga",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_sga_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_sga_consumers),
+@@ -1754,11 +1755,34 @@ void prcmu_ac_wake_req(void)
+ 
+ 	atomic_set(&ac_wake_req_state, 1);
+ 
++retry:
+ 	writel((val | PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ), PRCM_HOSTACCESS_REQ);
+ 
+ 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+-			msecs_to_jiffies(20000))) {
+-		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
++			msecs_to_jiffies(5000))) {
++		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
++			__func__);
++		goto unlock_and_return;
++	}
 +
- 	},
- 	[DB8500_REGULATOR_SWITCH_B2R2_MCDE] = {
- 		.supply_regulator = "db8500-vape",
-@@ -2318,6 +2364,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-esram12",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_esram12_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_esram12_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_ESRAM12RET] = {
- 		.constraints = {
-@@ -2331,6 +2379,8 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 			.name = "db8500-esram34",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
- 		},
-+		.consumer_supplies = db8500_esram34_consumers,
-+		.num_consumer_supplies = ARRAY_SIZE(db8500_esram34_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_ESRAM34RET] = {
- 		.constraints = {
++	/*
++	 * The modem can generate an AC_WAKE_ACK, and then still go to sleep.
++	 * As a workaround, we wait, and then check that the modem is indeed
++	 * awake (in terms of the value of the PRCM_MOD_AWAKE_STATUS
++	 * register, which may not be the whole truth).
++	 */
++	udelay(400);
++	status = (readl(PRCM_MOD_AWAKE_STATUS) & BITS(0, 2));
++	if (status != (PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE |
++			PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE)) {
++		pr_err("prcmu: %s received ack, but modem not awake (0x%X).\n",
++			__func__, status);
++		udelay(1200);
++		writel(val, PRCM_HOSTACCESS_REQ);
++		if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
++				msecs_to_jiffies(5000)))
++			goto retry;
++		panic("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
+ 			__func__);
+ 	}
+ 
+@@ -1783,8 +1807,8 @@ void prcmu_ac_sleep_req()
+ 		PRCM_HOSTACCESS_REQ);
+ 
+ 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+-			msecs_to_jiffies(20000))) {
+-		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
++			msecs_to_jiffies(5000))) {
++		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
+ 			__func__);
+ 	}
+ 
 -- 
 1.7.3.2
 
