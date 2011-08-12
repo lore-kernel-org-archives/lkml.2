@@ -1,33 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1HLNaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:30:12 -0400
-Received: from smtp-out02.alice-dsl.net ([88.44.60.12]:15916 "EHLO
-	smtp-out02.alice-dsl.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab1HLNaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:30:09 -0400
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Aug 2011 09:29:58 EDT
-Reply-To: <derrgdsn@aol.com>
-From: "Manfred." <sven.callies@alice-dsl.de>
-Subject: MY OFFER.
-Date: Fri, 12 Aug 2011 13:23:38 -0700
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <HSNMCL01B015vUPfYUi00005bca@out.alice-dsl.de>
-X-OriginalArrivalTime: 12 Aug 2011 13:23:40.0311 (UTC) FILETIME=[0CDE8A70:01CC58F3]
-To: unlisted-recipients:; (no To-header on input)
+	id S1752633Ab1HLNcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:32:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479Ab1HLNcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 09:32:21 -0400
+From: Andrew Jones <drjones@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: drjones@redhat.com, rostedt@goodmis.org
+Subject: [KTEST PATCH 00/10] collection of ktest patches
+Date: Fri, 12 Aug 2011 15:32:02 +0200
+Message-Id: <1313155932-20092-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hereby invite you on long term investment partnership.
+More than once I've had to drive git-bisect to bisect boot issues for
+Xen guests. The last time I needed to do so I decided to give ktest a
+whirl. While whirling I wrote a couple patches and added a few features.
+This patchset is the collection.
 
-Regards,
-Manfred.
+Andrew Jones (10):
+  ktest: create outputdir, if it doesn't exist
+  ktest: small cleanup
+  ktest: factor reboot code
+  ktest: Introduce RESET_TIME
+  ktest: refactor monitor/boot/test code
+  ktest: make start_monitor_and_boot true to its name
+  ktest: Introduce PASS_COUNT
+  ktest: test faster, put REBOOT_ON_SUCCESS to more work
+  ktest: test faster, favor rsync over the tarball method
+  ktest: Introduce FAILURE_LINE
+
+ tools/testing/ktest/ktest.pl    |  208 +++++++++++++++++++++++----------------
+ tools/testing/ktest/sample.conf |   23 ++++-
+ 2 files changed, 147 insertions(+), 84 deletions(-)
+
+-- 
+1.7.4.1
+
