@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab1HNQLG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:11:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab1HNQKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754847Ab1HNQKo (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 14 Aug 2011 12:10:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:06:00 2011
-Message-Id: <20110812210600.032018809@clark.kroah.org>
+Received: from cantor2.suse.de ([195.135.220.15]:36973 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754813Ab1HNQKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
+Message-Id: <20110812210559.754425311@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:15 -0700
+Date: Fri, 12 Aug 2011 14:05:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Howells <dhowells@redhat.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Subject: [90/90] mm: Fix fixup_user_fault() for MMU=n
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [87/90] ath9k_hw: Fix incorrect Tx control power in AR9003 template
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,60 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit 5c723ba5b7886909b2e430f2eae454c33f7fe5c6 upstream.
+commit 15052f81d255eac44e745bc630b36aa86779ad9d upstream.
 
-In commit 2efaca927f5c ("mm/futex: fix futex writes on archs with SW
-tracking of dirty & young") we forgot about MMU=n.  This patch fixes
-that.
+CTL power data incorrect in ctlPowerData_2G field of ar9300_eeprom.
+Setting incorrect CTL power in calibration is causing lower tx power.
+Tx power was reported as 3dBm while operating in channel 6 HT40+/
+in channel 11 HT40- due to CTL powers in the calibration is set to
+zero.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: David Howells <dhowells@redhat.com>
-Link: http://lkml.kernel.org/r/1311761831.24752.413.camel@twins
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Frysinger <vapier.adi@gmail.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/mm.h |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -959,6 +959,8 @@ int invalidate_inode_page(struct page *p
- #ifdef CONFIG_MMU
- extern int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, unsigned int flags);
-+extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-+			    unsigned long address, unsigned int fault_flags);
- #else
- static inline int handle_mm_fault(struct mm_struct *mm,
- 			struct vm_area_struct *vma, unsigned long address,
-@@ -968,6 +970,14 @@ static inline int handle_mm_fault(struct
- 	BUG();
- 	return VM_FAULT_SIGBUS;
- }
-+static inline int fixup_user_fault(struct task_struct *tsk,
-+		struct mm_struct *mm, unsigned long address,
-+		unsigned int fault_flags)
-+{
-+	/* should never happen if there's no MMU */
-+	BUG();
-+	return -EFAULT;
-+}
- #endif
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -306,7 +306,7 @@ static const struct ar9300_eeprom ar9300
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
  
- extern int make_pages_present(unsigned long addr, unsigned long end);
-@@ -985,8 +995,6 @@ int get_user_pages(struct task_struct *t
- int get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 			struct page **pages);
- struct page *get_dump_page(unsigned long addr);
--extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
--			    unsigned long address, unsigned int fault_flags);
+-		 { { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
++		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
  
- extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
- extern void do_invalidatepage(struct page *page, unsigned long offset);
+@@ -883,7 +883,7 @@ static const struct ar9300_eeprom ar9300
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+ 
+-		 { { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
++		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 
+@@ -2039,7 +2039,7 @@ static const struct ar9300_eeprom ar9300
+ 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+ 
+-		{ { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
++		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
+ 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+ 
 
 
