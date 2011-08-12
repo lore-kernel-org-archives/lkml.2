@@ -1,183 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1HLRyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 13:54:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25587 "EHLO mga09.intel.com"
+	id S1753649Ab1HLR6R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 13:58:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab1HLRyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 13:54:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="37959023"
-From: "Luck, Tony" <tony.luck@intel.com>
+	id S1752849Ab1HLR6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 13:58:14 -0400
+From: Andrew Jones <drjones@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: "Don Zickus" <dzickus@redhat.com>, "Matthew Garrett" <mjg@redhat.com>
-Subject: pstore: change mutex locking to spin_locks
-Date: Fri, 12 Aug 2011 10:54:51 -0700
-Message-Id: <4e4568eb10165cbab6@agluck-desktop.sc.intel.com>
+Cc: drjones@redhat.com, rostedt@goodmis.org
+Subject: [PATCH 07/10 v2] ktest: Introduce RERUN
+Date: Fri, 12 Aug 2011 19:58:05 +0200
+Message-Id: <1313171885-18148-1-git-send-email-drjones@redhat.com>
+In-Reply-To: <1313155932-20092-8-git-send-email-drjones@redhat.com>
+References: <1313155932-20092-8-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
-
-pstore was using mutex locking to protect read/write access to the
-backend plug-ins.  This causes problems when pstore is executed in
-an NMI context through panic() -> kmsg_dump().
-
-This patch changes the mutex to a spin_lock_irqsave then also checks to
-see if we are in an NMI context.  If we are in an NMI and can't get the
-lock, just print a message stating that and blow by the locking.
-
-All this is probably a hack around the bigger locking problem but it
-solves my current situation of trying to sleep in an NMI context.
-
-Tested by loading the lkdtm module and executing a HARDLOCKUP which
-will cause the machine to panic inside the nmi handler.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-
+Add another config variable that defines the number of additional
+times a test must pass before it really passes. This is good for
+bisecting boot problems, where the failure doesn't occur every time.
 ---
+ tools/testing/ktest/ktest.pl    |   23 +++++++++++++++--------
+ tools/testing/ktest/sample.conf |    7 +++++++
+ 2 files changed, 22 insertions(+), 8 deletions(-)
 
-Essentially the same patch that Don posted on July 20th. I just added the
-efivars.c bit, and did some minor formatting changes to make it fit on
-top of the "defer inserting OOPs entries into pstore" patch that I posted
-yesterday.  I plan to add both patches to linux-next soon, and will send
-to Linus in the 3.2 merge window.
-
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 2ca59dc..5e820ea 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -1165,7 +1165,7 @@ static int __init erst_init(void)
- 		goto err_release_erange;
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index e37c67e..28658b4 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -24,6 +24,7 @@ my %default;
+ $default{"NUM_TESTS"}		= 1;
+ $default{"REBOOT_TYPE"}		= "grub";
+ $default{"TEST_TYPE"}		= "test";
++$default{"RERUN"}		= 0;
+ $default{"BUILD_TYPE"}		= "randconfig";
+ $default{"MAKE_CMD"}		= "make";
+ $default{"TIMEOUT"}		= 120;
+@@ -61,6 +62,7 @@ my $builddir;
+ my $outputdir;
+ my $output_config;
+ my $test_type;
++my $rerun;
+ my $build_type;
+ my $build_options;
+ my $pre_build;
+@@ -1495,19 +1497,23 @@ sub do_run_test {
+ sub do_test {
+     my ($type) = @_;
+     my $failed = 0;
++    my $runs = $rerun + 1; # run at least once
  
- 	buf = kmalloc(erst_erange.size, GFP_KERNEL);
--	mutex_init(&erst_info.buf_mutex);
-+	spin_lock_init(&erst_info.buf_lock);
- 	if (buf) {
- 		erst_info.buf = buf + sizeof(struct cper_pstore_record);
- 		erst_info.bufsize = erst_erange.size -
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index eb80b54..be8bcb0 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -978,7 +978,7 @@ int register_efivars(struct efivars *efivars,
- 	if (efivars->efi_pstore_info.buf) {
- 		efivars->efi_pstore_info.bufsize = 1024;
- 		efivars->efi_pstore_info.data = efivars;
--		mutex_init(&efivars->efi_pstore_info.buf_mutex);
-+		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
- 		pstore_register(&efivars->efi_pstore_info);
- 	}
+     grub_install;
+-    start_monitor_and_boot or $failed = 1;
  
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index ca60ebc..0472924 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -28,6 +28,7 @@
- #include <linux/timer.h>
- #include <linux/slab.h>
- #include <linux/uaccess.h>
-+#include <linux/hardirq.h>
- #include <linux/workqueue.h>
+-    if ($failed && $in_bisect && $type ne "boot") {
+-	end_monitor;
+-	return -1;
+-    }
++    while (!$failed && $runs--) {
++	start_monitor_and_boot or $failed = 1;
  
- #include "internal.h"
-@@ -88,13 +89,20 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	u64		id;
- 	int		hsize;
- 	unsigned int	part = 1;
-+	unsigned long	flags = 0;
-+	int		is_locked = 0;
- 
- 	if (reason < ARRAY_SIZE(reason_str))
- 		why = reason_str[reason];
- 	else
- 		why = "Unknown";
- 
--	mutex_lock(&psinfo->buf_mutex);
-+	if (in_nmi()) {
-+		is_locked = spin_trylock(&psinfo->buf_lock);
-+		if (!is_locked)
-+			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
-+	} else
-+		spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	oopscount++;
- 	while (total < kmsg_bytes) {
- 		dst = psinfo->buf;
-@@ -123,7 +131,11 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		total += l1_cpy + l2_cpy;
- 		part++;
- 	}
--	mutex_unlock(&psinfo->buf_mutex);
-+	if (in_nmi()) {
-+		if (is_locked)
-+			spin_unlock(&psinfo->buf_lock);
-+	} else
-+		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+-    if (!$failed && $type ne "boot" && defined($run_test)) {
+-	do_run_test or $failed = 1;
++	if ($failed && $in_bisect && $type ne "boot") {
++	    end_monitor;
++	    return -1;
++	}
++
++	if (!$failed && $type ne "boot" && defined($run_test)) {
++	    do_run_test or $failed = 1;
++	}
++	end_monitor;
+     }
+-    end_monitor;
+     return !$failed;
  }
  
- static struct kmsg_dumper pstore_dumper = {
-@@ -188,11 +200,12 @@ void pstore_get_records(int quiet)
- 	enum pstore_type_id	type;
- 	struct timespec		time;
- 	int			failed = 0, rc;
-+	unsigned long		flags;
+@@ -2807,6 +2813,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     $outputdir = set_test_option("OUTPUT_DIR", $i);
+     $builddir = set_test_option("BUILD_DIR", $i);
+     $test_type = set_test_option("TEST_TYPE", $i);
++    $rerun = set_test_option("RERUN", $i);
+     $build_type = set_test_option("BUILD_TYPE", $i);
+     $build_options = set_test_option("BUILD_OPTIONS", $i);
+     $pre_build = set_test_option("PRE_BUILD", $i);
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index ba430a7..8d0d33e 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -266,6 +266,13 @@
+ # default (undefined)
+ #TEST = ssh user@machine /root/run_test
  
- 	if (!psi)
- 		return;
- 
--	mutex_lock(&psinfo->buf_mutex);
-+	spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	rc = psi->open(psi);
- 	if (rc)
- 		goto out;
-@@ -205,7 +218,7 @@ void pstore_get_records(int quiet)
- 	}
- 	psi->close(psi);
- out:
--	mutex_unlock(&psinfo->buf_mutex);
-+	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 
- 	if (failed)
- 		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
-@@ -233,7 +246,8 @@ static void pstore_timefunc(unsigned long dummy)
-  */
- int pstore_write(enum pstore_type_id type, char *buf, size_t size)
- {
--	u64	id;
-+	u64		id;
-+	unsigned long	flags;
- 
- 	if (!psinfo)
- 		return -ENODEV;
-@@ -241,13 +255,13 @@ int pstore_write(enum pstore_type_id type, char *buf, size_t size)
- 	if (size > psinfo->bufsize)
- 		return -EFBIG;
- 
--	mutex_lock(&psinfo->buf_mutex);
-+	spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	memcpy(psinfo->buf, buf, size);
- 	id = psinfo->write(type, 0, size, psinfo);
- 	if (pstore_is_mounted())
- 		pstore_mkfile(PSTORE_TYPE_DMESG, psinfo->name, id, psinfo->buf,
- 			      size, CURRENT_TIME, psinfo);
--	mutex_unlock(&psinfo->buf_mutex);
-+	spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 
- 	return 0;
- }
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index cc03bbf..b91440e 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -32,7 +32,7 @@ enum pstore_type_id {
- struct pstore_info {
- 	struct module	*owner;
- 	char		*name;
--	struct mutex	buf_mutex;	/* serialize access to 'buf' */
-+	spinlock_t	buf_lock;	/* serialize access to 'buf' */
- 	char		*buf;
- 	size_t		bufsize;
- 	int		(*open)(struct pstore_info *psi);
++# The number of times the test must pass before we really believe
++# it passes. Generally you could put a loop in the 'TEST' program,
++# but this option makes it easier to do boot testing for problems
++# that don't occur on every boot.
++# (default 0)
++#RERUN = 10
++
+ # The build type is any make config type or special command
+ #  (default randconfig)
+ #   nobuild - skip the clean and build step
+-- 
+1.7.4.1
+
