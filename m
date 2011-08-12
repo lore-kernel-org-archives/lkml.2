@@ -1,88 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab1HLCbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:31:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55284 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821Ab1HLCbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:31:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
-   d="asc'?scan'208";a="37684427"
-Subject: Re: linux-next: build failure after merge of the net tree
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Aug 2011 19:31:35 -0700
-In-Reply-To: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
-References: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-L1PAMMkqYFRbGe2Ao24X"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1313116296.2057.30.camel@jtkirshe-mobl>
-Mime-Version: 1.0
+	id S1753172Ab1HLCj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:39:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43941 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab1HLCj0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 22:39:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMjpGUeeNZ_S9hgz8pi-uTnJdcUjemuOusNa=fJ9muPPaSQLMQ@mail.gmail.com>
+References: <1312256727-13906-1-git-send-email-sonic.adi@gmail.com>
+	<CAMjpGUeeNZ_S9hgz8pi-uTnJdcUjemuOusNa=fJ9muPPaSQLMQ@mail.gmail.com>
+Date: Fri, 12 Aug 2011 10:39:25 +0800
+Message-ID: <CAMk6uBnwL8Y+QFRYKux6LxXT1zkgEKzMtUhNEjD6UFL5tARYiA@mail.gmail.com>
+Subject: Re: [PATCH v2] serial:bfin_uart: Put TX IRQ in individual platform resource.
+From: real mz <realmz6@gmail.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Sonic Zhang <sonic.adi@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+you mean the uart wakeup fix?
+-steven
 
---=-L1PAMMkqYFRbGe2Ao24X
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 2011-08-11 at 19:02 -0700, Stephen Rothwell wrote:
-> Hi all,
->=20
-> After merging the net tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> Assembler messages:
-> Fatal error: can't create drivers/net/ethernet/sun/.tmp_sungem_phy.o: No =
-such file or directory
->=20
-> Presumably caused by commit e689cf4a0427 ("cassini/niu/sun*: Move the Sun
-> drivers") theough I don't know why.  I tried throwing away my object
-> directory, but that didn't help.
->=20
-> Ah, ha!  This looks suspicious (change to drivers/net/Makefile):
->=20
-> +obj-$(CONFIG_SPIDER_NET) +=3D spidernet.o ethernet/sun/sungem_phy.o
->=20
-> I have used the net tree from next-20110811 for today.
-
-I am curious, can you compile the Sun GEM support driver?  and if so,
-does the Spider Net driver compile?
-
-I know I did not have the PPC hardware to test the compilation of the
-Spider Net driver, but I was basing the Makefile changes on similar
-changes that the Broadcom driver required, which I did compile test.
-
-I want to resolve this before continuing on with the next set of
-patches.
-
-
-
---=-L1PAMMkqYFRbGe2Ao24X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJORJCHAAoJECTsCADr/EWUnpkIAILvMD+I8W516JsOSSCxV2WW
-PaST8wJQx0+nqD0TTaOM3n2Gw6hwSbz9wJGXCMv6U+xreJCGv4tr09AvGHOQC/8L
-sJRQ+CJ4NUfsZ5y7gCqbBcsJSDr3MKr0o/L3aETNVaRTJph8/W4xFhiYBPVKRLL9
-81y0TtcHiQNc/53M7Q4vTqGI1Ju/JDotQBjYMPQZk+fUcfYMiHEvn9oD0rSKK2Fz
-E1nQhsIGFbavhNi0eXLnO4FVymQCi6Ggf5r5A8tQGulBR+5/9+I0VthW9nMPYQhz
-QpGo2Eg9T8E/sBQNEWgG8UouHQZfqcxnVnqIjHwKDU+e2nxQRGx5OCXkBlLHkdE=
-=Ml6H
------END PGP SIGNATURE-----
-
---=-L1PAMMkqYFRbGe2Ao24X--
-
+On Fri, Aug 12, 2011 at 10:17 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
+> On Mon, Aug 1, 2011 at 23:45, Sonic Zhang wrote:
+>> Serial TX IRQ is not RX IRQ plus 1 in some blackfin chips.
+>> Give individual platform resources to both TX and RX irqs.
+>
+> i guess you also need to fold in Scott's recent fix and send out a v3
+> -mike
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
