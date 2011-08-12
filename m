@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab1HLIbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:31:07 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:59380 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753223Ab1HLIah (ORCPT
+	id S1753610Ab1HLIbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:31:23 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:37351 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752282Ab1HLIbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:30:37 -0400
+	Fri, 12 Aug 2011 04:31:05 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Philippe Langlais <philippe.langlais@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 21/23] mfd/db5500-prcmu: spawn MFD cell for regulator
-Date: Fri, 12 Aug 2011 10:30:25 +0200
-Message-ID: <1313137825-31279-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 22/23] regulator/dbx500-prcmu: factor out common code
+Date: Fri, 12 Aug 2011 10:30:33 +0200
+Message-ID: <1313137833-31314-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,134 +26,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philippe Langlais <philippe.langlais@stericsson.com>
+From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 
-This spawns the necessary MFD cells off the DB5500 PRCMU
-so that we can register a voltage domain (EPOD) regulator driver
-against it.
+Before we add the DB5500 PRCMU voltage domain regulator, let's
+factor out the pieces of code that are common between both
+drivers.
 
 Cc: Liam Girdwood <lrg@ti.com>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Signed-off-by: Jonas Aberg <jonas.aberg@stericsson.com>
+Sugned-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
 Signed-off-by: Philippe Langlais <philippe.langlais@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db5500-prcmu.c |   89 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 89 insertions(+), 0 deletions(-)
+ drivers/regulator/Kconfig        |   12 +++++++
+ drivers/regulator/Makefile       |    2 +
+ drivers/regulator/db8500-prcmu.c |   43 +-------------------------
+ drivers/regulator/dbx500-prcmu.c |   62 ++++++++++++++++++++++++++++++++++++++
+ drivers/regulator/dbx500-prcmu.h |   18 +++++++++++
+ 5 files changed, 95 insertions(+), 42 deletions(-)
+ create mode 100644 drivers/regulator/dbx500-prcmu.c
+ create mode 100644 drivers/regulator/dbx500-prcmu.h
 
-diff --git a/drivers/mfd/db5500-prcmu.c b/drivers/mfd/db5500-prcmu.c
-index b7cd655..47fd0e9 100644
---- a/drivers/mfd/db5500-prcmu.c
-+++ b/drivers/mfd/db5500-prcmu.c
-@@ -20,6 +20,9 @@
- #include <linux/jiffies.h>
- #include <linux/bitops.h>
- #include <linux/platform_device.h>
-+#include <linux/mfd/core.h>
-+#include <linux/regulator/db5500-prcmu.h>
-+#include <linux/regulator/machine.h>
- #include <linux/interrupt.h>
- #include <linux/mfd/dbx500-prcmu.h>
- #include <mach/hardware.h>
-@@ -1351,6 +1354,83 @@ void __init db5500_prcmu_early_init(void)
- 	}
- }
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index c7fd2c0..d564e8d 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -281,9 +281,21 @@ config REGULATOR_AB8500
+ 	  This driver supports the regulators found on the ST-Ericsson mixed
+ 	  signal AB8500 PMIC
  
++config REGULATOR_DBX500_PRCMU
++	bool
++
++config REGULATOR_DB5500_PRCMU
++	bool "ST-Ericsson DB5500 Voltage Domain Regulators"
++	depends on MFD_DB5500_PRCMU
++	select REGULATOR_DBX500_PRCMU
++	help
++	  This driver supports the voltage domain regulators controlled by the
++	  DB5500 PRCMU
++
+ config REGULATOR_DB8500_PRCMU
+ 	bool "ST-Ericsson DB8500 Voltage Domain Regulators"
+ 	depends on MFD_DB8500_PRCMU
++	select REGULATOR_DBX500_PRCMU
+ 	help
+ 	  This driver supports the voltage domain regulators controlled by the
+ 	  DB8500 PRCMU
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 040d5aa..6011de0 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -42,6 +42,8 @@ obj-$(CONFIG_REGULATOR_TPS65912) += tps65912-regulator.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
++obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
++obj-$(CONFIG_REGULATOR_DB5500_PRCMU) += db5500-prcmu.o
+ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
+ obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
+diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
+index 2d014a1..a615649 100644
+--- a/drivers/regulator/db8500-prcmu.c
++++ b/drivers/regulator/db8500-prcmu.c
+@@ -17,48 +17,7 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/db8500-prcmu.h>
+-
+-/*
+- * power state reference count
+- */
+-static int power_state_active_cnt; /* will initialize to zero */
+-static DEFINE_SPINLOCK(power_state_active_lock);
+-
+-static void power_state_active_enable(void)
+-{
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&power_state_active_lock, flags);
+-	power_state_active_cnt++;
+-	spin_unlock_irqrestore(&power_state_active_lock, flags);
+-}
+-
+-static int power_state_active_disable(void)
+-{
+-	int ret = 0;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&power_state_active_lock, flags);
+-	if (power_state_active_cnt <= 0) {
+-		pr_err("power state: unbalanced enable/disable calls\n");
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	power_state_active_cnt--;
+-out:
+-	spin_unlock_irqrestore(&power_state_active_lock, flags);
+-	return ret;
+-}
+-
+-/*
+- * Exported interface for CPUIdle only. This function is called when interrupts
+- * are turned off. Hence, no locking.
+- */
+-int power_state_active_is_enabled(void)
+-{
+-	return (power_state_active_cnt > 0);
+-}
++#include "dbx500-prcmu.h"
+ 
+ /**
+  * struct db8500_regulator_info - db8500 regulator information
+diff --git a/drivers/regulator/dbx500-prcmu.c b/drivers/regulator/dbx500-prcmu.c
+new file mode 100644
+index 0000000..409cb85
+--- /dev/null
++++ b/drivers/regulator/dbx500-prcmu.c
+@@ -0,0 +1,62 @@
 +/*
-+ * Power domain switches (ePODs) modeled as regulators for the DB5500 SoC
++ * Copyright (C) ST-Ericsson SA 2010
++ *
++ * License Terms: GNU General Public License v2
++ * Authors: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
++ *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
++ *
++ * UX500 common part of Power domain regulators
 + */
-+static struct regulator_consumer_supply db5500_vape_consumers[] = {
-+	REGULATOR_SUPPLY("v-ape", NULL),
-+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.0"),
-+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.1"),
-+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.2"),
-+	REGULATOR_SUPPLY("v-i2c", "nmk-i2c.3"),
-+	REGULATOR_SUPPLY("vcore", "sdi0"),
-+	REGULATOR_SUPPLY("vcore", "sdi1"),
-+	REGULATOR_SUPPLY("vcore", "sdi2"),
-+	REGULATOR_SUPPLY("vcore", "sdi3"),
-+	REGULATOR_SUPPLY("vcore", "sdi4"),
-+	REGULATOR_SUPPLY("vcore", "uart0"),
-+	REGULATOR_SUPPLY("vcore", "uart1"),
-+	REGULATOR_SUPPLY("vcore", "uart2"),
-+	REGULATOR_SUPPLY("vcore", "uart3"),
-+};
 +
-+static struct regulator_consumer_supply db5500_sga_consumers[] = {
-+	REGULATOR_SUPPLY("v-mali", NULL),
-+};
++#include <linux/kernel.h>
++#include <linux/err.h>
++#include <linux/regulator/driver.h>
++#include "dbx500-prcmu.h"
 +
-+static struct regulator_consumer_supply db5500_hva_consumers[] = {
-+	REGULATOR_SUPPLY("v-hva", NULL),
-+};
++/*
++ * power state reference count
++ */
++static int power_state_active_cnt; /* will initialize to zero */
++static DEFINE_SPINLOCK(power_state_active_lock);
 +
-+static struct regulator_consumer_supply db5500_sia_consumers[] = {
-+	REGULATOR_SUPPLY("v-sia", "mmio_camera"),
-+};
++void power_state_active_enable(void)
++{
++	unsigned long flags;
 +
-+static struct regulator_consumer_supply db5500_disp_consumers[] = {
-+	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
-+	REGULATOR_SUPPLY("vsupply", "mcde"),
-+};
-+
-+static struct regulator_consumer_supply db5500_esram12_consumers[] = {
-+	REGULATOR_SUPPLY("v-esram12", "mcde"),
-+	REGULATOR_SUPPLY("esram12", "cm_control"),
-+};
-+
-+#define DB5500_REGULATOR_SWITCH(lower, upper)                           \
-+[DB5500_REGULATOR_SWITCH_##upper] = {                                   \
-+	.constraints = {                                                \
-+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,              \
-+	},                                                              \
-+	.consumer_supplies      = db5500_##lower##_consumers,            \
-+	.num_consumer_supplies  = ARRAY_SIZE(db5500_##lower##_consumers),\
++	spin_lock_irqsave(&power_state_active_lock, flags);
++	power_state_active_cnt++;
++	spin_unlock_irqrestore(&power_state_active_lock, flags);
 +}
 +
-+static struct regulator_init_data db5500_regulators[DB5500_NUM_REGULATORS] = {
-+	[DB5500_REGULATOR_VAPE] = {
-+		.constraints = {
-+			.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
-+		},
-+		.consumer_supplies	= db5500_vape_consumers,
-+		.num_consumer_supplies	= ARRAY_SIZE(db5500_vape_consumers),
-+	},
-+	DB5500_REGULATOR_SWITCH(sga, SGA),
-+	DB5500_REGULATOR_SWITCH(hva, HVA),
-+	DB5500_REGULATOR_SWITCH(sia, SIA),
-+	DB5500_REGULATOR_SWITCH(disp, DISP),
-+	DB5500_REGULATOR_SWITCH(esram12, ESRAM12),
++int power_state_active_disable(void)
++{
++	int ret = 0;
++	unsigned long flags;
++
++	spin_lock_irqsave(&power_state_active_lock, flags);
++	if (power_state_active_cnt <= 0) {
++		pr_err("power state: unbalanced enable/disable calls\n");
++		ret = -EINVAL;
++		goto out;
++	}
++
++	power_state_active_cnt--;
++out:
++	spin_unlock_irqrestore(&power_state_active_lock, flags);
++	return ret;
++}
++
++/*
++ * Exported interface for CPUIdle only. This function is called when interrupts
++ * are turned off. Hence, no locking.
++ */
++int power_state_active_is_enabled(void)
++{
++	return (power_state_active_cnt > 0);
++}
++
++struct ux500_regulator {
++	char *name;
++	void (*enable)(void);
++	int (*disable)(void);
 +};
+diff --git a/drivers/regulator/dbx500-prcmu.h b/drivers/regulator/dbx500-prcmu.h
+new file mode 100644
+index 0000000..5f015b8
+--- /dev/null
++++ b/drivers/regulator/dbx500-prcmu.h
+@@ -0,0 +1,18 @@
++/*
++ * Copyright (C) ST-Ericsson SA 2010
++ *
++ * Author: Bengt Jonsson <bengt.jonsson@stericsson.com> for ST-Ericsson,
++ *	   Jonas Aaberg <jonas.aberg@stericsson.com> for ST-Ericsson
++ *
++ * License Terms: GNU General Public License v2
++ *
++ */
 +
-+static struct mfd_cell db5500_prcmu_devs[] = {
-+	{
-+		.name = "db5500-prcmu-regulators",
-+		.platform_data = &db5500_regulators,
-+		.pdata_size = sizeof(db5500_regulators),
-+	},
-+	{
-+		.name = "cpufreq-u5500",
-+	},
-+};
++#ifndef DBX500_REGULATOR_H
++#define DBX500_REGULATOR_H
 +
- /**
-  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
-  *
-@@ -1373,6 +1453,15 @@ static int __init db5500_prcmu_probe(struct platform_device *pdev)
- 		goto no_irq_return;
- 	}
- 
-+	err = mfd_add_devices(&pdev->dev, 0, db5500_prcmu_devs,
-+			      ARRAY_SIZE(db5500_prcmu_devs), NULL,
-+			      0);
++void power_state_active_enable(void);
++int power_state_active_disable(void);
 +
-+	if (err)
-+		pr_err("prcmu: Failed to add subdevices\n");
-+	else
-+		pr_info("DB5500 PRCMU initialized\n");
++#endif
 +
- no_irq_return:
- 	return err;
- 
 -- 
 1.7.3.2
 
