@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1HLRRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 13:17:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:52315 "EHLO
+	id S1753410Ab1HLRR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 13:17:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55707 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab1HLRQ5 (ORCPT
+	with ESMTP id S1752667Ab1HLRQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 13:16:57 -0400
+	Fri, 12 Aug 2011 13:16:59 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
         rydberg@euromail.se
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, chris@cnpbagwell.com,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 2/8 v3] Input: synaptics - refactor agm packet parsing
-Date: Sat, 13 Aug 2011 01:16:41 +0800
-Message-Id: <1313169407-4358-3-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 8/8 v3] Input: synaptics - process finger (<=5) transitions
+Date: Sat, 13 Aug 2011 01:16:47 +0800
+Message-Id: <1313169407-4358-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
 References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
@@ -24,84 +24,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a Synaptics touchpad is in "AGM" mode, and multiple fingers are
-detected, the touchpad sends alternating "Advanced Gesture Mode" (AGM) and
-"Simple Gesture Mode" (SGM) packets.
-  The AGM packets have w=2, and contain reduced resolution finger data.
-  The SGM packets have w={0,1} and contain full resolution finger data.
+Synaptics image sensor touchpads track up to 5 fingers, but only report 2.
+They use a special "TYPE=2" (AGM-CONTACT) packet type that reports
+the number of tracked fingers and which finger is reported in the SGM
+and AGM packets.
 
-Refactor the parsing of agm packets to its own function, and rename the
-synaptics_data.mt field to .agm to indicate that it contains the contents of
-the last agm packet.
+With this new packet type, it is possible to tell userspace when 4 or 5
+fingers are touching.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- drivers/input/mouse/synaptics.c |   19 ++++++++++++++-----
- drivers/input/mouse/synaptics.h |    6 +++++-
- 2 files changed, 19 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c |   44 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 43 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 297e88f..e966894 100644
+index 57104ed..6f71cb7 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -419,6 +419,17 @@ static void synaptics_pt_create(struct psmouse *psmouse)
-  *	Functions to interpret the absolute mode packets
-  ****************************************************************************/
+@@ -755,6 +755,10 @@ static void synaptics_image_sensor_1f(struct synaptics_data *priv,
+ 		synaptics_mt_state_set(mt_state, 1, -1, -1);
+ 		priv->mt_state_lost = true;
+ 		break;
++	case 4:
++	case 5:
++		/* mt_state was updated by AGM-CONTACT packet */
++		break;
+ 	}
+ }
  
-+static void synaptics_parse_agm(const unsigned char buf[],
-+				struct synaptics_data *priv)
-+{
-+	struct synaptics_hw_state *agm = &priv->agm;
+@@ -809,6 +813,10 @@ static void synaptics_image_sensor_2f(struct synaptics_data *priv,
+ 		synaptics_mt_state_set(mt_state, 2, -1, -1);
+ 		priv->mt_state_lost = true;
+ 		break;
++	case 4:
++	case 5:
++		/* mt_state was updated by AGM-CONTACT packet */
++		break;
+ 	}
+ }
+ 
+@@ -837,6 +845,22 @@ static void synaptics_image_sensor_3f(struct synaptics_data *priv,
+ 		break;
+ 	case 2:
+ 		/*
++		 * If the AGM previously contained slot 3 or higher, then the
++		 * newly touching finger is in the lowest available slot.
++		 *
++		 * If SGM was previously 1 or higher, then the new SGM is
++		 * now slot 0 (with a new finger), otherwise, the new finger
++		 * is now in a hidden slot between 0 and AGM's slot.
++		 *
++		 * In all such cases, the SGM now contains slot 0, and the AGM
++		 * continues to contain the same slot as before.
++		 */
++		if (old->agm >= 3) {
++			synaptics_mt_state_set(mt_state, 3, 0, old->agm);
++			break;
++		}
 +
-+	/* Gesture packet: (x, y, z) at half resolution */
-+	agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-+	agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
-+	agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++		/*
+ 		 * After some 3->1 and all 3->2 transitions, we lose track
+ 		 * of which slot is reported by SGM and AGM.
+ 		 *
+@@ -876,9 +900,22 @@ static void synaptics_image_sensor_3f(struct synaptics_data *priv,
+ 		 * received AGM-CONTACT packet.
+ 		 */
+ 		break;
++
++	case 4:
++	case 5:
++		/* mt_state was updated by AGM-CONTACT packet */
++		break;
+ 	}
+ }
+ 
++/* Handle case where mt_state->count = 4, or = 5 */
++static void synaptics_image_sensor_45f(struct synaptics_data *priv,
++				       struct synaptics_mt_state *mt_state)
++{
++	/* mt_state was updated correctly by AGM-CONTACT packet */
++	priv->mt_state_lost = false;
 +}
 +
- static int synaptics_parse_hw_state(const unsigned char buf[],
- 				    struct synaptics_data *priv,
- 				    struct synaptics_hw_state *hw)
-@@ -453,10 +464,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 		}
+ static void synaptics_image_sensor_process(struct psmouse *psmouse,
+ 					   struct synaptics_hw_state *sgm)
+ {
+@@ -898,8 +935,10 @@ static void synaptics_image_sensor_process(struct psmouse *psmouse,
+ 		synaptics_image_sensor_1f(priv, &mt_state);
+ 	else if (sgm->w == 0)
+ 		synaptics_image_sensor_2f(priv, &mt_state);
+-	else if (sgm->w == 1)
++	else if (sgm->w == 1 && mt_state.count <= 3)
+ 		synaptics_image_sensor_3f(priv, &mt_state);
++	else
++		synaptics_image_sensor_45f(priv, &mt_state);
  
- 		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
--			/* Gesture packet: (x, y, z) at half resolution */
--			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
--			priv->mt.y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
--			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-+			synaptics_parse_agm(buf, priv);
- 			return 1;
- 		}
- 
-@@ -595,7 +603,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
- 	}
- 
- 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
--		synaptics_report_semi_mt_data(dev, &hw, &priv->mt, num_fingers);
-+		synaptics_report_semi_mt_data(dev, &hw, &priv->agm,
-+					      num_fingers);
- 
- 	/* Post events
- 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index ca040aa..a9efbf3 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -146,7 +146,11 @@ struct synaptics_data {
- 
- 	struct serio *pt_port;			/* Pass-through serio port */
- 
--	struct synaptics_hw_state mt;		/* current gesture packet */
-+	/*
-+	 * Last received Advanced Gesture Mode (AGM) packet. An AGM packet
-+	 * contains position data for a second contact, at half resolution.
-+	 */
-+	struct synaptics_hw_state agm;
- };
- 
- void synaptics_module_init(void);
+ 	/* Send resulting input events to user space */
+ 	synaptics_report_mt(psmouse, &mt_state, sgm);
+@@ -1118,6 +1157,9 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
+ 		/* Image sensors can sometimes report per-contact width */
+ 		input_set_abs_params(dev, ABS_MT_TOUCH_MAJOR, 4, 15, 0, 0);
++		/* Image sensors can signal 4 and 5 finger clicks */
++		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
++		__set_bit(BTN_TOOL_QUINTTAP, dev->keybit);
+ 	} else if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
+ 		/* Non-image sensors with AGM use semi-mt */
+ 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
 -- 
 1.7.3.1
 
