@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1HLLXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 07:23:45 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:48506 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab1HLLXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 07:23:44 -0400
-Message-ID: <4E450E39.3030404@ladisch.de>
-Date: Fri, 12 Aug 2011 13:27:53 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Pecker Hu <pecker.hu@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Need help about how linux to handle translation fault
-References: <CAPtRRT9h6yWNB41tfjO9ryx+BppkiTGNWRgNjNTUkwXv-B0eYw@mail.gmail.com>
-In-Reply-To: <CAPtRRT9h6yWNB41tfjO9ryx+BppkiTGNWRgNjNTUkwXv-B0eYw@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+	id S1754107Ab1HLLkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 07:40:17 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:46815 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751587Ab1HLLkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 07:40:15 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Antoine Jacquet <royale@zerezo.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/media/video/zr364xx.c: add missing cleanup code
+Date: Fri, 12 Aug 2011 13:40:08 +0200
+Message-Id: <1313149208-7368-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pecker Hu wrote:
-> ...
-> And I send the address of str to kernel space using IOCTL interface.
-> ioctl(fd, VM_TEST_GET_VADDR, str);
-> 
-> When I try to use pgd to find the physical address, I don't find it
-> .
+From: Julia Lawall <julia@diku.dk>
 
-You must not directly access user space memory from kernel space because
-that memory can be moved or swapped out at any time.  Use only functions
-like copy_from_user() which take appropriate precautions; and don't
-forget to check for errors.
+It seems just as necessary to free cam->vdev and cam in this error case as
+in the next one.
 
-Furthermore, the physical address is useless.  If you want to access
-the memory from a device, you have to use the DMA mapping API because
-the CPU's physical address it not necessarily the same address as that
-used on the device's bus, and sometimes you have to program an IOMMU
-before devices are allowed to access that memory at all.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-> So I think string array is located in data cache not in physical
-> memory, after I call copy_from_user, kernel will allocate page for it,
-> then we can access it, is it right?
+---
+There is yet another block of error handling code below the call to
+zr364xx_board_init, but perhaps no cleanup code is needed in that case,
+because that code is currently initializing a lock in cam?
 
-As far as any code running on the CPU is concerned, caches are
-completely transparent.  (This is not always true for devices, but the
-DMA mapping API takes care of that.)
+ drivers/media/video/zr364xx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/media/video/zr364xx.c b/drivers/media/video/zr364xx.c
+index c492846..e78cf94 100644
+--- a/drivers/media/video/zr364xx.c
++++ b/drivers/media/video/zr364xx.c
+@@ -1638,6 +1638,9 @@ static int zr364xx_probe(struct usb_interface *intf,
+ 
+ 	if (!cam->read_endpoint) {
+ 		dev_err(&intf->dev, "Could not find bulk-in endpoint\n");
++		video_device_release(cam->vdev);
++		kfree(cam);
++		cam = NULL;
+ 		return -ENOMEM;
+ 	}
+ 
 
-Regards,
-Clemens
