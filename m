@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1HLDfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:35:46 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:40117 "EHLO
+	id S1753368Ab1HLDfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 23:35:48 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:39695 "EHLO
 	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171Ab1HLDfh (ORCPT
+	with ESMTP id S1753171Ab1HLDfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:35:37 -0400
+	Thu, 11 Aug 2011 23:35:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws; d=kylemanna.com; h=from:to:cc
 	:subject:date:message-id:in-reply-to:references; q=dns; s=
-	kylemanna.com; b=dbfG8gL6mJj3pQbUsrUxDdj3qITu03u2nZaAJlu304M0kze
-	YF19pajgiRdrTSbgMCb7nX0LcmUb0EnvU8bkTEgziLSuREEjcA7qFqUEu+uwWa8/
-	40z4uLAV5evRgqZjTyTLkRe4NOeXBq7OWFhtNusCJ/J48mMog4VXbJthiXsk=
+	kylemanna.com; b=M7P85c/0BkbGPXvVABnoN+XASXG6HM2i9pAwKaKQ1vSlHJR
+	XpgfP6j3gQIabEk4jHuN2gB0LPtYWg8bwgwYUpLUWw9wJx/jdRsKqOsMN5p+jthy
+	KSN5I545yImPs2AOrIA/cbG9Y9ODTt2wuMI9HO2R+wDSonUz+eGjxR+yEBVo=
 From: Kyle Manna <kyle@kylemanna.com>
 To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
         Samuel Ortiz <sameo@linux.intel.com>
 Cc: Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Kyle Manna <kyle@kylemanna.com>
-Subject: [PATCH v2 4/4] arm: BeagleBoard: add support for the twl4030-madc
-Date: Thu, 11 Aug 2011 22:33:15 -0500
-Message-Id: <1313119995-15382-5-git-send-email-kyle@kylemanna.com>
+Subject: [PATCH v2 1/4] mfd: twl4030-madc: copy the device pointer
+Date: Thu, 11 Aug 2011 22:33:12 -0500
+Message-Id: <1313119995-15382-2-git-send-email-kyle@kylemanna.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
 References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
@@ -29,41 +29,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Worst case this fixes the following error:
+[   72.086212] (NULL device *): conversion timeout!
+
+Best case it prevents a crash
+
 Signed-off-by: Kyle Manna <kyle@kylemanna.com>
 ---
- arch/arm/mach-omap2/board-omap3beagle.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/mfd/twl4030-madc.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
-index 3ae16b4..9cc9fa9 100644
---- a/arch/arm/mach-omap2/board-omap3beagle.c
-+++ b/arch/arm/mach-omap2/board-omap3beagle.c
-@@ -378,7 +378,8 @@ static struct i2c_board_info __initdata beagle_i2c_eeprom[] = {
- static int __init omap3_beagle_i2c_init(void)
- {
- 	omap3_pmic_get_config(&beagle_twldata,
--			TWL_COMMON_PDATA_USB | TWL_COMMON_PDATA_AUDIO,
-+			TWL_COMMON_PDATA_USB | TWL_COMMON_PDATA_MADC |
-+			TWL_COMMON_PDATA_AUDIO,
- 			TWL_COMMON_REGULATOR_VDAC | TWL_COMMON_REGULATOR_VPLL2);
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index b5d598c..cb44b53 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -706,6 +706,8 @@ static int __devinit twl4030_madc_probe(struct platform_device *pdev)
+ 	if (!madc)
+ 		return -ENOMEM;
  
- 	beagle_twldata.vpll2->constraints.name = "VDVI";
-@@ -456,9 +457,15 @@ static void __init omap3_beagle_init_irq(void)
- 	omap3_init_irq();
- }
- 
-+static struct platform_device madc_hwmon = {
-+	.name	= "twl4030_madc_hwmon",
-+	.id	= -1,
-+};
++	madc->dev = &pdev->dev;
 +
- static struct platform_device *omap3_beagle_devices[] __initdata = {
- 	&leds_gpio,
- 	&keys_gpio,
-+	&madc_hwmon,
- };
- 
- static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
+ 	/*
+ 	 * Phoenix provides 2 interrupt lines. The first one is connected to
+ 	 * the OMAP. The other one can be connected to the other processor such
 -- 
 1.7.4.1
 
