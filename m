@@ -1,138 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab1HLQ0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:26:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab1HLQ0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:26:01 -0400
-From: Andrew Jones <drjones@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: drjones@redhat.com, rostedt@goodmis.org
-Subject: [PATCH 04/10 v2] ktest: Introduce CONSOLE_RESET_TIME
-Date: Fri, 12 Aug 2011 18:25:53 +0200
-Message-Id: <1313166353-3664-1-git-send-email-drjones@redhat.com>
-In-Reply-To: <1313155932-20092-5-git-send-email-drjones@redhat.com>
-References: <1313155932-20092-5-git-send-email-drjones@redhat.com>
+	id S1751479Ab1HLQ3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:29:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33775 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1HLQ3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 12:29:16 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/12] perf top browser: Remove spurious helpline update
+Date: Fri, 12 Aug 2011 13:28:53 -0300
+Message-Id: <1313166544-6209-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1313166544-6209-1-git-send-email-acme@infradead.org>
+References: <1313166544-6209-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When rebooting, some targets may lose their console connection. This
-certainly happens with 'virsh console' when used with my xen guests.
-Setting CONSOLE_RESET_TIME will tell ktest to reconnect the console
-after reboot.
----
- tools/testing/ktest/ktest.pl    |   28 +++++++++++++++++++++++-----
- tools/testing/ktest/sample.conf |    8 ++++++++
- 2 files changed, 31 insertions(+), 5 deletions(-)
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 12c392e..8bc6dd8 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -108,6 +108,7 @@ my $monitor_cnt = 0;
- my $sleep_time;
- my $bisect_sleep_time;
- my $patchcheck_sleep_time;
-+my $console_reset_time;
- my $ignore_warnings;
- my $store_failures;
- my $test_name;
-@@ -606,6 +607,7 @@ sub run_command;
- sub start_monitor;
- sub end_monitor;
- sub wait_for_monitor;
-+sub reset_monitor;
+It will be immediately replaced in perf_top_browser__run.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-q7e2jzb44elqpkvdllk94x0i@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/top.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
+index 5a06538..88403cf 100644
+--- a/tools/perf/util/ui/browsers/top.c
++++ b/tools/perf/util/ui/browsers/top.c
+@@ -208,6 +208,5 @@ int perf_top__tui_browser(struct perf_top *top)
+ 		},
+ 	};
  
- sub reboot {
-     my ($time) = @_;
-@@ -626,6 +628,7 @@ sub reboot {
- 	wait_for_monitor $time;
- 	end_monitor;
-     }
-+    reset_monitor;
+-	ui_helpline__push("Press <- or ESC to exit");
+ 	return perf_top_browser__run(&browser);
  }
- 
- sub do_not_reboot {
-@@ -685,7 +688,9 @@ sub close_console {
- }
- 
- sub start_monitor {
--    if ($monitor_cnt++) {
-+    my ($force) = @_;
-+
-+    if ($monitor_cnt++ && !defined($force)) {
- 	return;
-     }
-     $monitor_fp = \*MONFD;
-@@ -697,12 +702,23 @@ sub start_monitor {
- }
- 
- sub end_monitor {
--    if (--$monitor_cnt) {
-+    my ($force) = @_;
-+
-+    if (--$monitor_cnt && !defined($force)) {
- 	return;
-     }
-     close_console($monitor_fp, $monitor_pid);
- }
- 
-+sub reset_monitor {
-+    if ($monitor_cnt <= 0 || !defined($console_reset_time)) {
-+	return;
-+    }
-+    end_monitor 'force';
-+    sleep $console_reset_time;
-+    start_monitor 'force';
-+}
-+
- sub wait_for_monitor {
-     my ($time) = @_;
-     my $line;
-@@ -911,10 +927,11 @@ sub wait_for_input
- sub reboot_to {
-     if ($reboot_type eq "grub") {
- 	run_ssh "'(echo \"savedefault --default=$grub_number --once\" | grub --batch && reboot)'";
--	return;
-+    } else {
-+	run_command "$reboot_script";
-     }
--
--    run_command "$reboot_script";
-+    wait_for_monitor $sleep_time;
-+    reset_monitor;
- }
- 
- sub get_sha1 {
-@@ -2817,6 +2834,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     $sleep_time = set_test_option("SLEEP_TIME", $i);
-     $bisect_sleep_time = set_test_option("BISECT_SLEEP_TIME", $i);
-     $patchcheck_sleep_time = set_test_option("PATCHCHECK_SLEEP_TIME", $i);
-+    $console_reset_time = set_test_option("CONSOLE_RESET_TIME", $i);
-     $ignore_warnings = set_test_option("IGNORE_WARNINGS", $i);
-     $bisect_manual = set_test_option("BISECT_MANUAL", $i);
-     $bisect_skip = set_test_option("BISECT_SKIP", $i);
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-index b8bcd14..ba430a7 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -491,6 +491,14 @@
- # (default 60)
- #PATCHCHECK_SLEEP_TIME = 60
- 
-+# If the console needs to be reset during a reboot cycle in
-+# order to reestablish it's connection, then set this option
-+# to the number of seconds ktest should wait between disconnect
-+# and reconnect. This is needed when using 'virsh console' to
-+# connect to guests.
-+# (default undefined)
-+#CONSOLE_RESET_TIME = 5
-+
- # Reboot the target box on error (default 0)
- #REBOOT_ON_ERROR = 0
- 
 -- 
-1.7.4.1
+1.6.2.5
 
