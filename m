@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1HLDdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:33:25 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28661 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781Ab1HLDdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:33:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
-   d="scan'208";a="6396425"
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: davem@davemloft.net
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, netdev@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [net-next] spider_net: fix compile issue introduced by driver move
-Date: Thu, 11 Aug 2011 20:33:20 -0700
-Message-Id: <1313120000-12085-1-git-send-email-jeffrey.t.kirsher@intel.com>
-X-Mailer: git-send-email 1.7.6
+	id S1753458Ab1HLDfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 23:35:37 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:44052 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1HLDfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 23:35:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=kylemanna.com; h=from:to:cc
+	:subject:date:message-id:in-reply-to:references; q=dns; s=
+	kylemanna.com; b=rkU5QvHmNQq2e6uW5NEt0XDXzbcOrDf4qXyKrdRs7n8rLfo
+	J7WrzmCMUZ4kzU+Z1/TP4qIlAVHbeFZrPFPdKs0qrz81Hq+VZZhbxhItYGQYHMEf
+	2PVwxgYRMOiuO+0dGFfEzBYqe+dyRRxAxkJ4vnu/5Uv+lpZd3rzDIK6dLeOU=
+From: Kyle Manna <kyle@kylemanna.com>
+To: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kyle Manna <kyle@kylemanna.com>
+Subject: [PATCH v2 3/4] mfd: twl4030-madc: check for NULL pointer
+Date: Thu, 11 Aug 2011 22:33:14 -0500
+Message-Id: <1313119995-15382-4-git-send-email-kyle@kylemanna.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
+References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
+ <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both Spider net driver and Sun GEM driver use the sungem_phy.o object.
-This fix creates a Kconfig object for sungem_phy (like MDIO) so that
-both drivers require the SUNGEM_PHY object.
+If the twl4030-madc device wasn't registered, and another device, such
+as twl4030-madc-hwmon, calls twl4030_madc_conversion() a NULL pointer is
+dereferenced.
 
-This has been compile tested for the Sun GEM driver.
-
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Kyle Manna <kyle@kylemanna.com>
 ---
- drivers/net/Kconfig               |    4 ++++
- drivers/net/Makefile              |    2 +-
- drivers/net/ethernet/sun/Kconfig  |    1 +
- drivers/net/ethernet/sun/Makefile |    3 ++-
- 4 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/mfd/twl4030-madc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index e6be7123..c8779c1 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -934,6 +934,7 @@ config SPIDER_NET
- 	tristate "Spider Gigabit Ethernet driver"
- 	depends on PCI && (PPC_IBM_CELL_BLADE || PPC_CELLEB)
- 	select FW_LOADER
-+	select SUNGEM_PHY
- 	help
- 	  This driver supports the Gigabit Ethernet chips present on the
- 	  Cell Processor-Based Blades from IBM.
-@@ -1083,6 +1084,9 @@ if NETDEV_10000
- config MDIO
- 	tristate
+diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
+index 99dd611..834f824 100644
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -510,8 +510,9 @@ int twl4030_madc_conversion(struct twl4030_madc_request *req)
+ 	u8 ch_msb, ch_lsb;
+ 	int ret;
  
-+config SUNGEM_PHY
-+	tristate
+-	if (!req)
++	if (!req || !twl4030_madc)
+ 		return -EINVAL;
 +
- endif # NETDEV_10000
- 
- source "drivers/net/tokenring/Kconfig"
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index d151075..db888b0 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -41,7 +41,7 @@ obj-$(CONFIG_R6040) += r6040.o
- obj-$(CONFIG_YELLOWFIN) += yellowfin.o
- obj-$(CONFIG_FEALNX) += fealnx.o
- spidernet-y += spider_net.o spider_net_ethtool.o
--obj-$(CONFIG_SPIDER_NET) += spidernet.o ethernet/sun/sungem_phy.o
-+obj-$(CONFIG_SPIDER_NET) += spidernet.o
- obj-$(CONFIG_GELIC_NET) += ps3_gelic.o
- gelic_wireless-$(CONFIG_GELIC_WIRELESS) += ps3_gelic_wireless.o
- ps3_gelic-objs += ps3_gelic_net.o $(gelic_wireless-y)
-diff --git a/drivers/net/ethernet/sun/Kconfig b/drivers/net/ethernet/sun/Kconfig
-index 87b17a7..5132fa6 100644
---- a/drivers/net/ethernet/sun/Kconfig
-+++ b/drivers/net/ethernet/sun/Kconfig
-@@ -57,6 +57,7 @@ config SUNGEM
- 	tristate "Sun GEM support"
- 	depends on PCI
- 	select CRC32
-+	select SUNGEM_PHY
- 	---help---
- 	  Support for the Sun GEM chip, aka Sun GigabitEthernet/P 2.0.  See also
- 	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/806-3985-10.pdf>.
-diff --git a/drivers/net/ethernet/sun/Makefile b/drivers/net/ethernet/sun/Makefile
-index 4f25217..6e25dad 100644
---- a/drivers/net/ethernet/sun/Makefile
-+++ b/drivers/net/ethernet/sun/Makefile
-@@ -5,7 +5,8 @@
- obj-$(CONFIG_HAPPYMEAL) += sunhme.o
- obj-$(CONFIG_SUNQE) += sunqe.o
- obj-$(CONFIG_SUNBMAC) += sunbmac.o
--obj-$(CONFIG_SUNGEM) += sungem.o sungem_phy.o
-+obj-$(CONFIG_SUNGEM) += sungem.o
-+obj-$(CONFIG_SUNGEM_PHY) += sungem_phy.o
- obj-$(CONFIG_CASSINI) += cassini.o
- obj-$(CONFIG_SUNVNET) += sunvnet.o
- obj-$(CONFIG_NIU) += niu.o
+ 	mutex_lock(&twl4030_madc->lock);
+ 	if (req->method < TWL4030_MADC_RT || req->method > TWL4030_MADC_SW2) {
+ 		ret = -EINVAL;
 -- 
-1.7.6
+1.7.4.1
 
