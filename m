@@ -1,51 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab1HLHAD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 03:00:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36437 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1HLG76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 02:59:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: LPC2011 Power Management Micro Conf
-Date: Fri, 12 Aug 2011 09:01:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arjan van de Ven <arjan@infradead.org>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Paul Walmsley <paul@pwsan.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, Len Brown <lenb@kernel.org>,
-        tytso@mit.edu
-References: <201105011353.44809.rjw@sisk.pl> <201107030929.28555.rjw@sisk.pl> <20110812033221.GA5671@sirena.org.uk>
-In-Reply-To: <20110812033221.GA5671@sirena.org.uk>
+	id S1751627Ab1HLHBa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 03:01:30 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:52671 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab1HLHB3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 03:01:29 -0400
+Date: Fri, 12 Aug 2011 15:01:11 +0800 (SGT)
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+X-X-Sender: root@boston.corp.fedex.com
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: Andrey Panin <pazke@centrinvest.ru>, lkml <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: How to access serial port that is set in BIOS as OS Controlled
+Message-ID: <Pine.LNX.4.64.1108121443200.26481@boston.corp.fedex.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108120901.37632.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 12, 2011, Mark Brown wrote:
-> On Sun, Jul 03, 2011 at 09:29:28AM +0200, Rafael J. Wysocki wrote:
-> 
-> > If there's anything you'd like to discuss or give a presentation on related to
-> > Power Management, please let me know, preferably by replying to this message.
-> 
-> The issue of cross-bus sequencing within suspend has come up again - we
-> really need to work out how we make sure that dependencies between
-> devices that aren't accounted for in the control bus sorting we do as
-> standard.  This may be worth bringing up a KS also as it's device model
-> related.
 
-I agree, I'll add it to the agenda of the LPC microconf.
+
+On Fri, Aug 12, 2011 at 5:49 AM, Bjorn Helgaas <bhelgaas@google.com> 
+wrote:
+
+> Oops, my mistake.  You now need "pnp.debug=1" to turn the extra debug
+
+Now, I do see more messages and "resources" show "active" ...
+
+
+# dmesg
+pnp 00:00: parse allocated resources
+pnp 00:01: parse allocated resources
+pnp 00:01: PNP0c02: calling 0xc11c8a0c
+pnp 00:02: parse allocated resources
+pnp 00:02: PNP0c02: calling 0xc11c8a0c
+pnp 00:03: parse allocated resources
+pnp 00:04: parse allocated resources
+pnp 00:05: parse allocated resources
+pnp 00:06: parse allocated resources
+pnp 00:07: parse allocated resources
+pnp 00:08: parse resource options
+pnp 00:08:   dependent set 0 (acceptable) io  min 0x3f8 max 0x3f8 align 
+1 size 8 flags 0x1
+pnp 00:08:   dependent set 0 (acceptable) irq 4 flags 0x1
+pnp 00:08: parse allocated resources
+pnp 00:08: set resources
+pnp 00:09: parse resource options
+pnp 00:09:   dependent set 0 (acceptable) io  min 0x2f8 max 0x2f8 align 
+1 size 8 flags 0x1
+pnp 00:09:   dependent set 0 (acceptable) irq 3 flags 0x1
+pnp 00:09: parse allocated resources
+pnp 00:09: set resources
+pnp 00:0a: parse resource options
+pnp 00:0a:   dependent set 0 (acceptable) io  min 0x3e8 max 0x3e8 align 
+pnp 00:0a:   dependent set 0 (acceptable) irq 6 flags 0x1
+pnp 00:0a: pnp_assign_resources, try dependent set 0
+pnp 00:0a: pnp_assign_resources succeeded: current resources:
+pnp 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
+pnp 00:0a:   dependent set 0 (acceptable) irq 6 flags 0x1
+pnp 00:0a: pnp_assign_resources, try dependent set 0
+pnp 00:0a: pnp_assign_resources succeeded: current resources:
+pnp 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
+pnp 00:0a: [irq 6 flags 0x40000401]
+pnp 00:0a: set resources
+pnp 00:0b: parse resource options
+pnp 00:0b:   dependent set 0 (acceptable) io  min 0x2e8 max 0x2e8 align 
+1 size 8 flags 0x1
+pnp 00:0b:   dependent set 0 (acceptable) irq 12 flags 0x1
+pnp 00:0b: parse allocated resources
+pnp 00:0b: set resources
+serial 00:0a: pnp_assign_resources, try dependent set 0
+serial 00:0a: pnp_assign_resources succeeded: current resources:
+serial 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
+serial 00:0a: [irq 6 flags 0x40000401]
+serial 00:0a: pnp_start_dev: current resources:
+serial 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
+serial 00:0a: [irq 6 flags 0x40000401]
+serial 00:0a: set resources
+serial 00:0a: encode 2 resources
+serial 00:0a:   encode io 0x3e8-0x3ef decode 0x1
+serial 00:0a:   encode irq 6 edge high exclusive (2-byte descriptor)
+
+
+# cat /sys/bus/pnp/devices/00:0a/resources
+state = active
+io 0x3e8-0x3ef
+irq 6
+
+
+# setserial /dev/ttyS2
+/dev/ttyS2, UART: 16550A, Port: 0x03e8, IRQ: 6
+
+
+# echo activate > /sys/bus/pnp/devices/00:0a/resources
+-bash: echo: write error: Device or resource busy
+
+# dmesg
+serial 00:0a: in use; can't configure
+serial 00:0a: in use; can't configure
+
+
+# echo disable > /sys/bus/pnp/devices/00:0a/resources
+-bash: echo: write error: Device or resource busy
+
+# dmesg
+serial 00:0a: in use; can't configure
+serial 00:0a: in use; can't configure
+
+
+> This *should* work.  My guess is that it's failing because the I/O ports 
+> at 0x3e8 are still reserved.  The PNP core doesn't actually reserve 
+> anything, so it would have to be the 8250 driver.  It doesn't mention 
+> those ports in dmesg, so maybe they get reserved when you do the 
+> "setserial."
+
+It's working better now. But, the port is now always active and can't be 
+disabled.
+
+
+> The 8250 driver has no idea that you disabled the PNP device, so it 
+> would never release them.  Then when you try to activate it again, 
+> they're still in use.  You can test this idea a little bit by looking at 
+> /proc/ioports (1) immediately after boot, (2) before "setserial", (3) 
+> after "setserial", and (4) after you disable the PNP device.
+
+It always shows the same info, except I can't disable the port.
+
+# cat /proc/ioports
+   03e8-03ef : serial
+
 
 Thanks,
-Rafael
+Jeff
