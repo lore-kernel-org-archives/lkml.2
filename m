@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab1HNQK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:10:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36941 "EHLO mx2.suse.de"
+	id S1754816Ab1HNQKe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:10:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36967 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754747Ab1HNQKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:20 -0400
+	id S1754788Ab1HNQKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
-Message-Id: <20110812210559.414933872@clark.kroah.org>
+Message-Id: <20110812210559.676106328@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:08 -0700
+Date: Fri, 12 Aug 2011 14:05:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [83/90] ext4: Properly count journal credits for long symlinks
+        Richard Cochran <richard.cochran@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [86/90] dp83640: increase receive time stamp buffer size
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 8c20871998c082f6fbc963f1449a5ba5140ee39a upstream.
+commit 8028837d71ba9904b17281b40f94b93e947fbe38 upstream.
 
-Commit df5e6223407e ("ext4: fix deadlock in ext4_symlink() in ENOSPC
-conditions") recalculated the number of credits needed for a long
-symlink, in the process of splitting it into two transactions.  However,
-the first credit calculation under-counted because if selinux is
-enabled, credits are needed to create the selinux xattr as well.
+The dp83640 buffers receive time stamps from special PHY status frames,
+matching them to received PTP packets in a work queue. Because the timeout
+for orphaned time stamps is so long and the buffer is so small, the driver
+can drop time stamps under moderate PTP traffic.
 
-Overrunning the reservation will result in an OOPS in
-jbd2_journal_dirty_metadata() due to this assert:
+This commit fixes the issue by decreasing the timeout to (at least) one
+timer tick and increasing the buffer size.
 
-  J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
-
-Fix this by increasing the reservation size.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/namei.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/phy/dp83640.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2264,9 +2264,11 @@ static int ext4_symlink(struct inode *di
- 		/*
- 		 * For non-fast symlinks, we just allocate inode and put it on
- 		 * orphan list in the first transaction => we need bitmap,
--		 * group descriptor, sb, inode block, quota blocks.
-+		 * group descriptor, sb, inode block, quota blocks, and
-+		 * possibly selinux xattr blocks.
- 		 */
--		credits = 4 + EXT4_MAXQUOTAS_INIT_BLOCKS(dir->i_sb);
-+		credits = 4 + EXT4_MAXQUOTAS_INIT_BLOCKS(dir->i_sb) +
-+			  EXT4_XATTR_TRANS_BLOCKS;
- 	} else {
- 		/*
- 		 * Fast symlink. We have to add entry to directory
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -34,8 +34,7 @@
+ #define PAGESEL		0x13
+ #define LAYER4		0x02
+ #define LAYER2		0x01
+-#define MAX_RXTS	4
+-#define MAX_TXTS	4
++#define MAX_RXTS	64
+ #define N_EXT_TS	1
+ #define PSF_PTPVER	2
+ #define PSF_EVNT	0x4000
+@@ -218,7 +217,7 @@ static void phy2rxts(struct phy_rxts *p,
+ 	rxts->seqid = p->seqid;
+ 	rxts->msgtype = (p->msgtype >> 12) & 0xf;
+ 	rxts->hash = p->msgtype & 0x0fff;
+-	rxts->tmo = jiffies + HZ;
++	rxts->tmo = jiffies + 2;
+ }
+ 
+ static u64 phy2txts(struct phy_txts *p)
 
 
