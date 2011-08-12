@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab1HLXvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 19:51:19 -0400
-Received: from raba.ibpc.fr ([193.49.234.245]:59846 "EHLO raba.ibpc.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab1HLXvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 19:51:18 -0400
+	id S1752850Ab1HLXwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:52:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53979 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab1HLXwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 19:52:45 -0400
+Message-ID: <4E45BCBA.2050703@gmail.com>
+Date: Fri, 12 Aug 2011 16:52:26 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Date: Sat, 13 Aug 2011 01:45:49 +0200
-From: "Mr. Garry Moore" <Lili.Wei@ibpc.fr>
-To: undisclosed-recipients:;
-Subject: MTCN Numbers: 6096147516
-Reply-To: gmore_233@hotmail.my
-Message-ID: <dd01c280bab99009eea82fadb982c826@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+To: Keith Packard <keithp@keithp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@linux.ie
+Subject: Re: i915 suspend crash: BUG: unable to handle kernel NULL pointer
+ deferrence
+References: <4E44C537.8040101@gmail.com> <yunobzusona.fsf@aiko.keithp.com> <4E454D75.2090505@gmail.com> <yunliuysgf6.fsf@aiko.keithp.com> <4E4564D0.70104@gmail.com> <yund3gaseyl.fsf@aiko.keithp.com>
+In-Reply-To: <yund3gaseyl.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/12/2011 10:43 AM, Keith Packard wrote:
+> On Fri, 12 Aug 2011 10:37:20 -0700, "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
+>
+>>    I have: Enable modesetting on intel by default (DRM_I915_KMS) not set
+>>    in my .config. I will enable that and see if this fixes this issue, if
+>> not then I will test those patches out.
+>
+> Could you test the patches without switching to KMS first? Otherwise,
+> the underlying bugs aren't going to get fixed for anyone else...
+>
 
+Thanks a who lot for that.. machine wakes up perfectly with that patch..
 
--- 
-My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries.
-Here is the information below.
+dmesg of a patch applied with a good wakeup:
 
-MTCN Numbers: 6096147516
-Sender Name Is = Patrick Lee Chun
+http://fpaste.org/7GA7/
 
-I told him to keep sending you $7,500 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
+only really thing now I am seeing is:
+[drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[ 146.362007] render error detected, EIR: 0x00000010
+[ 146.362007] page table error
 
-A certificate will be made to change the Receivers Name
-to your name as stated by the Malaysian Government, send
-your Full Names and address via Email to: Mr Garry Moore
-to proceed.
+but might just be cosmetic.
 
-Note:
-
-You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Garry Moore.
-Tel: +(60) 166647187.
-For more info: www.g20.org
+Justin P. Mattock
