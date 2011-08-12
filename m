@@ -1,56 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382Ab1HLIDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:03:43 -0400
-Received: from lucidpixels.com ([72.73.18.11]:57570 "EHLO lucidpixels.com"
+	id S1751546Ab1HLIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:04:29 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:45979 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab1HLIDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:03:34 -0400
-Date: Fri, 12 Aug 2011 04:03:33 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Subject: 3.0: BUG: soft lockup - CPU#7 stuck for 23s!
-Message-ID: <alpine.DEB.2.02.1108120401160.21591@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1750792Ab1HLIE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 04:04:26 -0400
+X-ASG-Debug-ID: 1313136264-03d6a510a82a68a0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E44DE84.2030306@fusionio.com>
+Date: Fri, 12 Aug 2011 10:04:20 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR]" 
+	<asamymuthupa@micron.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v3 1/3] drivers/block/mtip32xx: Adding header file and
+  source for pci and block related operation
+References: <22A973199D2C2F46933448F6E7990A3002C80025@ntxboimbx31.micron.com>
+X-ASG-Orig-Subj: Re: [PATCH v3 1/3] drivers/block/mtip32xx: Adding header file and
+  source for pci and block related operation
+In-Reply-To: <22A973199D2C2F46933448F6E7990A3002C80025@ntxboimbx31.micron.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1313136264
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.71532
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2011-08-11 20:52, Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR] wrote:
+> +#ifndef WIN_SMART
+> + #define WIN_SMART       0xB0
+> +#endif
 
-Can anyone explain what is the cause of this problem?
+We have defines for this, just use those.
 
-  75 [330509.718763] Call Trace:
-  76 [330509.718771]  [<ffffffff81089e15>] ? pagevec_lookup+0x15/0x20
-  77 [330509.718776]  [<ffffffff8108b905>] ? invalidate_mapping_pages+0x55/0x130
-  78 [330509.718784]  [<ffffffff810d6835>] ? shrink_icache_memory+0x2c5/0x310
-  79 [330509.718788]  [<ffffffff8108c254>] ? shrink_slab+0x104/0x170
-  80 [330509.718793]  [<ffffffff8108eda2>] ? balance_pgdat+0x492/0x600
-  81 [330509.718798]  [<ffffffff8108efbc>] ? kswapd+0xac/0x250
-  82 [330509.718803]  [<ffffffff81050fd0>] ? abort_exclusive_wait+0xb0/0xb0
-  83 [330509.718807]  [<ffffffff8108ef10>] ? balance_pgdat+0x600/0x600
-  84 [330509.718811]  [<ffffffff8105082e>] ? kthread+0x7e/0x90
-  85 [330509.718818]  [<ffffffff815b4e14>] ? kernel_thread_helper+0x4/0x10
-  86 [330509.718822]  [<ffffffff810507b0>] ? kthread_worker_fn+0x120/0x120
-  87 [330509.718825]  [<ffffffff815b4e10>] ? gs_change+0xb/0xb
+> +#ifndef TRUE
+> + #define TRUE 1
+> +#endif
+> +
+> +#ifndef FALSE
+> + #define FALSE 0
+> +#endif
 
-Also:
+Get rid of any TRUE/FALSE, just use true/false.
 
-[330514.882885] Call Trace:
-[330514.882894]  [<ffffffff8147de53>] ? cpuidle_idle_call+0x73/0xe0
-[330514.882901]  [<ffffffff810007e6>] ? cpu_idle+0x56/0xb0
-[330514.882906] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48 89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 48 89 e8 0f 01 c9 <e8> cd da d3 ff 4c 29 e0 48 89 c7 e8 92 fa d1 ff 48 69 e8 40 42
-[330514.882972] Call Trace:
-[330514.882979]  [<ffffffff8147de53>] ? cpuidle_idle_call+0x73/0xe0
-[330514.882992]  [<ffffffff810007e6>] ? cpu_idle+0x56/0xb0
-[330514.883001] NMI backtrace for cpu 19
-[330514.883008] CPU 19
+> + * Use a tasklet for bottom half IRQ processing.
+> + *
+> + * Set to 1 to use a tasklet for bottom half IRQ processing.
+> + */
+> +#define MTIP_USE_TASKLET       1
 
-Full output here:
+As Christoph said, either get rid of this one or make it an option. My
+advise would be to kill it completely. It's one of those design
+decisions that you have to make, not a potential customer/user.
 
-http://home.comcast.net/~jpiszcz/20110812/3.0-error.txt
+> +/* Macro to extract the tag bit number from a tag value. */
+> +#define MTIP_TAG_BIT(tag)      (tag & 0x1f)
+> +
+> +/*
+> + * Macro to extract the tag index from a tag value. The index
+> + * is used to access the correct s_active/Command Issue register based
+> + * on the tag value.
+> + */
+> +#define MTIP_TAG_INDEX(tag)    (tag >> 5)
 
-Justin.
+You have these, but don't seem to use them consistently.
+
+> +/* Forced Unit Access Bit */
+> +#define FUA_BIT                        0x80
+
+Ditto WIN_SMART.
+
+> +       /*
+> +        * Semaphore used to lock out read/write commands during the
+> +        * execution of an internal command.
+> +        */
+> +       struct rw_semaphore internal_sem;
+
+I hope you are not using that in a hot path...
+
+> +/*
+> + * BIO completion function.
+> + *
+> + * @bio    Pointer to the BIO that has completed.
+> + * @status Completion status, 0 = success, non-zero = error.
+> + *
+> + * return value
+> + *     0
+> + */
+> +static int mtip_complete_bio(struct bio *bio, int status)
+> +{
+> +       bio_endio(bio, status);
+> +       return 0;
+> +}
+
+Why wrap this?
+
+> +int mtip_block_initialize(struct driver_data *dd)
+> +{
+> +       int rv = 0;
+> +       sector_t capacity;
+> +       unsigned int index = 0;
+> +       struct kobject *kobj;
+> +
+> +       /* Initialize the protocol layer. */
+> +       rv = mtip_hw_init(dd);
+> +       if (rv < 0) {
+> +               dev_err(&dd->pdev->dev,
+> +                       "Protocol layer initialization failed\n");
+> +               rv = -EINVAL;
+> +               goto protocol_init_error;
+> +       }
+> +
+> +       /* Allocate the request queue. */
+> +       dd->queue = blk_alloc_queue(GFP_KERNEL);
+
+It'd be nice for a high perf device like this to allocate the queue node
+local.
+
+> +       /* Set device limits. */
+> +       set_bit(QUEUE_FLAG_NOMERGES, &dd->queue->queue_flags);
+
+This wont matter, if you are using ->make_request_fn entry.
+
+-- 
+Jens Axboe
 
