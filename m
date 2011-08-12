@@ -1,214 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1HLAsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 20:48:39 -0400
-Received: from tundra.namei.org ([65.99.196.166]:56415 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab1HLAsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 20:48:37 -0400
-Date: Fri, 12 Aug 2011 10:48:27 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Steve French <smfrench@gmail.com>
-cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-cifs@vger.kernel.org, David Safford <safford@watson.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-In-Reply-To: <CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1108121047540.14215@tundra.namei.org>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com> <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com> <1313092847.3122.13.camel@localhost.localdomain>
- <CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754483Ab1HLAt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 20:49:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39376 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754246Ab1HLAtY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 20:49:24 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-429493442-1313110107=:14215"
+In-Reply-To: <20110811064059.GU6342@yookeroo.fritz.box>
+References: <20110811064059.GU6342@yookeroo.fritz.box>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 11 Aug 2011 17:48:56 -0700
+Message-ID: <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com>
+Subject: Re: Fix refcounting in hugetlbfs quota handling
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org, agraf@suse.de,
+        kvm <kvm@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Aug 10, 2011 at 11:40 PM, David Gibson
+<david@gibson.dropbear.id.au> wrote:
+>
+> This patch, therefore, stores a pointer to the inode instead of the
+> address_space in the page private data for hugepages.  More
+> importantly it correctly adjusts the reference count on the inodes
+> when they're added to the page private data.  This ensures that the
+> inode (and therefore the super block) will not be freed before we use
+> it from free_huge_page.
 
---1665246916-429493442-1313110107=:14215
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Looks sane, but I *really* want some acks from people who use/know
+hugetlbfs. Who would that be? I'm adding random people who have
+acked/signed-off patches to hugetlbfs recently..
 
-On Thu, 11 Aug 2011, Steve French wrote:
+             Linus
 
-> makes sense - do we want this going through the cifs tree or as part
-> of the xattr change mentioned below.
-
-Should be fine to go into the CIFS tree, as long as that is in -next.
-
-
-> 
-> On Thu, Aug 11, 2011 at 3:00 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Thu, 2011-08-11 at 15:29 -0400, Eric Paris wrote:
-> >> Not that this patch is wrong, but shouldn't cifs include xattr.h
-> >> directly rather than rely on such an obscure indirect callchain as
-> >> well?
-> >>
-> >> -Eric
-> >
-> > True, updated below.
-> >
-> > thanks,
-> >
-> > Mimi
-> >
-> > ---
-> > Local XATTR_TRUSTED_PREFIX_LEN and XATTR_SECURITY_PREFIX_LEN definitions
-> > redefined ones in 'linux/xattr.h'. This was caused by commit 9d8f13ba3f48
-> > ("security: new security_inode_init_security API adds function callback")
-> > including 'linux/xattr.h' in 'linux/security.h'.
-> >
-> > In file included from include/linux/security.h:39,
-> >                 from include/net/sock.h:54,
-> >                 from fs/cifs/cifspdu.h:25,
-> >                 from fs/cifs/xattr.c:26:
-> >
-> > This patch removes the local definitions.
-> >
-> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > ---
-> >  fs/cifs/xattr.c |   40 ++++++++++++++++++----------------------
-> >  1 files changed, 18 insertions(+), 22 deletions(-)
-> >
-> > diff --git a/fs/cifs/xattr.c b/fs/cifs/xattr.c
-> > index 2a22fb2..c323088 100644
-> > --- a/fs/cifs/xattr.c
-> > +++ b/fs/cifs/xattr.c
-> > @@ -22,6 +22,7 @@
-> >  #include <linux/fs.h>
-> >  #include <linux/posix_acl_xattr.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/xattr.h>
-> >  #include "cifsfs.h"
-> >  #include "cifspdu.h"
-> >  #include "cifsglob.h"
-> > @@ -31,16 +32,8 @@
-> >  #define MAX_EA_VALUE_SIZE 65535
-> >  #define CIFS_XATTR_DOS_ATTRIB "user.DosAttrib"
-> >  #define CIFS_XATTR_CIFS_ACL "system.cifs_acl"
-> > -#define CIFS_XATTR_USER_PREFIX "user."
-> > -#define CIFS_XATTR_SYSTEM_PREFIX "system."
-> > -#define CIFS_XATTR_OS2_PREFIX "os2."
-> > -#define CIFS_XATTR_SECURITY_PREFIX "security."
-> > -#define CIFS_XATTR_TRUSTED_PREFIX "trusted."
-> > -#define XATTR_TRUSTED_PREFIX_LEN  8
-> > -#define XATTR_SECURITY_PREFIX_LEN 9
-> > -/* BB need to add server (Samba e.g) support for security and trusted prefix */
-> > -
-> >
-> > +/* BB need to add server (Samba e.g) support for security and trusted prefix */
-> >
-> >  int cifs_removexattr(struct dentry *direntry, const char *ea_name)
-> >  {
-> > @@ -76,8 +69,8 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
-> >        }
-> >        if (ea_name == NULL) {
-> >                cFYI(1, "Null xattr names not supported");
-> > -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5)
-> > -               && (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4))) {
-> > +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> > +               && (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))) {
-> >                cFYI(1,
-> >                     "illegal xattr request %s (only user namespace supported)",
-> >                     ea_name);
-> > @@ -88,7 +81,7 @@ int cifs_removexattr(struct dentry *direntry, const char *ea_name)
-> >                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> >                        goto remove_ea_exit;
-> >
-> > -               ea_name += 5; /* skip past user. prefix */
-> > +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
-> >                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, NULL,
-> >                        (__u16)0, cifs_sb->local_nls,
-> >                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> > @@ -149,21 +142,23 @@ int cifs_setxattr(struct dentry *direntry, const char *ea_name,
-> >
-> >        if (ea_name == NULL) {
-> >                cFYI(1, "Null xattr names not supported");
-> > -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
-> > +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> > +                  == 0) {
-> >                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> >                        goto set_ea_exit;
-> >                if (strncmp(ea_name, CIFS_XATTR_DOS_ATTRIB, 14) == 0)
-> >                        cFYI(1, "attempt to set cifs inode metadata");
-> >
-> > -               ea_name += 5; /* skip past user. prefix */
-> > +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
-> >                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
-> >                        (__u16)value_size, cifs_sb->local_nls,
-> >                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> > -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
-> > +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)
-> > +                  == 0) {
-> >                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> >                        goto set_ea_exit;
-> >
-> > -               ea_name += 4; /* skip past os2. prefix */
-> > +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
-> >                rc = CIFSSMBSetEA(xid, pTcon, full_path, ea_name, ea_value,
-> >                        (__u16)value_size, cifs_sb->local_nls,
-> >                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> > @@ -269,7 +264,8 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
-> >        /* return alt name if available as pseudo attr */
-> >        if (ea_name == NULL) {
-> >                cFYI(1, "Null xattr names not supported");
-> > -       } else if (strncmp(ea_name, CIFS_XATTR_USER_PREFIX, 5) == 0) {
-> > +       } else if (strncmp(ea_name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN)
-> > +                  == 0) {
-> >                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> >                        goto get_ea_exit;
-> >
-> > @@ -277,15 +273,15 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
-> >                        cFYI(1, "attempt to query cifs inode metadata");
-> >                        /* revalidate/getattr then populate from inode */
-> >                } /* BB add else when above is implemented */
-> > -               ea_name += 5; /* skip past user. prefix */
-> > +               ea_name += XATTR_USER_PREFIX_LEN; /* skip past user. prefix */
-> >                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
-> >                        buf_size, cifs_sb->local_nls,
-> >                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> > -       } else if (strncmp(ea_name, CIFS_XATTR_OS2_PREFIX, 4) == 0) {
-> > +       } else if (strncmp(ea_name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
-> >                if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NO_XATTR)
-> >                        goto get_ea_exit;
-> >
-> > -               ea_name += 4; /* skip past os2. prefix */
-> > +               ea_name += XATTR_OS2_PREFIX_LEN; /* skip past os2. prefix */
-> >                rc = CIFSSMBQAllEAs(xid, pTcon, full_path, ea_name, ea_value,
-> >                        buf_size, cifs_sb->local_nls,
-> >                        cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MAP_SPECIAL_CHR);
-> > @@ -339,10 +335,10 @@ ssize_t cifs_getxattr(struct dentry *direntry, const char *ea_name,
-> >                cFYI(1, "Query CIFS ACL not supported yet");
-> >  #endif /* CONFIG_CIFS_ACL */
-> >        } else if (strncmp(ea_name,
-> > -                 CIFS_XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
-> > +                 XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) == 0) {
-> >                cFYI(1, "Trusted xattr namespace not supported yet");
-> >        } else if (strncmp(ea_name,
-> > -                 CIFS_XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
-> > +                 XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) == 0) {
-> >                cFYI(1, "Security xattr namespace not supported yet");
-> >        } else
-> >                cFYI(1,
-> > --
-> > 1.7.3.4
-> >
-> >
-> 
-> 
-> 
-> -- 
-> Thanks,
-> 
-> Steve
-> 
-
--- 
-James Morris
-<jmorris@namei.org>
---1665246916-429493442-1313110107=:14215--
+--- patch left quoted for new people ---
+> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+>
+> Index: working-2.6/fs/hugetlbfs/inode.c
+> ===================================================================
+> --- working-2.6.orig/fs/hugetlbfs/inode.c       2011-08-10 16:45:47.864758406 +1000
+> +++ working-2.6/fs/hugetlbfs/inode.c    2011-08-10 17:22:21.899638039 +1000
+> @@ -874,10 +874,10 @@ out_free:
+>        return -ENOMEM;
+>  }
+>
+> -int hugetlb_get_quota(struct address_space *mapping, long delta)
+> +int hugetlb_get_quota(struct inode *inode, long delta)
+>  {
+>        int ret = 0;
+> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
+> +       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
+>
+>        if (sbinfo->free_blocks > -1) {
+>                spin_lock(&sbinfo->stat_lock);
+> @@ -891,9 +891,9 @@ int hugetlb_get_quota(struct address_spa
+>        return ret;
+>  }
+>
+> -void hugetlb_put_quota(struct address_space *mapping, long delta)
+> +void hugetlb_put_quota(struct inode *inode, long delta)
+>  {
+> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
+> +       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
+>
+>        if (sbinfo->free_blocks > -1) {
+>                spin_lock(&sbinfo->stat_lock);
+> Index: working-2.6/include/linux/hugetlb.h
+> ===================================================================
+> --- working-2.6.orig/include/linux/hugetlb.h    2011-08-10 16:58:27.952527484 +1000
+> +++ working-2.6/include/linux/hugetlb.h 2011-08-10 17:22:08.723572707 +1000
+> @@ -171,8 +171,8 @@ extern const struct file_operations huge
+>  extern const struct vm_operations_struct hugetlb_vm_ops;
+>  struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
+>                                struct user_struct **user, int creat_flags);
+> -int hugetlb_get_quota(struct address_space *mapping, long delta);
+> -void hugetlb_put_quota(struct address_space *mapping, long delta);
+> +int hugetlb_get_quota(struct inode *inode, long delta);
+> +void hugetlb_put_quota(struct inode *inode, long delta);
+>
+>  static inline int is_file_hugepages(struct file *file)
+>  {
+> Index: working-2.6/mm/hugetlb.c
+> ===================================================================
+> --- working-2.6.orig/mm/hugetlb.c       2011-08-10 16:44:12.212284092 +1000
+> +++ working-2.6/mm/hugetlb.c    2011-08-10 17:21:49.603477888 +1000
+> @@ -533,10 +533,12 @@ static void free_huge_page(struct page *
+>         */
+>        struct hstate *h = page_hstate(page);
+>        int nid = page_to_nid(page);
+> -       struct address_space *mapping;
+> +       struct inode *inode;
+>
+> -       mapping = (struct address_space *) page_private(page);
+> +       inode = (struct inode *) page_private(page);
+>        set_page_private(page, 0);
+> +       iput(inode);
+> +
+>        page->mapping = NULL;
+>        BUG_ON(page_count(page));
+>        BUG_ON(page_mapcount(page));
+> @@ -551,8 +553,8 @@ static void free_huge_page(struct page *
+>                enqueue_huge_page(h, page);
+>        }
+>        spin_unlock(&hugetlb_lock);
+> -       if (mapping)
+> -               hugetlb_put_quota(mapping, 1);
+> +       if (inode)
+> +               hugetlb_put_quota(inode, 1);
+>  }
+>
+>  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+> @@ -1035,7 +1037,7 @@ static struct page *alloc_huge_page(stru
+>        if (chg < 0)
+>                return ERR_PTR(-VM_FAULT_OOM);
+>        if (chg)
+> -               if (hugetlb_get_quota(inode->i_mapping, chg))
+> +               if (hugetlb_get_quota(inode, chg))
+>                        return ERR_PTR(-VM_FAULT_SIGBUS);
+>
+>        spin_lock(&hugetlb_lock);
+> @@ -1045,12 +1047,12 @@ static struct page *alloc_huge_page(stru
+>        if (!page) {
+>                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>                if (!page) {
+> -                       hugetlb_put_quota(inode->i_mapping, chg);
+> +                       hugetlb_put_quota(inode, chg);
+>                        return ERR_PTR(-VM_FAULT_SIGBUS);
+>                }
+>        }
+>
+> -       set_page_private(page, (unsigned long) mapping);
+> +       set_page_private(page, (unsigned long) igrab(inode));
+>
+>        vma_commit_reservation(h, vma, addr);
+>
+> @@ -2086,7 +2088,8 @@ static void hugetlb_vm_op_close(struct v
+>
+>                if (reserve) {
+>                        hugetlb_acct_memory(h, -reserve);
+> -                       hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
+> +                       hugetlb_put_quota(vma->vm_file->f_mapping->host,
+> +                                         reserve);
+>                }
+>        }
+>  }
+> @@ -2884,7 +2887,7 @@ int hugetlb_reserve_pages(struct inode *
+>                return chg;
+>
+>        /* There must be enough filesystem quota for the mapping */
+> -       if (hugetlb_get_quota(inode->i_mapping, chg))
+> +       if (hugetlb_get_quota(inode, chg))
+>                return -ENOSPC;
+>
+>        /*
+> @@ -2893,7 +2896,7 @@ int hugetlb_reserve_pages(struct inode *
+>         */
+>        ret = hugetlb_acct_memory(h, chg);
+>        if (ret < 0) {
+> -               hugetlb_put_quota(inode->i_mapping, chg);
+> +               hugetlb_put_quota(inode, chg);
+>                return ret;
+>        }
+>
+> @@ -2922,7 +2925,7 @@ void hugetlb_unreserve_pages(struct inod
+>        inode->i_blocks -= (blocks_per_huge_page(h) * freed);
+>        spin_unlock(&inode->i_lock);
+>
+> -       hugetlb_put_quota(inode->i_mapping, (chg - freed));
+> +       hugetlb_put_quota(inode, (chg - freed));
+>        hugetlb_acct_memory(h, -(chg - freed));
+>  }
+>
+>
+> --
+> David Gibson                    | I'll have my music baroque, and my code
+> david AT gibson.dropbear.id.au  | minimalist, thank you.  NOT _the_ _other_
+>                                | _way_ _around_!
+> http://www.ozlabs.org/~dgibson
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
