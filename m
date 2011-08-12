@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab1HLVwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 17:52:01 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:33150 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab1HLVv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 17:51:58 -0400
-X-SENDER-IP: [85.230.168.63]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmxnAHWfRU5V5qg/PGdsb2JhbABBiQ+eaQsBAQEBNzKBQAEBBAEnExwjBQsIAw44FCUKGogCArsXDoVaXwSYKotZ
-X-IronPort-AV: E=Sophos;i="4.67,364,1309730400"; 
-   d="scan'208";a="211340902"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 12 Aug 2011 23:52:53 +0200
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 6/8 v3] Input: synaptics - process finger (<=3)
- transitions
-Message-ID: <20110812215253.GB9124@polaris.bitmath.org>
-References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
- <1313169407-4358-7-git-send-email-djkurtz@chromium.org>
+	id S1752511Ab1HLV4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:56:00 -0400
+Received: from mx4.orcon.net.nz ([219.88.242.54]:53818 "EHLO mx4.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752441Ab1HLVz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 17:55:57 -0400
+Message-ID: <4E45A16B.9060007@orcon.net.nz>
+Date: Sat, 13 Aug 2011 09:55:55 +1200
+From: Michael Cree <mcree@orcon.net.nz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313169407-4358-7-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sergei Trofimovich <slyfox@gentoo.org>
+CC: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: Re: [PATCH v2] Alpha: unbreak osf_setsysinfo(SSI_NVPAIRS, [SSIN_UACPROC,
+ UAC_SIGBUS])
+References: <1313182881-21266-1-git-send-email-slyfox@gentoo.org>
+In-Reply-To: <1313182881-21266-1-git-send-email-slyfox@gentoo.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-DSPAM-Check: by mx4.orcon.net.nz on Sat, 13 Aug 2011 09:55:55 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Sat Aug 13 09:55:55 2011
+X-DSPAM-Confidence: 0.9936
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 13/08/11 09:01, Sergei Trofimovich wrote:
+> The bug was accidentally found by the following program:
+>     #include <asm/sysinfo.h>
+>     #include <asm/unistd.h>
+>     #include <sys/syscall.h>
+>     static int setsysinfo(unsigned long op, void *buffer, unsigned long size,
+>                           int *start, void *arg, unsigned long flag) {
+>         return syscall(__NR_osf_setsysinfo, op, buffer, size, start, arg, flag);
+>     }
+> 
+>     int main(int argc, char **argv) {
+>         short x[10];
+>         unsigned int buf[2] = { SSIN_UACPROC, UAC_SIGBUS, };
+>         setsysinfo(SSI_NVPAIRS, buf, 1, 0, 0, 0);
+> 
+>         int  *y = (int*) (x+1);
+>         *y = 0;
+>         return 0;
+>     }
+> 
+> The program shoud fail on SIGBUS, but didn't.
+> 
+> The patch is a second part of userspace flag fix:
+>> commit 745dd2405e281d96c0a449103bdf6a895048f28c
+>> Author: Michael Cree <mcree@orcon.net.nz>
+>> Date:   Mon Nov 30 22:44:40 2009 -0500
+>>
+>>    Alpha: Rearrange thread info flags fixing two regressions
+>>
+>>    Both regressions fixed by (1) rearranging TIF_NOTIFY_RESUME flag to be
+>>    in lower 8 bits of the thread info flags, and (2) making sure that
+>>    ALPHA_UAC_SHIFT matches the rearrangement of the thread info flags.
+> 
+> Deleted outdated out-of-sync 'UAC_SHIFT' (the cause of bug) in favour of 'ALPHA_UAC_SHIFT'.
+> 
+> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+> Cc: linux-alpha@vger.kernel.org
+> Cc: Michael Cree <mcree@orcon.net.nz>
+> Cc: Richard Henderson <rth@twiddle.net>
+> Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+> Cc: Matt Turner <mattst88@gmail.com>
+> ---
+>  arch/alpha/include/asm/sysinfo.h     |    9 ---------
+>  arch/alpha/include/asm/thread_info.h |    8 ++++----
+>  arch/alpha/kernel/osf_sys.c          |    7 ++++---
+>  3 files changed, 8 insertions(+), 16 deletions(-)
 
-> Synaptics image sensor touchpads track 5 fingers, but only report 2.
-> This patch attempts to deal with some idiosyncrasies of these
-> touchpads:
+Looks good to me.
 
-I appreciate the complexity of the protocol at hand, and the patch is
-doing an excellent job documenting it. However, it does constitute a
-fair deal of code... What about the statements below:
+Acked-by: Michael Cree <mcree@orcon.net.nz>
 
-1. When two subsequent sgm packets report the same number of fingers
-(and unless told otherwise in some other fashion?), the sgm and the
-previous agm contains data for the same fingers as the previous (agm,
-sgm) pair, i.e., there is no transition.
-
-2. There is no general way to know which fingers are being reported
-after a transition.
-
-If both points above are true, how about something like this:
-
-a) Always report slots zero and one (for two or more fingers)
-
-b) Keep a global number, trackid
-
-c) Parse are buffer agm
-
-d) Parse sgm
-
-e) If a transition occured, increase trackid by two
-
-f) Set TRACKING_ID to trackid in slot zero and trackid+1 in slot one.
-
-It seems to me the above will result in contiuous handling of two
-unknown contacts in between transitions, and during transitions, new
-contacts will be generated.
-
-The algorithm above could possibly be improved for the 2->1
-transition, but from what I gather, 1->2 and 2->3 as well as 3->2 does
-not seem to be generally solvable, hence resulting in the above
-anyways.
-
-If any of points 1 and 2 are wrong, I am sure you will
-enlighten/remind me. ;-)
-
-Cheers,
-Henrik
+Thanks
+Michael.
