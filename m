@@ -1,121 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1HLNc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:32:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51057 "EHLO mx1.redhat.com"
+	id S1753432Ab1HLNdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab1HLNcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:32:24 -0400
+	id S1752643Ab1HLNc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 09:32:29 -0400
 From: Andrew Jones <drjones@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: drjones@redhat.com, rostedt@goodmis.org
-Subject: [PATCH 03/10] ktest: factor reboot code
-Date: Fri, 12 Aug 2011 15:32:05 +0200
-Message-Id: <1313155932-20092-4-git-send-email-drjones@redhat.com>
+Subject: [PATCH 07/10] ktest: Introduce PASS_COUNT
+Date: Fri, 12 Aug 2011 15:32:09 +0200
+Message-Id: <1313155932-20092-8-git-send-email-drjones@redhat.com>
 In-Reply-To: <1313155932-20092-1-git-send-email-drjones@redhat.com>
 References: <1313155932-20092-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clean up redundant code and prepare for reset time patch
+Add another config variable that defines the number of times a test
+must pass before it really passes. This is good for boot tests, where
+the failure doesn't occur every time.
 
 Signed-off-by: Andrew Jones <drjones@redhat.com>
 ---
- tools/testing/ktest/ktest.pl |   36 ++++++++++++++++--------------------
- 1 files changed, 16 insertions(+), 20 deletions(-)
+ tools/testing/ktest/ktest.pl    |   23 +++++++++++++++--------
+ tools/testing/ktest/sample.conf |    7 +++++++
+ 2 files changed, 22 insertions(+), 8 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index f1358c5..12c392e 100755
+index 4265652..38c4532 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -603,8 +603,13 @@ sub doprint {
- }
+@@ -24,6 +24,7 @@ my %default;
+ $default{"NUM_TESTS"}		= 1;
+ $default{"REBOOT_TYPE"}		= "grub";
+ $default{"TEST_TYPE"}		= "test";
++$default{"PASS_COUNT"}		= 1;
+ $default{"BUILD_TYPE"}		= "randconfig";
+ $default{"MAKE_CMD"}		= "make";
+ $default{"TIMEOUT"}		= 120;
+@@ -61,6 +62,7 @@ my $builddir;
+ my $outputdir;
+ my $output_config;
+ my $test_type;
++my $pass_count;
+ my $build_type;
+ my $build_options;
+ my $pre_build;
+@@ -1495,19 +1497,23 @@ sub do_run_test {
+ sub do_test {
+     my ($type) = @_;
+     my $failed = 0;
++    my $count = $pass_count;
  
- sub run_command;
-+sub start_monitor;
-+sub end_monitor;
-+sub wait_for_monitor;
+     grub_install;
+-    start_monitor_and_boot or $failed = 1;
  
- sub reboot {
-+    my ($time) = @_;
+-    if ($failed && $in_bisect && $type ne "boot") {
+-	end_monitor;
+-	return -1;
+-    }
++    while (!$failed && $count--) {
++	start_monitor_and_boot or $failed = 1;
+ 
+-    if (!$failed && $type ne "boot" && defined($run_test)) {
+-	do_run_test or $failed = 1;
++	if ($failed && $in_bisect && $type ne "boot") {
++	    end_monitor;
++	    return -1;
++	}
 +
-     # try to reboot normally
-     if (run_command $reboot) {
- 	if (defined($powercycle_after_reboot)) {
-@@ -615,6 +620,12 @@ sub reboot {
- 	# nope? power cycle it.
- 	run_command "$power_cycle";
-     }
-+
-+    if (defined($time)) {
-+	start_monitor;
-+	wait_for_monitor $time;
++	if (!$failed && $type ne "boot" && defined($run_test)) {
++	    do_run_test or $failed = 1;
++	}
 +	end_monitor;
-+    }
- }
- 
- sub do_not_reboot {
-@@ -719,10 +730,7 @@ sub fail {
- 	# no need to reboot for just building.
- 	if (!do_not_reboot) {
- 	    doprint "REBOOTING\n";
--	    reboot;
--	    start_monitor;
--	    wait_for_monitor $sleep_time;
--	    end_monitor;
-+	    reboot $sleep_time;
- 	}
- 
- 	my $name = "";
-@@ -1356,10 +1364,7 @@ sub success {
- 
-     if ($i != $opt{"NUM_TESTS"} && !do_not_reboot) {
- 	doprint "Reboot and wait $sleep_time seconds\n";
--	reboot;
--	start_monitor;
--	wait_for_monitor $sleep_time;
--	end_monitor;
-+	reboot $sleep_time;
      }
- }
- 
-@@ -1500,10 +1505,7 @@ sub run_git_bisect {
- 
- sub bisect_reboot {
-     doprint "Reboot and sleep $bisect_sleep_time seconds\n";
--    reboot;
--    start_monitor;
--    wait_for_monitor $bisect_sleep_time;
 -    end_monitor;
-+    reboot $bisect_sleep_time;
+     return !$failed;
  }
  
- # returns 1 on success, 0 on failure, -1 on skip
-@@ -2066,10 +2068,7 @@ sub config_bisect {
+@@ -2807,6 +2813,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     $outputdir = set_test_option("OUTPUT_DIR", $i);
+     $builddir = set_test_option("BUILD_DIR", $i);
+     $test_type = set_test_option("TEST_TYPE", $i);
++    $pass_count = set_test_option("PASS_COUNT", $i);
+     $build_type = set_test_option("BUILD_TYPE", $i);
+     $build_options = set_test_option("BUILD_OPTIONS", $i);
+     $pre_build = set_test_option("PRE_BUILD", $i);
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index 23b2fbb..fe7630a 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -266,6 +266,13 @@
+ # default (undefined)
+ #TEST = ssh user@machine /root/run_test
  
- sub patchcheck_reboot {
-     doprint "Reboot and sleep $patchcheck_sleep_time seconds\n";
--    reboot;
--    start_monitor;
--    wait_for_monitor $patchcheck_sleep_time;
--    end_monitor;
-+    reboot $patchcheck_sleep_time;
- }
- 
- sub patchcheck {
-@@ -2659,10 +2658,7 @@ sub make_min_config {
- 	}
- 
- 	doprint "Reboot and wait $sleep_time seconds\n";
--	reboot;
--	start_monitor;
--	wait_for_monitor $sleep_time;
--	end_monitor;
-+	reboot $sleep_time;
-     }
- 
-     success $i;
++# The number of times the test must pass before we really believe
++# it passes. Generally you could put a loop in the 'TEST' program,
++# but this option makes it easier to do boot testing for problems
++# that don't occur on every boot.
++# (default 1)
++#PASS_COUNT = 10
++
+ # The build type is any make config type or special command
+ #  (default randconfig)
+ #   nobuild - skip the clean and build step
 -- 
 1.7.4.1
 
