@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab1HNQJx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:09:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36865 "EHLO mx2.suse.de"
+	id S1754690Ab1HNQNz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:13:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36859 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754625Ab1HNQJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:09:50 -0400
+	id S1754565Ab1HNQJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:46 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
-Message-Id: <20110812210558.603730835@clark.kroah.org>
+Message-Id: <20110812210558.525835308@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:59 -0700
+Date: Fri, 12 Aug 2011 14:04:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [74/90] sparc: Access kernel TSB using physical addressing when possible.
+Subject: [73/90] sparc: Use popc when possible for ffs/__ffs/ffz.
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,262 +28,233 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 9076d0e7e02b98f7a65df10d1956326c8d8ba61a ]
-
-On sun4v this is basically required since we point the hypervisor and
-the TSB walking hardware at these tables using physical addressing
-too.
+[ Upstream commit 56d205cc5c0a3032a605121d4253e111193bf923 ]
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/tsb.h    |   51 ++++++++++++++++++----------------------
- arch/sparc/kernel/ktlb.S        |   24 +++++++++---------
- arch/sparc/kernel/vmlinux.lds.S |   10 +++++++
- arch/sparc/mm/init_64.c         |   40 ++++++++++++++++++++++++++++++-
- 4 files changed, 85 insertions(+), 40 deletions(-)
+ arch/sparc/include/asm/bitops_64.h |    7 +--
+ arch/sparc/kernel/entry.h          |    7 +++
+ arch/sparc/kernel/setup_64.c       |   34 +++++++++-----
+ arch/sparc/kernel/sparc_ksyms_64.c |    4 +
+ arch/sparc/kernel/vmlinux.lds.S    |    5 ++
+ arch/sparc/lib/Makefile            |    2 
+ arch/sparc/lib/ffs.S               |   84 +++++++++++++++++++++++++++++++++++++
+ 7 files changed, 127 insertions(+), 16 deletions(-)
+ create mode 100644 arch/sparc/lib/ffs.S
 
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -133,29 +133,6 @@ extern struct tsb_phys_patch_entry __tsb
- 	sub	TSB, 0x8, TSB;   \
- 	TSB_STORE(TSB, TAG);
+--- a/arch/sparc/include/asm/bitops_64.h
++++ b/arch/sparc/include/asm/bitops_64.h
+@@ -26,16 +26,17 @@ extern void change_bit(unsigned long nr,
+ #define smp_mb__before_clear_bit()	barrier()
+ #define smp_mb__after_clear_bit()	barrier()
  
--#define KTSB_LOAD_QUAD(TSB, REG) \
--	ldda		[TSB] ASI_NUCLEUS_QUAD_LDD, REG;
--
--#define KTSB_STORE(ADDR, VAL) \
--	stxa		VAL, [ADDR] ASI_N;
--
--#define KTSB_LOCK_TAG(TSB, REG1, REG2)	\
--99:	lduwa	[TSB] ASI_N, REG1;	\
--	sethi	%hi(TSB_TAG_LOCK_HIGH), REG2;\
--	andcc	REG1, REG2, %g0;	\
--	bne,pn	%icc, 99b;		\
--	 nop;				\
--	casa	[TSB] ASI_N, REG1, REG2;\
--	cmp	REG1, REG2;		\
--	bne,pn	%icc, 99b;		\
--	 nop;				\
--
--#define KTSB_WRITE(TSB, TTE, TAG) \
--	add	TSB, 0x8, TSB;   \
--	stxa	TTE, [TSB] ASI_N;     \
--	sub	TSB, 0x8, TSB;   \
--	stxa	TAG, [TSB] ASI_N;
--
- 	/* Do a kernel page table walk.  Leaves physical PTE pointer in
- 	 * REG1.  Jumps to FAIL_LABEL on early page table walk termination.
- 	 * VADDR will not be clobbered, but REG2 will.
-@@ -239,6 +216,8 @@ extern struct tsb_phys_patch_entry __tsb
- 	(KERNEL_TSB_SIZE_BYTES / 16)
- #define KERNEL_TSB4M_NENTRIES	4096
+-#include <asm-generic/bitops/ffz.h>
+-#include <asm-generic/bitops/__ffs.h>
+ #include <asm-generic/bitops/fls.h>
+ #include <asm-generic/bitops/__fls.h>
+ #include <asm-generic/bitops/fls64.h>
  
-+#define KTSB_PHYS_SHIFT		15
+ #ifdef __KERNEL__
+ 
++extern int ffs(int x);
++extern unsigned long __ffs(unsigned long);
 +
- 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
- 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
- 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
-@@ -247,13 +226,22 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * VADDR and TAG will be preserved and not clobbered by this macro.
- 	 */
- #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--	sethi		%hi(swapper_tsb), REG1; \
-+661:	sethi		%hi(swapper_tsb), REG1;			\
- 	or		REG1, %lo(swapper_tsb), REG1; \
-+	.section	.swapper_tsb_phys_patch, "ax"; \
-+	.word		661b; \
-+	.previous; \
-+661:	nop; \
-+	.section	.tsb_ldquad_phys_patch, "ax"; \
-+	.word		661b; \
-+	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
-+	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
-+	.previous; \
- 	srlx		VADDR, PAGE_SHIFT, REG2; \
- 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
- 	add		REG1, REG2, REG2; \
--	KTSB_LOAD_QUAD(REG2, REG3); \
-+	TSB_LOAD_QUAD(REG2, REG3); \
- 	cmp		REG3, TAG; \
- 	be,a,pt		%xcc, OK_LABEL; \
- 	 mov		REG4, REG1;
-@@ -263,12 +251,21 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * we can make use of that for the index computation.
- 	 */
- #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--	sethi		%hi(swapper_4m_tsb), REG1; \
-+661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
- 	or		REG1, %lo(swapper_4m_tsb), REG1; \
-+	.section	.swapper_4m_tsb_phys_patch, "ax"; \
-+	.word		661b; \
-+	.previous; \
-+661:	nop; \
-+	.section	.tsb_ldquad_phys_patch, "ax"; \
-+	.word		661b; \
-+	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
-+	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
-+	.previous; \
- 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
- 	add		REG1, REG2, REG2; \
--	KTSB_LOAD_QUAD(REG2, REG3); \
-+	TSB_LOAD_QUAD(REG2, REG3); \
- 	cmp		REG3, TAG; \
- 	be,a,pt		%xcc, OK_LABEL; \
- 	 mov		REG4, REG1;
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -47,16 +47,16 @@ kvmap_itlb_tsb_miss:
- kvmap_itlb_vmalloc_addr:
- 	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_itlb_longpath)
++#include <asm-generic/bitops/ffz.h>
+ #include <asm-generic/bitops/sched.h>
+-#include <asm-generic/bitops/ffs.h>
  
--	KTSB_LOCK_TAG(%g1, %g2, %g7)
-+	TSB_LOCK_TAG(%g1, %g2, %g7)
+ /*
+  * hweightN: returns the hamming weight (i.e. the number
+--- a/arch/sparc/kernel/entry.h
++++ b/arch/sparc/kernel/entry.h
+@@ -49,6 +49,13 @@ struct popc_3insn_patch_entry {
+ extern struct popc_3insn_patch_entry __popc_3insn_patch,
+ 	__popc_3insn_patch_end;
  
- 	/* Load and check PTE.  */
- 	ldxa		[%g5] ASI_PHYS_USE_EC, %g5
- 	mov		1, %g7
- 	sllx		%g7, TSB_TAG_INVALID_BIT, %g7
- 	brgez,a,pn	%g5, kvmap_itlb_longpath
--	 KTSB_STORE(%g1, %g7)
-+	 TSB_STORE(%g1, %g7)
++struct popc_6insn_patch_entry {
++	unsigned int	addr;
++	unsigned int	insns[6];
++};
++extern struct popc_6insn_patch_entry __popc_6insn_patch,
++	__popc_6insn_patch_end;
++
+ extern void __init per_cpu_patch(void);
+ extern void __init sun4v_patch(void);
+ extern void __init boot_cpu_id_too_large(int cpu);
+--- a/arch/sparc/kernel/setup_64.c
++++ b/arch/sparc/kernel/setup_64.c
+@@ -275,25 +275,35 @@ void __init sun4v_patch(void)
+ static void __init popc_patch(void)
+ {
+ 	struct popc_3insn_patch_entry *p3;
++	struct popc_6insn_patch_entry *p6;
  
--	KTSB_WRITE(%g1, %g5, %g6)
-+	TSB_WRITE(%g1, %g5, %g6)
+ 	p3 = &__popc_3insn_patch;
+ 	while (p3 < &__popc_3insn_patch_end) {
+-		unsigned long addr = p3->addr;
++		unsigned long i, addr = p3->addr;
  
- 	/* fallthrough to TLB load */
+-		*(unsigned int *) (addr +  0) = p3->insns[0];
+-		wmb();
+-		__asm__ __volatile__("flush	%0" : : "r" (addr +  0));
+-
+-		*(unsigned int *) (addr +  4) = p3->insns[1];
+-		wmb();
+-		__asm__ __volatile__("flush	%0" : : "r" (addr +  4));
+-
+-		*(unsigned int *) (addr +  8) = p3->insns[2];
+-		wmb();
+-		__asm__ __volatile__("flush	%0" : : "r" (addr +  4));
++		for (i = 0; i < 3; i++) {
++			*(unsigned int *) (addr +  (i * 4)) = p3->insns[i];
++			wmb();
++			__asm__ __volatile__("flush	%0"
++					     : : "r" (addr +  (i * 4)));
++		}
  
-@@ -102,9 +102,9 @@ kvmap_itlb_longpath:
- kvmap_itlb_obp:
- 	OBP_TRANS_LOOKUP(%g4, %g5, %g2, %g3, kvmap_itlb_longpath)
+ 		p3++;
+ 	}
++
++	p6 = &__popc_6insn_patch;
++	while (p6 < &__popc_6insn_patch_end) {
++		unsigned long i, addr = p6->addr;
++
++		for (i = 0; i < 6; i++) {
++			*(unsigned int *) (addr +  (i * 4)) = p6->insns[i];
++			wmb();
++			__asm__ __volatile__("flush	%0"
++					     : : "r" (addr +  (i * 4)));
++		}
++
++		p6++;
++	}
+ }
  
--	KTSB_LOCK_TAG(%g1, %g2, %g7)
-+	TSB_LOCK_TAG(%g1, %g2, %g7)
+ #ifdef CONFIG_SMP
+--- a/arch/sparc/kernel/sparc_ksyms_64.c
++++ b/arch/sparc/kernel/sparc_ksyms_64.c
+@@ -45,5 +45,9 @@ EXPORT_SYMBOL(__arch_hweight16);
+ EXPORT_SYMBOL(__arch_hweight32);
+ EXPORT_SYMBOL(__arch_hweight64);
  
--	KTSB_WRITE(%g1, %g5, %g6)
-+	TSB_WRITE(%g1, %g5, %g6)
- 
- 	ba,pt		%xcc, kvmap_itlb_load
- 	 nop
-@@ -112,17 +112,17 @@ kvmap_itlb_obp:
- kvmap_dtlb_obp:
- 	OBP_TRANS_LOOKUP(%g4, %g5, %g2, %g3, kvmap_dtlb_longpath)
- 
--	KTSB_LOCK_TAG(%g1, %g2, %g7)
-+	TSB_LOCK_TAG(%g1, %g2, %g7)
- 
--	KTSB_WRITE(%g1, %g5, %g6)
-+	TSB_WRITE(%g1, %g5, %g6)
- 
- 	ba,pt		%xcc, kvmap_dtlb_load
- 	 nop
- 
- 	.align		32
- kvmap_dtlb_tsb4m_load:
--	KTSB_LOCK_TAG(%g1, %g2, %g7)
--	KTSB_WRITE(%g1, %g5, %g6)
-+	TSB_LOCK_TAG(%g1, %g2, %g7)
-+	TSB_WRITE(%g1, %g5, %g6)
- 	ba,pt		%xcc, kvmap_dtlb_load
- 	 nop
- 
-@@ -222,16 +222,16 @@ kvmap_linear_patch:
- kvmap_dtlb_vmalloc_addr:
- 	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
- 
--	KTSB_LOCK_TAG(%g1, %g2, %g7)
-+	TSB_LOCK_TAG(%g1, %g2, %g7)
- 
- 	/* Load and check PTE.  */
- 	ldxa		[%g5] ASI_PHYS_USE_EC, %g5
- 	mov		1, %g7
- 	sllx		%g7, TSB_TAG_INVALID_BIT, %g7
- 	brgez,a,pn	%g5, kvmap_dtlb_longpath
--	 KTSB_STORE(%g1, %g7)
-+	 TSB_STORE(%g1, %g7)
- 
--	KTSB_WRITE(%g1, %g5, %g6)
-+	TSB_WRITE(%g1, %g5, %g6)
- 
- 	/* fallthrough to TLB load */
- 
++/* from ffs_ffz.S */
++EXPORT_SYMBOL(ffs);
++EXPORT_SYMBOL(__ffs);
++
+ /* Exporting a symbol from /init/main.c */
+ EXPORT_SYMBOL(saved_command_line);
 --- a/arch/sparc/kernel/vmlinux.lds.S
 +++ b/arch/sparc/kernel/vmlinux.lds.S
-@@ -107,6 +107,16 @@ SECTIONS
- 		*(.sun4v_2insn_patch)
- 		__sun4v_2insn_patch_end = .;
- 	}
-+	.swapper_tsb_phys_patch : {
-+		__swapper_tsb_phys_patch = .;
-+		*(.swapper_tsb_phys_patch)
-+		__swapper_tsb_phys_patch_end = .;
-+	}
-+	.swapper_4m_tsb_phys_patch : {
-+		__swapper_4m_tsb_phys_patch = .;
-+		*(.swapper_4m_tsb_phys_patch)
-+		__swapper_4m_tsb_phys_patch_end = .;
-+	}
- 	.popc_3insn_patch : {
- 		__popc_3insn_patch = .;
+@@ -112,6 +112,11 @@ SECTIONS
  		*(.popc_3insn_patch)
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -1597,6 +1597,42 @@ static void __init tsb_phys_patch(void)
- static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
- extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
- 
-+static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
-+{
-+	pa >>= KTSB_PHYS_SHIFT;
-+
-+	while (start < end) {
-+		unsigned int *ia = (unsigned int *)(unsigned long)*start;
-+
-+		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia));
-+
-+		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
-+
-+		start++;
+ 		__popc_3insn_patch_end = .;
+ 	}
++	.popc_6insn_patch : {
++		__popc_6insn_patch = .;
++		*(.popc_6insn_patch)
++		__popc_6insn_patch_end = .;
 +	}
-+}
-+
-+static void ktsb_phys_patch(void)
-+{
-+	extern unsigned int __swapper_tsb_phys_patch;
-+	extern unsigned int __swapper_tsb_phys_patch_end;
-+	extern unsigned int __swapper_4m_tsb_phys_patch;
-+	extern unsigned int __swapper_4m_tsb_phys_patch_end;
-+	unsigned long ktsb_pa;
-+
-+	ktsb_pa = kern_base + ((unsigned long)&swapper_tsb[0] - KERNBASE);
-+	patch_one_ktsb_phys(&__swapper_tsb_phys_patch,
-+			    &__swapper_tsb_phys_patch_end, ktsb_pa);
-+#ifndef CONFIG_DEBUG_PAGEALLOC
-+	ktsb_pa = (kern_base +
-+		   ((unsigned long)&swapper_4m_tsb[0] - KERNBASE));
-+	patch_one_ktsb_phys(&__swapper_4m_tsb_phys_patch,
-+			    &__swapper_4m_tsb_phys_patch_end, ktsb_pa);
-+#endif
-+}
-+
- static void __init sun4v_ktsb_init(void)
- {
- 	unsigned long ktsb_pa;
-@@ -1716,8 +1752,10 @@ void __init paging_init(void)
- 		sun4u_pgprot_init();
+ 	PERCPU_SECTION(SMP_CACHE_BYTES)
  
- 	if (tlb_type == cheetah_plus ||
--	    tlb_type == hypervisor)
-+	    tlb_type == hypervisor) {
- 		tsb_phys_patch();
-+		ktsb_phys_patch();
-+	}
+ 	. = ALIGN(PAGE_SIZE);
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -37,7 +37,7 @@ lib-$(CONFIG_SPARC64) += GENmemcpy.o GEN
+ lib-$(CONFIG_SPARC64) += GENpatch.o GENpage.o GENbzero.o
  
- 	if (tlb_type == hypervisor) {
- 		sun4v_patch_tlb_handlers();
+ lib-$(CONFIG_SPARC64) += copy_in_user.o user_fixup.o memmove.o
+-lib-$(CONFIG_SPARC64) += mcount.o ipcsum.o xor.o hweight.o
++lib-$(CONFIG_SPARC64) += mcount.o ipcsum.o xor.o hweight.o ffs.o
+ 
+ obj-y                 += iomap.o
+ obj-$(CONFIG_SPARC32) += atomic32.o
+--- /dev/null
++++ b/arch/sparc/lib/ffs.S
+@@ -0,0 +1,84 @@
++#include <linux/linkage.h>
++
++	.register	%g2,#scratch
++
++	.text
++	.align	32
++
++ENTRY(ffs)
++	brnz,pt	%o0, 1f
++	 mov	1, %o1
++	retl
++	 clr	%o0
++	nop
++	nop
++ENTRY(__ffs)
++	sllx	%o0, 32, %g1		/* 1  */
++	srlx	%o0, 32, %g2
++
++	clr	%o1			/* 2  */
++	movrz	%g1, %g2, %o0
++
++	movrz	%g1, 32, %o1		/* 3  */
++1:	clr	%o2
++
++	sllx	%o0, (64 - 16), %g1	/* 4  */
++	srlx	%o0, 16, %g2
++
++	movrz	%g1, %g2, %o0		/* 5  */
++	clr	%o3
++
++	movrz	%g1, 16, %o2		/* 6  */
++	clr	%o4
++
++	and	%o0, 0xff, %g1		/* 7  */
++	srlx	%o0, 8, %g2
++
++	movrz	%g1, %g2, %o0		/* 8  */
++	clr	%o5
++
++	movrz	%g1, 8, %o3		/* 9  */
++	add	%o2, %o1, %o2
++
++	and	%o0, 0xf, %g1		/* 10 */
++	srlx	%o0, 4, %g2
++
++	movrz	%g1, %g2, %o0		/* 11 */
++	add	%o2, %o3, %o2
++
++	movrz	%g1, 4, %o4		/* 12 */
++
++	and	%o0, 0x3, %g1		/* 13 */
++	srlx	%o0, 2, %g2
++
++	movrz	%g1, %g2, %o0		/* 14 */
++	add	%o2, %o4, %o2
++
++	movrz	%g1, 2, %o5		/* 15 */
++
++	and	%o0, 0x1, %g1		/* 16 */
++
++	add	%o2, %o5, %o2		/* 17 */
++	xor	%g1, 0x1, %g1
++
++	retl				/* 18 */
++	 add	%o2, %g1, %o0
++ENDPROC(ffs)
++ENDPROC(__ffs)
++
++	.section	.popc_6insn_patch, "ax"
++	.word		ffs
++	brz,pn	%o0, 98f
++	 neg	%o0, %g1
++	xnor	%o0, %g1, %o1
++	popc	%o1, %o0
++98:	retl
++	 nop
++	.word		__ffs
++	neg	%o0, %g1
++	xnor	%o0, %g1, %o1
++	popc	%o1, %o0
++	retl
++	 sub	%o0, 1, %o0
++	nop
++	.previous
 
 
