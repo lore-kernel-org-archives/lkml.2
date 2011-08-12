@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1HNQKa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:10:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36959 "EHLO mx2.suse.de"
+	id S1754791Ab1HNQLx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:11:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754747Ab1HNQK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:26 -0400
+	id S1754707Ab1HNQKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:23 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
-Message-Id: <20110812210559.595559160@clark.kroah.org>
+Message-Id: <20110812210559.515776903@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:10 -0700
+Date: Fri, 12 Aug 2011 14:05:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Richard Cochran <richard.cochran@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [85/90] gianfar: fix fiper alignment after resetting the time
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [84/90] e1000e: alternate MAC address does not work on device id 0x1060
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Cochran <richardcochran@gmail.com>
+From: Bruce Allan <bruce.w.allan@intel.com>
 
-commit cbc056602c7c63620c86904c431ff6b61e029dcc upstream.
+commit c407bee8a56d874b91f3e4ee790660959ff1a25e upstream.
 
-After resetting the time, the PPS signals on the FIPER output channels
-are incorrectly offset from the clock time, as can be readily verified
-by a looping back the FIPER to the external time stamp input.
+This issue is present all the way back to 2.6.34 kernels.
 
-Despite its name, setting the "Fiper Realignment Disable" bit seems to
-fix the problem, at least on the P2020.
-
-Also, following the example code from the Freescale BSP, it is not really
-necessary to disable and re-enable the timer in order to reprogram the
-FIPER. (The documentation is rather unclear on this point. It seems that
-writing to the alarm register also disables the FIPER.)
-
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
+Tested-by: Jeffrey Pieper <jeffrey.e.pieper@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/gianfar_ptp.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/net/e1000e/lib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/gianfar_ptp.c
-+++ b/drivers/net/gianfar_ptp.c
-@@ -193,14 +193,9 @@ static void set_alarm(struct etsects *et
- /* Caller must hold etsects->lock. */
- static void set_fipers(struct etsects *etsects)
- {
--	u32 tmr_ctrl = gfar_read(&etsects->regs->tmr_ctrl);
--
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl & (~TE));
--	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-+	set_alarm(etsects);
- 	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
- 	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
--	set_alarm(etsects);
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|TE);
- }
+--- a/drivers/net/e1000e/lib.c
++++ b/drivers/net/e1000e/lib.c
+@@ -190,7 +190,8 @@ s32 e1000_check_alt_mac_addr_generic(str
+ 	/* Check for LOM (vs. NIC) or one of two valid mezzanine cards */
+ 	if (!((nvm_data & NVM_COMPAT_LOM) ||
+ 	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_DUAL) ||
+-	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_QUAD)))
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES_QUAD) ||
++	      (hw->adapter->pdev->device == E1000_DEV_ID_82571EB_SERDES)))
+ 		goto out;
  
- /*
-@@ -511,7 +506,7 @@ static int gianfar_ptp_probe(struct plat
- 	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
- 	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
- 	set_alarm(etsects);
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE);
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE|FRD);
- 
- 	spin_unlock_irqrestore(&etsects->lock, flags);
- 
+ 	ret_val = e1000_read_nvm(hw, NVM_ALT_MAC_ADDR_PTR, 1,
 
 
