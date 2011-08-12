@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab1HNQGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:06:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36401 "EHLO mx2.suse.de"
+	id S1753953Ab1HNQG7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:06:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36414 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1HNQGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:06:50 -0400
+	id S1752062Ab1HNQG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:06:56 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:54 2011
-Message-Id: <20110812210554.047977033@clark.kroah.org>
+Message-Id: <20110812210554.237169562@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:07 -0700
+Date: Fri, 12 Aug 2011 14:04:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Reim <reimth@gmail.com>,
-        Stephen Michaels <Stephen.Micheals@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [22/90] drm/radeon: Log Subsystem Vendor and Device Information
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>
+Subject: [24/90] drm/i915: load the LUT before pipe enable on ILK+
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,40 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Reim <reimth@gmail.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit d522d9cc5bdd41214084383fc3e6d882f6916a78 upstream.
+commit 9c54c0dd948d715ccfd79e97d852f80eeb53254a upstream.
 
-    Log PCI subsystem vendor and subsystem device ID in addition to
-    PCI vendor and device ID during kernel mode initialisation. This helps
-    to better identify radeon devices of third-party vendors, e. g. for
-    bug analysis.
+Per the specs and to address
+https://bugs.freedesktop.org/show_bug.cgi?id=36888.
 
-    Tested for kernel 2.6.35, 2.6.38 and 3.0 on Asus M2A-VM HDMI board
-
-Signed-off-by: Thomas Reim <reimth@gmail.com>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Acked-by: Stephen Michaels <Stephen.Micheals@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -704,8 +704,9 @@ int radeon_device_init(struct radeon_dev
- 	rdev->gpu_lockup = false;
- 	rdev->accel_working = false;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2699,14 +2699,18 @@ static void ironlake_crtc_enable(struct
+ 		I915_WRITE(PF_WIN_SZ(pipe), dev_priv->pch_pf_size);
+ 	}
  
--	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X).\n",
--		radeon_family_name[rdev->family], pdev->vendor, pdev->device);
-+	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
-+		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
-+		pdev->subsystem_vendor, pdev->subsystem_device);
++	/*
++	 * On ILK+ LUT must be loaded before the pipe is running but with
++	 * clocks enabled
++	 */
++	intel_crtc_load_lut(crtc);
++
+ 	intel_enable_pipe(dev_priv, pipe, is_pch_port);
+ 	intel_enable_plane(dev_priv, plane, pipe);
  
- 	/* mutex initialization are all done here so we
- 	 * can recall function without having locking issues */
+ 	if (is_pch_port)
+ 		ironlake_pch_enable(crtc);
+ 
+-	intel_crtc_load_lut(crtc);
+-
+ 	mutex_lock(&dev->struct_mutex);
+ 	intel_update_fbc(dev);
+ 	mutex_unlock(&dev->struct_mutex);
 
 
