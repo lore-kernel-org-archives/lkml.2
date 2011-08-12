@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1HNQIE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:08:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36568 "EHLO mx2.suse.de"
+	id S1754286Ab1HNQIR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:08:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36625 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143Ab1HNQHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:07:53 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:55 2011
-Message-Id: <20110812210555.620065573@clark.kroah.org>
+	id S1754254Ab1HNQIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:14 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
+Message-Id: <20110812210556.137927030@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:25 -0700
+Date: Fri, 12 Aug 2011 14:04:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Mack <zonque@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [40/90] ALSA: snd-usb: operate on given mixer interface only
+        Julian Anastasov <ja@ssi.bg>,
+        Hans Schillstrom <hans.schillstrom@ericsson.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [46/90] IPVS: Free resources on module removal
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
 
-commit 1faa5d07a93fc5b0a4a5254fc940a79e20b55540 upstream.
+From: Simon Horman <horms@verge.net.au>
 
-When creating the mixers for an USB audio device, the current code looks
-at the host interface stored in mixer->chip->ctrl_if. Change this and
-rather keep a local pointer to the interface that was given when
-snd_usb_create_mixer() was called.
+[ Upstream commit 7676e345824f162191b1fe2058ad948a6cf91c20 ]
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Nicolai Krakowiak <nicolai.krakowiak@gmail.com>
-Reported-by: Lean-Yves LENHOF <jean-yves@lenhof.eu.org>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This resolves a panic on module removal.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Hans Schillstrom <hans.schillstrom@ericsson.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/usb/mixer.c |   20 ++++++++------------
- sound/usb/mixer.h |    1 +
- 2 files changed, 9 insertions(+), 12 deletions(-)
+ net/netfilter/ipvs/ip_vs_ctl.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1939,15 +1939,13 @@ static int snd_usb_mixer_controls(struct
- 	struct mixer_build state;
- 	int err;
- 	const struct usbmix_ctl_map *map;
--	struct usb_host_interface *hostif;
- 	void *p;
- 
--	hostif = mixer->chip->ctrl_intf;
- 	memset(&state, 0, sizeof(state));
- 	state.chip = mixer->chip;
- 	state.mixer = mixer;
--	state.buffer = hostif->extra;
--	state.buflen = hostif->extralen;
-+	state.buffer = mixer->hostif->extra;
-+	state.buflen = mixer->hostif->extralen;
- 
- 	/* check the mapping table */
- 	for (map = usbmix_ctl_maps; map->id; map++) {
-@@ -1960,7 +1958,8 @@ static int snd_usb_mixer_controls(struct
- 	}
- 
- 	p = NULL;
--	while ((p = snd_usb_find_csint_desc(hostif->extra, hostif->extralen, p, UAC_OUTPUT_TERMINAL)) != NULL) {
-+	while ((p = snd_usb_find_csint_desc(mixer->hostif->extra, mixer->hostif->extralen,
-+					    p, UAC_OUTPUT_TERMINAL)) != NULL) {
- 		if (mixer->protocol == UAC_VERSION_1) {
- 			struct uac1_output_terminal_descriptor *desc = p;
- 
-@@ -2167,17 +2166,15 @@ int snd_usb_mixer_activate(struct usb_mi
- /* create the handler for the optional status interrupt endpoint */
- static int snd_usb_mixer_status_create(struct usb_mixer_interface *mixer)
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -3771,6 +3771,7 @@ err_sock:
+ void ip_vs_control_cleanup(void)
  {
--	struct usb_host_interface *hostif;
- 	struct usb_endpoint_descriptor *ep;
- 	void *transfer_buffer;
- 	int buffer_length;
- 	unsigned int epnum;
- 
--	hostif = mixer->chip->ctrl_intf;
- 	/* we need one interrupt input endpoint */
--	if (get_iface_desc(hostif)->bNumEndpoints < 1)
-+	if (get_iface_desc(mixer->hostif)->bNumEndpoints < 1)
- 		return 0;
--	ep = get_endpoint(hostif, 0);
-+	ep = get_endpoint(mixer->hostif, 0);
- 	if (!usb_endpoint_dir_in(ep) || !usb_endpoint_xfer_int(ep))
- 		return 0;
- 
-@@ -2207,7 +2204,6 @@ int snd_usb_create_mixer(struct snd_usb_
- 	};
- 	struct usb_mixer_interface *mixer;
- 	struct snd_info_entry *entry;
--	struct usb_host_interface *host_iface;
- 	int err;
- 
- 	strcpy(chip->card->mixername, "USB Mixer");
-@@ -2224,8 +2220,8 @@ int snd_usb_create_mixer(struct snd_usb_
- 		return -ENOMEM;
- 	}
- 
--	host_iface = &usb_ifnum_to_if(chip->dev, ctrlif)->altsetting[0];
--	switch (get_iface_desc(host_iface)->bInterfaceProtocol) {
-+	mixer->hostif = &usb_ifnum_to_if(chip->dev, ctrlif)->altsetting[0];
-+	switch (get_iface_desc(mixer->hostif)->bInterfaceProtocol) {
- 	case UAC_VERSION_1:
- 	default:
- 		mixer->protocol = UAC_VERSION_1;
---- a/sound/usb/mixer.h
-+++ b/sound/usb/mixer.h
-@@ -3,6 +3,7 @@
- 
- struct usb_mixer_interface {
- 	struct snd_usb_audio *chip;
-+	struct usb_host_interface *hostif;
- 	struct list_head list;
- 	unsigned int ignore_ctl_error;
- 	struct urb *urb;
+ 	EnterFunction(2);
++	unregister_netdevice_notifier(&ip_vs_dst_notifier);
+ 	ip_vs_genl_unregister();
+ 	nf_unregister_sockopt(&ip_vs_sockopts);
+ 	LeaveFunction(2);
 
 
