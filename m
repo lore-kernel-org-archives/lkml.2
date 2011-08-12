@@ -1,59 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1HLSOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 14:14:06 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:48523
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753153Ab1HLSOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 14:14:03 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LPTUJW-01-GB4-02
-X-M-MSG: 
-Date: Fri, 12 Aug 2011 20:11:45 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] perf, x86: Implement 64 bit counter support for IBS
-Message-ID: <20110812181145.GI11702@erda.amd.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
- <1311860812-28748-8-git-send-email-robert.richter@amd.com>
- <1312285040.1147.108.camel@twins>
+	id S1753612Ab1HLSYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 14:24:17 -0400
+Received: from gmmr2.centrum.cz ([90.183.38.158]:42858 "EHLO gmmr2.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067Ab1HLSYP (ORCPT <rfc822;Linux-Kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 14:24:15 -0400
+Subject: =?UTF-8?Q?HELLO=20my=20=20=E4=BD=A0=E5=A5=BD=EF=BC=8C=E6=88=91?=
+Date: Fri, 12 Aug 2011 20:24:12 +0200
+From: "Rose" <william_rose55@yahoo.com>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1312285040.1147.108.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Message-Id: <20110812202412.F8B01353@centrum.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.08.11 07:37:20, Peter Zijlstra wrote:
-> On Thu, 2011-07-28 at 15:46 +0200, Robert Richter wrote:
-> > +       /*
-> > +        * Emulate IbsOpCurCnt in MSRC001_1033 (IbsOpCtl), not
-> > +        * supported in all cpus. As this triggered an interrupt, we
-> > +        * set the current count to the max count.
-> > +        */
-> > +       config = buffer[0];
-> > +       if (perf_ibs == &perf_ibs_op) {
-> > +               config &= ~IBS_OP_CUR_CNT;
-> > +               config |= (config & IBS_OP_MAX_CNT) << 36;
-> > +       } 
-> 
-> Shouldn't that be conditional on capability muck?
 
-It doesn't hurt actually, but true, will implement it right with the
-capability check.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+HELLO
+My name is Rose,i and became intrested in you, i will also like to know you more,and i want you to send an email to my email address so i can give you my picture for you to know whom i am. Here is my email address(william_rose55@yahoo.com)I believe we can move from here!
+I am waiting for your mail to my email address above..
+(Remeber the distance or colour does not matter but love matters alot in life)
+Thanks Rose  please contact me now through my email address
+(william_rose55@yahoo.com)
