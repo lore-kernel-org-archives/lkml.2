@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1HLCtw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:49:52 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44245 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab1HLCtt convert rfc822-to-8bit (ORCPT
+	id S1754316Ab1HLCuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:50:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43984 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753396Ab1HLCuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:49:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
-	<1313092847.3122.13.camel@localhost.localdomain>
-	<CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
-	<alpine.LRH.2.00.1108121047540.14215@tundra.namei.org>
-	<20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
-	<alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
-Date: Thu, 11 Aug 2011 21:49:48 -0500
-Message-ID: <CAH2r5mssB+3vDmNy3mWvGBDYXDu_NYiSZAFOxQXcckr+tHUV4A@mail.gmail.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-From: Steve French <smfrench@gmail.com>
-To: James Morris <jmorris@namei.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Aug 2011 22:50:05 -0400
+Subject: Re: [alsa-devel] [PATCH 1/4] ASoC: DAPM: Allow multiple mixer
+ sources to be routed via the same switch
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mike Frysinger <vapier.adi@gmail.com>, alsa-devel@alsa-project.org,
+        Liam Girdwood <lrg@ti.com>, device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4E43A808.4050105@metafoo.de>
+References: <1312948364-2587-1-git-send-email-lars@metafoo.de>
+	 <20110811093140.GB18454@opensource.wolfsonmicro.com>
+	 <4E43A808.4050105@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Wolfson Microelectronics
+Date: Fri, 12 Aug 2011 10:22:01 +0900
+Message-ID: <1313112121.19990.33.camel@finisterre.wolfsonmicro.main>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it is easier - I don't mind merging it to cifs now.   Seems
-harmless and low risk.
-
-On Thu, Aug 11, 2011 at 9:44 PM, James Morris <jmorris@namei.org> wrote:
-> On Fri, 12 Aug 2011, Stephen Rothwell wrote:
->
->> Except then that could leave Linus' tree broken during the next merge
->> window depending on the order he merges the cifs and security-testing
->> trees.  Unless that patch is sent to Linus as a fix patch before the next
->> merge window, of course.
->>
->> I will add this patch as a merge fixup to the merge of the
->> security-testing tree for today.  And will remove my copy when one of the
->> trees gets fixed.
->
-> I'll put it in my tree, then.
->
->> James: maybe I should change the name of your tree in -next to just
->> "security"?
->
-> Sure.
->
->
-> --
-> James Morris
-> <jmorris@namei.org>
->
+On Thu, 2011-08-11 at 11:59 +0200, Lars-Peter Clausen wrote:
 
 
+> The dapm_is_shared_control() stuff is about sharing kcontrols between multiple
+> muxes. This is about sharing the same kcontrol between multiple paths of the
+> same mixer.
 
--- 
-Thanks,
+> i.e
 
-Steve
+> { "Mono Mixer", "DAC", "Left DAC" },
+> { "Mono Mixer", "DAC", "Right DAC" },
+
+> doesn't work without this patch.
+
+OK, makes sense.
+
