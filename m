@@ -1,28 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1HLAqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 20:46:18 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:34441 "EHLO trinity.fluff.org"
+	id S1754397Ab1HLAri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 20:47:38 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:34503 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab1HLAqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 20:46:16 -0400
-Date: Fri, 12 Aug 2011 01:46:09 +0100
+	id S1753932Ab1HLArh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 20:47:37 -0400
+Date: Fri, 12 Aug 2011 01:47:32 +0100
 From: Ben Dooks <ben-i2c@fluff.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: tegra: fix possible race condition after tx
-Message-ID: <20110812004609.GD19115@trinity.fluff.org>
-References: <1313093946-24559-1-git-send-email-dianders@chromium.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Ben Dooks <ben-i2c@fluff.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Colin Cross <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Axel Lin <axel.lin@gmail.com>, Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+Subject: Re: Tegra I2C driver compilation failure (was: RE: [PATCH] dt: add
+	empty of_get_property for non-dt)
+Message-ID: <20110812004732.GF19115@trinity.fluff.org>
+References: <74CDBE0F657A3D45AFBB94109FB122FF04A0687289@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313093946-24559-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04A0687289@HQMAIL01.nvidia.com>
 X-Disclaimer: These are my views alone.
 X-URL: http://www.fluff.org/
 User-Agent: Mutt/1.5.18 (2008-05-17)
@@ -33,106 +38,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 01:19:06PM -0700, Doug Anderson wrote:
-> In tegra_i2c_fill_tx_fifo, once we have finished pushing all the bytes
-> to the I2C hardware controller, the interrupt might happen before we
-> have updated i2c_dev->msg_buf_remaining at the end of the function.
-> Then, in tegra_i2c_isr, we will call again tegra_i2c_fill_tx_fifo
-> triggering weird behaviour. This has been shown to happen under real
-> conditions.
+On Tue, Aug 09, 2011 at 09:21:31AM -0700, Stephen Warren wrote:
+> Stephen Warren wrote at Monday, August 08, 2011 1:26 PM:
+> > Rob Herring wrote at Sunday, August 07, 2011 8:38 AM:
+> > > On 08/05/2011 05:50 PM, Stephen Warren wrote:
+> > > > The patch adds empty function of_get_property for non-dt build, so that
+> > > > drivers migrating to dt can save some '#ifdef CONFIG_OF'.
+> > > >
+> > > > This also fixes the current Tegra compile problem in linux-next.
+> > >
+> > > You could just use of_property_read_u32 in the driver. It already has
+> > > empty version and will simplify the driver code some.
+> > 
+> > Yes, that would also work.
+> > 
+> > Grant, Ben, do you have a preference for which option to choose?
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-
-ok, it seems enough acks for this to make it in to the next i2c fixes
-pull I'll send at the weekend.
-
-> ---
->  drivers/i2c/busses/i2c-tegra.c |   46 +++++++++++++++++++++++++++------------
->  1 files changed, 32 insertions(+), 14 deletions(-)
+> Well, all three possible fixes have been posted now:
 > 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 2440b74..9c5fb75 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -270,14 +270,30 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->  
->  	/* Rounds down to not include partial word at the end of buf */
->  	words_to_transfer = buf_remaining / BYTES_PER_FIFO_WORD;
-> -	if (words_to_transfer > tx_fifo_avail)
-> -		words_to_transfer = tx_fifo_avail;
->  
-> -	i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
-> -
-> -	buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> -	buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
-> -	tx_fifo_avail -= words_to_transfer;
-> +	/* It's very common to have < 4 bytes, so optimize that case. */
-> +	if (words_to_transfer) {
-> +		if (words_to_transfer > tx_fifo_avail)
-> +			words_to_transfer = tx_fifo_avail;
-> +
-> +		/*
-> +		 * Update state before writing to FIFO.  If this casues us
-> +		 * to finish writing all bytes (AKA buf_remaining goes to 0) we
-> +		 * have a potential for an interrupt (PACKET_XFER_COMPLETE is
-> +		 * not maskable).  We need to make sure that the isr sees
-> +		 * buf_remaining as 0 and doesn't call us back re-entrantly.
-> +		 */
-> +		buf_remaining -= words_to_transfer * BYTES_PER_FIFO_WORD;
-> +		tx_fifo_avail -= words_to_transfer;
-> +		i2c_dev->msg_buf_remaining = buf_remaining;
-> +		i2c_dev->msg_buf = buf +
-> +			words_to_transfer * BYTES_PER_FIFO_WORD;
-> +		barrier();
-> +
-> +		i2c_writesl(i2c_dev, buf, I2C_TX_FIFO, words_to_transfer);
-> +
-> +		buf += words_to_transfer * BYTES_PER_FIFO_WORD;
-> +	}
->  
->  	/*
->  	 * If there is a partial word at the end of buf, handle it manually to
-> @@ -287,14 +303,15 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
->  	if (tx_fifo_avail > 0 && buf_remaining > 0) {
->  		BUG_ON(buf_remaining > 3);
->  		memcpy(&val, buf, buf_remaining);
-> +
-> +		/* Again update before writing to FIFO to make sure isr sees. */
-> +		i2c_dev->msg_buf_remaining = 0;
-> +		i2c_dev->msg_buf = NULL;
-> +		barrier();
-> +
->  		i2c_writel(i2c_dev, val, I2C_TX_FIFO);
-> -		buf_remaining = 0;
-> -		tx_fifo_avail--;
->  	}
->  
-> -	BUG_ON(tx_fifo_avail > 0 && buf_remaining > 0);
-> -	i2c_dev->msg_buf_remaining = buf_remaining;
-> -	i2c_dev->msg_buf = buf;
->  	return 0;
->  }
->  
-> @@ -411,9 +428,10 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
->  			tegra_i2c_mask_irq(i2c_dev, I2C_INT_TX_FIFO_DATA_REQ);
->  	}
->  
-> -	if ((status & I2C_INT_PACKET_XFER_COMPLETE) &&
-> -			!i2c_dev->msg_buf_remaining)
-> +	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
-> +		BUG_ON(i2c_dev->msg_buf_remaining);
->  		complete(&i2c_dev->msg_complete);
-> +	}
->  
->  	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
->  	if (i2c_dev->is_dvc)
+> Add ifdef to i2c driver:
+> http://www.spinics.net/lists/linux-tegra/msg01720.html
+> 
+> Implement empty of_get_property:
+> http://www.spinics.net/lists/linux-tegra/msg01881.html
+> 
+> Switch i2c driver to use of_property_read_u32:
+> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/127807
+> 
+> Ben, please could you please pick one of the changes and apply it, so
+> that linux-next compiles for Tegra? Thanks!
+
+I'll look into this at the weekend, of_property_read_u32 is probably
+a better function to call.
+ 
 > -- 
-> 1.7.3.1
+> nvpublic
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
 Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
