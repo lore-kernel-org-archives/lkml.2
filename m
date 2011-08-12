@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1HNQJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:09:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36821 "EHLO mx2.suse.de"
+	id S1754620Ab1HNQJj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:09:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36841 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754453Ab1HNQJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:09:30 -0400
+	id S1754453Ab1HNQJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
-Message-Id: <20110812210558.068970326@clark.kroah.org>
+Message-Id: <20110812210558.241016800@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:53 -0700
+Date: Fri, 12 Aug 2011 14:04:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [68/90] sparc: Minor tweaks to Niagara page copy/clear.
+Subject: [70/90] sparc: Use hweight64() in popc emulation.
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,242 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit e95ade083939dcb4b0c51c1a2c8504ea9ef3d6ef ]
-
-Don't use floating point on Niagara2, use the traditional
-plain Niagara code instead.
-
-Unroll Niagara loops to 128 bytes for copy, and 256 bytes
-for clear.
+[ Upstream commit d600cbed0fe8fceec04500824f638dfe4996c653 ]
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/kernel/head_64.S |    2 
- arch/sparc/lib/Makefile     |    2 
- arch/sparc/lib/NG2page.S    |   61 -----------------------
- arch/sparc/lib/NGpage.S     |  114 ++++++++++++++++++++++++++++----------------
- 4 files changed, 77 insertions(+), 102 deletions(-)
- delete mode 100644 arch/sparc/lib/NG2page.S
+ arch/sparc/kernel/unaligned_64.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/kernel/head_64.S
-+++ b/arch/sparc/kernel/head_64.S
-@@ -559,7 +559,7 @@ niagara2_patch:
- 	 nop
- 	call	niagara_patch_bzero
- 	 nop
--	call	niagara2_patch_pageops
-+	call	niagara_patch_pageops
- 	 nop
+--- a/arch/sparc/kernel/unaligned_64.c
++++ b/arch/sparc/kernel/unaligned_64.c
+@@ -22,6 +22,7 @@
+ #include <linux/bitops.h>
+ #include <linux/perf_event.h>
+ #include <linux/ratelimit.h>
++#include <linux/bitops.h>
+ #include <asm/fpumacro.h>
  
- 	ba,a,pt	%xcc, 80f
---- a/arch/sparc/lib/Makefile
-+++ b/arch/sparc/lib/Makefile
-@@ -31,7 +31,7 @@ lib-$(CONFIG_SPARC64) += NGmemcpy.o NGco
- lib-$(CONFIG_SPARC64) += NGpatch.o NGpage.o NGbzero.o
+ enum direction {
+@@ -373,16 +374,11 @@ asmlinkage void kernel_unaligned_trap(st
+ 	}
+ }
  
- lib-$(CONFIG_SPARC64) += NG2memcpy.o NG2copy_from_user.o NG2copy_to_user.o
--lib-$(CONFIG_SPARC64) +=  NG2patch.o NG2page.o
-+lib-$(CONFIG_SPARC64) +=  NG2patch.o
- 
- lib-$(CONFIG_SPARC64) += GENmemcpy.o GENcopy_from_user.o GENcopy_to_user.o
- lib-$(CONFIG_SPARC64) += GENpatch.o GENpage.o GENbzero.o
---- a/arch/sparc/lib/NG2page.S
-+++ /dev/null
-@@ -1,61 +0,0 @@
--/* NG2page.S: Niagara-2 optimized clear and copy page.
-- *
-- * Copyright (C) 2007 (davem@davemloft.net)
-- */
+-static char popc_helper[] = {
+-0, 1, 1, 2, 1, 2, 2, 3,
+-1, 2, 2, 3, 2, 3, 3, 4, 
+-};
 -
--#include <asm/asi.h>
--#include <asm/page.h>
--#include <asm/visasm.h>
--
--	.text
--	.align	32
--
--	/* This is heavily simplified from the sun4u variants
--	 * because Niagara-2 does not have any D-cache aliasing issues.
--	 */
--NG2copy_user_page:	/* %o0=dest, %o1=src, %o2=vaddr */
--	prefetch	[%o1 + 0x00], #one_read
--	prefetch	[%o1 + 0x40], #one_read
--	VISEntryHalf
--	set		PAGE_SIZE, %g7
--	sub		%o0, %o1, %g3
--1:	stxa		%g0, [%o1 + %g3] ASI_BLK_INIT_QUAD_LDD_P
--	subcc		%g7, 64, %g7
--	ldda		[%o1] ASI_BLK_P, %f0
--	stda		%f0, [%o1 + %g3] ASI_BLK_P
--	add		%o1, 64, %o1
--	bne,pt		%xcc, 1b
--	 prefetch	[%o1 + 0x40], #one_read
--	membar		#Sync
--	VISExitHalf
--	retl
--	 nop
--
--#define BRANCH_ALWAYS	0x10680000
--#define NOP		0x01000000
--#define NG_DO_PATCH(OLD, NEW)	\
--	sethi	%hi(NEW), %g1; \
--	or	%g1, %lo(NEW), %g1; \
--	sethi	%hi(OLD), %g2; \
--	or	%g2, %lo(OLD), %g2; \
--	sub	%g1, %g2, %g1; \
--	sethi	%hi(BRANCH_ALWAYS), %g3; \
--	sll	%g1, 11, %g1; \
--	srl	%g1, 11 + 2, %g1; \
--	or	%g3, %lo(BRANCH_ALWAYS), %g3; \
--	or	%g3, %g1, %g3; \
--	stw	%g3, [%g2]; \
--	sethi	%hi(NOP), %g3; \
--	or	%g3, %lo(NOP), %g3; \
--	stw	%g3, [%g2 + 0x4]; \
--	flush	%g2;
--
--	.globl	niagara2_patch_pageops
--	.type	niagara2_patch_pageops,#function
--niagara2_patch_pageops:
--	NG_DO_PATCH(copy_user_page, NG2copy_user_page)
--	NG_DO_PATCH(_clear_page, NGclear_page)
--	NG_DO_PATCH(clear_user_page, NGclear_user_page)
--	retl
--	 nop
--	.size	niagara2_patch_pageops,.-niagara2_patch_pageops
---- a/arch/sparc/lib/NGpage.S
-+++ b/arch/sparc/lib/NGpage.S
-@@ -16,55 +16,91 @@
- 	 */
- 
- NGcopy_user_page:	/* %o0=dest, %o1=src, %o2=vaddr */
--	prefetch	[%o1 + 0x00], #one_read
--	mov		8, %g1
--	mov		16, %g2
--	mov		24, %g3
-+	save		%sp, -192, %sp
-+	rd		%asi, %g3
-+	wr		%g0, ASI_BLK_INIT_QUAD_LDD_P, %asi
- 	set		PAGE_SIZE, %g7
-+	prefetch	[%i1 + 0x00], #one_read
-+	prefetch	[%i1 + 0x40], #one_read
- 
--1:	ldda		[%o1 + %g0] ASI_BLK_INIT_QUAD_LDD_P, %o2
--	ldda		[%o1 + %g2] ASI_BLK_INIT_QUAD_LDD_P, %o4
--	prefetch	[%o1 + 0x40], #one_read
--	add		%o1, 32, %o1
--	stxa		%o2, [%o0 + %g0] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%o3, [%o0 + %g1] ASI_BLK_INIT_QUAD_LDD_P
--	ldda		[%o1 + %g0] ASI_BLK_INIT_QUAD_LDD_P, %o2
--	stxa		%o4, [%o0 + %g2] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%o5, [%o0 + %g3] ASI_BLK_INIT_QUAD_LDD_P
--	ldda		[%o1 + %g2] ASI_BLK_INIT_QUAD_LDD_P, %o4
--	add		%o1, 32, %o1
--	add		%o0, 32, %o0
--	stxa		%o2, [%o0 + %g0] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%o3, [%o0 + %g1] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%o4, [%o0 + %g2] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%o5, [%o0 + %g3] ASI_BLK_INIT_QUAD_LDD_P
--	subcc		%g7, 64, %g7
-+1:	prefetch	[%i1 + 0x80], #one_read
-+	prefetch	[%i1 + 0xc0], #one_read
-+	ldda		[%i1 + 0x00] %asi, %o2
-+	ldda		[%i1 + 0x10] %asi, %o4
-+	ldda		[%i1 + 0x20] %asi, %l2
-+	ldda		[%i1 + 0x30] %asi, %l4
-+	stxa		%o2, [%i0 + 0x00] %asi
-+	stxa		%o3, [%i0 + 0x08] %asi
-+	stxa		%o4, [%i0 + 0x10] %asi
-+	stxa		%o5, [%i0 + 0x18] %asi
-+	stxa		%l2, [%i0 + 0x20] %asi
-+	stxa		%l3, [%i0 + 0x28] %asi
-+	stxa		%l4, [%i0 + 0x30] %asi
-+	stxa		%l5, [%i0 + 0x38] %asi
-+	ldda		[%i1 + 0x40] %asi, %o2
-+	ldda		[%i1 + 0x50] %asi, %o4
-+	ldda		[%i1 + 0x60] %asi, %l2
-+	ldda		[%i1 + 0x70] %asi, %l4
-+	stxa		%o2, [%i0 + 0x40] %asi
-+	stxa		%o3, [%i0 + 0x48] %asi
-+	stxa		%o4, [%i0 + 0x50] %asi
-+	stxa		%o5, [%i0 + 0x58] %asi
-+	stxa		%l2, [%i0 + 0x60] %asi
-+	stxa		%l3, [%i0 + 0x68] %asi
-+	stxa		%l4, [%i0 + 0x70] %asi
-+	stxa		%l5, [%i0 + 0x78] %asi
-+	add		%i1, 128, %i1
-+	subcc		%g7, 128, %g7
- 	bne,pt		%xcc, 1b
--	 add		%o0, 32, %o0
-+	 add		%i0, 128, %i0
-+	wr		%g3, 0x0, %asi
- 	membar		#Sync
--	retl
--	 nop
-+	ret
-+	 restore
- 
--	.globl		NGclear_page, NGclear_user_page
-+	.align		32
- NGclear_page:		/* %o0=dest */
- NGclear_user_page:	/* %o0=dest, %o1=vaddr */
--	mov		8, %g1
--	mov		16, %g2
--	mov		24, %g3
-+	rd		%asi, %g3
-+	wr		%g0, ASI_BLK_INIT_QUAD_LDD_P, %asi
- 	set		PAGE_SIZE, %g7
- 
--1:	stxa		%g0, [%o0 + %g0] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g1] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g2] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g3] ASI_BLK_INIT_QUAD_LDD_P
--	add		%o0, 32, %o0
--	stxa		%g0, [%o0 + %g0] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g1] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g2] ASI_BLK_INIT_QUAD_LDD_P
--	stxa		%g0, [%o0 + %g3] ASI_BLK_INIT_QUAD_LDD_P
--	subcc		%g7, 64, %g7
-+1:	stxa		%g0, [%o0 + 0x00] %asi
-+	stxa		%g0, [%o0 + 0x08] %asi
-+	stxa		%g0, [%o0 + 0x10] %asi
-+	stxa		%g0, [%o0 + 0x18] %asi
-+	stxa		%g0, [%o0 + 0x20] %asi
-+	stxa		%g0, [%o0 + 0x28] %asi
-+	stxa		%g0, [%o0 + 0x30] %asi
-+	stxa		%g0, [%o0 + 0x38] %asi
-+	stxa		%g0, [%o0 + 0x40] %asi
-+	stxa		%g0, [%o0 + 0x48] %asi
-+	stxa		%g0, [%o0 + 0x50] %asi
-+	stxa		%g0, [%o0 + 0x58] %asi
-+	stxa		%g0, [%o0 + 0x60] %asi
-+	stxa		%g0, [%o0 + 0x68] %asi
-+	stxa		%g0, [%o0 + 0x70] %asi
-+	stxa		%g0, [%o0 + 0x78] %asi
-+	stxa		%g0, [%o0 + 0x80] %asi
-+	stxa		%g0, [%o0 + 0x88] %asi
-+	stxa		%g0, [%o0 + 0x90] %asi
-+	stxa		%g0, [%o0 + 0x98] %asi
-+	stxa		%g0, [%o0 + 0xa0] %asi
-+	stxa		%g0, [%o0 + 0xa8] %asi
-+	stxa		%g0, [%o0 + 0xb0] %asi
-+	stxa		%g0, [%o0 + 0xb8] %asi
-+	stxa		%g0, [%o0 + 0xc0] %asi
-+	stxa		%g0, [%o0 + 0xc8] %asi
-+	stxa		%g0, [%o0 + 0xd0] %asi
-+	stxa		%g0, [%o0 + 0xd8] %asi
-+	stxa		%g0, [%o0 + 0xe0] %asi
-+	stxa		%g0, [%o0 + 0xe8] %asi
-+	stxa		%g0, [%o0 + 0xf0] %asi
-+	stxa		%g0, [%o0 + 0xf8] %asi
-+	subcc		%g7, 256, %g7
- 	bne,pt		%xcc, 1b
--	 add		%o0, 32, %o0
-+	 add		%o0, 256, %o0
-+	wr		%g3, 0x0, %asi
- 	membar		#Sync
- 	retl
- 	 nop
+ int handle_popc(u32 insn, struct pt_regs *regs)
+ {
+-	u64 value;
+-	int ret, i, rd = ((insn >> 25) & 0x1f);
+ 	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
++	int ret, rd = ((insn >> 25) & 0x1f);
++	u64 value;
+ 	                        
+ 	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
+ 	if (insn & 0x2000) {
+@@ -392,10 +388,7 @@ int handle_popc(u32 insn, struct pt_regs
+ 		maybe_flush_windows(0, insn & 0x1f, rd, from_kernel);
+ 		value = fetch_reg(insn & 0x1f, regs);
+ 	}
+-	for (ret = 0, i = 0; i < 16; i++) {
+-		ret += popc_helper[value & 0xf];
+-		value >>= 4;
+-	}
++	ret = hweight64(value);
+ 	if (rd < 16) {
+ 		if (rd)
+ 			regs->u_regs[rd] = ret;
 
 
