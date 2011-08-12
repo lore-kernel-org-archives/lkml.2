@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1HLDkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:40:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2310 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab1HLDkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:40:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="37034712"
-Subject: Re: [net-next] spider_net: fix compile issue introduced by driver
- move
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: "davem@davemloft.net" <davem@davemloft.net>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Aug 2011 20:40:14 -0700
-In-Reply-To: <1313120000-12085-1-git-send-email-jeffrey.t.kirsher@intel.com>
-References: <1313120000-12085-1-git-send-email-jeffrey.t.kirsher@intel.com>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-kEHJf8VPfCEOo4TDO6cj"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1313120415.2029.3.camel@jtkirshe-mobl>
-Mime-Version: 1.0
+	id S1750852Ab1HLEDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 00:03:36 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:49102 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1HLEDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 00:03:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110811232735.u5qoybpr4gg8kckw@webmail.mit.edu>
+References: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
+	<CAErSpo6Fh+zTMiSG+mjkNuA03cCEK7bej9y2oX+HfsScSYGFsw@mail.gmail.com>
+	<CANxBZFrzmTDaUrmkGhKAVsZpXScEDxdJeBzcMbBjEW=6ozppGw@mail.gmail.com>
+	<20110811232735.u5qoybpr4gg8kckw@webmail.mit.edu>
+Date: Fri, 12 Aug 2011 12:03:34 +0800
+Message-ID: <CANxBZFpjtGyk3CO0ViFJF8em_hBFLq7tErjMJrcq5vC7n9cy4g@mail.gmail.com>
+Subject: Re: [PATCH] pnp: replace deprecated __check_region to request_region
+From: Wang Shaoyan <stufever@gmail.com>
+To: Adam M Belay <abelay@mit.edu>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Adam,
 
---=-kEHJf8VPfCEOo4TDO6cj
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I can understand your worry, but back to beginning, just as the
+subject of the patch: "replace deprecated __check_region to
+request_region", I think this patch is still need, although it can't
+solve the problems both you guys mentioned. Do you agree it?
 
-On Thu, 2011-08-11 at 20:33 -0700, Kirsher, Jeffrey T wrote:
-> Both Spider net driver and Sun GEM driver use the sungem_phy.o object.
-> This fix creates a Kconfig object for sungem_phy (like MDIO) so that
-> both drivers require the SUNGEM_PHY object.
->=20
-> This has been compile tested for the Sun GEM driver.
->=20
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> ---
->  drivers/net/Kconfig               |    4 ++++
->  drivers/net/Makefile              |    2 +-
->  drivers/net/ethernet/sun/Kconfig  |    1 +
->  drivers/net/ethernet/sun/Makefile |    3 ++-
->  4 files changed, 8 insertions(+), 2 deletions(-)=20
+2011/8/12 Adam M Belay <abelay@mit.edu>:
+> Hi Wang,
+>
+> Yes, I think your description of the race condition is right. However, as
+> Bjorn
+> mentioned, there are many x86 init paths that will try to reserve the same
+> resources as those reported by pnp/acpi. There needs to be a better way to
+> coordinate legacy device enumeration. Otherwise, the request_region() calls
+> could fail when there isn't an actual resource conflict.
+>
+> IF we could find a good way to clean up the legacy users of request_region()
+> then we could probably make pnp behave more like pci with regard to resource
+> reservations.
+>
+> Cheers,
+> Adam
 
-Stephen, is it possible for you to try this patch to ensure it resolves
-the compile issue you saw for the Spider Net driver when merging with
-David's net-next tree?
 
---=-kEHJf8VPfCEOo4TDO6cj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJORKCeAAoJECTsCADr/EWUMOkH/2XsQbtXmnGqA4uIjo7HswJF
-khMegDmKUDhb9+MbQl8Od8N5lzJco3vudql4HnMvK1QRQdc1+uFpu/TfTNdIS13x
-0RozZgzRCHiVlOUeq/b5GlS3Tz5G3hCXaxpPvs0qYA4wMBAeQrkzkdY3mg8U6TQN
-57QhY2X71i2SyyiN6cPXBErx8O6BoaG077Xq4ZDDX0M7tSvZpQq2QCRO/65X0omC
-UD/6omxMA/ZRhTqboWWKOO+E28syozkifXC68JLNdZW6FwajTPoR+uMbOogRYdbl
-KbvEwyBDoLpZZJism1LiXVbahxXauzmzB6A+34PUB1ar3qkf+AuXM5CIhIfIhbc=
-=+NVq
------END PGP SIGNATURE-----
-
---=-kEHJf8VPfCEOo4TDO6cj--
-
+-- 
+Wang Shaoyan
