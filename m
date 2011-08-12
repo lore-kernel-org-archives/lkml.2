@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab1HLPMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 11:12:03 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58147 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab1HLPMA (ORCPT
+	id S1751998Ab1HLPNx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 11:13:53 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33390 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751164Ab1HLPNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 11:12:00 -0400
-Date: Fri, 12 Aug 2011 08:11:45 -0700 (PDT)
-Message-Id: <20110812.081145.1237768611581199187.davem@davemloft.net>
-To: jwboyer@redhat.com
-Cc: oliver@neukum.org, alexey.orishko@stericsson.com, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4] usbnet/cdc_ncm: Don't use stack variables for DMA
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110812150715.GD3014@zod.bos.redhat.com>
-References: <20110808123406.GA2526@zod.bos.redhat.com>
-	<20110812150715.GD3014@zod.bos.redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 12 Aug 2011 11:13:50 -0400
+Date: Fri, 12 Aug 2011 08:13:48 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Tonda <as@strmilov.cz>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: TCP port firewall incl. description and english variable names
+Message-Id: <20110812081348.02ec45d0.rdunlap@xenotime.net>
+In-Reply-To: <1313161843-18226-1-git-send-email-as@strmilov.cz>
+References: <1313161843-18226-1-git-send-email-as@strmilov.cz>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 12 Aug 2011 08:11:47 -0700 (PDT)
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@redhat.com>
-Date: Fri, 12 Aug 2011 11:07:16 -0400
+On Fri, 12 Aug 2011 17:10:43 +0200 Tonda wrote:
 
-> On Mon, Aug 08, 2011 at 08:34:06AM -0400, Josh Boyer wrote:
->> The cdc_ncm driver still has a few places where stack variables are
->> passed to the cdc_ncm_do_request function.  This triggers a stack trace in
->> lib/dma-debug.c if the CONFIG_DEBUG_DMA_API option is set.
->> 
->> Adjust these calls to pass parameters that have been allocated with
->> kzalloc.
->> 
->> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
->> ---
->> v4: Rebase against 3.1-rc1
->> v3: Fix checkpatch errors
->> v2: Fix leak in error path
->> 
->>  drivers/net/usb/cdc_ncm.c |   47 ++++++++++++++++++++++++++++++++++++--------
->>  1 files changed, 38 insertions(+), 9 deletions(-)
+> Module that is used to open, close or filter specified TCP port by sending certain sequence of UDP packets to predefined UDP ports (password-like firewall). One sequence of UDP ports is the opening key and sending packets successively to them opens the TCP port and the second sequence of UDP ports is the closing key and sending packets successively to them closes the TCP port. If between two UDP packets in the sequence comes more than 16 another UDP packets, the sequence (either opening or closing) is aborted. The configuration and view of affected TCP port, opening and closing key and other firewall parameters is made throw use of sysfs.
+
+> Signed-off-by: Antoine Steinhauser <as@strmilov.cz>
 > 
-> Just curious, but which tree would this be pulled into?  usb or net or?
+> diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
+> --- a/net/ipv4/Kconfig
+> +++ b/net/ipv4/Kconfig
+> @@ -624,3 +624,7 @@
+>  	  on the Internet.
+>  
+>  	  If unsure, say N.
+> +
+> +config TCPFIREWALL
+> +	tristate "TCP Firewall controlled by UDP queries"
+> +	depends on m
 
-Probably net.
+I have the same comments as yesterday, which for some reason were
+unanswered.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
