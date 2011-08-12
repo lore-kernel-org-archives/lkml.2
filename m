@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1HLBtc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 21:49:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53663 "EHLO smtps.tip.net.au"
+	id S1752608Ab1HLBx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 21:53:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34948 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab1HLBta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 21:49:30 -0400
-Date: Fri, 12 Aug 2011 11:49:19 +1000
+	id S1751069Ab1HLBx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 21:53:26 -0400
+Date: Fri, 12 Aug 2011 11:53:19 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: Steve French <smfrench@gmail.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-Message-Id: <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
-In-Reply-To: <alpine.LRH.2.00.1108121047540.14215@tundra.namei.org>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
-	<1313092847.3122.13.camel@localhost.localdomain>
-	<CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
-	<alpine.LRH.2.00.1108121047540.14215@tundra.namei.org>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warnings after merge of the net tree
+Message-Id: <20110812115319.c48966a412362f68c00c19dc@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Fri__12_Aug_2011_11_49_19_+1000_STIf+hZlW/Zq7re_"
+ boundary="Signature=_Fri__12_Aug_2011_11_53_19_+1000_5i4o4=G8APB099OD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Aug_2011_11_49_19_+1000_STIf+hZlW/Zq7re_
+--Signature=_Fri__12_Aug_2011_11_53_19_+1000_5i4o4=G8APB099OD
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-On Fri, 12 Aug 2011 10:48:27 +1000 (EST) James Morris <jmorris@namei.org> w=
-rote:
->
-> On Thu, 11 Aug 2011, Steve French wrote:
->=20
-> > makes sense - do we want this going through the cifs tree or as part
-> > of the xattr change mentioned below.
->=20
-> Should be fine to go into the CIFS tree, as long as that is in -next.
+After merging the net tree, today's linux-next build (powerpc ppc64_defconf=
+ig)
+produced these new warnings:
 
-Except then that could leave Linus' tree broken during the next merge
-window depending on the order he merges the cifs and security-testing
-trees.  Unless that patch is sent to Linus as a fix patch before the next
-merge window, of course.
+warning: (SCSI_BNX2_ISCSI && SCSI_BNX2X_FCOE) selects CNIC which has unmet =
+direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_BROADCOM && PCI)
+warning: (SCSI_CXGB3_ISCSI) selects CHELSIO_T3 which has unmet direct depen=
+dencies (NETDEVICES && ETHERNET && NET_VENDOR_CHELSIO && PCI && INET)
+warning: (SCSI_CXGB4_ISCSI) selects CHELSIO_T4 which has unmet direct depen=
+dencies (NETDEVICES && ETHERNET && NET_VENDOR_CHELSIO && PCI)
+warning: (MLX4_INFINIBAND) selects MLX4_CORE which has unmet direct depende=
+ncies (NETDEVICES && ETHERNET && NET_VENDOR_MELLANOX && PCI)
+warning: (SCSI_BNX2_ISCSI && SCSI_BNX2X_FCOE) selects CNIC which has unmet =
+direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_BROADCOM && PCI)
+warning: (SCSI_CXGB3_ISCSI) selects CHELSIO_T3 which has unmet direct depen=
+dencies (NETDEVICES && ETHERNET && NET_VENDOR_CHELSIO && PCI && INET)
+warning: (SCSI_CXGB4_ISCSI) selects CHELSIO_T4 which has unmet direct depen=
+dencies (NETDEVICES && ETHERNET && NET_VENDOR_CHELSIO && PCI)
+warning: (MLX4_INFINIBAND) selects MLX4_CORE which has unmet direct depende=
+ncies (NETDEVICES && ETHERNET && NET_VENDOR_MELLANOX && PCI)
 
-I will add this patch as a merge fixup to the merge of the
-security-testing tree for today.  And will remove my copy when one of the
-trees gets fixed.
-
-James: maybe I should change the name of your tree in -next to just
-"security"?
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__12_Aug_2011_11_49_19_+1000_STIf+hZlW/Zq7re_
+--Signature=_Fri__12_Aug_2011_11_53_19_+1000_5i4o4=G8APB099OD
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJORIafAAoJEDMEi1NhKgbsh3wH/j/+XoXMZuG+E9hS+wd6J8RC
-lI7Vtths2igscR7PMKcn5kesRFE2dBRXXVWQtuS97fn2oUriFxXuFuzzRh8YZn29
-7fMeIotRKebwmTdHY324gDUMbSdnpEkgyHxyKGwh43M+h7X8OkXyNr2ZUDlawg8Q
-aJlYhBN7iQk3r5yyKnCtT+9/lgRAg90CD7wTmpgA7/W1EYdXmony2Y1LJ8ddLCC/
-21lJ25jACap7rCMA4UZppCq6K0mcjvzlds/yPhx1RKJMr2n7KfkPK/FO8ofgZOx0
-5Z8tmOHiH9OB1Wld8g578H2rxn0hsH941x7XmE2ZwdIdTBOsQDYJpYqf/Zn2FIY=
-=dCXG
+iQEcBAEBAgAGBQJORIePAAoJEDMEi1NhKgbs3ioH/i6QNVtOno63uWdEM9YOmNqn
+oEqIn5l9P+i0zMCvZYIWtrsIyvQu6Uig2y6pkFxyQft8UhqiEUxNVrdKtYRHo5j7
+jdy0BXUEEjEQ/ZlVBJxht5aagsPqW8JR10PnGZJPEJbDGJeF86NduojJcYBxOedV
+i5VYt/xZiTxOEYojUJcQs7AcGNA8BI22POeZSatwxor/cUAl/MsRoU4q65239wHC
+rXVg1R/4P0avazU9nsAJrlJ3UgUqYQ5/AHSWzXQRnMoGM9HDE0NMyAHn/EEVteQq
+j2ylJIt2Wnlcv9U7FoeFMuRChS6fsncHeP+80A2IPMqnOWnOF00CCa9Xc2DLVV4=
+=Q+95
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__12_Aug_2011_11_49_19_+1000_STIf+hZlW/Zq7re_--
+--Signature=_Fri__12_Aug_2011_11_53_19_+1000_5i4o4=G8APB099OD--
