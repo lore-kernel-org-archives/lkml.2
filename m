@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab1HLDcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:32:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50691 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab1HLDcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:32:42 -0400
-Date: Fri, 12 Aug 2011 04:32:21 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arjan van de Ven <arjan@infradead.org>, Kevin Hilman <khilman@ti.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Paul Walmsley <paul@pwsan.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, Len Brown <lenb@kernel.org>,
-        tytso@mit.edu
-Subject: Re: LPC2011 Power Management Micro Conf
-Message-ID: <20110812033221.GA5671@sirena.org.uk>
-References: <201105011353.44809.rjw@sisk.pl>
- <201107030929.28555.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201107030929.28555.rjw@sisk.pl>
-X-Cookie: Have you locked your file cabinet?
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1754184Ab1HLDdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 23:33:25 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28661 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753781Ab1HLDdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 23:33:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
+   d="scan'208";a="6396425"
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: davem@davemloft.net
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, netdev@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [net-next] spider_net: fix compile issue introduced by driver move
+Date: Thu, 11 Aug 2011 20:33:20 -0700
+Message-Id: <1313120000-12085-1-git-send-email-jeffrey.t.kirsher@intel.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 03, 2011 at 09:29:28AM +0200, Rafael J. Wysocki wrote:
+Both Spider net driver and Sun GEM driver use the sungem_phy.o object.
+This fix creates a Kconfig object for sungem_phy (like MDIO) so that
+both drivers require the SUNGEM_PHY object.
 
-> If there's anything you'd like to discuss or give a presentation on related to
-> Power Management, please let me know, preferably by replying to this message.
+This has been compile tested for the Sun GEM driver.
 
-The issue of cross-bus sequencing within suspend has come up again - we
-really need to work out how we make sure that dependencies between
-devices that aren't accounted for in the control bus sorting we do as
-standard.  This may be worth bringing up a KS also as it's device model
-related.
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ drivers/net/Kconfig               |    4 ++++
+ drivers/net/Makefile              |    2 +-
+ drivers/net/ethernet/sun/Kconfig  |    1 +
+ drivers/net/ethernet/sun/Makefile |    3 ++-
+ 4 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index e6be7123..c8779c1 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -934,6 +934,7 @@ config SPIDER_NET
+ 	tristate "Spider Gigabit Ethernet driver"
+ 	depends on PCI && (PPC_IBM_CELL_BLADE || PPC_CELLEB)
+ 	select FW_LOADER
++	select SUNGEM_PHY
+ 	help
+ 	  This driver supports the Gigabit Ethernet chips present on the
+ 	  Cell Processor-Based Blades from IBM.
+@@ -1083,6 +1084,9 @@ if NETDEV_10000
+ config MDIO
+ 	tristate
+ 
++config SUNGEM_PHY
++	tristate
++
+ endif # NETDEV_10000
+ 
+ source "drivers/net/tokenring/Kconfig"
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index d151075..db888b0 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -41,7 +41,7 @@ obj-$(CONFIG_R6040) += r6040.o
+ obj-$(CONFIG_YELLOWFIN) += yellowfin.o
+ obj-$(CONFIG_FEALNX) += fealnx.o
+ spidernet-y += spider_net.o spider_net_ethtool.o
+-obj-$(CONFIG_SPIDER_NET) += spidernet.o ethernet/sun/sungem_phy.o
++obj-$(CONFIG_SPIDER_NET) += spidernet.o
+ obj-$(CONFIG_GELIC_NET) += ps3_gelic.o
+ gelic_wireless-$(CONFIG_GELIC_WIRELESS) += ps3_gelic_wireless.o
+ ps3_gelic-objs += ps3_gelic_net.o $(gelic_wireless-y)
+diff --git a/drivers/net/ethernet/sun/Kconfig b/drivers/net/ethernet/sun/Kconfig
+index 87b17a7..5132fa6 100644
+--- a/drivers/net/ethernet/sun/Kconfig
++++ b/drivers/net/ethernet/sun/Kconfig
+@@ -57,6 +57,7 @@ config SUNGEM
+ 	tristate "Sun GEM support"
+ 	depends on PCI
+ 	select CRC32
++	select SUNGEM_PHY
+ 	---help---
+ 	  Support for the Sun GEM chip, aka Sun GigabitEthernet/P 2.0.  See also
+ 	  <http://www.sun.com/products-n-solutions/hardware/docs/pdf/806-3985-10.pdf>.
+diff --git a/drivers/net/ethernet/sun/Makefile b/drivers/net/ethernet/sun/Makefile
+index 4f25217..6e25dad 100644
+--- a/drivers/net/ethernet/sun/Makefile
++++ b/drivers/net/ethernet/sun/Makefile
+@@ -5,7 +5,8 @@
+ obj-$(CONFIG_HAPPYMEAL) += sunhme.o
+ obj-$(CONFIG_SUNQE) += sunqe.o
+ obj-$(CONFIG_SUNBMAC) += sunbmac.o
+-obj-$(CONFIG_SUNGEM) += sungem.o sungem_phy.o
++obj-$(CONFIG_SUNGEM) += sungem.o
++obj-$(CONFIG_SUNGEM_PHY) += sungem_phy.o
+ obj-$(CONFIG_CASSINI) += cassini.o
+ obj-$(CONFIG_SUNVNET) += sunvnet.o
+ obj-$(CONFIG_NIU) += niu.o
+-- 
+1.7.6
+
