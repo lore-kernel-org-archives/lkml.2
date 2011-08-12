@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab1HLVLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 17:11:04 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41146 "EHLO
+	id S1752117Ab1HLVLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:11:21 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48302 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab1HLVLA (ORCPT
+	by vger.kernel.org with ESMTP id S1751956Ab1HLVLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 17:11:00 -0400
-X-Sasl-enc: CkJTQvkSmR3ECccx3Hs2QRuzVOIVvVry6b58DofCGDGU 1313183459
-Date: Fri, 12 Aug 2011 14:08:49 -0700
+	Fri, 12 Aug 2011 17:11:01 -0400
+X-Sasl-enc: 2hNo7W6b8TUcmhJhCC643Ir9JPZ9b9nJYR66VR7f6fOz 1313183461
+Date: Fri, 12 Aug 2011 14:10:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [0/6] 2.6.32.45-longterm review
-Message-ID: <20110812210849.GA5640@kroah.com>
+Subject: [0/6] 2.6.33.18-longterm review
+Message-ID: <20110812211045.GA6497@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.45 release.
+This is the start of the stable review cycle for the 2.6.33.18 release.
 There are 6 patches in this series, all will be posted as a response
 to this one.  If anyone has any issues with these being applied, please
 let us know.  If anyone is a maintainer of the proper subsystem, and
@@ -33,7 +33,7 @@ Responses should be made by Monday, August 15, 2011, 20:00:00 UTC.
 Anything received after that time might be too late.
 
 The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.45-rc1.gz
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.19-rc1.gz
 and the diffstat can be found below.
 
 thanks,
