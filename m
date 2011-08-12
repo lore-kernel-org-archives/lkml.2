@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1HNQZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:25:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36536 "EHLO mx2.suse.de"
+	id S1754022Ab1HNQHU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:07:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36465 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab1HNQHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:07:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:55 2011
-Message-Id: <20110812210555.281084531@clark.kroah.org>
+	id S1752062Ab1HNQHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:07:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:54 2011
+Message-Id: <20110812210554.688293989@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:21 -0700
+Date: Fri, 12 Aug 2011 14:04:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [36/90] ASoC: sgtl5000: fix cache handling
+        "David S. Miller" <davem@davemloft.net>
+Subject: [29/90] crypto: Move md5_transform to lib/md5.c
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,217 +25,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 151798f872d6b386d82cd1707ad703e981fef8f2 upstream.
+We are going to use this for TCP/IP sequence number and fragment ID
+generation.
 
-Cache handling in this driver is broken. The chip has 16-bit registers, yet the
-register numbers also increase by 2 per register, i.e.  there are only
-even-numbered registers. The cache in this driver, though, simply increments
-register numbers, so it does need some mapping as seen in
-sgtl5000_restore_regs(), note the '>> 1':
-
-	snd_soc_write(codec, SGTL5000_CHIP_LINREG_CTRL,
-                        cache[SGTL5000_CHIP_LINREG_CTRL >> 1]);
-
-That, of course, won't work with snd_soc_update_bits(). (Thus, we won't even
-notice the missing register 0x1c in the default regs which shifted all follwing
-registers to wrong values.) Noticed on the MX28EVK where enabling the regulators
-simply locked up the chip.
-
-Refactor the routines and use a properly sized default_regs array which matches
-the register layout of the underlying chip, i.e. create a truly flat cache.
-This also saves some code which should make up for the bigger array a little.
-When soc-core will somewhen have another cache type which handles a step size,
-this conversion will also ease the transition.
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Tested-by: Dong Aisheng <b29396@freescale.com>
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/soc/codecs/sgtl5000.c |  128 ++++++++++++--------------------------------
- 1 file changed, 35 insertions(+), 93 deletions(-)
+ crypto/md5.c               |   92 -------------------------------------------
+ include/linux/cryptohash.h |    5 ++
+ lib/Makefile               |    2 
+ lib/md5.c                  |   95 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 102 insertions(+), 92 deletions(-)
+ create mode 100644 lib/md5.c
 
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -33,73 +33,31 @@
- #define SGTL5000_DAP_REG_OFFSET	0x0100
- #define SGTL5000_MAX_REG_OFFSET	0x013A
+--- a/crypto/md5.c
++++ b/crypto/md5.c
+@@ -21,99 +21,9 @@
+ #include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/types.h>
++#include <linux/cryptohash.h>
+ #include <asm/byteorder.h>
  
--/* default value of sgtl5000 registers except DAP */
--static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET >> 1] =  {
--	0xa011, /* 0x0000, CHIP_ID. 11 stand for revison 17 */
--	0x0000, /* 0x0002, CHIP_DIG_POWER. */
--	0x0008, /* 0x0004, CHIP_CKL_CTRL */
--	0x0010, /* 0x0006, CHIP_I2S_CTRL */
--	0x0000, /* 0x0008, reserved */
--	0x0008, /* 0x000A, CHIP_SSS_CTRL */
--	0x0000, /* 0x000C, reserved */
--	0x020c, /* 0x000E, CHIP_ADCDAC_CTRL */
--	0x3c3c, /* 0x0010, CHIP_DAC_VOL */
--	0x0000, /* 0x0012, reserved */
--	0x015f, /* 0x0014, CHIP_PAD_STRENGTH */
--	0x0000, /* 0x0016, reserved */
--	0x0000, /* 0x0018, reserved */
--	0x0000, /* 0x001A, reserved */
--	0x0000, /* 0x001E, reserved */
--	0x0000, /* 0x0020, CHIP_ANA_ADC_CTRL */
--	0x1818, /* 0x0022, CHIP_ANA_HP_CTRL */
--	0x0111, /* 0x0024, CHIP_ANN_CTRL */
--	0x0000, /* 0x0026, CHIP_LINREG_CTRL */
--	0x0000, /* 0x0028, CHIP_REF_CTRL */
--	0x0000, /* 0x002A, CHIP_MIC_CTRL */
--	0x0000, /* 0x002C, CHIP_LINE_OUT_CTRL */
--	0x0404, /* 0x002E, CHIP_LINE_OUT_VOL */
--	0x7060, /* 0x0030, CHIP_ANA_POWER */
--	0x5000, /* 0x0032, CHIP_PLL_CTRL */
--	0x0000, /* 0x0034, CHIP_CLK_TOP_CTRL */
--	0x0000, /* 0x0036, CHIP_ANA_STATUS */
--	0x0000, /* 0x0038, reserved */
--	0x0000, /* 0x003A, CHIP_ANA_TEST2 */
--	0x0000, /* 0x003C, CHIP_SHORT_CTRL */
--	0x0000, /* reserved */
--};
+-#define F1(x, y, z)	(z ^ (x & (y ^ z)))
+-#define F2(x, y, z)	F1(z, x, y)
+-#define F3(x, y, z)	(x ^ y ^ z)
+-#define F4(x, y, z)	(y ^ (x | ~z))
 -
--/* default value of dap registers */
--static const u16 sgtl5000_dap_regs[] = {
--	0x0000, /* 0x0100, DAP_CONTROL */
--	0x0000, /* 0x0102, DAP_PEQ */
--	0x0040, /* 0x0104, DAP_BASS_ENHANCE */
--	0x051f, /* 0x0106, DAP_BASS_ENHANCE_CTRL */
--	0x0000, /* 0x0108, DAP_AUDIO_EQ */
--	0x0040, /* 0x010A, DAP_SGTL_SURROUND */
--	0x0000, /* 0x010C, DAP_FILTER_COEF_ACCESS */
--	0x0000, /* 0x010E, DAP_COEF_WR_B0_MSB */
--	0x0000, /* 0x0110, DAP_COEF_WR_B0_LSB */
--	0x0000, /* 0x0112, reserved */
--	0x0000, /* 0x0114, reserved */
--	0x002f, /* 0x0116, DAP_AUDIO_EQ_BASS_BAND0 */
--	0x002f, /* 0x0118, DAP_AUDIO_EQ_BAND0 */
--	0x002f, /* 0x011A, DAP_AUDIO_EQ_BAND2 */
--	0x002f, /* 0x011C, DAP_AUDIO_EQ_BAND3 */
--	0x002f, /* 0x011E, DAP_AUDIO_EQ_TREBLE_BAND4 */
--	0x8000, /* 0x0120, DAP_MAIN_CHAN */
--	0x0000, /* 0x0122, DAP_MIX_CHAN */
--	0x0510, /* 0x0124, DAP_AVC_CTRL */
--	0x1473, /* 0x0126, DAP_AVC_THRESHOLD */
--	0x0028, /* 0x0128, DAP_AVC_ATTACK */
--	0x0050, /* 0x012A, DAP_AVC_DECAY */
--	0x0000, /* 0x012C, DAP_COEF_WR_B1_MSB */
--	0x0000, /* 0x012E, DAP_COEF_WR_B1_LSB */
--	0x0000, /* 0x0130, DAP_COEF_WR_B2_MSB */
--	0x0000, /* 0x0132, DAP_COEF_WR_B2_LSB */
--	0x0000, /* 0x0134, DAP_COEF_WR_A1_MSB */
--	0x0000, /* 0x0136, DAP_COEF_WR_A1_LSB */
--	0x0000, /* 0x0138, DAP_COEF_WR_A2_MSB */
--	0x0000, /* 0x013A, DAP_COEF_WR_A2_LSB */
-+/* default value of sgtl5000 registers */
-+static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
-+	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
-+	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
-+	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
-+	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
-+	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
-+	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
-+	[SGTL5000_CHIP_ANA_CTRL] = 0x0111,
-+	[SGTL5000_CHIP_LINE_OUT_VOL] = 0x0404,
-+	[SGTL5000_CHIP_ANA_POWER] = 0x7060,
-+	[SGTL5000_CHIP_PLL_CTRL] = 0x5000,
-+	[SGTL5000_DAP_BASS_ENHANCE] = 0x0040,
-+	[SGTL5000_DAP_BASS_ENHANCE_CTRL] = 0x051f,
-+	[SGTL5000_DAP_SURROUND] = 0x0040,
-+	[SGTL5000_DAP_EQ_BASS_BAND0] = 0x002f,
-+	[SGTL5000_DAP_EQ_BASS_BAND1] = 0x002f,
-+	[SGTL5000_DAP_EQ_BASS_BAND2] = 0x002f,
-+	[SGTL5000_DAP_EQ_BASS_BAND3] = 0x002f,
-+	[SGTL5000_DAP_EQ_BASS_BAND4] = 0x002f,
-+	[SGTL5000_DAP_MAIN_CHAN] = 0x8000,
-+	[SGTL5000_DAP_AVC_CTRL] = 0x0510,
-+	[SGTL5000_DAP_AVC_THRESHOLD] = 0x1473,
-+	[SGTL5000_DAP_AVC_ATTACK] = 0x0028,
-+	[SGTL5000_DAP_AVC_DECAY] = 0x0050,
- };
- 
- /* regulator supplies for sgtl5000, VDDD is an optional external supply */
-@@ -1022,12 +980,10 @@ static int sgtl5000_suspend(struct snd_s
- static int sgtl5000_restore_regs(struct snd_soc_codec *codec)
+-#define MD5STEP(f, w, x, y, z, in, s) \
+-	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
+-
+-static void md5_transform(u32 *hash, u32 const *in)
+-{
+-	u32 a, b, c, d;
+-
+-	a = hash[0];
+-	b = hash[1];
+-	c = hash[2];
+-	d = hash[3];
+-
+-	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
+-	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
+-	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
+-	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
+-	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
+-	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
+-	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
+-	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
+-	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
+-	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
+-	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
+-	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
+-	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
+-	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
+-	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
+-	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
+-
+-	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
+-	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
+-	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
+-	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
+-	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
+-	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
+-	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
+-	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
+-	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
+-	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
+-	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
+-	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
+-	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
+-	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
+-	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
+-	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
+-
+-	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
+-	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
+-	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
+-	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
+-	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
+-	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
+-	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
+-	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
+-	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
+-	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
+-	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
+-	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
+-	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
+-	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
+-	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
+-	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
+-
+-	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
+-	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
+-	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
+-	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
+-	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
+-	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
+-	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
+-	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
+-	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
+-	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
+-	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
+-	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
+-	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
+-	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
+-	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
+-	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
+-
+-	hash[0] += a;
+-	hash[1] += b;
+-	hash[2] += c;
+-	hash[3] += d;
+-}
+-
+ /* XXX: this stuff can be optimized */
+ static inline void le32_to_cpu_array(u32 *buf, unsigned int words)
  {
- 	u16 *cache = codec->reg_cache;
--	int i;
--	int regular_regs = SGTL5000_CHIP_SHORT_CTRL >> 1;
-+	u16 reg;
+--- a/include/linux/cryptohash.h
++++ b/include/linux/cryptohash.h
+@@ -8,6 +8,11 @@
+ void sha_init(__u32 *buf);
+ void sha_transform(__u32 *digest, const char *data, __u32 *W);
  
- 	/* restore regular registers */
--	for (i = 0; i < regular_regs; i++) {
--		int reg = i << 1;
-+	for (reg = 0; reg <= SGTL5000_CHIP_SHORT_CTRL; reg += 2) {
++#define MD5_DIGEST_WORDS 4
++#define MD5_MESSAGE_BYTES 64
++
++void md5_transform(__u32 *hash, __u32 const *in);
++
+ __u32 half_md4_transform(__u32 buf[4], __u32 const in[8]);
  
- 		/* this regs depends on the others */
- 		if (reg == SGTL5000_CHIP_ANA_POWER ||
-@@ -1037,35 +993,31 @@ static int sgtl5000_restore_regs(struct
- 			reg == SGTL5000_CHIP_CLK_CTRL)
- 			continue;
+ #endif
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -10,7 +10,7 @@ endif
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+-	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
++	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o find_next_bit.o
  
--		snd_soc_write(codec, reg, cache[i]);
-+		snd_soc_write(codec, reg, cache[reg]);
- 	}
- 
- 	/* restore dap registers */
--	for (i = SGTL5000_DAP_REG_OFFSET >> 1;
--			i < SGTL5000_MAX_REG_OFFSET >> 1; i++) {
--		int reg = i << 1;
--
--		snd_soc_write(codec, reg, cache[i]);
--	}
-+	for (reg = SGTL5000_DAP_REG_OFFSET; reg < SGTL5000_MAX_REG_OFFSET; reg += 2)
-+		snd_soc_write(codec, reg, cache[reg]);
- 
- 	/*
- 	 * restore power and other regs according
- 	 * to set_power() and set_clock()
- 	 */
- 	snd_soc_write(codec, SGTL5000_CHIP_LINREG_CTRL,
--			cache[SGTL5000_CHIP_LINREG_CTRL >> 1]);
-+			cache[SGTL5000_CHIP_LINREG_CTRL]);
- 
- 	snd_soc_write(codec, SGTL5000_CHIP_ANA_POWER,
--			cache[SGTL5000_CHIP_ANA_POWER >> 1]);
-+			cache[SGTL5000_CHIP_ANA_POWER]);
- 
- 	snd_soc_write(codec, SGTL5000_CHIP_CLK_CTRL,
--			cache[SGTL5000_CHIP_CLK_CTRL >> 1]);
-+			cache[SGTL5000_CHIP_CLK_CTRL]);
- 
- 	snd_soc_write(codec, SGTL5000_CHIP_REF_CTRL,
--			cache[SGTL5000_CHIP_REF_CTRL >> 1]);
-+			cache[SGTL5000_CHIP_REF_CTRL]);
- 
- 	snd_soc_write(codec, SGTL5000_CHIP_LINE_OUT_CTRL,
--			cache[SGTL5000_CHIP_LINE_OUT_CTRL >> 1]);
-+			cache[SGTL5000_CHIP_LINE_OUT_CTRL]);
- 	return 0;
- }
- 
-@@ -1460,16 +1412,6 @@ static __devinit int sgtl5000_i2c_probe(
- 	if (!sgtl5000)
- 		return -ENOMEM;
- 
--	/*
--	 * copy DAP default values to default value array.
--	 * sgtl5000 register space has a big hole, merge it
--	 * at init phase makes life easy.
--	 * FIXME: should we drop 'const' of sgtl5000_regs?
--	 */
--	memcpy((void *)(&sgtl5000_regs[0] + (SGTL5000_DAP_REG_OFFSET >> 1)),
--			sgtl5000_dap_regs,
--			SGTL5000_MAX_REG_OFFSET - SGTL5000_DAP_REG_OFFSET);
--
- 	i2c_set_clientdata(client, sgtl5000);
- 
- 	ret = snd_soc_register_codec(&client->dev,
+--- /dev/null
++++ b/lib/md5.c
+@@ -0,0 +1,95 @@
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/cryptohash.h>
++
++#define F1(x, y, z)	(z ^ (x & (y ^ z)))
++#define F2(x, y, z)	F1(z, x, y)
++#define F3(x, y, z)	(x ^ y ^ z)
++#define F4(x, y, z)	(y ^ (x | ~z))
++
++#define MD5STEP(f, w, x, y, z, in, s) \
++	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
++
++void md5_transform(__u32 *hash, __u32 const *in)
++{
++	u32 a, b, c, d;
++
++	a = hash[0];
++	b = hash[1];
++	c = hash[2];
++	d = hash[3];
++
++	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
++	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
++	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
++	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
++	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
++	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
++	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
++	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
++	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
++	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
++	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
++	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
++	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
++	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
++	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
++	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
++
++	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
++	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
++	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
++	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
++	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
++	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
++	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
++	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
++	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
++	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
++	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
++	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
++	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
++	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
++	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
++	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
++
++	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
++	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
++	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
++	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
++	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
++	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
++	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
++	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
++	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
++	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
++	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
++	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
++	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
++	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
++	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
++	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
++
++	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
++	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
++	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
++	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
++	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
++	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
++	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
++	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
++	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
++	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
++	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
++	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
++	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
++	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
++	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
++	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
++
++	hash[0] += a;
++	hash[1] += b;
++	hash[2] += c;
++	hash[3] += d;
++}
++EXPORT_SYMBOL(md5_transform);
 
 
