@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218Ab1HLFMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 01:12:22 -0400
-Received: from tundra.namei.org ([65.99.196.166]:60029 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab1HLFMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 01:12:21 -0400
-Date: Fri, 12 Aug 2011 15:08:11 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Steve French <smfrench@gmail.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-In-Reply-To: <CAH2r5mssB+3vDmNy3mWvGBDYXDu_NYiSZAFOxQXcckr+tHUV4A@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1108121508030.15327@tundra.namei.org>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com> <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com> <1313092847.3122.13.camel@localhost.localdomain> <CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
- <alpine.LRH.2.00.1108121047540.14215@tundra.namei.org> <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au> <alpine.LRH.2.00.1108121244250.14779@tundra.namei.org> <CAH2r5mssB+3vDmNy3mWvGBDYXDu_NYiSZAFOxQXcckr+tHUV4A@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-1955279335-1313125691=:15327"
+	id S1751471Ab1HLFRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 01:17:47 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:37353 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1HLFRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 01:17:46 -0400
+Subject: Re: [PATCH] perf: fix temporary file ownership check
+From: Pekka Enberg <penberg@kernel.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20110811205537.GA22864@albatros>
+References: <20110811205537.GA22864@albatros>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 12 Aug 2011 08:17:43 +0300
+Message-ID: <1313126263.29737.21.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1665246916-1955279335-1313125691=:15327
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Thu, 11 Aug 2011, Steve French wrote:
-
-> If it is easier - I don't mind merging it to cifs now.   Seems
-> harmless and low risk.
-
-I've applied it to my tree.
-
+On Fri, 2011-08-12 at 00:55 +0400, Vasiliy Kulikov wrote:
+> A file in /tmp/ might be a symlink, so lstat() should be used
+> instead of stat().
 > 
-> On Thu, Aug 11, 2011 at 9:44 PM, James Morris <jmorris@namei.org> wrote:
-> > On Fri, 12 Aug 2011, Stephen Rothwell wrote:
-> >
-> >> Except then that could leave Linus' tree broken during the next merge
-> >> window depending on the order he merges the cifs and security-testing
-> >> trees.  Unless that patch is sent to Linus as a fix patch before the next
-> >> merge window, of course.
-> >>
-> >> I will add this patch as a merge fixup to the merge of the
-> >> security-testing tree for today.  And will remove my copy when one of the
-> >> trees gets fixed.
-> >
-> > I'll put it in my tree, then.
-> >
-> >> James: maybe I should change the name of your tree in -next to just
-> >> "security"?
-> >
-> > Sure.
-> >
-> >
-> > --
-> > James Morris
-> > <jmorris@namei.org>
-> >
-> 
-> 
-> 
-> -- 
-> Thanks,
-> 
-> Steve
-> 
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
--- 
-James Morris
-<jmorris@namei.org>
---1665246916-1955279335-1313125691=:15327--
+Acked-by: Pekka Enberg <penberg@kernel.org>
+
+> ---
+>  tools/perf/util/symbol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+> index a8b5371..5db39f6 100644
+> --- a/tools/perf/util/symbol.c
+> +++ b/tools/perf/util/symbol.c
+> @@ -1506,7 +1506,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+>  	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
+>  		struct stat st;
+>  
+> -		if (stat(dso->name, &st) < 0)
+> +		if (lstat(dso->name, &st) < 0)
+>  			return -1;
+>  
+>  		if (st.st_uid && (st.st_uid != geteuid())) {
+
+
