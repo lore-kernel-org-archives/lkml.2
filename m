@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1HLN44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:56:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41351 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab1HLN4y (ORCPT
+	id S1753500Ab1HLOAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 10:00:24 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48944 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab1HLOAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:56:54 -0400
-Subject: Re: [PATCH v2 3/4] limit nr_dentries per superblock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        David Chinner <david@fromorbit.com>
-In-Reply-To: <1312504544-1108-4-git-send-email-glommer@parallels.com>
-References: <1312504544-1108-1-git-send-email-glommer@parallels.com>
-	 <1312504544-1108-4-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Aug 2011 15:56:52 +0200
-Message-ID: <1313157412.2354.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 12 Aug 2011 10:00:20 -0400
+Date: Fri, 12 Aug 2011 09:51:02 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Kalle Valo <kvalo@qca.qualcomm.com>, Greg KH <gregkh@suse.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (wireless & staging trees related)
+Message-ID: <20110812135101.GA2286@tuxdriver.com>
+References: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au>
+ <4E438D56.5020801@qca.qualcomm.com>
+ <20110811141604.GA14763@suse.de>
+ <4E43FA61.1010301@qca.qualcomm.com>
+ <20110812121216.28e6979b44bacb651849640b@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110812121216.28e6979b44bacb651849640b@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 05 août 2011 à 04:35 +0400, Glauber Costa a écrit :
-> This patch lays the foundation for us to limit the dcache size.
-> Each super block can have only a maximum amount of dentries under its
-> sub-tree. Allocation fails if we we're over limit and the cache
-> can't be pruned to free up space for the newcomers.
+On Fri, Aug 12, 2011 at 12:12:16PM +1000, Stephen Rothwell wrote:
+> Hi Kalle, Greg,
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Dave Chinner <david@fromorbit.com>
-> ---
->  fs/dcache.c        |   25 +++++++++++++++++++++++++
->  fs/super.c         |    1 +
->  include/linux/fs.h |    1 +
->  3 files changed, 27 insertions(+), 0 deletions(-)
+> On Thu, 11 Aug 2011 18:50:57 +0300 Kalle Valo <kvalo@qca.qualcomm.com> wrote:
+> >
+> > On 08/11/2011 05:16 PM, Greg KH wrote:
+> > > On Thu, Aug 11, 2011 at 11:05:42AM +0300, Kalle Valo wrote:
+> > >
+> > >> Yes, the cleaned up version of ath6kl is now in wireless-next and the
+> > >> staging version can be removed in 3.2. Greg, how do you want to handle
+> > >> removal of the staging version? Should I send a patch to you removing
+> > >> it? Or should I send the patch to John?
+> > > 
+> > > Just tell me.  Should I really delete drivers/staging/ath6kl/ for the
+> > > 3.2 kernel release?  If so, I'll gladly do so in my tree so linux-next
+> > > will be fine for issues like this in the future.
+> > 
+> > Yes, please delete ath6kl from staging for the 3.2 release as the
+> > cleanup version is now in wireless-next.
+> > 
+> > Thank you everyone and sorry for the mess.
 > 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index ac19d24..52a0faf 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1180,6 +1180,28 @@ void shrink_dcache_parent(struct dentry * parent)
->  }
->  EXPORT_SYMBOL(shrink_dcache_parent);
->  
-> +static int dcache_mem_check(struct super_block *sb)
-> +{
-> +	int i;
-> +	int nr_dentry;
-> +	struct shrink_control sc = {
-> +		.gfp_mask = GFP_KERNEL,
-> +	};
-> +
-> +	do {
-> +		nr_dentry = 0;
-> +		for_each_possible_cpu(i)
-> +			nr_dentry += per_cpu(*sb->s_nr_dentry, i);
+> I think that the removal should be done in the wirelesss tree so that
+> Linus' tree is not broken during the next merge window.
+> 
+> I have added the removal patch as a merge fixup one the merge of the
+> wireless tree for today.
 
-You seriously want to call this for every __d_alloc() invocation,
-even if s_nr_dentry_max is the default value (INT_MAX) ?
+Makes sense to me -- probably also is more sane if there is some fool
+out there relying on the ath6kl driver in staging that doesn't know
+about the switch to the wireless tree.
 
-On a 4096 cpu machine, it will be _very_ slow.
-
-A percpu_counter would be the thing to consider, since you can avoid the
-for_each_possible_cpu(i) loop if percpu_counter_read() is smaller than
-sb->s_nr_dentry_max.
-
-Check how its done in include/net/tcp.h, tcp_too_many_orphans()
-
-
-
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
