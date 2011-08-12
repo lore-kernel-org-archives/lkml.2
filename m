@@ -1,21 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1HNQI1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:08:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36641 "EHLO mx2.suse.de"
+	id S1754426Ab1HNQIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:08:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36683 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298Ab1HNQIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:08:20 -0400
+	id S1754370Ab1HNQIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:34 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
-Message-Id: <20110812210556.314378286@clark.kroah.org>
+Message-Id: <20110812210556.660706972@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:33 -0700
+Date: Fri, 12 Aug 2011 14:04:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>, "David S. Miller" <davem@davemloft.net>
-Subject: [48/90] drivers/net/niu.c: adjust array index
+        Neil Horman <nhorman@tuxdriver.com>,
+        Karsten Keil <isdn@linux-pingi.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        Patrick McHardy <kaber@trash.net>, Krzysztof Halasa <khc@pm.waw.pl>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: [52/90] net: Audit drivers to identify those needing IFF_TX_SKB_SHARING cleared
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +33,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Julia Lawall <julia@diku.dk>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 956837f7c954443f426a82ba6f17b33488cf9a0c ]
+[ Upstream commit 550fd08c2cebad61c548def135f67aba284c6162 ]
 
-Convert array index from the loop bound to the loop index.
+After the last patch, We are left in a state in which only drivers calling
+ether_setup have IFF_TX_SKB_SHARING set (we assume that drivers touching real
+hardware call ether_setup for their net_devices and don't hold any state in
+their skbs.  There are a handful of drivers that violate this assumption of
+course, and need to be fixed up.  This patch identifies those drivers, and marks
+them as not being able to support the safe transmission of skbs by clearning the
+IFF_TX_SKB_SHARING flag in priv_flags
 
-A simplified version of the semantic patch that fixes this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression e1,e2,ar;
-@@
-
-for(e1 = 0; e1 < e2; e1++) { <...
-  ar[
-- e2
-+ e1
-  ]
-  ...> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Karsten Keil <isdn@linux-pingi.de>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Patrick McHardy <kaber@trash.net>
+CC: Krzysztof Halasa <khc@pm.waw.pl>
+CC: "John W. Linville" <linville@tuxdriver.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Marcel Holtmann <marcel@holtmann.org>
+CC: Johannes Berg <johannes@sipsolutions.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/niu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/i4l/isdn_net.c                  |    3 +++
+ drivers/net/bonding/bond_main.c              |    6 ++++--
+ drivers/net/ifb.c                            |    2 +-
+ drivers/net/macvlan.c                        |    2 +-
+ drivers/net/tun.c                            |    1 +
+ drivers/net/veth.c                           |    2 ++
+ drivers/net/wan/hdlc_fr.c                    |    5 +++--
+ drivers/net/wireless/airo.c                  |    1 +
+ drivers/net/wireless/hostap/hostap_main.c    |    1 +
+ drivers/staging/ath6kl/os/linux/ar6000_drv.c |    1 +
+ net/8021q/vlan_dev.c                         |    2 +-
+ net/bluetooth/bnep/netdev.c                  |    1 +
+ net/l2tp/l2tp_eth.c                          |    2 +-
+ net/mac80211/iface.c                         |    1 +
+ 14 files changed, 22 insertions(+), 8 deletions(-)
 
---- a/drivers/net/niu.c
-+++ b/drivers/net/niu.c
-@@ -9196,7 +9196,7 @@ static int __devinit niu_ldg_init(struct
+--- a/drivers/isdn/i4l/isdn_net.c
++++ b/drivers/isdn/i4l/isdn_net.c
+@@ -2531,6 +2531,9 @@ static void _isdn_setup(struct net_devic
  
- 	first_chan = 0;
- 	for (i = 0; i < port; i++)
--		first_chan += parent->rxchan_per_port[port];
-+		first_chan += parent->rxchan_per_port[i];
- 	num_chan = parent->rxchan_per_port[port];
+ 	/* Setup the generic properties */
+ 	dev->flags = IFF_NOARP|IFF_POINTOPOINT;
++
++	/* isdn prepends a header in the tx path, can't share skbs */
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->header_ops = NULL;
+ 	dev->netdev_ops = &isdn_netdev_ops;
  
- 	for (i = first_chan; i < (first_chan + num_chan); i++) {
-@@ -9212,7 +9212,7 @@ static int __devinit niu_ldg_init(struct
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1625,8 +1625,10 @@ int bond_enslave(struct net_device *bond
  
- 	first_chan = 0;
- 	for (i = 0; i < port; i++)
--		first_chan += parent->txchan_per_port[port];
-+		first_chan += parent->txchan_per_port[i];
- 	num_chan = parent->txchan_per_port[port];
- 	for (i = first_chan; i < (first_chan + num_chan); i++) {
- 		err = niu_ldg_assign_ldn(np, parent,
+ 			if (slave_dev->type != ARPHRD_ETHER)
+ 				bond_setup_by_slave(bond_dev, slave_dev);
+-			else
++			else {
+ 				ether_setup(bond_dev);
++				bond_dev->priv_flags &= ~IFF_TX_SKB_SHARING;
++			}
+ 
+ 			netdev_bonding_change(bond_dev,
+ 					      NETDEV_POST_TYPE_CHANGE);
+@@ -4398,7 +4400,7 @@ static void bond_setup(struct net_device
+ 	bond_dev->tx_queue_len = 0;
+ 	bond_dev->flags |= IFF_MASTER|IFF_MULTICAST;
+ 	bond_dev->priv_flags |= IFF_BONDING;
+-	bond_dev->priv_flags &= ~IFF_XMIT_DST_RELEASE;
++	bond_dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
+ 
+ 	/* At first, we block adding VLANs. That's the only way to
+ 	 * prevent problems that occur when adding VLANs over an
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -145,7 +145,7 @@ static void ifb_setup(struct net_device
+ 
+ 	dev->flags |= IFF_NOARP;
+ 	dev->flags &= ~IFF_MULTICAST;
+-	dev->priv_flags &= ~IFF_XMIT_DST_RELEASE;
++	dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
+ 	random_ether_addr(dev->dev_addr);
+ }
+ 
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -547,7 +547,7 @@ void macvlan_common_setup(struct net_dev
+ {
+ 	ether_setup(dev);
+ 
+-	dev->priv_flags	       &= ~IFF_XMIT_DST_RELEASE;
++	dev->priv_flags	       &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
+ 	dev->netdev_ops		= &macvlan_netdev_ops;
+ 	dev->destructor		= free_netdev;
+ 	dev->header_ops		= &macvlan_hard_header_ops,
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -528,6 +528,7 @@ static void tun_net_init(struct net_devi
+ 		dev->netdev_ops = &tap_netdev_ops;
+ 		/* Ethernet TAP Device */
+ 		ether_setup(dev);
++		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 
+ 		random_ether_addr(dev->dev_addr);
+ 
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -262,6 +262,8 @@ static void veth_setup(struct net_device
+ {
+ 	ether_setup(dev);
+ 
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
++
+ 	dev->netdev_ops = &veth_netdev_ops;
+ 	dev->ethtool_ops = &veth_ethtool_ops;
+ 	dev->features |= NETIF_F_LLTX;
+--- a/drivers/net/wan/hdlc_fr.c
++++ b/drivers/net/wan/hdlc_fr.c
+@@ -1083,9 +1083,10 @@ static int fr_add_pvc(struct net_device
+ 
+ 	used = pvc_is_used(pvc);
+ 
+-	if (type == ARPHRD_ETHER)
++	if (type == ARPHRD_ETHER) {
+ 		dev = alloc_netdev(0, "pvceth%d", ether_setup);
+-	else
++		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
++	} else
+ 		dev = alloc_netdev(0, "pvc%d", pvc_setup);
+ 
+ 	if (!dev) {
+--- a/drivers/net/wireless/airo.c
++++ b/drivers/net/wireless/airo.c
+@@ -2823,6 +2823,7 @@ static struct net_device *_init_airo_car
+ 	dev->wireless_data = &ai->wireless_data;
+ 	dev->irq = irq;
+ 	dev->base_addr = port;
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 
+ 	SET_NETDEV_DEV(dev, dmdev);
+ 
+--- a/drivers/net/wireless/hostap/hostap_main.c
++++ b/drivers/net/wireless/hostap/hostap_main.c
+@@ -855,6 +855,7 @@ void hostap_setup_dev(struct net_device
+ 
+ 	iface = netdev_priv(dev);
+ 	ether_setup(dev);
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 
+ 	/* kernel callbacks */
+ 	if (iface) {
+--- a/drivers/staging/ath6kl/os/linux/ar6000_drv.c
++++ b/drivers/staging/ath6kl/os/linux/ar6000_drv.c
+@@ -6198,6 +6198,7 @@ int ar6000_create_ap_interface(struct ar
+     
+     ether_setup(dev);
+     init_netdev(dev, ap_ifname);
++    dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 
+     if (register_netdev(dev)) {
+         AR_DEBUG_PRINTF(ATH_DEBUG_ERR,("ar6000_create_ap_interface: register_netdev failed\n"));
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -694,7 +694,7 @@ void vlan_setup(struct net_device *dev)
+ 	ether_setup(dev);
+ 
+ 	dev->priv_flags		|= IFF_802_1Q_VLAN;
+-	dev->priv_flags		&= ~IFF_XMIT_DST_RELEASE;
++	dev->priv_flags		&= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
+ 	dev->tx_queue_len	= 0;
+ 
+ 	dev->netdev_ops		= &vlan_netdev_ops;
+--- a/net/bluetooth/bnep/netdev.c
++++ b/net/bluetooth/bnep/netdev.c
+@@ -231,6 +231,7 @@ void bnep_net_setup(struct net_device *d
+ 	dev->addr_len = ETH_ALEN;
+ 
+ 	ether_setup(dev);
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->netdev_ops = &bnep_netdev_ops;
+ 
+ 	dev->watchdog_timeo  = HZ * 2;
+--- a/net/l2tp/l2tp_eth.c
++++ b/net/l2tp/l2tp_eth.c
+@@ -103,7 +103,7 @@ static struct net_device_ops l2tp_eth_ne
+ static void l2tp_eth_dev_setup(struct net_device *dev)
+ {
+ 	ether_setup(dev);
+-
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->netdev_ops		= &l2tp_eth_netdev_ops;
+ 	dev->destructor		= free_netdev;
+ }
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -699,6 +699,7 @@ static const struct net_device_ops ieee8
+ static void ieee80211_if_setup(struct net_device *dev)
+ {
+ 	ether_setup(dev);
++	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->netdev_ops = &ieee80211_dataif_ops;
+ 	dev->destructor = free_netdev;
+ }
 
 
