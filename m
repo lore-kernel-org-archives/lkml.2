@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1HLWz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 18:55:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57807 "EHLO
+	id S1753243Ab1HLWzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 18:55:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:32784 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1HLWz1 (ORCPT
+	with ESMTP id S1752822Ab1HLWzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 18:55:27 -0400
+	Fri, 12 Aug 2011 18:55:22 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
@@ -14,9 +14,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH 11/12] arm/tegra: board-dt: Remove dependency on non-dt pinmux functions
-Date: Fri, 12 Aug 2011 16:54:56 -0600
-Message-Id: <1313189697-21287-12-git-send-email-swarren@nvidia.com>
+Subject: [RFC PATCH 08/12] gpio/tegra: Add device tree support
+Date: Fri, 12 Aug 2011 16:54:53 -0600
+Message-Id: <1313189697-21287-9-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
 References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
@@ -26,53 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/mach-tegra/Makefile   |    1 -
- arch/arm/mach-tegra/board-dt.c |   10 ----------
- 2 files changed, 0 insertions(+), 11 deletions(-)
+ drivers/gpio/gpio-tegra.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
-index f11b910..bab6544 100644
---- a/arch/arm/mach-tegra/Makefile
-+++ b/arch/arm/mach-tegra/Makefile
-@@ -30,7 +30,6 @@ obj-${CONFIG_MACH_SEABOARD}             += board-seaboard.o
- obj-${CONFIG_MACH_SEABOARD}             += board-seaboard-pinmux.o
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index 4da4839..923b413 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -326,6 +326,29 @@ static struct irq_chip tegra_gpio_irq_chip = {
+ #endif
+ };
  
- obj-${CONFIG_MACH_TEGRA_DT}             += board-dt.o
--obj-${CONFIG_MACH_TEGRA_DT}             += board-harmony-pinmux.o
++#ifdef CONFIG_OF
++static void __init tegra_gpio_probe_dt(struct platform_device *pdev)
++{
++	const __be32 *gpios;
++	u32 gpioslen;
++	int i;
++
++	gpios = of_get_property(pdev->dev.of_node, "nvidia,gpios", &gpioslen);
++	if (gpios == NULL)
++		return;
++
++	gpioslen /= sizeof(*gpios);
++	for (i = 0; i < gpioslen; i++, gpios++) {
++		u32 gpio = be32_to_cpup(gpios);
++		dev_err(&pdev->dev, "Enabling GPIO %d\n", gpio);
++		tegra_gpio_enable(gpio);
++	}
++}
++#else
++static inline void __init tegra_gpio_probe_dt(struct platform_device *pdev)
++{
++}
++#endif
  
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice.o
- obj-${CONFIG_MACH_TRIMSLICE}            += board-trimslice-pinmux.o
-diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-index 1995b79..06e82c4 100644
---- a/arch/arm/mach-tegra/board-dt.c
-+++ b/arch/arm/mach-tegra/board-dt.c
-@@ -41,14 +41,9 @@
- #include <mach/irqs.h>
+ /* This lock class tells lockdep that GPIO irqs are in a different
+  * category than their parents, so it won't report false recursion.
+@@ -371,13 +394,21 @@ static int __init tegra_gpio_probe(struct platform_device *pdev)
+ 			spin_lock_init(&bank->lvl_lock[j]);
+ 	}
  
- #include "board.h"
--#include "board-harmony.h"
- #include "clock.h"
- #include "devices.h"
++	tegra_gpio_probe_dt(pdev);
++
+ 	return 0;
+ }
  
--void harmony_pinmux_init(void);
--void seaboard_pinmux_init(void);
--
--
- struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("nvidia,tegra20-gpio", TEGRA_GPIO_BASE, "tegra-gpio", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra20-pinmux", TEGRA_APB_MISC_BASE, "tegra-pinmux", NULL),
-@@ -93,11 +88,6 @@ static void __init tegra_dt_init(void)
- 
- 	tegra_clk_init_from_table(tegra_dt_clk_init_table);
- 
--	if (of_machine_is_compatible("nvidia,harmony"))
--		harmony_pinmux_init();
--	else if (of_machine_is_compatible("nvidia,seaboard"))
--		seaboard_pinmux_init();
--
- 	/*
- 	 * Finished with the static registrations now; fill in the missing
- 	 * devices
++static struct of_device_id tegra_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nvidia,tegra20-gpio", },
++	{ },
++};
++
+ static struct platform_driver tegra_gpio_driver = {
+ 	.driver		= {
+ 		.name	= "tegra-gpio",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = tegra_gpio_of_match,
+ 	},
+ 	.probe		= tegra_gpio_probe,
+ };
 -- 
 1.7.0.4
 
