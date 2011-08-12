@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab1HLHPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 03:15:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab1HLHPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 03:15:07 -0400
-Message-ID: <4E44D330.2040702@redhat.com>
-Date: Fri, 12 Aug 2011 09:16:00 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1751359Ab1HLHZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 03:25:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50299 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab1HLHZU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 03:25:20 -0400
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-CC: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-References: <Pine.LNX.4.44L0.1108111145360.1958-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1108111235400.27040@banach.math.auburn.edu> <4E443C6E.8040808@infradead.org>
-In-Reply-To: <4E443C6E.8040808@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAP05o4JDz_53k73-yUXn4S3hFNZ=ccEhaee-U53M+M6qm41Y=A@mail.gmail.com>
+References: <1312899309-24067-1-git-send-email-keshava_mgowda@ti.com>
+	<1312899309-24067-2-git-send-email-keshava_mgowda@ti.com>
+	<1312899309-24067-3-git-send-email-keshava_mgowda@ti.com>
+	<CACVXFVMqwzSOSvkq4q6GnR2gso8NuQD4DRumAVesQB=P_8yDaQ@mail.gmail.com>
+	<CAP05o4JDz_53k73-yUXn4S3hFNZ=ccEhaee-U53M+M6qm41Y=A@mail.gmail.com>
+Date: Fri, 12 Aug 2011 15:25:20 +0800
+Message-ID: <CACVXFVPN0dS0P4rdvAhKKaTr1yuHRE_KbMiL-1PivObt9aGLhw@mail.gmail.com>
+Subject: Re: [PATCH 2/5 v4] arm: omap: usb: ehci and ohci hwmod structures for omap3
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
+        khilman@ti.com, b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 12, 2011 at 1:46 PM, Munegowda, Keshava
+<keshava_mgowda@ti.com> wrote:
+> On Thu, Aug 11, 2011 at 8:53 PM, Ming Lei <tom.leiming@gmail.com> wrote:
 
-On 08/11/2011 10:32 PM, Mauro Carvalho Chehab wrote:
+>>> +static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
+>>> +       .rev_offs       = 0x0000,
+>>> +       .sysc_offs      = 0x0010,
+>>> +       .syss_offs      = 0x0014,
+>>> +       .sysc_flags     = (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
+>>
+>> SYSC_HAS_ENAWAKEUP is missed or not needed?
+>
+> not needed. wakeup will through irq-chaining mechanism.
 
-<snip stuff I agree with>
+I am wondering how irq-chaining mechanism can wakeup MPU, could you
+describe it in a little detail?
 
-> instead of using the V4L2 device node to access the stored images, it probably makes
-> more sense to use a separate device for that, that will handle a separate set of
-> ioctl's, and just use read() to retrieve the image data, after selecting the desired
-> image number, via ioctl().
+In fact, I have tested usb remote wakeup on rc1 plus your patches on beagle
+xm, seems the usb mouse can't wakeup MPU at all.
 
-I don't see a lot of added value in doing things this way. We can simply
-have a set of new ioctls on the /dev/video# node for this and a new
-V4L2_CAP_STILL_IMAGE to indicate the availability of these ioctls. This will keep
-the driver a lot simpler then doing 2 separate device nodes for 1 device.
+>>
+>>> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+>>> +                          MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
+>>> +       .sysc_fields    = &omap_hwmod_sysc_type1,
+>>> +};
+>>> +
+>>> +static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
+>>> +       .name = "usbhs_uhh",
+>>> +       .sysc = &omap34xx_usb_host_hs_sysc,
+>>> +};
+>>> +
+>>> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
+>>> +       &omap34xx_usb_host_hs__l3_main_2,
+>>> +};
+>>> +
+>>> +static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
+>>> +       {
+>>> +               .name           = "uhh",
+>>> +               .pa_start       = 0x48064000,
+>>> +               .pa_end         = 0x480643ff,
+>>> +               .flags          = ADDR_TYPE_RT
+>>> +       },
+>>> +       {} /* Terminating Entry */
+>>> +};
+>>> +
+>>> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
+>>> +       .master         = &omap3xxx_l4_core_hwmod,
+>>> +       .slave          = &omap34xx_usb_host_hs_hwmod,
+>>> +       .clk            = "l4_ick",
+>>> +       .addr           = omap34xx_usb_host_hs_addrs,
+>>> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
+>>> +};
+>>
+>> Even USBHOST_L4_ICLK is used only by USBHOST_SICLK, it is better to
+>> define a "usbhost_siclk" clk for consistence with TRM.
+>
+> I dint understand, what is the change you are suggesting?
 
-Regards,
+>From 23.2.1 of OMAP35x TRM(Rev. M), USBHOST_SICLK inside
+'High-speed USB Host controller' is driven by L4 slave interface
+clock, so looks like l4 iclk should be parent of USBHOST_SICLK.
 
-Hans
+Considered  USBHOST_L4_ICLK is used only by USBHOST_SICLK,
+you may ignore my question about it.
+
+thanks,
+-- 
+Ming Lei
