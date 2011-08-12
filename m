@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1HLQ3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:29:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45402 "EHLO
+	id S1752526Ab1HLQ32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:29:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45360 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab1HLQ3i (ORCPT
+	with ESMTP id S1751666Ab1HLQ3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:29:38 -0400
+	Fri, 12 Aug 2011 12:29:19 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Avi Kivity <avi@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        yrl.pp-manager.tt@hitachi.com, acme@ghostprotocols.net
-Subject: [GIT PULL 00/12] perf fixes
-Date: Fri, 12 Aug 2011 13:28:52 -0300
-Message-Id: <1313166544-6209-1-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/12] perf probe: Fix line walker to check CU correctly
+Date: Fri, 12 Aug 2011 13:28:57 -0300
+Message-Id: <1313166544-6209-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1313166544-6209-1-git-send-email-acme@infradead.org>
+References: <1313166544-6209-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-        Please consider pulling from:
+Fix line walker to check whether a given DIE is CU or not.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+Actually this function accepts CU, subprogram and inlined_subroutine
+DIEs.
 
-Regards,
+Without this fix, perf probe always fails to analyze lines on inlined
+functions;
 
-- Arnaldo
+$ perf probe -L pre_schedule
+Debuginfo analysis failed. (-2)
+  Error: Failed to show lines. (-2)
 
-Arnaldo Carvalho de Melo (1):
-  perf top browser: Remove spurious helpline update
+This fixes that bug, as below.
 
-Jiri Olsa (1):
-  perf report: Use properly build_id kernel binaries
+$ perf probe -L pre_schedule
+<pre_schedule@/home/mhiramat/ksrc/linux-2.6/kernel/sched.c:0>
+      0  static inline void pre_schedule(struct rq *rq, struct task_struct *prev
+         {
+      2         if (prev->sched_class->pre_schedule)
+      3                 prev->sched_class->pre_schedule(rq, prev);
+         }
 
-Masami Hiramatsu (9):
-  perf probe: Fix a memory leak for scopes array
-  perf probe: Fix line walker to check CU correctly
-  perf probe: Fix to search nested inlined functions in CU
-  perf probe: Fix to walk all inline instances
-  perf probe: Warn when more than one line are given
-  perf probe: Fix to search local variables in appropriate scope
-  perf probe: Avoid searching variables in intermediate scopes
-  perf probe: Search concrete out-of-line instances
-  perf probe: Filter out redundant inline-instances
+         /* rq->lock is NOT held, but preemption is disabled */
 
-Vasiliy Kulikov (1):
-  perf: fix temporary file ownership check
+Changes from v1:
+ - Update against current tip tree.(Fix dwarf-aux.c)
 
- tools/perf/builtin-probe.c        |   14 ++-
- tools/perf/util/dwarf-aux.c       |  210 +++++++++++++++++++++++++++++++---
- tools/perf/util/dwarf-aux.h       |   11 ++
- tools/perf/util/header.c          |   11 ++-
- tools/perf/util/probe-finder.c    |  231 +++++++++++++++++++++++--------------
- tools/perf/util/probe-finder.h    |    2 +-
- tools/perf/util/symbol.c          |   59 ++++++----
- tools/perf/util/symbol.h          |    1 -
- tools/perf/util/ui/browsers/top.c |    1 -
- 9 files changed, 403 insertions(+), 137 deletions(-)
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20110811110235.19900.20614.stgit@fedora15
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/dwarf-aux.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index fddf40f..d35b454 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -439,7 +439,7 @@ static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
+ 
+ /**
+  * die_walk_lines - Walk on lines inside given DIE
+- * @rt_die: a root DIE (CU or subprogram)
++ * @rt_die: a root DIE (CU, subprogram or inlined_subroutine)
+  * @callback: callback routine
+  * @data: user data
+  *
+@@ -460,12 +460,12 @@ int die_walk_lines(Dwarf_Die *rt_die, line_walk_callback_t callback, void *data)
+ 	size_t nlines, i;
+ 
+ 	/* Get the CU die */
+-	if (dwarf_tag(rt_die) == DW_TAG_subprogram)
++	if (dwarf_tag(rt_die) != DW_TAG_compile_unit)
+ 		cu_die = dwarf_diecu(rt_die, &die_mem, NULL, NULL);
+ 	else
+ 		cu_die = rt_die;
+ 	if (!cu_die) {
+-		pr_debug2("Failed to get CU from subprogram\n");
++		pr_debug2("Failed to get CU from given DIE.\n");
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+1.6.2.5
 
