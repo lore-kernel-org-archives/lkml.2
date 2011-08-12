@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1HNQNO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:13:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42969 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab1HNQKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:12 -0400
-Date: Sun, 14 Aug 2011 20:08:48 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Solar Designer <solar@openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>,
-        containers@lists.linux-foundation.org
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-Message-ID: <20110814160848.GA4333@albatros>
-References: <20110812150304.GC16880@albatros>
- <4E45884B.8030303@zytor.com>
- <20110813062246.GC3851@albatros>
- <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com>
- <m2ei0olnua.fsf@firstfloor.org>
- <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com>
- <20110814092028.GB14293@openwall.com>
- <01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com>
- <20110814152729.GU5782@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110814152729.GU5782@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754737Ab1HNQNa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:13:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36880 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab1HNQJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
+Message-Id: <20110812210558.787825745@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 12 Aug 2011 14:05:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [76/90] sparc: Fix build with DEBUG_PAGEALLOC enabled.
+In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CC'ed Will Drewry, the author of new seccomp version, and 
-containers list)
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-On Sun, Aug 14, 2011 at 17:27 +0200, Andi Kleen wrote:
-> > i386 vs x86-64 vs x32 is just one of many axes along which syscalls can be restricted (and for that matter, one axis if backward compatibility), and it does not make sense to burden the code with ad hoc filters.  Designing a general filter facility which can be used to restrict any container to the subset of system calls it actually needs would make more sense, no?
-> 
-> I believe this is already in the newer versions of seccomp.
+------------------
 
-The "newer versions of seccomp" are NAK'ed by Ingo.  AFAIU, Ingo wants
-more generic filters to filter much more than syscalls.  But it
-contradicts the security by simplicity, which we're trying to achieve
-with this patch.
 
-Compatibility syscalls are much more error prone than common syscalls
-as they lack good testing or sometimes lack it at all, unfortunately.
-The link I've posted is about a crazy bug - a completely uninitialized
-structure was used in copy_from_user() function.  The function was not
-tested _at all_.  I doubt any non-compatibility syscall (ioctl()
-handler, etc.) can be completely untested.
+From: "David S. Miller" <davem@davemloft.net>
 
-Also we already have CONFIG_IA32_EMULATION, this patch only moves the
-configuration mechanism from the compilation stage to the runtime stage,
-it doesn't draw the new line.  It grants the permissions to use the
-feature to some containers, but denies to other containers, which is an
-rather expected property of containers separation.
+[ Upstream commit 0785a8e87be0202744d8681363aecbd4ffbb5f5a ]
 
-Thanks,
+arch/sparc/mm/init_64.c:1622:22: error: unused variable '__swapper_4m_tsb_phys_patch_end' [-Werror=unused-variable]
+arch/sparc/mm/init_64.c:1621:22: error: unused variable '__swapper_4m_tsb_phys_patch' [-Werror=unused-variable]
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ arch/sparc/mm/init_64.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -1618,18 +1618,20 @@ static void ktsb_phys_patch(void)
+ {
+ 	extern unsigned int __swapper_tsb_phys_patch;
+ 	extern unsigned int __swapper_tsb_phys_patch_end;
+-	extern unsigned int __swapper_4m_tsb_phys_patch;
+-	extern unsigned int __swapper_4m_tsb_phys_patch_end;
+ 	unsigned long ktsb_pa;
+ 
+ 	ktsb_pa = kern_base + ((unsigned long)&swapper_tsb[0] - KERNBASE);
+ 	patch_one_ktsb_phys(&__swapper_tsb_phys_patch,
+ 			    &__swapper_tsb_phys_patch_end, ktsb_pa);
+ #ifndef CONFIG_DEBUG_PAGEALLOC
++	{
++	extern unsigned int __swapper_4m_tsb_phys_patch;
++	extern unsigned int __swapper_4m_tsb_phys_patch_end;
+ 	ktsb_pa = (kern_base +
+ 		   ((unsigned long)&swapper_4m_tsb[0] - KERNBASE));
+ 	patch_one_ktsb_phys(&__swapper_4m_tsb_phys_patch,
+ 			    &__swapper_4m_tsb_phys_patch_end, ktsb_pa);
++	}
+ #endif
+ }
+ 
+
+
