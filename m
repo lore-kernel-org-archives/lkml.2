@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1HLJsk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 05:48:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39015 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab1HLJsj convert rfc822-to-8bit (ORCPT
+	id S1752855Ab1HLJz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 05:55:58 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39274 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab1HLJzz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 05:48:39 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Aug 2011 11:47:54 +0200
-In-Reply-To: <20110812024353.GA11606@localhost>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
-	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
-	 <20110808230535.GC7176@localhost> <1313103367.26866.39.camel@twins>
-	 <20110812024353.GA11606@localhost>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 12 Aug 2011 05:55:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110812044605.GA8533@xanatos>
+References: <Pine.LNX.4.44L0.1108101025250.1917-100000@iolanthe.rowland.org>
+	<3166003.Y8gKYdUrh9@edgy>
+	<4E446873.9020508@gmail.com>
+	<1451239.ZLFiT5MIDr@edgy>
+	<CACTFLANyL95Gy6c2YznV-h0tYdZ7nvRhObsq8dvp9n4_9=D_Mw@mail.gmail.com>
+	<20110812044605.GA8533@xanatos>
+Date: Fri, 12 Aug 2011 11:55:54 +0200
+Message-ID: <CACTFLAOc4QRm7sRQd0-MQLORO72s3_ZTu3KocgEtv1wuZ=2pUw@mail.gmail.com>
+Subject: Re: Allocating buffers for USB transfers (again)
+From: Daniel Mack <zonque@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: =?UTF-8?B?TWF0xJtqIExhaXRs?= <matej@laitl.cz>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Florian Mickler <florian@mickler.org>,
+        Oliver Neukum <oliver@neukum.org>, linux-usb@vger.kernel.org,
+        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        Clemens Ladisch <clemens@ladisch.de>, pedrib@gmail.com,
+        William Light <wrl@illest.net>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1313142474.6576.10.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 10:43 +0800, Wu Fengguang wrote:
-> >                s - x 3
-> >  f(x) :=  1 + (-----)
-> >                l - s
-> 
+On Fri, Aug 12, 2011 at 6:46 AM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Fri, Aug 12, 2011 at 03:28:42AM +0200, Daniel Mack wrote:
+>> On Fri, Aug 12, 2011 at 1:50 AM, Matěj Laitl <matej@laitl.cz> wrote:
+>> > On 12. 8. 2011 Daniel Mack wrote:
+>> >> > This patch actually makes the sound playback _worse_. Now I get strange
+>> >> > squawks where previously at least first seconds of a song sounded
+>> >> > normally.
+>> >> >
+>> >> > However, I no longer get "zero length buffer submitted" or that "...
+>> >> > Weird." debug messages, only several megabytes of: (should I post these
+>> >> > somewhere?)
+>> >> >
+>> >> > xhci_hcd 0000:05:00.0: Giveback URB ffff880114cec000, len = 880,
+>> >> > expected = 1000, status = -115
+>> >> > xhci_hcd 0000:05:00.0: Giveback URB ffff880114740000, len = 352,
+>> >> > expected = 1000, status = -115
+>> >> > xhci_hcd 0000:05:00.0: underrun event on endpoint
+>> >>
+>> >> Might be the hardware doesn't like this. As I said, the patch is blindly
+>> >> written and I couldn't test it. Did you test this on a EHCI port as well?
+>> >
+>> > Good point, this patch distorts the playback also on the EHCI port. (the
+>> > playback seems to be 10 times slower than it should be)
+>>
+>> And it is only this *last* patch that causes it, yes?
+>>
+>> If that is the case, we need empty subframes in the middle of urbs,
+>> and we need to figure a way how to teach the XHCI driver to cope with
+>> that, too.
+>
+> By empty subframes, you mean zero-length frame buffers in the middle of
+> the URB, correct?
 
-> Looks very neat, much simpler than the three curves solution!
+Yep.
 
-Glad you like it, there is of course the small matter of real-world
-behaviour to consider, lets hope that works as well :-)
+> Andiry and Alan had some suggestions for how to fix
+> that, so I'll try to cook up a patch tomorrow.  Then we'll have to
+> "unpeel" the debug patches and make sure the system is still usable.
+
+Good :) And I'll make a patch to make double-submission impossible in
+a nice way.
+
+
+Daniel
