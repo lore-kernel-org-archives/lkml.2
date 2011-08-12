@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1HLUJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:09:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53519 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757Ab1HLUJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:09:46 -0400
-Message-ID: <4E45884B.8030303@zytor.com>
-Date: Fri, 12 Aug 2011 15:08:43 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1751546Ab1HLU1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:27:54 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:52876 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751196Ab1HLU1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:27:53 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=wSWQpAr6UJYA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=J1mbgZyY04IlwC6AL_EA:9 a=CjuIK1q_8ugA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 24.153.165.185
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
+Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
+        <linux@horizon.com>, <linux-kernel@vger.kernel.org>
+References: <014801cc584f$5ff90e00$1feb2a00$@systemfabricworks.com> <OF79B4FA74.153E98FD-ONC12578EA.0021A784-C12578EA.0024990B@transmode.se>
+In-Reply-To: <OF79B4FA74.153E98FD-ONC12578EA.0021A784-C12578EA.0024990B@transmode.se>
+Subject: RE: [patch v5 resending 0/8] Add slicing-by-8 to crc32
+Date: Fri, 12 Aug 2011 15:27:50 -0500
+Message-ID: <02c501cc592e$4f5f6000$ee1e2000$@systemfabricworks.com>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-References: <20110812150304.GC16880@albatros>
-In-Reply-To: <20110812150304.GC16880@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQB1TE/iCpDUaKMDJaAWrgI6YSoYCwKURzh8l7MgHkA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2011 10:03 AM, Vasiliy Kulikov wrote:
-> This patch allows x86-64 systems with 32 bit syscalls support to lock a
-> pid namespace to 32 or 64 bitness syscalls/tasks.  By denying rarely
-> used compatibility syscalls it reduces an attack surface for 32 bit
-> containers.
-> 
-> The new sysctl is introduced, abi.bitness_locked.  If set to 1, it locks
-> all tasks inside of current pid namespace to the bitness of init task
-> (pid_ns->child_reaper).  After that:
-> 
-> 1) a task trying to do a syscall of other bitness would get a signal as
-> if the corresponding syscall is not enabled (IDT entry/MSR is not
-> initialized).
-> 
-> 2) loading ELF binaries of another bitness is prohibited (as if the
-> corresponding CONFIG_BINFMT_*=N).
-> 
-> If there is any task which differs in bitness, the lockup fails.
-> 
-> In this patch version the lockup is handled by sysctl.  In the future I
-> plan to do it via prctl() to handle situations of container root
-> compromize.  For now, the lockup can be configured by init scripts,
-> which parse /etc/sysctl.conf and set the sysctl variable.  But if
-> /sbin/init is compromized, the malicious code would gain a possibility
-> to do arbitrary syscalls.  So, it should be possible to lockup the
-> container before the init execution.
-> 
-> ( The asm stubs for denied syscalls might be buggy, if so - please
-> ignore them :) it is just a PoC. )
-> 
+> I am not even going to try. After a quick look they still look broken
 
-NAK on this in its current form, as it breaks the upcoming x32 ABI.
-Selection by ABI needs to be more specific.
+You are right, of course ;-) Patches 2, 6 and 7 each had one line in the
+original with trailing whitespace.
+Something in the process I used stripped the whitespace from the patch. I
+will make another attempt and check them first. I miss the old days when I
+could cat a file to sendmail. Thunderbird is hell and outlook which I am
+required to use for most things is worse.
 
-However, I have to question the value of this... if this is enabled in
-the system as a whole (as opposed to compiled out) it seems kind of
-pointless... if there are bugs we need to deal with them anyway.
+Thank you for your patience.
 
-> Qestions/thoughts:
-> 
-> The patch adds a check in syscalls code.  Is it a significant
-> slowdown for fast syscalls?  If so, probably it worth moving the check
-> into scheduler code and enabling/disabling corresponding interrupt/MSRs
-> on each task switch?
-> 
+Bob
 
-*YOU* are the person who needs to answer that question by providing
-measurements.  Quite frankly I suspect checks in the syscall code *or*
-task switching MSRs are going to be unacceptable from a performance
-point of view.
-
-	-hpa
