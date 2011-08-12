@@ -1,199 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab1HNQQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:16:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43414 "EHLO hera.kernel.org"
+	id S1754566Ab1HNQQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:16:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36808 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab1HNQQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:16:09 -0400
-Date: Sun, 14 Aug 2011 16:15:44 GMT
-From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-953bfcd10e6f3697233e8e5128c611d275da39c1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com, pjt@google.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110721184756.878333391@google.com>
-References: <20110721184756.878333391@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Implement hierarchical task accounting for SCHED_OTHER
-Git-Commit-ID: 953bfcd10e6f3697233e8e5128c611d275da39c1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:15:47 +0000 (UTC)
+	id S1754582Ab1HNQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:26 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
+Message-Id: <20110812210557.976018944@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 12 Aug 2011 14:04:52 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [67/90] sparc: Sanitize cpu feature detection and reporting.
+In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  953bfcd10e6f3697233e8e5128c611d275da39c1
-Gitweb:     http://git.kernel.org/tip/953bfcd10e6f3697233e8e5128c611d275da39c1
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 21 Jul 2011 09:43:27 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 14 Aug 2011 12:01:13 +0200
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-sched: Implement hierarchical task accounting for SCHED_OTHER
+------------------
 
-Introduce hierarchical task accounting for the group scheduling case in CFS, as
-well as promoting the responsibility for maintaining rq->nr_running to the
-scheduling classes.
 
-The primary motivation for this is that with scheduling classes supporting
-bandwidth throttling it is possible for entities participating in throttled
-sub-trees to not have root visible changes in rq->nr_running across activate
-and de-activate operations.  This in turn leads to incorrect idle and
-weight-per-task load balance decisions.
+From: "David S. Miller" <davem@davemloft.net>
 
-This also allows us to make a small fixlet to the fastpath in pick_next_task()
-under group scheduling.
+[ Upstream commit ac85fe8b21248054851e05bfaa352562e5b06dd3 ]
 
-Note: this issue also exists with the existing sched_rt throttling mechanism.
-This patch does not address that.
+Instead of evaluating the cpu features for ELF_HWCAP every exec,
+calculate it once at boot time.
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110721184756.878333391@google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Add AV_SPARC_* capability flag bits, compatible with what Solaris
+reports to applications.
+
+Report these capabilities once in the kernel log, and also via
+/proc/cpuinfo in a new "cpucaps" entry.
+
+If available, fetch the cpu features from the machine description
+'hwcap-list' property of the 'cpu' node.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- kernel/sched.c          |    6 ++----
- kernel/sched_fair.c     |    6 ++++++
- kernel/sched_rt.c       |    5 ++++-
- kernel/sched_stoptask.c |    2 ++
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ arch/sparc/include/asm/elf_64.h |   65 +++++++----------
+ arch/sparc/kernel/cpu.c         |    1 
+ arch/sparc/kernel/kernel.h      |    6 +
+ arch/sparc/kernel/setup_64.c    |  149 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 185 insertions(+), 36 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index cf427bb..cd1a531 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -311,7 +311,7 @@ struct task_group root_task_group;
- /* CFS-related fields in a runqueue */
- struct cfs_rq {
- 	struct load_weight load;
--	unsigned long nr_running;
-+	unsigned long nr_running, h_nr_running;
+--- a/arch/sparc/include/asm/elf_64.h
++++ b/arch/sparc/include/asm/elf_64.h
+@@ -59,15 +59,33 @@
+ #define R_SPARC_6		45
  
- 	u64 exec_clock;
- 	u64 min_vruntime;
-@@ -1802,7 +1802,6 @@ static void activate_task(struct rq *rq, struct task_struct *p, int flags)
- 		rq->nr_uninterruptible--;
- 
- 	enqueue_task(rq, p, flags);
--	inc_nr_running(rq);
- }
- 
- /*
-@@ -1814,7 +1813,6 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
- 		rq->nr_uninterruptible++;
- 
- 	dequeue_task(rq, p, flags);
--	dec_nr_running(rq);
- }
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-@@ -4258,7 +4256,7 @@ pick_next_task(struct rq *rq)
- 	 * Optimization: we know that if all tasks are in
- 	 * the fair class we can call that function directly:
- 	 */
--	if (likely(rq->nr_running == rq->cfs.nr_running)) {
-+	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
- 		p = fair_sched_class.pick_next_task(rq);
- 		if (likely(p))
- 			return p;
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index f4b732a..f86b0cb 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1310,16 +1310,19 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running++;
- 		flags = ENQUEUE_WAKEUP;
- 	}
- 
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running++;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	inc_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-@@ -1339,6 +1342,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running--;
- 
- 		/* Don't dequeue parent if it has other entities besides us */
- 		if (cfs_rq->load.weight) {
-@@ -1358,11 +1362,13 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running--;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	dec_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index a8c207f..a9d3c6b 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -936,6 +936,8 @@ enqueue_task_rt(struct rq *rq, struct task_struct *p, int flags)
- 
- 	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
-+
-+	inc_nr_running(rq);
- }
- 
- static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
-@@ -946,6 +948,8 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
- 	dequeue_rt_entity(rt_se);
- 
- 	dequeue_pushable_task(rq, p);
-+
-+	dec_nr_running(rq);
- }
- 
- /*
-@@ -1841,4 +1845,3 @@ static void print_rt_stats(struct seq_file *m, int cpu)
- 	rcu_read_unlock();
- }
- #endif /* CONFIG_SCHED_DEBUG */
+ /* Bits present in AT_HWCAP, primarily for Sparc32.  */
 -
-diff --git a/kernel/sched_stoptask.c b/kernel/sched_stoptask.c
-index 6f43763..8b44e7f 100644
---- a/kernel/sched_stoptask.c
-+++ b/kernel/sched_stoptask.c
-@@ -34,11 +34,13 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
- static void
- enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
+-#define HWCAP_SPARC_FLUSH       1    /* CPU supports flush instruction. */
+-#define HWCAP_SPARC_STBAR       2
+-#define HWCAP_SPARC_SWAP        4
+-#define HWCAP_SPARC_MULDIV      8
+-#define HWCAP_SPARC_V9		16
+-#define HWCAP_SPARC_ULTRA3	32
+-#define HWCAP_SPARC_BLKINIT	64
+-#define HWCAP_SPARC_N2		128
++#define HWCAP_SPARC_FLUSH       0x00000001
++#define HWCAP_SPARC_STBAR       0x00000002
++#define HWCAP_SPARC_SWAP        0x00000004
++#define HWCAP_SPARC_MULDIV      0x00000008
++#define HWCAP_SPARC_V9		0x00000010
++#define HWCAP_SPARC_ULTRA3	0x00000020
++#define HWCAP_SPARC_BLKINIT	0x00000040
++#define HWCAP_SPARC_N2		0x00000080
++
++/* Solaris compatible AT_HWCAP bits. */
++#define AV_SPARC_MUL32		0x00000100 /* 32x32 multiply is efficient */
++#define AV_SPARC_DIV32		0x00000200 /* 32x32 divide is efficient */
++#define AV_SPARC_FSMULD		0x00000400 /* 'fsmuld' is efficient */
++#define AV_SPARC_V8PLUS		0x00000800 /* v9 insn available to 32bit */
++#define AV_SPARC_POPC		0x00001000 /* 'popc' is efficient */
++#define AV_SPARC_VIS		0x00002000 /* VIS insns available */
++#define AV_SPARC_VIS2		0x00004000 /* VIS2 insns available */
++#define AV_SPARC_ASI_BLK_INIT	0x00008000 /* block init ASIs available */
++#define AV_SPARC_FMAF		0x00010000 /* fused multiply-add */
++#define AV_SPARC_VIS3		0x00020000 /* VIS3 insns available */
++#define AV_SPARC_HPC		0x00040000 /* HPC insns available */
++#define AV_SPARC_RANDOM		0x00080000 /* 'random' insn available */
++#define AV_SPARC_TRANS		0x00100000 /* transaction insns available */
++#define AV_SPARC_FJFMAU		0x00200000 /* unfused multiply-add */
++#define AV_SPARC_IMA		0x00400000 /* integer multiply-add */
++#define AV_SPARC_ASI_CACHE_SPARING \
++				0x00800000 /* cache sparing ASIs available */
+ 
+ #define CORE_DUMP_USE_REGSET
+ 
+@@ -162,33 +180,8 @@ typedef struct {
+ #define ELF_ET_DYN_BASE		0x0000010000000000UL
+ #define COMPAT_ELF_ET_DYN_BASE	0x0000000070000000UL
+ 
+-
+-/* This yields a mask that user programs can use to figure out what
+-   instruction set this cpu supports.  */
+-
+-/* On Ultra, we support all of the v8 capabilities. */
+-static inline unsigned int sparc64_elf_hwcap(void)
+-{
+-	unsigned int cap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
+-			    HWCAP_SPARC_SWAP | HWCAP_SPARC_MULDIV |
+-			    HWCAP_SPARC_V9);
+-
+-	if (tlb_type == cheetah || tlb_type == cheetah_plus)
+-		cap |= HWCAP_SPARC_ULTRA3;
+-	else if (tlb_type == hypervisor) {
+-		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 ||
+-		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
+-		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
+-			cap |= HWCAP_SPARC_BLKINIT;
+-		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
+-		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
+-			cap |= HWCAP_SPARC_N2;
+-	}
+-
+-	return cap;
+-}
+-
+-#define ELF_HWCAP	sparc64_elf_hwcap();
++extern unsigned long sparc64_elf_hwcap;
++#define ELF_HWCAP	sparc64_elf_hwcap
+ 
+ /* This yields a string that ld.so will use to load implementation
+    specific libraries for optimization.  This is more specific in
+--- a/arch/sparc/kernel/cpu.c
++++ b/arch/sparc/kernel/cpu.c
+@@ -396,6 +396,7 @@ static int show_cpuinfo(struct seq_file
+ 		   , cpu_data(0).clock_tick
+ #endif
+ 		);
++	cpucap_info(m);
+ #ifdef CONFIG_SMP
+ 	smp_bogo(m);
+ #endif
+--- a/arch/sparc/kernel/kernel.h
++++ b/arch/sparc/kernel/kernel.h
+@@ -10,6 +10,12 @@ extern const char *sparc_pmu_type;
+ extern unsigned int fsr_storage;
+ extern int ncpus_probed;
+ 
++#ifdef CONFIG_SPARC64
++/* setup_64.c */
++struct seq_file;
++extern void cpucap_info(struct seq_file *);
++#endif
++
+ #ifdef CONFIG_SPARC32
+ /* cpu.c */
+ extern void cpu_probe(void);
+--- a/arch/sparc/kernel/setup_64.c
++++ b/arch/sparc/kernel/setup_64.c
+@@ -29,6 +29,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/initrd.h>
++#include <linux/module.h>
+ 
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -46,6 +47,8 @@
+ #include <asm/mmu.h>
+ #include <asm/ns87303.h>
+ #include <asm/btext.h>
++#include <asm/elf.h>
++#include <asm/mdesc.h>
+ 
+ #ifdef CONFIG_IP_PNP
+ #include <net/ipconfig.h>
+@@ -278,6 +281,151 @@ void __init boot_cpu_id_too_large(int cp
+ }
+ #endif
+ 
++/* On Ultra, we support all of the v8 capabilities. */
++unsigned long sparc64_elf_hwcap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
++				   HWCAP_SPARC_SWAP | HWCAP_SPARC_MULDIV |
++				   HWCAP_SPARC_V9);
++EXPORT_SYMBOL(sparc64_elf_hwcap);
++
++static const char *hwcaps[] = {
++	"flush", "stbar", "swap", "muldiv", "v9",
++	"ultra3", "blkinit", "n2",
++
++	/* These strings are as they appear in the machine description
++	 * 'hwcap-list' property for cpu nodes.
++	 */
++	"mul32", "div32", "fsmuld", "v8plus", "popc", "vis", "vis2",
++	"ASIBlkInit", "fmaf", "vis3", "hpc", "random", "trans", "fjfmau",
++	"ima", "cspare",
++};
++
++void cpucap_info(struct seq_file *m)
++{
++	unsigned long caps = sparc64_elf_hwcap;
++	int i, printed = 0;
++
++	seq_puts(m, "cpucaps\t\t: ");
++	for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
++		unsigned long bit = 1UL << i;
++		if (caps & bit) {
++			seq_printf(m, "%s%s",
++				   printed ? "," : "", hwcaps[i]);
++			printed++;
++		}
++	}
++	seq_putc(m, '\n');
++}
++
++static void __init report_hwcaps(unsigned long caps)
++{
++	int i, printed = 0;
++
++	printk(KERN_INFO "CPU CAPS: [");
++	for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
++		unsigned long bit = 1UL << i;
++		if (caps & bit) {
++			printk(KERN_CONT "%s%s",
++			       printed ? "," : "", hwcaps[i]);
++			if (++printed == 8) {
++				printk(KERN_CONT "]\n");
++				printk(KERN_INFO "CPU CAPS: [");
++				printed = 0;
++			}
++		}
++	}
++	printk(KERN_CONT "]\n");
++}
++
++static unsigned long __init mdesc_cpu_hwcap_list(void)
++{
++	struct mdesc_handle *hp;
++	unsigned long caps = 0;
++	const char *prop;
++	int len;
++	u64 pn;
++
++	hp = mdesc_grab();
++	if (!hp)
++		return 0;
++
++	pn = mdesc_node_by_name(hp, MDESC_NODE_NULL, "cpu");
++	if (pn == MDESC_NODE_NULL)
++		goto out;
++
++	prop = mdesc_get_property(hp, pn, "hwcap-list", &len);
++	if (!prop)
++		goto out;
++
++	while (len) {
++		int i, plen;
++
++		for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
++			unsigned long bit = 1UL << i;
++
++			if (!strcmp(prop, hwcaps[i])) {
++				caps |= bit;
++				break;
++			}
++		}
++
++		plen = strlen(prop) + 1;
++		prop += plen;
++		len -= plen;
++	}
++
++out:
++	mdesc_release(hp);
++	return caps;
++}
++
++/* This yields a mask that user programs can use to figure out what
++ * instruction set this cpu supports.
++ */
++static void __init init_sparc64_elf_hwcap(void)
++{
++	unsigned long cap = sparc64_elf_hwcap;
++	unsigned long mdesc_caps;
++
++	if (tlb_type == cheetah || tlb_type == cheetah_plus)
++		cap |= HWCAP_SPARC_ULTRA3;
++	else if (tlb_type == hypervisor) {
++		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 ||
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
++			cap |= HWCAP_SPARC_BLKINIT;
++		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
++			cap |= HWCAP_SPARC_N2;
++	}
++
++	cap |= (AV_SPARC_MUL32 | AV_SPARC_DIV32 | AV_SPARC_V8PLUS);
++
++	mdesc_caps = mdesc_cpu_hwcap_list();
++	if (!mdesc_caps) {
++		if (tlb_type == spitfire)
++			cap |= AV_SPARC_VIS;
++		if (tlb_type == cheetah || tlb_type == cheetah_plus)
++			cap |= AV_SPARC_VIS | AV_SPARC_VIS2;
++		if (tlb_type == cheetah_plus)
++			cap |= AV_SPARC_POPC;
++		if (tlb_type == hypervisor) {
++			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1)
++				cap |= AV_SPARC_ASI_BLK_INIT;
++			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
++			    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
++				cap |= (AV_SPARC_VIS | AV_SPARC_VIS2 |
++					AV_SPARC_ASI_BLK_INIT |
++					AV_SPARC_POPC);
++			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
++				cap |= (AV_SPARC_VIS3 | AV_SPARC_HPC |
++					AV_SPARC_FMAF);
++		}
++	}
++	sparc64_elf_hwcap = cap | mdesc_caps;
++
++	report_hwcaps(sparc64_elf_hwcap);
++}
++
+ void __init setup_arch(char **cmdline_p)
  {
-+	inc_nr_running(rq);
+ 	/* Initialize PROM console and command line. */
+@@ -337,6 +485,7 @@ void __init setup_arch(char **cmdline_p)
+ 	init_cur_cpu_trap(current_thread_info());
+ 
+ 	paging_init();
++	init_sparc64_elf_hwcap();
  }
  
- static void
- dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
- {
-+	dec_nr_running(rq);
- }
- 
- static void yield_task_stop(struct rq *rq)
+ extern int stop_a_enabled;
+
+
