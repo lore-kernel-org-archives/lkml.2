@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab1HNQGr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:06:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36387 "EHLO mx2.suse.de"
+	id S1753818Ab1HNQG1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:06:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36317 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1HNQGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:06:43 -0400
+	id S1753650Ab1HNQGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:06:22 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:53 2011
-Message-Id: <20110812210553.868881896@clark.kroah.org>
+Message-Id: <20110812210553.343873320@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:05 -0700
+Date: Fri, 12 Aug 2011 14:03:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Reim <reimth@gmail.com>,
-        Stephen Michaels <Stephen.Micheals@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [20/90] drm/radeon: Extended DDC Probing for Connectors with Improperly Wired DDC Lines (here: Asus M2A-VM HDMI)
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [14/90] ath9k: skip ->config_pci_powersave() if PCIe port has ASPM disabled
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,236 +26,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Reim <reimth@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit e384fab8c6f3ca88600bcb2ebdf0eb2f90864fab upstream.
+commit d4930086bdd0c08a8b3a4d66a9c702297cb74a99 upstream.
 
-    Some integrated ATI Radeon chipset implementations with add-on HDMI card
-    (e. g. Asus M2A-VM HDMI) indicate the availability of a DDC even
-    when the add-on card is not plugged in or HDMI is disabled in BIOS setup.
-    In this case, drm_get_edid() and drm_edid_block_valid() periodically
-    dump data and kernel errors into system log files and onto terminals.
-    For these connectors DDC probing is extended by a check for a correct
-    EDID header. Only in case a valid EDID header is also found, the
-    (HDMI or DVI) connector will be used by the Radeon driver. This prevents
-    the kernel driver from useless flooding of logs and terminal sessions with
-    EDID dumps and error messages.
-    This patch adds a flag 'requires_extended_probe' to the radeon_connector
-    structure. In function radeon_connector_needs_extended_probe() this flag
-    can be set on a chipset family/vendor/connector type specific basis.
-    In addition, function radeon_ddc_probe() has been adapted to perform
-    extended DDC probing if required by the connector's flag.
-    Requires function drm_edid_header_is_valid() in DRM module provided by
-    [PATCH] drm: Separate EDID Header Check from EDID Block Check.
+We receive many bug reports about system hang during suspend/resume
+when ath9k driver is in use. Adrian Chadd remarked that this problem
+happens on systems that have ASPM disabled.
 
-    Tested for kernel 2.6.35, 2.6.38 and 3.0 on Asus M2A-VM HDMI board
+To do not hit the bug, skip doing ->config_pci_powersave magic if PCIe
+downstream port device, which ath9k device is connected to, has ASPM
+disabled.
 
-    BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=668196
-    BugLink: http://bugs.launchpad.net/bugs/7228066
+Bug was introduced by:
 
-Signed-off-by: Thomas Reim <reimth@gmail.com>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Acked-by: Stephen Michaels <Stephen.Micheals@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+commit 53bc7aa08b48e5cd745f986731cc7dc24eef2a9f
+Author: Vivek Natarajan <vnatarajan@atheros.com>
+Date:   Mon Apr 5 14:48:04 2010 +0530
+
+    ath9k: Add support for newer AR9285 chipsets.
+
+Patch should address:
+https://bugzilla.kernel.org/show_bug.cgi?id=37462
+https://bugzilla.kernel.org/show_bug.cgi?id=37082
+https://bugzilla.redhat.com/show_bug.cgi?id=697157
+
+however I did not receive confirmation about that, except from Camilo
+Mesias, whose system stops hang regularly with this patch (but still
+hangs from time to time, but this is probably some other bug).
+
+Tested-by: Camilo Mesias <camilo@mesias.co.uk>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |   45 +++++++++++++++++++++++++++--
- drivers/gpu/drm/radeon/radeon_display.c    |    9 +++++
- drivers/gpu/drm/radeon/radeon_i2c.c        |   32 +++++++++++++++-----
- drivers/gpu/drm/radeon/radeon_mode.h       |    6 +++
- 4 files changed, 80 insertions(+), 12 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c |    6 +-----
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c |    6 +-----
+ drivers/net/wireless/ath/ath9k/hw.c        |   11 +++++++++--
+ drivers/net/wireless/ath/ath9k/hw.h        |    3 ++-
+ drivers/net/wireless/ath/ath9k/pci.c       |   27 +++++++++++++++++++++++++++
+ 5 files changed, 40 insertions(+), 13 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -430,6 +430,36 @@ int radeon_connector_set_property(struct
- 	return 0;
+--- a/drivers/net/wireless/ath/ath9k/ar9002_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+@@ -309,11 +309,7 @@ static void ar9002_hw_configpcipowersave
+ 	u8 i;
+ 	u32 val;
+ 
+-	if (ah->is_pciexpress != true)
+-		return;
+-
+-	/* Do not touch SerDes registers */
+-	if (ah->config.pcie_powersave_enable == 2)
++	if (ah->is_pciexpress != true || ah->aspm_enabled != true)
+ 		return;
+ 
+ 	/* Nothing to do on restore for 11N */
+--- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+@@ -351,11 +351,7 @@ static void ar9003_hw_configpcipowersave
+ 					 int restore,
+ 					 int power_off)
+ {
+-	if (ah->is_pciexpress != true)
+-		return;
+-
+-	/* Do not touch SerDes registers */
+-	if (ah->config.pcie_powersave_enable == 2)
++	if (ah->is_pciexpress != true || ah->aspm_enabled != true)
+ 		return;
+ 
+ 	/* Nothing to do on restore for 11N */
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -299,6 +299,14 @@ static void ath9k_hw_disablepcie(struct
+ 	REG_WRITE(ah, AR_PCIE_SERDES2, 0x00000000);
  }
  
-+/*
-+ * Some integrated ATI Radeon chipset implementations (e. g.
-+ * Asus M2A-VM HDMI) may indicate the availability of a DDC,
-+ * even when there's no monitor connected. For these connectors
-+ * following DDC probe extension will be applied: check also for the
-+ * availability of EDID with at least a correct EDID header. Only then,
-+ * DDC is assumed to be available. This prevents drm_get_edid() and
-+ * drm_edid_block_valid() from periodically dumping data and kernel
-+ * errors into the logs and onto the terminal.
-+ */
-+static bool radeon_connector_needs_extended_probe(struct radeon_device *dev,
-+				     uint32_t supported_device,
-+				     int connector_type)
++static void ath9k_hw_aspm_init(struct ath_hw *ah)
 +{
-+	/* Asus M2A-VM HDMI board sends data to i2c bus even,
-+	 * if HDMI add-on card is not plugged in or HDMI is disabled in
-+	 * BIOS. Valid DDC can only be assumed, if also a valid EDID header
-+	 * can be retrieved via i2c bus during DDC probe */
-+	if ((dev->pdev->device == 0x791e) &&
-+	    (dev->pdev->subsystem_vendor == 0x1043) &&
-+	    (dev->pdev->subsystem_device == 0x826d)) {
-+		if ((connector_type == DRM_MODE_CONNECTOR_HDMIA) &&
-+		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
-+			return true;
-+	}
++	struct ath_common *common = ath9k_hw_common(ah);
 +
-+	/* Default: no EDID header probe required for DDC probing */
-+	return false;
++	if (common->bus_ops->aspm_init)
++		common->bus_ops->aspm_init(common);
 +}
 +
- static void radeon_fixup_lvds_native_mode(struct drm_encoder *encoder,
- 					  struct drm_connector *connector)
+ /* This should work for all families including legacy */
+ static bool ath9k_hw_chip_test(struct ath_hw *ah)
  {
-@@ -661,7 +691,8 @@ radeon_vga_detect(struct drm_connector *
- 		ret = connector_status_disconnected;
+@@ -359,7 +367,6 @@ static void ath9k_hw_init_config(struct
+ 	ah->config.additional_swba_backoff = 0;
+ 	ah->config.ack_6mb = 0x0;
+ 	ah->config.cwm_ignore_extcca = 0;
+-	ah->config.pcie_powersave_enable = 0;
+ 	ah->config.pcie_clock_req = 0;
+ 	ah->config.pcie_waen = 0;
+ 	ah->config.analog_shiftreg = 1;
+@@ -577,7 +584,7 @@ static int __ath9k_hw_init(struct ath_hw
  
- 	if (radeon_connector->ddc_bus)
--		dret = radeon_ddc_probe(radeon_connector);
-+		dret = radeon_ddc_probe(radeon_connector,
-+					radeon_connector->requires_extended_probe);
- 	if (dret) {
- 		if (radeon_connector->edid) {
- 			kfree(radeon_connector->edid);
-@@ -833,7 +864,8 @@ radeon_dvi_detect(struct drm_connector *
- 	bool dret = false;
  
- 	if (radeon_connector->ddc_bus)
--		dret = radeon_ddc_probe(radeon_connector);
-+		dret = radeon_ddc_probe(radeon_connector,
-+					radeon_connector->requires_extended_probe);
- 	if (dret) {
- 		if (radeon_connector->edid) {
- 			kfree(radeon_connector->edid);
-@@ -1251,7 +1283,8 @@ radeon_dp_detect(struct drm_connector *c
- 				if (radeon_dp_getdpcd(radeon_connector))
- 					ret = connector_status_connected;
- 			} else {
--				if (radeon_ddc_probe(radeon_connector))
-+				if (radeon_ddc_probe(radeon_connector,
-+						     radeon_connector->requires_extended_probe))
- 					ret = connector_status_connected;
- 			}
- 		}
-@@ -1406,6 +1439,9 @@ radeon_add_atom_connector(struct drm_dev
- 	radeon_connector->shared_ddc = shared_ddc;
- 	radeon_connector->connector_object_id = connector_object_id;
- 	radeon_connector->hpd = *hpd;
-+	radeon_connector->requires_extended_probe =
-+		radeon_connector_needs_extended_probe(rdev, supported_device,
-+							connector_type);
- 	radeon_connector->router = *router;
- 	if (router->ddc_valid || router->cd_valid) {
- 		radeon_connector->router_bus = radeon_i2c_lookup(rdev, &router->i2c_info);
-@@ -1752,6 +1788,9 @@ radeon_add_legacy_connector(struct drm_d
- 	radeon_connector->devices = supported_device;
- 	radeon_connector->connector_object_id = connector_object_id;
- 	radeon_connector->hpd = *hpd;
-+	radeon_connector->requires_extended_probe =
-+		radeon_connector_needs_extended_probe(rdev, supported_device,
-+							connector_type);
- 	switch (connector_type) {
- 	case DRM_MODE_CONNECTOR_VGA:
- 		drm_connector_init(dev, &radeon_connector->base, &radeon_vga_connector_funcs, connector_type);
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -777,8 +777,17 @@ static int radeon_ddc_dump(struct drm_co
- 	if (!radeon_connector->ddc_bus)
- 		return -1;
- 	edid = drm_get_edid(connector, &radeon_connector->ddc_bus->adapter);
-+	/* Log EDID retrieval status here. In particular with regard to
-+	 * connectors with requires_extended_probe flag set, that will prevent
-+	 * function radeon_dvi_detect() to fetch EDID on this connector,
-+	 * as long as there is no valid EDID header found */
- 	if (edid) {
-+		DRM_INFO("Radeon display connector %s: Found valid EDID",
-+				drm_get_connector_name(connector));
- 		kfree(edid);
-+	} else {
-+		DRM_INFO("Radeon display connector %s: No monitor connected or invalid EDID",
-+				drm_get_connector_name(connector));
- 	}
- 	return ret;
+ 	if (ah->is_pciexpress)
+-		ath9k_hw_configpcipowersave(ah, 0, 0);
++		ath9k_hw_aspm_init(ah);
+ 	else
+ 		ath9k_hw_disablepcie(ah);
+ 
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -215,7 +215,6 @@ struct ath9k_ops_config {
+ 	int additional_swba_backoff;
+ 	int ack_6mb;
+ 	u32 cwm_ignore_extcca;
+-	u8 pcie_powersave_enable;
+ 	bool pcieSerDesWrite;
+ 	u8 pcie_clock_req;
+ 	u32 pcie_waen;
+@@ -671,6 +670,7 @@ struct ath_hw {
+ 
+ 	bool sw_mgmt_crypto;
+ 	bool is_pciexpress;
++	bool aspm_enabled;
+ 	bool is_monitoring;
+ 	bool need_an_top2_fixup;
+ 	u16 tx_trig_level;
+@@ -870,6 +870,7 @@ struct ath_bus_ops {
+ 	bool (*eeprom_read)(struct ath_common *common, u32 off, u16 *data);
+ 	void (*bt_coex_prep)(struct ath_common *common);
+ 	void (*extn_synch_en)(struct ath_common *common);
++	void (*aspm_init)(struct ath_common *common);
+ };
+ 
+ static inline struct ath_common *ath9k_hw_common(struct ath_hw *ah)
+--- a/drivers/net/wireless/ath/ath9k/pci.c
++++ b/drivers/net/wireless/ath/ath9k/pci.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/nl80211.h>
+ #include <linux/pci.h>
++#include <linux/pci-aspm.h>
+ #include <linux/ath9k_platform.h>
+ #include "ath9k.h"
+ 
+@@ -115,12 +116,38 @@ static void ath_pci_extn_synch_enable(st
+ 	pci_write_config_byte(pdev, sc->sc_ah->caps.pcie_lcr_offset, lnkctl);
  }
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -32,17 +32,17 @@
-  * radeon_ddc_probe
-  *
-  */
--bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
-+bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool requires_extended_probe)
- {
--	u8 out_buf[] = { 0x0, 0x0};
--	u8 buf[2];
-+	u8 out = 0x0;
-+	u8 buf[8];
- 	int ret;
- 	struct i2c_msg msgs[] = {
- 		{
- 			.addr = 0x50,
- 			.flags = 0,
- 			.len = 1,
--			.buf = out_buf,
-+			.buf = &out,
- 		},
- 		{
- 			.addr = 0x50,
-@@ -52,15 +52,31 @@ bool radeon_ddc_probe(struct radeon_conn
- 		}
- 	};
  
-+	/* Read 8 bytes from i2c for extended probe of EDID header */
-+	if (requires_extended_probe)
-+		msgs[1].len = 8;
++static void ath_pci_aspm_init(struct ath_common *common)
++{
++	struct ath_softc *sc = (struct ath_softc *) common->priv;
++	struct ath_hw *ah = sc->sc_ah;
++	struct pci_dev *pdev = to_pci_dev(sc->dev);
++	struct pci_dev *parent;
++	int pos;
++	u8 aspm;
 +
- 	/* on hw with routers, select right port */
- 	if (radeon_connector->router.ddc_valid)
- 		radeon_router_select_ddc_port(radeon_connector);
- 
- 	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
--	if (ret == 2)
--		return true;
--
--	return false;
-+	if (ret != 2)
-+		/* Couldn't find an accessible DDC on this connector */
-+		return false;
-+	if (requires_extended_probe) {
-+		/* Probe also for valid EDID header
-+		 * EDID header starts with:
-+		 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00.
-+		 * Only the first 6 bytes must be valid as
-+		 * drm_edid_block_valid() can fix the last 2 bytes */
-+		if (drm_edid_header_is_valid(buf) < 6) {
-+			/* Couldn't find an accessible EDID on this
-+			 * connector */
-+			return false;
-+		}
++	if (!pci_is_pcie(pdev))
++		return;
++
++	parent = pdev->bus->self;
++	if (WARN_ON(!parent))
++		return;
++
++	pos = pci_pcie_cap(parent);
++	pci_read_config_byte(parent, pos +  PCI_EXP_LNKCTL, &aspm);
++	if (aspm & (PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1)) {
++		ah->aspm_enabled = true;
++		/* Initialize PCIe PM and SERDES registers. */
++		ath9k_hw_configpcipowersave(ah, 0, 0);
 +	}
-+	return true;
- }
++}
++
+ static const struct ath_bus_ops ath_pci_bus_ops = {
+ 	.ath_bus_type = ATH_PCI,
+ 	.read_cachesize = ath_pci_read_cachesize,
+ 	.eeprom_read = ath_pci_eeprom_read,
+ 	.bt_coex_prep = ath_pci_bt_coex_prep,
+ 	.extn_synch_en = ath_pci_extn_synch_enable,
++	.aspm_init = ath_pci_aspm_init,
+ };
  
- /* bit banging i2c */
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -438,6 +438,9 @@ struct radeon_connector {
- 	struct radeon_i2c_chan *ddc_bus;
- 	/* some systems have an hdmi and vga port with a shared ddc line */
- 	bool shared_ddc;
-+	/* for some Radeon chip families we apply an additional EDID header
-+	   check as part of the DDC probe */
-+	bool requires_extended_probe;
- 	bool use_digital;
- 	/* we need to mind the EDID between detect
- 	   and get modes due to analog/digital/tvencoder */
-@@ -514,7 +517,8 @@ extern void radeon_i2c_put_byte(struct r
- 				u8 val);
- extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
- extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
--extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
-+extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector,
-+			bool requires_extended_probe);
- extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
- 
- extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
+ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 
