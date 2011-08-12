@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1HNQGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:06:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36303 "EHLO mx2.suse.de"
+	id S1753824Ab1HNQ3i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:29:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36295 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753546Ab1HNQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:06:15 -0400
+	id S1753730Ab1HNQGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:06:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:53 2011
-Message-Id: <20110812210553.171257915@clark.kroah.org>
+Message-Id: <20110812210553.079701119@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:03:57 -0700
+Date: Fri, 12 Aug 2011 14:03:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [12/90] iwlegacy: set tx power after rxon_assoc
+Subject: [11/90] rtlwifi: Fix kernel oops on ARM SOC
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 17e859a899712d16c3e70b045d61ad9e02c53f8a upstream.
+commit b6b67df3f24c45af0012ee3c8af2f62ca083ae18 upstream.
 
-If settings of tx power was deferred during scan or changing channel we
-have to setup them during commit rxon. Fix problem on 3945 (4965 already
-has this fix).
+This driver uses information from the self member of the pci_bus struct to
+get information regarding the bridge to which the PCIe device is attached.
+Unfortunately, this member is not established on all architectures, which
+leads to a kernel oops.
 
-Optimize code to apply tx settings only when tx power was actually
-changed.
+Skipping the entire block that uses the self member to determine the bridge
+vendor will only affect RTL8192DE devices as that driver sets the ASPM support
+flag differently when the bridge vendor is Intel. If the self member is
+available, there is no functional change.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+This patch fixes Bugzilla No. 40212.
+
+Reported-by: Hubert Liao <liao.hubertt@gmail.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlegacy/iwl-3945.c |    6 +++++-
- drivers/net/wireless/iwlegacy/iwl-4965.c |    8 ++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/pci.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/iwlegacy/iwl-3945.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-3945.c
-@@ -1747,7 +1747,11 @@ int iwl3945_commit_rxon(struct iwl_priv
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1709,15 +1709,17 @@ static bool _rtl_pci_find_adapter(struct
+ 	pcipriv->ndis_adapter.devnumber = PCI_SLOT(pdev->devfn);
+ 	pcipriv->ndis_adapter.funcnumber = PCI_FUNC(pdev->devfn);
+ 
+-	/*find bridge info */
+-	pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;
+-	for (tmp = 0; tmp < PCI_BRIDGE_VENDOR_MAX; tmp++) {
+-		if (bridge_pdev->vendor == pcibridge_vendors[tmp]) {
+-			pcipriv->ndis_adapter.pcibridge_vendor = tmp;
+-			RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-				 ("Pci Bridge Vendor is found index: %d\n",
+-				  tmp));
+-			break;
++	if (bridge_pdev) {
++		/*find bridge info if available */
++		pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;
++		for (tmp = 0; tmp < PCI_BRIDGE_VENDOR_MAX; tmp++) {
++			if (bridge_pdev->vendor == pcibridge_vendors[tmp]) {
++				pcipriv->ndis_adapter.pcibridge_vendor = tmp;
++				RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
++					 ("Pci Bridge Vendor is found index:"
++					 " %d\n", tmp));
++				break;
++			}
  		}
- 
- 		memcpy(active_rxon, staging_rxon, sizeof(*active_rxon));
--
-+		/*
-+		 * We do not commit tx power settings while channel changing,
-+		 * do it now if tx power changed.
-+		 */
-+		iwl_legacy_set_tx_power(priv, priv->tx_power_next, false);
- 		return 0;
  	}
  
---- a/drivers/net/wireless/iwlegacy/iwl-4965.c
-+++ b/drivers/net/wireless/iwlegacy/iwl-4965.c
-@@ -1237,7 +1237,12 @@ static int iwl4965_commit_rxon(struct iw
- 
- 		memcpy(active_rxon, &ctx->staging, sizeof(*active_rxon));
- 		iwl_legacy_print_rx_config_cmd(priv, ctx);
--		goto set_tx_power;
-+		/*
-+		 * We do not commit tx power settings while channel changing,
-+		 * do it now if tx power changed.
-+		 */
-+		iwl_legacy_set_tx_power(priv, priv->tx_power_next, false);
-+		return 0;
- 	}
- 
- 	/* If we are currently associated and the new config requires
-@@ -1317,7 +1322,6 @@ static int iwl4965_commit_rxon(struct iw
- 
- 	iwl4965_init_sensitivity(priv);
- 
--set_tx_power:
- 	/* If we issue a new RXON command which required a tune then we must
- 	 * send a new TXPOWER command or we won't be able to Tx any frames */
- 	ret = iwl_legacy_set_tx_power(priv, priv->tx_power_next, true);
 
 
