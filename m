@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab1HLHor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 03:44:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38084 "EHLO bear.ext.ti.com"
+	id S1751117Ab1HLHyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 03:54:21 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:36687 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1HLHom convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 03:44:42 -0400
-From: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
-To: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Aug 2011 13:11:17 +0530
-Subject: RE: [PATCH v2] OMAP3: powerdomains: Match silicon revision to
- select the correct "core_pwrdm" definition
-Thread-Topic: [PATCH v2] OMAP3: powerdomains: Match silicon revision to
- select the correct "core_pwrdm" definition
-Thread-Index: AcxC5Ia8qqHHIZ8JRjCWZU++qT/tdAV3rISs
-Message-ID: <FCCFB4CDC6E5564B9182F639FC3560870370A4D985@dbde02.ent.ti.com>
-References: <1310730250-10920-1-git-send-email-abhilash.kv@ti.com>
-In-Reply-To: <1310730250-10920-1-git-send-email-abhilash.kv@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750735Ab1HLHyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 03:54:20 -0400
+In-Reply-To: <014801cc584f$5ff90e00$1feb2a00$@systemfabricworks.com>
+References: <014801cc584f$5ff90e00$1feb2a00$@systemfabricworks.com>
+Subject: Re: [patch v5 resending 0/8] Add slicing-by-8 to crc32
+X-KeepSent: 79B4FA74:153E98FD-C12578EA:0021A784;
+ type=4; name=$KeepSent
+To: "Bob Pearson" <rpearson@systemfabricworks.com>
+Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com, linux@horizon.com,
+        linux-kernel@vger.kernel.org
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF79B4FA74.153E98FD-ONC12578EA.0021A784-C12578EA.0024990B@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Fri, 12 Aug 2011 08:39:44 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 08/12/2011 08:39:44
 MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi 
+"Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/11 19:52:01:
+>
+> Resending the patch series by hand. I have been having a lot of problems
+> trying to
+> Figure out how to make quilt and thunderbird play together. Please let me
+> Know of this one is better. I have never been able to get quilt to
+> Make a mbox that my thunderbird likes but Frank has been able to do it.
+> The last time I imported a mbox into thunderbird as Unsent Messages and then
+> Edited each note and typed send but for some reason there was a lot of
+> breakage.
+> This time I just used the external editor to read in each patch from the
+> patches
+> Directory one a time.
 
-On Friday, July 15, 2011 5:14 PM +0530, Koyamangalath, Abhilash wrote:
-________________________________________
-> From: Koyamangalath, Abhilash
-> Sent: Friday, July 15, 2011 5:14 PM
-> To: linux-omap@vger.kernel.org
-> Cc: tony@atomide.com; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org; Koyamangalath, Abhilash
-> Subject: [PATCH v2] OMAP3: powerdomains: Match silicon revision to select the correct "core_pwrdm" definition
-> 
-> powerdomains3xxx_data.c defines core_3xxx_pre_es3_1_pwrdm and
-> core_3xxx_es3_1_pwrdm to take care of differences in "core_pwrdm"
-> implementations across revisions.
-> However,_pwrdm_lookup("core_pwrdm") always matches the first definition for
-> 3630 ES 1.1 and 1.2 which is incorrect. This patch fixes this issue by adding
-> code to match silicon revision as well while looking up "core_pwrdm" in
-> _pwrdm_lookup().
-> core_3xxx_es3_1_pwrdm is different from core_3xxx_pre_es3_1_pwrdm in
-> that the former adds hardware save-restore support for USBTLL for 3430
-> ES3.1 and for 3630 ES1.1 and ES1.2.
-> 
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> ---
-> v2:
-> * now tested on 3630 (ES1.2 and ES1.0) and 3530 (ES3.0 and ES3.1)
-> * fixed checkpatch errors/warnings.
-> 
->  arch/arm/mach-omap2/powerdomain.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/powerdomain.c b/arch/arm/mach-omap2/powerdomain.c
-> index 9af0847..82a2e30 100644
-> --- a/arch/arm/mach-omap2/powerdomain.c
-> +++ b/arch/arm/mach-omap2/powerdomain.c
-> @@ -32,6 +32,7 @@
->  #include "powerdomain.h"
->  #include "clockdomain.h"
->  #include <plat/prcm.h>
-> +#include <plat/cpu.h>
-> 
->  #include "pm.h"
-> 
-> @@ -58,6 +59,24 @@ static struct powerdomain *_pwrdm_lookup(const char *name)
-> 
->         list_for_each_entry(temp_pwrdm, &pwrdm_list, node) {
->                 if (!strcmp(name, temp_pwrdm->name)) {
-> +                       if (!strcmp(name, "core_pwrdm") && cpu_is_omap3630()) {
-> +                               if (omap_rev() > OMAP3630_REV_ES1_0) {
-> +                                       /*
-> +                                        * match omap_chip info for OMAP3630
-> +                                        * Rev ES1.1, ES1.2 or higher
-> +                                        */
-> +                                       if (!(temp_pwrdm->omap_chip.oc
-> +                                               & CHIP_GE_OMAP3630ES1_1))
-> +                                               continue;
-> +                               } else {
-> +                                       /* match omap_chip info for OMAP3630
-> +                                        * Rev ES1.0
-> +                                        */
-> +                                       if (!(temp_pwrdm->omap_chip.oc
-> +                                                & CHIP_IS_OMAP3630ES1))
-> +                                               continue;
-> +                               }
-> +                       }
->                         pwrdm = temp_pwrdm;
->                         break;
->                 }
-> --
-> 1.7.1
-Any comments ?
+I am not even going to try. After a quick look the still look broken and
+several my earlier remarks appears to be ignored.
+The changes to gen_crc32table.c looks random, where did this come from
+(in v5 6/8):
+ -static uint32_t crc32table_le[4][LE_TABLE_SIZE];
+-static uint32_t crc32table_be[4][BE_TABLE_SIZE];
++static uint32_t crc32table_le[4][256];
++static uint32_t crc32table_be[4][256];
 
--Abhilash 
+ Jocke
+
