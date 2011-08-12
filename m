@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1HNQJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:09:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36871 "EHLO mx2.suse.de"
+	id S1754698Ab1HNQKE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:10:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36890 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754660Ab1HNQJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:09:53 -0400
+	id S1754654Ab1HNQKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:00 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
-Message-Id: <20110812210558.696017700@clark.kroah.org>
+Message-Id: <20110812210558.874394229@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:00 -0700
+Date: Fri, 12 Aug 2011 14:05:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [75/90] sparc: Size mondo queues more sanely.
+        John Johansen <john.johansen@canonical.com>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [77/90] Ecryptfs: Add mount option to check uid of device being
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,104 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ mounted = expect uid
 
+From: John Johansen <john.johansen@canonical.com>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 764355487ea220fdc2faf128d577d7f679b91f97 upstream.
 
-[ Upstream commit 961f65fc41cdc1f9099a6075258816c0db98e390 ]
+Close a TOCTOU race for mounts done via ecryptfs-mount-private.  The mount
+source (device) can be raced when the ownership test is done in userspace.
+Provide Ecryptfs a means to force the uid check at mount time.
 
-There is currently no upper limit on the mondo queue sizes we'll use,
-which guarentees that we'll eventually his page allocation limits, and
-thus allocation failures, due to MAX_ORDER.
-
-Cap the sizes sanely, current limits are:
-
-CPU  MONDO	2 * max_possible_cpus
-DEV  MONDO	256 (basically NR_IRQS)
-RES  MONDO	128
-NRES MONDO	4
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: John Johansen <john.johansen@canonical.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/kernel/mdesc.c |   30 +++++++++++++++++++++++-------
- 1 file changed, 23 insertions(+), 7 deletions(-)
 
---- a/arch/sparc/kernel/mdesc.c
-+++ b/arch/sparc/kernel/mdesc.c
-@@ -508,6 +508,8 @@ const char *mdesc_node_name(struct mdesc
- }
- EXPORT_SYMBOL(mdesc_node_name);
+---
+ fs/ecryptfs/main.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -175,6 +175,7 @@ enum { ecryptfs_opt_sig, ecryptfs_opt_ec
+        ecryptfs_opt_encrypted_view, ecryptfs_opt_fnek_sig,
+        ecryptfs_opt_fn_cipher, ecryptfs_opt_fn_cipher_key_bytes,
+        ecryptfs_opt_unlink_sigs, ecryptfs_opt_mount_auth_tok_only,
++       ecryptfs_opt_check_dev_ruid,
+        ecryptfs_opt_err };
  
-+static u64 max_cpus = 64;
+ static const match_table_t tokens = {
+@@ -191,6 +192,7 @@ static const match_table_t tokens = {
+ 	{ecryptfs_opt_fn_cipher_key_bytes, "ecryptfs_fn_key_bytes=%u"},
+ 	{ecryptfs_opt_unlink_sigs, "ecryptfs_unlink_sigs"},
+ 	{ecryptfs_opt_mount_auth_tok_only, "ecryptfs_mount_auth_tok_only"},
++	{ecryptfs_opt_check_dev_ruid, "ecryptfs_check_dev_ruid"},
+ 	{ecryptfs_opt_err, NULL}
+ };
+ 
+@@ -236,6 +238,7 @@ static void ecryptfs_init_mount_crypt_st
+  * ecryptfs_parse_options
+  * @sb: The ecryptfs super block
+  * @options: The options passed to the kernel
++ * @check_ruid: set to 1 if device uid should be checked against the ruid
+  *
+  * Parse mount options:
+  * debug=N 	   - ecryptfs_verbosity level for debug output
+@@ -251,7 +254,8 @@ static void ecryptfs_init_mount_crypt_st
+  *
+  * Returns zero on success; non-zero on error
+  */
+-static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options)
++static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
++				  uid_t *check_ruid)
+ {
+ 	char *p;
+ 	int rc = 0;
+@@ -276,6 +280,8 @@ static int ecryptfs_parse_options(struct
+ 	char *cipher_key_bytes_src;
+ 	char *fn_cipher_key_bytes_src;
+ 
++	*check_ruid = 0;
 +
- static void __init report_platform_properties(void)
- {
- 	struct mdesc_handle *hp = mdesc_grab();
-@@ -543,8 +545,10 @@ static void __init report_platform_prope
- 	if (v)
- 		printk("PLATFORM: watchdog-max-timeout [%llu ms]\n", *v);
- 	v = mdesc_get_property(hp, pn, "max-cpus", NULL);
--	if (v)
--		printk("PLATFORM: max-cpus [%llu]\n", *v);
-+	if (v) {
-+		max_cpus = *v;
-+		printk("PLATFORM: max-cpus [%llu]\n", max_cpus);
-+	}
+ 	if (!options) {
+ 		rc = -EINVAL;
+ 		goto out;
+@@ -380,6 +386,9 @@ static int ecryptfs_parse_options(struct
+ 			mount_crypt_stat->flags |=
+ 				ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY;
+ 			break;
++		case ecryptfs_opt_check_dev_ruid:
++			*check_ruid = 1;
++			break;
+ 		case ecryptfs_opt_err:
+ 		default:
+ 			printk(KERN_WARNING
+@@ -475,6 +484,7 @@ static struct dentry *ecryptfs_mount(str
+ 	const char *err = "Getting sb failed";
+ 	struct inode *inode;
+ 	struct path path;
++	uid_t check_ruid;
+ 	int rc;
  
- #ifdef CONFIG_SMP
- 	{
-@@ -715,7 +719,7 @@ static void __cpuinit set_proc_ids(struc
- }
+ 	sbi = kmem_cache_zalloc(ecryptfs_sb_info_cache, GFP_KERNEL);
+@@ -483,7 +493,7 @@ static struct dentry *ecryptfs_mount(str
+ 		goto out;
+ 	}
  
- static void __cpuinit get_one_mondo_bits(const u64 *p, unsigned int *mask,
--					 unsigned char def)
-+					 unsigned long def, unsigned long max)
- {
- 	u64 val;
- 
-@@ -726,6 +730,9 @@ static void __cpuinit get_one_mondo_bits
- 	if (!val || val >= 64)
- 		goto use_default;
- 
-+	if (val > max)
-+		val = max;
+-	rc = ecryptfs_parse_options(sbi, raw_data);
++	rc = ecryptfs_parse_options(sbi, raw_data, &check_ruid);
+ 	if (rc) {
+ 		err = "Error parsing options";
+ 		goto out;
+@@ -521,6 +531,15 @@ static struct dentry *ecryptfs_mount(str
+ 			"known incompatibilities\n");
+ 		goto out_free;
+ 	}
 +
- 	*mask = ((1U << val) * 64U) - 1U;
- 	return;
- 
-@@ -736,19 +743,28 @@ use_default:
- static void __cpuinit get_mondo_data(struct mdesc_handle *hp, u64 mp,
- 				     struct trap_per_cpu *tb)
- {
-+	static int printed;
- 	const u64 *val;
- 
- 	val = mdesc_get_property(hp, mp, "q-cpu-mondo-#bits", NULL);
--	get_one_mondo_bits(val, &tb->cpu_mondo_qmask, 7);
-+	get_one_mondo_bits(val, &tb->cpu_mondo_qmask, 7, ilog2(max_cpus * 2));
- 
- 	val = mdesc_get_property(hp, mp, "q-dev-mondo-#bits", NULL);
--	get_one_mondo_bits(val, &tb->dev_mondo_qmask, 7);
-+	get_one_mondo_bits(val, &tb->dev_mondo_qmask, 7, 8);
- 
- 	val = mdesc_get_property(hp, mp, "q-resumable-#bits", NULL);
--	get_one_mondo_bits(val, &tb->resum_qmask, 6);
-+	get_one_mondo_bits(val, &tb->resum_qmask, 6, 7);
- 
- 	val = mdesc_get_property(hp, mp, "q-nonresumable-#bits", NULL);
--	get_one_mondo_bits(val, &tb->nonresum_qmask, 2);
-+	get_one_mondo_bits(val, &tb->nonresum_qmask, 2, 2);
-+	if (!printed++) {
-+		pr_info("SUN4V: Mondo queue sizes "
-+			"[cpu(%u) dev(%u) r(%u) nr(%u)]\n",
-+			tb->cpu_mondo_qmask + 1,
-+			tb->dev_mondo_qmask + 1,
-+			tb->resum_qmask + 1,
-+			tb->nonresum_qmask + 1);
++	if (check_ruid && path.dentry->d_inode->i_uid != current_uid()) {
++		rc = -EPERM;
++		printk(KERN_ERR "Mount of device (uid: %d) not owned by "
++		       "requested user (uid: %d)\n",
++		       path.dentry->d_inode->i_uid, current_uid());
++		goto out_free;
 +	}
- }
- 
- static void * __cpuinit mdesc_iterate_over_cpus(void *(*func)(struct mdesc_handle *, u64, int, void *), void *arg, cpumask_t *mask)
++
+ 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
 
 
