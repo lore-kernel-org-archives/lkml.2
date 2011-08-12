@@ -1,253 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1HNQWK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:22:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44213 "EHLO hera.kernel.org"
+	id S1754866Ab1HNQWn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:22:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36664 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754416Ab1HNQWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:22:05 -0400
-Date: Sun, 14 Aug 2011 16:21:42 GMT
-From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-ec12cb7f31e28854efae7dd6f9544e0a66379040@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com,
-        ncrao@google.com, pjt@google.com, bharata@linux.vnet.ibm.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bharata@linux.vnet.ibm.com, ncrao@google.com,
-        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110721184757.179386821@google.com>
-References: <20110721184757.179386821@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Accumulate per-cfs_rq cpu usage and charge against bandwidth
-Git-Commit-ID: ec12cb7f31e28854efae7dd6f9544e0a66379040
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:21:49 +0000 (UTC)
+	id S1754386Ab1HNQIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
+Message-Id: <20110812210556.580630739@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 12 Aug 2011 14:04:36 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Robert Olsson <robert.olsson@its.uu.se>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [51/90] net: add IFF_SKB_TX_SHARED flag to priv_flags
+In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ec12cb7f31e28854efae7dd6f9544e0a66379040
-Gitweb:     http://git.kernel.org/tip/ec12cb7f31e28854efae7dd6f9544e0a66379040
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 21 Jul 2011 09:43:30 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 14 Aug 2011 12:03:26 +0200
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-sched: Accumulate per-cfs_rq cpu usage and charge against bandwidth
+------------------
 
-Account bandwidth usage on the cfs_rq level versus the task_groups to which
-they belong.  Whether we are tracking bandwidth on a given cfs_rq is maintained
-under cfs_rq->runtime_enabled.
 
-cfs_rq's which belong to a bandwidth constrained task_group have their runtime
-accounted via the update_curr() path, which withdraws bandwidth from the global
-pool as desired.  Updates involving the global pool are currently protected
-under cfs_bandwidth->lock, local runtime is protected by rq->lock.
+From: Neil Horman <nhorman@tuxdriver.com>
 
-This patch only assigns and tracks quota, no action is taken in the case that
-cfs_rq->runtime_used exceeds cfs_rq->runtime_assigned.
+[ Upstream commit d8873315065f1f527c7c380402cf59b1e1d0ae36 ]
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Signed-off-by: Nikhil Rao <ncrao@google.com>
-Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110721184757.179386821@google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Pktgen attempts to transmit shared skbs to net devices, which can't be used by
+some drivers as they keep state information in skbs.  This patch adds a flag
+marking drivers as being able to handle shared skbs in their tx path.  Drivers
+are defaulted to being unable to do so, but calling ether_setup enables this
+flag, as 90% of the drivers calling ether_setup touch real hardware and can
+handle shared skbs.  A subsequent patch will audit drivers to ensure that the
+flag is set properly
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Jiri Pirko <jpirko@redhat.com>
+CC: Robert Olsson <robert.olsson@its.uu.se>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+CC: David S. Miller <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/sched.h |    4 ++
- kernel/sched.c        |    4 ++-
- kernel/sched_fair.c   |   79 +++++++++++++++++++++++++++++++++++++++++++++++-
- kernel/sysctl.c       |   10 ++++++
- 4 files changed, 94 insertions(+), 3 deletions(-)
+ include/linux/if.h |    2 ++
+ net/core/pktgen.c  |    8 +++++---
+ net/ethernet/eth.c |    1 +
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4ac2c05..bc6f5f2 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2040,6 +2040,10 @@ static inline void sched_autogroup_fork(struct signal_struct *sig) { }
- static inline void sched_autogroup_exit(struct signal_struct *sig) { }
- #endif
+--- a/include/linux/if.h
++++ b/include/linux/if.h
+@@ -76,6 +76,8 @@
+ #define IFF_BRIDGE_PORT	0x4000		/* device used as bridge port */
+ #define IFF_OVS_DATAPATH	0x8000	/* device used as Open vSwitch
+ 					 * datapath port */
++#define IFF_TX_SKB_SHARING	0x10000	/* The interface supports sharing
++					 * skbs on transmit */
  
-+#ifdef CONFIG_CFS_BANDWIDTH
-+extern unsigned int sysctl_sched_cfs_bandwidth_slice;
-+#endif
-+
- #ifdef CONFIG_RT_MUTEXES
- extern int rt_mutex_getprio(struct task_struct *p);
- extern void rt_mutex_setprio(struct task_struct *p, int prio);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index ea6850d..35561c6 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -251,7 +251,7 @@ struct cfs_bandwidth {
- #ifdef CONFIG_CFS_BANDWIDTH
- 	raw_spinlock_t lock;
- 	ktime_t period;
--	u64 quota;
-+	u64 quota, runtime;
- 	s64 hierarchal_quota;
- #endif
- };
-@@ -407,6 +407,7 @@ static inline u64 default_cfs_period(void);
- static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- {
- 	raw_spin_lock_init(&cfs_b->lock);
-+	cfs_b->runtime = 0;
- 	cfs_b->quota = RUNTIME_INF;
- 	cfs_b->period = ns_to_ktime(default_cfs_period());
- }
-@@ -9107,6 +9108,7 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
-+	cfs_b->runtime = quota;
- 	raw_spin_unlock_irq(&cfs_b->lock);
+ #define IF_GET_IFACE	0x0001		/* for querying only */
+ #define IF_GET_PROTO	0x0002
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1070,7 +1070,9 @@ static ssize_t pktgen_if_write(struct fi
+ 		len = num_arg(&user_buffer[i], 10, &value);
+ 		if (len < 0)
+ 			return len;
+-
++		if ((value > 0) &&
++		    (!(pkt_dev->odev->priv_flags & IFF_TX_SKB_SHARING)))
++			return -ENOTSUPP;
+ 		i += len;
+ 		pkt_dev->clone_skb = value;
  
- 	for_each_possible_cpu(i) {
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index f24f417..9502aa8 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -89,6 +89,20 @@ const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
-  */
- unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
+@@ -3555,7 +3557,6 @@ static int pktgen_add_device(struct pktg
+ 	pkt_dev->min_pkt_size = ETH_ZLEN;
+ 	pkt_dev->max_pkt_size = ETH_ZLEN;
+ 	pkt_dev->nfrags = 0;
+-	pkt_dev->clone_skb = pg_clone_skb_d;
+ 	pkt_dev->delay = pg_delay_d;
+ 	pkt_dev->count = pg_count_d;
+ 	pkt_dev->sofar = 0;
+@@ -3563,7 +3564,6 @@ static int pktgen_add_device(struct pktg
+ 	pkt_dev->udp_src_max = 9;
+ 	pkt_dev->udp_dst_min = 9;
+ 	pkt_dev->udp_dst_max = 9;
+-
+ 	pkt_dev->vlan_p = 0;
+ 	pkt_dev->vlan_cfi = 0;
+ 	pkt_dev->vlan_id = 0xffff;
+@@ -3575,6 +3575,8 @@ static int pktgen_add_device(struct pktg
+ 	err = pktgen_setup_dev(pkt_dev, ifname);
+ 	if (err)
+ 		goto out1;
++	if (pkt_dev->odev->priv_flags & IFF_TX_SKB_SHARING)
++		pkt_dev->clone_skb = pg_clone_skb_d;
  
-+#ifdef CONFIG_CFS_BANDWIDTH
-+/*
-+ * Amount of runtime to allocate from global (tg) to local (per-cfs_rq) pool
-+ * each time a cfs_rq requests quota.
-+ *
-+ * Note: in the case that the slice exceeds the runtime remaining (either due
-+ * to consumption or the quota being specified to be smaller than the slice)
-+ * we will always only issue the remaining available time.
-+ *
-+ * default: 5 msec, units: microseconds
-+  */
-+unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
-+#endif
-+
- static const struct sched_class fair_sched_class;
+ 	pkt_dev->entry = proc_create_data(ifname, 0600, pg_proc_dir,
+ 					  &pktgen_if_fops, pkt_dev);
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -340,6 +340,7 @@ void ether_setup(struct net_device *dev)
+ 	dev->addr_len		= ETH_ALEN;
+ 	dev->tx_queue_len	= 1000;	/* Ethernet wants good queues */
+ 	dev->flags		= IFF_BROADCAST|IFF_MULTICAST;
++	dev->priv_flags		= IFF_TX_SKB_SHARING;
  
- /**************************************************************
-@@ -292,6 +306,8 @@ find_matching_se(struct sched_entity **se, struct sched_entity **pse)
+ 	memset(dev->broadcast, 0xFF, ETH_ALEN);
  
- #endif	/* CONFIG_FAIR_GROUP_SCHED */
- 
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				   unsigned long delta_exec);
- 
- /**************************************************************
-  * Scheduling class tree data structure manipulation methods:
-@@ -583,6 +599,8 @@ static void update_curr(struct cfs_rq *cfs_rq)
- 		cpuacct_charge(curtask, delta_exec);
- 		account_group_exec_runtime(curtask, delta_exec);
- 	}
-+
-+	account_cfs_rq_runtime(cfs_rq, delta_exec);
- }
- 
- static inline void
-@@ -1248,6 +1266,58 @@ static inline u64 default_cfs_period(void)
- {
- 	return 100000000ULL;
- }
-+
-+static inline u64 sched_cfs_bandwidth_slice(void)
-+{
-+	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
-+}
-+
-+static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-+{
-+	struct task_group *tg = cfs_rq->tg;
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	u64 amount = 0, min_amount;
-+
-+	/* note: this is a positive sum as runtime_remaining <= 0 */
-+	min_amount = sched_cfs_bandwidth_slice() - cfs_rq->runtime_remaining;
-+
-+	raw_spin_lock(&cfs_b->lock);
-+	if (cfs_b->quota == RUNTIME_INF)
-+		amount = min_amount;
-+	else if (cfs_b->runtime > 0) {
-+		amount = min(cfs_b->runtime, min_amount);
-+		cfs_b->runtime -= amount;
-+	}
-+	raw_spin_unlock(&cfs_b->lock);
-+
-+	cfs_rq->runtime_remaining += amount;
-+}
-+
-+static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				     unsigned long delta_exec)
-+{
-+	if (!cfs_rq->runtime_enabled)
-+		return;
-+
-+	cfs_rq->runtime_remaining -= delta_exec;
-+	if (cfs_rq->runtime_remaining > 0)
-+		return;
-+
-+	assign_cfs_rq_runtime(cfs_rq);
-+}
-+
-+static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+						   unsigned long delta_exec)
-+{
-+	if (!cfs_rq->runtime_enabled)
-+		return;
-+
-+	__account_cfs_rq_runtime(cfs_rq, delta_exec);
-+}
-+
-+#else
-+static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-+				     unsigned long delta_exec) {}
- #endif
- 
- /**************************************************
-@@ -4266,8 +4336,13 @@ static void set_curr_task_fair(struct rq *rq)
- {
- 	struct sched_entity *se = &rq->curr->se;
- 
--	for_each_sched_entity(se)
--		set_next_entity(cfs_rq_of(se), se);
-+	for_each_sched_entity(se) {
-+		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+
-+		set_next_entity(cfs_rq, se);
-+		/* ensure bandwidth has been allocated on our new cfs_rq */
-+		account_cfs_rq_runtime(cfs_rq, 0);
-+	}
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 11d65b5..2d2ecdc 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -379,6 +379,16 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+#ifdef CONFIG_CFS_BANDWIDTH
-+	{
-+		.procname	= "sched_cfs_bandwidth_slice_us",
-+		.data		= &sysctl_sched_cfs_bandwidth_slice,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
+
+
