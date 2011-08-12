@@ -1,137 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627Ab1HLHBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 03:01:30 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:52671 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab1HLHB3 (ORCPT
+	id S1751898Ab1HLHDP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 03:03:15 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:7800 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab1HLHDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 03:01:29 -0400
-Date: Fri, 12 Aug 2011 15:01:11 +0800 (SGT)
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-X-X-Sender: root@boston.corp.fedex.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: Andrey Panin <pazke@centrinvest.ru>, lkml <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: Re: How to access serial port that is set in BIOS as OS Controlled
-Message-ID: <Pine.LNX.4.64.1108121443200.26481@boston.corp.fedex.com>
+	Fri, 12 Aug 2011 03:03:14 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Jason Liu <jason.hui@linaro.org>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>,
+        <patches@linaro.org>
+Subject: [PATCH] mtd: mxc_nand: Add mx53 NFC driver support
+Date: Fri, 12 Aug 2011 15:07:59 +0800
+Message-ID: <1313132879-10531-1-git-send-email-jason.hui@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This has already been tested with Samsung NAND: K9LAG08U0M
+on MX53EVK board, ubi/ubifs has already been tested OK too.
+
+Signed-off-by: Jason Liu <jason.hui@linaro.org>
+---
+ drivers/mtd/nand/mxc_nand.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 90df34c..a3f1b50 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -41,7 +41,7 @@
+ 
+ #define nfc_is_v21()		(cpu_is_mx25() || cpu_is_mx35())
+ #define nfc_is_v1()		(cpu_is_mx31() || cpu_is_mx27() || cpu_is_mx21())
+-#define nfc_is_v3_2()		cpu_is_mx51()
++#define nfc_is_v3_2()		(cpu_is_mx51() || cpu_is_mx53())
+ #define nfc_is_v3()		nfc_is_v3_2()
+ 
+ /* Addresses for NFC registers */
+-- 
+1.7.4.1
 
 
-On Fri, Aug 12, 2011 at 5:49 AM, Bjorn Helgaas <bhelgaas@google.com> 
-wrote:
-
-> Oops, my mistake.  You now need "pnp.debug=1" to turn the extra debug
-
-Now, I do see more messages and "resources" show "active" ...
-
-
-# dmesg
-pnp 00:00: parse allocated resources
-pnp 00:01: parse allocated resources
-pnp 00:01: PNP0c02: calling 0xc11c8a0c
-pnp 00:02: parse allocated resources
-pnp 00:02: PNP0c02: calling 0xc11c8a0c
-pnp 00:03: parse allocated resources
-pnp 00:04: parse allocated resources
-pnp 00:05: parse allocated resources
-pnp 00:06: parse allocated resources
-pnp 00:07: parse allocated resources
-pnp 00:08: parse resource options
-pnp 00:08:   dependent set 0 (acceptable) io  min 0x3f8 max 0x3f8 align 
-1 size 8 flags 0x1
-pnp 00:08:   dependent set 0 (acceptable) irq 4 flags 0x1
-pnp 00:08: parse allocated resources
-pnp 00:08: set resources
-pnp 00:09: parse resource options
-pnp 00:09:   dependent set 0 (acceptable) io  min 0x2f8 max 0x2f8 align 
-1 size 8 flags 0x1
-pnp 00:09:   dependent set 0 (acceptable) irq 3 flags 0x1
-pnp 00:09: parse allocated resources
-pnp 00:09: set resources
-pnp 00:0a: parse resource options
-pnp 00:0a:   dependent set 0 (acceptable) io  min 0x3e8 max 0x3e8 align 
-pnp 00:0a:   dependent set 0 (acceptable) irq 6 flags 0x1
-pnp 00:0a: pnp_assign_resources, try dependent set 0
-pnp 00:0a: pnp_assign_resources succeeded: current resources:
-pnp 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
-pnp 00:0a:   dependent set 0 (acceptable) irq 6 flags 0x1
-pnp 00:0a: pnp_assign_resources, try dependent set 0
-pnp 00:0a: pnp_assign_resources succeeded: current resources:
-pnp 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
-pnp 00:0a: [irq 6 flags 0x40000401]
-pnp 00:0a: set resources
-pnp 00:0b: parse resource options
-pnp 00:0b:   dependent set 0 (acceptable) io  min 0x2e8 max 0x2e8 align 
-1 size 8 flags 0x1
-pnp 00:0b:   dependent set 0 (acceptable) irq 12 flags 0x1
-pnp 00:0b: parse allocated resources
-pnp 00:0b: set resources
-serial 00:0a: pnp_assign_resources, try dependent set 0
-serial 00:0a: pnp_assign_resources succeeded: current resources:
-serial 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
-serial 00:0a: [irq 6 flags 0x40000401]
-serial 00:0a: pnp_start_dev: current resources:
-serial 00:0a: [io  0x03e8-0x03ef flags 0x40000101]
-serial 00:0a: [irq 6 flags 0x40000401]
-serial 00:0a: set resources
-serial 00:0a: encode 2 resources
-serial 00:0a:   encode io 0x3e8-0x3ef decode 0x1
-serial 00:0a:   encode irq 6 edge high exclusive (2-byte descriptor)
-
-
-# cat /sys/bus/pnp/devices/00:0a/resources
-state = active
-io 0x3e8-0x3ef
-irq 6
-
-
-# setserial /dev/ttyS2
-/dev/ttyS2, UART: 16550A, Port: 0x03e8, IRQ: 6
-
-
-# echo activate > /sys/bus/pnp/devices/00:0a/resources
--bash: echo: write error: Device or resource busy
-
-# dmesg
-serial 00:0a: in use; can't configure
-serial 00:0a: in use; can't configure
-
-
-# echo disable > /sys/bus/pnp/devices/00:0a/resources
--bash: echo: write error: Device or resource busy
-
-# dmesg
-serial 00:0a: in use; can't configure
-serial 00:0a: in use; can't configure
-
-
-> This *should* work.  My guess is that it's failing because the I/O ports 
-> at 0x3e8 are still reserved.  The PNP core doesn't actually reserve 
-> anything, so it would have to be the 8250 driver.  It doesn't mention 
-> those ports in dmesg, so maybe they get reserved when you do the 
-> "setserial."
-
-It's working better now. But, the port is now always active and can't be 
-disabled.
-
-
-> The 8250 driver has no idea that you disabled the PNP device, so it 
-> would never release them.  Then when you try to activate it again, 
-> they're still in use.  You can test this idea a little bit by looking at 
-> /proc/ioports (1) immediately after boot, (2) before "setserial", (3) 
-> after "setserial", and (4) after you disable the PNP device.
-
-It always shows the same info, except I can't disable the port.
-
-# cat /proc/ioports
-   03e8-03ef : serial
-
-
-Thanks,
-Jeff
