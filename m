@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab1HLP4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 11:56:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56802 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab1HLP4j convert rfc822-to-8bit (ORCPT
+	id S1753909Ab1HLP6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 11:58:04 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:50239 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1HLP6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 11:56:39 -0400
+	Fri, 12 Aug 2011 11:58:01 -0400
+Message-ID: <4E454D75.2090505@gmail.com>
+Date: Fri, 12 Aug 2011 08:57:41 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110802050411.GC3857@192.168.0.12>
-References: <20110801210905.GC2096@zod.bos.redhat.com>
-	<20110802050411.GC3857@192.168.0.12>
-Date: Fri, 12 Aug 2011 17:56:38 +0200
-Message-ID: <CACTFLAM9sqCAQusGXuA6_JVGZvFKp8pOgb9mbEP_aEzt9b80Uw@mail.gmail.com>
-Subject: Re: ums-realtek driver uses stack memory for DMA
-From: Daniel Mack <zonque@gmail.com>
-To: Adam Cozzette <acozzette@cs.hmc.edu>
-Cc: Josh Boyer <jwboyer@redhat.com>, edwin_rong <edwin_rong@realsil.com.cn>,
-        wwang <wei_wang@realsil.com.cn>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Keith Packard <keithp@keithp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@linux.ie
+Subject: Re: i915 suspend crash: BUG: unable to handle kernel NULL pointer
+ deferrence
+References: <4E44C537.8040101@gmail.com> <yunobzusona.fsf@aiko.keithp.com>
+In-Reply-To: <yunobzusona.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 2, 2011 at 7:04 AM, Adam Cozzette <acozzette@cs.hmc.edu> wrote:
-
-> drivers/usb/storage/realtek_cr.c:419:40: warning: ‘buf[0]’ may be used uninitialized in this function [-Wuninitialized]
+On 08/12/2011 07:14 AM, Keith Packard wrote:
+> On Thu, 11 Aug 2011 23:16:23 -0700, "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
 >
-> It think they are harmless but I didn't see an obvious way to get rid of them,
-> so if you have any suggestions I would be glad to hear them.
+>> I can try for a bisect, but might not be able to do so due to time
+>> constraints and things.
+>> (if there is any patches to try and test let me know!)
 >
-> This patch changed rts51x_read_mem, rts51x_write_mem, and rts51x_read_status to
-> allocate temporary buffers with kmalloc. This way stack addresses are not used
-> for DMA when these functions call rts51x_bulk_transport.
+> Can you provide the output of 'lspci -n -v', and can you tell us which
+> version of the kernel this corresponds to?
 >
-> Signed-off-by: Adam Cozzette <acozzette@cs.hmc.edu>
-> ---
->  realtek_cr.c |   35 ++++++++++++++++++++++++++++++-----
->  1 file changed, 30 insertions(+), 5 deletions(-)
 
-[...]
+yeah appologize for not posting any info on the machine(bit tired).
+Anyways here is part of lspci(I can fpast the whole thing if need be),
+and dmesg of the machine running the latest Mainline.
 
-> @@ -342,6 +351,12 @@ static int rts51x_write_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
->  {
->        int retval;
->        u8 cmnd[12] = { 0 };
-> +       u8 *buf;
-> +
-> +       buf = kmalloc(len, GFP_NOIO);
-> +       if (buf == NULL)
-> +               return USB_STOR_TRANSPORT_ERROR;
-> +       memcpy(buf, data, len);
+http://fpaste.org/aSQP/
 
-Your can simplify this with kmemdup().
+one thing I am seeing is:
+
+
+[ 96.384971] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.408364] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.425860] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.443365] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.474238] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.491728] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+[ 96.521229] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+
+in of which I have not seen in the past.
+
+as for good kernel 2.6.39-rc5 survives suspend.
+
+Justin P. Mattock
