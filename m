@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1HLSAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 14:00:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751067Ab1HLSAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 14:00:16 -0400
-Date: Fri, 12 Aug 2011 19:57:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 4/3] kill PF_STARTING
-Message-ID: <20110812175701.GE7484@redhat.com>
-References: <20110727163159.GA23785@redhat.com> <20110729192358.GB31717@mtj.dyndns.org> <20110812175550.GA7484@redhat.com>
+	id S1753036Ab1HLSDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 14:03:19 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:6039 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1HLSDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 14:03:17 -0400
+Subject: [PATCH] hpsa: add heartbeat sysfs host attribute
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Date: Fri, 12 Aug 2011 13:03:14 -0500
+Message-ID: <20110812180314.21808.59261.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110812175550.GA7484@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously it was (ab)used by utrace. Then it was wrongly used by
-the scheduler code.
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Currently it is not used, kill it before it finds the new erroneous
-user.
+The cciss driver had a CCISS_HEARTBEAT ioctl which
+was not implemented in hpsa.  This ioctl returned a
+counter from a register on the Smart Array which the
+firmware would periodically update.  It can be used
+to detect certain kinds of faults (e.g. controller
+lockup) by noticing when the value remains constant
+for more than a second or two.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
+ Documentation/scsi/hpsa.txt |    8 ++++++++
+ drivers/scsi/hpsa.c         |   18 ++++++++++++++++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
- include/linux/sched.h |    1 -
- 1 file changed, 1 deletion(-)
-
---- 3.1/include/linux/sched.h~4_kill_PF_STARTING	2011-08-12 18:51:13.000000000 +0200
-+++ 3.1/include/linux/sched.h	2011-08-12 18:52:58.000000000 +0200
-@@ -1756,7 +1756,6 @@ extern void thread_group_times(struct ta
- /*
-  * Per process flags
-  */
--#define PF_STARTING	0x00000002	/* being created */
- #define PF_EXITING	0x00000004	/* getting shut down */
- #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
- #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
---- 3.1/kernel/fork.c~4_kill_PF_STARTING	2011-08-12 18:51:13.000000000 +0200
-+++ 3.1/kernel/fork.c	2011-08-12 18:52:58.000000000 +0200
-@@ -1026,7 +1026,6 @@ static void copy_flags(unsigned long clo
+diff --git a/Documentation/scsi/hpsa.txt b/Documentation/scsi/hpsa.txt
+index 891435a..0dac1e0 100644
+--- a/Documentation/scsi/hpsa.txt
++++ b/Documentation/scsi/hpsa.txt
+@@ -47,6 +47,7 @@ HPSA specific entries in /sys
+   /sys/class/scsi_host/host*/firmware_revision
+   /sys/class/scsi_host/host*/resettable
+   /sys/class/scsi_host/host*/transport_mode
++  /sys/class/scsi_host/host*/heartbeat
  
- 	new_flags &= ~(PF_SUPERPRIV | PF_WQ_WORKER);
- 	new_flags |= PF_FORKNOEXEC;
--	new_flags |= PF_STARTING;
- 	p->flags = new_flags;
- 	clear_freeze_flag(p);
+   the host "rescan" attribute is a write only attribute.  Writing to this
+   attribute will cause the driver to scan for new, changed, or removed devices
+@@ -78,6 +79,13 @@ HPSA specific entries in /sys
+   kexec tools to warn the user if they attempt to designate a device which is
+   unable to honor the reset_devices kernel parameter as a dump device.
+ 
++  The "heartbeat" read-only attribute returns the value of a heartbeat
++  counter register on a Smart Array controller as a 32 bit unsigned
++  hexadecimal integer (e.g: "0x12345678").  The value should change
++  periodically, not less than once per second.  If this value fails to
++  change for a period longer than one second, it means something has
++  gone wrong (e.g. Smart Array controller firmware has locked up.)
++
+   HPSA specific disk attributes:
+   ------------------------------
+ 
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index b200b73..ce6bde4 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -340,6 +340,21 @@ static ssize_t host_show_resettable(struct device *dev,
+ 	return snprintf(buf, 20, "%d\n", ctlr_is_resettable(h->board_id));
  }
-@@ -1563,15 +1562,6 @@ long do_fork(unsigned long clone_flags,
- 		}
  
- 		audit_finish_fork(p);
--
--		/*
--		 * We set PF_STARTING at creation in case tracing wants to
--		 * use this to distinguish a fully live task from one that
--		 * hasn't finished SIGSTOP raising yet.  Now we clear it
--		 * and set the child going.
--		 */
--		p->flags &= ~PF_STARTING;
--
- 		wake_up_new_task(p);
++static ssize_t host_show_heartbeat(struct device *dev,
++	struct device_attribute *attr, char *buf)
++{
++	struct ctlr_info *h;
++	struct Scsi_Host *shost = class_to_shost(dev);
++	u32 heartbeat;
++	unsigned long flags;
++
++	h = shost_to_hba(shost);
++	spin_lock_irqsave(&h->lock, flags);
++	heartbeat = readl(&h->cfgtable->HeartBeat);
++	spin_unlock_irqrestore(&h->lock, flags);
++	return snprintf(buf, 20, "0x%08x\n", heartbeat);
++}
++
+ static inline int is_logical_dev_addr_mode(unsigned char scsi3addr[])
+ {
+ 	return (scsi3addr[3] & 0xC0) == 0x40;
+@@ -448,6 +463,8 @@ static DEVICE_ATTR(transport_mode, S_IRUGO,
+ 	host_show_transport_mode, NULL);
+ static DEVICE_ATTR(resettable, S_IRUGO,
+ 	host_show_resettable, NULL);
++static DEVICE_ATTR(heartbeat, S_IRUGO,
++	host_show_heartbeat, NULL);
  
- 		/* forking complete and child started to run, tell ptracer */
+ static struct device_attribute *hpsa_sdev_attrs[] = {
+ 	&dev_attr_raid_level,
+@@ -462,6 +479,7 @@ static struct device_attribute *hpsa_shost_attrs[] = {
+ 	&dev_attr_commands_outstanding,
+ 	&dev_attr_transport_mode,
+ 	&dev_attr_resettable,
++	&dev_attr_heartbeat,
+ 	NULL,
+ };
+ 
 
