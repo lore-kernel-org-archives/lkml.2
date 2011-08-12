@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab1HNQVt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:21:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36716 "EHLO mx2.suse.de"
+	id S1754443Ab1HNQIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:08:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36692 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754416Ab1HNQIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:08:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:57 2011
-Message-Id: <20110812210557.004835094@clark.kroah.org>
+	id S1754415Ab1HNQIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
+Message-Id: <20110812210556.746070891@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:41 -0700
+Date: Fri, 12 Aug 2011 14:04:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Klement Fish <klement2@azet.sk>,
-        Francois Romieu <romieu@fr.zoreil.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [56/90] sis190: Rx filter init is needed for MAC address change.
+Subject: [53/90] bonding: fix string comparison errors
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +27,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Klement Fish <klement2@azet.sk>
+From: Andy Gospodarek <andy@greyhouse.net>
 
-[ Upstream commit fe66101f14813b77d84f6450d51772a2af2b81a1 ]
+[ Upstream commit f4bb2e9c4fa9e5fdddf90589703613fd1a9c519f ]
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=34552
+When a bond contains a device where one name is the subset of another
+(eth1 and eth10, for example), one cannot properly set the primary
+device or the currently active device.
 
-Signed-off-by: Klement Fish <klement2@azet.sk>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+This was reported and based on work by Takuma Umeya.  I also verified
+the problem and tested that this fix resolves it.
+
+V2: A few did not like the the current code or my changes, so I
+refactored bonding_store_primary and bonding_store_active_slave to be a
+bit cleaner, dropped the use of strnicmp since we did not really need
+the comparison to be case insensitive, and formatted the input string
+from sysfs so a comparison to IFNAMSIZ could be used.
+
+I also discovered an error in bonding_store_active_slave that would
+modify bond->primary_slave rather than bond->curr_active_slave before
+forcing the bonding driver to choose a new active slave.
+
+V3: Actually sending the proper patch....
+
+Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+Reported-by: Takuma Umeya <tumeya@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/sis190.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_sysfs.c |  133 ++++++++++++++++++++-------------------
+ 1 file changed, 71 insertions(+), 62 deletions(-)
 
---- a/drivers/net/sis190.c
-+++ b/drivers/net/sis190.c
-@@ -1824,6 +1824,16 @@ static int sis190_ioctl(struct net_devic
- 		generic_mii_ioctl(&tp->mii_if, if_mii(ifr), cmd, NULL);
- }
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -992,6 +992,7 @@ static ssize_t bonding_store_primary(str
+ 	int i;
+ 	struct slave *slave;
+ 	struct bonding *bond = to_bond(d);
++	char ifname[IFNAMSIZ];
  
-+static int sis190_mac_addr(struct net_device  *dev, void *p)
-+{
-+	int rc;
+ 	if (!rtnl_trylock())
+ 		return restart_syscall();
+@@ -1002,32 +1003,33 @@ static ssize_t bonding_store_primary(str
+ 	if (!USES_PRIMARY(bond->params.mode)) {
+ 		pr_info("%s: Unable to set primary slave; %s is in mode %d\n",
+ 			bond->dev->name, bond->dev->name, bond->params.mode);
+-	} else {
+-		bond_for_each_slave(bond, slave, i) {
+-			if (strnicmp
+-			    (slave->dev->name, buf,
+-			     strlen(slave->dev->name)) == 0) {
+-				pr_info("%s: Setting %s as primary slave.\n",
+-					bond->dev->name, slave->dev->name);
+-				bond->primary_slave = slave;
+-				strcpy(bond->params.primary, slave->dev->name);
+-				bond_select_active_slave(bond);
+-				goto out;
+-			}
+-		}
++		goto out;
++	}
+ 
+-		/* if we got here, then we didn't match the name of any slave */
++	sscanf(buf, "%16s", ifname); /* IFNAMSIZ */
+ 
+-		if (strlen(buf) == 0 || buf[0] == '\n') {
+-			pr_info("%s: Setting primary slave to None.\n",
+-				bond->dev->name);
+-			bond->primary_slave = NULL;
+-				bond_select_active_slave(bond);
+-		} else {
+-			pr_info("%s: Unable to set %.*s as primary slave as it is not a slave.\n",
+-				bond->dev->name, (int)strlen(buf) - 1, buf);
++	/* check to see if we are clearing primary */
++	if (!strlen(ifname) || buf[0] == '\n') {
++		pr_info("%s: Setting primary slave to None.\n",
++			bond->dev->name);
++		bond->primary_slave = NULL;
++		bond_select_active_slave(bond);
++		goto out;
++	}
 +
-+	rc = eth_mac_addr(dev, p);
-+	if (!rc)
-+		sis190_init_rxfilter(dev);
-+	return rc;
-+}
++	bond_for_each_slave(bond, slave, i) {
++		if (strncmp(slave->dev->name, ifname, IFNAMSIZ) == 0) {
++			pr_info("%s: Setting %s as primary slave.\n",
++				bond->dev->name, slave->dev->name);
++			bond->primary_slave = slave;
++			strcpy(bond->params.primary, slave->dev->name);
++			bond_select_active_slave(bond);
++			goto out;
+ 		}
+ 	}
 +
- static const struct net_device_ops sis190_netdev_ops = {
- 	.ndo_open		= sis190_open,
- 	.ndo_stop		= sis190_close,
-@@ -1832,7 +1842,7 @@ static const struct net_device_ops sis19
- 	.ndo_tx_timeout		= sis190_tx_timeout,
- 	.ndo_set_multicast_list = sis190_set_rx_mode,
- 	.ndo_change_mtu		= eth_change_mtu,
--	.ndo_set_mac_address 	= eth_mac_addr,
-+	.ndo_set_mac_address	= sis190_mac_addr,
- 	.ndo_validate_addr	= eth_validate_addr,
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller	 = sis190_netpoll,
++	pr_info("%s: Unable to set %.*s as primary slave.\n",
++		bond->dev->name, (int)strlen(buf) - 1, buf);
+ out:
+ 	write_unlock_bh(&bond->curr_slave_lock);
+ 	read_unlock(&bond->lock);
+@@ -1162,6 +1164,7 @@ static ssize_t bonding_store_active_slav
+ 	struct slave *old_active = NULL;
+ 	struct slave *new_active = NULL;
+ 	struct bonding *bond = to_bond(d);
++	char ifname[IFNAMSIZ];
+ 
+ 	if (!rtnl_trylock())
+ 		return restart_syscall();
+@@ -1170,56 +1173,62 @@ static ssize_t bonding_store_active_slav
+ 	read_lock(&bond->lock);
+ 	write_lock_bh(&bond->curr_slave_lock);
+ 
+-	if (!USES_PRIMARY(bond->params.mode))
++	if (!USES_PRIMARY(bond->params.mode)) {
+ 		pr_info("%s: Unable to change active slave; %s is in mode %d\n",
+ 			bond->dev->name, bond->dev->name, bond->params.mode);
+-	else {
+-		bond_for_each_slave(bond, slave, i) {
+-			if (strnicmp
+-			    (slave->dev->name, buf,
+-			     strlen(slave->dev->name)) == 0) {
+-        			old_active = bond->curr_active_slave;
+-        			new_active = slave;
+-        			if (new_active == old_active) {
+-					/* do nothing */
+-					pr_info("%s: %s is already the current active slave.\n",
++		goto out;
++	}
++
++	sscanf(buf, "%16s", ifname); /* IFNAMSIZ */
++
++	/* check to see if we are clearing active */
++	if (!strlen(ifname) || buf[0] == '\n') {
++		pr_info("%s: Clearing current active slave.\n",
++			bond->dev->name);
++		bond->curr_active_slave = NULL;
++		bond_select_active_slave(bond);
++		goto out;
++	}
++
++	bond_for_each_slave(bond, slave, i) {
++		if (strncmp(slave->dev->name, ifname, IFNAMSIZ) == 0) {
++			old_active = bond->curr_active_slave;
++			new_active = slave;
++			if (new_active == old_active) {
++				/* do nothing */
++				pr_info("%s: %s is already the current"
++					" active slave.\n",
++					bond->dev->name,
++					slave->dev->name);
++				goto out;
++			}
++			else {
++				if ((new_active) &&
++				    (old_active) &&
++				    (new_active->link == BOND_LINK_UP) &&
++				    IS_UP(new_active->dev)) {
++					pr_info("%s: Setting %s as active"
++						" slave.\n",
+ 						bond->dev->name,
+ 						slave->dev->name);
+-					goto out;
++					bond_change_active_slave(bond,
++								 new_active);
+ 				}
+ 				else {
+-        				if ((new_active) &&
+-            				    (old_active) &&
+-				            (new_active->link == BOND_LINK_UP) &&
+-				            IS_UP(new_active->dev)) {
+-						pr_info("%s: Setting %s as active slave.\n",
+-							bond->dev->name,
+-							slave->dev->name);
+-							bond_change_active_slave(bond, new_active);
+-        				}
+-					else {
+-						pr_info("%s: Could not set %s as active slave; either %s is down or the link is down.\n",
+-							bond->dev->name,
+-							slave->dev->name,
+-							slave->dev->name);
+-					}
+-					goto out;
++					pr_info("%s: Could not set %s as"
++						" active slave; either %s is"
++						" down or the link is down.\n",
++						bond->dev->name,
++						slave->dev->name,
++						slave->dev->name);
+ 				}
++				goto out;
+ 			}
+ 		}
+-
+-		/* if we got here, then we didn't match the name of any slave */
+-
+-		if (strlen(buf) == 0 || buf[0] == '\n') {
+-			pr_info("%s: Setting active slave to None.\n",
+-				bond->dev->name);
+-			bond->primary_slave = NULL;
+-			bond_select_active_slave(bond);
+-		} else {
+-			pr_info("%s: Unable to set %.*s as active slave as it is not a slave.\n",
+-				bond->dev->name, (int)strlen(buf) - 1, buf);
+-		}
+ 	}
++
++	pr_info("%s: Unable to set %.*s as active slave.\n",
++		bond->dev->name, (int)strlen(buf) - 1, buf);
+  out:
+ 	write_unlock_bh(&bond->curr_slave_lock);
+ 	read_unlock(&bond->lock);
 
 
