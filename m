@@ -1,53 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab1HLNKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:10:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56196 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212Ab1HLNKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:10:44 -0400
-Date: Fri, 12 Aug 2011 15:10:42 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ying Han <yinghan@google.com>, Balbir Singh <bsingharora@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [patch 1/2] mm: vmscan: fix force-scanning small targets without
- swap
-Message-ID: <20110812131042.GB32335@tiehlicka.suse.cz>
-References: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751984Ab1HLNM5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:12:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33469 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab1HLNM4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 09:12:56 -0400
+Subject: Re: [ANNOUNCE] 3.0.1-rt9
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rolando Martins <rolando.martins@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Fri, 12 Aug 2011 15:12:31 +0200
+In-Reply-To: <CABcS5h2UEzUZ4a3F6Z8SAyn_3uzPDJ5FEpGnZVJ2ikKzeLd3Ew@mail.gmail.com>
+References: <1313153166.6576.36.camel@twins>
+	 <CABcS5h2UEzUZ4a3F6Z8SAyn_3uzPDJ5FEpGnZVJ2ikKzeLd3Ew@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313154751.6576.45.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-08-11 22:31:54, Johannes Weiner wrote:
-> Without swap, anonymous pages are not scanned.  As such, they should
-> not count when considering force-scanning a small target if there is
-> no swap.
-> 
-> Otherwise, targets are not force-scanned even when their effective
-> scan number is zero and the other conditions--kswapd/memcg--apply.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+On Fri, 2011-08-12 at 13:49 +0100, Rolando Martins wrote:
+> Great work!
+> Any news on the CGROUP_RT front?
 
-We are calculating nr_force_scan even if it is not needed but this
-shouldn't hurt.
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Right, let me go brew a strong pot of tea and actually stare at that for
+a change ;-)
