@@ -1,289 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1HLANV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 20:13:21 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:32799 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754628Ab1HLANU (ORCPT
+	id S1754619Ab1HLASX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 20:18:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56964 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754523Ab1HLASV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 20:13:20 -0400
-Date: Thu, 11 Aug 2011 17:13:17 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Tonda <as@strmilov.cz>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: TCP port firewall controlled by UDP packets
-Message-Id: <20110811171317.271be88b.rdunlap@xenotime.net>
-In-Reply-To: <1313106969-18733-1-git-send-email-as@strmilov.cz>
-References: <1313106969-18733-1-git-send-email-as@strmilov.cz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 11 Aug 2011 20:18:21 -0400
+Subject: RE: [PATCH] i2c/tegra: I2C driver uses the
+ suspend_noirq/resume_noirq
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Colin Cross <ccross@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+	 <CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+	 <20110806084805.GA18098@sirena.org.uk>
+	 <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+	 <CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
+	 <74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Wolfson Microelectronics
+Date: Fri, 12 Aug 2011 09:18:16 +0900
+Message-ID: <1313108296.19990.10.camel@finisterre.wolfsonmicro.main>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Aug 2011 01:56:09 +0200 Tonda wrote:
+On Thu, 2011-08-11 at 14:09 -0700, Stephen Warren wrote:
+> Colin Cross wrote at Thursday, August 11, 2011 2:51 PM:
 
-Need more patch description & justification here, as well as
-Signed-off-by: <your name & email address>
+> Mark Brown wrote:
+> > Unfortunately it's the only tool Linux has for dealing with this sort of
+> > issue right now.  We were supposed to be getting support for telling the
+> > PM core about dependencies but Linus didn't like that,
 
+> Mark, can you fill in a little more detail; did Linus not like the concept
+> of drivers registering dependencies on each-other, or was there a problem
+> with the specific implementation that was proposed? I assume we're still a
 
-> diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-> --- a/net/ipv4/Kconfig
-> +++ b/net/ipv4/Kconfig
-> @@ -624,3 +624,7 @@
->  	  on the Internet.
->  
->  	  If unsure, say N.
-> +
-> +config TCPFIREWALL
-> +	tristate "TCP Firewall controlled by UDP queries"
-> +	depends on m
+He didn't like either, I think - he felt that probe ordering should be
+sufficient. Which is true within the device model, in that devices can't
+probe until all their resources are ready. This is coming up for ASoC
+because that mechanism just doesn't work at all for us an we have to
+work around it.
 
-Why buildable only as a loadable module?
+> long way away from anything like that working. You also mentioned Grant's
+> device registration retry stuff, but doesn't that only solve the initial
+> probing, not shutdown/suspend dependencies, or do devices take locks on
+> each-other to handle that too?
 
+Our current mechanism is based entirely on the order in which things get
+instantiated so depending on the implementation of deferred binding we
+may be able to change the ordering of the dpm_list.
 
-> diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-> --- a/net/ipv4/Makefile
-> +++ b/net/ipv4/Makefile
-> @@ -51,3 +51,4 @@
->  
->  obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
->  		      xfrm4_output.o
-> +obj-$(CONFIG_TCPFIREWALL) += tcpfirewall/
-> diff --git a/net/ipv4/tcpfirewall/Makefile b/net/ipv4/tcpfirewall/Makefile
-> --- a/net/ipv4/tcpfirewall/Makefile
-> +++ b/net/ipv4/tcpfirewall/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_TCPFIREWALL) += tcpfirewall.o
-> diff --git a/net/ipv4/tcpfirewall/tcpfirewall.c b/net/ipv4/tcpfirewall/tcpfirewall.c
-> --- a/net/ipv4/tcpfirewall/tcpfirewall.c
-> +++ b/net/ipv4/tcpfirewall/tcpfirewall.c
-> @@ -0,0 +1,451 @@
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/skbuff.h>
-> +#include <linux/in.h>
-> +#include <linux/if_packet.h>
-> +#include <linux/tcp.h>
-> +#include <linux/udp.h>
-> +#include <net/tcp.h>
-> +#include <net/udp.h>
-> +
-> +struct net_protocol {
-> +	int (*handler)(struct sk_buff *skb);
-> +	void (*err_handler)(struct sk_buff *skb, u32 info);
-> +	int (*gso_send_check)(struct sk_buff *skb);
-> +	struct sk_buff *(*gso_segment)(struct sk_buff *skb,
-> +		u32 features);
-> +	struct sk_buff **(*gro_receive)(struct sk_buff **head,
-> +		struct sk_buff *skb);
-> +	int (*gro_complete)(struct sk_buff *skb);
-> +	unsigned int no_policy:1,
-> +		netns_ok:1;
-> +};
-> +
-> +MODULE_LICENSE("GPL");
-> +
-> +static unsigned long inet_protos = 0x01234567;
-> +
-> +struct net_protocol **_inet_protos;
-> +
-> +module_param(inet_protos, ulong, 0);
-> +
-> +static int *otviraky;
-> +static int *zaviraky;
-> +
-> +static int pocetotviraku;
-> +static int pocetzaviraku;
-> +static int stav;
-> +static int packetcounter;
-> +static int tcpport;
-> +static int open;
-> +static int firewall;
-> +
-> +int (*tcpv4recv) (struct sk_buff *skb);
-> +int (*udprecv) (struct sk_buff *skb);
-> +
-> +int udpcontroller(struct sk_buff *skb)
-
-can be static?
-
-> +{
-> +	const struct udphdr *uh;
-> +
-> +	if (skb->pkt_type != PACKET_HOST) {
-> +		kfree_skb(skb);
-> +		return 0;
-> +	}
-> +
-> +	if (!pskb_may_pull(skb, sizeof(struct tcphdr))) {
-> +		kfree_skb(skb);
-> +		return 0;
-> +	}
-> +
-> +	uh = udp_hdr(skb);
-> +
-> +	if (pocetotviraku == 0)
-> +		return udprecv(skb);
-> +
-> +	if (!open) {
-> +		if (uh->dest == otviraky[stav]) {
-> +			++stav;
-> +			packetcounter = 0;
-> +
-> +			if (stav == pocetotviraku) {
-> +				open = 1;
-> +				stav = 0;
-> +			}
-> +		} else {
-> +			if (packetcounter <= 16) {
-> +				++packetcounter;
-> +				if (packetcounter > 16)
-> +					stav = 0;
-> +			}
-> +		}
-> +	} else {
-> +		if (uh->dest == zaviraky[stav]) {
-> +			++stav;
-> +			packetcounter = 0;
-> +
-> +			if (stav == pocetzaviraku) {
-> +				open = 0;
-> +				stav = 0;
-> +			}
-> +		} else {
-> +			if (packetcounter <= 16) {
-> +				++packetcounter;
-> +				if (packetcounter > 16)
-> +					stav = 0;
-> +			}
-> +		}
-> +	}
-> +
-> +
-> +	return udprecv(skb);
-> +}
-> +
-> +int tcpfirewall(struct sk_buff *skb)
-
-can be static?
-
-> +{
-> +	const struct tcphdr *th;
-> +
-> +	if (skb->pkt_type != PACKET_HOST) {
-> +		kfree_skb(skb);
-> +		return 0;
-> +	}
-> +
-> +	if (!pskb_may_pull(skb, sizeof(struct tcphdr))) {
-> +		kfree_skb(skb);
-> +		return 0;
-> +	}
-> +
-> +	th = tcp_hdr(skb);
-> +
-> +	if (th->dest == tcpport) {
-> +		if (firewall == 1 && !open) {
-> +			/*tcpv4sendreset(NULL, skb);*/
-> +			kfree_skb(skb);
-> +			return 0;
-> +		}
-> +	}
-> +
-> +	return tcpv4recv(skb);
-> +}
-
-[snip]
-
-> +static int __init start(void)
-> +{
-> +	if (inet_protos == 0x01234567) {
-> +		printk(KERN_WARNING "inet_protos parameter was not");
-> +		printk(KERN_WARNING " specified!\nread its value from");
-> +		printk(KERN_WARNING " System_map file file, and insert");
-> +		printk(KERN_WARNING " the module again!\n");
-
-Break the printk() calls at newlines, please.
-
-> +		return -1;
-> +	}
-> +
-> +	pocetotviraku = 0;
-> +	pocetzaviraku = 0;
-> +	stav = -1;
-> +	packetcounter = 0;
-> +	tcpport = 0;
-> +	open = 1;
-> +	firewall = 0;
-> +
-> +	memset(&kobj, 0, sizeof(struct kobject));
-> +
-> +	_inet_protos = (struct net_protocol **)inet_protos;
-> +
-> +	kobject_init(&kobj, &khid);
-> +	if (kobject_add(&kobj, NULL, "tcpfirewall") < 0)
-> +		printk(KERN_ERR "kobject_add failed");
-> +
-
-All of these kobject_add() and sysfs_create_file() failures are not
-fatal errors?
-
-> +	if (sysfs_create_file(&kobj, &fw) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &opn) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &tcpp) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &openers) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &closers) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &stat) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +	if (sysfs_create_file(&kobj, &counte) < 0)
-> +		printk(KERN_ERR "sysfs_create_file failed");
-> +
-> +	zalohatcp = _inet_protos[IPPROTO_TCP];
-> +	zalohaudp = _inet_protos[IPPROTO_UDP];
-> +	mytcp = *zalohatcp;
-> +	myudp = *zalohaudp;
-> +	tcpv4recv = mytcp.handler;
-> +	udprecv = myudp.handler;
-> +	mytcp.handler = tcpfirewall;
-> +	myudp.handler = udpcontroller;
-> +	_inet_protos[IPPROTO_TCP] = &mytcp;
-> +	_inet_protos[IPPROTO_UDP] = &myudp;
-> +	return 0;
-> +}
-> +
-> +static void konec(void)
-> +{
-> +	_inet_protos[IPPROTO_TCP] = zalohatcp;
-> +	_inet_protos[IPPROTO_UDP] = zalohaudp;
-> +
-> +	if (pocetotviraku)
-> +		kfree(otviraky);
-> +	if (pocetzaviraku)
-> +		kfree(zaviraky);
-> +
-> +	kobject_del(&kobj);
-> +}
-> +
-> +module_init(start);
-> +module_exit(konec);
-> --
-
-Some of the function & variable names confuse me.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
