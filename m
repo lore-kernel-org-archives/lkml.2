@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab1HLWDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 18:03:21 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:41014 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab1HLWDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 18:03:19 -0400
-Date: Sat, 13 Aug 2011 00:03:17 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
-Message-ID: <20110812220316.GA28845@merkur.ravnborg.org>
-References: <4E457682.5020107@codeaurora.org> <1313175602-21834-1-git-send-email-sboyd@codeaurora.org> <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com> <20110812205520.GL4775@n2100.arm.linux.org.uk> <CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752538Ab1HLWGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 18:06:04 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:55199 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290Ab1HLWGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 18:06:01 -0400
+Date: Fri, 12 Aug 2011 15:06:07 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>
+Subject: Re: linux-next: Tree for Aug 12 (benet/be2net)
+Message-ID: <20110812150607.2303e10e@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110812135618.a209d9af.rdunlap@xenotime.net>
+References: <20110812171311.4d7bb640f38838bf7c34df50@canb.auug.org.au>
+	<20110812135618.a209d9af.rdunlap@xenotime.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 12 Aug 2011 13:56:18 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> On Fri, 12 Aug 2011 17:13:11 +1000 Stephen Rothwell wrote:
 > 
-> I suspect this would have done the job:
+> > Hi all,
+> > 
+> > [The kernel.org mirroring is being very slow today]
 > 
-> $(obj)/font.o: $(srctree)/drivers/video/console/font_acorn_8x8.c
->         $(cmd,cc_o_c)'
+>   [s.l.o.w.]
+>  
+> > The net tree gained a build failure do I used the version from
+> > next-20110811.
+> 
+> 
+> On i386:
+> 
+> drivers/built-in.o: In function `be_rx_eqd_update':
+> be_main.c:(.text+0x569229): undefined reference to `__udivdi3'
+> 
 
-I prefer using $(call,shipped) and let kbuild figure out how
-build an .o file from a .c file.
+Already fixed:
 
-In other words - avoiding use of the internal to Makefile.build
-variables in various places.
+Author: Eric Dumazet <eric.dumazet@gmail.com>  2011-08-08 23:23:07
+Committer: David S. Miller <davem@davemloft.net>  2011-08-12 02:54:22
+Parent: 9aebddd11be42366f89b0296590770c02797aa98 (be2net: Move the Emulex driver)
+Branches: master, remotes/origin/master
+Follows: v3.0
+Precedes: 
 
-	Sam
+    benet: fix build error on 32bit arch
+    
+    Error comes from commit ac124ff973e27802797
+    (be2net: cleanup and refactor stats code)
+    
+    ERROR: "__udivdi3" [drivers/net/benet/be2net.ko] undefined!
+    
+    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+    CC: Sathya Perla <sathya.perla@emulex.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
