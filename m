@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab1HNQTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:19:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37350 "EHLO mx2.suse.de"
+	id S1755014Ab1HNQTY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:19:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37334 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754925Ab1HNQSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:18:23 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:10:35 2011
-Message-Id: <20110812211035.036598909@clark.kroah.org>
+	id S1754548Ab1HNQSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:18:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:10:34 2011
+Message-Id: <20110812211034.862255062@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:09:55 -0700
+Date: Fri, 12 Aug 2011 14:09:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [5/6] powerpc: Fix device tree claim code
+        Takashi Iwai <tiwai@suse.de>
+Subject: [3/6] ALSA: timer - Fix Oops at closing slave timer
 In-Reply-To: <20110812211045.GA6497@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 966728dd88b4026ec58fee169ccceaeaf56ef120 upstream.
+commit 0584ffa548b6e59aceb027112f23a55f0133400e upstream.
 
-I have a box that fails in OF during boot with:
+A slave-timer instance has no timer reference, and this results in
+NULL-dereference at stopping the timer, typically called at closing
+the device.
 
-DEFAULT CATCH!, exception-handler=fff00400
-at   %SRR0: 49424d2c4c6f6768   %SRR1: 800000004000b002
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=40682
 
-ie "IBM,Logh". OF got corrupted with a device tree string.
-
-Looking at make_room and alloc_up, we claim the first chunk (1 MB)
-but we never claim any more. mem_end is always set to alloc_top
-which is the top of our available address space, guaranteeing we will
-never call alloc_up and claim more memory.
-
-Also alloc_up wasn't setting alloc_bottom to the bottom of the
-available address space.
-
-This doesn't help the box to boot, but we at least fail with
-an obvious error. We could relocate the device tree in a future
-patch.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/prom_init.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/core/timer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -890,7 +890,7 @@ static unsigned long __init alloc_up(uns
- 	}
- 	if (addr == 0)
- 		return 0;
--	RELOC(alloc_bottom) = addr;
-+	RELOC(alloc_bottom) = addr + size;
- 
- 	prom_debug(" -> %x\n", addr);
- 	prom_debug("  alloc_bottom : %x\n", RELOC(alloc_bottom));
-@@ -1704,7 +1704,7 @@ static void __init *make_room(unsigned l
- 		chunk = alloc_up(room, 0);
- 		if (chunk == 0)
- 			prom_panic("No memory for flatten_device_tree (claim failed)");
--		*mem_end = RELOC(alloc_top);
-+		*mem_end = chunk + room;
- 	}
- 
- 	ret = (void *)*mem_start;
-@@ -1923,7 +1923,7 @@ static void __init flatten_device_tree(v
- 	mem_start = (unsigned long)alloc_up(room, PAGE_SIZE);
- 	if (mem_start == 0)
- 		prom_panic("Can't allocate initial device-tree chunk\n");
--	mem_end = RELOC(alloc_top);
-+	mem_end = mem_start + room;
- 
- 	/* Get root of tree */
- 	root = call_prom("peer", 1, 1, (phandle)0);
+--- a/sound/core/timer.c
++++ b/sound/core/timer.c
+@@ -530,6 +530,8 @@ int snd_timer_stop(struct snd_timer_inst
+ 	if (err < 0)
+ 		return err;
+ 	timer = timeri->timer;
++	if (!timer)
++		return -EINVAL;
+ 	spin_lock_irqsave(&timer->lock, flags);
+ 	timeri->cticks = timeri->ticks;
+ 	timeri->pticks = 0;
 
 
