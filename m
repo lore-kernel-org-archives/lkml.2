@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1HLQWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:22:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37368 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab1HLQWF (ORCPT
+	id S1752196Ab1HLQZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:25:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:26496 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1HLQZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:22:05 -0400
-From: Ralf Thielow <ralf.thielow@googlemail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Ralf Thielow <ralf.thielow@googlemail.com>
-Subject: [PATCH] scripts: get_maintainer: Update Linus' git repository
-Date: Fri, 12 Aug 2011 18:21:55 +0200
-Message-Id: <1313166115-2838-1-git-send-email-ralf.thielow@googlemail.com>
-X-Mailer: git-send-email 1.7.6
+	Fri, 12 Aug 2011 12:25:13 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=ROWKvSakK224mvYvRA704Ln8Ziva2dBAsJ57z+SVCofWAWfdaswCESsMe2TXzLxde
+	gZJvybKSgfxoy2u5w9gdQ==
+MIME-Version: 1.0
+In-Reply-To: <CANxBZFpjtGyk3CO0ViFJF8em_hBFLq7tErjMJrcq5vC7n9cy4g@mail.gmail.com>
+References: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
+ <CAErSpo6Fh+zTMiSG+mjkNuA03cCEK7bej9y2oX+HfsScSYGFsw@mail.gmail.com>
+ <CANxBZFrzmTDaUrmkGhKAVsZpXScEDxdJeBzcMbBjEW=6ozppGw@mail.gmail.com>
+ <20110811232735.u5qoybpr4gg8kckw@webmail.mit.edu> <CANxBZFpjtGyk3CO0ViFJF8em_hBFLq7tErjMJrcq5vC7n9cy4g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 12 Aug 2011 10:24:50 -0600
+Message-ID: <CAErSpo6NgwTt0o0u651ojN_xH=5qqVN1o0POTEeK+eV6Y68p7A@mail.gmail.com>
+Subject: Re: [PATCH] pnp: replace deprecated __check_region to request_region
+To: Wang Shaoyan <stufever@gmail.com>
+Cc: Adam M Belay <abelay@mit.edu>, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change to new git tree -
-(git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git).
+On Thu, Aug 11, 2011 at 10:03 PM, Wang Shaoyan <stufever@gmail.com> wrote:
+> I can understand your worry, but back to beginning, just as the
+> subject of the patch: "replace deprecated __check_region to
+> request_region", I think this patch is still need, although it can't
+> solve the problems both you guys mentioned. Do you agree it?
 
-Signed-off-by: Ralf Thielow <ralf.thielow@googlemail.com>
----
- scripts/get_maintainer.pl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Your patch is presented as "no functional change," but in fact, the
+current code does not leave the region reserved, while with your patch
+it does.  This is quite a large change and I think it will break
+things.
 
-diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-index eb2f1e6..4594f33 100755
---- a/scripts/get_maintainer.pl
-+++ b/scripts/get_maintainer.pl
-@@ -1389,7 +1389,7 @@ sub vcs_exists {
- 	warn("$P: No supported VCS found.  Add --nogit to options?\n");
- 	warn("Using a git repository produces better results.\n");
- 	warn("Try Linus Torvalds' latest git repository using:\n");
--	warn("git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git\n");
-+	warn("git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git\n");
- 	$printed_novcs = 1;
-     }
-     return 0;
--- 
-1.7.6
+I would like to see the PNP core reserve resources, but it should be
+done for all resources of all device.  Your patch only affects ioports
+(I think we should do memory as well), and it only affects the
+assignment path (I don't think we do this for every device we
+enumerate).  And it effectively adds a region reservation without
+adding a corresponding release.
 
+Bjorn
