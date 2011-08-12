@@ -1,39 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1HLIeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:34:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39234 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751968Ab1HLIen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:34:43 -0400
-Date: Fri, 12 Aug 2011 17:34:27 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Liam Girdwood <lrg@ti.com>, Jonas Aberg <jonas.aberg@stericsson.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 22/23] regulator/dbx500-prcmu: factor out common code
-Message-ID: <20110812083425.GA13557@opensource.wolfsonmicro.com>
-References: <1313137833-31314-1-git-send-email-linus.walleij@stericsson.com>
+	id S1753121Ab1HLIf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:35:29 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:42428 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752499Ab1HLIfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 04:35:24 -0400
+Date: Fri, 12 Aug 2011 10:34:58 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110812083458.GB6916@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izVoN2s6J9t1TVj+1pMmHVxfiWYvq=uqeTL4C5-YsBwOw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313137833-31314-1-git-send-email-linus.walleij@stericsson.com>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALWz4izVoN2s6J9t1TVj+1pMmHVxfiWYvq=uqeTL4C5-YsBwOw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 10:30:33AM +0200, Linus Walleij wrote:
-> From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+On Thu, Aug 11, 2011 at 01:33:05PM -0700, Ying Han wrote:
+> > Johannes, I wonder if we should include the following patch:
 > 
-> Before we add the DB5500 PRCMU voltage domain regulator, let's
-> factor out the pieces of code that are common between both
-> drivers.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 674823e..1513deb 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -832,7 +832,7 @@ static void
+> mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
+>          * Forget old LRU when this page_cgroup is *not* used. This Used bit
+>          * is guarded by lock_page() because the page is SwapCache.
+>          */
+> -       if (!PageCgroupUsed(pc))
+> +       if (PageLRU(page) && !PageCgroupUsed(pc))
+>                 del_page_from_lru(zone, page);
+>         spin_unlock_irqrestore(&zone->lru_lock, flags);
 
-Acked-by: Mark Brown <broonie@opensouirce.wolfsonmicro.com>
+Yes, as the first PageLRU check is outside the lru_lock, PageLRU may
+indeed go away before grabbing the lock.  The page will already be
+unlinked and the LRU accounting will be off.
+
+The deeper problem, however, is that del_page_from_lru is wrong.  We
+can not keep the page off the LRU while leaving PageLRU set, or it
+won't be very meaningful after the commit, anyway.  And in reality, we
+only care about properly memcg-unaccounting the old lru state before
+we change pc->mem_cgroup, so this becomes
+
+	if (!PageLRU(page))
+		return;
+	spin_lock_irqsave(&zone->lru_lock, flags);
+	if (!PageCgroupUsed(pc))
+		mem_cgroup_lru_del(page);
+	spin_unlock_irqrestore(&zone->lru_lock, flags);
+
+I don't see why we should care if the page stays physically linked to
+the list.  The PageLRU check outside the lock is still fine as the
+accounting has been done already if !PageLRU and a putback without
+PageCgroupUsed will not re-account to pc->mem_cgroup, as the comment
+above this code explains nicely.
+
+The handling after committing the charge becomes this:
+
+-	if (likely(!PageLRU(page)))
+-		return;
+	spin_lock_irqsave(&zone->lru_lock, flags);
+	lru = page_lru(page);
+	if (PageLRU(page) && !PageCgroupAcctLRU(pc)) {
+		del_page_from_lru_list(zone, page, lru);
+		add_page_to_lru_list(zone, page, lru);
+	}
+
+If the page is not on the LRU, someone else will put it there and link
+it up properly.  If it is on the LRU and already memcg-accounted then
+it must be on the right lruvec as setting pc->mem_cgroup and PCG_USED
+is properly ordered.  Otherwise, it has to be physically moved to the
+correct lruvec and memcg-accounted for.
+
+The old unlocked PageLRU check in after_commit is no longer possible
+because setting PG_lru is not ordered against setting the list head,
+which means the page could be linked to the wrong lruvec while this
+CPU would not yet observe PG_lru and do the relink.  So this needs
+strong ordering.  Given that this code is hairy enough as it is, I
+just removed the preliminary check for now and do the check only under
+the lock instead of adding barriers here and to the lru linking sites.
+
+Thanks for making me write this out, few thinks put one's
+understanding of a problem to the test like this.
+
+Let's hope it helped :-)
