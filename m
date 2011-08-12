@@ -1,346 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab1HLMip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 08:38:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18628 "EHLO mx1.redhat.com"
+	id S1751951Ab1HLMoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 08:44:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55153 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab1HLMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 08:38:43 -0400
-Message-ID: <4E451ED0.1000909@redhat.com>
-Date: Fri, 12 Aug 2011 14:38:40 +0200
-From: Josef Lusticky <jlustick@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1751847Ab1HLMoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 08:44:22 -0400
+Date: Fri, 12 Aug 2011 14:44:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH] memcg: add nr_pages argument for hierarchical reclaim
+Message-ID: <20110812124418.GA32335@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110810141425.GC15007@tiehlicka.suse.cz>
+ <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110811145055.GN8023@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Unable to handle kernel paging request
-References: <4E3FD98C.8040607@redhat.com> <20110808114840.c0cbabef.rdunlap@xenotime.net>
-In-Reply-To: <20110808114840.c0cbabef.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811145055.GN8023@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 8.8.2011 20:48, Randy Dunlap napsal(a):
-> On Mon, 08 Aug 2011 14:41:48 +0200 Josef Lusticky wrote:
->
->> 1.
->> I get kernel panic when loading and unloading presented modules saying
->> BUG: Unable to handle kernel paging request.
->>
->> 2.
->> I've written short script that finds all available modules on system and
->> tries to
->> load and unload them - see attachment or http://pastebin.com/dphQp2D3
->> I've tried several machines with different kernels and architectures
->> and always got kernel panic, oops or not responding system.
->> The problem is the panic is always caused by different module on
->> different machines and with different kernels but some of call traces
->> are similar and they always begin with "BUG: unable to handle kernel
->> paging request at" + address.
->> I've been using module-init-tools 3.9 and 3.16 (most recent).
->> Here are examples of output:
->> stable kernel 3.0 on x86_64 machine: http://pastebin.com/WKAEdSjE
-> Now that pastebin is working again:
->
-> The 3.0 oops is fixed by this git commit:
-> 7676e345824f162191b1fe2058ad948a6cf91c20
-> which was merged on July 28.
-> Dave Miller wrote that he would submit it for -stable also.
->
-> Um, same fix for the 2.6.39.3 oops.
->
-> BTW, just putting the kernel oops logs inline in the email (or even as
-> attachments) is usually preferable to making someone use a web browser
-> to view them.
->
->
->> stable kernel 2.6.39.3 on x86_64 machine: http://pastebin.com/3XNy5n3B
->> stable lts kernel 2.6.32.43 on x86_64 machine: http://pastebin.com/rYzH6y2B
->> stable lts kernel 2.6.32.43 on i386 machine: http://pastebin.com/qSnLTch2
->>
->> The problem does not occur when loading and unloading one module.
->> The problem does not occur after certain amounts of loaded modules.
->> When I choose a different order of modules (e.g. using sort) I get panic
->> on different module.
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+On Thu 11-08-11 16:50:55, Michal Hocko wrote:
+> On Thu 11-08-11 08:52:52, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 10 Aug 2011 16:14:25 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Tue 09-08-11 19:09:33, KAMEZAWA Hiroyuki wrote:
+> > > > memcg :avoid node fallback scan if possible.
+> > > > 
+> > > > Now, try_to_free_pages() scans all zonelist because the page allocator
+> > > > should visit all zonelists...but that behavior is harmful for memcg.
+> > > > Memcg just scans memory because it hits limit...no memory shortage
+> > > > in pased zonelist.
+> > > > 
+> > > > For example, with following unbalanced nodes
+> > > > 
+> > > >      Node 0    Node 1
+> > > > File 1G        0
+> > > > Anon 200M      200M
+> > > > 
+> > > > memcg will cause swap-out from Node1 at every vmscan.
+> > > > 
+> > > > Another example, assume 1024 nodes system.
+> > > > With 1024 node system, memcg will visit 1024 nodes
+> > > > pages per vmscan... This is overkilling. 
+> > > > 
+> > > > This is why memcg's victim node selection logic doesn't work
+> > > > as expected.
+> > > > 
+> > > > This patch is a help for stopping vmscan when we scanned enough.
+> > > > 
+> > > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > OK, I see the point. At first I was afraid that we would make a bigger
+> > > pressure on the node which triggered the reclaim but as we are selecting
+> > > t dynamically (mem_cgroup_select_victim_node) - round robin at the
+> > > moment - it should be fair in the end. More targeted node selection
+> > > should be even more efficient.
+> > > 
+> > > I still have a concern about resize_limit code path, though. It uses
+> > > memcg direct reclaim to get under the new limit (assuming it is lower
+> > > than the current one). 
+> > > Currently we might reclaim nr_nodes * SWAP_CLUSTER_MAX while
+> > > after your change we have it at SWAP_CLUSTER_MAX. This means that
+> > > mem_cgroup_resize_mem_limit might fail sooner on large NUMA machines
+> > > (currently it is doing 5 rounds of reclaim before it gives up). I do not
+> > > consider this to be blocker but maybe we should enhance
+> > > mem_cgroup_hierarchical_reclaim with a nr_pages argument to tell it how
+> > > much we want to reclaim (min(SWAP_CLUSTER_MAX, nr_pages)).
+> > > What do you think?
+> > > 
+> > 
+> > Hmm,
+> > 
+> > > mem_cgroup_resize_mem_limit might fail sooner on large NUMA machines
+> > 
+> > mem_cgroup_resize_limit() just checks (curusage < prevusage), then, 
+> > I agree reducing the number of scan/reclaim will cause that.
+> > 
+> > I agree to pass nr_pages to try_to_free_mem_cgroup_pages().
 
-Hi Randy,
-thank you for your answer!
+This is another version which prevents from excessive reclaim due to
+THP.
+---
+From: Michal Hocko <mhocko@suse.cz>
+Subject: memcg: add nr_pages argument for hierarchical reclaim
 
-The commit seems to fix issues with ip_vs_ctl module,
-but I got another panic today using the script on the same machine.
-Here's the output:
+Now that we are doing memcg direct reclaim limited to nr_to_reclaim
+pages (introduced by "memcg: stop vmscan when enough done.") we have to
+be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
+most callers but it might cause failures for limit resize or force_empty
+code paths on big NUMA machines.
 
-*** Loading module lirc_dev ***
-lirc_dev: module unloaded
-IR JVC protocol handler initialized
-IR Sony protocol handler initialized
-IR MCE Keyboard/mouse protocol handler initialized
-lirc_dev: IR Remote Control driver registered, major 250
-IR LIRC bridge handler initialized
-*** Removing modBUG: unable to handle kernel paging request at 
-ffffffffa0852acc
-IP: [<ffffffffa0852acc>] 0xffffffffa0852acb
-PGD 1a06067 PUD 1a0a063 PMD 37e50067 PTE 0
-Oops: 0010 [#1] SMP
-CPU 1
-Modules linked in: ir_lirc_codec lirc_dev ir_mce_kbd_decoder 
-ir_sony_decoder ir_jvc_decoder ir_rc6_decoder ir_rc5_decoder 
-ir_nec_decoder rc_core soc_mediabus ivtv cx2341x v4l2_common videodev 
-v4l2_compat_ioctl32 tveeprom dvb_usb_af9005_remote des_generic dccp_ipv6 
-dccp_ipv4 dccp sctp libcrc32c nf_tproxy_core ts_kmp kvm mce_inject 
-cryptd aes_x86_64 aes_generic snd_mpu401_uart snd_rawmidi snd_seq_dummy 
-snd_seq snd_seq_device sunrpc cpufreq_ondemand acpi_cpufreq freq_table 
-mperf ipv6 dm_mirror dm_region_hash dm_log ppdev parport_pc parport 
-hp_wmi sparse_keymap rfkill pcspkr serio_raw sg tg3 
-snd_hda_codec_realtek snd_hda_codec snd_hwdep snd_pcm snd_timer snd 
-soundcore snd_page_alloc x38_edac edac_core ext4 mbcache jbd2 floppy 
-sr_mod cdrom sd_mod crc_t10dif ahci libahci nouveau ttm drm_kms_helper 
-drm i2c_algo_bit i2c_core mxm_wmi wmi video dm_mod [last unloaded: lirc_dev]
+Previously we might have reclaimed up to nr_nodes * SWAP_CLUSTER_MAX
+while now we have it at SWAP_CLUSTER_MAX. Both resize and force_empty rely
+on reclaiming a certain amount of pages and retrying if their condition is
+still not met.
 
-Pid: 39, comm: kworker/1:2 Tainted: G          I 3.1.0-rc1 #1 
-Hewlett-Packard HP xw4600 Workstation/0AA0h
-RIP: 0010:[<ffffffffa0852acc>]  [<ffffffffa0852acc>] 0xffffffffa0852acb
-RSP: 0000:ffff8800387ffdf0  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff880038784740 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
-RBP: ffff8800387ffdf0 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff88003fc8e140
-R13: ffff88003fc96400 R14: ffffffffa0852ab0 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff88003fc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: ffffffffa0852acc CR3: 000000003608c000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/1:2 (pid: 39, threadinfo ffff8800387fe000, task 
-ffff8800386d8b00)
-Stack:
-  ffff8800387ffe50 ffffffff81082e11 ffff880000062ac0 ffffffffa08544e0
-  ffff88003fc96405 000000003fc8e140 ffff880038784740 ffff880038784740
-  ffff88003fc8e140 ffff88003fc8e148 ffff880038784760 0000000000013c80
-Call Trace:
-  [<ffffffff81082e11>] process_one_work+0x131/0x450
-  [<ffffffff81084bbb>] worker_thread+0x17b/0x3c0
-  [<ffffffff81084a40>] ? manage_workers+0x120/0x120
-  [<ffffffff810894d6>] kthread+0x96/0xa0
-  [<ffffffff814f0114>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81089440>] ? kthread_worker_fn+0x1a0/0x1a0
-  [<ffffffff814f0110>] ? gs_change+0x13/0x13
-Code:  Bad RIP value.
-RIP  [<ffffffffa0852acc>] 0xffffffffa0852acb
-  RSP <ffff8800387ffdf0>
-CR2: ffffffffa0852acc
----[ end trace a7919e7f17c0a727 ]---
-ule xpnet ***
-*BUG: unable to handle kernel paging request at fffffffffffffff8
-IP: [<ffffffff81089030>] kthread_data+0x10/0x20
-PGD 1a06067 PUD 1a07067 PMD 0
-Oops: 0000 [#2] SMP
-CPU 1
-Modules linked in: xpnet(-) xp gru ir_lirc_codec lirc_dev 
-ir_mce_kbd_decoder ir_sony_decoder ir_jvc_decoder ir_rc6_decoder 
-ir_rc5_decoder ir_nec_decoder rc_core soc_mediabus ivtv cx2341x 
-v4l2_common videodev v4l2_compat_ioctl32 tveeprom dvb_usb_af9005_remote 
-des_generic dccp_ipv6 dccp_ipv4 dccp sctp libcrc32c nf_tproxy_core 
-ts_kmp kvm mce_inject cryptd aes_x86_64 aes_generic snd_mpu401_uart 
-snd_rawmidi snd_seq_dummy snd_seq snd_seq_device sunrpc cpufreq_ondemand 
-acpi_cpufreq freq_table mperf ipv6 dm_mirror dm_region_hash dm_log ppdev 
-parport_pc parport hp_wmi sparse_keymap rfkill pcspkr serio_raw sg tg3 
-snd_hda_codec_realtek snd_hda_codec snd_hwdep snd_pcm snd_timer snd 
-soundcore snd_page_alloc x38_edac edac_core ext4 mbcache jbd2 floppy 
-sr_mod cdrom sd_mod crc_t10dif ahci libahci nouveau ttm drm_kms_helper 
-drm i2c_algo_bit i2c_core mxm_wmi wmi video dm_mod [last unloaded: lirc_dev]
+Let's add nr_pages argument to mem_cgroup_hierarchical_reclaim which will
+push it further to try_to_free_mem_cgroup_pages. We still fall back to
+SWAP_CLUSTER_MAX for small requests so the standard code (hot) paths are not
+affected by this.
 
-Pid: 39, comm: kworker/1:2 Tainted: G      D   I 3.1.0-rc1 #1 
-Hewlett-Packard HP xw4600 Workstation/0AA0h
-RIP: 0010:[<ffffffff81089030>]  [<ffffffff81089030>] kthread_data+0x10/0x20
-RSP: 0018:ffff8800387ffa38  EFLAGS: 00010096
-RAX: 0000000000000000 RBX: 0000000000000001 RCX: 0000000000000001
-RDX: 0000000000000001 RSI: 0000000000000001 RDI: ffff8800386d8b00
-RBP: ffff8800387ffa38 R08: ffff8800386d8b70 R09: dead000000200200
-R10: 0000000000000400 R11: 0000000000000001 R12: ffff8800386d90a8
-R13: 0000000000000001 R14: 0000000000000001 R15: 0000000000000096
-FS:  0000000000000000(0000) GS:ffff88003fc80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: fffffffffffffff8 CR3: 000000003608c000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process kworker/1:2 (pid: 39, threadinfo ffff8800387fe000, task 
-ffff8800386d8b00)
-Stack:
-  ffff8800387ffa58 ffffffff81082365 ffff8800387ffa58 ffff88003fc93280
-  ffff8800387ffaf8 ffffffff814e3a63 ffff880035c2cda8 ffff880035c2cdf8
-  0000000000013280 ffff8800387fffd8 ffff8800387fe010 0000000000013280
-Call Trace:
-  [<ffffffff81082365>] wq_worker_sleeping+0x15/0xa0
-  [<ffffffff814e3a63>] schedule+0x5e3/0x850
-  [<ffffffff8122812b>] ? put_io_context+0x4b/0x60
-  [<ffffffff8106b85a>] do_exit+0x26a/0x410
-  [<ffffffff814e702b>] oops_end+0xab/0xf0
-  [<ffffffff8104196c>] no_context+0xfc/0x190
-  [<ffffffff81041b25>] __bad_area_nosemaphore+0x125/0x1e0
-  [<ffffffff8124f371>] ? list_del+0x11/0x40
-  [<ffffffff81041bf3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff814e9866>] do_page_fault+0x326/0x460
-  [<ffffffff81053e03>] ? __wake_up+0x53/0x70
-  [<ffffffff81080b9e>] ? call_usermodehelper_exec+0x9e/0xe0
-  [<ffffffff81080e1b>] ? __request_module+0x18b/0x220
-  [<ffffffff814e6375>] page_fault+0x25/0x30
-  [<ffffffff81082e11>] process_one_work+0x131/0x450
-  [<ffffffff81084bbb>] worker_thread+0x17b/0x3c0
-  [<ffffffff81084a40>] ? manage_workers+0x120/0x120
-  [<ffffffff810894d6>] kthread+0x96/0xa0
-  [<ffffffff814f0114>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81089440>] ? kthread_worker_fn+0x1a0/0x1a0
-  [<ffffffff814f0110>] ? gs_change+0x13/0x13
-Code: 66 66 66 90 65 48 8b 04 25 40 c4 00 00 48 8b 80 50 05 00 00 8b 40 
-f0 c9 c3 66 90 55 48 89 e5 66 66 66 66 90 48 8b 87 50 05 00 00
-  8b 40 f8 c9 c3 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 66
-RIP  [<ffffffff81089030>] kthread_data+0x10/0x20
-  RSP <ffff8800387ffa38>
-CR2: fffffffffffffff8
----[ end trace a7919e7f17c0a728 ]---
-Fixing recursive fault but reboot is needed!
-Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 1
-Pid: 39, comm: kworker/1:2 Tainted: G      D   I 3.1.0-rc1 #1
-Call Trace:
-<NMI>  [<ffffffff814e30fb>] panic+0x91/0x1b1
-  [<ffffffff810ccc11>] watchdog_overflow_callback+0xb1/0xc0
-  [<ffffffff81102073>] __perf_event_overflow+0x93/0x200
-  [<ffffffff810905e8>] ? sched_clock_cpu+0xb8/0x110
-  [<ffffffff810fca01>] ? perf_event_update_userpage+0x11/0xc0
-  [<ffffffff811025d4>] perf_event_overflow+0x14/0x20
-  [<ffffffff81025e51>] intel_pmu_handle_irq+0x321/0x530
-  [<ffffffff814e7649>] perf_event_nmi_handler+0x29/0xa0
-  [<ffffffff814e99f5>] notifier_call_chain+0x55/0x80
-  [<ffffffff814e9a5a>] atomic_notifier_call_chain+0x1a/0x20
-  [<ffffffff814e9a8e>] notify_die+0x2e/0x30
-  [<ffffffff814e6c39>] default_do_nmi+0x39/0x1f0
-  [<ffffffff814e6e70>] do_nmi+0x80/0xa0
-  [<ffffffff814e6630>] nmi+0x20/0x30
-  [<ffffffff8106b9b0>] ? do_exit+0x3c0/0x410
-  [<ffffffff814e5c25>] ? _raw_spin_lock_irq+0x25/0x30
-<<EOE>>  [<ffffffff814e354e>] schedule+0xce/0x850
-  [<ffffffff8106b9b0>] do_exit+0x3c0/0x410
-  [<ffffffff814e702b>] oops_end+0xab/0xf0
-  [<ffffffff8104196c>] no_context+0xfc/0x190
-  [<ffffffff81041b25>] __bad_area_nosemaphore+0x125/0x1e0
-  [<ffffffff81041bf3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff814e9866>] do_page_fault+0x326/0x460
-  [<ffffffff810d3405>] ? call_rcu_sched+0x15/0x20
-  [<ffffffff810d3405>] ? call_rcu_sched+0x15/0x20
-  [<ffffffff814e6375>] page_fault+0x25/0x30
-  [<ffffffff81089030>] ? kthread_data+0x10/0x20
-  [<ffffffff81082365>] wq_worker_sleeping+0x15/0xa0
-  [<ffffffff814e3a63>] schedule+0x5e3/0x850
-  [<ffffffff8122812b>] ? put_io_context+0x4b/0x60
-  [<ffffffff8106b85a>] do_exit+0x26a/0x410
-  [<ffffffff814e702b>] oops_end+0xab/0xf0
-  [<ffffffff8104196c>] no_context+0xfc/0x190
-  [<ffffffff81041b25>] __bad_area_nosemaphore+0x125/0x1e0
-  [<ffffffff8124f371>] ? list_del+0x11/0x40
-  [<ffffffff81041bf3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff814e9866>] do_page_fault+0x326/0x460
-  [<ffffffff81053e03>] ? __wake_up+0x53/0x70
-  [<ffffffff81080b9e>] ? call_usermodehelper_exec+0x9e/0xe0
-  [<ffffffff81080e1b>] ? __request_module+0x18b/0x220
-  [<ffffffff814e6375>] page_fault+0x25/0x30
-  [<ffffffff81082e11>] process_one_work+0x131/0x450
-  [<ffffffff81084bbb>] worker_thread+0x17b/0x3c0
-  [<ffffffff81084a40>] ? manage_workers+0x120/0x120
-  [<ffffffff810894d6>] kthread+0x96/0xa0
-  [<ffffffff814f0114>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81089440>] ? kthread_worker_fn+0x1a0/0x1a0
-  [<ffffffff814f0110>] ? gs_change+0x13/0x13
-panic occurred, switching back to text console
-------------[ cut here ]------------
-WARNING: at arch/x86/kernel/smp.c:118 native_smp_send_reschedule+0x5c/0x60()
-Hardware name: HP xw4600 Workstation
-Modules linked in: xpnet(-) xp gru ir_lirc_codec lirc_dev 
-ir_mce_kbd_decoder ir_sony_decoder ir_jvc_decoder ir_rc6_decoder 
-ir_rc5_decoder ir_nec_decoder rc_core soc_mediabus ivtv cx2341x 
-v4l2_common videodev v4l2_compat_ioctl32 tveeprom dvb_usb_af9005_remote 
-des_generic dccp_ipv6 dccp_ipv4 dccp sctp libcrc32c nf_tproxy_core 
-ts_kmp kvm mce_inject cryptd aes_x86_64 aes_generic snd_mpu401_uart 
-snd_rawmidi snd_seq_dummy snd_seq snd_seq_device sunrpc cpufreq_ondemand 
-acpi_cpufreq freq_table mperf ipv6 dm_mirror dm_region_hash dm_log ppdev 
-parport_pc parport hp_wmi sparse_keymap rfkill pcspkr serio_raw sg tg3 
-snd_hda_codec_realtek snd_hda_codec snd_hwdep snd_pcm snd_timer snd 
-soundcore snd_page_alloc x38_edac edac_core ext4 mbcache jbd2 floppy 
-sr_mod cdrom sd_mod crc_t10dif ahci libahci nouveau ttm drm_kms_helper 
-drm i2c_algo_bit i2c_core mxm_wmi wmi video dm_mod [last unloaded: lirc_dev]
-Pid: 39, comm: kworker/1:2 Tainted: G      D   I 3.1.0-rc1 #1
-Call Trace:
-<IRQ>  [<ffffffff81066dbf>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff81066e1a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff8103066c>] native_smp_send_reschedule+0x5c/0x60
-  [<ffffffff8105e64a>] try_to_wake_up+0x1da/0x2a0
-  [<ffffffff8105e722>] default_wake_function+0x12/0x20
-  [<ffffffff81089b6d>] autoremove_wake_function+0x1d/0x50
-  [<ffffffff8110fa5f>] ? free_pages+0x4f/0x60
-  [<ffffffff8104e6c9>] __wake_up_common+0x59/0x90
-  [<ffffffff81053df8>] __wake_up+0x48/0x70
-  [<ffffffff810678f4>] printk_tick+0x44/0x50
-  [<ffffffff8107686d>] update_process_times+0x4d/0x90
-  [<ffffffff8109b1c6>] tick_sched_timer+0x66/0xc0
-  [<ffffffff810d36be>] ? __rcu_process_callbacks+0x5e/0x1d0
-  [<ffffffff8108dc62>] __run_hrtimer+0x82/0x1d0
-  [<ffffffff8109b160>] ? tick_nohz_handler+0x100/0x100
-  [<ffffffff8108e036>] hrtimer_interrupt+0x106/0x240
-  [<ffffffff814f0ba9>] smp_apic_timer_interrupt+0x69/0x99
-  [<ffffffff814eea5e>] apic_timer_interrupt+0x6e/0x80
-<EOI> <NMI>  [<ffffffff814e31d3>] ? panic+0x169/0x1b1
-  [<ffffffff814e3130>] ? panic+0xc6/0x1b1
-  [<ffffffff810ccc11>] watchdog_overflow_callback+0xb1/0xc0
-  [<ffffffff81102073>] __perf_event_overflow+0x93/0x200
-  [<ffffffff810905e8>] ? sched_clock_cpu+0xb8/0x110
-  [<ffffffff810fca01>] ? perf_event_update_userpage+0x11/0xc0
-  [<ffffffff811025d4>] perf_event_overflow+0x14/0x20
-  [<ffffffff81025e51>] intel_pmu_handle_irq+0x321/0x530
-  [<ffffffff814e7649>] perf_event_nmi_handler+0x29/0xa0
-  [<ffffffff814e99f5>] notifier_call_chain+0x55/0x80
-  [<ffffffff814e9a5a>] atomic_notifier_call_chain+0x1a/0x20
-  [<ffffffff814e9a8e>] notify_die+0x2e/0x30
-  [<ffffffff814e6c39>] default_do_nmi+0x39/0x1f0
-  [<ffffffff814e6e70>] do_nmi+0x80/0xa0
-  [<ffffffff814e6630>] nmi+0x20/0x30
-  [<ffffffff8106b9b0>] ? do_exit+0x3c0/0x410
-  [<ffffffff814e5c25>] ? _raw_spin_lock_irq+0x25/0x30
-<<EOE>>  [<ffffffff814e354e>] schedule+0xce/0x850
-  [<ffffffff8106b9b0>] do_exit+0x3c0/0x410
-  [<ffffffff814e702b>] oops_end+0xab/0xf0
-  [<ffffffff8104196c>] no_context+0xfc/0x190
-  [<ffffffff81041b25>] __bad_area_nosemaphore+0x125/0x1e0
-  [<ffffffff81041bf3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff814e9866>] do_page_fault+0x326/0x460
-  [<ffffffff810d3405>] ? call_rcu_sched+0x15/0x20
-  [<ffffffff810d3405>] ? call_rcu_sched+0x15/0x20
-  [<ffffffff814e6375>] page_fault+0x25/0x30
-  [<ffffffff81089030>] ? kthread_data+0x10/0x20
-  [<ffffffff81082365>] wq_worker_sleeping+0x15/0xa0
-  [<ffffffff814e3a63>] schedule+0x5e3/0x850
-  [<ffffffff8122812b>] ? put_io_context+0x4b/0x60
-  [<ffffffff8106b85a>] do_exit+0x26a/0x410
-  [<ffffffff814e702b>] oops_end+0xab/0xf0
-  [<ffffffff8104196c>] no_context+0xfc/0x190
-  [<ffffffff81041b25>] __bad_area_nosemaphore+0x125/0x1e0
-  [<ffffffff8124f371>] ? list_del+0x11/0x40
-  [<ffffffff81041bf3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff814e9866>] do_page_fault+0x326/0x460
-  [<ffffffff81053e03>] ? __wake_up+0x53/0x70
-  [<ffffffff81080b9e>] ? call_usermodehelper_exec+0x9e/0xe0
-  [<ffffffff81080e1b>] ? __request_module+0x18b/0x220
-  [<ffffffff814e6375>] page_fault+0x25/0x30
-  [<ffffffff81082e11>] process_one_work+0x131/0x450
-  [<ffffffff81084bbb>] worker_thread+0x17b/0x3c0
-  [<ffffffff81084a40>] ? manage_workers+0x120/0x120
-  [<ffffffff810894d6>] kthread+0x96/0xa0
-  [<ffffffff814f0114>] kernel_thread_helper+0x4/0x10
-  [<ffffffff81089440>] ? kthread_worker_fn+0x1a0/0x1a0
-  [<ffffffff814f0110>] ? gs_change+0x13/0x13
----[ end trace a7919e7f17c0a729 ]---
+We have to be careful in mem_cgroup_do_charge and do not provide the
+given nr_pages because we would reclaim too much for THP which can
+safely fall back to single page allocations.
+
+Open questions:
+- Should we care about soft limit as well? Currently I am using excess
+  number of pages for the parameter so it can replace direct query for
+  the value in mem_cgroup_hierarchical_reclaim but should we push it to
+  mem_cgroup_shrink_node_zone?
+  I do not think so because we should try to reclaim from more groups in the
+  hierarchy and also it doesn't get to shrink_zones which has been modified
+  by the previous patch.
+- mem_cgroup_force_empty asks for reclaiming all pages. I guess it should be
+  OK but will have to think about it some more.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Index: linus_tree/include/linux/memcontrol.h
+===================================================================
+--- linus_tree.orig/include/linux/memcontrol.h	2011-08-11 15:44:43.000000000 +0200
++++ linus_tree/include/linux/memcontrol.h	2011-08-11 15:46:27.000000000 +0200
+@@ -130,7 +130,8 @@ extern void mem_cgroup_print_oom_info(st
+ 
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap,
+-						  struct memcg_scanrecord *rec);
++						  struct memcg_scanrecord *rec,
++						  unsigned long nr_pages);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 						gfp_t gfp_mask, bool noswap,
+ 						struct zone *zone,
+Index: linus_tree/mm/memcontrol.c
+===================================================================
+--- linus_tree.orig/mm/memcontrol.c	2011-08-11 15:36:15.000000000 +0200
++++ linus_tree/mm/memcontrol.c	2011-08-11 18:10:52.000000000 +0200
+@@ -1729,12 +1729,15 @@ static void mem_cgroup_record_scanstat(s
+  * (other groups can be removed while we're walking....)
+  *
+  * If shrink==true, for avoiding to free too much, this returns immedieately.
++ * Given nr_pages tells how many pages are we over the soft limit or how many
++ * pages do we want to reclaim in the direct reclaim mode.
+  */
+ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+ 						struct zone *zone,
+ 						gfp_t gfp_mask,
+ 						unsigned long reclaim_options,
+-						unsigned long *total_scanned)
++						unsigned long *total_scanned,
++						unsigned long nr_pages)
+ {
+ 	struct mem_cgroup *victim;
+ 	int ret, total = 0;
+@@ -1743,11 +1746,8 @@ static int mem_cgroup_hierarchical_recla
+ 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
+ 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
+ 	struct memcg_scanrecord rec;
+-	unsigned long excess;
+ 	unsigned long scanned;
+ 
+-	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
+-
+ 	/* If memsw_is_minimum==1, swap-out is of-no-use. */
+ 	if (!check_soft && !shrink && root_mem->memsw_is_minimum)
+ 		noswap = true;
+@@ -1785,11 +1785,11 @@ static int mem_cgroup_hierarchical_recla
+ 				}
+ 				/*
+ 				 * We want to do more targeted reclaim.
+-				 * excess >> 2 is not to excessive so as to
++				 * nr_pages >> 2 is not to excessive so as to
+ 				 * reclaim too much, nor too less that we keep
+ 				 * coming back to reclaim from this cgroup
+ 				 */
+-				if (total >= (excess >> 2) ||
++				if (total >= (nr_pages >> 2) ||
+ 					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
+ 					css_put(&victim->css);
+ 					break;
+@@ -1816,7 +1816,7 @@ static int mem_cgroup_hierarchical_recla
+ 			*total_scanned += scanned;
+ 		} else
+ 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
+-						noswap, &rec);
++						noswap, &rec, nr_pages);
+ 		mem_cgroup_record_scanstat(&rec);
+ 		css_put(&victim->css);
+ 		/*
+@@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
+ 
++	/*
++	 * We are lying about nr_pages because we do not want to
++	 * reclaim too much for THP pages which should rather fallback
++	 * to small pages.
++	 */
+ 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+-					      gfp_mask, flags, NULL);
++					      gfp_mask, flags, NULL,
++					      1);
+ 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+ 		return CHARGE_RETRY;
+ 	/*
+@@ -3567,7 +3573,8 @@ static int mem_cgroup_resize_limit(struc
+ 
+ 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
+ 						MEM_CGROUP_RECLAIM_SHRINK,
+-						NULL);
++						NULL,
++						(val-memlimit) >> PAGE_SHIFT);
+ 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
+ 		/* Usage is reduced ? */
+   		if (curusage >= oldusage)
+@@ -3628,7 +3635,8 @@ static int mem_cgroup_resize_memsw_limit
+ 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
+ 						MEM_CGROUP_RECLAIM_NOSWAP |
+ 						MEM_CGROUP_RECLAIM_SHRINK,
+-						NULL);
++						NULL,
++						(val-memswlimit) >> PAGE_SHIFT);
+ 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
+ 		/* Usage is reduced ? */
+ 		if (curusage >= oldusage)
+@@ -3671,10 +3679,12 @@ unsigned long mem_cgroup_soft_limit_recl
+ 			break;
+ 
+ 		nr_scanned = 0;
++		excess = res_counter_soft_limit_excess(&mz->mem->res);
+ 		reclaimed = mem_cgroup_hierarchical_reclaim(mz->mem, zone,
+ 						gfp_mask,
+ 						MEM_CGROUP_RECLAIM_SOFT,
+-						&nr_scanned);
++						&nr_scanned,
++						excess >> PAGE_SHIFT);
+ 		nr_reclaimed += reclaimed;
+ 		*total_scanned += nr_scanned;
+ 		spin_lock(&mctz->lock);
+@@ -3871,7 +3881,8 @@ try_to_free:
+ 		rec.mem = mem;
+ 		rec.root = mem;
+ 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
+-						false, &rec);
++						false, &rec,
++						mem->res.usage >> PAGE_SHIFT);
+ 		if (!progress) {
+ 			nr_retries--;
+ 			/* maybe some writeback is necessary */
+Index: linus_tree/mm/vmscan.c
+===================================================================
+--- linus_tree.orig/mm/vmscan.c	2011-08-11 15:44:43.000000000 +0200
++++ linus_tree/mm/vmscan.c	2011-08-11 16:41:22.000000000 +0200
+@@ -2340,7 +2340,8 @@ unsigned long mem_cgroup_shrink_node_zon
+ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ 					   gfp_t gfp_mask,
+ 					   bool noswap,
+-					   struct memcg_scanrecord *rec)
++					   struct memcg_scanrecord *rec,
++					   unsigned long nr_pages)
+ {
+ 	struct zonelist *zonelist;
+ 	unsigned long nr_reclaimed;
+@@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = !noswap,
+-		.nr_to_reclaim = SWAP_CLUSTER_MAX,
++		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
+ 		.order = 0,
+ 		.mem_cgroup = mem_cont,
+ 		.memcg_record = rec,
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
