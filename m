@@ -1,147 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab1HLU6Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:58:25 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:35983 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab1HLU6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:58:24 -0400
-From: Sergei Trofimovich <slyfox@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Sergei Trofimovich <slyfox@gentoo.org>, linux-alpha@vger.kernel.org,
-        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH v2] Alpha: unbreak osf_setsysinfo(SSI_NVPAIRS, [SSIN_UACPROC, UAC_SIGBUS])
-Date: Sat, 13 Aug 2011 00:01:21 +0300
-Message-Id: <1313182881-21266-1-git-send-email-slyfox@gentoo.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751201Ab1HLVFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:05:06 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17490 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1HLVFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 17:05:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=GFeklVckUuMyjahC03xfxP5Nmo6zX09/eGBLR4hpiCo5TsR5W11aFRrnkja4A4N73
+	ZD5CqSjeDrUahViBaTFqg==
+From: Mike Waychison <mikew@google.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Mike Waychison <mikew@google.com>
+Subject: [PATCH] rtc: Initialized rtc_time->tm_isdst
+Date: Fri, 12 Aug 2011 14:04:30 -0700
+Message-Id: <1313183070-16724-1-git-send-email-mikew@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bug was accidentally found by the following program:
-    #include <asm/sysinfo.h>
-    #include <asm/unistd.h>
-    #include <sys/syscall.h>
-    static int setsysinfo(unsigned long op, void *buffer, unsigned long size,
-                          int *start, void *arg, unsigned long flag) {
-        return syscall(__NR_osf_setsysinfo, op, buffer, size, start, arg, flag);
-    }
+Even though the Linux kernel does not use the tm_isdst field, it is
+exposed as part of the ABI.  This field can accidentally be left
+initialized, which is why we currently memset buffers returned to
+userland in rtc_read_time.
 
-    int main(int argc, char **argv) {
-        short x[10];
-        unsigned int buf[2] = { SSIN_UACPROC, UAC_SIGBUS, };
-        setsysinfo(SSI_NVPAIRS, buf, 1, 0, 0, 0);
+There is a case however where the field can return garbage from the
+stack though when using the RTC_ALM_READ ioctl on the rtc device.  This
+ioctl invokes rtc_read_alarm, which is careful to memset the rtc_wkalrm
+buffer that is copied to userland, but it then uses a struct copy to
+assign to alarm->time given the return value from rtc_ktime_to_tm().
 
-        int  *y = (int*) (x+1);
-        *y = 0;
-        return 0;
-    }
+rtc_ktime_to_tm() is implemented by calling rtc_time_to_tm using a
+derivative seconds counds from ktime, but rtc_time_to_tm does not assign
+a value to ->tm_isdst.  This results in garbage from rtc_ktime_to_tm()'s
+frame ending up being copied out to userland as part of the returned
+rtc_wkalrm.
 
-The program shoud fail on SIGBUS, but didn't.
+Fix this by initializing rtc_time->tm_isdst to 0 in rtc_time_to_tm.
 
-The patch is a second part of userspace flag fix:
-> commit 745dd2405e281d96c0a449103bdf6a895048f28c
-> Author: Michael Cree <mcree@orcon.net.nz>
-> Date:   Mon Nov 30 22:44:40 2009 -0500
->
->    Alpha: Rearrange thread info flags fixing two regressions
->
->    Both regressions fixed by (1) rearranging TIF_NOTIFY_RESUME flag to be
->    in lower 8 bits of the thread info flags, and (2) making sure that
->    ALPHA_UAC_SHIFT matches the rearrangement of the thread info flags.
-
-Deleted outdated out-of-sync 'UAC_SHIFT' (the cause of bug) in favour of 'ALPHA_UAC_SHIFT'.
-
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-Cc: linux-alpha@vger.kernel.org
-Cc: Michael Cree <mcree@orcon.net.nz>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- arch/alpha/include/asm/sysinfo.h     |    9 ---------
- arch/alpha/include/asm/thread_info.h |    8 ++++----
- arch/alpha/kernel/osf_sys.c          |    7 ++++---
- 3 files changed, 8 insertions(+), 16 deletions(-)
+ drivers/rtc/rtc-lib.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/alpha/include/asm/sysinfo.h b/arch/alpha/include/asm/sysinfo.h
-index 086aba2..e77d77c 100644
---- a/arch/alpha/include/asm/sysinfo.h
-+++ b/arch/alpha/include/asm/sysinfo.h
-@@ -27,13 +27,4 @@
- #define UAC_NOFIX			2
- #define UAC_SIGBUS			4
+diff --git a/drivers/rtc/rtc-lib.c b/drivers/rtc/rtc-lib.c
+index 075f170..c4cf057 100644
+--- a/drivers/rtc/rtc-lib.c
++++ b/drivers/rtc/rtc-lib.c
+@@ -85,6 +85,8 @@ void rtc_time_to_tm(unsigned long time, struct rtc_time *tm)
+ 	time -= tm->tm_hour * 3600;
+ 	tm->tm_min = time / 60;
+ 	tm->tm_sec = time - tm->tm_min * 60;
++
++	tm->tm_isdst = 0;
+ }
+ EXPORT_SYMBOL(rtc_time_to_tm);
  
--
--#ifdef __KERNEL__
--
--/* This is the shift that is applied to the UAC bits as stored in the
--   per-thread flags.  See thread_info.h.  */
--#define UAC_SHIFT			6
--
--#endif
--
- #endif /* __ASM_ALPHA_SYSINFO_H */
-diff --git a/arch/alpha/include/asm/thread_info.h b/arch/alpha/include/asm/thread_info.h
-index 6f32f9c..ff73db0 100644
---- a/arch/alpha/include/asm/thread_info.h
-+++ b/arch/alpha/include/asm/thread_info.h
-@@ -74,9 +74,9 @@ register struct thread_info *__current_thread_info __asm__("$8");
- #define TIF_NEED_RESCHED	3	/* rescheduling necessary */
- #define TIF_POLLING_NRFLAG	8	/* poll_idle is polling NEED_RESCHED */
- #define TIF_DIE_IF_KERNEL	9	/* dik recursion lock */
--#define TIF_UAC_NOPRINT		10	/* see sysinfo.h */
--#define TIF_UAC_NOFIX		11
--#define TIF_UAC_SIGBUS		12
-+#define TIF_UAC_NOPRINT		10	/* ! Preserve sequence of following */
-+#define TIF_UAC_NOFIX		11	/* ! flags as they match            */
-+#define TIF_UAC_SIGBUS		12	/* ! userspace part of 'osf_sysinfo' */
- #define TIF_MEMDIE		13	/* is terminating due to OOM killer */
- #define TIF_RESTORE_SIGMASK	14	/* restore signal mask in do_signal */
- #define TIF_FREEZE		16	/* is freezing for suspend */
-@@ -97,7 +97,7 @@ register struct thread_info *__current_thread_info __asm__("$8");
- #define _TIF_ALLWORK_MASK	(_TIF_WORK_MASK		\
- 				 | _TIF_SYSCALL_TRACE)
- 
--#define ALPHA_UAC_SHIFT		10
-+#define ALPHA_UAC_SHIFT		TIF_UAC_NOPRINT
- #define ALPHA_UAC_MASK		(1 << TIF_UAC_NOPRINT | 1 << TIF_UAC_NOFIX | \
- 				 1 << TIF_UAC_SIGBUS)
- 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 326f0a2..2032f67 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -42,6 +42,7 @@
- #include <asm/uaccess.h>
- #include <asm/system.h>
- #include <asm/sysinfo.h>
-+#include <asm/thread_info.h>
- #include <asm/hwrpb.h>
- #include <asm/processor.h>
- 
-@@ -633,7 +634,7 @@ SYSCALL_DEFINE5(osf_getsysinfo, unsigned long, op, void __user *, buffer,
-  	case GSI_UACPROC:
- 		if (nbytes < sizeof(unsigned int))
- 			return -EINVAL;
-- 		w = (current_thread_info()->flags >> UAC_SHIFT) & UAC_BITMASK;
-+ 		w = (current_thread_info()->flags >> ALPHA_UAC_SHIFT) & UAC_BITMASK;
-  		if (put_user(w, (unsigned int __user *)buffer))
-  			return -EFAULT;
-  		return 1;
-@@ -756,8 +757,8 @@ SYSCALL_DEFINE5(osf_setsysinfo, unsigned long, op, void __user *, buffer,
-  			case SSIN_UACPROC:
- 			again:
- 				old = current_thread_info()->flags;
--				new = old & ~(UAC_BITMASK << UAC_SHIFT);
--				new = new | (w & UAC_BITMASK) << UAC_SHIFT;
-+				new = old & ~(UAC_BITMASK << ALPHA_UAC_SHIFT);
-+				new = new | (w & UAC_BITMASK) << ALPHA_UAC_SHIFT;
- 				if (cmpxchg(&current_thread_info()->flags,
- 					    old, new) != old)
- 					goto again;
 -- 
-1.7.3.4
+1.7.3.1
 
