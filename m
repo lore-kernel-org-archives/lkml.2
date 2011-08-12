@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab1HLNFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:05:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34252 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab1HLNFp (ORCPT
+	id S1751896Ab1HLNI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:08:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54383 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab1HLNI4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:05:45 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=b6fuAeHeA_gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=5nDEedgFmzgbygEZf50A:9 a=E7PL98EbeFmZ9fkpu5IA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/5][RFC] ftrace: Return pt_regs to function trace
- callback (x86_64 only so
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <4E4479E9.5040804@hitachi.com>
-References: <20110810162222.017387055@goodmis.org>
-	 <20110810163038.238028499@goodmis.org>  <4E436EDC.2080101@hitachi.com>
-	 <1313067566.18583.288.camel@gandalf.stny.rr.com>
-	 <4E4479E9.5040804@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 12 Aug 2011 09:05:40 -0400
-Message-ID: <1313154341.18583.316.camel@gandalf.stny.rr.com>
+	Fri, 12 Aug 2011 09:08:56 -0400
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Aug 2011 15:08:24 +0200
+In-Reply-To: <20110812125952.GA16675@localhost>
+References: <20110806084447.388624428@intel.com>
+	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
+	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
+	 <20110808230535.GC7176@localhost> <1313153657.6576.40.camel@twins>
+	 <20110812125952.GA16675@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313154504.6576.44.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 09:55 +0900, Masami Hiramatsu wrote:
+On Fri, 2011-08-12 at 20:59 +0800, Wu Fengguang wrote:
+> On Fri, Aug 12, 2011 at 08:54:17PM +0800, Peter Zijlstra wrote:
+> > On Fri, 2011-08-12 at 00:56 +0200, Peter Zijlstra wrote:
+> > > 
+> > >                s - x 3
+> > >  f(x) :=  1 + (-----)
+> > >                  d
+> > > 
+> > btw, if you want steeper slopes for rampup and brake you can add another
+> > factor like:
+> > 
+> >                  s - x 3
+> >   f(x) :=  1 + a(-----)
+> >                    d
+> >  
+> > And solve the whole f(l)=0 thing again to determine d in l and a.
+> > 
+> > For 0 < a < 1 the slopes increase.
+> 
+> Yes, we can leave it as a future tuning option. For now I'm pretty
+> satisfied with the current function's shape :)
 
-> Please note, kprobes is the function which basically provides a
-> breakpoint handler in the kernel. Users expect that. So all registers
-> should be provided as breakpoint interrupt does. That's what I said
-> "transparently".
-
-Well, I think I'm on the right track then. Because I'm working to get
-the function graph tracer to use this functionality as well.
-
-I believe that I can make this work "transparently" too.
-
-I'm now working on having ftrace use the breakpoint/update method as
-well as the stop_machine() method. If an arch has an alternative to
-stop_machine, then it can use that method instead.
-
--- Steve
-
-
-
+Oh for sure, it just occurred to me when looking at your plots and
+thought I'd at least mention it.. You know something to poke at on a
+rainy afternoon ;-)
