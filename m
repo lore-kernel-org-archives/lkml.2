@@ -1,158 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1HLLxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 07:53:14 -0400
-Received: from mx.ctc-g.co.jp ([131.248.58.1]:33784 "EHLO mx.ctc.ctc-g.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab1HLLxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 07:53:12 -0400
-X-Greylist: delayed 1940 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Aug 2011 07:53:12 EDT
-Date: Fri, 12 Aug 2011 20:20:47 +0900
-From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
-Subject: Request for Redhat
-To: linux-kernel@vger.kernel.org
-Cc: "omega-g1@ctc-g.co.jp" <omega-g1@ctc-g.co.jp>, notsuki@redhat.com,
-        "Kozaki, Motokazu" <motokazu.kozaki@hp.com>,
-        Hajime Taira <htaira@redhat.com>
-Reply-to: jun.kondo@ctc-g.co.jp
-Message-id: <4E450C8F.4030009@ctc-g.co.jp>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-2022-JP
-Content-transfer-encoding: 7bit
-X-post-Received: by post01.ctc-g.co.jp (CTC-GN 2006/10/01) id 82FAE74BC;	Fri,
- 12 Aug 2011 20:20:39 +0900 (JST)
-X-vs: by localhost.is02.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 5592053E61;
-	Fri, 12 Aug 2011 20:20:39 +0900 (JST)
-X-vs: by is02.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 46D5A53E5E;	Fri,
- 12 Aug 2011 20:20:39 +0900 (JST)
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; ja; rv:1.9.2.12)
- Gecko/20101027 Thunderbird/3.1.6
+	id S1751457Ab1HLMPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 08:15:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38998 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1HLMPT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 08:15:19 -0400
+Subject: Re: [PATCH v6 2/2] Output stall data in debugfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Alex Neronskiy <zakmagnus@chromium.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>
+Date: Fri, 12 Aug 2011 14:14:52 +0200
+In-Reply-To: <20110811230005.GC16327@google.com>
+References: <1312999364-21104-1-git-send-email-zakmagnus@chromium.org>
+	 <1312999364-21104-2-git-send-email-zakmagnus@chromium.org>
+	 <1313091323.8491.30.camel@twins>
+	 <CAAuSN90BtbRaqkde0iKNQJvpa22AeKJLfyjO6NYqc3kdhqHXtg@mail.gmail.com>
+	 <1313094223.26866.15.camel@twins>
+	 <CAAuSN90CXXEdco_fNYrv-ZUZPr4nB4HYPM1NCgaSgGz+Z-jaRQ@mail.gmail.com>
+	 <1313097475.26866.18.camel@twins> <20110811230005.GC16327@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313151293.6576.29.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CTC had the following demand;
+On Thu, 2011-08-11 at 16:00 -0700, Mandeep Singh Baines wrote:
+> Hi Peter,
+> 
+> Peter Zijlstra (peterz@infradead.org) wrote:
+> > On Thu, 2011-08-11 at 13:31 -0700, Alex Neronskiy wrote:
+> > > 
+> > > > I mean, we're at the point where a PREEMPT=y kernel has a pretty decent
+> > > > latency and the PREEMPT_RT kernels live at ~30us. So wth are you
+> > > > measuring?
+> 
+> In an earlier patch in the series, Alex was looking into using the timer
+> for getting stack traces but using a different time source (TSC, jiffies) for
+> measuring the worst latency seen so far.
+> 
+> Since you know when the watchdog should have run, you can measure the
+> difference between when it did run and when it should have. This would allow
+> you to be able to measure latency down to the ms or lower.
 
-1. to ensure high throughput from the beginning of
-tcp connection at normal times by acquiring large
-default transmission buffer value
+But that's an arse backwards way of measuring latency. And we already
+have an implementation that does it the right way around, its the
+preempt-off and irq-off latency tracer in ftrace.
 
-2. to limit the block time of the write in order to
-prevent the timeout of upper layer applications
-even when the connection has low throughput, such
-as low rate streaming
+They instrument the preempt/irq disable/enable sites and simply trace
+everything in between, getting you an exact measurement and overview of
+wth the kernel thought it was doing during that time.
 
+That is much much more useful than a random stacktrace at some point.
 
-The root of the issue;
+In fact it is the tool the -rt kernel uses to find and break these
+latencies.
 
-2 can not be achieved with the configuration that
-satisfies 1.
+> > > Well, not all kernels have PREEMPT. Chromebook kernels don't, for example.
+> > 
+> > Can one infer from that statement that the purpose is trying to measure
+> > non preempt latency? ...
+> > 
+> 
+> Our "current" plan is to see if we can get away with PREEMPT_VOLUNTARY
+> and then fix any issues that we find by adding pre-emption points and
+> finer grain locking (to enable pre-emption points) where needed.
+> We were hoping to use this patch to find those issues.
 
-The current behavior is as follows;
+Then you're doing it wrong. Use the ftrace infrastructure that's in
+place for this purpose, the -rt kernel has been using that for many many
+years to do exactly that.
 
-Write is blocked when tcp transmission buffer (wmem)
-becomes full.
-In order to write again after that, one third of the
-transmission buffer (sk_wmem_queued/2) must be freed.
+> Right now we have softlockup_thresh set to 10 seconds. But we have no idea
+> whether this is too high or not. Ideally, you'd want to set the threshold
+> as low as possible but no so low that you start panicking the system
+> on temporary stalls.
 
-When the throughput is low, timeout occurs by the time
-when the free buffer space is created, which affects
-streaming service.
+I can't remember the last time the softlockup thing said anything
+useful. Just disable the thing, its useless.
 
+> Let's say that worst stall that every happens on our system is < 1s and
+> any stall that is > 1s is really a lockup. With this patch, we could
+> say that with confidence and push the threshold down from 10 to 2.
+> The quicker we can detect a lockup, the better. We minimize downtown
+> and get the machine up in no time (our boot is only 8 seconds).
 
-The effect of the patch;
+/me fails to grasp the relation between stalls and boot time. Esp
+softlockup crap.
 
-By putting xxx into the variable yyy, the portion of
-the transmission buffer becomes zzz, thus timeout will
-not occur in the low throughput network environment.
+> But I suspect that there are stalls. In Alex's first run with the patch,
+> he saw a few lockups which we are now investigating. They were mostly
+> in the suspend/resume and boot/shutdown paths. One I'm confident
+> is a bug and we'll send a patch upstream shortly.
 
-xxx → integer(e.g. 4)
-yyy → "sysctl_tcp_lowat"
-zzz → "sk_wmem_queued >> 4"
+A stall is mostly people forgetting to tickle the watchdog timer, I'm
+very sure these paths actually work (the moment they don't people start
+to complain rather loud).
 
-Also, we think one third of the transmission buffer
-(sk_wmem_queued/2) is too deterministic, and it should
-be configurable.
+Now optimizing those paths is a whole different game, you want a trace
+and profile for that again, seeing if it does something particularly
+stupid (trace) and making the more expensive things less so (profile).
 
---------------------------------------------------
-# diff -urN sock.c sock.c.mod
---- sock.c 2011-04-14 14:58:03.000000000 +0900
-+++ sock.c.mod 2011-04-21 15:31:36.000000000 +0900
-@@ -205,6 +205,8 @@
-__u32 sysctl_wmem_default = SK_WMEM_MAX;
-__u32 sysctl_rmem_default = SK_RMEM_MAX;
+> > ... Why not use the tracer build for that purpose?
+> > 
+> 
+> PREEMPT_TRACER is awesome for the lab or development machines but
+> it adds too much overhead to use in production. Its add a pretty big
+> overhead every time you context switch. With PREEMPT, the overhead
+> would be even more.
 
-+int sysctl_tcp_lowat = 1;
-+
-/* Maximal space eaten by iovec or ancilliary data plus some space */
-int sysctl_optmem_max = sizeof(unsigned long)*(2*UIO_MAXIOV + 512);
+I don't think context switches are the problem, but simply that you
+effectively run with the function tracer enabled.
 
-@@ -1005,6 +1007,8 @@
-sysctl_wmem_max = 131071;
-sysctl_rmem_max = 131071;
-}
-+
-+ sysctl_tcp_lowat = 1;
-}
+Also, isn't chromium basically a very limited (aka useless) environment?
+You should be able to get a fairly good coverage of chrome (the single
+app on there afaik) in pre-production testing.
 
-/*
-@@ -2084,4 +2088,5 @@
-#ifdef CONFIG_SYSCTL
-EXPORT_SYMBOL(sysctl_rmem_max);
-EXPORT_SYMBOL(sysctl_wmem_max);
-+EXPORT_SYMBOL(sysctl_tcp_lowat);
-#endif
-#
-# diff -urN sock.h sock.h.mod
---- sock.h 2011-04-14 14:58:03.000000000 +0900
-+++ sock.h.mod 2011-04-21 15:30:07.000000000 +0900
-@@ -434,9 +434,12 @@
-/*
-* Compute minimal free write space needed to queue new packets.
-*/
-+
-+extern int sysctl_tcp_lowat;
-+
-static inline int sk_stream_min_wspace(struct sock *sk)
-{
-- return sk->sk_wmem_queued / 2;
-+ return sk->sk_wmem_queued >> sysctl_tcp_lowat;
-}
+> The timer period is 1/5 the period of the threshold. The minimum threshold
+> is 1s. So if we set the threshold to 1s, we could get a stack trace
+> for a 200 ms stall. That would rock.
 
-static inline int sk_stream_wspace(struct sock *sk)
-#
-# diff -urN sysctl_net_core.c sysctl_net_core.c.mod
---- sysctl_net_core.c 2011-04-14 14:57:10.000000000 +0900
-+++ sysctl_net_core.c.mod 2011-04-04 21:09:48.000000000 +0900
-@@ -30,6 +30,7 @@
-extern u32 sysctl_xfrm_aevent_rseqth;
-extern int sysctl_xfrm_larval_drop;
-extern u32 sysctl_xfrm_acq_expires;
-+extern int sysctl_tcp_lowat;
-#endif
+I'm still not sure of the value of stack traces for latencies, it simply
+gives a random snapshot of somewhere in the path (at best, you can hit
+after the path with the watchdog approach).
 
-ctl_table core_table[] = {
-@@ -151,6 +152,14 @@
-.proc_handler = &proc_dointvec
-},
-#endif /* CONFIG_XFRM */
-+ {
-+ .ctl_name = NET_CORE_TCP_LOWAT,
-+ .procname = "tcp_lowat",
-+ .data = &sysctl_tcp_lowat,
-+ .maxlen = sizeof(int),
-+ .mode = 0644,
-+ .proc_handler = &proc_dointvec
-+ },
-#endif /* CONFIG_NET */
-{
-.ctl_name = NET_CORE_SOMAXCONN,
-#
---------------------------------------------------
+> We would love to set the threshold to 1s and know that we aren't seeing any
+> stalls above 200ms. That would give us at least 800 ms of breathing room.
+> But right now, we have no idea how much breathing room there is.
 
-------------------------------------------
-Jun.Kondo
-ITOCHU TECHNO-SOLUTIONS Corporation(CTC)
-tel:+81-3-6238-6607
-fax:+81-3-5226-2369
-------------------------------------------
+OK, but why not run cyclictest? That is the timer sampling latency
+detection tool of choice, another on of these -rt things we've been
+using for donkey-years. Cyclictest can even run ftrace for you if you
+want.
+
