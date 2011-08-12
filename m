@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab1HLP6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 11:58:04 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50239 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1HLP6B (ORCPT
+	id S1754044Ab1HLP7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 11:59:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50814 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab1HLP7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 11:58:01 -0400
-Message-ID: <4E454D75.2090505@gmail.com>
-Date: Fri, 12 Aug 2011 08:57:41 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        airlied@linux.ie
-Subject: Re: i915 suspend crash: BUG: unable to handle kernel NULL pointer
- deferrence
-References: <4E44C537.8040101@gmail.com> <yunobzusona.fsf@aiko.keithp.com>
-In-Reply-To: <yunobzusona.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 12 Aug 2011 11:59:42 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=eisdwKgMlAkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4DpGv-UzhSiCBayho-cA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 04/10] ktest: Introduce RESET_TIME
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1313155932-20092-5-git-send-email-drjones@redhat.com>
+References: <1313155932-20092-1-git-send-email-drjones@redhat.com>
+	 <1313155932-20092-5-git-send-email-drjones@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 12 Aug 2011 11:59:39 -0400
+Message-ID: <1313164779.18583.327.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2011 07:14 AM, Keith Packard wrote:
-> On Thu, 11 Aug 2011 23:16:23 -0700, "Justin P. Mattock"<justinmattock@gmail.com>  wrote:
->
->> I can try for a bisect, but might not be able to do so due to time
->> constraints and things.
->> (if there is any patches to try and test let me know!)
->
-> Can you provide the output of 'lspci -n -v', and can you tell us which
-> version of the kernel this corresponds to?
->
-
-yeah appologize for not posting any info on the machine(bit tired).
-Anyways here is part of lspci(I can fpast the whole thing if need be),
-and dmesg of the machine running the latest Mainline.
-
-http://fpaste.org/aSQP/
-
-one thing I am seeing is:
+Hi Andrew,
 
 
-[ 96.384971] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.408364] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.425860] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.443365] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.474238] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.491728] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
-[ 96.521229] [drm:i915_get_vblank_timestamp] *ERROR* Invalid crtc 0
+On Fri, 2011-08-12 at 15:32 +0200, Andrew Jones wrote:
+ 
+> +# If the console needs to be reset during a reboot cycle in
+> +# order to reestablish it's connection, then set this option
+> +# to the number of seconds ktest should wait between disconnect
+> +# and reconnect. This is needed when using 'virsh console' to
+> +# connect to guests.
+> +# (default undefined)
+> +#RESET_TIME = 5
 
-in of which I have not seen in the past.
+I think the name RESET_TIME is a bit ambiguous. Maybe it should be
+called CONSOLE_RESET_TIME.
 
-as for good kernel 2.6.39-rc5 survives suspend.
+-- Steve
 
-Justin P. Mattock
+> +
+>  # Reboot the target box on error (default 0)
+>  #REBOOT_ON_ERROR = 0
+>  
+
+
