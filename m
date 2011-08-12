@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1HLOAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 10:00:24 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48944 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab1HLOAU (ORCPT
+	id S1752060Ab1HLOJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 10:09:36 -0400
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:56188 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1HLOJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 10:00:20 -0400
-Date: Fri, 12 Aug 2011 09:51:02 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>, Greg KH <gregkh@suse.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Raja Mani <rmani@qca.qualcomm.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (wireless & staging trees related)
-Message-ID: <20110812135101.GA2286@tuxdriver.com>
-References: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au>
- <4E438D56.5020801@qca.qualcomm.com>
- <20110811141604.GA14763@suse.de>
- <4E43FA61.1010301@qca.qualcomm.com>
- <20110812121216.28e6979b44bacb651849640b@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110812121216.28e6979b44bacb651849640b@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Aug 2011 10:09:35 -0400
+Date: Fri, 12 Aug 2011 16:08:46 +0200
+From: "Udo A. Steinberg" <udo@hypervisor.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: Kernel panic with intel_iommu=on
+Message-ID: <20110812160846.29fd9149@laptop.anywhere.org>
+In-Reply-To: <CAPM=9tzwYHgbmKUuPsrW_4nrKOQ5m+7N0JV-kMpOv43yVh-49A@mail.gmail.com>
+References: <20110812145818.00cde392@laptop.anywhere.org>
+	<CAPM=9tzwYHgbmKUuPsrW_4nrKOQ5m+7N0JV-kMpOv43yVh-49A@mail.gmail.com>
+X-Mailer: X-Mailer 5.0 Gold
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/suR/hM2E12YeNs2mIwb.WtW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 12:12:16PM +1000, Stephen Rothwell wrote:
-> Hi Kalle, Greg,
-> 
-> On Thu, 11 Aug 2011 18:50:57 +0300 Kalle Valo <kvalo@qca.qualcomm.com> wrote:
-> >
-> > On 08/11/2011 05:16 PM, Greg KH wrote:
-> > > On Thu, Aug 11, 2011 at 11:05:42AM +0300, Kalle Valo wrote:
-> > >
-> > >> Yes, the cleaned up version of ath6kl is now in wireless-next and the
-> > >> staging version can be removed in 3.2. Greg, how do you want to handle
-> > >> removal of the staging version? Should I send a patch to you removing
-> > >> it? Or should I send the patch to John?
-> > > 
-> > > Just tell me.  Should I really delete drivers/staging/ath6kl/ for the
-> > > 3.2 kernel release?  If so, I'll gladly do so in my tree so linux-next
-> > > will be fine for issues like this in the future.
-> > 
-> > Yes, please delete ath6kl from staging for the 3.2 release as the
-> > cleanup version is now in wireless-next.
-> > 
-> > Thank you everyone and sorry for the mess.
-> 
-> I think that the removal should be done in the wirelesss tree so that
-> Linus' tree is not broken during the next merge window.
-> 
-> I have added the removal patch as a merge fixup one the merge of the
-> wireless tree for today.
+--Sig_/suR/hM2E12YeNs2mIwb.WtW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Makes sense to me -- probably also is more sane if there is some fool
-out there relying on the ath6kl driver in staging that doesn't know
-about the switch to the wireless tree.
+On Fri, 12 Aug 2011 23:51:47 +1000 Dave Airlie (DA) wrote:
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+DA> Does intel_iommu=3Digfx_off work as well?
+DA>=20
+DA> I've been seeing a few of these with Ironlake chipsets, the reason
+DA> firefox does it is probably because it causes the 3D driver to be
+DA> used.
+
+With intel_iommu=3Digfx_off it works as well. Looks like that keeps IOMMU 1
+disabled. So the bug seems to be in the register-based invalidation of mapp=
+ings
+in the DMAR engine that remaps igfx. And it must be something that firefox =
+5.0
+doesn't trigger, whereas 6.0 does.
+
+For completeness, here's the relevant dmesg output with intel_iommu=3Digfx_=
+off.
+
+DMAR: Host address width 36
+DMAR: DRHD base: 0x000000feb00000 flags: 0x0
+IOMMU 0: reg_base_addr feb00000 ver 1:0 cap c9008020a30270 ecap 1000
+DMAR: DRHD base: 0x000000feb01000 flags: 0x0
+IOMMU 1: reg_base_addr feb01000 ver 1:0 cap c0000020230270 ecap 1000
+DMAR: DRHD base: 0x000000feb03000 flags: 0x1
+IOMMU 2: reg_base_addr feb03000 ver 1:0 cap c9008020230270 ecap 1000
+DMAR: RMRR base: 0x000000000e0000 end: 0x000000000effff
+DMAR: RMRR base: 0x0000003e600000 end: 0x0000003effffff
+DMAR: No ATSR found
+IOMMU 0 0xfeb00000: using Register based invalidation
+IOMMU 2 0xfeb03000: using Register based invalidation
+IOMMU: Setting RMRR:
+IOMMU: Setting identity map for device 0000:00:1d.0 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1d.1 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1d.2 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1d.7 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1a.0 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1a.1 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1a.2 [0xe0000 - 0xeffff]
+IOMMU: Setting identity map for device 0000:00:1a.7 [0xe0000 - 0xeffff]
+IOMMU: Prepare 0-16MiB unity mapping for LPC
+IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff]
+PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
+
+Cheers,
+
+	- Udo
+
+--Sig_/suR/hM2E12YeNs2mIwb.WtW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk5FM+4ACgkQnhRzXSM7nSkskQCfZdmxqHMJHlV640vB26e7q82b
+6OcAnRZ9ibeS+clg8UN/AVa5LMZxZ73L
+=uxoc
+-----END PGP SIGNATURE-----
+
+--Sig_/suR/hM2E12YeNs2mIwb.WtW--
