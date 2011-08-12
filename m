@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab1HNQHy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:07:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36561 "EHLO mx2.suse.de"
+	id S1754093Ab1HNQHf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:07:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36521 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1HNQHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:07:49 -0400
+	id S1753987Ab1HNQHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:07:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:55 2011
-Message-Id: <20110812210555.525113147@clark.kroah.org>
+Message-Id: <20110812210555.115388308@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:24 -0700
+Date: Fri, 12 Aug 2011 14:04:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolai Krakowiak <nicolai.krakowiak@gmail.com>,
-        Daniel Mack <zonque@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [39/90] ALSA: snd-usb: avoid dividing by zero on invalid input
+        Al Viro <viro@ZenIV.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [34/90] cifs: cope with negative dentries in cifs_get_root
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolai Krakowiak <nicolai.krakowiak@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 60c961a9e1ed879a4d151df6076bf1203f595f73 upstream.
+commit 80975d21aae2136ccae1ce914a1602dc1d8b0795 upstream.
 
-Signed-off-by: Nicolai Krakowiak <nicolai.krakowiak@gmail.com>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The loop around lookup_one_len doesn't handle the case where it might
+return a negative dentry, which can cause an oops on the next pass
+through the loop. Check for that and break out of the loop with an
+error of -ENOENT if there is one.
+
+Fixes the panic reported here:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=727927
+
+Reported-by: TR Bentley <home@trarbentley.net>
+Reported-by: Iain Arnell <iarnell@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/mixer.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/cifs/cifsfs.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1191,6 +1191,11 @@ static int parse_audio_feature_unit(stru
- 
- 	if (state->mixer->protocol == UAC_VERSION_1) {
- 		csize = hdr->bControlSize;
-+		if (!csize) {
-+			snd_printdd(KERN_ERR "usbaudio: unit %u: "
-+				    "invalid bControlSize == 0\n", unitid);
-+			return -EINVAL;
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -581,6 +581,10 @@ cifs_get_root(struct smb_vol *vol, struc
+ 		mutex_unlock(&dir->i_mutex);
+ 		dput(dentry);
+ 		dentry = child;
++		if (!dentry->d_inode) {
++			dput(dentry);
++			dentry = ERR_PTR(-ENOENT);
 +		}
- 		channels = (hdr->bLength - 7) / csize - 1;
- 		bmaControls = hdr->bmaControls;
- 	} else {
+ 	} while (!IS_ERR(dentry));
+ 	_FreeXid(xid);
+ 	kfree(full_path);
 
 
