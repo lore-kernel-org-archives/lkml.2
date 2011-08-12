@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1HNQIO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:08:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36611 "EHLO mx2.suse.de"
+	id S1754318Ab1HNQY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:24:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36592 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235Ab1HNQIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:08:09 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
-Message-Id: <20110812210556.055971663@clark.kroah.org>
+	id S1754198Ab1HNQID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:55 2011
+Message-Id: <20110812210555.888174857@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:30 -0700
+Date: Fri, 12 Aug 2011 14:04:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
-Subject: [45/90] ipv4: fix the reusing of routing cache entries
+        "David S. Miller" <davem@davemloft.net>
+Subject: [43/90] icmp: Fix regression in nexthop resolution during replies.
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Julian Anastasov <ja@ssi.bg>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d547f727df86059104af2234804fdd538e112015 ]
+[ Upstream commit 415b3334a21aa67806c52d1acf4e72e14f7f402f ]
 
-	compare_keys and ip_route_input_common rely on
-rt_oif for distinguishing of input and output routes
-with same keys values. But sometimes the input route has
-also same hash chain (keyed by iif != 0) with the output
-routes (keyed by orig_oif=0). Problem visible if running
-with small number of rhash_entries.
+icmp_route_lookup() uses the wrong flow parameters if the reverse
+session route lookup isn't used.
 
-	Fix them to use rt_route_iif instead. By this way
-input route can not be returned to users that request
-output route.
+So do not commit to the re-decoded flow until we actually make a
+final decision to use a real route saved in 'rt2'.
 
-	The patch fixes the ip_rt_bug errors that were
-reported in ip_local_out context, mostly for 255.255.255.255
-destinations.
-
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Reported-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/route.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv4/icmp.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -726,6 +726,7 @@ static inline int compare_keys(struct rt
- 		((__force u32)rt1->rt_key_src ^ (__force u32)rt2->rt_key_src) |
- 		(rt1->rt_mark ^ rt2->rt_mark) |
- 		(rt1->rt_key_tos ^ rt2->rt_key_tos) |
-+		(rt1->rt_route_iif ^ rt2->rt_route_iif) |
- 		(rt1->rt_oif ^ rt2->rt_oif) |
- 		(rt1->rt_iif ^ rt2->rt_iif)) == 0;
- }
-@@ -2282,8 +2283,8 @@ int ip_route_input_common(struct sk_buff
- 		if ((((__force u32)rth->rt_key_dst ^ (__force u32)daddr) |
- 		     ((__force u32)rth->rt_key_src ^ (__force u32)saddr) |
- 		     (rth->rt_iif ^ iif) |
--		     rth->rt_oif |
- 		     (rth->rt_key_tos ^ tos)) == 0 &&
-+		    rt_is_input_route(rth) &&
- 		    rth->rt_mark == skb->mark &&
- 		    net_eq(dev_net(rth->dst.dev), net) &&
- 		    !rt_is_expired(rth)) {
+--- a/net/ipv4/icmp.c
++++ b/net/ipv4/icmp.c
+@@ -380,6 +380,7 @@ static struct rtable *icmp_route_lookup(
+ 					struct icmp_bxm *param)
+ {
+ 	struct rtable *rt, *rt2;
++	struct flowi4 fl4_dec;
+ 	int err;
+ 
+ 	memset(fl4, 0, sizeof(*fl4));
+@@ -408,19 +409,19 @@ static struct rtable *icmp_route_lookup(
+ 	} else
+ 		return rt;
+ 
+-	err = xfrm_decode_session_reverse(skb_in, flowi4_to_flowi(fl4), AF_INET);
++	err = xfrm_decode_session_reverse(skb_in, flowi4_to_flowi(&fl4_dec), AF_INET);
+ 	if (err)
+ 		goto relookup_failed;
+ 
+-	if (inet_addr_type(net, fl4->saddr) == RTN_LOCAL) {
+-		rt2 = __ip_route_output_key(net, fl4);
++	if (inet_addr_type(net, fl4_dec.saddr) == RTN_LOCAL) {
++		rt2 = __ip_route_output_key(net, &fl4_dec);
+ 		if (IS_ERR(rt2))
+ 			err = PTR_ERR(rt2);
+ 	} else {
+ 		struct flowi4 fl4_2 = {};
+ 		unsigned long orefdst;
+ 
+-		fl4_2.daddr = fl4->saddr;
++		fl4_2.daddr = fl4_dec.saddr;
+ 		rt2 = ip_route_output_key(net, &fl4_2);
+ 		if (IS_ERR(rt2)) {
+ 			err = PTR_ERR(rt2);
+@@ -428,7 +429,7 @@ static struct rtable *icmp_route_lookup(
+ 		}
+ 		/* Ugh! */
+ 		orefdst = skb_in->_skb_refdst; /* save old refdst */
+-		err = ip_route_input(skb_in, fl4->daddr, fl4->saddr,
++		err = ip_route_input(skb_in, fl4_dec.daddr, fl4_dec.saddr,
+ 				     RT_TOS(tos), rt2->dst.dev);
+ 
+ 		dst_release(&rt2->dst);
+@@ -440,10 +441,11 @@ static struct rtable *icmp_route_lookup(
+ 		goto relookup_failed;
+ 
+ 	rt2 = (struct rtable *) xfrm_lookup(net, &rt2->dst,
+-					    flowi4_to_flowi(fl4), NULL,
++					    flowi4_to_flowi(&fl4_dec), NULL,
+ 					    XFRM_LOOKUP_ICMP);
+ 	if (!IS_ERR(rt2)) {
+ 		dst_release(&rt->dst);
++		memcpy(fl4, &fl4_dec, sizeof(*fl4));
+ 		rt = rt2;
+ 	} else if (PTR_ERR(rt2) == -EPERM) {
+ 		if (rt)
 
 
