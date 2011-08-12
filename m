@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab1HLTzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 15:55:32 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:59373 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751786Ab1HLTzb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 15:55:31 -0400
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX1/oBE5xhE/olAFCjyDWmsrwc4EpZWDUnVBhxVvOhn
-	5KPnYin8QZoqQf
-Date: Fri, 12 Aug 2011 21:55:25 +0200
-From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH] UserModeLinux-HOWTO.txt: remove ^H characters
-Message-ID: <20110812195525.GL29043@debian.debian>
-References: <1313108903-7351-1-git-send-email-j.neuschaefer@gmx.net>
- <20110812101928.f34da400.rdunlap@xenotime.net>
+	id S1754246Ab1HLUJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:09:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53519 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab1HLUJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:09:46 -0400
+Message-ID: <4E45884B.8030303@zytor.com>
+Date: Fri, 12 Aug 2011 15:08:43 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110812101928.f34da400.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
+References: <20110812150304.GC16880@albatros>
+In-Reply-To: <20110812150304.GC16880@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 10:19:28AM -0700, Randy Dunlap wrote:
-[...]
-> I like the patch, although the text file seems to be quite old and it
-> appears to be a generated file (from where?).
+On 08/12/2011 10:03 AM, Vasiliy Kulikov wrote:
+> This patch allows x86-64 systems with 32 bit syscalls support to lock a
+> pid namespace to 32 or 64 bitness syscalls/tasks.  By denying rarely
+> used compatibility syscalls it reduces an attack surface for 32 bit
+> containers.
 > 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> The new sysctl is introduced, abi.bitness_locked.  If set to 1, it locks
+> all tasks inside of current pid namespace to the bitness of init task
+> (pid_ns->child_reaper).  After that:
+> 
+> 1) a task trying to do a syscall of other bitness would get a signal as
+> if the corresponding syscall is not enabled (IDT entry/MSR is not
+> initialized).
+> 
+> 2) loading ELF binaries of another bitness is prohibited (as if the
+> corresponding CONFIG_BINFMT_*=N).
+> 
+> If there is any task which differs in bitness, the lockup fails.
+> 
+> In this patch version the lockup is handled by sysctl.  In the future I
+> plan to do it via prctl() to handle situations of container root
+> compromize.  For now, the lockup can be configured by init scripts,
+> which parse /etc/sysctl.conf and set the sysctl variable.  But if
+> /sbin/init is compromized, the malicious code would gain a possibility
+> to do arbitrary syscalls.  So, it should be possible to lockup the
+> container before the init execution.
+> 
+> ( The asm stubs for denied syscalls might be buggy, if so - please
+> ignore them :) it is just a PoC. )
+> 
 
-This ctrl-H stuff actually seems to be a way to display text in bold
-or underlined when viewed with less.
+NAK on this in its current form, as it breaks the upcoming x32 ABI.
+Selection by ABI needs to be more specific.
 
-Jonathan Neuschäfer
+However, I have to question the value of this... if this is enabled in
+the system as a whole (as opposed to compiled out) it seems kind of
+pointless... if there are bugs we need to deal with them anyway.
+
+> Qestions/thoughts:
+> 
+> The patch adds a check in syscalls code.  Is it a significant
+> slowdown for fast syscalls?  If so, probably it worth moving the check
+> into scheduler code and enabling/disabling corresponding interrupt/MSRs
+> on each task switch?
+> 
+
+*YOU* are the person who needs to answer that question by providing
+measurements.  Quite frankly I suspect checks in the syscall code *or*
+task switching MSRs are going to be unacceptable from a performance
+point of view.
+
+	-hpa
