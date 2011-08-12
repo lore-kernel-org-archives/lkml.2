@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1HLIu6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:50:58 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:43058 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751513Ab1HLIu5 (ORCPT
+	id S1753653Ab1HLIvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:51:14 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:47165 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab1HLIvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:50:57 -0400
+	Fri, 12 Aug 2011 04:51:05 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Vijaya Kumar Kilari <vijay.kilari@stericsson.com>,
+        Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 17/23] mfd/db5500-prcmu: sleep handling
-Date: Fri, 12 Aug 2011 10:29:54 +0200
-Message-ID: <1313137794-31147-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 02/23] mfd/db8500-prcmu: extend DB8500 PRCMU mailbox defs
+Date: Fri, 12 Aug 2011 10:27:41 +0200
+Message-ID: <1313137661-30650-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,103 +22,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vijaya Kumar Kilari <vijay.kilari@stericsson.com>
+From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 
-This implements accessors for requesting system sleep states
-including the onchip RAM retention.
+We have a few more mailboxes and fixed messages in the
+DB8500 PRCMU, update to match the latest specification.
 
-Signed-off-by: Vijaya Kumar Kilari <vijay.kilari@stericsson.com>
+Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db5500-prcmu.c       |   61 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/dbx500-prcmu.h |    2 +-
- 2 files changed, 62 insertions(+), 1 deletions(-)
+ drivers/mfd/db8500-prcmu.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/db5500-prcmu.c b/drivers/mfd/db5500-prcmu.c
-index e374481..91bb353 100644
---- a/drivers/mfd/db5500-prcmu.c
-+++ b/drivers/mfd/db5500-prcmu.c
-@@ -626,6 +626,67 @@ static void config_wakeups(void)
- 	last_abb_events = abb_events;
- }
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index b5bd245..dcc690e 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -131,12 +131,14 @@
+ #define MB1H_REQUEST_APE_OPP_100_VOLT 0x3
+ #define MB1H_RELEASE_APE_OPP_100_VOLT 0x4
+ #define MB1H_RELEASE_USB_WAKEUP 0x5
++#define MB1H_PLL_ON_OFF 0x6
  
-+int db5500_prcmu_config_esram0_deep_sleep(u8 state)
-+{
-+	unsigned long flags;
-+
-+	if ((state > ESRAM0_DEEP_SLEEP_STATE_RET) ||
-+	    (state < ESRAM0_DEEP_SLEEP_STATE_OFF))
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	if (state == ESRAM0_DEEP_SLEEP_STATE_RET)
-+		writeb(RET_ST, PRCM_REQ_MB0_ESRAM0_STATE);
-+	else
-+		writeb(OFF_ST, PRCM_REQ_MB0_ESRAM0_STATE);
-+
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
-+
-+	return 0;
-+}
-+
-+int db5500_prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll)
-+{
-+	int r = 0;
-+	unsigned long flags;
-+
-+	/* Deep Idle is not supported in DB5500 */
-+	BUG_ON((state < PRCMU_AP_SLEEP) || (state >= PRCMU_AP_DEEP_IDLE));
-+
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
-+		cpu_relax();
-+
-+	switch (state) {
-+	case PRCMU_AP_IDLE:
-+		writeb(DB5500_AP_IDLE, PRCM_REQ_MB0_AP_POWER_STATE);
-+		/* TODO: Can be high latency */
-+		writeb(DDR_PWR_STATE_UNCHANGED, PRCM_REQ_MB0_DDR_STATE);
-+		break;
-+	case PRCMU_AP_SLEEP:
-+		writeb(DB5500_AP_SLEEP, PRCM_REQ_MB0_AP_POWER_STATE);
-+		break;
-+	case PRCMU_AP_DEEP_SLEEP:
-+		writeb(DB5500_AP_DEEP_SLEEP, PRCM_REQ_MB0_AP_POWER_STATE);
-+		break;
-+	default:
-+		r = -EINVAL;
-+		goto unlock_return;
-+	}
-+	writeb((keep_ap_pll ? 1 : 0), PRCM_REQ_MB0_AP_PLL_STATE);
-+	writeb((keep_ulp_clk ? 1 : 0), PRCM_REQ_MB0_ULP_CLOCK_STATE);
-+
-+	writeb(MB0H_PWR_STATE_TRANS, PRCM_REQ_MB0_HEADER);
-+	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
-+
-+unlock_return:
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
-+
-+	return r;
-+}
-+
- void db5500_prcmu_enable_wakeups(u32 wakeups)
- {
- 	unsigned long flags;
-diff --git a/include/linux/mfd/dbx500-prcmu.h b/include/linux/mfd/dbx500-prcmu.h
-index bac942f..e8541ff 100644
---- a/include/linux/mfd/dbx500-prcmu.h
-+++ b/include/linux/mfd/dbx500-prcmu.h
-@@ -362,7 +362,7 @@ static inline int prcmu_enable_dsipll(void)
- static inline int prcmu_config_esram0_deep_sleep(u8 state)
- {
- 	if (machine_is_u5500())
--		return -EINVAL;
-+		return db5500_prcmu_config_esram0_deep_sleep(state);
- 	else
- 		return db8500_prcmu_config_esram0_deep_sleep(state);
- }
+ /* Mailbox 1 Requests */
+ #define PRCM_REQ_MB1_ARM_OPP			(PRCM_REQ_MB1 + 0x0)
+ #define PRCM_REQ_MB1_APE_OPP			(PRCM_REQ_MB1 + 0x1)
+-#define PRCM_REQ_MB1_APE_OPP_100_RESTORE	(PRCM_REQ_MB1 + 0x4)
+-#define PRCM_REQ_MB1_ARM_OPP_100_RESTORE	(PRCM_REQ_MB1 + 0x8)
++#define PRCM_REQ_MB1_PLL_ON_OFF			(PRCM_REQ_MB1 + 0x4)
++#define PLL_SOC1_OFF	0x4
++#define PLL_SOC1_ON	0x8
+ 
+ /* Mailbox 1 ACKs */
+ #define PRCM_ACK_MB1_CURRENT_ARM_OPP	(PRCM_ACK_MB1 + 0x0)
+@@ -184,6 +186,11 @@
+ #define MB4H_HOTDOG	0x12
+ #define MB4H_HOTMON	0x13
+ #define MB4H_HOT_PERIOD	0x14
++#define MB4H_A9WDOG_CONF 0x16
++#define MB4H_A9WDOG_EN   0x17
++#define MB4H_A9WDOG_DIS  0x18
++#define MB4H_A9WDOG_LOAD 0x19
++#define MB4H_A9WDOG_KICK 0x20
+ 
+ /* Mailbox 4 Requests */
+ #define PRCM_REQ_MB4_DDR_ST_AP_SLEEP_IDLE	(PRCM_REQ_MB4 + 0x0)
+@@ -196,6 +203,13 @@
+ #define PRCM_REQ_MB4_HOT_PERIOD			(PRCM_REQ_MB4 + 0x0)
+ #define HOTMON_CONFIG_LOW			BIT(0)
+ #define HOTMON_CONFIG_HIGH			BIT(1)
++#define PRCM_REQ_MB4_A9WDOG_0			(PRCM_REQ_MB4 + 0x0)
++#define PRCM_REQ_MB4_A9WDOG_1			(PRCM_REQ_MB4 + 0x1)
++#define PRCM_REQ_MB4_A9WDOG_2			(PRCM_REQ_MB4 + 0x2)
++#define PRCM_REQ_MB4_A9WDOG_3			(PRCM_REQ_MB4 + 0x3)
++#define A9WDOG_AUTO_OFF_EN			BIT(7)
++#define A9WDOG_AUTO_OFF_DIS			0
++#define A9WDOG_ID_MASK				0xf
+ 
+ /* Mailbox 5 Requests */
+ #define PRCM_REQ_MB5_I2C_SLAVE_OP	(PRCM_REQ_MB5 + 0x0)
+@@ -1638,6 +1652,11 @@ static bool read_mailbox_4(void)
+ 	case MB4H_HOTDOG:
+ 	case MB4H_HOTMON:
+ 	case MB4H_HOT_PERIOD:
++	case MB4H_A9WDOG_CONF:
++	case MB4H_A9WDOG_EN:
++	case MB4H_A9WDOG_DIS:
++	case MB4H_A9WDOG_LOAD:
++	case MB4H_A9WDOG_KICK:
+ 		break;
+ 	default:
+ 		print_unknown_header_warning(4, header);
 -- 
 1.7.3.2
 
