@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab1HLTQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 15:16:11 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37632 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab1HLTQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 15:16:09 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=KfSig92Mt2CtQbRU6nFx1Vbt7rQSkWQxjeUmWohvHJ4aZwPkhMVQB8ijUCvwoYmyW
-	JDuhROVnrKtOmjJRf9idg==
-Date: Fri, 12 Aug 2011 12:15:21 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: David Gibson <david@gibson.dropbear.id.au>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org, agraf@suse.de,
-        kvm <kvm@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1754286Ab1HLTRv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 15:17:51 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:35981 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185Ab1HLTRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 15:17:50 -0400
+Date: Fri, 12 Aug 2011 21:17:18 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrew Hastings <abh@cray.com>,
-        Adam Litke <agl@us.ibm.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: Fix refcounting in hugetlbfs quota handling
-In-Reply-To: <CAEwNFnB+5DZQw0CrfkcdP_rd5FBM6fw26=_yS3P283a9TKLNiw@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1108121126560.1290@sister.anvils>
-References: <20110811064059.GU6342@yookeroo.fritz.box> <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com> <CAEwNFnB+5DZQw0CrfkcdP_rd5FBM6fw26=_yS3P283a9TKLNiw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110812191718.GE29086@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izVoN2s6J9t1TVj+1pMmHVxfiWYvq=uqeTL4C5-YsBwOw@mail.gmail.com>
+ <20110812083458.GB6916@cmpxchg.org>
+ <CALWz4iz=30A7hUkEmo5_K3q1KiM8tBWvh_ghhbEFm0ZksfzQ=g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-278926984-1313176534=:1290"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALWz4iz=30A7hUkEmo5_K3q1KiM8tBWvh_ghhbEFm0ZksfzQ=g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323584-278926984-1313176534=:1290
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-On Fri, 12 Aug 2011, Minchan Kim wrote:
-> On Fri, Aug 12, 2011 at 9:48 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Wed, Aug 10, 2011 at 11:40 PM, David Gibson
-> > <david@gibson.dropbear.id.au> wrote:
-> >>
-> >> This patch, therefore, stores a pointer to the inode instead of the
-> >> address_space in the page private data for hugepages. =C2=A0More
-> >> importantly it correctly adjusts the reference count on the inodes
-> >> when they're added to the page private data. =C2=A0This ensures that t=
-he
-> >> inode (and therefore the super block) will not be freed before we use
-> >> it from free_huge_page.
+On Fri, Aug 12, 2011 at 10:08:18AM -0700, Ying Han wrote:
+> On Fri, Aug 12, 2011 at 1:34 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > And in reality, we only care about properly memcg-unaccounting the
+> > old lru state before we change pc->mem_cgroup, so this becomes
 > >
-> > Looks sane, but I *really* want some acks from people who use/know
-> > hugetlbfs. Who would that be? I'm adding random people who have
-> > acked/signed-off patches to hugetlbfs recently..
->=20
-> At least, code itself looks good to me but your random choice was failed.
-> Maybe people you want are as follows.
-> http://marc.info/?t=3D126928975800003&r=3D1&w=3D2
->=20
-> Ccing right persons.
+> >        if (!PageLRU(page))
+> >                 return;
+> >        spin_lock_irqsave(&zone->lru_lock, flags);
+> >         if (!PageCgroupUsed(pc))
+> >                mem_cgroup_lru_del(page);
+> >         spin_unlock_irqrestore(&zone->lru_lock, flags);
+> >
+> > I don't see why we should care if the page stays physically linked
+> > to the list.
+> 
+> Can you clarify that?
 
-I don't know much about hugetlbfs these days, but I think the patch
-is very wrong.
+Well, I don't see anything wrong with leaving it on the LRU.  We just
+need to unaccount the page from pc->mem_cgroup's lru stats before the
+page is charged, pc->mem_cgroup overwritten, and the account lost.
 
-The real change is where alloc_huge_page() does igrab(inode) and
-free_huge_pages() does iput(inode)?
+> > The handling after committing the charge becomes this:
+> >
+> > -       if (likely(!PageLRU(page)))
+> > -               return;
+> >        spin_lock_irqsave(&zone->lru_lock, flags);
+> >         lru = page_lru(page);
+> >        if (PageLRU(page) && !PageCgroupAcctLRU(pc)) {
+> >                del_page_from_lru_list(zone, page, lru);
+> >                add_page_to_lru_list(zone, page, lru);
+> >        }
+> >
+> > If the page is not on the LRU, someone else will put it there and link
+> > it up properly.  If it is on the LRU and already memcg-accounted then
+> > it must be on the right lruvec as setting pc->mem_cgroup and PCG_USED
+> > is properly ordered.  Otherwise, it has to be physically moved to the
+> > correct lruvec and memcg-accounted for.
+> 
+> While working on the zone->lru_lock patch, i have been questioning myself on
+> the PageLRU and PageCgroupAcctLRU bit. Here is my question:
+> 
+> It looks to me that PageLRU indicates the page is linked to per-zone lru
+> list, and PageCgroupAcctLRU indicates the page is charged to a memcg and
+> also linked to memcg's private lru list. All of these work nicely when we
+> have both global and private (per-memcg) lru list, but i can not put them
+> together after this patch.
+> 
+> Now page is linked to private lru always either memcg or root. While linked
+> to either lru list, the page could be uncharged (like swapcache). No matter
+> what, i am thinking whether or not we can get rid of the AcctLRU bit from pc
+> and use LRU bit only here.
 
-That makes me very nervous, partly because a final iput() is a complex
-operation, which we wouldn't expect to be doing when "freeing" a page.
+As I said above: if after the commit the page is on the LRU (PageLRU
+set), pc->mem_cgroup's lru stats may or may not include the page, and
+the page may or may not be on the right lruvec.
 
-My first worry was that free_huge_page() could actually get called at
-interrupt time (when it's in a pagevec of pages to be freed as a batch,
-then another put_page is done at interrupt time which frees that batch):
-I worried that we use spin_lock not spin_lock_irqsave on inode->i_lock.
-To be honest though, I've not followed up whether that's actually a
-possibility, the compound page path is too twisty for a quick answer;
-and even if it's a possibility, it's one that's already ignored in the
-case of hugetlb_lock.
+If someone had the page isolated (reclaim?) while we charge it and put
+it back, the page may either be charged or uncharged at the time of
+putback.
 
-Setting that aside, I think this thing of grabbing a reference to inode
-for each page just does not work as you wish: when we unlink an inode,
-all its pages should be freed; but because they are themselves holding
-references to the inode, it and its pages stick around forever.
+	unused: PageLRU is set, but page possibly on the wrong lruvec
+	(root_mem_cgroup's per default, see mem_cgroup_lru_add_list)
+	and not properly accounted for.  We can detect this case by
+	seeing AcctLRU cleared.
 
-A quick experiment with your patch versus without confirmed that:
-meminfo HugePages_Free stayed down with your patch, but went back to
-HugePages_Total without it.  Please check, perhaps I'm just mistaken.
+	used: PageLRU is set, page on the right lruvec and properly
+	accounted.  We can detect this case by seeing that
+	mem_cgroup_lru_add_list() set AcctLRU.
 
-Sorry, I've not looked into what a constructive alternative might be;
-and it's not the first time we've had this difficulty - it came up last
-year when the ->freepage function was added, that the inode may be gone
-by the time ->freepage(page) is called.
-
-On a side note, very good description - thank you, but I wish you'd
-split the patch into two, the fix and then the inode-instead-of-mapping
-cleanup.  Though personally I'd prefer not to make that "cleanup": it's
-normal for a struct address space * to be used in struct page (if I delved
-I guess I'd find good reason why this one is in page->private instead of
-page->mapping: perhaps because it's needed after page->mapping is reset
-to NULL, perhaps because it's needed on COWed copies of hugetlbfs pages).
-
-Hugh
---8323584-278926984-1313176534=:1290--
