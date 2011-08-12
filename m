@@ -1,158 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab1HLUlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:41:18 -0400
-Received: from smtp16.mail.ru ([94.100.176.153]:51518 "EHLO smtp16.mail.ru"
+	id S1751854Ab1HLUm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:42:59 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:59767 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab1HLUlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:41:17 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: lm-sensors@lm-sensors.org
-Cc: Ian Dobson <i.dobson@planet-ian.com>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
+	id S1751319Ab1HLUm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:42:58 -0400
+Message-ID: <4E45904F.60904@free.fr>
+Date: Fri, 12 Aug 2011 22:42:55 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Serge Hallyn <serge.hallyn@canonical.com>
+CC: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
+        bonbons@linux-vserver.org, oleg@tv-sign.ru,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3] hwmon: add caseopen detection to w83627ehf driver
-Date: Sat, 13 Aug 2011 00:41:11 +0400
-Message-Id: <1313181671-5164-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.4.rc3
-X-Spam: Not detected
-X-Mras: Ok
+Subject: Re: [PATCH 2/2] Notify container-init parent a 'reboot' occured
+References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr> <20110811210951.GA17349@peqn> <4E444A04.3070403@free.fr> <20110812162908.GA9304@peqn>
+In-Reply-To: <20110812162908.GA9304@peqn>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export caseopen alarm status into userspace for Winbond W83627*
-and Nuvoton NCT677[56] chips and implement alarm clear knob.
-Second caseopen alarm on NCT6776 is also supported.
+On 08/12/2011 06:29 PM, Serge Hallyn wrote:
+> Quoting Daniel Lezcano (daniel.lezcano@free.fr):
+> ...
+>>> Doesn't this mean that an unprivileged task in a container can shut
+>>> down the container?
+>> Ha ha ! Right, good catch :)
+>>
+>> Yes, rethinking about it, we can do what initially proposed Bruno by
+>> just preventing to reboot when we are not in the init_pid_ns. Actually, 
+>> the sys_reboot occurs after the services shutdown and "kill -1 SIGTERM"
+>> and "kill -1 SIGKILL", and would not make sense to do that in a child
+>> pid namespace, except if we are in a container where we don't want to
+>> reboot :)
+>>
+>> So IMO, it is safe to do:
+>>
+>> 	if (!ns_capable(current_pid_ns()->user_ns, CAP_SYS_BOOT))
+>>  		return -EPERM;
+>> 	
+>> 	if (pid_ns != &init_pid_ns)
+>> 		return pid_namespace_reboot(pid_ns, cmd, buffer);
+> So I don't know if you want to prepend
+> http://kernel.ubuntu.com/git?p=serge/linux-syslogns.git;a=commit;h=63556e9a39bcd75ec4a88333425800905013c73e
+> to your patchset, or just check nsown_capable(CAP_SYS_BOOT) for now,
+> but as soon as you resend with that I'll happily, nay,
+> ecstatically ack.
 
-Thanks to Guenter Roeck for information about Nuvoton chips
-and suggestion to use SENSOR_ATTR_2.
-
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- drivers/hwmon/w83627ehf.c |   62 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 62 insertions(+), 0 deletions(-)
-
-Changes v2 -> v3:
-* SENSOR_ATTR_2 is used instead of SENSOR_ATTR. As result code became
-  more slim and neat.
-* Type of reg variable in caseopen_clear() function changed from
-  unsigned int to u16 to match return value of w83627ehf_read_value()
-
-Changes v1 -> v2:
-* support for Nuvoton NCT677[56] is added (including second caseopen on NCT6776)
-* now data->caseopen contains raw register value, extraction of needed bits
-  is done in show_caseopen()
-  * store_caseopen_clear() is renamed to clear_caseopen()
-
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index f2b377c..eca61b3 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -197,6 +197,9 @@ static const u16 W83627EHF_REG_TEMP_CONFIG[] = { 0, 0x152, 0x252, 0 };
- #define W83627EHF_REG_ALARM2		0x45A
- #define W83627EHF_REG_ALARM3		0x45B
- 
-+#define W83627EHF_REG_CASEOPEN_DET	0x42 /* SMI STATUS #2 */
-+#define W83627EHF_REG_CASEOPEN_CLR	0x46 /* SMI MASK #3 */
-+
- /* SmartFan registers */
- #define W83627EHF_REG_FAN_STEPUP_TIME 0x0f
- #define W83627EHF_REG_FAN_STEPDOWN_TIME 0x0e
-@@ -468,6 +471,7 @@ struct w83627ehf_data {
- 	s16 temp_max[9];
- 	s16 temp_max_hyst[9];
- 	u32 alarms;
-+	u8 caseopen;
- 
- 	u8 pwm_mode[4]; /* 0->DC variable voltage, 1->PWM variable duty cycle */
- 	u8 pwm_enable[4]; /* 1->manual
-@@ -873,6 +877,9 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
- 			       (w83627ehf_read_value(data,
- 					W83627EHF_REG_ALARM3) << 16);
- 
-+		data->caseopen = w83627ehf_read_value(data,
-+						W83627EHF_REG_CASEOPEN_DET);
-+
- 		data->last_updated = jiffies;
- 		data->valid = 1;
- 	}
-@@ -1654,6 +1661,48 @@ show_vid(struct device *dev, struct device_attribute *attr, char *buf)
- }
- static DEVICE_ATTR(cpu0_vid, S_IRUGO, show_vid, NULL);
- 
-+
-+/* Case open detection */
-+
-+static ssize_t
-+show_caseopen(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct w83627ehf_data *data = w83627ehf_update_device(dev);
-+
-+	return sprintf(buf, "%d\n",
-+		!!(data->caseopen & to_sensor_dev_attr_2(attr)->index));
-+}
-+
-+static ssize_t
-+clear_caseopen(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct w83627ehf_data *data = dev_get_drvdata(dev);
-+	unsigned long val;
-+	u16 reg, mask;
-+
-+	if (strict_strtoul(buf, 10, &val) || val != 0)
-+		return -EINVAL;
-+
-+	mask = to_sensor_dev_attr_2(attr)->nr;
-+
-+	mutex_lock(&data->update_lock);
-+	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
-+	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg | mask);
-+	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg & ~mask);
-+	data->valid = 0;	/* Force cache refresh */
-+	mutex_unlock(&data->update_lock);
-+
-+	return count;
-+}
-+
-+static struct sensor_device_attribute_2 sda_caseopen[] = {
-+	SENSOR_ATTR_2(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
-+			clear_caseopen, 0x80, 0x10),
-+	SENSOR_ATTR_2(intrusion1_alarm, S_IWUSR | S_IRUGO, show_caseopen,
-+			clear_caseopen, 0x40, 0x40),
-+};
-+
- /*
-  * Driver and device management
-  */
-@@ -1710,6 +1759,9 @@ static void w83627ehf_device_remove_files(struct device *dev)
- 		device_remove_file(dev, &sda_temp_type[i].dev_attr);
- 	}
- 
-+	device_remove_file(dev, &sda_caseopen[0].dev_attr);
-+	device_remove_file(dev, &sda_caseopen[1].dev_attr);
-+
- 	device_remove_file(dev, &dev_attr_name);
- 	device_remove_file(dev, &dev_attr_cpu0_vid);
- }
-@@ -2261,6 +2313,16 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
- 			goto exit_remove;
- 	}
- 
-+	err = device_create_file(dev, &sda_caseopen[0].dev_attr);
-+	if (err)
-+		goto exit_remove;
-+
-+	if (sio_data->kind == nct6776) {
-+		err = device_create_file(dev, &sda_caseopen[1].dev_attr);
-+		if (err)
-+			goto exit_remove;
-+	}
-+
- 	err = device_create_file(dev, &dev_attr_name);
- 	if (err)
- 		goto exit_remove;
--- 
-1.7.4.rc3
+Ok, in order to not mix the functionnalities, I will send in a separate
+patch the nsown_capable change.
 
