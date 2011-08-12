@@ -1,243 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1HLKaC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 06:30:02 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59028 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab1HLK37 (ORCPT
+	id S1751951Ab1HLKdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 06:33:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45351 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab1HLKdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 06:29:59 -0400
-Date: Fri, 12 Aug 2011 14:29:54 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [RFC] x86, mm: start mmap allocation for libs from low addresses
-Message-ID: <20110812102954.GA3496@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 12 Aug 2011 06:33:15 -0400
+Date: Fri, 12 Aug 2011 03:33:09 -0700 (PDT)
+Message-Id: <20110812.033309.210496433188639417.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 12 Aug 2011 03:33:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes mmap base address allocator logic to incline to
-allocate addresses from the first 16 Mbs of address space.  These
-addresses start from zero byte (0x00AABBCC).  Using such addresses
-breaks ret2libc exploits abusing string buffer overflows.  As library
-addresses contain zero byte, addresses of library functions may not
-present in the string, which is used to overflow the buffer.  As a
-result, it makes it impossible to change the return address on the stack
-to the address of some library function (e.g. system(3)).
 
-The logic is applied to 32 bit tasks, both for 32 bit kernels and for 32
-bit tasks running on 64 bit kernels.  64 bit tasks already have zero
-bytes in addresses of library functions.  Other architectures may reuse
-the logic.
+1) Alternate MAC doesn't work on some E1000E chips, from Bruce Allan.
 
-The first Mb is excluded from the range because of the compatibility with
-programs like Wine and Dosemu.
+2) bnx2x fixes from Vladislav Zolotarov and Dmitry Kravkov including a fix
+   for queue selection when FCOE is disabled.
 
-If the sum of libraries sizes plus executable size doesn't exceed 15 Mb,
-the only pages out of ASCII-protected range are VDSO and vsyscall.
-However, they don't provide enough material for obtaining arbitrary code
-execution and are not dangerous without using other executable pages.
+3) Some uses of rt->rt_iif should be rt->rt_route_iif, from Julian
+   Anastasov.
 
-If 16 Mbs are over, we fallback to the old allocation algorithm.
+4) Fix ebt_register_table() error unwind, from Julia Lawall.
 
-Without the patch:
+5) Similarly for netlabel's netlbl_cfg_cipsov4_map_add().
 
-$ ldd /bin/ls
-	linux-gate.so.1 =>  (0xf779c000)
-        librt.so.1 => /lib/librt.so.1 (0xb7fcf000)
-        libtermcap.so.2 => /lib/libtermcap.so.2 (0xb7fca000)
-        libc.so.6 => /lib/libc.so.6 (0xb7eae000)
-        libpthread.so.0 => /lib/libpthread.so.0 (0xb7e5b000)
-        /lib/ld-linux.so.2 (0xb7fe6000)
+6) Build fixes for SH IRDA drivers, from Kuninori Morimoto.
 
-With the patch:
+7) If cookie_check_timestamp() fails in some cases, we leave "ecn_ok"
+   uninitialized but then test it.  From Mike Waychison.
 
-$ ldd /bin/ls
-	linux-gate.so.1 =>  (0xf772a000)
-	librt.so.1 => /lib/librt.so.1 (0x0014a000)
-	libtermcap.so.2 => /lib/libtermcap.so.2 (0x0015e000)
-	libc.so.6 => /lib/libc.so.6 (0x00162000)
-	libpthread.so.0 => /lib/libpthread.so.0 (0x00283000)
-	/lib/ld-linux.so.2 (0x00131000)
+8) __scm_send() accidently captures UID instead of GID in credentials,
+   fix from Tim Chen.
 
-The same logic was used in -ow patch for 2.0-2.4 kernels and in
-exec-shield for 2.6.x kernels.  Parts of the code were taken from RHEL6
-version of exec-shield.
+9) Fix leak in wl1251 wireless, from Julia Lawall.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
---
- arch/x86/mm/mmap.c       |    5 +++
- include/linux/mm_types.h |    4 +++
- include/linux/sched.h    |    3 ++
- mm/mmap.c                |   66 ++++++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 73 insertions(+), 5 deletions(-)
+10) PRIO packet scheduler needs to use qdisc_dequeue_peeked(), from Flowian
+    Westphal.
 
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 1dab519..0c82a94 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -131,6 +131,11 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- 	} else {
- 		mm->mmap_base = mmap_base();
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
-+		if (mmap_is_ia32()) {
-+			mm->get_unmapped_exec_area =
-+				arch_get_unmapped_exec_area;
-+			mm->lib_mmap_base = 0x00110000 + mmap_rnd();
-+		}
- 		mm->unmap_area = arch_unmap_area_topdown;
- 	}
- }
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 027935c..5f2dca9 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -225,9 +225,13 @@ struct mm_struct {
- 	unsigned long (*get_unmapped_area) (struct file *filp,
- 				unsigned long addr, unsigned long len,
- 				unsigned long pgoff, unsigned long flags);
-+	unsigned long (*get_unmapped_exec_area) (struct file *filp,
-+				unsigned long addr, unsigned long len,
-+				unsigned long pgoff, unsigned long flags);
- 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
- #endif
- 	unsigned long mmap_base;		/* base of mmap area */
-+	unsigned long lib_mmap_base;		/* base of mmap libraries area (includes zero symbol) */
- 	unsigned long task_size;		/* size of task vm space */
- 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
- 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f024c63..8feaba9 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -394,6 +394,9 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
- 			  unsigned long flags);
- extern void arch_unmap_area(struct mm_struct *, unsigned long);
- extern void arch_unmap_area_topdown(struct mm_struct *, unsigned long);
-+extern unsigned long
-+arch_get_unmapped_exec_area(struct file *, unsigned long,
-+		unsigned long, unsigned long, unsigned long);
- #else
- static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
- #endif
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d49736f..489510c 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -50,6 +50,10 @@ static void unmap_region(struct mm_struct *mm,
- 		struct vm_area_struct *vma, struct vm_area_struct *prev,
- 		unsigned long start, unsigned long end);
- 
-+static unsigned long
-+get_unmapped_area_prot(struct file *file, unsigned long addr, unsigned long len,
-+		unsigned long pgoff, unsigned long flags, bool exec);
-+
- /*
-  * WARNING: the debugging will use recursive algorithms so never enable this
-  * unless you know what you are doing.
-@@ -989,7 +993,8 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	/* Obtain the address to map to. we verify (or select) it and ensure
- 	 * that it represents a valid section of the address space.
- 	 */
--	addr = get_unmapped_area(file, addr, len, pgoff, flags);
-+	addr = get_unmapped_area_prot(file, addr, len, pgoff, flags,
-+			prot & PROT_EXEC);
- 	if (addr & ~PAGE_MASK)
- 		return addr;
- 
-@@ -1528,6 +1533,46 @@ bottomup:
- }
- #endif
- 
-+unsigned long
-+arch_get_unmapped_exec_area(struct file *filp, unsigned long addr0,
-+		unsigned long len, unsigned long pgoff, unsigned long flags)
-+{
-+	unsigned long addr = addr0;
-+	struct mm_struct *mm = current->mm;
-+	struct vm_area_struct *vma;
-+
-+	if (len > TASK_SIZE)
-+		return -ENOMEM;
-+
-+	if (flags & MAP_FIXED)
-+		return addr;
-+
-+	/* We ALWAYS start from the beginning as base addresses
-+	 * with zero high bits is a valued resource */
-+	addr = max_t(unsigned long, mm->lib_mmap_base, mmap_min_addr);
-+
-+	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
-+		/* At this point:  (!vma || addr < vma->vm_end). */
-+		if (TASK_SIZE - len < addr)
-+			return -ENOMEM;
-+
-+		/* We don't want to touch brk of not DYNAMIC elf binaries */
-+		if (mm->brk && addr > mm->brk)
-+			goto failed;
-+
-+		if (!vma || addr + len <= vma->vm_start)
-+			return addr;
-+
-+		addr = vma->vm_end;
-+		/* If 0x01000000 is touched, the algo gives up */
-+		if (addr >= 0x01000000)
-+			goto failed;
-+	}
-+
-+failed:
-+	return current->mm->get_unmapped_area(filp, addr0, len, pgoff, flags);
-+}
-+
- void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
- {
- 	/*
-@@ -1541,9 +1586,9 @@ void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
- 		mm->free_area_cache = mm->mmap_base;
- }
- 
--unsigned long
--get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
--		unsigned long pgoff, unsigned long flags)
-+static unsigned long
-+get_unmapped_area_prot(struct file *file, unsigned long addr, unsigned long len,
-+		unsigned long pgoff, unsigned long flags, bool exec)
- {
- 	unsigned long (*get_area)(struct file *, unsigned long,
- 				  unsigned long, unsigned long, unsigned long);
-@@ -1556,7 +1601,11 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
- 	if (len > TASK_SIZE)
- 		return -ENOMEM;
- 
--	get_area = current->mm->get_unmapped_area;
-+	if (exec && current->mm->get_unmapped_exec_area)
-+		get_area = current->mm->get_unmapped_exec_area;
-+	else
-+		get_area = current->mm->get_unmapped_area;
-+
- 	if (file && file->f_op && file->f_op->get_unmapped_area)
- 		get_area = file->f_op->get_unmapped_area;
- 	addr = get_area(file, addr, len, pgoff, flags);
-@@ -1571,6 +1620,13 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
- 	return arch_rebalance_pgtables(addr, len);
- }
- 
-+unsigned long
-+get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
-+		unsigned long pgoff, unsigned long flags)
-+{
-+	return get_unmapped_area_prot(file, addr, len, pgoff, flags, false);
-+}
-+
- EXPORT_SYMBOL(get_unmapped_area);
- 
- /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
----
+11) ath5k_beacon_send() needs better error handling, from Bob Copeland.
+
+12) Add device IDs to rt2x00 USB wireless.
+
+13) Correct source address semantics on ipv4 raw sockets, from Julian
+    Anastasov.
+
+14) Packets looped back need to grab a reference to their attached route.
+    Also from Julian Anastasov.
+
+15) ip_route_me_harder() fix for packets coming from the global RAW socket
+    TCP uses to send resets and some ACKs.  From Julian Anastasov.
+
+16) Fix compat handling for IP_PKTOPTIONS, from Daniel Baluta.
+
+17) Add missing compat entry from PPPIOCGL2TPSTATS, from Florian Westphal.
+
+18) Fix crash when input route accidently used for output, from Julian
+    Anastasov.
+
+19) SLIP/SLCAN need to use netif_rx_ni() because of the context in which
+    TTY buffers are signalled.  From Matvejchikov Ilya and Oliver Hartkopp.
+
+20) Fix double-free in nf_reinject.  From Julian Anastasov.
+
+Please pull, thanks a lot!
+
+The following changes since commit eeca7360f756f7e36e846f35018df20808c7ef63:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2011-08-12 00:35:46 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net.git master
+
+Alex Hacker (1):
+      ath9k: fix a misprint which leads to incorrect calibration
+
+Andrei Warkentin (1):
+      Bridge: Always send NETDEV_CHANGEADDR up on br MAC change.
+
+Anthony Bourguignon (1):
+      rt2x00: Add rt2870 device id for Dvico usb key
+
+Bob Copeland (1):
+      ath5k: fix error handling in ath5k_beacon_send
+
+Bruce Allan (4):
+      e1000e: alternate MAC address does not work on device id 0x1060
+      e1000e: do not disable receiver on 82574/82583
+      e1000e: alternate MAC address update
+      e1000e: increase driver version number
+
+Daniel Baluta (1):
+      ipv4: Fix ip_getsockopt for IP_PKTOPTIONS
+
+David S. Miller (2):
+      net: Make userland include of netlink.h more sane.
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Dmitry Kravkov (3):
+      bnx2x: prevent race between undi_unload and load flows
+      bnx2x: properly clean indirect addresses
+      bnx2x: disable dcb on 578xx since not supported yet
+
+Florian Westphal (2):
+      compat_ioctl: add compat handler for PPPIOCGL2TPSTATS
+      net_sched: prio: use qdisc_dequeue_peeked
+
+Hauke Mehrtens (1):
+      b43: read correct register on bcma bus.
+
+Ivo van Doorn (1):
+      rt2x00: Add new rt73 buffalo USB id
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Julia Lawall (3):
+      drivers/net/wireless/wl1251: add missing kfree
+      net/netlabel/netlabel_kapi.c: add missing cleanup code
+      net/bridge/netfilter/ebtables.c: use available error handling code
+
+Julian Anastasov (6):
+      netfilter: avoid double free in nf_reinject
+      ipv4: fix the reusing of routing cache entries
+      netfilter: TCP and raw fix for ip_route_me_harder
+      ipv4: route non-local sources for raw socket
+      ipv4: use dst with ref during bcast/mcast loopback
+      ipv4: some rt_iif -> rt_route_iif conversions
+
+Kuninori Morimoto (3):
+      net/irda: sh_irda: add missing header
+      net/irda: sh_sir: add missing header
+      net/irda: sh_sir: tidyup compile warning
+
+Larry Finger (1):
+      rtlwifi: rtl892cu: New USB IDs
+
+Matvejchikov Ilya (1):
+      slip: fix NOHZ local_softirq_pending 08 warning
+
+Mike Waychison (1):
+      tcp: initialize variable ecn_ok in syncookies path
+
+Nicolas de Pesloüan (1):
+      bonding: document two undocumented options.
+
+Oliver Hartkopp (1):
+      slcan: ldisc generated skbs are received in softirq context
+
+Rajkumar Manoharan (2):
+      ath9k_hw: Fix incorrect Tx control power in AR9003 template
+      ath9k_hw: update PMU to improve ripple issue for AR9485
+
+Ralf Baechle (1):
+      PCnet: Fix section mismatch
+
+Richard Cochran (2):
+      gianfar: fix fiper alignment after resetting the time
+      dp83640: increase receive time stamp buffer size
+
+Tim Chen (1):
+      scm: Capture the full credentials of the scm sender
+
+Vladislav Zolotarov (2):
+      bnx2x: init FCOE FP only once
+      bnx2x: fix select_queue when FCoE is disabled
+
+Willem de Bruijn (1):
+      net: add Documentation/networking/scaling.txt
+
+huajun li (1):
+      rtl8150: rtl8150_disconnect(...) does not need tasklet_disable(...)
+
+ Documentation/networking/bonding.txt           |   29 ++
+ Documentation/networking/scaling.txt           |  371 ++++++++++++++++++++++++
+ drivers/net/bnx2x/bnx2x_cmn.c                  |   35 ++-
+ drivers/net/bnx2x/bnx2x_dcb.c                  |    2 +-
+ drivers/net/bnx2x/bnx2x_main.c                 |   23 ++-
+ drivers/net/bnx2x/bnx2x_reg.h                  |   26 ++-
+ drivers/net/can/slcan.c                        |    2 +-
+ drivers/net/e1000e/82571.c                     |    6 +-
+ drivers/net/e1000e/e1000.h                     |    1 +
+ drivers/net/e1000e/ethtool.c                   |    3 +-
+ drivers/net/e1000e/lib.c                       |    7 +-
+ drivers/net/e1000e/netdev.c                    |    9 +-
+ drivers/net/gianfar_ptp.c                      |    9 +-
+ drivers/net/irda/sh_irda.c                     |    2 +
+ drivers/net/irda/sh_sir.c                      |    4 +-
+ drivers/net/pcnet32.c                          |    2 +-
+ drivers/net/phy/dp83640.c                      |    5 +-
+ drivers/net/slip.c                             |    2 +-
+ drivers/net/usb/rtl8150.c                      |    1 -
+ drivers/net/wireless/ath/ath5k/base.c          |   23 +-
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 +-
+ drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 +-
+ drivers/net/wireless/b43/dma.c                 |   20 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c        |    2 +
+ drivers/net/wireless/rt2x00/rt73usb.c          |    1 +
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c    |   11 +-
+ drivers/net/wireless/wl1251/acx.c              |    6 +-
+ drivers/net/wireless/wl1251/cmd.c              |    2 +-
+ fs/compat_ioctl.c                              |    1 +
+ include/linux/netlink.h                        |    2 +-
+ include/linux/socket.h                         |    6 +-
+ include/net/inet_sock.h                        |    2 +-
+ net/bridge/br_if.c                             |    6 +-
+ net/bridge/br_notify.c                         |    7 +-
+ net/bridge/netfilter/ebtables.c                |    3 +-
+ net/core/scm.c                                 |    2 +-
+ net/ipv4/ip_output.c                           |    1 +
+ net/ipv4/ip_sockglue.c                         |    9 +-
+ net/ipv4/netfilter.c                           |   18 +-
+ net/ipv4/raw.c                                 |    3 +-
+ net/ipv4/route.c                               |    9 +-
+ net/ipv4/syncookies.c                          |    2 +-
+ net/ipv6/syncookies.c                          |    2 +-
+ net/netfilter/nf_queue.c                       |    1 +
+ net/netlabel/netlabel_kapi.c                   |   20 +-
+ net/sched/sch_prio.c                           |    2 +-
+ 46 files changed, 604 insertions(+), 106 deletions(-)
+ create mode 100644 Documentation/networking/scaling.txt
