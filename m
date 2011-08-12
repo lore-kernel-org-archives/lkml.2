@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab1HLUzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:55:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43030 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab1HLUzp (ORCPT
+	id S1751343Ab1HLU4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:56:22 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:54023 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751331Ab1HLU4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:55:45 -0400
-Date: Fri, 12 Aug 2011 21:55:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
-Message-ID: <20110812205520.GL4775@n2100.arm.linux.org.uk>
-References: <4E457682.5020107@codeaurora.org> <1313175602-21834-1-git-send-email-sboyd@codeaurora.org> <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 12 Aug 2011 16:56:20 -0400
+Date: Fri, 12 Aug 2011 13:56:18 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>
+Subject: Re: linux-next: Tree for Aug 12 (benet/be2net)
+Message-Id: <20110812135618.a209d9af.rdunlap@xenotime.net>
+In-Reply-To: <20110812171311.4d7bb640f38838bf7c34df50@canb.auug.org.au>
+References: <20110812171311.4d7bb640f38838bf7c34df50@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 04:48:12PM -0400, Arnaud Lacombe wrote:
-> You should be able to avoid the extra copy altogether by doing something ala:
-> 
-> $(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
->         $(call cmd,as_o_S)
-> 
-> note that I also remove the $(SRCARCH), as there is no other
-> `arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
+On Fri, 12 Aug 2011 17:13:11 +1000 Stephen Rothwell wrote:
 
-We tried such things, but it results in kbuild arguing over building
-lib1funcs.S in arch/arm/lib and arch/arm/boot/compressed.  You end up
-with it rebuilding the arch/arm/lib one, followed by a rebuild of the
-arch/arm/boot/compressed one.
+> Hi all,
+> 
+> [The kernel.org mirroring is being very slow today]
 
-We've ended up with what we have because its about the only way to get
-kbuild to behave.
+  [s.l.o.w.]
+ 
+> The net tree gained a build failure do I used the version from
+> next-20110811.
+
+
+On i386:
+
+drivers/built-in.o: In function `be_rx_eqd_update':
+be_main.c:(.text+0x569229): undefined reference to `__udivdi3'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
