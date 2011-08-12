@@ -1,58 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab1HNQRu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:17:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37291 "EHLO mx2.suse.de"
+	id S1754897Ab1HNQSN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:18:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37323 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754777Ab1HNQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:17:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:08:44 2011
-Message-Id: <20110812210844.287474680@clark.kroah.org>
+	id S1754548Ab1HNQSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:18:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:10:34 2011
+Message-Id: <20110812211034.676406490@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:07:29 -0700
+Date: Fri, 12 Aug 2011 14:09:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [6/6] powerpc: pseries: Fix kexec on machines with more than 4TB of RAM
-In-Reply-To: <20110812210849.GA5640@kroah.com>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [1/6] crypto: Move md5_transform to lib/md5.c
+In-Reply-To: <20110812211045.GA6497@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit bed9a31527af8ff3dfbad62a1a42815cef4baab7 upstream.
+We are going to use this for TCP/IP sequence number and fragment ID
+generation.
 
-On a box with 8TB of RAM the MMU hashtable is 64GB in size. That
-means we have 4G PTEs. pSeries_lpar_hptab_clear was using a signed
-int to store the index which will overflow at 2G.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- arch/powerpc/platforms/pseries/lpar.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/md5.c               |   92 -------------------------------------------
+ include/linux/cryptohash.h |    5 ++
+ lib/Makefile               |    2 
+ lib/md5.c                  |   95 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 102 insertions(+), 92 deletions(-)
+ create mode 100644 lib/md5.c
 
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -371,7 +371,7 @@ static void pSeries_lpar_hptab_clear(voi
- 		unsigned long ptel;
- 	} ptes[4];
- 	long lpar_rc;
--	int i, j;
-+	unsigned long i, j;
+--- a/crypto/md5.c
++++ b/crypto/md5.c
+@@ -20,6 +20,7 @@
+ #include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/types.h>
++#include <linux/cryptohash.h>
+ #include <asm/byteorder.h>
  
- 	/* Read in batches of 4,
- 	 * invalidate only valid entries not in the VRMA
+ #define MD5_DIGEST_SIZE		16
+@@ -27,103 +28,12 @@
+ #define MD5_BLOCK_WORDS		16
+ #define MD5_HASH_WORDS		4
+ 
+-#define F1(x, y, z)	(z ^ (x & (y ^ z)))
+-#define F2(x, y, z)	F1(z, x, y)
+-#define F3(x, y, z)	(x ^ y ^ z)
+-#define F4(x, y, z)	(y ^ (x | ~z))
+-
+-#define MD5STEP(f, w, x, y, z, in, s) \
+-	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
+-
+ struct md5_ctx {
+ 	u32 hash[MD5_HASH_WORDS];
+ 	u32 block[MD5_BLOCK_WORDS];
+ 	u64 byte_count;
+ };
+ 
+-static void md5_transform(u32 *hash, u32 const *in)
+-{
+-	u32 a, b, c, d;
+-
+-	a = hash[0];
+-	b = hash[1];
+-	c = hash[2];
+-	d = hash[3];
+-
+-	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
+-	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
+-	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
+-	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
+-	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
+-	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
+-	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
+-	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
+-	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
+-	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
+-	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
+-	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
+-	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
+-	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
+-	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
+-	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
+-
+-	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
+-	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
+-	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
+-	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
+-	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
+-	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
+-	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
+-	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
+-	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
+-	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
+-	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
+-	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
+-	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
+-	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
+-	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
+-	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
+-
+-	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
+-	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
+-	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
+-	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
+-	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
+-	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
+-	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
+-	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
+-	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
+-	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
+-	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
+-	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
+-	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
+-	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
+-	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
+-	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
+-
+-	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
+-	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
+-	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
+-	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
+-	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
+-	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
+-	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
+-	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
+-	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
+-	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
+-	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
+-	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
+-	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
+-	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
+-	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
+-	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
+-
+-	hash[0] += a;
+-	hash[1] += b;
+-	hash[2] += c;
+-	hash[3] += d;
+-}
+-
+ /* XXX: this stuff can be optimized */
+ static inline void le32_to_cpu_array(u32 *buf, unsigned int words)
+ {
+--- a/include/linux/cryptohash.h
++++ b/include/linux/cryptohash.h
+@@ -8,6 +8,11 @@
+ void sha_init(__u32 *buf);
+ void sha_transform(__u32 *digest, const char *data, __u32 *W);
+ 
++#define MD5_DIGEST_WORDS 4
++#define MD5_MESSAGE_BYTES 64
++
++void md5_transform(__u32 *hash, __u32 const *in);
++
+ __u32 half_md4_transform(__u32 buf[4], __u32 const in[8]);
+ 
+ #endif
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -10,7 +10,7 @@ endif
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 rbtree.o radix-tree.o dump_stack.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+-	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
++	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o flex_array.o
+ 
+--- /dev/null
++++ b/lib/md5.c
+@@ -0,0 +1,95 @@
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/cryptohash.h>
++
++#define F1(x, y, z)	(z ^ (x & (y ^ z)))
++#define F2(x, y, z)	F1(z, x, y)
++#define F3(x, y, z)	(x ^ y ^ z)
++#define F4(x, y, z)	(y ^ (x | ~z))
++
++#define MD5STEP(f, w, x, y, z, in, s) \
++	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
++
++void md5_transform(__u32 *hash, __u32 const *in)
++{
++	u32 a, b, c, d;
++
++	a = hash[0];
++	b = hash[1];
++	c = hash[2];
++	d = hash[3];
++
++	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
++	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
++	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
++	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
++	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
++	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
++	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
++	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
++	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
++	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
++	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
++	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
++	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
++	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
++	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
++	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
++
++	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
++	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
++	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
++	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
++	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
++	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
++	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
++	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
++	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
++	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
++	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
++	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
++	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
++	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
++	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
++	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
++
++	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
++	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
++	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
++	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
++	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
++	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
++	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
++	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
++	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
++	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
++	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
++	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
++	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
++	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
++	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
++	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
++
++	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
++	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
++	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
++	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
++	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
++	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
++	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
++	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
++	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
++	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
++	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
++	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
++	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
++	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
++	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
++	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
++
++	hash[0] += a;
++	hash[1] += b;
++	hash[2] += c;
++	hash[3] += d;
++}
++EXPORT_SYMBOL(md5_transform);
 
 
