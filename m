@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab1HLQm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:42:58 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36172 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab1HLQmy (ORCPT
+	id S1752288Ab1HLQqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:46:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34958 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1HLQqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:42:54 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Tonda <as@strmilov.cz>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+	Fri, 12 Aug 2011 12:46:35 -0400
+Date: Fri, 12 Aug 2011 17:46:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
+        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
+        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
+        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
+        zajec5@gmail.com, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: TCP port firewall controlled by UDP packets
-In-Reply-To: Your message of "Fri, 12 Aug 2011 01:56:09 +0200."
-             <1313106969-18733-1-git-send-email-as@strmilov.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <1313106969-18733-1-git-send-email-as@strmilov.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1313167234_2634P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 12 Aug 2011 12:40:34 -0400
-Message-ID: <6556.1313167234@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4E455783.0148,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20110812164608.GC28150@sirena.org.uk>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+ <201108111455.56319.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108111455.56319.arnd@arndb.de>
+X-Cookie: You have a message from the operator.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1313167234_2634P
-Content-Type: text/plain; charset=us-ascii
+On Thu, Aug 11, 2011 at 02:55:55PM +0200, Arnd Bergmann wrote:
+> On Thursday 11 August 2011, Kenneth Heitke wrote:
 
-On Fri, 12 Aug 2011 01:56:09 +0200, Tonda said:
-> diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-> --- a/net/ipv4/Kconfig
-> +++ b/net/ipv4/Kconfig
-> @@ -624,3 +624,7 @@
->  	  on the Internet.
->  
->  	  If unsure, say N.
-> +
-> +config TCPFIREWALL
-> +	tristate "TCP Firewall controlled by UDP queries"
-> +	depends on m
+> > +EXPORT_SYMBOL_GPL(slim_add_device);
 
-I don't suppose it would be asking too much to support UPNP here, would it?
-https://secure.wikimedia.org/wikipedia/en/wiki/Internet_Gateway_Device_Protocol
+> I don't think this should be exported: AFAICT, the set of slim_devices
+> is a property of the platform, so I don't see how any other device driver
+> would add another device.
 
-(If this in fact *does* do the UPNP thing, then this *really* needs better docs).
+The platform may be comprised of multiple hardwaare modules with
+functionality on daughtercards which can be probed at runtime.  You may
+also find someone constructing a PCI card or something with a slimbus
+controller on it at some point.
 
+> > +EXPORT_SYMBOL_GPL(slim_register_board_info);
 
---==_Exmh_1313167234_2634P
-Content-Type: application/pgp-signature
+> We are trying to gradually convert platforms that have hardcoded device
+> lists and cannot probe devices by looking at the hardware over to using
+> device tree files that list all the devices.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> I think that this would work well for slimbus and should be done
+> right from the start. This means however that you should not
+> register a "board_info" but instead change the slim_register_controller
+> function so that it adds all devices listed as children of the
+> controller in the device tree.
 
-iD8DBQFORVeCcC3lWbTT17ARArKFAKCYJ+Eq1gVGp+7tcrQFTpz6cF1WrwCg+4/U
-BXGIxPr7tXpJbXcx5TZF6Kk=
-=6ULu
------END PGP SIGNATURE-----
-
---==_Exmh_1313167234_2634P--
-
+It seems a bit extreme to prevent anyone implementing a subsystem for
+their platform until they've converted it into device tree.  Though with
+slimbus it should be at least somewhat probeable IIRC?
