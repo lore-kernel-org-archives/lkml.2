@@ -1,52 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab1HLQZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:25:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26496 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1HLQZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:25:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=ROWKvSakK224mvYvRA704Ln8Ziva2dBAsJ57z+SVCofWAWfdaswCESsMe2TXzLxde
-	gZJvybKSgfxoy2u5w9gdQ==
-MIME-Version: 1.0
-In-Reply-To: <CANxBZFpjtGyk3CO0ViFJF8em_hBFLq7tErjMJrcq5vC7n9cy4g@mail.gmail.com>
-References: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
- <CAErSpo6Fh+zTMiSG+mjkNuA03cCEK7bej9y2oX+HfsScSYGFsw@mail.gmail.com>
- <CANxBZFrzmTDaUrmkGhKAVsZpXScEDxdJeBzcMbBjEW=6ozppGw@mail.gmail.com>
- <20110811232735.u5qoybpr4gg8kckw@webmail.mit.edu> <CANxBZFpjtGyk3CO0ViFJF8em_hBFLq7tErjMJrcq5vC7n9cy4g@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 12 Aug 2011 10:24:50 -0600
-Message-ID: <CAErSpo6NgwTt0o0u651ojN_xH=5qqVN1o0POTEeK+eV6Y68p7A@mail.gmail.com>
-Subject: Re: [PATCH] pnp: replace deprecated __check_region to request_region
-To: Wang Shaoyan <stufever@gmail.com>
-Cc: Adam M Belay <abelay@mit.edu>, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1752441Ab1HLQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:26:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab1HLQ0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 12:26:01 -0400
+From: Andrew Jones <drjones@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: drjones@redhat.com, rostedt@goodmis.org
+Subject: [PATCH 04/10 v2] ktest: Introduce CONSOLE_RESET_TIME
+Date: Fri, 12 Aug 2011 18:25:53 +0200
+Message-Id: <1313166353-3664-1-git-send-email-drjones@redhat.com>
+In-Reply-To: <1313155932-20092-5-git-send-email-drjones@redhat.com>
+References: <1313155932-20092-5-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 10:03 PM, Wang Shaoyan <stufever@gmail.com> wrote:
-> I can understand your worry, but back to beginning, just as the
-> subject of the patch: "replace deprecated __check_region to
-> request_region", I think this patch is still need, although it can't
-> solve the problems both you guys mentioned. Do you agree it?
+When rebooting, some targets may lose their console connection. This
+certainly happens with 'virsh console' when used with my xen guests.
+Setting CONSOLE_RESET_TIME will tell ktest to reconnect the console
+after reboot.
+---
+ tools/testing/ktest/ktest.pl    |   28 +++++++++++++++++++++++-----
+ tools/testing/ktest/sample.conf |    8 ++++++++
+ 2 files changed, 31 insertions(+), 5 deletions(-)
 
-Your patch is presented as "no functional change," but in fact, the
-current code does not leave the region reserved, while with your patch
-it does.  This is quite a large change and I think it will break
-things.
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 12c392e..8bc6dd8 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -108,6 +108,7 @@ my $monitor_cnt = 0;
+ my $sleep_time;
+ my $bisect_sleep_time;
+ my $patchcheck_sleep_time;
++my $console_reset_time;
+ my $ignore_warnings;
+ my $store_failures;
+ my $test_name;
+@@ -606,6 +607,7 @@ sub run_command;
+ sub start_monitor;
+ sub end_monitor;
+ sub wait_for_monitor;
++sub reset_monitor;
+ 
+ sub reboot {
+     my ($time) = @_;
+@@ -626,6 +628,7 @@ sub reboot {
+ 	wait_for_monitor $time;
+ 	end_monitor;
+     }
++    reset_monitor;
+ }
+ 
+ sub do_not_reboot {
+@@ -685,7 +688,9 @@ sub close_console {
+ }
+ 
+ sub start_monitor {
+-    if ($monitor_cnt++) {
++    my ($force) = @_;
++
++    if ($monitor_cnt++ && !defined($force)) {
+ 	return;
+     }
+     $monitor_fp = \*MONFD;
+@@ -697,12 +702,23 @@ sub start_monitor {
+ }
+ 
+ sub end_monitor {
+-    if (--$monitor_cnt) {
++    my ($force) = @_;
++
++    if (--$monitor_cnt && !defined($force)) {
+ 	return;
+     }
+     close_console($monitor_fp, $monitor_pid);
+ }
+ 
++sub reset_monitor {
++    if ($monitor_cnt <= 0 || !defined($console_reset_time)) {
++	return;
++    }
++    end_monitor 'force';
++    sleep $console_reset_time;
++    start_monitor 'force';
++}
++
+ sub wait_for_monitor {
+     my ($time) = @_;
+     my $line;
+@@ -911,10 +927,11 @@ sub wait_for_input
+ sub reboot_to {
+     if ($reboot_type eq "grub") {
+ 	run_ssh "'(echo \"savedefault --default=$grub_number --once\" | grub --batch && reboot)'";
+-	return;
++    } else {
++	run_command "$reboot_script";
+     }
+-
+-    run_command "$reboot_script";
++    wait_for_monitor $sleep_time;
++    reset_monitor;
+ }
+ 
+ sub get_sha1 {
+@@ -2817,6 +2834,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     $sleep_time = set_test_option("SLEEP_TIME", $i);
+     $bisect_sleep_time = set_test_option("BISECT_SLEEP_TIME", $i);
+     $patchcheck_sleep_time = set_test_option("PATCHCHECK_SLEEP_TIME", $i);
++    $console_reset_time = set_test_option("CONSOLE_RESET_TIME", $i);
+     $ignore_warnings = set_test_option("IGNORE_WARNINGS", $i);
+     $bisect_manual = set_test_option("BISECT_MANUAL", $i);
+     $bisect_skip = set_test_option("BISECT_SKIP", $i);
+diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
+index b8bcd14..ba430a7 100644
+--- a/tools/testing/ktest/sample.conf
++++ b/tools/testing/ktest/sample.conf
+@@ -491,6 +491,14 @@
+ # (default 60)
+ #PATCHCHECK_SLEEP_TIME = 60
+ 
++# If the console needs to be reset during a reboot cycle in
++# order to reestablish it's connection, then set this option
++# to the number of seconds ktest should wait between disconnect
++# and reconnect. This is needed when using 'virsh console' to
++# connect to guests.
++# (default undefined)
++#CONSOLE_RESET_TIME = 5
++
+ # Reboot the target box on error (default 0)
+ #REBOOT_ON_ERROR = 0
+ 
+-- 
+1.7.4.1
 
-I would like to see the PNP core reserve resources, but it should be
-done for all resources of all device.  Your patch only affects ioports
-(I think we should do memory as well), and it only affects the
-assignment path (I don't think we do this for every device we
-enumerate).  And it effectively adds a region reservation without
-adding a corresponding release.
-
-Bjorn
