@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab1HLUm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:42:59 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:59767 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319Ab1HLUm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:42:58 -0400
-Message-ID: <4E45904F.60904@free.fr>
-Date: Fri, 12 Aug 2011 22:42:55 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	id S1751996Ab1HLUsQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:48:16 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:50689 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab1HLUsN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 16:48:13 -0400
 MIME-Version: 1.0
-To: Serge Hallyn <serge.hallyn@canonical.com>
-CC: akpm@linux-foundation.org, containers@lists.linux-foundation.org,
-        bonbons@linux-vserver.org, oleg@tv-sign.ru,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Notify container-init parent a 'reboot' occured
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr> <20110811210951.GA17349@peqn> <4E444A04.3070403@free.fr> <20110812162908.GA9304@peqn>
-In-Reply-To: <20110812162908.GA9304@peqn>
+In-Reply-To: <1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
+References: <4E457682.5020107@codeaurora.org>
+	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
+Date: Fri, 12 Aug 2011 16:48:12 -0400
+Message-ID: <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2011 06:29 PM, Serge Hallyn wrote:
-> Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> ...
->>> Doesn't this mean that an unprivileged task in a container can shut
->>> down the container?
->> Ha ha ! Right, good catch :)
->>
->> Yes, rethinking about it, we can do what initially proposed Bruno by
->> just preventing to reboot when we are not in the init_pid_ns. Actually, 
->> the sys_reboot occurs after the services shutdown and "kill -1 SIGTERM"
->> and "kill -1 SIGKILL", and would not make sense to do that in a child
->> pid namespace, except if we are in a container where we don't want to
->> reboot :)
->>
->> So IMO, it is safe to do:
->>
->> 	if (!ns_capable(current_pid_ns()->user_ns, CAP_SYS_BOOT))
->>  		return -EPERM;
->> 	
->> 	if (pid_ns != &init_pid_ns)
->> 		return pid_namespace_reboot(pid_ns, cmd, buffer);
-> So I don't know if you want to prepend
-> http://kernel.ubuntu.com/git?p=serge/linux-syslogns.git;a=commit;h=63556e9a39bcd75ec4a88333425800905013c73e
-> to your patchset, or just check nsown_capable(CAP_SYS_BOOT) for now,
-> but as soon as you resend with that I'll happily, nay,
-> ecstatically ack.
+Hi,
 
-Ok, in order to not mix the functionnalities, I will send in a separate
-patch the nsown_capable change.
+On Fri, Aug 12, 2011 at 3:00 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> lib1funcs.S is reshipped even though the file hasn't changed
+> because the make rule is marked with FORCE. According to Sam
+> Ravnborg:
+>
+>        The FORCE prerequisite will tell make to always execute
+>        the command.
+>        But we only want to execute the command if:
+>        1) $(obj)/lib1funcs.S is missing
+>        2) or $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S is not
+>        older then $(obj)/lib1funcs.S
+>
+>        So dropping FORCE should be a safe thing to do.
+>
+> This fixes the shipped problem, but we still have to reassemble
+> lib1funcs.S because it isn't part of $targets. Add
+> lib1funcs.{S,o} to $targets to avoid relinking the compressed
+> vmlinux if nothing changes.
+>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> ---
+>  arch/arm/boot/compressed/Makefile |    8 +++-----
+>  1 files changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
+> index 0c74a6f..937fd26 100644
+> --- a/arch/arm/boot/compressed/Makefile
+> +++ b/arch/arm/boot/compressed/Makefile
+> @@ -91,7 +91,7 @@ suffix_$(CONFIG_KERNEL_LZMA) = lzma
+>
+>  targets       := vmlinux vmlinux.lds \
+>                 piggy.$(suffix_y) piggy.$(suffix_y).o \
+> -                font.o font.c head.o misc.o $(OBJS)
+> +                font.o font.c head.o misc.o lib1funcs.o lib1funcs.S $(OBJS)
+>
+>  # Make sure files are removed during clean
+>  extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
+> @@ -121,9 +121,7 @@ LDFLAGS_vmlinux += -X
+>  LDFLAGS_vmlinux += -T
+>
+>  # For __aeabi_uidivmod
+> -lib1funcs = $(obj)/lib1funcs.o
+> -
+> -$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S FORCE
+> +$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S
+>        $(call cmd,shipped)
+>
+You should be able to avoid the extra copy altogether by doing something ala:
 
+$(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
+        $(call cmd,as_o_S)
+
+note that I also remove the $(SRCARCH), as there is no other
+`arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
+
+ - Arnaud
+
+>  # We need to prevent any GOTOFF relocs being used with references
+> @@ -140,7 +138,7 @@ bad_syms=$$($(CROSS_COMPILE)nm $@ | sed -n 's/^.\{8\} [bc] \(.*\)/\1/p') && \
+>     echo "$$bad_syms" >&2; rm -f $@; false )
+>
+>  $(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/$(HEAD) $(obj)/piggy.$(suffix_y).o \
+> -               $(addprefix $(obj)/, $(OBJS)) $(lib1funcs) FORCE
+> +               $(addprefix $(obj)/, $(OBJS)) $(obj)/lib1funcs.o FORCE
+>        $(call if_changed,ld)
+>        @$(check_for_bad_syms)
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
