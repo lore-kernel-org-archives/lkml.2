@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1HLCpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:45:09 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55426 "EHLO tundra.namei.org"
+	id S1753838Ab1HLCrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:47:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:32887 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab1HLCpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:45:07 -0400
-Date: Fri, 12 Aug 2011 12:44:55 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Steve French <smfrench@gmail.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] CIFS: remove local xattr definitions
-In-Reply-To: <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
-Message-ID: <alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
-References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com> <CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com> <1313092847.3122.13.camel@localhost.localdomain> <CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
- <alpine.LRH.2.00.1108121047540.14215@tundra.namei.org> <20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752890Ab1HLCrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 22:47:41 -0400
+Date: Fri, 12 Aug 2011 12:47:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the security-testing tree
+Message-Id: <20110812124723.30fe0e364394fdd4900cb2e3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__12_Aug_2011_12_47_23_+1000_KOxsrFhiYaQH=Fo+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Aug 2011, Stephen Rothwell wrote:
+--Signature=_Fri__12_Aug_2011_12_47_23_+1000_KOxsrFhiYaQH=Fo+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Except then that could leave Linus' tree broken during the next merge
-> window depending on the order he merges the cifs and security-testing
-> trees.  Unless that patch is sent to Linus as a fix patch before the next
-> merge window, of course.
-> 
-> I will add this patch as a merge fixup to the merge of the
-> security-testing tree for today.  And will remove my copy when one of the
-> trees gets fixed.
+Hi James,
 
-I'll put it in my tree, then.
+After merging the security-testing tree, today's linux-next build
+(powerpc ppc64_defconfig) failed like this:
 
-> James: maybe I should change the name of your tree in -next to just
-> "security"?
+init/mounts.o: In function `security_old_inode_init_security':
+(.opd+0xf0): multiple definition of `security_old_inode_init_security'
+init/main.o:(.opd+0x108): first defined here
+init/mounts.o: In function `.security_old_inode_init_security':
+(.text+0x50): multiple definition of `.security_old_inode_init_security'
+init/main.o:(.text+0x110): first defined here
 
-Sure.
+etc ... (lots and lots)
 
+Casued by commit e1c9b23adbe8 ("evm: building without EVM enabled fixes").
 
--- 
-James Morris
-<jmorris@namei.org>
+Please, please, build test this stuff.  This is the same error that that
+patch was supposed to fix but on another function ...
+
+I have used the security-tree tree from next-20110809 again.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__12_Aug_2011_12_47_23_+1000_KOxsrFhiYaQH=Fo+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJORJQ7AAoJEDMEi1NhKgbsaYwH/1VCA00QsdCmuJfdEsuMAC9O
+UqpsrCVd0ePpVIEVIYt3vT02IqgQtWAzIru+7VbOFwR+Gd3EVN9fVUoy89EdIqC3
+33hWpKjylr6HDCZdzKC+hH7o/Y6c/AyU2h85f/SeChxvNxJehy0tUFTIVxDJDMjY
+UcubBgwl0e+8lvvTULB020HKF24K1p4cCbgysb+degJtpFf4TsxgFtRl1MIyCNPn
+332gAuOw91hRNSHqqM/ulcw4akx7t30nEY7OW0HnY4bLBYaHAFkIyE1ykpW5XtEa
+Yg0Pnb8Nb9tSQnQNSZcP1bgQl/h39vYeRh6Plcpnqw7rkjLUeSLQYnfNinBFtBk=
+=eXxv
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Aug_2011_12_47_23_+1000_KOxsrFhiYaQH=Fo+--
