@@ -1,196 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab1HLAt0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 20:49:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39376 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754246Ab1HLAtY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 20:49:24 -0400
+	id S1754472Ab1HLAzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 20:55:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59847 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243Ab1HLAzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 20:55:12 -0400
+X-AuditID: b753bd60-a327cba0000050a4-4b-4e4479ed40ba
+X-AuditID: b753bd60-a327cba0000050a4-4b-4e4479ed40ba
+Message-ID: <4E4479E9.5040804@hitachi.com>
+Date: Fri, 12 Aug 2011 09:55:05 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110811064059.GU6342@yookeroo.fritz.box>
-References: <20110811064059.GU6342@yookeroo.fritz.box>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 11 Aug 2011 17:48:56 -0700
-Message-ID: <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com>
-Subject: Re: Fix refcounting in hugetlbfs quota handling
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org, agraf@suse.de,
-        kvm <kvm@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH 3/5][RFC] ftrace: Return pt_regs to function trace callback
+ (x86_64 only so
+References: <20110810162222.017387055@goodmis.org>  <20110810163038.238028499@goodmis.org>  <4E436EDC.2080101@hitachi.com> <1313067566.18583.288.camel@gandalf.stny.rr.com>
+In-Reply-To: <1313067566.18583.288.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 11:40 PM, David Gibson
-<david@gibson.dropbear.id.au> wrote:
+(2011/08/11 21:59), Steven Rostedt wrote:
+> On Thu, 2011-08-11 at 14:55 +0900, Masami Hiramatsu wrote:
+>> (2011/08/11 1:22), Steven Rostedt wrote:
+>>> From: Steven Rostedt <srostedt@redhat.com>
+>>>
+>>> Return as the 4th paramater to the function tracer callback the pt_regs.
+>>>
+>>> So far this is only supported by x86_64. The ftrace_ops flag
+>>> FTRACE_OPS_FL_SAVE_REGS is added to tell the arch to save all regs
+>>> to the pt_regs, otherwise a minimum is just passed back (the same
+>>> regs that is saved by mcount itself).
+>>
+>> I guess it will be a bit hard to port this on x86-32, because
+>> on x86-32, the top of stack address in pt_regs is the address
+>> of sp member (e.g. &(pt_regs->sp)). I mean that when mcount-entry
+>> calls ftrace_caller, it pushes an address of the next instruction
+>> of mcount-entry on the top of stack.
+>> In that case, &(pt_regs->sp) points the entry which stores the
+>> address, instead of the return address of probed function.
 >
-> This patch, therefore, stores a pointer to the inode instead of the
-> address_space in the page private data for hugepages.  More
-> importantly it correctly adjusts the reference count on the inodes
-> when they're added to the page private data.  This ensures that the
-> inode (and therefore the super block) will not be freed before we use
-> it from free_huge_page.
+> I'm a little confused here. What is needed by kprobes handlers?
 
-Looks sane, but I *really* want some acks from people who use/know
-hugetlbfs. Who would that be? I'm adding random people who have
-acked/signed-off patches to hugetlbfs recently..
+pt_regs, which is same as what the breakpoint interrupt generates.
+This means that all members of pt_regs should be filled (except ss)
+as interrupt handler does.
 
-             Linus
+> It should be no problem saving the sp member onto pt_regs of the time
+> mcount was called, and simulate the probe as if it was put on the nop.
 
---- patch left quoted for new people ---
-> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
+OK.
+
 >
-> Index: working-2.6/fs/hugetlbfs/inode.c
-> ===================================================================
-> --- working-2.6.orig/fs/hugetlbfs/inode.c       2011-08-10 16:45:47.864758406 +1000
-> +++ working-2.6/fs/hugetlbfs/inode.c    2011-08-10 17:22:21.899638039 +1000
-> @@ -874,10 +874,10 @@ out_free:
->        return -ENOMEM;
->  }
+>>
+>> e.g. with kprobes (on x86-32):
+>>
+>> [  <bx>  ] <- pt_regs
+>> [  ...   ]
+>> [  <cs>  ]
+>> [<flags> ]
+>> [ret-addr] <- &(pt_regs.sp)
+>> [  arg1  ]
+>> [  arg2  ]
+>>
+>> with this method:
+>>
+>> [  <bx>  ] <- pt_regs
+>> [  ...   ]
+>> [  <cs>  ]
+>> [<flags> ]
+>> [mcount-ret] <- &(pt_regs.sp)
+>> [ret-addr]
+>> [  arg1  ]
+>> [  arg2  ]
+>>
+>> I think this is hard to solve without a tricky hack.
 >
-> -int hugetlb_get_quota(struct address_space *mapping, long delta)
-> +int hugetlb_get_quota(struct inode *inode, long delta)
->  {
->        int ret = 0;
-> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> +       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
+> Is this for handling kretprobes? With mcount, we shouldn't be doing that
+> because mcount is not the place that kretprobes should be doing this.
+
+Yeah, I know, but if kprobe works on mcount with --fentry *transparently*,
+it should support kretprobes.
+Moreover, if we'd like to access args on the stack, sp should be able to be
+handled as breakpoint-based kprobes. and that has to be done for dynamic-
+events on x86-32.
+
+> When we add __fentry__, the arch code will be different to handle that
+> and it shouldn't be too hard to make that work with kretprobes.
 >
->        if (sbinfo->free_blocks > -1) {
->                spin_lock(&sbinfo->stat_lock);
-> @@ -891,9 +891,9 @@ int hugetlb_get_quota(struct address_spa
->        return ret;
->  }
+>>
+>> For example, on x86-32, MCOUNT_FRAME_SAVE saves
+>> flags on the entry which will be <cs> and it saves
+>> mcount-ret to local stack and moves flags to next entry.
+>>
+>> <save-frame>
+>> pushf			# save flags on CS(%esp)
+>> subl $12, %esp		# skip ip, orig_ax and gs
+>> pushl %fs
+>> pushl %es
+>> ...
+>> pushl %ebx
+>> movl 56(%esp), %ebx	# load mcount-ret address
+>> movl 52(%esp), %ebp	# load flags
+>> movl %ebp, 56(%esp)	# store flags
 >
-> -void hugetlb_put_quota(struct address_space *mapping, long delta)
-> +void hugetlb_put_quota(struct inode *inode, long delta)
->  {
-> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> +       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(inode->i_sb);
+> Nope we don't do anything like this. I've already got x86_32 working
+> (but maybe it needs more for pt_regs->sp) but why is pushf needed?
+
+as I said below (inlined comment), e.g. someone who wanna chase IF,
+he needs eflags.
+
+Please note, kprobes is the function which basically provides a
+breakpoint handler in the kernel. Users expect that. So all registers
+should be provided as breakpoint interrupt does. That's what I said
+"transparently".
+
 >
->        if (sbinfo->free_blocks > -1) {
->                spin_lock(&sbinfo->stat_lock);
-> Index: working-2.6/include/linux/hugetlb.h
-> ===================================================================
-> --- working-2.6.orig/include/linux/hugetlb.h    2011-08-10 16:58:27.952527484 +1000
-> +++ working-2.6/include/linux/hugetlb.h 2011-08-10 17:22:08.723572707 +1000
-> @@ -171,8 +171,8 @@ extern const struct file_operations huge
->  extern const struct vm_operations_struct hugetlb_vm_ops;
->  struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
->                                struct user_struct **user, int creat_flags);
-> -int hugetlb_get_quota(struct address_space *mapping, long delta);
-> -void hugetlb_put_quota(struct address_space *mapping, long delta);
-> +int hugetlb_get_quota(struct inode *inode, long delta);
-> +void hugetlb_put_quota(struct inode *inode, long delta);
+> -- Steve
 >
->  static inline int is_file_hugepages(struct file *file)
->  {
-> Index: working-2.6/mm/hugetlb.c
-> ===================================================================
-> --- working-2.6.orig/mm/hugetlb.c       2011-08-10 16:44:12.212284092 +1000
-> +++ working-2.6/mm/hugetlb.c    2011-08-10 17:21:49.603477888 +1000
-> @@ -533,10 +533,12 @@ static void free_huge_page(struct page *
->         */
->        struct hstate *h = page_hstate(page);
->        int nid = page_to_nid(page);
-> -       struct address_space *mapping;
-> +       struct inode *inode;
+>>
+>> call function (ebx is callee save)
+>>
+>> <restore-frame>
+>> movl 56(%esp), %ebp	# load flags
+>> movl %ebp, 52(%esp)	# store flags
+>> movl %ebx, 56(%esp)	# load mcount-ret address
+>> ...
+>> popf
+>> ret
+>>
+>> Hmm?
+>>
+>>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>>> ---
+>>>  arch/x86/include/asm/ftrace.h     |   38 ++++++++++++++++++++----------------
+>>>  arch/x86/kernel/entry_64.S        |   23 +++++++++++++++++++++-
+>>>  include/linux/ftrace.h            |   15 ++++++++++++-
+>>>  kernel/trace/ftrace.c             |   29 ++++++++++++++++++---------
+>>>  kernel/trace/trace_events.c       |    2 +-
+>>>  kernel/trace/trace_functions.c    |    7 +++--
+>>>  kernel/trace/trace_irqsoff.c      |    2 +-
+>>>  kernel/trace/trace_sched_wakeup.c |    3 +-
+>>>  kernel/trace/trace_selftest.c     |   15 +++++++++----
+>>>  kernel/trace/trace_stack.c        |    3 +-
+>>>  10 files changed, 95 insertions(+), 42 deletions(-)
+>>>
+>>> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+>>> index b3fcf16..0750c2a 100644
+>>> --- a/arch/x86/include/asm/ftrace.h
+>>> +++ b/arch/x86/include/asm/ftrace.h
+>>> @@ -4,26 +4,29 @@
+>>>  #ifdef __ASSEMBLY__
+>>>
+>>>  	.macro MCOUNT_SAVE_FRAME
+>>> -	/* taken from glibc */
+>>> -	subq $0x38, %rsp
+>>> -	movq %rax, (%rsp)
+>>> -	movq %rcx, 8(%rsp)
+>>> -	movq %rdx, 16(%rsp)
+>>> -	movq %rsi, 24(%rsp)
+>>> -	movq %rdi, 32(%rsp)
+>>> -	movq %r8, 40(%rsp)
+>>> -	movq %r9, 48(%rsp)
+>>> +	 /*
+>>> +	  * We add enough stack to save all regs,
+>>> +	  * and we what we need in the location of pt_regs.
+>>> +	  */
+>>> +	subq $ORIG_RAX, %rsp
+>>> +	movq %rax, RAX(%rsp)
+>>> +	movq %rcx, RCX(%rsp)
+>>> +	movq %rdx, RDX(%rsp)
+>>> +	movq %rsi, RSI(%rsp)
+>>> +	movq %rdi, RDI(%rsp)
+>>> +	movq %r8, R8(%rsp)
+>>> +	movq %r9, R9(%rsp)
+>>>  	.endm
+>>>
+>>>  	.macro MCOUNT_RESTORE_FRAME
+>>> -	movq 48(%rsp), %r9
+>>> -	movq 40(%rsp), %r8
+>>> -	movq 32(%rsp), %rdi
+>>> -	movq 24(%rsp), %rsi
+>>> -	movq 16(%rsp), %rdx
+>>> -	movq 8(%rsp), %rcx
+>>> -	movq (%rsp), %rax
+>>> -	addq $0x38, %rsp
+>>> +	movq R9(%rsp), %r9
+>>> +	movq R8(%rsp), %r8
+>>> +	movq RDI(%rsp), %rdi
+>>> +	movq RSI(%rsp), %rsi
+>>> +	movq RDX(%rsp), %rdx
+>>> +	movq RCX(%rsp), %rcx
+>>> +	movq RAX(%rsp), %rax
+>>> +	addq $ORIG_RAX, %rsp
+>>>  	.endm
+>>>
+>>>  #endif
+>>> @@ -34,6 +37,7 @@
+>>>
+>>>  #if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
+>>>  #define ARCH_SUPPORTS_FTRACE_OPS 1
+>>> +#define ARCH_SUPPORTS_FTRACE_SAVE_REGS 1
+>>>  #endif
+>>>
+>>>  #ifndef __ASSEMBLY__
+>>> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+>>> index 27adc2b..b77f297 100644
+>>> --- a/arch/x86/kernel/entry_64.S
+>>> +++ b/arch/x86/kernel/entry_64.S
+>>> @@ -78,7 +78,16 @@ ENTRY(ftrace_caller)
+>>
+>> I can see below code before save frame.
+>>
+>> 	cmpl $0, function_trace_stop
+>> 	jne  ftrace_stub
+>>
+>> Please pushf before comparing it. :)
+>> Sometimes, the value of eflags is worth to watch.
+>> I know that SF/ZF will be never used between
+>> function call, so it is OK if the eflags is saved
+>> in MCOUNT_SAVE_FRAME.
+>>
+>>>  	MCOUNT_SAVE_FRAME
+>>>
+>>>  	leaq function_trace_op, %rdx
+>>> -	movq 0x38(%rsp), %rdi
+>>> +
+>>> +	cmpl $0, ftrace_save_regs
+>>> +	jne  save_all_regs
+>>> +
+>>> +call_func:
+>>> +
+>>> +	/* regs go into 4th parameter */
+>>> +	leaq (%rsp), %rcx
+>>> +
+>>> +	movq ORIG_RAX(%rsp), %rdi
+>>>  	movq 8(%rbp), %rsi
+>>>  	subq $MCOUNT_INSN_SIZE, %rdi
+>>>
+>>> @@ -96,6 +105,18 @@ GLOBAL(ftrace_stub)
+>>>  	retq
+>>>  END(ftrace_caller)
+>>>
+>>> +save_all_regs:
+>>> +	/* Save the rest of pt_regs */
+>>> +	movq %r15, R15(%rsp)
+>>> +	movq %r14, R14(%rsp)
+>>> +	movq %r13, R13(%rsp)
+>>> +	movq %r12, R12(%rsp)
+>>> +	movq %r10, R10(%rsp)
+>>> +	movq %rbp, RBP(%rsp)
+>>> +	movq %rbx, RBX(%rsp)
+>>> +	jmp call_func
+>>
+>> At least, pt_regs.sp must be saved for accessing
+>> vars on stack.
+>>
+>>> +
+>>> +
+>>>  #else /* ! CONFIG_DYNAMIC_FTRACE */
+>>>  ENTRY(mcount)
+>>>  	cmpl $0, function_trace_stop
+>>
+>> You also need to restore the rest of pt_regs if
+>> ftrace_save_regs is true.
+>>
+>> Thank you,
+>>
 >
-> -       mapping = (struct address_space *) page_private(page);
-> +       inode = (struct inode *) page_private(page);
->        set_page_private(page, 0);
-> +       iput(inode);
-> +
->        page->mapping = NULL;
->        BUG_ON(page_count(page));
->        BUG_ON(page_mapcount(page));
-> @@ -551,8 +553,8 @@ static void free_huge_page(struct page *
->                enqueue_huge_page(h, page);
->        }
->        spin_unlock(&hugetlb_lock);
-> -       if (mapping)
-> -               hugetlb_put_quota(mapping, 1);
-> +       if (inode)
-> +               hugetlb_put_quota(inode, 1);
->  }
->
->  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-> @@ -1035,7 +1037,7 @@ static struct page *alloc_huge_page(stru
->        if (chg < 0)
->                return ERR_PTR(-VM_FAULT_OOM);
->        if (chg)
-> -               if (hugetlb_get_quota(inode->i_mapping, chg))
-> +               if (hugetlb_get_quota(inode, chg))
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->
->        spin_lock(&hugetlb_lock);
-> @@ -1045,12 +1047,12 @@ static struct page *alloc_huge_page(stru
->        if (!page) {
->                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->                if (!page) {
-> -                       hugetlb_put_quota(inode->i_mapping, chg);
-> +                       hugetlb_put_quota(inode, chg);
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->                }
->        }
->
-> -       set_page_private(page, (unsigned long) mapping);
-> +       set_page_private(page, (unsigned long) igrab(inode));
->
->        vma_commit_reservation(h, vma, addr);
->
-> @@ -2086,7 +2088,8 @@ static void hugetlb_vm_op_close(struct v
->
->                if (reserve) {
->                        hugetlb_acct_memory(h, -reserve);
-> -                       hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-> +                       hugetlb_put_quota(vma->vm_file->f_mapping->host,
-> +                                         reserve);
->                }
->        }
->  }
-> @@ -2884,7 +2887,7 @@ int hugetlb_reserve_pages(struct inode *
->                return chg;
->
->        /* There must be enough filesystem quota for the mapping */
-> -       if (hugetlb_get_quota(inode->i_mapping, chg))
-> +       if (hugetlb_get_quota(inode, chg))
->                return -ENOSPC;
->
->        /*
-> @@ -2893,7 +2896,7 @@ int hugetlb_reserve_pages(struct inode *
->         */
->        ret = hugetlb_acct_memory(h, chg);
->        if (ret < 0) {
-> -               hugetlb_put_quota(inode->i_mapping, chg);
-> +               hugetlb_put_quota(inode, chg);
->                return ret;
->        }
->
-> @@ -2922,7 +2925,7 @@ void hugetlb_unreserve_pages(struct inod
->        inode->i_blocks -= (blocks_per_huge_page(h) * freed);
->        spin_unlock(&inode->i_lock);
->
-> -       hugetlb_put_quota(inode->i_mapping, (chg - freed));
-> +       hugetlb_put_quota(inode, (chg - freed));
->        hugetlb_acct_memory(h, -(chg - freed));
->  }
->
->
-> --
-> David Gibson                    | I'll have my music baroque, and my code
-> david AT gibson.dropbear.id.au  | minimalist, thank you.  NOT _the_ _other_
->                                | _way_ _around_!
-> http://www.ozlabs.org/~dgibson
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
