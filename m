@@ -1,126 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab1HLFqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 01:46:44 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:45962 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751666Ab1HLFql convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 01:46:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACVXFVMqwzSOSvkq4q6GnR2gso8NuQD4DRumAVesQB=P_8yDaQ@mail.gmail.com>
-References: <1312899309-24067-1-git-send-email-keshava_mgowda@ti.com>
-	<1312899309-24067-2-git-send-email-keshava_mgowda@ti.com>
-	<1312899309-24067-3-git-send-email-keshava_mgowda@ti.com>
-	<CACVXFVMqwzSOSvkq4q6GnR2gso8NuQD4DRumAVesQB=P_8yDaQ@mail.gmail.com>
-Date: Fri, 12 Aug 2011 11:16:35 +0530
-Message-ID: <CAP05o4JDz_53k73-yUXn4S3hFNZ=ccEhaee-U53M+M6qm41Y=A@mail.gmail.com>
-Subject: Re: [PATCH 2/5 v4] arm: omap: usb: ehci and ohci hwmod structures for omap3
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        khilman@ti.com, b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754226Ab1HLFre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 01:47:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53761 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794Ab1HLFrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 01:47:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
+   d="asc'?scan'208";a="6419424"
+Subject: Re: [net-next] spider_net: fix compile issue introduced by driver
+ move
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Aug 2011 22:47:17 -0700
+In-Reply-To: <20110812150003.1e2ba71018bea040fc7649d7@canb.auug.org.au>
+References: <1313120000-12085-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <1313120415.2029.3.camel@jtkirshe-mobl>
+	 <20110812144131.59de312ee6e1a9e8865c1a85@canb.auug.org.au>
+	 <20110812150003.1e2ba71018bea040fc7649d7@canb.auug.org.au>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-NlwO3MxWF5C6k3DaQ++3"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313128038.4588.5.camel@jtkirshe-mobl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 8:53 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi,
->
-> On Tue, Aug 9, 2011 at 10:15 PM, Keshava Munegowda
-> <keshava_mgowda@ti.com> wrote:
->> Following 4 hwmod strcuture are added:
->> UHH hwmod of usbhs with uhh base address and functional clock,
->> EHCI hwmod with irq and base address,
->> OHCI hwmod with irq and base address,
->> TLL hwmod of usbhs with the TLL base address and irq.
->>
->> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  279 ++++++++++++++++++++++++++++
->>  1 files changed, 279 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> index 59fdb9f..d7316b3 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
->> @@ -84,6 +84,10 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
->>  static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
->>  static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
->>  static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
->> +static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
->> +static struct omap_hwmod omap34xx_usbhs_ohci_hwmod;
->> +static struct omap_hwmod omap34xx_usbhs_ehci_hwmod;
->> +static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
->>
->>  /* L3 -> L4_CORE interface */
->>  static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
->> @@ -3196,6 +3200,276 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
->>        .omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
->>  };
->>
->> +/*
->> + * 'usb_host_hs' class
->> + * high-speed multi-port usb host controller
->> + */
->> +static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
->> +       .master         = &omap34xx_usb_host_hs_hwmod,
->> +       .slave          = &omap3xxx_l3_main_hwmod,
->> +       .clk            = "core_l3_ick",
->> +       .user           = OCP_USER_MPU,
->> +};
->> +
->> +static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
->> +       .rev_offs       = 0x0000,
->> +       .sysc_offs      = 0x0010,
->> +       .syss_offs      = 0x0014,
->> +       .sysc_flags     = (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
->
-> SYSC_HAS_ENAWAKEUP is missed or not needed?
 
-not needed. wakeup will through irq-chaining mechanism.
+--=-NlwO3MxWF5C6k3DaQ++3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->
->> +       .idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
->> +                          MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
->> +       .sysc_fields    = &omap_hwmod_sysc_type1,
->> +};
->> +
->> +static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
->> +       .name = "usbhs_uhh",
->> +       .sysc = &omap34xx_usb_host_hs_sysc,
->> +};
->> +
->> +static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
->> +       &omap34xx_usb_host_hs__l3_main_2,
->> +};
->> +
->> +static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
->> +       {
->> +               .name           = "uhh",
->> +               .pa_start       = 0x48064000,
->> +               .pa_end         = 0x480643ff,
->> +               .flags          = ADDR_TYPE_RT
->> +       },
->> +       {} /* Terminating Entry */
->> +};
->> +
->> +static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
->> +       .master         = &omap3xxx_l4_core_hwmod,
->> +       .slave          = &omap34xx_usb_host_hs_hwmod,
->> +       .clk            = "l4_ick",
->> +       .addr           = omap34xx_usb_host_hs_addrs,
->> +       .user           = OCP_USER_MPU | OCP_USER_SDMA,
->> +};
->
-> Even USBHOST_L4_ICLK is used only by USBHOST_SICLK, it is better to
-> define a "usbhost_siclk" clk for consistence with TRM.
+On Thu, 2011-08-11 at 22:00 -0700, Stephen Rothwell wrote:
+> Hi Jeff,
+>=20
+> On Fri, 12 Aug 2011 14:41:31 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+> >
+> > On Thu, 11 Aug 2011 20:40:14 -0700 Jeff Kirsher <jeffrey.t.kirsher@inte=
+l.com> wrote:
+> > >
+> > > On Thu, 2011-08-11 at 20:33 -0700, Kirsher, Jeffrey T wrote:
+> > > > Both Spider net driver and Sun GEM driver use the sungem_phy.o obje=
+ct.
+> > > > This fix creates a Kconfig object for sungem_phy (like MDIO) so tha=
+t
+> > > > both drivers require the SUNGEM_PHY object.
+> > > >=20
+> > > > This has been compile tested for the Sun GEM driver.
+> > > >=20
+> > > > Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> > > > ---
+> > > >  drivers/net/Kconfig               |    4 ++++
+> > > >  drivers/net/Makefile              |    2 +-
+> > > >  drivers/net/ethernet/sun/Kconfig  |    1 +
+> > > >  drivers/net/ethernet/sun/Makefile |    3 ++-
+> > > >  4 files changed, 8 insertions(+), 2 deletions(-)=20
+> > >=20
+> > > Stephen, is it possible for you to try this patch to ensure it resolv=
+es
+> > > the compile issue you saw for the Spider Net driver when merging with
+> > > David's net-next tree?
+> >=20
+> > That patch doesn't come close to applying to the copy of Dave's tree I
+> > have from this morning (head e7c379d2a0dc).  I'll see if I can figure i=
+t
+> > out ...
+>=20
+> OK, I applied it by hand and it seems to fix that failure, thanks.
+>=20
+> However, Dave, I now get these (powerpc ppc64defconfig build of just the
+> net tree):
+>=20
+> ERROR: ".cxgb4_unregister_uld" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] unde=
+fined!
+> ERROR: ".cxgb4_register_uld" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefi=
+ned!
+> ERROR: ".cxgb4_iscsi_init" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefine=
+d!
+> ERROR: ".cxgb4_port_idx" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined!
+> ERROR: ".cxgb4_port_viid" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined=
+!
+> ERROR: ".cxgb4_port_chan" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined=
+!
+> ERROR: ".cxgb4_best_mtu" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined!
+> ERROR: ".cxgb4_l2t_get" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined!
+> ERROR: ".cxgb4_alloc_atid" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefine=
+d!
+> ERROR: ".cxgb4_l2t_release" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefin=
+ed!
+> ERROR: ".cxgb4_pktgl_to_skb" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefi=
+ned!
+> ERROR: ".cxgb4_remove_tid" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefine=
+d!
+> ERROR: ".cxgb4_free_atid" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined=
+!
+> ERROR: ".cxgb4_ofld_send" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined=
+!
+> ERROR: ".cxgb4_l2t_send" [drivers/scsi/cxgbi/cxgb4i/cxgb4i.ko] undefined!
+> ERROR: ".cxgb3_unregister_client" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] u=
+ndefined!
+> ERROR: ".cxgb3_register_client" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] und=
+efined!
+> ERROR: ".t3_l2e_free" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefined!
+> ERROR: ".cxgb3_remove_tid" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefine=
+d!
+> ERROR: ".cxgb3_alloc_atid" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefine=
+d!
+> ERROR: ".t3_l2t_get" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefined!
+> ERROR: ".cxgb3_queue_tid_release" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] u=
+ndefined!
+> ERROR: ".cxgb3_free_atid" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefined=
+!
+> ERROR: ".cxgb3_insert_tid" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefine=
+d!
+> ERROR: ".t3_l2t_send_slow" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefine=
+d!
+> ERROR: ".cxgb3_ofld_send" [drivers/scsi/cxgbi/cxgb3i/cxgb3i.ko] undefined=
+!
+> ERROR: ".cnic_unregister_driver" [drivers/scsi/bnx2i/bnx2i.ko] undefined!
+> ERROR: ".cnic_register_driver" [drivers/scsi/bnx2i/bnx2i.ko] undefined!
+> ERROR: ".mii_phy_probe" [drivers/net/spidernet.ko] undefined!
+> ERROR: ".mlx4_cq_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_qp_release_range" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_counter_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] unde=
+fined!
+> ERROR: ".mlx4_write_mtt" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_get_protocol_dev" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_srq_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_srq_query" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_fmr_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_multicast_detach" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_db_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_unregister_interface" [drivers/infiniband/hw/mlx4/mlx4_ib.k=
+o] undefined!
+> ERROR: ".mlx4_buf_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_mr_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_mtt_init" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_fmr_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_cq_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_pd_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_SYNC_TPT" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_qp_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_buf_write_mtt" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] unde=
+fined!
+> ERROR: ".mlx4_cq_resize" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_fmr_unmap" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_qp_modify" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_mtt_cleanup" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefi=
+ned!
+> ERROR: ".mlx4_counter_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undef=
+ined!
+> ERROR: ".mlx4_mr_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_qp_reserve_range" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_alloc_cmd_mailbox" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] =
+undefined!
+> ERROR: ".mlx4_fmr_enable" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefin=
+ed!
+> ERROR: ".mlx4_mr_enable" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_uar_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_db_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_pd_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_free_cmd_mailbox" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_srq_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_uar_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_CLOSE_PORT" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefin=
+ed!
+> ERROR: ".mlx4_qp_query" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_qp_alloc" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".mlx4_map_phys_fmr" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undef=
+ined!
+> ERROR: ".mlx4_qp_remove" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_multicast_attach" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_INIT_PORT" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_cq_modify" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefine=
+d!
+> ERROR: ".mlx4_srq_arm" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_find_cached_vlan" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] u=
+ndefined!
+> ERROR: ".mlx4_buf_free" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined=
+!
+> ERROR: ".__mlx4_cmd" [drivers/infiniband/hw/mlx4/mlx4_ib.ko] undefined!
+> ERROR: ".mlx4_register_interface" [drivers/infiniband/hw/mlx4/mlx4_ib.ko]=
+ undefined!
+> ERROR: ".cxgb4_free_atid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undef=
+ined!
+> ERROR: ".cxgb4_ofld_send" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undef=
+ined!
+> ERROR: ".cxgb4_alloc_stid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] unde=
+fined!
+> ERROR: ".cxgb4_get_tcp_stats" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] u=
+ndefined!
+> ERROR: ".cxgb4_l2t_release" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] und=
+efined!
+> ERROR: ".cxgb4_l2t_get" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undefin=
+ed!
+> ERROR: ".cxgb4_best_mtu" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undefi=
+ned!
+> ERROR: ".cxgb4_port_idx" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undefi=
+ned!
+> ERROR: ".cxgb4_unregister_uld" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] =
+undefined!
+> ERROR: ".cxgb4_alloc_atid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] unde=
+fined!
+> ERROR: ".cxgb4_l2t_send" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undefi=
+ned!
+> ERROR: ".cxgb4_free_stid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undef=
+ined!
+> ERROR: ".cxgb4_pktgl_to_skb" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] un=
+defined!
+> ERROR: ".cxgb4_create_server" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] u=
+ndefined!
+> ERROR: ".cxgb4_register_uld" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] un=
+defined!
+> ERROR: ".cxgb4_port_chan" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undef=
+ined!
+> ERROR: ".cxgb4_port_viid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] undef=
+ined!
+> ERROR: ".cxgb4_remove_tid" [drivers/infiniband/hw/cxgb4/iw_cxgb4.ko] unde=
+fined!
+> ERROR: ".dev2t3cdev" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undefined!
+> ERROR: ".cxgb3_insert_tid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] unde=
+fined!
+> ERROR: ".t3_l2t_get" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undefined!
+> ERROR: ".cxgb3_register_client" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko]=
+ undefined!
+> ERROR: ".t3_l2t_send_slow" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] unde=
+fined!
+> ERROR: ".cxgb3_unregister_client" [drivers/infiniband/hw/cxgb3/iw_cxgb3.k=
+o] undefined!
+> ERROR: ".cxgb3_free_stid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undef=
+ined!
+> ERROR: ".cxgb3_free_atid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undef=
+ined!
+> ERROR: ".cxgb3_alloc_stid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] unde=
+fined!
+> ERROR: ".cxgb3_remove_tid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] unde=
+fined!
+> ERROR: ".cxgb3_ofld_send" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undef=
+ined!
+> ERROR: ".cxgb3_alloc_atid" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] unde=
+fined!
+> ERROR: ".t3_l2t_send_event" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] und=
+efined!
+> ERROR: ".t3_l2e_free" [drivers/infiniband/hw/cxgb3/iw_cxgb3.ko] undefined=
+!
+> ERROR: ".t3_register_cpl_handler" [drivers/infiniband/hw/cxgb3/iw_cxgb3.k=
+o] undefined!
+>=20
+> and I don't get this if I go back to your commit 19fd61785a58.
+>=20
 
-I dint understand, what is the change you are suggesting?
+This is just an example of the change that would be needed to resolve
+defconfig issues.  The below patch should resolve the cxgb3/4 errors.  I
+have not made the necessary changes to resolve the mlx4 issues in this
+patch.  I can generate those as well, if need be.
 
-keshava
+diff --git a/arch/powerpc/configs/ppc64_defconfig
+b/arch/powerpc/configs/ppc64_defconfig
+index 84a685a5..4f099ba 100644
+--- a/arch/powerpc/configs/ppc64_defconfig
++++ b/arch/powerpc/configs/ppc64_defconfig
+@@ -229,6 +229,11 @@ CONFIG_BONDING=3Dm
+ CONFIG_TUN=3Dm
+ CONFIG_MARVELL_PHY=3Dy
+ CONFIG_BROADCOM_PHY=3Dm
++CONFIG_ETHERNET=3Dy
++CONFIG_NET_VENDOR_CHELSIO=3Dy
++CONFIG_CHELSIO_T1=3Dm
++CONFIG_CHELSIO_T3=3Dm
++CONFIG_CHELSIO_T4=3Dm
+ CONFIG_NET_ETHERNET=3Dy
+ CONFIG_SUNGEM=3Dy
+ CONFIG_NET_VENDOR_3COM=3Dy
+@@ -246,9 +251,6 @@ CONFIG_BNX2=3Dm
+ CONFIG_SPIDER_NET=3Dm
+ CONFIG_GELIC_NET=3Dm
+ CONFIG_GELIC_WIRELESS=3Dy
+-CONFIG_CHELSIO_T1=3Dm
+-CONFIG_CHELSIO_T3=3Dm
+-CONFIG_CHELSIO_T4=3Dm
+ CONFIG_EHEA=3Dm
+ CONFIG_IXGBE=3Dm
+ CONFIG_IXGB=3Dm
+
+--=-NlwO3MxWF5C6k3DaQ++3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJORL5lAAoJECTsCADr/EWUR20IALLZTMZwSXjtv6oiTulBa4uH
+qmkv9lk48RLZ9n3Wm2lDYXq+uQWM9LIQsxL4NYcBezfggP4qv0exKOve8mTHyknR
+4So9rozijeUsxKS0sIn1W2mYvf7NhApMlQQDMYb2Sk8ys3xZXob28W7oCbI8mEo/
+3FJXKI9N/byc0mWKqmV0LV4dv2eFIlQzFY4u09tzycbZi5/fIzEe7sBqRPTy65Mf
+8VG5Nz6jSv6V0gBKBnRN5Ko+v7TS+3TdIEUwLmvqKupfSXz447jz/TrXk0Ld4lrE
+ok5QleLYPkUnou+aScNdDvsIExSCuJEGyOVkk1rnPTFpJYtIiIPRvTIu8X/9jGY=
+=r03B
+-----END PGP SIGNATURE-----
+
+--=-NlwO3MxWF5C6k3DaQ++3--
+
