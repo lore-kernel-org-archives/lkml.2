@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab1HNQGk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:06:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36348 "EHLO mx2.suse.de"
+	id S1753868Ab1HNQ24 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:28:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36323 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab1HNQGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:06:37 -0400
+	id S1753779Ab1HNQG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:06:26 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:53 2011
-Message-Id: <20110812210553.669595015@clark.kroah.org>
+Message-Id: <20110812210553.429837808@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:03 -0700
+Date: Fri, 12 Aug 2011 14:04:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [18/90] xen: allow enable use of VGA console on dom0
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [15/90] net: sendmmsg should only return an error if no messages were sent
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,193 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit c2419b4a4727f67af2fc2cd68b0d878b75e781bb upstream.
+commit 728ffb86f10873aaf4abd26dde691ee40ae731fe upstream.
 
-Get the information about the VGA console hardware from Xen, and put
-it into the form the bootloader normally generates, so that the rest
-of the kernel can deal with VGA as usual.
+sendmmsg uses a similar error return strategy as recvmmsg but it
+turns out to be a confusing way to communicate errors.
 
-[ Impact: make VGA console work in dom0 ]
+The current code stores the error code away and returns it on the next
+sendmmsg call. This means a call with completely valid arguments could
+get an error from a previous call.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-[v1: Rebased on 2.6.39]
-[v2: Removed incorrect comments and fixed compile warnings]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Change things so we only return an error if no datagrams could be sent.
+If less than the requested number of messages were sent, the application
+must retry starting at the first failed one and if the problem is
+persistent the error will be returned.
+
+This matches the behaviour of other syscalls like read/write - it
+is not an error if less than the requested number of elements are sent.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/Makefile       |    2 -
- arch/x86/xen/enlighten.c    |    8 +++++
- arch/x86/xen/vga.c          |   67 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/xen/xen-ops.h      |   11 +++++++
- include/xen/interface/xen.h |   39 +++++++++++++++++++++++++
- 5 files changed, 126 insertions(+), 1 deletion(-)
+ net/socket.c |   27 +++------------------------
+ 1 file changed, 3 insertions(+), 24 deletions(-)
 
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -18,5 +18,5 @@ obj-y		:= enlighten.o setup.o multicalls
- obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2005,12 +2005,9 @@ int __sys_sendmmsg(int fd, struct mmsghd
+ 	if (!sock)
+ 		return err;
+ 
+-	err = sock_error(sock->sk);
+-	if (err)
+-		goto out_put;
 -
-+obj-$(CONFIG_XEN_DOM0)		+= vga.o
- obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1248,6 +1248,14 @@ asmlinkage void __init xen_start_kernel(
- 		if (pci_xen)
- 			x86_init.pci.arch_init = pci_xen_init;
- 	} else {
-+		const struct dom0_vga_console_info *info =
-+			(void *)((char *)xen_start_info +
-+				 xen_start_info->console.dom0.info_off);
-+
-+		xen_init_vga(info, xen_start_info->console.dom0.info_size);
-+		xen_start_info->console.domU.mfn = 0;
-+		xen_start_info->console.domU.evtchn = 0;
-+
- 		/* Make sure ACS will be enabled */
- 		pci_request_acs();
+ 	entry = mmsg;
+ 	compat_entry = (struct compat_mmsghdr __user *)mmsg;
++	err = 0;
+ 
+ 	while (datagrams < vlen) {
+ 		/*
+@@ -2037,29 +2034,11 @@ int __sys_sendmmsg(int fd, struct mmsghd
+ 		++datagrams;
  	}
---- /dev/null
-+++ b/arch/x86/xen/vga.c
-@@ -0,0 +1,67 @@
-+#include <linux/screen_info.h>
-+#include <linux/init.h>
-+
-+#include <asm/bootparam.h>
-+#include <asm/setup.h>
-+
-+#include <xen/interface/xen.h>
-+
-+#include "xen-ops.h"
-+
-+void __init xen_init_vga(const struct dom0_vga_console_info *info, size_t size)
-+{
-+	struct screen_info *screen_info = &boot_params.screen_info;
-+
-+	/* This is drawn from a dump from vgacon:startup in
-+	 * standard Linux. */
-+	screen_info->orig_video_mode = 3;
-+	screen_info->orig_video_isVGA = 1;
-+	screen_info->orig_video_lines = 25;
-+	screen_info->orig_video_cols = 80;
-+	screen_info->orig_video_ega_bx = 3;
-+	screen_info->orig_video_points = 16;
-+	screen_info->orig_y = screen_info->orig_video_lines - 1;
-+
-+	switch (info->video_type) {
-+	case XEN_VGATYPE_TEXT_MODE_3:
-+		if (size < offsetof(struct dom0_vga_console_info, u.text_mode_3)
-+		    + sizeof(info->u.text_mode_3))
-+			break;
-+		screen_info->orig_video_lines = info->u.text_mode_3.rows;
-+		screen_info->orig_video_cols = info->u.text_mode_3.columns;
-+		screen_info->orig_x = info->u.text_mode_3.cursor_x;
-+		screen_info->orig_y = info->u.text_mode_3.cursor_y;
-+		screen_info->orig_video_points =
-+			info->u.text_mode_3.font_height;
-+		break;
-+
-+	case XEN_VGATYPE_VESA_LFB:
-+		if (size < offsetof(struct dom0_vga_console_info,
-+				    u.vesa_lfb.gbl_caps))
-+			break;
-+		screen_info->orig_video_isVGA = VIDEO_TYPE_VLFB;
-+		screen_info->lfb_width = info->u.vesa_lfb.width;
-+		screen_info->lfb_height = info->u.vesa_lfb.height;
-+		screen_info->lfb_depth = info->u.vesa_lfb.bits_per_pixel;
-+		screen_info->lfb_base = info->u.vesa_lfb.lfb_base;
-+		screen_info->lfb_size = info->u.vesa_lfb.lfb_size;
-+		screen_info->lfb_linelength = info->u.vesa_lfb.bytes_per_line;
-+		screen_info->red_size = info->u.vesa_lfb.red_size;
-+		screen_info->red_pos = info->u.vesa_lfb.red_pos;
-+		screen_info->green_size = info->u.vesa_lfb.green_size;
-+		screen_info->green_pos = info->u.vesa_lfb.green_pos;
-+		screen_info->blue_size = info->u.vesa_lfb.blue_size;
-+		screen_info->blue_pos = info->u.vesa_lfb.blue_pos;
-+		screen_info->rsvd_size = info->u.vesa_lfb.rsvd_size;
-+		screen_info->rsvd_pos = info->u.vesa_lfb.rsvd_pos;
-+		if (size >= offsetof(struct dom0_vga_console_info,
-+				     u.vesa_lfb.gbl_caps)
-+		    + sizeof(info->u.vesa_lfb.gbl_caps))
-+			screen_info->capabilities = info->u.vesa_lfb.gbl_caps;
-+		if (size >= offsetof(struct dom0_vga_console_info,
-+				     u.vesa_lfb.mode_attrs)
-+		    + sizeof(info->u.vesa_lfb.mode_attrs))
-+			screen_info->vesa_attributes = info->u.vesa_lfb.mode_attrs;
-+		break;
-+	}
-+}
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -88,6 +88,17 @@ static inline void xen_uninit_lock_cpu(i
+ 
+-out_put:
+ 	fput_light(sock->file, fput_needed);
+ 
+-	if (err == 0)
+-		return datagrams;
+-
+-	if (datagrams != 0) {
+-		/*
+-		 * We may send less entries than requested (vlen) if the
+-		 * sock is non blocking...
+-		 */
+-		if (err != -EAGAIN) {
+-			/*
+-			 * ... or if sendmsg returns an error after we
+-			 * send some datagrams, where we record the
+-			 * error to return on the next call or if the
+-			 * app asks about it using getsockopt(SO_ERROR).
+-			 */
+-			sock->sk->sk_err = -err;
+-		}
+-
++	/* We only return an error if no datagrams were able to be sent */
++	if (datagrams != 0)
+ 		return datagrams;
+-	}
+ 
+ 	return err;
  }
- #endif
- 
-+struct dom0_vga_console_info;
-+
-+#ifdef CONFIG_XEN_DOM0
-+void __init xen_init_vga(const struct dom0_vga_console_info *, size_t size);
-+#else
-+static inline void __init xen_init_vga(const struct dom0_vga_console_info *info,
-+				       size_t size)
-+{
-+}
-+#endif
-+
- /* Declare an asm function, along with symbols needed to make it
-    inlineable */
- #define DECL_ASM(ret, name, ...)		\
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -450,6 +450,45 @@ struct start_info {
- 	int8_t cmd_line[MAX_GUEST_CMDLINE];
- };
- 
-+struct dom0_vga_console_info {
-+	uint8_t video_type;
-+#define XEN_VGATYPE_TEXT_MODE_3 0x03
-+#define XEN_VGATYPE_VESA_LFB    0x23
-+
-+	union {
-+		struct {
-+			/* Font height, in pixels. */
-+			uint16_t font_height;
-+			/* Cursor location (column, row). */
-+			uint16_t cursor_x, cursor_y;
-+			/* Number of rows and columns (dimensions in characters). */
-+			uint16_t rows, columns;
-+		} text_mode_3;
-+
-+		struct {
-+			/* Width and height, in pixels. */
-+			uint16_t width, height;
-+			/* Bytes per scan line. */
-+			uint16_t bytes_per_line;
-+			/* Bits per pixel. */
-+			uint16_t bits_per_pixel;
-+			/* LFB physical address, and size (in units of 64kB). */
-+			uint32_t lfb_base;
-+			uint32_t lfb_size;
-+			/* RGB mask offsets and sizes, as defined by VBE 1.2+ */
-+			uint8_t  red_pos, red_size;
-+			uint8_t  green_pos, green_size;
-+			uint8_t  blue_pos, blue_size;
-+			uint8_t  rsvd_pos, rsvd_size;
-+
-+			/* VESA capabilities (offset 0xa, VESA command 0x4f00). */
-+			uint32_t gbl_caps;
-+			/* Mode attributes (offset 0x0, VESA command 0x4f01). */
-+			uint16_t mode_attrs;
-+		} vesa_lfb;
-+	} u;
-+};
-+
- /* These flags are passed in the 'flags' field of start_info_t. */
- #define SIF_PRIVILEGED    (1<<0)  /* Is the domain privileged? */
- #define SIF_INITDOMAIN    (1<<1)  /* Is this the initial control domain? */
 
 
