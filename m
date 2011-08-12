@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1HNQHU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:07:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36465 "EHLO mx2.suse.de"
+	id S1754128Ab1HNQ00 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:26:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36489 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab1HNQHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:07:13 -0400
+	id S1752062Ab1HNQHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:07:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:54 2011
-Message-Id: <20110812210554.688293989@clark.kroah.org>
+Message-Id: <20110812210554.847498847@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:14 -0700
+Date: Fri, 12 Aug 2011 14:04:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [29/90] crypto: Move md5_transform to lib/md5.c
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [31/90] asus-wmi: fix hwmon/pwm1
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,246 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Corentin Chary <corentin.chary@gmail.com>
 
-We are going to use this for TCP/IP sequence number and fragment ID
-generation.
+commit 49979d091d1847823c064301da1ec173619ddd92 upstream.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The code was completly broken, and should never had been sent
+to the kernel. That's what happens when you write code without
+hardware to test it.
+
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- crypto/md5.c               |   92 -------------------------------------------
- include/linux/cryptohash.h |    5 ++
- lib/Makefile               |    2 
- lib/md5.c                  |   95 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 102 insertions(+), 92 deletions(-)
- create mode 100644 lib/md5.c
 
---- a/crypto/md5.c
-+++ b/crypto/md5.c
-@@ -21,99 +21,9 @@
- #include <linux/module.h>
- #include <linux/string.h>
- #include <linux/types.h>
-+#include <linux/cryptohash.h>
- #include <asm/byteorder.h>
- 
--#define F1(x, y, z)	(z ^ (x & (y ^ z)))
--#define F2(x, y, z)	F1(z, x, y)
--#define F3(x, y, z)	(x ^ y ^ z)
--#define F4(x, y, z)	(y ^ (x | ~z))
--
--#define MD5STEP(f, w, x, y, z, in, s) \
--	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
--
--static void md5_transform(u32 *hash, u32 const *in)
--{
--	u32 a, b, c, d;
--
--	a = hash[0];
--	b = hash[1];
--	c = hash[2];
--	d = hash[3];
--
--	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
--	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
--	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
--	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
--	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
--	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
--	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
--	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
--	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
--	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
--	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
--	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
--	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
--	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
--	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
--	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
--
--	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
--	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
--	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
--	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
--	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
--	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
--	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
--	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
--	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
--	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
--	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
--	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
--	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
--	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
--	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
--	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
--
--	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
--	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
--	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
--	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
--	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
--	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
--	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
--	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
--	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
--	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
--	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
--	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
--	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
--	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
--	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
--	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
--
--	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
--	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
--	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
--	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
--	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
--	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
--	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
--	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
--	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
--	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
--	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
--	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
--	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
--	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
--	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
--	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
--
--	hash[0] += a;
--	hash[1] += b;
--	hash[2] += c;
--	hash[3] += d;
--}
--
- /* XXX: this stuff can be optimized */
- static inline void le32_to_cpu_array(u32 *buf, unsigned int words)
+---
+ drivers/platform/x86/asus-wmi.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -797,8 +797,8 @@ exit:
+  * Hwmon device
+  */
+ static ssize_t asus_hwmon_pwm1(struct device *dev,
+-			    struct device_attribute *attr,
+-			    char *buf)
++			       struct device_attribute *attr,
++			       char *buf)
  {
---- a/include/linux/cryptohash.h
-+++ b/include/linux/cryptohash.h
-@@ -8,6 +8,11 @@
- void sha_init(__u32 *buf);
- void sha_transform(__u32 *digest, const char *data, __u32 *W);
+ 	struct asus_wmi *asus = dev_get_drvdata(dev);
+ 	u32 value;
+@@ -809,7 +809,7 @@ static ssize_t asus_hwmon_pwm1(struct de
+ 	if (err < 0)
+ 		return err;
  
-+#define MD5_DIGEST_WORDS 4
-+#define MD5_MESSAGE_BYTES 64
-+
-+void md5_transform(__u32 *hash, __u32 const *in);
-+
- __u32 half_md4_transform(__u32 buf[4], __u32 const in[8]);
+-	value |= 0xFF;
++	value &= 0xFF;
  
- #endif
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -10,7 +10,7 @@ endif
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
--	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
-+	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o find_next_bit.o
- 
---- /dev/null
-+++ b/lib/md5.c
-@@ -0,0 +1,95 @@
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/cryptohash.h>
-+
-+#define F1(x, y, z)	(z ^ (x & (y ^ z)))
-+#define F2(x, y, z)	F1(z, x, y)
-+#define F3(x, y, z)	(x ^ y ^ z)
-+#define F4(x, y, z)	(y ^ (x | ~z))
-+
-+#define MD5STEP(f, w, x, y, z, in, s) \
-+	(w += f(x, y, z) + in, w = (w<<s | w>>(32-s)) + x)
-+
-+void md5_transform(__u32 *hash, __u32 const *in)
-+{
-+	u32 a, b, c, d;
-+
-+	a = hash[0];
-+	b = hash[1];
-+	c = hash[2];
-+	d = hash[3];
-+
-+	MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
-+	MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);
-+	MD5STEP(F1, c, d, a, b, in[2] + 0x242070db, 17);
-+	MD5STEP(F1, b, c, d, a, in[3] + 0xc1bdceee, 22);
-+	MD5STEP(F1, a, b, c, d, in[4] + 0xf57c0faf, 7);
-+	MD5STEP(F1, d, a, b, c, in[5] + 0x4787c62a, 12);
-+	MD5STEP(F1, c, d, a, b, in[6] + 0xa8304613, 17);
-+	MD5STEP(F1, b, c, d, a, in[7] + 0xfd469501, 22);
-+	MD5STEP(F1, a, b, c, d, in[8] + 0x698098d8, 7);
-+	MD5STEP(F1, d, a, b, c, in[9] + 0x8b44f7af, 12);
-+	MD5STEP(F1, c, d, a, b, in[10] + 0xffff5bb1, 17);
-+	MD5STEP(F1, b, c, d, a, in[11] + 0x895cd7be, 22);
-+	MD5STEP(F1, a, b, c, d, in[12] + 0x6b901122, 7);
-+	MD5STEP(F1, d, a, b, c, in[13] + 0xfd987193, 12);
-+	MD5STEP(F1, c, d, a, b, in[14] + 0xa679438e, 17);
-+	MD5STEP(F1, b, c, d, a, in[15] + 0x49b40821, 22);
-+
-+	MD5STEP(F2, a, b, c, d, in[1] + 0xf61e2562, 5);
-+	MD5STEP(F2, d, a, b, c, in[6] + 0xc040b340, 9);
-+	MD5STEP(F2, c, d, a, b, in[11] + 0x265e5a51, 14);
-+	MD5STEP(F2, b, c, d, a, in[0] + 0xe9b6c7aa, 20);
-+	MD5STEP(F2, a, b, c, d, in[5] + 0xd62f105d, 5);
-+	MD5STEP(F2, d, a, b, c, in[10] + 0x02441453, 9);
-+	MD5STEP(F2, c, d, a, b, in[15] + 0xd8a1e681, 14);
-+	MD5STEP(F2, b, c, d, a, in[4] + 0xe7d3fbc8, 20);
-+	MD5STEP(F2, a, b, c, d, in[9] + 0x21e1cde6, 5);
-+	MD5STEP(F2, d, a, b, c, in[14] + 0xc33707d6, 9);
-+	MD5STEP(F2, c, d, a, b, in[3] + 0xf4d50d87, 14);
-+	MD5STEP(F2, b, c, d, a, in[8] + 0x455a14ed, 20);
-+	MD5STEP(F2, a, b, c, d, in[13] + 0xa9e3e905, 5);
-+	MD5STEP(F2, d, a, b, c, in[2] + 0xfcefa3f8, 9);
-+	MD5STEP(F2, c, d, a, b, in[7] + 0x676f02d9, 14);
-+	MD5STEP(F2, b, c, d, a, in[12] + 0x8d2a4c8a, 20);
-+
-+	MD5STEP(F3, a, b, c, d, in[5] + 0xfffa3942, 4);
-+	MD5STEP(F3, d, a, b, c, in[8] + 0x8771f681, 11);
-+	MD5STEP(F3, c, d, a, b, in[11] + 0x6d9d6122, 16);
-+	MD5STEP(F3, b, c, d, a, in[14] + 0xfde5380c, 23);
-+	MD5STEP(F3, a, b, c, d, in[1] + 0xa4beea44, 4);
-+	MD5STEP(F3, d, a, b, c, in[4] + 0x4bdecfa9, 11);
-+	MD5STEP(F3, c, d, a, b, in[7] + 0xf6bb4b60, 16);
-+	MD5STEP(F3, b, c, d, a, in[10] + 0xbebfbc70, 23);
-+	MD5STEP(F3, a, b, c, d, in[13] + 0x289b7ec6, 4);
-+	MD5STEP(F3, d, a, b, c, in[0] + 0xeaa127fa, 11);
-+	MD5STEP(F3, c, d, a, b, in[3] + 0xd4ef3085, 16);
-+	MD5STEP(F3, b, c, d, a, in[6] + 0x04881d05, 23);
-+	MD5STEP(F3, a, b, c, d, in[9] + 0xd9d4d039, 4);
-+	MD5STEP(F3, d, a, b, c, in[12] + 0xe6db99e5, 11);
-+	MD5STEP(F3, c, d, a, b, in[15] + 0x1fa27cf8, 16);
-+	MD5STEP(F3, b, c, d, a, in[2] + 0xc4ac5665, 23);
-+
-+	MD5STEP(F4, a, b, c, d, in[0] + 0xf4292244, 6);
-+	MD5STEP(F4, d, a, b, c, in[7] + 0x432aff97, 10);
-+	MD5STEP(F4, c, d, a, b, in[14] + 0xab9423a7, 15);
-+	MD5STEP(F4, b, c, d, a, in[5] + 0xfc93a039, 21);
-+	MD5STEP(F4, a, b, c, d, in[12] + 0x655b59c3, 6);
-+	MD5STEP(F4, d, a, b, c, in[3] + 0x8f0ccc92, 10);
-+	MD5STEP(F4, c, d, a, b, in[10] + 0xffeff47d, 15);
-+	MD5STEP(F4, b, c, d, a, in[1] + 0x85845dd1, 21);
-+	MD5STEP(F4, a, b, c, d, in[8] + 0x6fa87e4f, 6);
-+	MD5STEP(F4, d, a, b, c, in[15] + 0xfe2ce6e0, 10);
-+	MD5STEP(F4, c, d, a, b, in[6] + 0xa3014314, 15);
-+	MD5STEP(F4, b, c, d, a, in[13] + 0x4e0811a1, 21);
-+	MD5STEP(F4, a, b, c, d, in[4] + 0xf7537e82, 6);
-+	MD5STEP(F4, d, a, b, c, in[11] + 0xbd3af235, 10);
-+	MD5STEP(F4, c, d, a, b, in[2] + 0x2ad7d2bb, 15);
-+	MD5STEP(F4, b, c, d, a, in[9] + 0xeb86d391, 21);
-+
-+	hash[0] += a;
-+	hash[1] += b;
-+	hash[2] += c;
-+	hash[3] += d;
-+}
-+EXPORT_SYMBOL(md5_transform);
+ 	if (value == 1) /* Low Speed */
+ 		value = 85;
+@@ -869,7 +869,7 @@ static mode_t asus_hwmon_sysfs_is_visibl
+ 		 * - reverved bits are non-zero
+ 		 * - sfun and presence bit are not set
+ 		 */
+-		if (value != ASUS_WMI_UNSUPPORTED_METHOD || value & 0xFFF80000
++		if (value == ASUS_WMI_UNSUPPORTED_METHOD || value & 0xFFF80000
+ 		    || (!asus->sfun && !(value & ASUS_WMI_DSTS_PRESENCE_BIT)))
+ 			ok = false;
+ 	}
+@@ -904,6 +904,7 @@ static int asus_wmi_hwmon_init(struct as
+ 		pr_err("Could not register asus hwmon device\n");
+ 		return PTR_ERR(hwmon);
+ 	}
++	dev_set_drvdata(hwmon, asus);
+ 	asus->hwmon_device = hwmon;
+ 	result = sysfs_create_group(&hwmon->kobj, &hwmon_attribute_group);
+ 	if (result)
 
 
