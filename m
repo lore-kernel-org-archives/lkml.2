@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096Ab1HLVkC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 17:40:02 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:51991 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1HLVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 17:40:00 -0400
-Date: Fri, 12 Aug 2011 14:39:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: peterz@infradead.org
-Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -rt] eliminate ->rcu_boosted
-Message-ID: <20110812213953.GA15999@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1752367Ab1HLVlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:41:47 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38048 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1HLVlp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 17:41:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110812205520.GL4775@n2100.arm.linux.org.uk>
+References: <4E457682.5020107@codeaurora.org>
+	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
+	<CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
+	<20110812205520.GL4775@n2100.arm.linux.org.uk>
+Date: Fri, 12 Aug 2011 17:41:42 -0400
+Message-ID: <CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit eliminates the new ->rcu_boosted field, using the
-pre-existing ->rcu_boost_mutex field in its place.  This fixes a bug where
-rcu_copy_process() failed to clear ->rcu_boosted in the child process.
+Hi,
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
+On Fri, Aug 12, 2011 at 4:55 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Aug 12, 2011 at 04:48:12PM -0400, Arnaud Lacombe wrote:
+>> You should be able to avoid the extra copy altogether by doing something ala:
+>>
+>> $(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
+>>         $(call cmd,as_o_S)
+>>
+>> note that I also remove the $(SRCARCH), as there is no other
+>> `arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
+>
+> We tried such things, but it results in kbuild arguing over building
+> lib1funcs.S in arch/arm/lib and arch/arm/boot/compressed.  You end up
+> with it rebuilding the arch/arm/lib one, followed by a rebuild of the
+> arch/arm/boot/compressed one.
+>
+hum... I tried this approach on a reduced testcase with an object in
+arch/x86/boot/ using a prerequisite in arch/x86/lib/ and it seemed to
+behave as I would expect. From what I can find online, this comes from
+http://lkml.org/lkml/2009/11/13/246. Albin's original is broken
+because it refers to object in the source tree. I suspect Martin's
+change to work only because he had a stale
+`arch/$(SRCARCH)/lib/lib1funcs.o' in his tree. Sebastian's change is
+broken because he was badly using $(obj), he should have used
+$(objtree). All case are otherwise broken because of
+cross-subdirectory object dependency do not work.
 
- include/linux/sched.h   |    3 ---
- kernel/rcutree_plugin.h |   20 ++++++++++----------
- 2 files changed, 10 insertions(+), 13 deletions(-)
+The commit I think you refer to should be:
 
-diff -urpNa -X dontdiff linux-3.0.1-rt9/include/linux/sched.h linux-3.0.1-rt9.patched//include/linux/sched.h
---- linux-3.0.1-rt9/include/linux/sched.h	2011-08-12 14:22:22.000000000 -0700
-+++ linux-3.0.1-rt9.patched//include/linux/sched.h	2011-08-12 14:32:18.000000000 -0700
-@@ -1268,9 +1268,6 @@ struct task_struct {
- #ifdef CONFIG_PREEMPT_RCU
- 	int rcu_read_lock_nesting;
- 	char rcu_read_unlock_special;
--#if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU)
--	int rcu_boosted;
--#endif /* #if defined(CONFIG_RCU_BOOST) && defined(CONFIG_TREE_PREEMPT_RCU) */
- 	struct list_head rcu_node_entry;
- #endif /* #ifdef CONFIG_PREEMPT_RCU */
- #ifdef CONFIG_TREE_PREEMPT_RCU
-diff -urpNa -X dontdiff linux-3.0.1-rt9/kernel/rcutree_plugin.h linux-3.0.1-rt9.patched//kernel/rcutree_plugin.h
---- linux-3.0.1-rt9/kernel/rcutree_plugin.h	2011-08-12 14:22:24.000000000 -0700
-+++ linux-3.0.1-rt9.patched//kernel/rcutree_plugin.h	2011-08-12 14:33:21.000000000 -0700
-@@ -299,6 +299,9 @@ static noinline void rcu_read_unlock_spe
- 	int empty_exp;
- 	unsigned long flags;
- 	struct list_head *np;
-+#ifdef CONFIG_RCU_BOOST
-+	struct rt_mutex *rbmp = NULL;
-+#endif /* #ifdef CONFIG_RCU_BOOST */
- 	struct rcu_node *rnp;
- 	int special;
- 
-@@ -344,6 +347,7 @@ static noinline void rcu_read_unlock_spe
- 		smp_mb(); /* ensure expedited fastpath sees end of RCU c-s. */
- 		np = rcu_next_node_entry(t, rnp);
- 		list_del_init(&t->rcu_node_entry);
-+		t->rcu_blocked_node = NULL;
- 		if (&t->rcu_node_entry == rnp->gp_tasks)
- 			rnp->gp_tasks = np;
- 		if (&t->rcu_node_entry == rnp->exp_tasks)
-@@ -351,13 +355,12 @@ static noinline void rcu_read_unlock_spe
- #ifdef CONFIG_RCU_BOOST
- 		if (&t->rcu_node_entry == rnp->boost_tasks)
- 			rnp->boost_tasks = np;
--		/* Snapshot and clear ->rcu_boosted with rcu_node lock held. */
--		if (t->rcu_boosted) {
--			special |= RCU_READ_UNLOCK_BOOSTED;
--			t->rcu_boosted = 0;
-+		/* Snapshot/clear ->rcu_boost_mutex with rcu_node lock held. */
-+		if (t->rcu_boost_mutex) {
-+			rbmp = t->rcu_boost_mutex;
-+			t->rcu_boost_mutex = NULL;
- 		}
- #endif /* #ifdef CONFIG_RCU_BOOST */
--		t->rcu_blocked_node = NULL;
- 
- 		/*
- 		 * If this was the last task on the current list, and if
-@@ -371,10 +374,8 @@ static noinline void rcu_read_unlock_spe
- 
- #ifdef CONFIG_RCU_BOOST
- 		/* Unboost if we were boosted. */
--		if (special & RCU_READ_UNLOCK_BOOSTED) {
--			rt_mutex_unlock(t->rcu_boost_mutex);
--			t->rcu_boost_mutex = NULL;
--		}
-+		if (rbmp)
-+			rt_mutex_unlock(rbmp);
- #endif /* #ifdef CONFIG_RCU_BOOST */
- 
- 		/*
-@@ -1201,7 +1202,6 @@ static int rcu_boost(struct rcu_node *rn
- 	t = container_of(tb, struct task_struct, rcu_node_entry);
- 	rt_mutex_init_proxy_locked(&mtx, t);
- 	t->rcu_boost_mutex = &mtx;
--	t->rcu_boosted = 1;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
- 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+commit 4486b86368d72bcac76439638b36667b1c6a1360
+Author: Russell King <rmk@dyn-67.arm.linux.org.uk>
+Date:   Sun Jun 3 18:54:42 2007 +0100
+
+    [ARM] riscpc: fix decompressor font file handling
+
+    font_acorn_8x8.o was being built in drivers/video/console/ twice
+    during a build _in the same location_ - once for the kernel proper,
+    and once for the decompressor.  The result is when you came to run an
+    install target, the kernel was always rebuilt due to this file
+    apparantly having been built with different compiler arguments.
+
+    Solve this by making a local copy at build time in the decompressor's
+    directory.
+
+    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+I suspect this would have done the job:
+
+$(obj)/font.o: $(srctree)/drivers/video/console/font_acorn_8x8.c
+        $(cmd,cc_o_c)
+
+rather than abusing `cmd_shipped'. font.o would not have been built
+twice in the _same_ location, but respectively in
+`drivers/video/console/font_acorn_8x8.o' and
+`arch/arm/boot/compressed/font.o'
+
+ - Arnaud
+
+> We've ended up with what we have because its about the only way to get
+> kbuild to behave.
+>
