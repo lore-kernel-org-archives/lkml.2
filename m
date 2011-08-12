@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1HLUyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 16:54:52 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54665 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab1HLUyu (ORCPT
+	id S1751934Ab1HLUzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 16:55:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43030 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab1HLUzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 16:54:50 -0400
-X-Sasl-enc: O8bjwDjvYg9UoH+koKk2km2He+OsajeWeijSd/2PDyST 1313182489
-Date: Fri, 12 Aug 2011 13:53:49 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: usbutils 004 release
-Message-ID: <20110812205349.GA31222@kroah.com>
+	Fri, 12 Aug 2011 16:55:45 -0400
+Date: Fri, 12 Aug 2011 21:55:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+Message-ID: <20110812205520.GL4775@n2100.arm.linux.org.uk>
+References: <4E457682.5020107@codeaurora.org> <1313175602-21834-1-git-send-email-sboyd@codeaurora.org> <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 004 release of usbutils.
+On Fri, Aug 12, 2011 at 04:48:12PM -0400, Arnaud Lacombe wrote:
+> You should be able to avoid the extra copy altogether by doing something ala:
+> 
+> $(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
+>         $(call cmd,as_o_S)
+> 
+> note that I also remove the $(SRCARCH), as there is no other
+> `arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
 
-This fixes a much reported bug with USB devices that users didn't have
-permissions to access, and a few other reported problems as well.
+We tried such things, but it results in kbuild arguing over building
+lib1funcs.S in arch/arm/lib and arch/arm/boot/compressed.  You end up
+with it rebuilding the arch/arm/lib one, followed by a rebuild of the
+arch/arm/boot/compressed one.
 
-The package can be downladed from kernel.org:
-	http://www.kernel.org/pub/linux/utils/usb/usbutils/
-
-We've switched over to using git for development now, which makes things
-much easier than the old cvs tree.  The tree can be found on both
-kernel.org and github.com if you want to fork it and send us changes
-easier:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-	http://github.com/gregkh/usbutils/tree/master
-
-thanks,
-
-greg k-h
-
------------
-
-Carl-Daniel Hailfinger (2):
-      Fix lsusb out-of-bounds write
-      Fix lsusb double-free
-
-Dafydd Crosby (2):
-      Verbose flag in tree mode shows vendor and product name.     When running `lsusb -tv`, devices should have the vendor and     product name appended to the row.
-      Fix compiler warning
-
-Greg Kroah-Hartman (2):
-      Merge pull request #2 from nphilipp/master--nphilipp
-      Merge pull request #3 from dafyddcrosby/lsusb-tv
-
-Nils Philippsen (1):
-      don't use invalid config descriptors
-
+We've ended up with what we have because its about the only way to get
+kbuild to behave.
