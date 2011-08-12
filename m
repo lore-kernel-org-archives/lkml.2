@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1HLWR3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 18:17:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53345 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab1HLWR0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 18:17:26 -0400
+	id S1752650Ab1HLWUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 18:20:09 -0400
+Received: from verein.lst.de ([213.95.11.211]:37239 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab1HLWUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 18:20:05 -0400
+Date: Sat, 13 Aug 2011 00:20:03 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Linus Torvalds <torvalds@osdl.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Jan Kiszka <jan.kiszka@web.de>,
+        qemu-devel@nongnu.org, agraf@suse.de, kvm <kvm@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: Re: [Qemu-devel] Fix refcounting in hugetlbfs quota handling
+Message-ID: <20110812222003.GA8300@lst.de>
+References: <20110811064059.GU6342@yookeroo.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <20110812220316.GA28845@merkur.ravnborg.org>
-References: <4E457682.5020107@codeaurora.org>
-	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
-	<CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
-	<20110812205520.GL4775@n2100.arm.linux.org.uk>
-	<CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com>
-	<20110812220316.GA28845@merkur.ravnborg.org>
-Date: Fri, 12 Aug 2011 18:17:25 -0400
-Message-ID: <CACqU3MUVir_hfAtVz24Y7NrQOHAa=WyyHnCN4M6BHLQ294Tdww@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811064059.GU6342@yookeroo.fritz.box>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Aug 11, 2011 at 04:40:59PM +1000, David Gibson wrote:
+> Linus, please apply
+> 
+> hugetlbfs tracks the current usage of hugepages per hugetlbfs
+> mountpoint.  To correctly track this when hugepages are released, it
+> must find the right hugetlbfs super_block from the struct page
+> available in free_huge_page().
 
-On Fri, Aug 12, 2011 at 6:03 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->>
->> I suspect this would have done the job:
->>
->> $(obj)/font.o: $(srctree)/drivers/video/console/font_acorn_8x8.c
->>         $(cmd,cc_o_c)'
->
-> I prefer using $(call,shipped) and let kbuild figure out how
-> build an .o file from a .c file.
->
-> In other words - avoiding use of the internal to Makefile.build
-> variables in various places.
->
-indeed, but I'd argue that 1) this would not be the first Makefile
-using these internal macros (alpha and ia64 are using such construct
-for aliasing) and 2) the `cmd_shipped' stuff is as internal than other
-functions :-)
+a superblock is not a mountpoint, it's a filesystem instance.  You can happily
+have a single filesystem mounted at multiple mount points.
 
-I wonder if we could not make kbuild provide an interface for such code-reuse...
+> However, this usage is buggy, because nothing ensures that the
+> address_space is not freed before all the hugepages that belonged to
+> it are.  In practice that will usually be the case, but if extra page
+> references have been taken by e.g. drivers or kvm doing
+> get_user_pages() then the file, inode and address space may be
+> destroyed before all the pages.
+> 
+> In addition, the quota functions use the mapping only to get the inode
+> then the super_block.  However, most of the callers already have the
+> inode anyway and have to get the mapping from there.
+> 
+> This patch, therefore, stores a pointer to the inode instead of the
+> address_space in the page private data for hugepages.
 
- - Arnaud
+What's sthe point?  The lifetime of inode->i_mapping is exactly the
+same as that of the inode, except for those few filesystem that use
+one from a different inode (and then for the whole lifetime of the
+inode), so I can't see how your patch will make a difference.
+
+> More
+> importantly it correctly adjusts the reference count on the inodes
+> when they're added to the page private data.  This ensures that the
+> inode (and therefore the super block) will not be freed before we use
+> it from free_huge_page.
+
+That seems like the real fix.  And even if you'd still do the other bits
+it should be a separate patch/
+
