@@ -1,126 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab1HLXAw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 19:00:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1120 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab1HLXAX (ORCPT
+	id S1752828Ab1HLXEd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:04:33 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22404 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab1HLXE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 19:00:23 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6436"; a="109856857"
-From: David Brown <davidb@codeaurora.org>
-To: Randy Dunlap <rdunlap@xenotime.net>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-serial@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 2/4] msm_serial: Add devicetree support
-Date: Fri, 12 Aug 2011 16:00:06 -0700
-Message-Id: <1313190008-7551-3-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1313190008-7551-1-git-send-email-davidb@codeaurora.org>
-References: <1313190008-7551-1-git-send-email-davidb@codeaurora.org>
+	Fri, 12 Aug 2011 19:04:29 -0400
+Date: Sat, 13 Aug 2011 01:04:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andrea Merello <andreamrl@tiscali.it>,
+        Andre Nogueira <andre.neo.net@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefan Weil <weil@mail.berlios.de>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/3] drivers/staging/rtl8187se: Don't pass huge struct by
+ value
+Message-ID: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree support to the msm_serial driver.  Clocks are still
-queried by direct name from the driver until device tree clock support
-is implemented.
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sat, 13 Aug 2011 00:51:40 +0200
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
+struct ieee80211_network is fairly large (more than half a kilobyte),
+so let's pass a pointer instead of passing the entire structure by
+value when ieee80211_is_54g() and ieee80211_is_shortslot() need to
+look at a few members.
+Also remove parentheses around the values being returned from those
+two functions - 'return' is not a function.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- .../devicetree/bindings/tty/serial/msm_serial.txt  |   18 ++++++++++++++++++
- drivers/tty/serial/msm_serial.c                    |   14 ++++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/tty/serial/msm_serial.txt
+ drivers/staging/rtl8187se/ieee80211/ieee80211.h    |    4 ++--
+ .../rtl8187se/ieee80211/ieee80211_softmac.c        |   14 +++++++-------
+ drivers/staging/rtl8187se/r8180_rtl8225z2.c        |    4 ++--
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/tty/serial/msm_serial.txt b/Documentation/devicetree/bindings/tty/serial/msm_serial.txt
-new file mode 100644
-index 0000000..071459c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/tty/serial/msm_serial.txt
-@@ -0,0 +1,18 @@
-+* Qualcomm MSM UART
-+
-+Required properties:
-+- compatible :
-+	- "qcom,msm-uart"
-+- reg : offset and length of the register set for the device
-+	for the hsuart operating in compatible mode, there should be a
-+	second pair describing the gsbi registers.
-+- interrupts : should contain the uart interrupt.
-+
-+Example:
-+
-+	uart@19c400000 {
-+		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
-+		reg = <0x19c40000 0x1000">,
-+		      <0x19c00000 0x1000">;
-+		interrupts = <195>;
-+	};
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index d9863b2..d5a6db6 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -19,6 +19,7 @@
- # define SUPPORT_SYSRQ
- #endif
+diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211.h b/drivers/staging/rtl8187se/ieee80211/ieee80211.h
+index e79a7e2..40dd715 100644
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211.h
+@@ -1339,8 +1339,8 @@ int ieee80211_wx_set_mlme(struct ieee80211_device *ieee,
  
-+#include <linux/atomic.h>
- #include <linux/hrtimer.h>
- #include <linux/module.h>
- #include <linux/io.h>
-@@ -33,6 +34,8 @@
- #include <linux/clk.h>
- #include <linux/platform_device.h>
- #include <linux/delay.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #include "msm_serial.h"
- 
-@@ -856,6 +859,8 @@ static struct uart_driver msm_uart_driver = {
- 	.cons = MSM_CONSOLE,
+ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len);
+ /* ieee80211_softmac.c */
+-extern short ieee80211_is_54g(struct ieee80211_network net);
+-extern short ieee80211_is_shortslot(struct ieee80211_network net);
++extern short ieee80211_is_54g(const struct ieee80211_network *net);
++extern short ieee80211_is_shortslot(const struct ieee80211_network *net);
+ extern int ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 			struct ieee80211_rx_stats *rx_stats, u16 type,
+ 			u16 stype);
+diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+index 38e67f0..26bacb9 100644
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+@@ -32,14 +32,14 @@ u8 rsn_authen_cipher_suite[16][4] = {
+ 	{0x00,0x0F,0xAC,0x05}, //WEP-104
  };
  
-+static atomic_t msm_uart_next_id = ATOMIC_INIT(0);
-+
- static int __init msm_serial_probe(struct platform_device *pdev)
+-short ieee80211_is_54g(struct ieee80211_network net)
++short ieee80211_is_54g(const struct ieee80211_network *net)
  {
- 	struct msm_port *msm_port;
-@@ -863,6 +868,9 @@ static int __init msm_serial_probe(struct platform_device *pdev)
- 	struct uart_port *port;
- 	int irq;
- 
-+	if (pdev->id == -1)
-+		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
-+
- 	if (unlikely(pdev->id < 0 || pdev->id >= UART_NR))
- 		return -ENXIO;
- 
-@@ -920,11 +928,17 @@ static int __devexit msm_serial_remove(struct platform_device *pdev)
- 	return 0;
+-	return ((net.rates_ex_len > 0) || (net.rates_len > 4));
++	return (net->rates_ex_len > 0) || (net->rates_len > 4);
  }
  
-+static struct of_device_id msm_match_table[] = {
-+	{ .compatible = "qcom,msm-hsuart-lite" },
-+	{}
-+};
-+
- static struct platform_driver msm_platform_driver = {
- 	.remove = msm_serial_remove,
- 	.driver = {
- 		.name = "msm_serial",
- 		.owner = THIS_MODULE,
-+		.of_match_table = msm_match_table,
- 	},
- };
+-short ieee80211_is_shortslot(struct ieee80211_network net)
++short ieee80211_is_shortslot(const struct ieee80211_network *net)
+ {
+-	return (net.capability & WLAN_CAPABILITY_SHORT_SLOT);
++	return net->capability & WLAN_CAPABILITY_SHORT_SLOT;
+ }
  
+ /* returns the total length needed for pleacing the RATE MFIE
+@@ -789,7 +789,7 @@ static struct sk_buff* ieee80211_probe_resp(struct ieee80211_device *ieee, u8 *d
+ 	else
+ 		atim_len = 0;
+ 
+-	if(ieee80211_is_54g(ieee->current_network))
++	if(ieee80211_is_54g(&ieee->current_network))
+ 		erp_len = 3;
+ 	else
+ 		erp_len = 0;
+@@ -1258,7 +1258,7 @@ void ieee80211_associate_complete_wq(struct work_struct *work)
+ 	struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, associate_complete_wq);
+ 
+ 	printk(KERN_INFO "Associated successfully\n");
+-	if(ieee80211_is_54g(ieee->current_network) &&
++	if(ieee80211_is_54g(&ieee->current_network) &&
+ 		(ieee->modulation & IEEE80211_OFDM_MODULATION)){
+ 
+ 		ieee->rate = 540;
+@@ -1379,7 +1379,7 @@ inline void ieee80211_softmac_new_net(struct ieee80211_device *ieee, struct ieee
+ 				ieee->beinretry = false;
+ 				queue_work(ieee->wq, &ieee->associate_procedure_wq);
+ 			}else{
+-				if(ieee80211_is_54g(ieee->current_network) &&
++				if(ieee80211_is_54g(&ieee->current_network) &&
+ 						(ieee->modulation & IEEE80211_OFDM_MODULATION)){
+ 					ieee->rate = 540;
+ 					printk(KERN_INFO"Using G rates\n");
+diff --git a/drivers/staging/rtl8187se/r8180_rtl8225z2.c b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+index 3f09f76..ee5b867 100644
+--- a/drivers/staging/rtl8187se/r8180_rtl8225z2.c
++++ b/drivers/staging/rtl8187se/r8180_rtl8225z2.c
+@@ -596,7 +596,7 @@ static void rtl8225_rf_set_chan(struct net_device *dev, short ch)
+ {
+ 	struct r8180_priv *priv = ieee80211_priv(dev);
+ 	short gset = (priv->ieee80211->state == IEEE80211_LINKED &&
+-		ieee80211_is_54g(priv->ieee80211->current_network)) ||
++		ieee80211_is_54g(&priv->ieee80211->current_network)) ||
+ 		priv->ieee80211->iw_mode == IW_MODE_MONITOR;
+ 
+ 	rtl8225_SetTXPowerLevel(dev, ch);
+@@ -615,7 +615,7 @@ static void rtl8225_rf_set_chan(struct net_device *dev, short ch)
+ 	}
+ 
+ 	if (priv->ieee80211->state == IEEE80211_LINKED &&
+-	    ieee80211_is_shortslot(priv->ieee80211->current_network))
++	    ieee80211_is_shortslot(&priv->ieee80211->current_network))
+ 		write_nic_byte(dev, SLOT, 0x9);
+ 	else
+ 		write_nic_byte(dev, SLOT, 0x14);
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
