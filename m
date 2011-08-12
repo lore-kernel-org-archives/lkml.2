@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab1HLDFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 23:05:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23706 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab1HLDFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 23:05:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
-   d="asc'?scan'208";a="38569515"
-Subject: Re: linux-next: build failure after merge of the net tree
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: David Miller <davem@davemloft.net>
-Cc: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	id S1753117Ab1HLDOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 23:14:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52419 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751473Ab1HLDOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 23:14:42 -0400
+Date: Fri, 12 Aug 2011 12:14:35 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Colin Cross <ccross@google.com>
+Cc: Stephen Warren <swarren@nvidia.com>, Ben Dooks <ben-linux@fluff.org>,
+        Dilan Lee <dilee@nvidia.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Aug 2011 20:05:25 -0700
-In-Reply-To: <20110811.195150.1070520107072994432.davem@davemloft.net>
-References: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
-	 <1313116296.2057.30.camel@jtkirshe-mobl>
-	 <20110811.195150.1070520107072994432.davem@davemloft.net>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-M2yiEpagJgF9JDRMOBtn"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1313118339.2029.1.camel@jtkirshe-mobl>
-Mime-Version: 1.0
+Subject: Re: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
+Message-ID: <20110812031433.GE10218@opensource.wolfsonmicro.com>
+References: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+ <CAMbhsRScgMaTZ2e3a__OgOrrA6HN9_dkGuuNGaEfP+iqRdjyNQ@mail.gmail.com>
+ <20110806084805.GA18098@sirena.org.uk>
+ <74CDBE0F657A3D45AFBB94109FB122FF04AEA24CC8@HQMAIL01.nvidia.com>
+ <CAMbhsRR2+bhpjhGfUSt9M5tDk1EW2d70yC-tZy27zEgVqtkfSg@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF04AEA24D09@HQMAIL01.nvidia.com>
+ <CAMbhsRTVm+dUODDgqiekpTrrNnpo9trJNNvOQ2ETCNkneh-L-g@mail.gmail.com>
+ <1313109916.19990.28.camel@finisterre.wolfsonmicro.main>
+ <CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRShLvyc2XKJAL8PwR0Uj4Pnp9rVt7QyK1qAVxJ-R2PSdQ@mail.gmail.com>
+X-Cookie: Your aim is high and to the right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 11, 2011 at 07:59:27PM -0700, Colin Cross wrote:
+> On Thu, Aug 11, 2011 at 5:45 PM, Mark Brown
 
---=-M2yiEpagJgF9JDRMOBtn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > For example with ASoC we'd sort all the components before the ASoC card
+> > without regard for their bus dependencies or any other dependencies they
+> > have (eg, their regulators). Since the ASoC card is a platform device
+> > it's likely to have registered early with no regard for where the buses
+> > the card needs are registered. I'd expect there's a reasonable chance
+> > it'll actually make things worse in the short term.
 
-On Thu, 2011-08-11 at 19:51 -0700, David Miller wrote:
-> From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> Date: Thu, 11 Aug 2011 19:31:35 -0700
->=20
-> > I am curious, can you compile the Sun GEM support driver?  and if so,
-> > does the Spider Net driver compile?
->=20
-> I'm pretty sure you cannot reference object targets outside of
-> the current directory and expect it to work.
->=20
-> You can only reference things in the current directory (objects,
-> directories to traverse down into, etc.) as targets
->=20
-> So when there is a common piece of infrastructure shared by
-> two drivers, you're really going to have to cope with them
-> at the same time.
+> You can't just move everything after the card, you have to move
+> everything after the last device that was probed, and it only works if
+> nothing depends on any of the devices that are moved.
 
-I am working on a patch now to fix this.
-
-Stephen - if you could compile test it, I would greatly appreciate.
-
---=-M2yiEpagJgF9JDRMOBtn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJORJh1AAoJECTsCADr/EWUdLgH/1cBztEYeR8BHUyHidsWeHH5
-NIcnihy20vrclE9KV4hWPpQ6alOfrYCuNpC9OqpeqGppZSpIsb0xMWrbMIjSu9n3
-jjh0VgZIWQg7n2kdV6s4WtoPxlZv80roeL9lmYSOoP1FIS/18r4GZW05mHFv51uK
-0T4mNFoLohqm5xT4onnzMIiA4uAEOi0eiQiSkQ9SE0angzSLla3J9huXjx6vFZEX
-21vxNk2THiekPl7jwbfQ3OB8qV13zH6gBCH7PvzbBTG5nIxKHs58HJBzG1sR56CM
-e+RJdQa2VmBmqAX26sNV5LjhcXLCHT9KlcQu2Ncjy9Kso2zCIbfEMCbUvMEncrE=
-=7usg
------END PGP SIGNATURE-----
-
---=-M2yiEpagJgF9JDRMOBtn--
-
+Sorry, I said that the wrong way round due to trying to reply quickly -
+the card would be the thing that moves since that's the thing that
+actually does the suspend but we've *no* idea which device we need to
+move it after.  Since all the function does is a direct move after or
+before a single device all we can do is pick one and pray that it's the
+right device.
