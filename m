@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1HNQQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:16:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36808 "EHLO mx2.suse.de"
+	id S1754000Ab1HNQQt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:16:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36792 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab1HNQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:09:26 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:58 2011
-Message-Id: <20110812210557.976018944@clark.kroah.org>
+	id S1754558Ab1HNQJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:57 2011
+Message-Id: <20110812210557.805423660@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:52 -0700
+Date: Fri, 12 Aug 2011 14:04:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [67/90] sparc: Sanitize cpu feature detection and reporting.
+Subject: [65/90] sparc: Dont do expensive hypervisor PCR write unless necessary.
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,313 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit ac85fe8b21248054851e05bfaa352562e5b06dd3 ]
+[ Upstream commit 314ff52727fe94dfbe07f3a9a489ab3ca8d8df5a ]
 
-Instead of evaluating the cpu features for ELF_HWCAP every exec,
-calculate it once at boot time.
+The hypervisor call is only necessary if hypervisor events are
+being requested.
 
-Add AV_SPARC_* capability flag bits, compatible with what Solaris
-reports to applications.
-
-Report these capabilities once in the kernel log, and also via
-/proc/cpuinfo in a new "cpucaps" entry.
-
-If available, fetch the cpu features from the machine description
-'hwcap-list' property of the 'cpu' node.
+So if we're not tracking hypervisor events, simply do a direct
+register write.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/include/asm/elf_64.h |   65 +++++++----------
- arch/sparc/kernel/cpu.c         |    1 
- arch/sparc/kernel/kernel.h      |    6 +
- arch/sparc/kernel/setup_64.c    |  149 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 185 insertions(+), 36 deletions(-)
+ arch/sparc/kernel/pcr.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/elf_64.h
-+++ b/arch/sparc/include/asm/elf_64.h
-@@ -59,15 +59,33 @@
- #define R_SPARC_6		45
- 
- /* Bits present in AT_HWCAP, primarily for Sparc32.  */
--
--#define HWCAP_SPARC_FLUSH       1    /* CPU supports flush instruction. */
--#define HWCAP_SPARC_STBAR       2
--#define HWCAP_SPARC_SWAP        4
--#define HWCAP_SPARC_MULDIV      8
--#define HWCAP_SPARC_V9		16
--#define HWCAP_SPARC_ULTRA3	32
--#define HWCAP_SPARC_BLKINIT	64
--#define HWCAP_SPARC_N2		128
-+#define HWCAP_SPARC_FLUSH       0x00000001
-+#define HWCAP_SPARC_STBAR       0x00000002
-+#define HWCAP_SPARC_SWAP        0x00000004
-+#define HWCAP_SPARC_MULDIV      0x00000008
-+#define HWCAP_SPARC_V9		0x00000010
-+#define HWCAP_SPARC_ULTRA3	0x00000020
-+#define HWCAP_SPARC_BLKINIT	0x00000040
-+#define HWCAP_SPARC_N2		0x00000080
-+
-+/* Solaris compatible AT_HWCAP bits. */
-+#define AV_SPARC_MUL32		0x00000100 /* 32x32 multiply is efficient */
-+#define AV_SPARC_DIV32		0x00000200 /* 32x32 divide is efficient */
-+#define AV_SPARC_FSMULD		0x00000400 /* 'fsmuld' is efficient */
-+#define AV_SPARC_V8PLUS		0x00000800 /* v9 insn available to 32bit */
-+#define AV_SPARC_POPC		0x00001000 /* 'popc' is efficient */
-+#define AV_SPARC_VIS		0x00002000 /* VIS insns available */
-+#define AV_SPARC_VIS2		0x00004000 /* VIS2 insns available */
-+#define AV_SPARC_ASI_BLK_INIT	0x00008000 /* block init ASIs available */
-+#define AV_SPARC_FMAF		0x00010000 /* fused multiply-add */
-+#define AV_SPARC_VIS3		0x00020000 /* VIS3 insns available */
-+#define AV_SPARC_HPC		0x00040000 /* HPC insns available */
-+#define AV_SPARC_RANDOM		0x00080000 /* 'random' insn available */
-+#define AV_SPARC_TRANS		0x00100000 /* transaction insns available */
-+#define AV_SPARC_FJFMAU		0x00200000 /* unfused multiply-add */
-+#define AV_SPARC_IMA		0x00400000 /* integer multiply-add */
-+#define AV_SPARC_ASI_CACHE_SPARING \
-+				0x00800000 /* cache sparing ASIs available */
- 
- #define CORE_DUMP_USE_REGSET
- 
-@@ -162,33 +180,8 @@ typedef struct {
- #define ELF_ET_DYN_BASE		0x0000010000000000UL
- #define COMPAT_ELF_ET_DYN_BASE	0x0000000070000000UL
- 
--
--/* This yields a mask that user programs can use to figure out what
--   instruction set this cpu supports.  */
--
--/* On Ultra, we support all of the v8 capabilities. */
--static inline unsigned int sparc64_elf_hwcap(void)
--{
--	unsigned int cap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
--			    HWCAP_SPARC_SWAP | HWCAP_SPARC_MULDIV |
--			    HWCAP_SPARC_V9);
--
--	if (tlb_type == cheetah || tlb_type == cheetah_plus)
--		cap |= HWCAP_SPARC_ULTRA3;
--	else if (tlb_type == hypervisor) {
--		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 ||
--		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
--		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
--			cap |= HWCAP_SPARC_BLKINIT;
--		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
--		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
--			cap |= HWCAP_SPARC_N2;
--	}
--
--	return cap;
--}
--
--#define ELF_HWCAP	sparc64_elf_hwcap();
-+extern unsigned long sparc64_elf_hwcap;
-+#define ELF_HWCAP	sparc64_elf_hwcap
- 
- /* This yields a string that ld.so will use to load implementation
-    specific libraries for optimization.  This is more specific in
---- a/arch/sparc/kernel/cpu.c
-+++ b/arch/sparc/kernel/cpu.c
-@@ -396,6 +396,7 @@ static int show_cpuinfo(struct seq_file
- 		   , cpu_data(0).clock_tick
- #endif
- 		);
-+	cpucap_info(m);
- #ifdef CONFIG_SMP
- 	smp_bogo(m);
- #endif
---- a/arch/sparc/kernel/kernel.h
-+++ b/arch/sparc/kernel/kernel.h
-@@ -10,6 +10,12 @@ extern const char *sparc_pmu_type;
- extern unsigned int fsr_storage;
- extern int ncpus_probed;
- 
-+#ifdef CONFIG_SPARC64
-+/* setup_64.c */
-+struct seq_file;
-+extern void cpucap_info(struct seq_file *);
-+#endif
-+
- #ifdef CONFIG_SPARC32
- /* cpu.c */
- extern void cpu_probe(void);
---- a/arch/sparc/kernel/setup_64.c
-+++ b/arch/sparc/kernel/setup_64.c
-@@ -29,6 +29,7 @@
- #include <linux/interrupt.h>
- #include <linux/cpu.h>
- #include <linux/initrd.h>
-+#include <linux/module.h>
- 
- #include <asm/system.h>
- #include <asm/io.h>
-@@ -46,6 +47,8 @@
- #include <asm/mmu.h>
- #include <asm/ns87303.h>
- #include <asm/btext.h>
-+#include <asm/elf.h>
-+#include <asm/mdesc.h>
- 
- #ifdef CONFIG_IP_PNP
- #include <net/ipconfig.h>
-@@ -278,6 +281,151 @@ void __init boot_cpu_id_too_large(int cp
- }
- #endif
- 
-+/* On Ultra, we support all of the v8 capabilities. */
-+unsigned long sparc64_elf_hwcap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
-+				   HWCAP_SPARC_SWAP | HWCAP_SPARC_MULDIV |
-+				   HWCAP_SPARC_V9);
-+EXPORT_SYMBOL(sparc64_elf_hwcap);
-+
-+static const char *hwcaps[] = {
-+	"flush", "stbar", "swap", "muldiv", "v9",
-+	"ultra3", "blkinit", "n2",
-+
-+	/* These strings are as they appear in the machine description
-+	 * 'hwcap-list' property for cpu nodes.
-+	 */
-+	"mul32", "div32", "fsmuld", "v8plus", "popc", "vis", "vis2",
-+	"ASIBlkInit", "fmaf", "vis3", "hpc", "random", "trans", "fjfmau",
-+	"ima", "cspare",
-+};
-+
-+void cpucap_info(struct seq_file *m)
-+{
-+	unsigned long caps = sparc64_elf_hwcap;
-+	int i, printed = 0;
-+
-+	seq_puts(m, "cpucaps\t\t: ");
-+	for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
-+		unsigned long bit = 1UL << i;
-+		if (caps & bit) {
-+			seq_printf(m, "%s%s",
-+				   printed ? "," : "", hwcaps[i]);
-+			printed++;
-+		}
-+	}
-+	seq_putc(m, '\n');
-+}
-+
-+static void __init report_hwcaps(unsigned long caps)
-+{
-+	int i, printed = 0;
-+
-+	printk(KERN_INFO "CPU CAPS: [");
-+	for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
-+		unsigned long bit = 1UL << i;
-+		if (caps & bit) {
-+			printk(KERN_CONT "%s%s",
-+			       printed ? "," : "", hwcaps[i]);
-+			if (++printed == 8) {
-+				printk(KERN_CONT "]\n");
-+				printk(KERN_INFO "CPU CAPS: [");
-+				printed = 0;
-+			}
-+		}
-+	}
-+	printk(KERN_CONT "]\n");
-+}
-+
-+static unsigned long __init mdesc_cpu_hwcap_list(void)
-+{
-+	struct mdesc_handle *hp;
-+	unsigned long caps = 0;
-+	const char *prop;
-+	int len;
-+	u64 pn;
-+
-+	hp = mdesc_grab();
-+	if (!hp)
-+		return 0;
-+
-+	pn = mdesc_node_by_name(hp, MDESC_NODE_NULL, "cpu");
-+	if (pn == MDESC_NODE_NULL)
-+		goto out;
-+
-+	prop = mdesc_get_property(hp, pn, "hwcap-list", &len);
-+	if (!prop)
-+		goto out;
-+
-+	while (len) {
-+		int i, plen;
-+
-+		for (i = 0; i < ARRAY_SIZE(hwcaps); i++) {
-+			unsigned long bit = 1UL << i;
-+
-+			if (!strcmp(prop, hwcaps[i])) {
-+				caps |= bit;
-+				break;
-+			}
-+		}
-+
-+		plen = strlen(prop) + 1;
-+		prop += plen;
-+		len -= plen;
-+	}
-+
-+out:
-+	mdesc_release(hp);
-+	return caps;
-+}
-+
-+/* This yields a mask that user programs can use to figure out what
-+ * instruction set this cpu supports.
-+ */
-+static void __init init_sparc64_elf_hwcap(void)
-+{
-+	unsigned long cap = sparc64_elf_hwcap;
-+	unsigned long mdesc_caps;
-+
-+	if (tlb_type == cheetah || tlb_type == cheetah_plus)
-+		cap |= HWCAP_SPARC_ULTRA3;
-+	else if (tlb_type == hypervisor) {
-+		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 ||
-+		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
-+		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
-+			cap |= HWCAP_SPARC_BLKINIT;
-+		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
-+		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
-+			cap |= HWCAP_SPARC_N2;
-+	}
-+
-+	cap |= (AV_SPARC_MUL32 | AV_SPARC_DIV32 | AV_SPARC_V8PLUS);
-+
-+	mdesc_caps = mdesc_cpu_hwcap_list();
-+	if (!mdesc_caps) {
-+		if (tlb_type == spitfire)
-+			cap |= AV_SPARC_VIS;
-+		if (tlb_type == cheetah || tlb_type == cheetah_plus)
-+			cap |= AV_SPARC_VIS | AV_SPARC_VIS2;
-+		if (tlb_type == cheetah_plus)
-+			cap |= AV_SPARC_POPC;
-+		if (tlb_type == hypervisor) {
-+			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1)
-+				cap |= AV_SPARC_ASI_BLK_INIT;
-+			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
-+			    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
-+				cap |= (AV_SPARC_VIS | AV_SPARC_VIS2 |
-+					AV_SPARC_ASI_BLK_INIT |
-+					AV_SPARC_POPC);
-+			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
-+				cap |= (AV_SPARC_VIS3 | AV_SPARC_HPC |
-+					AV_SPARC_FMAF);
-+		}
-+	}
-+	sparc64_elf_hwcap = cap | mdesc_caps;
-+
-+	report_hwcaps(sparc64_elf_hwcap);
-+}
-+
- void __init setup_arch(char **cmdline_p)
+--- a/arch/sparc/kernel/pcr.c
++++ b/arch/sparc/kernel/pcr.c
+@@ -80,8 +80,11 @@ static void n2_pcr_write(u64 val)
  {
- 	/* Initialize PROM console and command line. */
-@@ -337,6 +485,7 @@ void __init setup_arch(char **cmdline_p)
- 	init_cur_cpu_trap(current_thread_info());
+ 	unsigned long ret;
  
- 	paging_init();
-+	init_sparc64_elf_hwcap();
+-	ret = sun4v_niagara2_setperf(HV_N2_PERF_SPARC_CTL, val);
+-	if (ret != HV_EOK)
++	if (val & PCR_N2_HTRACE) {
++		ret = sun4v_niagara2_setperf(HV_N2_PERF_SPARC_CTL, val);
++		if (ret != HV_EOK)
++			write_pcr(val);
++	} else
+ 		write_pcr(val);
  }
  
- extern int stop_a_enabled;
 
 
