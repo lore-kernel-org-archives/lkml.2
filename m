@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab1HLXEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 19:04:40 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:52890 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab1HLXEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 19:04:38 -0400
-Date: Sat, 13 Aug 2011 01:04:45 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mike McCormack <mikem@ring3k.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Weil <weil@mail.berlios.de>,
-        Andrea Merello <andreamrl@tiscali.it>, netdev@vger.kernel.org
-Subject: [PATCH 2/3] drivers/staging/rtl8192e: Don't pass huge struct by
- value
-Message-ID: <alpine.LNX.2.00.1108130058310.7387@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752744Ab1HLXTw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:19:52 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:60661 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752441Ab1HLXTu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 19:19:50 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110812213037.GA24803@google.com>
+References: <1312899309-24067-1-git-send-email-keshava_mgowda@ti.com>
+ <1312899309-24067-2-git-send-email-keshava_mgowda@ti.com> <1312899309-24067-3-git-send-email-keshava_mgowda@ti.com>
+ <1312899309-24067-4-git-send-email-keshava_mgowda@ti.com> <1312899309-24067-5-git-send-email-keshava_mgowda@ti.com>
+ <1312899309-24067-6-git-send-email-keshava_mgowda@ti.com> <20110810163142.GA10156@google.com>
+ <CAP05o4L+qn4K=jLx5Jo8WsG7LnU=VniQSR+fLc=RM5mW4kP1OQ@mail.gmail.com> <20110812213037.GA24803@google.com>
+From: "Menon, Nishanth" <nm@ti.com>
+Date: Fri, 12 Aug 2011 18:19:29 -0500
+Message-ID: <CAOMWX4dUONED8_1KyooUu3Wn8PD+jT+XLRkkUhF9U-EvdUXi1w@mail.gmail.com>
+Subject: Re: [PATCH 5/5 v4] mfd: omap: usb: Runtime PM support
+To: Todd Poynor <toddpoynor@google.com>
+Cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        gadiyar@ti.com, sameo@linux.intel.com, parthab@india.ti.com,
+        tony@atomide.com, khilman@ti.com, b-cousson@ti.com, paul@pwsan.com,
+        johnstul@us.ibm.com, vishwanath.bs@ti.com, vikram.pandita@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sat, 13 Aug 2011 00:52:32 +0200
+On Fri, Aug 12, 2011 at 16:30, Todd Poynor <toddpoynor@google.com> wrote:
+> On Fri, Aug 12, 2011 at 12:20:21PM +0530, Munegowda, Keshava wrote:
+>> On Wed, Aug 10, 2011 at 10:01 PM, Todd Poynor <toddpoynor@google.com> wrote:
+>> >> @@ -913,12 +598,15 @@ static int usbhs_enable(struct device *dev)
+>> >>                               (pdata->ehci_data->reset_gpio_port[1], 1);
+>> >>       }
+>> >>
+>> >> -end_count:
+>> >> -     omap->count++;
+>> >> +     pm_runtime_put_sync(dev);
+>> >>       spin_unlock_irqrestore(&omap->lock, flags);
+>> >
+>> > Is pm_runtime_irq_safe() needed (else I think runtime PM callbacks may
+>> > re-enable IRQs... or there's the new *_suspend runtime PM calls that
+>> > may avoid this)?
+>>
+>>  pm_runtime_irq_safe()  is not required; usbhs does not have a parent
+>> and it is the parent driver of
+>> ehci and ohci drivers.
+>
+> But the above expects IRQs to be disabled during the
+> pm_runtime_put_sync, and synchronous calls can turn IRQs back on in
+> rpm_idle:
+>
+>        if (callback) {
+>                spin_unlock_irq(&dev->power.lock);
+>
+>                callback(dev);
+>
+> I see other folks who know this better than me are discussing USB run
+> time PM and might_sleep contexts, so I'll note this concern and let
+> others chime in if they think there's a real problem here.
 
-struct ieee80211_network is fairly large (more than half a kilobyte),
-so let's pass a pointer instead of passing the entire structure by
-value when ieee80211_is_54g() and ieee80211_is_shortslot() need to
-look at a few members.
-Also remove parentheses around the values being returned from those
-two functions - 'return' is not a function.
+It is rather easy with the following patch applied to pull this bug out!
+https://patchwork.kernel.org/patch/1001572/
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/rtl8192e/ieee80211/ieee80211.h     |    4 ++--
- .../staging/rtl8192e/ieee80211/ieee80211_softmac.c |   14 +++++++-------
- 2 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211.h b/drivers/staging/rtl8192e/ieee80211/ieee80211.h
-index 6d7963e..abc7a1b 100644
---- a/drivers/staging/rtl8192e/ieee80211/ieee80211.h
-+++ b/drivers/staging/rtl8192e/ieee80211/ieee80211.h
-@@ -2425,8 +2425,8 @@ int ieee80211_wx_set_mlme(struct ieee80211_device *ieee,
- int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len);
- 
- /* ieee80211_softmac.c */
--short ieee80211_is_54g(struct ieee80211_network net);
--short ieee80211_is_shortslot(struct ieee80211_network net);
-+short ieee80211_is_54g(const struct ieee80211_network *net);
-+short ieee80211_is_shortslot(const struct ieee80211_network *net);
- int ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
- 			struct ieee80211_rx_stats *rx_stats, u16 type,
- 			u16 stype);
-diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-index 60e9a09..4a5e9b2 100644
---- a/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c
-@@ -33,14 +33,14 @@ u8 rsn_authen_cipher_suite[16][4] = {
- 	{0x00,0x0F,0xAC,0x05}, //WEP-104
- };
- 
--short ieee80211_is_54g(struct ieee80211_network net)
-+short ieee80211_is_54g(const struct ieee80211_network *net)
- {
--	return ((net.rates_ex_len > 0) || (net.rates_len > 4));
-+	return (net->rates_ex_len > 0) || (net->rates_len > 4);
- }
- 
--short ieee80211_is_shortslot(struct ieee80211_network net)
-+short ieee80211_is_shortslot(const struct ieee80211_network *net)
- {
--	return (net.capability & WLAN_CAPABILITY_SHORT_SLOT);
-+	return (net->capability & WLAN_CAPABILITY_SHORT_SLOT);
- }
- 
- /* returns the total length needed for pleacing the RATE MFIE
-@@ -723,7 +723,7 @@ static struct sk_buff* ieee80211_probe_resp(struct ieee80211_device *ieee, u8 *d
- 	else
- 		atim_len = 0;
- 
--	if(ieee80211_is_54g(ieee->current_network))
-+	if(ieee80211_is_54g(&ieee->current_network))
- 		erp_len = 3;
- 	else
- 		erp_len = 0;
-@@ -1351,7 +1351,7 @@ void ieee80211_associate_complete_wq(struct work_struct *work)
-         struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, associate_complete_wq);
- 	printk(KERN_INFO "Associated successfully\n");
- 	ieee->is_roaming = false;
--	if(ieee80211_is_54g(ieee->current_network) &&
-+	if(ieee80211_is_54g(&ieee->current_network) &&
- 		(ieee->modulation & IEEE80211_OFDM_MODULATION)){
- 
- 		ieee->rate = 108;
-@@ -1504,7 +1504,7 @@ inline void ieee80211_softmac_new_net(struct ieee80211_device *ieee, struct ieee
- 					ieee->state = IEEE80211_ASSOCIATING;
- 					queue_work(ieee->wq, &ieee->associate_procedure_wq);
- 				}else{
--					if(ieee80211_is_54g(ieee->current_network) &&
-+					if(ieee80211_is_54g(&ieee->current_network) &&
- 						(ieee->modulation & IEEE80211_OFDM_MODULATION)){
- 						ieee->rate = 108;
- 						ieee->SetWirelessMode(ieee, IEEE_G);
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Regards,
+Nishanth Menon
