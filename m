@@ -1,189 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab1HLG7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 02:59:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22700 "EHLO mx1.redhat.com"
+	id S1752004Ab1HLHAD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 03:00:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36437 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab1HLG7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 02:59:45 -0400
-Date: Fri, 12 Aug 2011 08:58:58 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [patch 2/2] mm: vmscan: drop nr_force_scan[] from get_scan_count
-Message-ID: <20110812065858.GA6916@redhat.com>
-References: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
- <1313094715-31187-2-git-send-email-jweiner@redhat.com>
- <CAEwNFnBp7JBWpuaT=ZKDyfQTQqOe_mT0CLFAw9LWo10GoXaFnQ@mail.gmail.com>
+	id S1751546Ab1HLG76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 02:59:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: LPC2011 Power Management Micro Conf
+Date: Fri, 12 Aug 2011 09:01:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arjan van de Ven <arjan@infradead.org>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, Len Brown <lenb@kernel.org>,
+        tytso@mit.edu
+References: <201105011353.44809.rjw@sisk.pl> <201107030929.28555.rjw@sisk.pl> <20110812033221.GA5671@sirena.org.uk>
+In-Reply-To: <20110812033221.GA5671@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEwNFnBp7JBWpuaT=ZKDyfQTQqOe_mT0CLFAw9LWo10GoXaFnQ@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108120901.37632.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 08:44:34AM +0900, Minchan Kim wrote:
-> On Fri, Aug 12, 2011 at 5:31 AM, Johannes Weiner <jweiner@redhat.com> wrote:
-> > The nr_force_scan[] tuple holds the effective scan numbers for anon
-> > and file pages in case the situation called for a forced scan and the
-> > regularly calculated scan numbers turned out zero.
-> >
-> > However, the effective scan number can always be assumed to be
-> > SWAP_CLUSTER_MAX right before the division into anon and file.  The
-> > numerators and denominator are properly set up for all cases, be it
-> > force scan for just file, just anon, or both, to do the right thing.
-> >
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+On Friday, August 12, 2011, Mark Brown wrote:
+> On Sun, Jul 03, 2011 at 09:29:28AM +0200, Rafael J. Wysocki wrote:
 > 
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-
-Thanks.
-
-> There is a nitpick at below.
-
-> > @@ -1927,20 +1917,10 @@ out:
-> >                scan = zone_nr_lru_pages(zone, sc, l);
-> >                if (priority || noswap) {
-> >                        scan >>= priority;
-> > +                       if (!scan && force_scan)
-> > +                               scan = SWAP_CLUSTER_MAX;
-> >                        scan = div64_u64(scan * fraction[file], denominator);
-> >                }
-> > -
-> > -               /*
-> > -                * If zone is small or memcg is small, nr[l] can be 0.
-> > -                * This results no-scan on this priority and priority drop down.
-> > -                * For global direct reclaim, it can visit next zone and tend
-> > -                * not to have problems. For global kswapd, it's for zone
-> > -                * balancing and it need to scan a small amounts. When using
-> > -                * memcg, priority drop can cause big latency. So, it's better
-> > -                * to scan small amount. See may_noscan above.
-> > -                */
+> > If there's anything you'd like to discuss or give a presentation on related to
+> > Power Management, please let me know, preferably by replying to this message.
 > 
-> Please move this comment with tidy-up at where making force_scan true.
-> Of course, we can find it by git log[246e87a9393] but as I looked the
-> git log, it explain this comment indirectly and it's not
-> understandable to newbies. I think this comment is more understandable
-> than changelog in git.
+> The issue of cross-bus sequencing within suspend has come up again - we
+> really need to work out how we make sure that dependencies between
+> devices that aren't accounted for in the control bus sorting we do as
+> standard.  This may be worth bringing up a KS also as it's device model
+> related.
 
-I guess you are right, I am a bit overeager when deleting comments.
-How is this?
+I agree, I'll add it to the agenda of the LPC microconf.
 
----
-From: Johannes Weiner <jweiner@redhat.com>
-Subject: [patch] mm: vmscan: drop nr_force_scan[] from get_scan_count
-
-The nr_force_scan[] tuple holds the effective scan numbers for anon
-and file pages in case the situation called for a forced scan and the
-regularly calculated scan numbers turned out zero.
-
-However, the effective scan number can always be assumed to be
-SWAP_CLUSTER_MAX right before the division into anon and file.  The
-numerators and denominator are properly set up for all cases, be it
-force scan for just file, just anon, or both, to do the right thing.
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Ying Han <yinghan@google.com>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Mel Gorman <mel@csn.ul.ie>
----
- mm/vmscan.c |   36 ++++++++++++------------------------
- 1 files changed, 12 insertions(+), 24 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 96061d7..a6ca076 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1831,12 +1831,19 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	enum lru_list l;
- 	int noswap = 0;
- 	bool force_scan = false;
--	unsigned long nr_force_scan[2];
- 
--	/* kswapd does zone balancing and need to scan this zone */
-+	/*
-+	 * If the zone or memcg is small, nr[l] can be 0.  This
-+	 * results in no scanning on this priority and a potential
-+	 * priority drop.  Global direct reclaim can go to the next
-+	 * zone and tends to have no problems. Global kswapd is for
-+	 * zone balancing and it needs to scan a minimum amount. When
-+	 * reclaiming for a memcg, a priority drop can cause high
-+	 * latencies, so it's better to scan a minimum amount there as
-+	 * well.
-+	 */
- 	if (scanning_global_lru(sc) && current_is_kswapd())
- 		force_scan = true;
--	/* memcg may have small limit and need to avoid priority drop */
- 	if (!scanning_global_lru(sc))
- 		force_scan = true;
- 
-@@ -1846,8 +1853,6 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 		fraction[0] = 0;
- 		fraction[1] = 1;
- 		denominator = 1;
--		nr_force_scan[0] = 0;
--		nr_force_scan[1] = SWAP_CLUSTER_MAX;
- 		goto out;
- 	}
- 
-@@ -1864,8 +1869,6 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 			fraction[0] = 1;
- 			fraction[1] = 0;
- 			denominator = 1;
--			nr_force_scan[0] = SWAP_CLUSTER_MAX;
--			nr_force_scan[1] = 0;
- 			goto out;
- 		}
- 	}
-@@ -1914,11 +1917,6 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	fraction[0] = ap;
- 	fraction[1] = fp;
- 	denominator = ap + fp + 1;
--	if (force_scan) {
--		unsigned long scan = SWAP_CLUSTER_MAX;
--		nr_force_scan[0] = div64_u64(scan * ap, denominator);
--		nr_force_scan[1] = div64_u64(scan * fp, denominator);
--	}
- out:
- 	for_each_evictable_lru(l) {
- 		int file = is_file_lru(l);
-@@ -1927,20 +1925,10 @@ out:
- 		scan = zone_nr_lru_pages(zone, sc, l);
- 		if (priority || noswap) {
- 			scan >>= priority;
-+			if (!scan && force_scan)
-+				scan = SWAP_CLUSTER_MAX;
- 			scan = div64_u64(scan * fraction[file], denominator);
- 		}
--
--		/*
--		 * If zone is small or memcg is small, nr[l] can be 0.
--		 * This results no-scan on this priority and priority drop down.
--		 * For global direct reclaim, it can visit next zone and tend
--		 * not to have problems. For global kswapd, it's for zone
--		 * balancing and it need to scan a small amounts. When using
--		 * memcg, priority drop can cause big latency. So, it's better
--		 * to scan small amount. See may_noscan above.
--		 */
--		if (!scan && force_scan)
--			scan = nr_force_scan[file];
- 		nr[l] = scan;
- 	}
- }
--- 
-1.7.6
-
+Thanks,
+Rafael
