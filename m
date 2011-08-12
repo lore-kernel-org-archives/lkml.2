@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1HNQIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:08:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36683 "EHLO mx2.suse.de"
+	id S1754477Ab1HNQIu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:08:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754370Ab1HNQIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:08:34 -0400
+	id S1754370Ab1HNQIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:08:47 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
-Message-Id: <20110812210556.660706972@clark.kroah.org>
+Message-Id: <20110812210556.925248738@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:37 -0700
+Date: Fri, 12 Aug 2011 14:04:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Karsten Keil <isdn@linux-pingi.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        Patrick McHardy <kaber@trash.net>, Krzysztof Halasa <khc@pm.waw.pl>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: [52/90] net: Audit drivers to identify those needing IFF_TX_SKB_SHARING cleared
+        Tushar Gohad <tgohad@mvista.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [55/90] xfrm: Fix key lengths for rfc3686(ctr(aes))
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,212 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Tushar Gohad <tgohad@mvista.com>
 
-[ Upstream commit 550fd08c2cebad61c548def135f67aba284c6162 ]
+[ Upstream commit 4203223a1aed862b4445fdcd260d6139603a51d9 ]
 
-After the last patch, We are left in a state in which only drivers calling
-ether_setup have IFF_TX_SKB_SHARING set (we assume that drivers touching real
-hardware call ether_setup for their net_devices and don't hold any state in
-their skbs.  There are a handful of drivers that violate this assumption of
-course, and need to be fixed up.  This patch identifies those drivers, and marks
-them as not being able to support the safe transmission of skbs by clearning the
-IFF_TX_SKB_SHARING flag in priv_flags
+Fix the min and max bit lengths for AES-CTR (RFC3686) keys.
+The number of bits in key spec is the key length (128/256)
+plus 32 bits of nonce.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Karsten Keil <isdn@linux-pingi.de>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Jay Vosburgh <fubar@us.ibm.com>
-CC: Andy Gospodarek <andy@greyhouse.net>
-CC: Patrick McHardy <kaber@trash.net>
-CC: Krzysztof Halasa <khc@pm.waw.pl>
-CC: "John W. Linville" <linville@tuxdriver.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Marcel Holtmann <marcel@holtmann.org>
-CC: Johannes Berg <johannes@sipsolutions.net>
+This change takes care of the "Invalid key length" errors
+reported by setkey when specifying 288 bit keys for aes-ctr.
+
+Signed-off-by: Tushar Gohad <tgohad@mvista.com>
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/isdn/i4l/isdn_net.c                  |    3 +++
- drivers/net/bonding/bond_main.c              |    6 ++++--
- drivers/net/ifb.c                            |    2 +-
- drivers/net/macvlan.c                        |    2 +-
- drivers/net/tun.c                            |    1 +
- drivers/net/veth.c                           |    2 ++
- drivers/net/wan/hdlc_fr.c                    |    5 +++--
- drivers/net/wireless/airo.c                  |    1 +
- drivers/net/wireless/hostap/hostap_main.c    |    1 +
- drivers/staging/ath6kl/os/linux/ar6000_drv.c |    1 +
- net/8021q/vlan_dev.c                         |    2 +-
- net/bluetooth/bnep/netdev.c                  |    1 +
- net/l2tp/l2tp_eth.c                          |    2 +-
- net/mac80211/iface.c                         |    1 +
- 14 files changed, 22 insertions(+), 8 deletions(-)
+ net/xfrm/xfrm_algo.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/i4l/isdn_net.c
-+++ b/drivers/isdn/i4l/isdn_net.c
-@@ -2531,6 +2531,9 @@ static void _isdn_setup(struct net_devic
- 
- 	/* Setup the generic properties */
- 	dev->flags = IFF_NOARP|IFF_POINTOPOINT;
-+
-+	/* isdn prepends a header in the tx path, can't share skbs */
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 	dev->header_ops = NULL;
- 	dev->netdev_ops = &isdn_netdev_ops;
- 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1625,8 +1625,10 @@ int bond_enslave(struct net_device *bond
- 
- 			if (slave_dev->type != ARPHRD_ETHER)
- 				bond_setup_by_slave(bond_dev, slave_dev);
--			else
-+			else {
- 				ether_setup(bond_dev);
-+				bond_dev->priv_flags &= ~IFF_TX_SKB_SHARING;
-+			}
- 
- 			netdev_bonding_change(bond_dev,
- 					      NETDEV_POST_TYPE_CHANGE);
-@@ -4398,7 +4400,7 @@ static void bond_setup(struct net_device
- 	bond_dev->tx_queue_len = 0;
- 	bond_dev->flags |= IFF_MASTER|IFF_MULTICAST;
- 	bond_dev->priv_flags |= IFF_BONDING;
--	bond_dev->priv_flags &= ~IFF_XMIT_DST_RELEASE;
-+	bond_dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
- 
- 	/* At first, we block adding VLANs. That's the only way to
- 	 * prevent problems that occur when adding VLANs over an
---- a/drivers/net/ifb.c
-+++ b/drivers/net/ifb.c
-@@ -145,7 +145,7 @@ static void ifb_setup(struct net_device
- 
- 	dev->flags |= IFF_NOARP;
- 	dev->flags &= ~IFF_MULTICAST;
--	dev->priv_flags &= ~IFF_XMIT_DST_RELEASE;
-+	dev->priv_flags &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
- 	random_ether_addr(dev->dev_addr);
- }
- 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -547,7 +547,7 @@ void macvlan_common_setup(struct net_dev
- {
- 	ether_setup(dev);
- 
--	dev->priv_flags	       &= ~IFF_XMIT_DST_RELEASE;
-+	dev->priv_flags	       &= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
- 	dev->netdev_ops		= &macvlan_netdev_ops;
- 	dev->destructor		= free_netdev;
- 	dev->header_ops		= &macvlan_hard_header_ops,
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -528,6 +528,7 @@ static void tun_net_init(struct net_devi
- 		dev->netdev_ops = &tap_netdev_ops;
- 		/* Ethernet TAP Device */
- 		ether_setup(dev);
-+		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 
- 		random_ether_addr(dev->dev_addr);
- 
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -262,6 +262,8 @@ static void veth_setup(struct net_device
- {
- 	ether_setup(dev);
- 
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
-+
- 	dev->netdev_ops = &veth_netdev_ops;
- 	dev->ethtool_ops = &veth_ethtool_ops;
- 	dev->features |= NETIF_F_LLTX;
---- a/drivers/net/wan/hdlc_fr.c
-+++ b/drivers/net/wan/hdlc_fr.c
-@@ -1083,9 +1083,10 @@ static int fr_add_pvc(struct net_device
- 
- 	used = pvc_is_used(pvc);
- 
--	if (type == ARPHRD_ETHER)
-+	if (type == ARPHRD_ETHER) {
- 		dev = alloc_netdev(0, "pvceth%d", ether_setup);
--	else
-+		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
-+	} else
- 		dev = alloc_netdev(0, "pvc%d", pvc_setup);
- 
- 	if (!dev) {
---- a/drivers/net/wireless/airo.c
-+++ b/drivers/net/wireless/airo.c
-@@ -2823,6 +2823,7 @@ static struct net_device *_init_airo_car
- 	dev->wireless_data = &ai->wireless_data;
- 	dev->irq = irq;
- 	dev->base_addr = port;
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 
- 	SET_NETDEV_DEV(dev, dmdev);
- 
---- a/drivers/net/wireless/hostap/hostap_main.c
-+++ b/drivers/net/wireless/hostap/hostap_main.c
-@@ -855,6 +855,7 @@ void hostap_setup_dev(struct net_device
- 
- 	iface = netdev_priv(dev);
- 	ether_setup(dev);
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 
- 	/* kernel callbacks */
- 	if (iface) {
---- a/drivers/staging/ath6kl/os/linux/ar6000_drv.c
-+++ b/drivers/staging/ath6kl/os/linux/ar6000_drv.c
-@@ -6198,6 +6198,7 @@ int ar6000_create_ap_interface(struct ar
-     
-     ether_setup(dev);
-     init_netdev(dev, ap_ifname);
-+    dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 
-     if (register_netdev(dev)) {
-         AR_DEBUG_PRINTF(ATH_DEBUG_ERR,("ar6000_create_ap_interface: register_netdev failed\n"));
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -694,7 +694,7 @@ void vlan_setup(struct net_device *dev)
- 	ether_setup(dev);
- 
- 	dev->priv_flags		|= IFF_802_1Q_VLAN;
--	dev->priv_flags		&= ~IFF_XMIT_DST_RELEASE;
-+	dev->priv_flags		&= ~(IFF_XMIT_DST_RELEASE | IFF_TX_SKB_SHARING);
- 	dev->tx_queue_len	= 0;
- 
- 	dev->netdev_ops		= &vlan_netdev_ops;
---- a/net/bluetooth/bnep/netdev.c
-+++ b/net/bluetooth/bnep/netdev.c
-@@ -231,6 +231,7 @@ void bnep_net_setup(struct net_device *d
- 	dev->addr_len = ETH_ALEN;
- 
- 	ether_setup(dev);
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 	dev->netdev_ops = &bnep_netdev_ops;
- 
- 	dev->watchdog_timeo  = HZ * 2;
---- a/net/l2tp/l2tp_eth.c
-+++ b/net/l2tp/l2tp_eth.c
-@@ -103,7 +103,7 @@ static struct net_device_ops l2tp_eth_ne
- static void l2tp_eth_dev_setup(struct net_device *dev)
- {
- 	ether_setup(dev);
--
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 	dev->netdev_ops		= &l2tp_eth_netdev_ops;
- 	dev->destructor		= free_netdev;
- }
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -699,6 +699,7 @@ static const struct net_device_ops ieee8
- static void ieee80211_if_setup(struct net_device *dev)
- {
- 	ether_setup(dev);
-+	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
- 	dev->netdev_ops = &ieee80211_dataif_ops;
- 	dev->destructor = free_netdev;
- }
+--- a/net/xfrm/xfrm_algo.c
++++ b/net/xfrm/xfrm_algo.c
+@@ -462,8 +462,8 @@ static struct xfrm_algo_desc ealg_list[]
+ 	.desc = {
+ 		.sadb_alg_id = SADB_X_EALG_AESCTR,
+ 		.sadb_alg_ivlen	= 8,
+-		.sadb_alg_minbits = 128,
+-		.sadb_alg_maxbits = 256
++		.sadb_alg_minbits = 160,
++		.sadb_alg_maxbits = 288
+ 	}
+ },
+ };
 
 
