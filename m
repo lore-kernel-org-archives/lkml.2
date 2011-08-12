@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab1HLLLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 07:11:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50698 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab1HLLLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 07:11:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,362,1309762800"; 
-   d="scan'208";a="37802573"
-Date: Fri, 12 Aug 2011 19:11:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110812111139.GB8016@localhost>
-References: <20110806084447.388624428@intel.com>
- <20110806094526.733282037@intel.com>
- <1312811193.10488.33.camel@twins>
- <20110808141128.GA22080@localhost>
- <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313103367.26866.39.camel@twins>
- <20110812024353.GA11606@localhost>
- <1313142474.6576.10.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313142474.6576.10.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753859Ab1HLLOm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 07:14:42 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:36127 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab1HLLOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 07:14:41 -0400
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: dan.j.williams@intel.com, vkoul@infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: sundaram@ti.com, linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, nsekhar@ti.com,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCH] DMAEngine: Define generic transfer request api
+Date: Fri, 12 Aug 2011 16:44:27 +0530
+Message-Id: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 05:47:54PM +0800, Peter Zijlstra wrote:
-> On Fri, 2011-08-12 at 10:43 +0800, Wu Fengguang wrote:
-> > >                s - x 3
-> > >  f(x) :=  1 + (-----)
-> > >                l - s
-> > 
-> 
-> > Looks very neat, much simpler than the three curves solution!
-> 
-> Glad you like it, there is of course the small matter of real-world
-> behaviour to consider, lets hope that works as well :-)
+Define a new api that could be used for doing fancy data transfers
+like interleaved to contiguous copy and vice-versa.
+Traditional SG_list based transfers tend to be very inefficient in
+such cases as where the interleave and chunk are only a few bytes,
+which call for a very condensed api to convey pattern of the transfer.
 
-It magically meets all the criteria in my mind, not to mention it can
-eliminate 2 extra patches. As for the tests, so far, so good :)
+This api supports all 4 variants of scatter-gather and contiguous transfer.
+Besides, it could also represent common operations like
+        device_prep_dma_{cyclic, memset, memcpy}
+and maybe some more that I am not sure of.
 
-Your arithmetics are awesome!
+Of course, neither can this api help transfers that don't lend to DMA by
+nature, i.e, scattered tiny read/writes with no periodic pattern.
 
-Thanks,
-Fengguang
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
+ include/linux/dmaengine.h |   73 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 73 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 8fbf40e..74f3ae0 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -76,6 +76,76 @@ enum dma_transaction_type {
+ /* last transaction type for creation of the capabilities mask */
+ #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+ 
++/**
++ * Generic Transfer Request
++ * ------------------------
++ * A chunk is collection of contiguous bytes to be transfered.
++ * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
++ * ICGs may or maynot change between chunks.
++ * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
++ *  that when repeated an integral number of times, specifies the transfer.
++ * A transfer template is specification of a Frame, the number of times
++ *  it is to be repeated and other per-transfer attributes.
++ *
++ * Practically, a client driver would have ready a template for each
++ *  type of transfer it is going to need during its lifetime and
++ *  set only 'src_start' and 'dst_start' before submitting the requests.
++ *
++ *
++ *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
++ *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
++ *
++ *    ==  Chunk size
++ *    ... ICG
++ */
++
++/**
++ * struct data_chunk - Element of scatter-gather list that makes a frame.
++ * @size: Number of bytes to read from source.
++ *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
++ * @icg: Number of bytes to jump after last src/dst address of this
++ *	 chunk and before first src/dst address for next chunk.
++ *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
++ *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
++ */
++struct data_chunk {
++	size_t size;
++	size_t icg;
++};
++
++/**
++ * struct xfer_template - Template to convey DMAC the transfer pattern
++ *	 and attributes.
++ * @op: The operation to perform on source data before writing it on
++ *	 to destination address.
++ * @src_start: Bus address of source for the first chunk.
++ * @dst_start: Bus address of destination for the first chunk.
++ * @src_inc: If the source address increments after reading from it.
++ * @dst_inc: If the destination address increments after writing to it.
++ * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
++ *		Otherwise, source is read contiguously (icg ignored).
++ *		Ignored if src_inc is false.
++ * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
++ *		Otherwise, destination is filled contiguously (icg ignored).
++ *		Ignored if dst_inc is false.
++ * @frm_irq: If the client expects DMAC driver to do callback after each frame.
++ * @numf: Number of frames in this template.
++ * @frame_size: Number of chunks in a frame i.e, size of sgl[].
++ * @sgl: Array of {chunk,icg} pairs that make up a frame.
++ */
++struct xfer_template {
++	enum dma_transaction_type op;
++	dma_addr_t src_start;
++	dma_addr_t dst_start;
++	bool src_inc;
++	bool dst_inc;
++	bool src_sgl;
++	bool dst_sgl;
++	bool frm_irq;
++	size_t numf;
++	size_t frame_size;
++	struct data_chunk sgl[0];
++};
+ 
+ /**
+  * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+@@ -432,6 +502,7 @@ struct dma_tx_state {
+  * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+  *	The function takes a buffer of size buf_len. The callback function will
+  *	be called after period_len bytes have been transferred.
++ * @device_prep_dma_genxfer: Transfer expression in a generic way.
+  * @device_control: manipulate all pending operations on a channel, returns
+  *	zero or error code
+  * @device_tx_status: poll for transaction completion, the optional
+@@ -496,6 +567,8 @@ struct dma_device {
+ 	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+ 		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 		size_t period_len, enum dma_data_direction direction);
++	struct dma_async_tx_descriptor *(*device_prep_dma_genxfer)(
++		struct dma_chan *chan, struct xfer_template *xt);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		unsigned long arg);
+ 
+-- 
+1.7.4.1
+
