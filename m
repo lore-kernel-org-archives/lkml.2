@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1HLXg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 19:36:59 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50744 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab1HLXg5 (ORCPT
+	id S1752943Ab1HLXji (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:39:38 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22705 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534Ab1HLXjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 19:36:57 -0400
-Subject: Re: [PATCH] rtc: twl: Fix registration vs. init order
-From: John Stultz <john.stultz@linaro.org>
-To: Todd Poynor <toddpoynor@google.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1313032836-347-1-git-send-email-toddpoynor@google.com>
-References: <1313032836-347-1-git-send-email-toddpoynor@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Aug 2011 16:36:52 -0700
-Message-ID: <1313192212.2970.45.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Aug 2011 19:39:35 -0400
+Date: Sat, 13 Aug 2011 01:39:43 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH][Trivial] net/wan/hdlc_ppp: remove dead goto
+Message-ID: <alpine.LNX.2.00.1108130138100.7387@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-10 at 20:20 -0700, Todd Poynor wrote:
-> Only register as an RTC device after the hardware has been
-> successfully initialized.  The RTC class driver will call
-> back to this driver to read a pending alarm, and other
-> drivers watching for new devices on the RTC class may
-> read the RTC time upon registration.  Such access might
-> occur while the RTC is stopped, prior to clearing
-> pending alarms, etc.
-> 
-> The new ordering also avoids leaving the platform
-> device drvdata set to an unregistered struct rtc_device *
-> on probe errors.
-> 
-> Signed-off-by: Todd Poynor <toddpoynor@google.com>
+From: Jesper Juhl <jj@chaosbits.net>
 
-Thanks! Queued.
--john
+We'll either hit one of the case labels or the default in the switch
+and in all cases do we then 'goto out', so having 'goto out' right
+after the switch is pointless as we can never hit it - remove it.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/wan/hdlc_ppp.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wan/hdlc_ppp.c b/drivers/net/wan/hdlc_ppp.c
+index 055a918..5385876 100644
+--- a/drivers/net/wan/hdlc_ppp.c
++++ b/drivers/net/wan/hdlc_ppp.c
+@@ -547,7 +547,6 @@ static int ppp_rx(struct sk_buff *skb)
+ 		ppp_cp_event(dev, pid, RUC, 0, 0, len, cp);
+ 		goto out;
+ 	}
+-	goto out;
+ 
+ rx_error:
+ 	dev->stats.rx_errors++;
+-- 
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
