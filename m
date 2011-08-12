@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab1HLEeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 00:34:21 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61410 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab1HLEeS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 00:34:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com>
-References: <20110811064059.GU6342@yookeroo.fritz.box>
-	<CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com>
-Date: Fri, 12 Aug 2011 13:34:17 +0900
-Message-ID: <CAEwNFnB+5DZQw0CrfkcdP_rd5FBM6fw26=_yS3P283a9TKLNiw@mail.gmail.com>
-Subject: Re: Fix refcounting in hugetlbfs quota handling
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Jan Kiszka <jan.kiszka@web.de>, qemu-devel@nongnu.org, agraf@suse.de,
-        kvm <kvm@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrew Hastings <abh@cray.com>,
-        Adam Litke <agl@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751364Ab1HLEej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 00:34:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39937 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab1HLEee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 00:34:34 -0400
+Date: Fri, 12 Aug 2011 14:34:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: jeffrey.t.kirsher@intel.com
+Cc: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the net tree
+Message-Id: <20110812143418.4fe084a6926f9f6258b596fd@canb.auug.org.au>
+In-Reply-To: <1313118339.2029.1.camel@jtkirshe-mobl>
+References: <20110812120248.a23ecc95e9c1111da3a8ef30@canb.auug.org.au>
+	<1313116296.2057.30.camel@jtkirshe-mobl>
+	<20110811.195150.1070520107072994432.davem@davemloft.net>
+	<1313118339.2029.1.camel@jtkirshe-mobl>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__12_Aug_2011_14_34_18_+1000_e++8hRo7glyzKHPX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 9:48 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Aug 10, 2011 at 11:40 PM, David Gibson
-> <david@gibson.dropbear.id.au> wrote:
->>
->> This patch, therefore, stores a pointer to the inode instead of the
->> address_space in the page private data for hugepages.  More
->> importantly it correctly adjusts the reference count on the inodes
->> when they're added to the page private data.  This ensures that the
->> inode (and therefore the super block) will not be freed before we use
->> it from free_huge_page.
+--Signature=_Fri__12_Aug_2011_14_34_18_+1000_e++8hRo7glyzKHPX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Jeff,
+
+On Thu, 11 Aug 2011 20:05:25 -0700 Jeff Kirsher <jeffrey.t.kirsher@intel.co=
+m> wrote:
 >
-> Looks sane, but I *really* want some acks from people who use/know
-> hugetlbfs. Who would that be? I'm adding random people who have
-> acked/signed-off patches to hugetlbfs recently..
+> I am working on a patch now to fix this.
+>=20
+> Stephen - if you could compile test it, I would greatly appreciate.
 
-At least, code itself looks good to me but your random choice was failed.
-Maybe people you want are as follows.
-http://marc.info/?t=126928975800003&r=1&w=2
+Sure, send it over.  With master.kernel.org down, its not like I can
+releease linux-next anyway :-)
 
-Ccing right persons.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Fri__12_Aug_2011_14_34_18_+1000_e++8hRo7glyzKHPX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJORK1KAAoJEDMEi1NhKgbs9m4H/i0NuvC9bsTClg8lEFa1conP
+Nw0hd1DE/lrDqM1hZGCSKdeNoMOiK5kAGPD/g6er+VeoA21qio+eFOwfgRJ903o9
+7YdkCCFrgjx+kzjc/3EGM9G293TDY/wCPjIwvPFkyQDZCzynBwlB2RbqUU99kkDD
+fxPhR44aKYJhOHSmrzNDIMvtFFftGcwtKFEfsGXwx22oDQ5LWd/DdLAFfd52Bo7K
+a8TegxnG9676B/Rx3NbQvYkEPBDmoEdtDxKOfdusrGKBUDvyBNXOS7RJafuTfZ5t
+cBSIgTyA2nfBtDdvTNFL1pwtM3GpvAQgxj71I2CMLcvRgHSAL0sXTwjzWv8pACc=
+=+BMS
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Aug_2011_14_34_18_+1000_e++8hRo7glyzKHPX--
