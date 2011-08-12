@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab1HLVYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 17:24:32 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45314 "EHLO
+	id S1751853Ab1HLVY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 17:24:29 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52243 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab1HLVYa (ORCPT
+	by vger.kernel.org with ESMTP id S1751186Ab1HLVY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 17:24:30 -0400
-X-Sasl-enc: s0lIwt7KUAQ62Zeaa2G39uMMOy6zn6tpcjqPfBSXR99m 1313184268
-Date: Fri, 12 Aug 2011 14:22:49 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for 3.1
-Message-ID: <20110812212249.GB7044@kroah.com>
+	Fri, 12 Aug 2011 17:24:28 -0400
+X-Sasl-enc: HdibwuKWnOyMo46SCA2Kurl/1wRYrzVbQbVVyuzDuT8v 1313184267
+Date: Fri, 12 Aug 2011 14:22:43 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] STAGING fixes for 3.1
+Message-ID: <20110812212243.GA7044@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,125 +22,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some fixes for your 3.1 git tree for the USB subsystem.
+Here are a number of minor staging driver fixes for your 3.1 tree.
 
-Lots of little things, nothing really major, just stuff people reported,
-and some new device ids.
+Full details are below, nothing really major, but lots of build fixes
+for stuff people have reported.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
 
-All have been in the -next releases for a while now.
+All patches have been in the -next releases for a while now.
+
+These patches will be sent to the linux driver project list for all to
+see.
 
 thanks,
 
 greg k-h
 
-------------
-
- drivers/usb/class/usbtmc.c             |    2 +-
- drivers/usb/core/config.c              |   11 ++--
- drivers/usb/gadget/Kconfig             |    2 +-
- drivers/usb/gadget/at91_udc.c          |    1 +
- drivers/usb/gadget/composite.c         |    6 +-
- drivers/usb/gadget/f_hid.c             |    7 ++
- drivers/usb/gadget/fusb300_udc.c       |  101 --------------------------------
- drivers/usb/gadget/net2272.c           |    2 +-
- drivers/usb/gadget/s3c2410_udc.c       |    1 +
- drivers/usb/host/ehci-hub.c            |   12 ++++
- drivers/usb/host/ehci-mxc.c            |    1 +
- drivers/usb/host/ehci-omap.c           |   16 +++++
- drivers/usb/host/isp1760-hcd.c         |    3 +
- drivers/usb/host/pci-quirks.c          |    4 +-
- drivers/usb/host/xhci.c                |   19 +++++--
- drivers/usb/musb/Kconfig               |    3 -
- drivers/usb/musb/musb_gadget.c         |    5 ++
- drivers/usb/musb/tusb6010_omap.c       |    2 +-
- drivers/usb/renesas_usbhs/mod_gadget.c |    3 +-
- drivers/usb/serial/ftdi_sio.c          |    8 ++-
- drivers/usb/serial/ftdi_sio_ids.h      |    6 ++-
- drivers/usb/serial/option.c            |   12 ++++
- drivers/usb/serial/qcserial.c          |    2 +
- drivers/usb/storage/unusual_devs.h     |   10 +++
- 24 files changed, 113 insertions(+), 126 deletions(-)
+--------------
+ .../staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c   |    2 +-
+ drivers/staging/dt3155v4l/dt3155v4l.c              |    1 +
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    1 +
+ drivers/staging/gma500/gem_glue.c                  |   23 +----
+ drivers/staging/gma500/gem_glue.h                  |    2 -
+ drivers/staging/hv/blkvsc_drv.c                    |    4 +-
+ drivers/staging/iio/accel/adis16203_core.c         |    8 +-
+ drivers/staging/iio/accel/adis16204_core.c         |    8 +-
+ drivers/staging/iio/accel/adis16209_core.c         |    8 +-
+ drivers/staging/iio/accel/adis16240_core.c         |    8 +-
+ drivers/staging/iio/gyro/adis16260_core.c          |    8 +-
+ drivers/staging/nvec/TODO                          |    6 +-
+ drivers/staging/rtl8192u/r819xU_firmware.c         |    9 +-
+ drivers/staging/rts_pstor/rtsx.c                   |  109 ++++++++------------
+ drivers/staging/rts_pstor/rtsx.h                   |    9 ++-
+ drivers/staging/solo6x10/core.c                    |    1 +
+ drivers/staging/solo6x10/enc.c                     |    1 +
+ drivers/staging/solo6x10/g723.c                    |    1 +
+ drivers/staging/solo6x10/p2m.c                     |    1 +
+ drivers/staging/solo6x10/solo6x10.h                |    1 +
+ drivers/staging/speakup/devsynth.c                 |    5 +-
+ drivers/staging/zcache/Makefile                    |    2 +-
+ drivers/staging/zcache/{zcache.c => zcache-main.c} |   13 ++-
+ 23 files changed, 112 insertions(+), 119 deletions(-)
+ rename drivers/staging/zcache/{zcache.c => zcache-main.c} (99%)
 
 ---------------
 
-Andrew Bird (4):
-      USB: option driver: add PID for Vodafone-Huawei K3770
-      USB: option driver: add PID for Vodafone-Huawei K3771
-      USB: option driver: add PID for Vodafone-Huawei K4510
-      USB: option driver: add PID for Vodafone-Huawei K4511
+Alan Cox (1):
+      gma500: Fix clashes with DRM updates
 
-Arnaud Lacombe (1):
-      usb/host/pci-quirks.c: correct annotation of `ehci_dmi_nohandoff_table'
+Andrew Morton (5):
+      drivers/staging/speakup/devsynth.c: fix "buffer size is not provably correct" error
+      drivers/staging/dt3155v4l/dt3155v4l.c needs slab.h
+      drivers/staging/solo6x10/core.c needs slab.h
+      drivers/staging/solo6x10/p2m.c needs slab.h
+      staging: more missing slab.h inclusions
 
-Artur Zimmer (1):
-      USB: Serial: Add PID(0xF7C0) to FTDI SIO driver for a zeitcontrol-device
+Dan Carpenter (1):
+      Staging: iio: add some unlocks to raw_read() functions
 
-Arvid Brodin (1):
-      usb/isp1760: Added missing call to usb_hcd_check_unlink_urb() during unlink
+Julia Lawall (2):
+      drivers/staging/ath6kl/miscdrv/ar3kps/ar3kpsparser.c: adjust array index
+      drivers/staging/hv/blkvsc_drv.c: eliminate NULL pointer dereference
 
-Axel Lin (1):
-      usb: gadget: s3c2410_udc: fix unterminated platform_device_id table
+Nitin Gupta (1):
+      zcache: Fix build error when sysfs is not defined
 
-Boris Todorov (1):
-      USB: EHCI: Fix test mode sequence
+Paul Gortmaker (1):
+      staging: ft1000_proc needs asm/io.h for inw/outw on sparc
 
-Florian Echtler (1):
-      USB: Serial: Add device ID for Sierra Wireless MC8305
+Russell King (1):
+      Staging: Add clk API note to nvec/TODO
 
-Geert Uytterhoeven (1):
-      usb: gadget: net2272 - Correct includes
+Stefan Lippers-Hollmann (1):
+      staging: rtl8192u: declare MODULE_FIRMWARE
 
-Ionut Nicu (1):
-      USB: ftdi_sio: fix minor typo in get_ftdi_divisor
+Thadeu Lima de Souza Cascardo (4):
+      staging: fix zcache building
+      staging: zcache: module is GPL
+      staging: zcache: include module.h for MODULE_LICENSE
+      zcache: Use div_u64 for 64-bit division
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      USB: at91_udc: include linux/prefetch.h explicitly
+Wanlong Gao (1):
+      drivers:staging:solo6x10:add the missed slab.h
 
-JiSheng Zhang (1):
-      USB: xhci: fix OS want to own HC
-
-John Stultz (1):
-      usb: musb: fix oops on musb_gadget_pullup
-
-Kuninori Morimoto (2):
-      usb: renesas_usbhs: fix DMA build by including dma-mapping.h
-      usb: renesas_usbhs: fixup usbhsg_for_each_uep 1st pos
-
-Maxim Nikulin (1):
-      USB: assign instead of equal in usbtmc.c
-
-Ming Lei (1):
-      usb: host: ehci-omap: fix .remove and failure handling path of .probe(v1)
-
-Nick Bowler (1):
-      USB: usb-storage: unusual_devs entry for ARM V2M motherboard.
-
-Rabin Vincent (1):
-      usb: musb: fix Kconfig
-
-Sarah Sharp (1):
-      xhci: Don't submit commands or URBs to halted hosts.
-
-Sebastian Andrzej Siewior (3):
-      usb/config: use proper endian access for wMaxPacketSize
-      usb: gadget: fusb300: remove #if 0 block
-      usb: gadget: composite: fix bMaxPacketSize for SuperSpeed
-
-Sebastian Bauer (1):
-      usb: gadget: hid: don't STALL when processing a HID Descriptor request
-
-Sergei Trofimovich (1):
-      usb: musb: tusb6010_omap: fix build failure: error: 'musb' undeclared
-
-Shawn Guo (1):
-      usb/ehci-mxc: add missing inclusion of mach/hardware.h
-
-Uwe Bonnes (1):
-      usb: serial: ftdi_sio.c: For the FT232H FTDI_SIO_SET_BAUDRATE_REQUEST, index needs to be shifted too
-
-Vijay Chavan (1):
-      USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
+wwang (1):
+      staging:rts_pstor: fix thread synchronization flow
 
