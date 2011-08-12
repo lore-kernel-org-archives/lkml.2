@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab1HLNdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:33:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55736 "EHLO mx1.redhat.com"
+	id S1753464Ab1HLNd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:33:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58105 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab1HLNc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:32:29 -0400
-From: Andrew Jones <drjones@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: drjones@redhat.com, rostedt@goodmis.org
-Subject: [PATCH 07/10] ktest: Introduce PASS_COUNT
-Date: Fri, 12 Aug 2011 15:32:09 +0200
-Message-Id: <1313155932-20092-8-git-send-email-drjones@redhat.com>
-In-Reply-To: <1313155932-20092-1-git-send-email-drjones@redhat.com>
-References: <1313155932-20092-1-git-send-email-drjones@redhat.com>
+	id S1752643Ab1HLNdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 09:33:53 -0400
+Date: Fri, 12 Aug 2011 15:33:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ying Han <yinghan@google.com>, Balbir Singh <bsingharora@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [patch 2/2] mm: vmscan: drop nr_force_scan[] from get_scan_count
+Message-ID: <20110812133352.GD32335@tiehlicka.suse.cz>
+References: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
+ <1313094715-31187-2-git-send-email-jweiner@redhat.com>
+ <CAEwNFnBp7JBWpuaT=ZKDyfQTQqOe_mT0CLFAw9LWo10GoXaFnQ@mail.gmail.com>
+ <20110812065858.GA6916@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110812065858.GA6916@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add another config variable that defines the number of times a test
-must pass before it really passes. This is good for boot tests, where
-the failure doesn't occur every time.
+On Fri 12-08-11 08:58:58, Johannes Weiner wrote:
+[...]
+> From: Johannes Weiner <jweiner@redhat.com>
+> Subject: [patch] mm: vmscan: drop nr_force_scan[] from get_scan_count
+> 
+> The nr_force_scan[] tuple holds the effective scan numbers for anon
+> and file pages in case the situation called for a forced scan and the
+> regularly calculated scan numbers turned out zero.
+> 
+> However, the effective scan number can always be assumed to be
+> SWAP_CLUSTER_MAX right before the division into anon and file.  The
+> numerators and denominator are properly set up for all cases, be it
+> force scan for just file, just anon, or both, to do the right thing.
 
-Signed-off-by: Andrew Jones <drjones@redhat.com>
----
- tools/testing/ktest/ktest.pl    |   23 +++++++++++++++--------
- tools/testing/ktest/sample.conf |    7 +++++++
- 2 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 4265652..38c4532 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -24,6 +24,7 @@ my %default;
- $default{"NUM_TESTS"}		= 1;
- $default{"REBOOT_TYPE"}		= "grub";
- $default{"TEST_TYPE"}		= "test";
-+$default{"PASS_COUNT"}		= 1;
- $default{"BUILD_TYPE"}		= "randconfig";
- $default{"MAKE_CMD"}		= "make";
- $default{"TIMEOUT"}		= 120;
-@@ -61,6 +62,7 @@ my $builddir;
- my $outputdir;
- my $output_config;
- my $test_type;
-+my $pass_count;
- my $build_type;
- my $build_options;
- my $pre_build;
-@@ -1495,19 +1497,23 @@ sub do_run_test {
- sub do_test {
-     my ($type) = @_;
-     my $failed = 0;
-+    my $count = $pass_count;
- 
-     grub_install;
--    start_monitor_and_boot or $failed = 1;
- 
--    if ($failed && $in_bisect && $type ne "boot") {
--	end_monitor;
--	return -1;
--    }
-+    while (!$failed && $count--) {
-+	start_monitor_and_boot or $failed = 1;
- 
--    if (!$failed && $type ne "boot" && defined($run_test)) {
--	do_run_test or $failed = 1;
-+	if ($failed && $in_bisect && $type ne "boot") {
-+	    end_monitor;
-+	    return -1;
-+	}
-+
-+	if (!$failed && $type ne "boot" && defined($run_test)) {
-+	    do_run_test or $failed = 1;
-+	}
-+	end_monitor;
-     }
--    end_monitor;
-     return !$failed;
- }
- 
-@@ -2807,6 +2813,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     $outputdir = set_test_option("OUTPUT_DIR", $i);
-     $builddir = set_test_option("BUILD_DIR", $i);
-     $test_type = set_test_option("TEST_TYPE", $i);
-+    $pass_count = set_test_option("PASS_COUNT", $i);
-     $build_type = set_test_option("BUILD_TYPE", $i);
-     $build_options = set_test_option("BUILD_OPTIONS", $i);
-     $pre_build = set_test_option("PRE_BUILD", $i);
-diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-index 23b2fbb..fe7630a 100644
---- a/tools/testing/ktest/sample.conf
-+++ b/tools/testing/ktest/sample.conf
-@@ -266,6 +266,13 @@
- # default (undefined)
- #TEST = ssh user@machine /root/run_test
- 
-+# The number of times the test must pass before we really believe
-+# it passes. Generally you could put a loop in the 'TEST' program,
-+# but this option makes it easier to do boot testing for problems
-+# that don't occur on every boot.
-+# (default 1)
-+#PASS_COUNT = 10
-+
- # The build type is any make config type or special command
- #  (default randconfig)
- #   nobuild - skip the clean and build step
+Nice. The code is much easier to read.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
 -- 
-1.7.4.1
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
