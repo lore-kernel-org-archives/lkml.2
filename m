@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab1HLTx5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 15:53:57 -0400
-Received: from home.keithp.com ([63.227.221.253]:40236 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab1HLTx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 15:53:56 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Francesco Allertsen <fallertsen@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Reverting rc6 by default
-In-Reply-To: <20110714170026.GA2261@fujiko>
-References: <20110621164209.GA2155@fujiko> <yun8vsvxdr4.fsf@aiko.keithp.com> <20110621184757.GA2185@fujiko> <yunzklb9fg1.fsf@aiko.keithp.com> <20110705230101.GD2852@fujiko> <CAOJsxLFVSEDEaYH8Dw4jWGo9=wkC8QQWOs4xRR6qcgVM2xCRoA@mail.gmail.com> <yunhb6rec97.fsf@aiko.keithp.com> <CAOJsxLGKtjCpY=X1UrHVY79qLjVCgCT3XC795yh_uEn-0_4D0w@mail.gmail.com> <20110714075007.GB2949@fujiko> <yuntyaohmo3.fsf@aiko.keithp.com> <20110714170026.GA2261@fujiko>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 12 Aug 2011 12:53:52 -0700
-Message-ID: <yun7h6is8xb.fsf@aiko.keithp.com>
+	id S1754447Ab1HLTzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 15:55:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:59373 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751786Ab1HLTzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 15:55:31 -0400
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX1/oBE5xhE/olAFCjyDWmsrwc4EpZWDUnVBhxVvOhn
+	5KPnYin8QZoqQf
+Date: Fri, 12 Aug 2011 21:55:25 +0200
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
+        linux-kernel@vger.kernel.org, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH] UserModeLinux-HOWTO.txt: remove ^H characters
+Message-ID: <20110812195525.GL29043@debian.debian>
+References: <1313108903-7351-1-git-send-email-j.neuschaefer@gmx.net>
+ <20110812101928.f34da400.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110812101928.f34da400.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 12, 2011 at 10:19:28AM -0700, Randy Dunlap wrote:
+[...]
+> I like the patch, although the text file seems to be quite old and it
+> appears to be a generated file (from where?).
+> 
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-On Thu, 14 Jul 2011 19:00:26 +0200, Francesco Allertsen <fallertsen@gmail.c=
-om> wrote:
+This ctrl-H stuff actually seems to be a way to display text in bold
+or underlined when viewed with less.
 
-> I have tried to boot with the latest git with the commit
-> 05bd42688dbc066d4e2689b6f73c0470601f788b reverted (so I have the 'Idling
-> fix' and the rc6 enabled), but I have the same freeze.
-
-Can you send me your kernel .config file? I'm still not having any luck
-reproducing your problems, using an X201s with the 1.22 BIOS version.
-
-I'm wondering if the trouble is caused by the the selection of kernel config
-parameters....
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFORYTQQp8BWwlsTdMRAoaRAKCyd8PwwgXGuSV37Oj6E9dEf6odtACfdjjo
-gvE8IBAGej0RIgktjP4tWjg=
-=OOMs
------END PGP SIGNATURE-----
---=-=-=--
+Jonathan Neuschäfer
