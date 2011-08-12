@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab1HLMxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 08:53:47 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54369 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1HLMxq (ORCPT
+	id S1752264Ab1HLMyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 08:54:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49024 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1HLMyw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 08:53:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
-Date: Fri, 12 Aug 2011 14:53:05 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com> <1313146711-1767-8-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1313146711-1767-8-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108121453.05898.arnd@arndb.de>
-X-Provags-ID: V02:K0:6ajYTDi7dUGhOFy5raIsIxwGWCD4KeNkWlx8bLXJQ8J
- MajKLzQTzR71886sThEBOcqgiiOQcQWML2J3YAXQVKScSaRR2D
- EX3ofQYCMl+oF6tIqt8tWwilX9Sz2QCLxy1zgysCfwjb5Yx3Dy
- KMPOiZb1xCqz1kZ9mn4BtaGpDm7eHz/NfB++44We9DrYbw1ND9
- Gn662OU3HLzTmQatOxpIw==
+	Fri, 12 Aug 2011 08:54:52 -0400
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Aug 2011 14:54:17 +0200
+References: <20110806084447.388624428@intel.com>
+	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
+	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
+	 <20110808230535.GC7176@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1313153657.6576.40.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 August 2011, Marek Szyprowski wrote:
+On Fri, 2011-08-12 at 00:56 +0200, Peter Zijlstra wrote:
 > 
-> From: Russell King <rmk+kernel@arm.linux.org.uk>
+>                s - x 3
+>  f(x) :=  1 + (-----)
+>                  d
 > 
-> Steal memory from the kernel to provide coherent DMA memory to drivers.
-> This avoids the problem with multiple mappings with differing attributes
-> on later CPUs.
-> 
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> [m.szyprowski: rebased onto 3.1-rc1]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+btw, if you want steeper slopes for rampup and brake you can add another
+factor like:
 
-Hi Marek,
+                 s - x 3
+  f(x) :=  1 + a(-----)
+                   d
+ 
+And solve the whole f(l)=0 thing again to determine d in l and a.
 
-Is this the same patch that Russell had to revert because it didn't
-work on some of the older machines, in particular those using
-dmabounce?
-
-I thought that our discussion ended with the plan to use this only
-for ARMv6+ (which has a problem with double mapping) but not on ARMv5
-and below (which don't have this problem but might need dmabounce).
-
-	Arnd
+For 0 < a < 1 the slopes increase.
