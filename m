@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1HNQKo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:10:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36973 "EHLO mx2.suse.de"
+	id S1754859Ab1HNQKs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:10:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36988 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab1HNQKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
-Message-Id: <20110812210559.754425311@clark.kroah.org>
+	id S1754823Ab1HNQKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:06:00 2011
+Message-Id: <20110812210559.936984388@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:12 -0700
+Date: Fri, 12 Aug 2011 14:05:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [87/90] ath9k_hw: Fix incorrect Tx control power in AR9003 template
+        "David S. Miller" <davem@davemloft.net>
+Subject: [89/90] sparc: Dont do hypervisor calls on non-sun4v in DS driver.
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 15052f81d255eac44e745bc630b36aa86779ad9d upstream.
+commit c92761fd9efcbbcb59e7bf4db88e29ce03229889 upstream.
 
-CTL power data incorrect in ctlPowerData_2G field of ar9300_eeprom.
-Setting incorrect CTL power in calibration is causing lower tx power.
-Tx power was reported as 3dBm while operating in channel 6 HT40+/
-in channel 11 HT40- due to CTL powers in the calibration is set to
-zero.
-
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/ds.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -306,7 +306,7 @@ static const struct ar9300_eeprom ar9300
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -1256,13 +1256,14 @@ static int __init ds_init(void)
+ {
+ 	unsigned long hv_ret, major, minor;
  
--		 { { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
-+		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
+-	hv_ret = sun4v_get_version(HV_GRP_REBOOT_DATA, &major, &minor);
+-	if (hv_ret == HV_EOK) {
+-		pr_info("SUN4V: Reboot data supported (maj=%lu,min=%lu).\n",
+-			major, minor);
+-		reboot_data_supported = 1;
++	if (tlb_type == hypervisor) {
++		hv_ret = sun4v_get_version(HV_GRP_REBOOT_DATA, &major, &minor);
++		if (hv_ret == HV_EOK) {
++			pr_info("SUN4V: Reboot data supported (maj=%lu,min=%lu).\n",
++				major, minor);
++			reboot_data_supported = 1;
++		}
+ 	}
+-
+ 	kthread_run(ds_thread, NULL, "kldomd");
  
-@@ -883,7 +883,7 @@ static const struct ar9300_eeprom ar9300
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
- 
--		 { { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
-+		 { { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		 { { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 
-@@ -2039,7 +2039,7 @@ static const struct ar9300_eeprom ar9300
- 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 1) } },
- 
--		{ { CTL(60, 1), CTL(60, 0), CTL(0, 0), CTL(0, 0) } },
-+		{ { CTL(60, 1), CTL(60, 0), CTL(60, 0), CTL(60, 0) } },
- 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 		{ { CTL(60, 0), CTL(60, 1), CTL(60, 0), CTL(60, 0) } },
- 
+ 	return vio_register_driver(&ds_driver);
 
 
