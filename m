@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1HLXji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 19:39:38 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22705 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab1HLXjf (ORCPT
+	id S1753006Ab1HLXmf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:42:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33282 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1HLXmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 19:39:35 -0400
-Date: Sat, 13 Aug 2011 01:39:43 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH][Trivial] net/wan/hdlc_ppp: remove dead goto
-Message-ID: <alpine.LNX.2.00.1108130138100.7387@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 12 Aug 2011 19:42:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=m+O0A/AsBhmN4S9BFi87GBZZ8T7lxM8jTKz6ybEh+YVyhfUzXF0qk5opKi8mfj/Ml
+	KmKh8kKfHwnC5t9KLL68w==
+From: Mike Waychison <mikew@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+        Mike Waychison <mikew@google.com>
+Subject: [PATCH] oprofilefs: Handle zero-length writes.
+Date: Fri, 12 Aug 2011 16:42:19 -0700
+Message-Id: <1313192539-19581-1-git-send-email-mikew@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
+Currently in oprofilefs, files that use ulong_fops mis-handle writes of
+zero length.  A count of 0 causes oprofilefs_ulong_from_user to return
+0 (success), which then leads to oprofile_set_ulong being called to
+stuff "value" into file->private_data without it being initialized.
 
-We'll either hit one of the case labels or the default in the switch
-and in all cases do we then 'goto out', so having 'goto out' right
-after the switch is pointless as we can never hit it - remove it.
+Fix this by moving the check for a zero-length write up into
+ulong_write_file.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- drivers/net/wan/hdlc_ppp.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/oprofile/oprofilefs.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wan/hdlc_ppp.c b/drivers/net/wan/hdlc_ppp.c
-index 055a918..5385876 100644
---- a/drivers/net/wan/hdlc_ppp.c
-+++ b/drivers/net/wan/hdlc_ppp.c
-@@ -547,7 +547,6 @@ static int ppp_rx(struct sk_buff *skb)
- 		ppp_cp_event(dev, pid, RUC, 0, 0, len, cp);
- 		goto out;
- 	}
--	goto out;
+diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+index e9ff6f7..ee14e6e 100644
+--- a/drivers/oprofile/oprofilefs.c
++++ b/drivers/oprofile/oprofilefs.c
+@@ -65,9 +65,6 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
+ 	char tmpbuf[TMPBUFSIZE];
+ 	unsigned long flags;
  
- rx_error:
- 	dev->stats.rx_errors++;
+-	if (!count)
+-		return 0;
+-
+ 	if (count > TMPBUFSIZE - 1)
+ 		return -EINVAL;
+ 
+@@ -97,6 +94,8 @@ static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_
+ 
+ 	if (*offset)
+ 		return -EINVAL;
++	if (count == 0)
++		return 0;
+ 
+ 	retval = oprofilefs_ulong_from_user(&value, buf, count);
+ 	if (retval)
 -- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.3.1
 
