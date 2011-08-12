@@ -1,66 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab1HLI0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:26:21 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:20579 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab1HLI0M (ORCPT
+	id S1752061Ab1HLI1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:27:55 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:50193 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750992Ab1HLI1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:26:12 -0400
-X-AuditID: cbfee61b-b7c3dae000002cb8-f8-4e44e3a00d63
-Date: Fri, 12 Aug 2011 17:26:06 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] ARM: EXYNOS4: Update config file of NURI to enable RTC
-In-reply-to: <4E27FEBC.7050302@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Message-id: <006201cc58c9$7c7b7c00$75727400$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcxHkI1lHnFCLS3DT6KkIbqpakNXFgRONUlA
-References: <4E27FEBC.7050302@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 12 Aug 2011 04:27:52 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Vijaya Kumar Kilari <vijay.kilari@stericsson.com>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Jonas Aberg <jonas.aberg@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Pawel Szyszuk <pawel.szyszuk@stericsson.com>,
+        Jimmy Rubin <jimmy.rubin@stericsson.com>,
+        Mattias Nilsson <mattias.i.nilsson@stericsson.com>
+Subject: [PATCH 00/23] mfd: DBx500 PRCMU updates
+Date: Fri, 12 Aug 2011 10:26:59 +0200
+Message-ID: <1313137619-30580-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chanwoo Choi wrote:
-> 
-> This patch update config file of NURI board to enable RTC
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/mach-exynos4/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
-> index b735705..bb675fb 100644
-> --- a/arch/arm/mach-exynos4/Kconfig
-> +++ b/arch/arm/mach-exynos4/Kconfig
-> @@ -184,6 +184,7 @@ config MACH_NURI
->  	bool "Mobile NURI Board"
->  	select CPU_EXYNOS4210
->  	select S3C_DEV_WDT
-> +	select S3C_DEV_RTC
->  	select S3C_DEV_HSMMC
->  	select S3C_DEV_HSMMC2
->  	select S3C_DEV_HSMMC3
-> --
-> 1.7.0.4
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Applied, thanks.
+The following patchset refactors and updates the MFD PRCMU
+(Power Reset Control Management Unit) drivers for DBx500.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Mainly there is a bulk of refactoring work from Mattias
+Nilsson unifying the APIs, so the implementations can
+share a common API despite their individual differences.
+
+The rest is mainly updates, added accessor functions for
+various things the PRCMU can handle. Notice that all of
+these are accessors, mediators, so clearly in the MFD
+domain. The consumers of the interfaces are in the
+platform and e.g. the CPUfreq and voltage domain drivers
+as can be seen in the refactorings.
+
+Then we include some refactorings of the PRCMU
+voltage domain regulator driver and a new DB5500 power
+domain regulator driver as part of this patchset as well.
+I'm harvesting ACKs from the regulator people for these,
+hoping to merge the entire shebang through Sam's MFD
+tree.
+
+Thanks,
+Linus Walleij
+
+Bengt Jonsson (3):
+  mfd/db8500-prcmu: hwacc power state accessor
+  mfd/db8500-prcmu: voltage domain consumers
+  regulator/dbx500-prcmu: factor out common code
+
+Jonas Aberg (1):
+  mfd/db8500-prcmu: add watchdog accessor functions
+
+Linus Walleij (2):
+  mfd/db5500-prcmu: fix defines
+  mfd/db5500-prcmu: convert to platform device
+
+Mattias Nilsson (7):
+  mfd/db8500-prcmu: refactor DB8500 PRCMU reg access
+  mfd/db8500-prcmu: extend DB8500 PRCMU mailbox defs
+  mfd/db8500-prcmu: initialize DB8500 PRCMU regs
+  mfd/dbx500-prcmu: create a common interface
+  mfd/dbx500-prcmu: move to the new API
+  mfd/db8500-prcmu: add accessors for PLL and SGA clock
+  mfd/db8500-prcmu: tweak for modem wakeup
+
+Pawel Szyszuk (1):
+  mfd/db5500-prcmu: implement reset and cause
+
+Philippe Langlais (2):
+  mfd/db5500-prcmu: spawn MFD cell for regulator
+  regulator/db5500-prcmu: add driver
+
+Rabin Vincent (1):
+  mfd/db5500-prcmu: implement clock handling
+
+Sebastian Rasmussen (1):
+  mfd/db8500-prcmu: reset code retrieval
+
+Shreshtha Kumar Sahu (2):
+  mfd/db5500-prcmu: update mailbox handling
+  mfd/db5500-prcmu: implement OPP handling
+
+Vijaya Kumar Kilari (3):
+  mfd/db5500-prcmu: implement event handling
+  mfd/db5500-prcmu: sleep handling
+  mfd/db5500-prcmu: implement EPOD handling
+
+ arch/arm/mach-ux500/Kconfig                    |    1 +
+ arch/arm/mach-ux500/cpu-db5500.c               |    5 +
+ arch/arm/mach-ux500/cpu.c                      |    2 +-
+ arch/arm/mach-ux500/include/mach/irqs-db5500.h |   29 +
+ drivers/cpufreq/db8500-cpufreq.c               |    2 +-
+ drivers/mfd/db5500-prcmu-regs.h                |  115 ---
+ drivers/mfd/db5500-prcmu.c                     | 1090 +++++++++++++++++++++++-
+ drivers/mfd/db8500-prcmu-regs.h                |  166 ----
+ drivers/mfd/db8500-prcmu.c                     |  616 +++++++++++---
+ drivers/mfd/dbx500-prcmu-regs.h                |  204 +++++
+ drivers/regulator/Kconfig                      |   12 +
+ drivers/regulator/Makefile                     |    2 +
+ drivers/regulator/db5500-prcmu.c               |  351 ++++++++
+ drivers/regulator/db8500-prcmu.c               |   45 +-
+ drivers/regulator/dbx500-prcmu.c               |   62 ++
+ drivers/regulator/dbx500-prcmu.h               |   18 +
+ include/linux/mfd/db5500-prcmu.h               |  102 ++-
+ include/linux/mfd/db8500-prcmu.h               |  368 ++-------
+ include/linux/mfd/dbx500-prcmu.h               |  549 ++++++++++++
+ include/linux/regulator/db5500-prcmu.h         |   25 +
+ 20 files changed, 2997 insertions(+), 767 deletions(-)
+ delete mode 100644 drivers/mfd/db5500-prcmu-regs.h
+ delete mode 100644 drivers/mfd/db8500-prcmu-regs.h
+ create mode 100644 drivers/mfd/dbx500-prcmu-regs.h
+ create mode 100644 drivers/regulator/db5500-prcmu.c
+ create mode 100644 drivers/regulator/dbx500-prcmu.c
+ create mode 100644 drivers/regulator/dbx500-prcmu.h
+ create mode 100644 include/linux/mfd/dbx500-prcmu.h
+ create mode 100644 include/linux/regulator/db5500-prcmu.h
+
+-- 
+1.7.3.2
 
