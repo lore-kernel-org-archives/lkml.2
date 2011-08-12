@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab1HLCt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 22:49:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43970 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752511Ab1HLCt4 (ORCPT
+	id S1754178Ab1HLCtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 22:49:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44245 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab1HLCtt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 22:49:56 -0400
-Subject: Re: [PATCH 2/4] ASoC: Add ADAU1373 codec support
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>
-In-Reply-To: <4E4471E1.5060706@metafoo.de>
-References: <1312948364-2587-1-git-send-email-lars@metafoo.de>
-	 <1312948364-2587-2-git-send-email-lars@metafoo.de>
-	 <20110811092702.GA18454@opensource.wolfsonmicro.com>
-	 <4E43AACF.5060701@metafoo.de>
-	 <1313068590.19990.2.camel@finisterre.wolfsonmicro.main>
-	 <4E4471E1.5060706@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Wolfson Microelectronics
-Date: Fri, 12 Aug 2011 10:20:46 +0900
-Message-ID: <1313112046.19990.32.camel@finisterre.wolfsonmicro.main>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Aug 2011 22:49:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
+References: <1313090079-25859-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<CACLa4ptNaOvwFX-2VPBve=PBvnB7X85tzTnTPSLtprbT8vSGgw@mail.gmail.com>
+	<1313092847.3122.13.camel@localhost.localdomain>
+	<CAH2r5muSOM=haAXHg+ys05vgJ30m94g_NQz-Y2AgMDkmV1dbiw@mail.gmail.com>
+	<alpine.LRH.2.00.1108121047540.14215@tundra.namei.org>
+	<20110812114919.2797815cf41cd69048e1d3cf@canb.auug.org.au>
+	<alpine.LRH.2.00.1108121244250.14779@tundra.namei.org>
+Date: Thu, 11 Aug 2011 21:49:48 -0500
+Message-ID: <CAH2r5mssB+3vDmNy3mWvGBDYXDu_NYiSZAFOxQXcckr+tHUV4A@mail.gmail.com>
+Subject: Re: [PATCH] CIFS: remove local xattr definitions
+From: Steve French <smfrench@gmail.com>
+To: James Morris <jmorris@namei.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 02:20 +0200, Lars-Peter Clausen wrote:
-> On 08/11/2011 03:16 PM, Mark Brown wrote:
+If it is easier - I don't mind merging it to cifs now.   Seems
+harmless and low risk.
 
-> > Sorry, what does this actually control? I guess I've been mislead but
-> > from the name of the control I'd expect it to control if the outputs
-> > were physically connected as mono or stereo outputs.
+On Thu, Aug 11, 2011 at 9:44 PM, James Morris <jmorris@namei.org> wrote:
+> On Fri, 12 Aug 2011, Stephen Rothwell wrote:
+>
+>> Except then that could leave Linus' tree broken during the next merge
+>> window depending on the order he merges the cifs and security-testing
+>> trees.  Unless that patch is sent to Linus as a fix patch before the next
+>> merge window, of course.
+>>
+>> I will add this patch as a merge fixup to the merge of the
+>> security-testing tree for today.  And will remove my copy when one of the
+>> trees gets fixed.
+>
+> I'll put it in my tree, then.
+>
+>> James: maybe I should change the name of your tree in -next to just
+>> "security"?
+>
+> Sure.
+>
+>
+> --
+> James Morris
+> <jmorris@namei.org>
+>
 
-> It controls how Lineout and Speaker mixers distribute the left and right input
-> channels to their output channels.
 
-Ah, I see. I guess that should really be represented in DAPM so that if
-we're playing a mono signal out we figure out that both left and right
-channels are connected even if there's only input for one of them,
-especially for the line outputs which may be connected to external
-speaker drivers or something that needs power management.
 
+-- 
+Thanks,
+
+Steve
