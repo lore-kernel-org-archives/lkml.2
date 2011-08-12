@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab1HLNcj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 09:32:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47732 "EHLO mx1.redhat.com"
+	id S1752989Ab1HLNci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 09:32:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752855Ab1HLNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 09:32:33 -0400
+	id S1752793Ab1HLNcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 09:32:31 -0400
 From: Andrew Jones <drjones@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: drjones@redhat.com, rostedt@goodmis.org
-Subject: [PATCH 10/10] ktest: Introduce FAILURE_LINE
-Date: Fri, 12 Aug 2011 15:32:12 +0200
-Message-Id: <1313155932-20092-11-git-send-email-drjones@redhat.com>
+Subject: [PATCH 08/10] ktest: test faster, put REBOOT_ON_SUCCESS to more work
+Date: Fri, 12 Aug 2011 15:32:10 +0200
+Message-Id: <1313155932-20092-9-git-send-email-drjones@redhat.com>
 In-Reply-To: <1313155932-20092-1-git-send-email-drjones@redhat.com>
 References: <1313155932-20092-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the counterpart to SUCCESS_LINE. In some cases the boot will
-succeed, but the console will display a message that means that the
-boot test failed (such as a warning) while it boots. Use this option
-to detect this and fail the test.
+Allow the user to decide if it's necessary to reboot after each
+successful test or not. If a successfully booted target supports
+installation of another kernel, then we might as well save the
+time to reboot (which may be long on some systems) to a known-good
+kernel. We already have REBOOT_ON_SUCCESS, which defaults to true,
+and was underutilized. It only controlled the rebooting of the
+target after all testing completed successfully. Now, if the user
+sets this to false, we assume that rebooting isn't necessary at
+any stage of the testing, assuming the tests are successful. The
+option is now also a per-test config option, so the top-level,
+default behavior may remain the same.
 
 Signed-off-by: Andrew Jones <drjones@redhat.com>
 ---
- tools/testing/ktest/ktest.pl    |    7 +++++++
- tools/testing/ktest/sample.conf |    7 +++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ tools/testing/ktest/ktest.pl    |    8 +++++---
+ tools/testing/ktest/sample.conf |    1 -
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index ac0e688..35af7e2 100755
+index 38c4532..719df19 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -122,6 +122,7 @@ my $booted_timeout;
- my $detect_triplefault;
- my $console;
- my $success_line;
-+my $failure_line;
- my $stop_after_success;
- my $stop_after_failure;
- my $stop_test_after;
-@@ -1015,6 +1016,11 @@ sub monitor {
- 	# we are not guaranteed to get a full line
- 	$full_line .= $line;
+@@ -74,6 +74,7 @@ my $reboot_script;
+ my $power_cycle;
+ my $reboot;
+ my $reboot_on_error;
++my $reboot_on_success;
+ my $poweroff_on_error;
+ my $die_on_failure;
+ my $powercycle_after_reboot;
+@@ -1383,7 +1384,7 @@ sub success {
+     doprint     "*******************************************\n";
+     doprint     "*******************************************\n";
  
-+	if (defined($failure_line) && $full_line =~ /$failure_line/) {
-+	    $bug = 1;
-+	    last;
-+	}
-+
- 	if ($full_line =~ /$success_line/) {
- 	    $booted = 1;
- 	    $success_start = time;
-@@ -2872,6 +2878,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     $console = set_test_option("CONSOLE", $i);
-     $detect_triplefault = set_test_option("DETECT_TRIPLE_FAULT", $i);
-     $success_line = set_test_option("SUCCESS_LINE", $i);
-+    $failure_line = set_test_option("FAILURE_LINE", $i);
-     $stop_after_success = set_test_option("STOP_AFTER_SUCCESS", $i);
-     $stop_after_failure = set_test_option("STOP_AFTER_FAILURE", $i);
-     $stop_test_after = set_test_option("STOP_TEST_AFTER", $i);
+-    if ($i != $opt{"NUM_TESTS"} && !do_not_reboot) {
++    if ($i != $opt{"NUM_TESTS"} && !do_not_reboot && $reboot_on_success) {
+ 	doprint "Reboot and wait $sleep_time seconds\n";
+ 	reboot $sleep_time;
+     }
+@@ -1585,7 +1586,7 @@ sub run_bisect_test {
+ 
+     # reboot the box to a kernel we can ssh to
+     if ($type ne "build") {
+-	bisect_reboot;
++	bisect_reboot if ($result == 0 || $reboot_on_success);
+     }
+     $in_bisect = 0;
+ 
+@@ -2191,7 +2192,7 @@ sub patchcheck {
+ 
+ 	do_test($type) or return 0;
+ 
+-	patchcheck_reboot;
++	patchcheck_reboot if ($reboot_on_success);
+     }
+     $in_patchcheck = 0;
+     success $i;
+@@ -2834,6 +2835,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
+     $post_install = set_test_option("POST_INSTALL", $i);
+     $reboot_script = set_test_option("REBOOT_SCRIPT", $i);
+     $reboot_on_error = set_test_option("REBOOT_ON_ERROR", $i);
++    $reboot_on_success = set_test_option("REBOOT_ON_SUCCESS", $i);
+     $poweroff_on_error = set_test_option("POWEROFF_ON_ERROR", $i);
+     $die_on_failure = set_test_option("DIE_ON_FAILURE", $i);
+     $power_off = set_test_option("POWER_OFF", $i);
 diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-index 36521c8..98df23c 100644
+index fe7630a..36521c8 100644
 --- a/tools/testing/ktest/sample.conf
 +++ b/tools/testing/ktest/sample.conf
-@@ -421,6 +421,13 @@
- # (default "login:")
- #SUCCESS_LINE = login:
- 
-+# Line indicating a failed boot. This is what the line contains, not
-+# the entire line. If you need the entire line to match, then use
-+# regular expression syntax like with SUCCESS_LINE. This is useful
-+# for testing boot issues that don't stop the boot from completing.
-+# (default undefined)
-+#FAILURE_LINE = WARNING
-+
- # In case the console constantly fills the screen, having
- # a specified time to stop the test after success is recommended.
- # (in seconds)
+@@ -11,7 +11,6 @@
+ #  LOG_FILE
+ #  CLEAR_LOG
+ #  POWEROFF_ON_SUCCESS
+-#  REBOOT_ON_SUCCESS
+ #
+ # Test specific options are set after the label:
+ #
 -- 
 1.7.4.1
 
