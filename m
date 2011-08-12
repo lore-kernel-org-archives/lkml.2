@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1HLR76 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 13:59:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58423 "EHLO mx1.redhat.com"
+	id S1752622Ab1HLSAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 14:00:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753612Ab1HLR75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 13:59:57 -0400
-Date: Fri, 12 Aug 2011 19:56:46 +0200
+	id S1751067Ab1HLSAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 14:00:16 -0400
+Date: Fri, 12 Aug 2011 19:57:01 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Roland McGrath <roland@hack.frob.com>,
@@ -14,8 +14,8 @@ Cc: Roland McGrath <roland@hack.frob.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Matt Fleming <matt.fleming@linux.intel.com>,
         linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 3/3] coredump_wait: don't call complete_vfork_done()
-Message-ID: <20110812175646.GD7484@redhat.com>
+Subject: [PATCH 4/3] kill PF_STARTING
+Message-ID: <20110812175701.GE7484@redhat.com>
 References: <20110727163159.GA23785@redhat.com> <20110729192358.GB31717@mtj.dyndns.org> <20110812175550.GA7484@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,63 +26,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that CLONE_VFORK is killable, coredump_wait() no longer needs
-complete_vfork_done(). zap_threads() should find and kill all tasks
-with the same ->mm, this includes our parent if ->vfork_done is set.
+Previously it was (ab)used by utrace. Then it was wrongly used by
+the scheduler code.
 
-mm_release() becomes the only caller, unexport complete_vfork_done().
+Currently it is not used, kill it before it finds the new erroneous
+user.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
  include/linux/sched.h |    1 -
- fs/exec.c             |   14 ++------------
- kernel/fork.c         |    2 +-
- 3 files changed, 3 insertions(+), 14 deletions(-)
+ 1 file changed, 1 deletion(-)
 
---- 3.1/include/linux/sched.h~3_coredump_no_vfork_done	2011-08-12 18:50:11.000000000 +0200
-+++ 3.1/include/linux/sched.h	2011-08-12 18:51:13.000000000 +0200
-@@ -2254,7 +2254,6 @@ extern int do_execve(const char *,
- 		     const char __user * const __user *,
- 		     const char __user * const __user *, struct pt_regs *);
- extern long do_fork(unsigned long, unsigned long, struct pt_regs *, unsigned long, int __user *, int __user *);
--extern void complete_vfork_done(struct task_struct *tsk);
- struct task_struct *fork_idle(int);
+--- 3.1/include/linux/sched.h~4_kill_PF_STARTING	2011-08-12 18:51:13.000000000 +0200
++++ 3.1/include/linux/sched.h	2011-08-12 18:52:58.000000000 +0200
+@@ -1756,7 +1756,6 @@ extern void thread_group_times(struct ta
+ /*
+  * Per process flags
+  */
+-#define PF_STARTING	0x00000002	/* being created */
+ #define PF_EXITING	0x00000004	/* getting shut down */
+ #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
+ #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
+--- 3.1/kernel/fork.c~4_kill_PF_STARTING	2011-08-12 18:51:13.000000000 +0200
++++ 3.1/kernel/fork.c	2011-08-12 18:52:58.000000000 +0200
+@@ -1026,7 +1026,6 @@ static void copy_flags(unsigned long clo
  
- extern void set_task_comm(struct task_struct *tsk, char *from);
---- 3.1/fs/exec.c~3_coredump_no_vfork_done	2011-08-12 18:50:11.000000000 +0200
-+++ 3.1/fs/exec.c	2011-08-12 18:51:13.000000000 +0200
-@@ -1925,19 +1925,9 @@ static int coredump_wait(int exit_code, 
- 		core_waiters = zap_threads(tsk, mm, core_state, exit_code);
- 	up_write(&mm->mmap_sem);
- 
--	if (unlikely(core_waiters < 0))
--		goto fail;
--
--	/*
--	 * Make sure nobody is waiting for us to release the VM,
--	 * otherwise we can deadlock when we wait on each other
--	 */
--	if (tsk->vfork_done)
--		complete_vfork_done(tsk);
--
--	if (core_waiters)
-+	if (core_waiters > 0)
- 		wait_for_completion(&core_state->startup);
--fail:
-+
- 	return core_waiters;
+ 	new_flags &= ~(PF_SUPERPRIV | PF_WQ_WORKER);
+ 	new_flags |= PF_FORKNOEXEC;
+-	new_flags |= PF_STARTING;
+ 	p->flags = new_flags;
+ 	clear_freeze_flag(p);
  }
+@@ -1563,15 +1562,6 @@ long do_fork(unsigned long clone_flags,
+ 		}
  
---- 3.1/kernel/fork.c~3_coredump_no_vfork_done	2011-08-12 18:50:11.000000000 +0200
-+++ 3.1/kernel/fork.c	2011-08-12 18:51:13.000000000 +0200
-@@ -650,7 +650,7 @@ struct mm_struct *get_task_mm(struct tas
- }
- EXPORT_SYMBOL_GPL(get_task_mm);
+ 		audit_finish_fork(p);
+-
+-		/*
+-		 * We set PF_STARTING at creation in case tracing wants to
+-		 * use this to distinguish a fully live task from one that
+-		 * hasn't finished SIGSTOP raising yet.  Now we clear it
+-		 * and set the child going.
+-		 */
+-		p->flags &= ~PF_STARTING;
+-
+ 		wake_up_new_task(p);
  
--void complete_vfork_done(struct task_struct *tsk)
-+static void complete_vfork_done(struct task_struct *tsk)
- {
- 	struct completion *vfork;
- 
+ 		/* forking complete and child started to run, tell ptracer */
 
