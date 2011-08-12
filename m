@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1HLWze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 18:55:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44723 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1HLWzI (ORCPT
+	id S1752810Ab1HLXAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 19:00:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1120 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab1HLXAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 18:55:08 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH 01/12] dt: Add of_find_child_node_by_name()
-Date: Fri, 12 Aug 2011 16:54:46 -0600
-Message-Id: <1313189697-21287-2-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
-References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
+	Fri, 12 Aug 2011 19:00:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6436"; a="109856845"
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Alan Cox <alan@linux.intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 0/4] Initial DT support for MSM8660
+Date: Fri, 12 Aug 2011 16:00:04 -0700
+Message-Id: <1313190008-7551-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function retrieves a named child node of a given parent node.
+This series adds initial support for booting the MSM8660 via
+devicetree.  The target boots with a serial console, and no platform
+data.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/of/base.c  |   18 ++++++++++++++++++
- include/linux/of.h |    2 ++
- 2 files changed, 20 insertions(+), 0 deletions(-)
+In order to test this with a devicetree boot, it is necessary to
+include patches allowing the devicetree to be appended to the kernel,
+and merge ATAG values into the DT.
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 3ff22e3..7eea9e3 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -388,6 +388,24 @@ struct device_node *of_find_node_by_name(struct device_node *from,
- }
- EXPORT_SYMBOL(of_find_node_by_name);
- 
-+struct device_node *of_find_child_node_by_name(
-+	const struct device_node *parent, const char *name)
-+{
-+	struct device_node *child;
-+
-+	read_lock(&devtree_lock);
-+
-+	for_each_child_of_node(parent, child) {
-+		if (!strcmp(child->name, name))
-+			break;
-+	}
-+
-+	read_unlock(&devtree_lock);
-+
-+	return child;
-+}
-+EXPORT_SYMBOL(of_find_child_node_by_name);
-+
- /**
-  *	of_find_node_by_type - Find a node by its "device_type" property
-  *	@from:	The node to start searching from, or NULL to start searching
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 9180dc5..032c71b 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -161,6 +161,8 @@ extern struct device_node *of_find_node_by_name(struct device_node *from,
- #define for_each_node_by_name(dn, name) \
- 	for (dn = of_find_node_by_name(NULL, name); dn; \
- 	     dn = of_find_node_by_name(dn, name))
-+extern struct device_node *of_find_child_node_by_name(
-+	const struct device_node *node, const char *name);
- extern struct device_node *of_find_node_by_type(struct device_node *from,
- 	const char *type);
- #define for_each_node_by_type(dn, type) \
+Once these patches reach mainline, I intend to remove the non-DT boot
+for this target.
+
+David Brown (4):
+  msm_serial: Use relative resources for iomem
+  msm_serial: Add devicetree support
+  ARM: msm: Add devicetree support for msm8660-surf
+  ARM: msm: Describe MSM 8660 SURF FPGA registers in DT
+
+ .../devicetree/bindings/tty/serial/msm_serial.txt  |   18 ++++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   29 ++++++
+ arch/arm/mach-msm/board-msm8x60.c                  |   98 ++++++++++++++++++--
+ drivers/tty/serial/msm_serial.c                    |   30 ++++--
+ 4 files changed, 158 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/msm_serial.txt
+ create mode 100644 arch/arm/boot/dts/msm8660-surf.dts
+
 -- 
-1.7.0.4
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
