@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab1HLONa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 10:13:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:53253 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab1HLON2 (ORCPT
+	id S1752949Ab1HLONr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 10:13:47 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:48784 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1HLONp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 10:13:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6435"; a="109710782"
-X-IronPort-AV: E=Sophos;i="4.67,360,1309762800"; 
-   d="scan'208";a="155378993"
-Message-ID: <4E453502.4000401@qca.qualcomm.com>
-Date: Fri, 12 Aug 2011 17:13:22 +0300
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 12 Aug 2011 10:13:45 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E4536FE.40502@cam.ac.uk>
+Date: Fri, 12 Aug 2011 15:21:50 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
 MIME-Version: 1.0
-To: "John W. Linville" <linville@tuxdriver.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <gregkh@suse.de>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Raja Mani <rmani@qca.qualcomm.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (wireless
- & staging trees related)
-References: <20110811155529.e5f47afa0504c4ddef58ab37@canb.auug.org.au> <4E438D56.5020801@qca.qualcomm.com> <20110811141604.GA14763@suse.de> <4E43FA61.1010301@qca.qualcomm.com> <20110812121216.28e6979b44bacb651849640b@canb.auug.org.au> <20110812135101.GA2286@tuxdriver.com>
-In-Reply-To: <20110812135101.GA2286@tuxdriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: stufever@gmail.com, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, gregkh@suse.de,
+        michael.hennerich@analog.com, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: Re: [PATCH] staging: IIO: DAC: Delete useless label error_ret in
+ ad5791.c
+References: <1312654158-28057-1-git-send-email-wangshaoyan.pt@taobao.com> <4E44E99E.3070302@cam.ac.uk>
+In-Reply-To: <4E44E99E.3070302@cam.ac.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.234.11.52]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2011 04:51 PM, John W. Linville wrote:
-> On Fri, Aug 12, 2011 at 12:12:16PM +1000, Stephen Rothwell wrote:
->> On Thu, 11 Aug 2011 18:50:57 +0300 Kalle Valo <kvalo@qca.qualcomm.com> wrote:
->>>
->>> Yes, please delete ath6kl from staging for the 3.2 release as the
->>> cleanup version is now in wireless-next.
->>>
->>> Thank you everyone and sorry for the mess.
+On 08/12/11 09:51, Jonathan Cameron wrote:
+> On 08/06/11 19:09, stufever@gmail.com wrote:
+>> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 >>
->> I think that the removal should be done in the wirelesss tree so that
->> Linus' tree is not broken during the next merge window.
+>>   drivers/staging/iio/dac/ad5791.c: In function 'ad5791_probe':
+>>   drivers/staging/iio/dac/ad5791.c:384: warning: label 'error_ret' defined but not used
 >>
->> I have added the removal patch as a merge fixup one the merge of the
->> wireless tree for today.
+>> The label error_ret is defined, but never used, so delete it to avoid annoying warning.
+> As with other one, this is fixed in iio-blue.git, but I'm happy to see either version merge.
+I'm dozing.  This is the third fix for this one.  Greg, pick up which ever one you want!
+>>
+>> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+>> ---
+>>  drivers/staging/iio/dac/ad5791.c |    1 -
+>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/iio/dac/ad5791.c b/drivers/staging/iio/dac/ad5791.c
+>> index 64770d2..5b00b70 100644
+>> --- a/drivers/staging/iio/dac/ad5791.c
+>> +++ b/drivers/staging/iio/dac/ad5791.c
+>> @@ -381,7 +381,6 @@ error_put_reg_pos:
+>>  	if (!IS_ERR(reg_vdd))
+>>  		regulator_put(reg_vdd);
+>>  
+>> -error_ret:
+>>  	return ret;
+>>  }
+>>  
 > 
-> Makes sense to me -- probably also is more sane if there is some fool
-> out there relying on the ath6kl driver in staging that doesn't know
-> about the switch to the wireless tree.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Ok, I'll send a patch to John which removes the staging driver.
-
-Kalle
