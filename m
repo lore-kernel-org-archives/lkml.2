@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab1HLPhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 11:37:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab1HLPhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 11:37:05 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, msnitzer@redhat.com, vgoyal@redhat.com,
-        shaohua <shli@kernel.org>
-Subject: Re: [patch] block: fix flush machinery for stacking drivers with differring flush flags
-References: <x49ty9pqood.fsf@segfault.boston.devel.redhat.com>
-	<20110812125935.GA4254@htj.dyndns.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 12 Aug 2011 11:36:46 -0400
-In-Reply-To: <20110812125935.GA4254@htj.dyndns.org> (Tejun Heo's message of
-	"Fri, 12 Aug 2011 14:59:35 +0200")
-Message-ID: <x49fwl6prox.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753513Ab1HLPg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 11:36:59 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:34987 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752855Ab1HLPg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 11:36:56 -0400
+Date: Fri, 12 Aug 2011 11:36:55 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <4E44D5B5.7040305@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1108121135390.11936-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Fri, 12 Aug 2011, Hans de Goede wrote:
 
->> -#define REQ_CLONE_MASK		REQ_COMMON_MASK
->> +/*
->> + * Cloned requests are inserted into the elevator via blk_insert_cloned_request.
->> + * Because the flush flags exported by the request-based dm target may in
->> + * theory be different from the flush flags of the underlying request_queue,
->> + * we need to pass along information regarding whether a particular request
->> + * is part of a flush sequence.  This is primarily used to complete I/Os early
->> + * that would otherwise not be necessary (such as an empty flush for a request
->> + * queue that does not support flush).  In such a case, the end_io path for
->> + * the request would try to account the I/O instead of ignoring it, resulting
->> + * in a null pointer dereference.
->> + */
->> +#define REQ_CLONE_MASK		(REQ_COMMON_MASK | REQ_FLUSH_SEQ)
->
-> I'm probably missing something, but why do we still need to copy
-> REQ_FLUSH_SEQ?  Why doesn't the following work?
->
-> * dm driver always advertises REQ_FLUSH|FUA like other stacking
->   drivers.
->
-> * blk-flush for the dm, decomposes flushes to FLUSH + FUA write and
->   send it down.
->
-> * dm driver clones the requests and send them down to each member
->   queue.
->
-> * blk-flush on member queue, handles FLUSH as FLUSH and decomposes FUA
->   write as necessary.
->
-> What am I missing?  Why does end_io path still matter when it goes
-> through blk-flush on the member device too?
+> > I'm not claiming that this is a better solution than putting everything
+> > in the kernel.  Just that it is a workable alternative which would
+> > involve a lot less coding.
+> 
+> This is definitely an interesting proposal, something to think about ...
+> 
+> I have 2 concerns wrt this approach:
+> 
+> 1) It feels less clean then just having a single driver; and
 
-You're missing the I/O completion of an empty flush trying to do I/O
-accounting, and oopsing, as shown in the stack trace I provided before.
+Agreed.
 
-We could avoid passing REQ_FLUSH_SEQ, and then set it when completing an
-empty flush, but I thought that was even worse.  Or, maybe we could
-clear REQ_IO_STAT when completing such requests.
+> 2) I agree it will be less coding, but I doubt it will really be that much
+> less work. It will likely need less new code (but a lot can be more or
+> less copy pasted), but it will need changes across a wider array of
+> subsystems / userspace components, requiring a lot of coordinating,
+> getting patches merged in different projects, etc. So in the end I
+> think it too will be quite a bit of work.
+> 
+> I guess that what I'm trying to say here is, that if we are going to
+> spend a significant amount of time on this, we might just as well
+> go for the best solution we can come up with even if that is some
+> more work.
 
--Jeff
+Okay, go ahead.  I have no objection.
+
+Alan Stern
+
