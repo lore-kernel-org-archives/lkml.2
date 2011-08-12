@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab1HLQqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 12:46:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34958 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab1HLQqf (ORCPT
+	id S1752495Ab1HLQtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 12:49:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56280 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682Ab1HLQts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 12:46:35 -0400
-Date: Fri, 12 Aug 2011 17:46:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20110812164608.GC28150@sirena.org.uk>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
- <201108111455.56319.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108111455.56319.arnd@arndb.de>
-X-Cookie: You have a message from the operator.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Fri, 12 Aug 2011 12:49:48 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=jTP-XjUXK6cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=XjXROemBD1dN12PN3FwA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 07/10] ktest: Introduce PASS_COUNT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1313155932-20092-8-git-send-email-drjones@redhat.com>
+References: <1313155932-20092-1-git-send-email-drjones@redhat.com>
+	 <1313155932-20092-8-git-send-email-drjones@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 12 Aug 2011 12:49:45 -0400
+Message-ID: <1313167785.18583.336.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 02:55:55PM +0200, Arnd Bergmann wrote:
-> On Thursday 11 August 2011, Kenneth Heitke wrote:
+On Fri, 2011-08-12 at 15:32 +0200, Andrew Jones wrote:
+> Add another config variable that defines the number of times a test
+> must pass before it really passes. This is good for boot tests, where
+> the failure doesn't occur every time.
 
-> > +EXPORT_SYMBOL_GPL(slim_add_device);
+I'm curious to how this is really different than the ITERATE keyword.
 
-> I don't think this should be exported: AFAICT, the set of slim_devices
-> is a property of the platform, so I don't see how any other device driver
-> would add another device.
+That is, if we had:
 
-The platform may be comprised of multiple hardwaare modules with
-functionality on daughtercards which can be probed at runtime.  You may
-also find someone constructing a PCI card or something with a slimbus
-controller on it at some point.
+TEST_START ITERATE 10
+TEST_TYPE = test
+TEST = ssh root@box "/work/runtest"
 
-> > +EXPORT_SYMBOL_GPL(slim_register_board_info);
+Hmm, is this to help in the bisects?
 
-> We are trying to gradually convert platforms that have hardcoded device
-> lists and cannot probe devices by looking at the hardware over to using
-> device tree files that list all the devices.
+Maybe it should be called ITERATE as well, just to be consistent.
 
-> I think that this would work well for slimbus and should be done
-> right from the start. This means however that you should not
-> register a "board_info" but instead change the slim_register_controller
-> function so that it adds all devices listed as children of the
-> controller in the device tree.
+TEST_START
+TEST_TYPE = bisect
+ITERATE = 10
 
-It seems a bit extreme to prevent anyone implementing a subsystem for
-their platform until they've converted it into device tree.  Though with
-slimbus it should be at least somewhat probeable IIRC?
+??
+
+Or maybe that is confusing too, as that could be used to do the iterate
+within the TEST_START (hmm, I may add that).
+
+How about PASS_THRESHOLD? or PASS_COUNT_THRESHOLD? As I think that may
+be more descriptive.
+
+/me rereads his email and sees that he has a tendency to talk to
+himself.
+
+
+-- Steve
+
+
