@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1HNQKO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:10:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36922 "EHLO mx2.suse.de"
+	id S1754759Ab1HNQMg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:12:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36929 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754656Ab1HNQKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:10:10 -0400
+	id S1754709Ab1HNQKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:10:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:59 2011
-Message-Id: <20110812210559.137383000@clark.kroah.org>
+Message-Id: <20110812210559.224887970@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:05:05 -0700
+Date: Fri, 12 Aug 2011 14:05:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>,
+        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [80/90] powerpc: Fix device tree claim code
+Subject: [81/90] powerpc: pseries: Fix kexec on machines with more than 4TB of RAM
 In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,63 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-commit 966728dd88b4026ec58fee169ccceaeaf56ef120 upstream.
+commit bed9a31527af8ff3dfbad62a1a42815cef4baab7 upstream.
 
-I have a box that fails in OF during boot with:
-
-DEFAULT CATCH!, exception-handler=fff00400
-at   %SRR0: 49424d2c4c6f6768   %SRR1: 800000004000b002
-
-ie "IBM,Logh". OF got corrupted with a device tree string.
-
-Looking at make_room and alloc_up, we claim the first chunk (1 MB)
-but we never claim any more. mem_end is always set to alloc_top
-which is the top of our available address space, guaranteeing we will
-never call alloc_up and claim more memory.
-
-Also alloc_up wasn't setting alloc_bottom to the bottom of the
-available address space.
-
-This doesn't help the box to boot, but we at least fail with
-an obvious error. We could relocate the device tree in a future
-patch.
+On a box with 8TB of RAM the MMU hashtable is 64GB in size. That
+means we have 4G PTEs. pSeries_lpar_hptab_clear was using a signed
+int to store the index which will overflow at 2G.
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/prom_init.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/platforms/pseries/lpar.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/prom_init.c
-+++ b/arch/powerpc/kernel/prom_init.c
-@@ -1020,7 +1020,7 @@ static unsigned long __init alloc_up(uns
- 	}
- 	if (addr == 0)
- 		return 0;
--	RELOC(alloc_bottom) = addr;
-+	RELOC(alloc_bottom) = addr + size;
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -395,7 +395,7 @@ static void pSeries_lpar_hptab_clear(voi
+ 		unsigned long ptel;
+ 	} ptes[4];
+ 	long lpar_rc;
+-	int i, j;
++	unsigned long i, j;
  
- 	prom_debug(" -> %x\n", addr);
- 	prom_debug("  alloc_bottom : %x\n", RELOC(alloc_bottom));
-@@ -1834,7 +1834,7 @@ static void __init *make_room(unsigned l
- 		chunk = alloc_up(room, 0);
- 		if (chunk == 0)
- 			prom_panic("No memory for flatten_device_tree (claim failed)");
--		*mem_end = RELOC(alloc_top);
-+		*mem_end = chunk + room;
- 	}
- 
- 	ret = (void *)*mem_start;
-@@ -2053,7 +2053,7 @@ static void __init flatten_device_tree(v
- 	mem_start = (unsigned long)alloc_up(room, PAGE_SIZE);
- 	if (mem_start == 0)
- 		prom_panic("Can't allocate initial device-tree chunk\n");
--	mem_end = RELOC(alloc_top);
-+	mem_end = mem_start + room;
- 
- 	/* Get root of tree */
- 	root = call_prom("peer", 1, 1, (phandle)0);
+ 	/* Read in batches of 4,
+ 	 * invalidate only valid entries not in the VRMA
 
 
