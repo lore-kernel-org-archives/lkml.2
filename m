@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1HLBHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 21:07:54 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:44016 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753430Ab1HLBHw (ORCPT
+	id S1751724Ab1HLBJW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 21:09:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37803 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab1HLBJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 21:07:52 -0400
-Date: Thu, 11 Aug 2011 21:07:51 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <libusb-devel@lists.sourceforge.net>,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        <hector@marcansoft.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, <pbonzini@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <alpine.LNX.2.00.1108111235400.27040@banach.math.auburn.edu>
-Message-ID: <Pine.LNX.4.44L0.1108112104490.31728-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 11 Aug 2011 21:09:20 -0400
+Date: Thu, 11 Aug 2011 18:08:46 -0700 (PDT)
+Message-Id: <20110811.180846.1821152818786929944.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 11 Aug 2011 18:08:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011, Theodore Kilgore wrote:
 
-> Alan,
-> 
-> As I said, I am agnostic, though leaning in the direction that Hans de 
-> Goede is pointing. What he says about a single control mechanism seems to 
-> make a lot of sense. If you can come up with an outline of the "easier to 
-> code" solution, that would be interesting, though.
+Please pull to get this Sparc bug fix, thanks!
 
-That approach has been outlined in the other emails I have posted 
-recently.
+The following changes since commit 068ef739127af1faf6f342b56d41ceea89f76c75:
 
-> I assume you are also going to be in Vancouver? If you will be there on 
-> Monday, then Hans and I are already planning to meet and discuss. 
+  Merge branch 'fixes' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-08-10 17:37:17 -0700)
 
-No, I'm not going to Vancouver.  However I will attend the Linux 
-Plumbers conference in Santa Rosa.
+are available in the git repository at:
 
-Alan Stern
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc.git master
 
+David S. Miller (1):
+      sparc: Don't do hypervisor calls on non-sun4v in DS driver.
+
+ arch/sparc/kernel/ds.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
