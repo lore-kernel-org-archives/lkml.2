@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1HLI3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 04:29:42 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:48794 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751317Ab1HLI3i (ORCPT
+	id S1753306Ab1HLIaC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 04:30:02 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:59599 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752916Ab1HLI36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 04:29:38 -0400
+	Fri, 12 Aug 2011 04:29:58 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Vijaya Kumar Kilari <vijay.kilari@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Jimmy Rubin <jimmy.rubin@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 14/23] mfd/db5500-prcmu: implement event handling
-Date: Fri, 12 Aug 2011 10:29:28 +0200
-Message-ID: <1313137768-31048-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 16/23] mfd/db5500-prcmu: implement clock handling
+Date: Fri, 12 Aug 2011 10:29:45 +0200
+Message-ID: <1313137785-31114-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -22,209 +23,227 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vijaya Kumar Kilari <vijay.kilari@stericsson.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-This adds code to handle the events spawned from the DB5500
-PRCMU, and calls out to virtual interrupt handlers for these.
+This adds accessor functions for clock handling to the
+DB5500 PRCMU driver.
 
-Vijaya Kumar Kilari <vijay.kilari@stericsson.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Jimmy Rubin <jimmy.rubin@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db5500-prcmu.c |  149 ++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 143 insertions(+), 6 deletions(-)
+ drivers/mfd/db5500-prcmu.c |  198 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 198 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mfd/db5500-prcmu.c b/drivers/mfd/db5500-prcmu.c
-index c8709b0..2762cfa 100644
+index 5550ac9..e374481 100644
 --- a/drivers/mfd/db5500-prcmu.c
 +++ b/drivers/mfd/db5500-prcmu.c
-@@ -400,6 +400,78 @@ static struct {
+@@ -401,6 +401,204 @@ static struct {
  /* PRCMU TCDM base IO address. */
  static __iomem void *tcdm_base;
  
-+/* This function should only be called while mb0_transfer.lock is held. */
-+static void config_wakeups(void)
-+{
-+	static u32 last_dbb_events;
-+	static u32 last_abb_events;
-+	u32 dbb_events;
-+	u32 abb_events;
-+
-+	dbb_events = mb0_transfer.req.dbb_irqs | mb0_transfer.req.dbb_wakeups;
-+
-+	abb_events = mb0_transfer.req.abb_events;
-+
-+	if ((dbb_events == last_dbb_events) && (abb_events == last_abb_events))
-+		return;
-+
-+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
-+		cpu_relax();
-+
-+	writel(dbb_events, PRCM_REQ_MB0_WAKEUP_DBB);
-+	writel(abb_events, PRCM_REQ_MB0_WAKEUP_ABB);
-+	writeb(MB0H_WAKE_UP_CFG, PRCM_REQ_MB0_HEADER);
-+	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
-+
-+	last_dbb_events = dbb_events;
-+	last_abb_events = abb_events;
-+}
-+
-+void db5500_prcmu_enable_wakeups(u32 wakeups)
-+{
-+	unsigned long flags;
-+	u32 bits;
-+	int i;
-+
-+	BUG_ON(wakeups != (wakeups & VALID_WAKEUPS));
-+
-+	for (i = 0, bits = 0; i < NUM_PRCMU_WAKEUP_INDICES; i++) {
-+		if (wakeups & BIT(i)) {
-+			if (prcmu_wakeup_bit[i] == 0)
-+				WARN(1, "WAKEUP NOT SUPPORTED");
-+			else
-+				bits |= prcmu_wakeup_bit[i];
-+		}
-+	}
-+
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	mb0_transfer.req.dbb_wakeups = bits;
-+	config_wakeups();
-+
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
-+}
-+
-+void db5500_prcmu_config_abb_event_readout(u32 abb_events)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	mb0_transfer.req.abb_events = abb_events;
-+	config_wakeups();
-+
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
-+}
-+
-+void db5500_prcmu_get_abb_event_buffer(void __iomem **buf)
-+{
-+	if (readb(PRCM_ACK_MB0_READ_POINTER) & 1)
-+		*buf = (PRCM_ACK_MB0_WAKEUP_1_ABB);
-+	else
-+		*buf = (PRCM_ACK_MB0_WAKEUP_0_ABB);
-+}
-+
- /**
-  * db5500_prcmu_abb_read() - Read register value(s) from the ABB.
-  * @slave:	The I2C slave address.
-@@ -742,8 +814,57 @@ static irqreturn_t prcmu_irq_thread_fn(int irq, void *data)
- 	return IRQ_HANDLED;
- }
- 
-+static void prcmu_mask_work(struct work_struct *work)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mb0_transfer.lock, flags);
-+
-+	config_wakeups();
-+
-+	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
-+}
-+
-+static void prcmu_irq_mask(struct irq_data *d)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
-+
-+	mb0_transfer.req.dbb_irqs &= ~prcmu_irq_bit[d->irq - IRQ_DB5500_PRCMU_BASE];
-+
-+	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
-+	schedule_work(&mb0_transfer.mask_work);
-+}
-+
-+static void prcmu_irq_unmask(struct irq_data *d)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&mb0_transfer.dbb_irqs_lock, flags);
-+
-+	mb0_transfer.req.dbb_irqs |= prcmu_irq_bit[d->irq - IRQ_DB5500_PRCMU_BASE];
-+
-+	spin_unlock_irqrestore(&mb0_transfer.dbb_irqs_lock, flags);
-+	schedule_work(&mb0_transfer.mask_work);
-+}
-+
-+static void noop(struct irq_data *d)
-+{
-+}
-+
-+static struct irq_chip prcmu_irq_chip = {
-+	.name           = "prcmu",
-+	.irq_disable    = prcmu_irq_mask,
-+	.irq_ack        = noop,
-+	.irq_mask       = prcmu_irq_mask,
-+	.irq_unmask     = prcmu_irq_unmask,
++struct clk_mgt {
++	unsigned int offset;
++	u32 pllsw;
 +};
 +
- void __init db5500_prcmu_early_init(void)
- {
-+	unsigned int i;
++static DEFINE_SPINLOCK(clk_mgt_lock);
 +
- 	tcdm_base = __io_address(U5500_PRCMU_TCDM_BASE);
- 	spin_lock_init(&mb0_transfer.lock);
- 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
-@@ -755,6 +876,18 @@ void __init db5500_prcmu_early_init(void)
- 	init_completion(&mb3_transfer.sysclk_work);
- 	mutex_init(&mb5_transfer.lock);
- 	init_completion(&mb5_transfer.work);
++#define CLK_MGT_ENTRY(_name)[PRCMU_##_name] = {	\
++	(PRCM_##_name##_MGT_OFF), 0			\
++}
++static struct clk_mgt clk_mgt[PRCMU_NUM_REG_CLOCKS] = {
++	CLK_MGT_ENTRY(SGACLK),
++	CLK_MGT_ENTRY(UARTCLK),
++	CLK_MGT_ENTRY(MSP02CLK),
++	CLK_MGT_ENTRY(I2CCLK),
++	CLK_MGT_ENTRY(SDMMCCLK),
++	CLK_MGT_ENTRY(PER1CLK),
++	CLK_MGT_ENTRY(PER2CLK),
++	CLK_MGT_ENTRY(PER3CLK),
++	CLK_MGT_ENTRY(PER5CLK),
++	CLK_MGT_ENTRY(PER6CLK),
++	CLK_MGT_ENTRY(PWMCLK),
++	CLK_MGT_ENTRY(IRDACLK),
++	CLK_MGT_ENTRY(IRRCCLK),
++	CLK_MGT_ENTRY(HDMICLK),
++	CLK_MGT_ENTRY(APEATCLK),
++	CLK_MGT_ENTRY(APETRACECLK),
++	CLK_MGT_ENTRY(MCDECLK),
++	CLK_MGT_ENTRY(DSIALTCLK),
++	CLK_MGT_ENTRY(DMACLK),
++	CLK_MGT_ENTRY(B2R2CLK),
++	CLK_MGT_ENTRY(TVCLK),
++	CLK_MGT_ENTRY(RNGCLK),
++	CLK_MGT_ENTRY(SIACLK),
++	CLK_MGT_ENTRY(SVACLK),
++};
 +
-+	INIT_WORK(&mb0_transfer.mask_work, prcmu_mask_work);
++bool db5500_prcmu_is_ac_wake_requested(void)
++{
++	return false;
++}
 +
-+	/* Initalize irqs. */
-+	for (i = 0; i < NUM_DB5500_PRCMU_WAKEUPS; i++) {
-+		unsigned int irq;
++static int request_sysclk(bool enable)
++{
++	int r;
 +
-+		irq = IRQ_DB5500_PRCMU_BASE + i;
-+		irq_set_chip_and_handler(irq, &prcmu_irq_chip,
-+					 handle_simple_irq);
-+		set_irq_flags(irq, IRQF_VALID);
++	r = 0;
++	mutex_lock(&mb3_transfer.sysclk_lock);
++
++	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(3))
++		cpu_relax();
++
++	if (enable)
++		mb3_transfer.req_st = SYSCLK_ON;
++	else
++		mb3_transfer.req_st = SYSCLK_OFF;
++
++	writeb(mb3_transfer.req_st, (PRCM_REQ_MB3_REFCLK_MGT));
++
++	writeb(MB3H_REFCLK_REQUEST, (PRCM_REQ_MB3_HEADER));
++	writel(MBOX_BIT(3), PRCM_MBOX_CPU_SET);
++
++	/*
++	 * The firmware only sends an ACK if we want to enable the
++	 * SysClk, and it succeeds.
++	 */
++	if (!wait_for_completion_timeout(&mb3_transfer.sysclk_work,
++			msecs_to_jiffies(20000))) {
++		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
++			__func__);
++		r = -EIO;
++		WARN(1, "Failed to set sysclk");
++		goto unlock_and_return;
 +	}
- }
- 
- /**
-@@ -763,7 +896,7 @@ void __init db5500_prcmu_early_init(void)
-  */
- int __init db5500_prcmu_init(void)
++
++	if ((mb3_transfer.ack.header != MB3H_REFCLK_REQUEST) ||
++			(mb3_transfer.ack.status != mb3_transfer.req_st)) {
++		r = -EIO;
++	}
++
++unlock_and_return:
++	mutex_unlock(&mb3_transfer.sysclk_lock);
++
++	return r;
++}
++
++static int request_timclk(bool enable)
++{
++	u32 val = (PRCM_TCR_DOZE_MODE | PRCM_TCR_TENSEL_MASK);
++
++	if (!enable)
++		val |= PRCM_TCR_STOP_TIMERS;
++	writel(val, PRCM_TCR);
++
++	return 0;
++}
++
++static int request_reg_clock(u8 clock, bool enable)
++{
++	u32 val;
++	unsigned long flags;
++
++	WARN_ON(!clk_mgt[clock].offset);
++
++	spin_lock_irqsave(&clk_mgt_lock, flags);
++
++	/* Grab the HW semaphore. */
++	while ((readl(PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
++		cpu_relax();
++
++	val = readl(_PRCMU_BASE + clk_mgt[clock].offset);
++	if (enable) {
++		val |= (PRCM_CLK_MGT_CLKEN | clk_mgt[clock].pllsw);
++	} else {
++		clk_mgt[clock].pllsw = (val & PRCM_CLK_MGT_CLKPLLSW_MASK);
++		val &= ~(PRCM_CLK_MGT_CLKEN | PRCM_CLK_MGT_CLKPLLSW_MASK);
++	}
++	writel(val, (_PRCMU_BASE + clk_mgt[clock].offset));
++
++	/* Release the HW semaphore. */
++	writel(0, PRCM_SEM);
++
++	spin_unlock_irqrestore(&clk_mgt_lock, flags);
++
++	return 0;
++}
++
++/*
++ * request_pll() - Request for a pll to be enabled or disabled.
++ * @pll:        The pll for which the request is made.
++ * @enable:     Whether the clock should be enabled (true) or disabled (false).
++ *
++ * This function should only be used by the clock implementation.
++ * Do not use it from any other place!
++ */
++static int request_pll(u8 pll, bool enable)
++{
++	int r = 0;
++
++	BUG_ON(pll >= DB5500_NUM_PLL_ID);
++	mutex_lock(&mb2_transfer.lock);
++
++	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(2))
++		cpu_relax();
++
++	mb2_transfer.req.pll_st[pll] = enable;
++
++	/* fill in mailbox */
++	writeb(pll, PRCM_REQ_MB2_PLL_CLIENT);
++	writeb(mb2_transfer.req.pll_st[pll], PRCM_REQ_MB2_PLL_STATE);
++
++	writeb(MB2H_PLL_REQUEST, PRCM_REQ_MB2_HEADER);
++
++	writel(MBOX_BIT(2), PRCM_MBOX_CPU_SET);
++	if (!wait_for_completion_timeout(&mb2_transfer.work,
++		msecs_to_jiffies(500))) {
++		pr_err("prcmu: set_pll() failed.\n"
++			"prcmu: Please check your firmware version.\n");
++		r = -EIO;
++		WARN(1, "Failed to set pll");
++		goto unlock_and_return;
++	}
++	if (mb2_transfer.ack.status != RC_SUCCESS ||
++		mb2_transfer.ack.header != MB2H_PLL_REQUEST)
++		r = -EIO;
++
++unlock_and_return:
++	mutex_unlock(&mb2_transfer.lock);
++
++	return r;
++}
++
++/**
++ * db5500_prcmu_request_clock() - Request for a clock to be enabled or disabled.
++ * @clock:      The clock for which the request is made.
++ * @enable:     Whether the clock should be enabled (true) or disabled (false).
++ *
++ * This function should only be used by the clock implementation.
++ * Do not use it from any other place!
++ */
++int db5500_prcmu_request_clock(u8 clock, bool enable)
++{
++	if (clock < PRCMU_NUM_REG_CLOCKS)
++		return request_reg_clock(clock, enable);
++	else if (clock == PRCMU_TIMCLK)
++		return request_timclk(enable);
++	else if (clock == PRCMU_PLLSOC0)
++		return request_pll(DB5500_PLL_SOC0, enable);
++	else if (clock == PRCMU_PLLSOC1)
++		return request_pll(DB5500_PLL_SOC1, enable);
++	else if (clock == PRCMU_PLLDDR)
++		return request_pll(DB5500_PLL_DDR, enable);
++	else if (clock == PRCMU_SYSCLK)
++		return request_sysclk(enable);
++	else
++		return -EINVAL;
++}
++
+ /* This function should only be called while mb0_transfer.lock is held. */
+ static void config_wakeups(void)
  {
--	int r = 0;
-+	int err = 0;
- 
- 	if (ux500_is_svp() || !cpu_is_u5500())
- 		return -ENODEV;
-@@ -771,13 +904,17 @@ int __init db5500_prcmu_init(void)
- 	/* Clean up the mailbox interrupts after pre-kernel code. */
- 	writel(ALL_MBOX_BITS, PRCM_ARM_IT1_CLR);
- 
--	r = request_threaded_irq(IRQ_DB5500_PRCMU1, prcmu_irq_handler,
--		prcmu_irq_thread_fn, 0, "prcmu", NULL);
--	if (r < 0) {
-+	err = request_threaded_irq(IRQ_DB5500_PRCMU1, prcmu_irq_handler,
-+		prcmu_irq_thread_fn, IRQF_NO_SUSPEND, "prcmu", NULL);
-+	if (err < 0) {
- 		pr_err("prcmu: Failed to allocate IRQ_DB5500_PRCMU1.\n");
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto no_irq_return;
- 	}
--	return 0;
-+
-+no_irq_return:
-+	return err;
-+
- }
- 
- arch_initcall(db5500_prcmu_init);
 -- 
 1.7.3.2
 
