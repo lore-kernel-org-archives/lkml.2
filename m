@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1HLTRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 15:17:51 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:35981 "EHLO zene.cmpxchg.org"
+	id S1754355Ab1HLTTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 15:19:13 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56843 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185Ab1HLTRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 15:17:50 -0400
-Date: Fri, 12 Aug 2011 21:17:18 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
-Message-ID: <20110812191718.GE29086@cmpxchg.org>
-References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
- <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
- <CALWz4izVoN2s6J9t1TVj+1pMmHVxfiWYvq=uqeTL4C5-YsBwOw@mail.gmail.com>
- <20110812083458.GB6916@cmpxchg.org>
- <CALWz4iz=30A7hUkEmo5_K3q1KiM8tBWvh_ghhbEFm0ZksfzQ=g@mail.gmail.com>
+	id S1754234Ab1HLTTJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 15:19:09 -0400
+Message-ID: <4E457C9E.7060002@parallels.com>
+Date: Fri, 12 Aug 2011 16:18:54 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALWz4iz=30A7hUkEmo5_K3q1KiM8tBWvh_ghhbEFm0ZksfzQ=g@mail.gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        David Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v2 3/4] limit nr_dentries per superblock
+References: <1312504544-1108-1-git-send-email-glommer@parallels.com>  <1312504544-1108-4-git-send-email-glommer@parallels.com> <1313157412.2354.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1313157412.2354.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [187.25.233.177]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 10:08:18AM -0700, Ying Han wrote:
-> On Fri, Aug 12, 2011 at 1:34 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > And in reality, we only care about properly memcg-unaccounting the
-> > old lru state before we change pc->mem_cgroup, so this becomes
-> >
-> >        if (!PageLRU(page))
-> >                 return;
-> >        spin_lock_irqsave(&zone->lru_lock, flags);
-> >         if (!PageCgroupUsed(pc))
-> >                mem_cgroup_lru_del(page);
-> >         spin_unlock_irqrestore(&zone->lru_lock, flags);
-> >
-> > I don't see why we should care if the page stays physically linked
-> > to the list.
-> 
-> Can you clarify that?
+On 08/12/2011 10:56 AM, Eric Dumazet wrote:
+> Le vendredi 05 août 2011 à 04:35 +0400, Glauber Costa a écrit :
+>> This patch lays the foundation for us to limit the dcache size.
+>> Each super block can have only a maximum amount of dentries under its
+>> sub-tree. Allocation fails if we we're over limit and the cache
+>> can't be pruned to free up space for the newcomers.
+>>
+>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>> CC: Dave Chinner<david@fromorbit.com>
+>> ---
+>>   fs/dcache.c        |   25 +++++++++++++++++++++++++
+>>   fs/super.c         |    1 +
+>>   include/linux/fs.h |    1 +
+>>   3 files changed, 27 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/dcache.c b/fs/dcache.c
+>> index ac19d24..52a0faf 100644
+>> --- a/fs/dcache.c
+>> +++ b/fs/dcache.c
+>> @@ -1180,6 +1180,28 @@ void shrink_dcache_parent(struct dentry * parent)
+>>   }
+>>   EXPORT_SYMBOL(shrink_dcache_parent);
+>>
+>> +static int dcache_mem_check(struct super_block *sb)
+>> +{
+>> +	int i;
+>> +	int nr_dentry;
+>> +	struct shrink_control sc = {
+>> +		.gfp_mask = GFP_KERNEL,
+>> +	};
+>> +
+>> +	do {
+>> +		nr_dentry = 0;
+>> +		for_each_possible_cpu(i)
+>> +			nr_dentry += per_cpu(*sb->s_nr_dentry, i);
+>
+> You seriously want to call this for every __d_alloc() invocation,
+> even if s_nr_dentry_max is the default value (INT_MAX) ?
 
-Well, I don't see anything wrong with leaving it on the LRU.  We just
-need to unaccount the page from pc->mem_cgroup's lru stats before the
-page is charged, pc->mem_cgroup overwritten, and the account lost.
+Well, I guess that special-casing INT_MAX is a good thing.
+I can include it in the next submission, I like it. Thanks.
 
-> > The handling after committing the charge becomes this:
-> >
-> > -       if (likely(!PageLRU(page)))
-> > -               return;
-> >        spin_lock_irqsave(&zone->lru_lock, flags);
-> >         lru = page_lru(page);
-> >        if (PageLRU(page) && !PageCgroupAcctLRU(pc)) {
-> >                del_page_from_lru_list(zone, page, lru);
-> >                add_page_to_lru_list(zone, page, lru);
-> >        }
-> >
-> > If the page is not on the LRU, someone else will put it there and link
-> > it up properly.  If it is on the LRU and already memcg-accounted then
-> > it must be on the right lruvec as setting pc->mem_cgroup and PCG_USED
-> > is properly ordered.  Otherwise, it has to be physically moved to the
-> > correct lruvec and memcg-accounted for.
-> 
-> While working on the zone->lru_lock patch, i have been questioning myself on
-> the PageLRU and PageCgroupAcctLRU bit. Here is my question:
-> 
-> It looks to me that PageLRU indicates the page is linked to per-zone lru
-> list, and PageCgroupAcctLRU indicates the page is charged to a memcg and
-> also linked to memcg's private lru list. All of these work nicely when we
-> have both global and private (per-memcg) lru list, but i can not put them
-> together after this patch.
-> 
-> Now page is linked to private lru always either memcg or root. While linked
-> to either lru list, the page could be uncharged (like swapcache). No matter
-> what, i am thinking whether or not we can get rid of the AcctLRU bit from pc
-> and use LRU bit only here.
+> On a 4096 cpu machine, it will be _very_ slow.
+>
+> A percpu_counter would be the thing to consider, since you can avoid the
+> for_each_possible_cpu(i) loop if percpu_counter_read() is smaller than
+> sb->s_nr_dentry_max.
+>
+> Check how its done in include/net/tcp.h, tcp_too_many_orphans()
 
-As I said above: if after the commit the page is on the LRU (PageLRU
-set), pc->mem_cgroup's lru stats may or may not include the page, and
-the page may or may not be on the right lruvec.
+Yeah, I guess I could do that. In fact, my first series used 
+percpu_counters, and then I switched. But looking back, percpu_counters
+are indeed more suitable. The goal back then was trying to avoid 
+percpu_counter_add, but as it is right now, we trade it for an even 
+worse thing.
 
-If someone had the page isolated (reclaim?) while we charge it and put
-it back, the page may either be charged or uncharged at the time of
-putback.
-
-	unused: PageLRU is set, but page possibly on the wrong lruvec
-	(root_mem_cgroup's per default, see mem_cgroup_lru_add_list)
-	and not properly accounted for.  We can detect this case by
-	seeing AcctLRU cleared.
-
-	used: PageLRU is set, page on the right lruvec and properly
-	accounted.  We can detect this case by seeing that
-	mem_cgroup_lru_add_list() set AcctLRU.
-
+Thank you for your comments.
