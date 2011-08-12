@@ -1,243 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1HNQPQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:15:16 -0400
-Received: from mail.globalsuite.net ([69.46.103.200]:45297 "EHLO
-	mail.globalsuite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab1HNQO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:14:57 -0400
-X-AuditID: c0a8013c-b7b24ae000000ba8-d0-4e47eb186ef7
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        David Chinner <david@fromorbit.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH v3 4/4] parse options in the vfs level
-Date: Sun, 14 Aug 2011 19:13:52 +0400
-Message-Id: <1313334832-1150-5-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1313334832-1150-1-git-send-email-glommer@parallels.com>
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1754585Ab1HNQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:09:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36797 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350Ab1HNQJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:09:22 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:57 2011
+Message-Id: <20110812210557.896717662@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 12 Aug 2011 14:04:51 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [66/90] sparc: Detect and handle UltraSPARC-T3 cpu types.
+In-Reply-To: <20110812210626.GA4725@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a simple generic vfs option parser.
-Right now, the only option we have is to limit the size of the dcache.
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-So any user that wants to have a dcache entries limit, can specify:
+------------------
 
-  mount -o whatever_options,vfs_dcache_size=XXX <dev> <mntpoint>
 
-It is supposed to work well with remounts, allowing it to change
-multiple over the course of the filesystem's lifecycle.
+From: "David S. Miller" <davem@davemloft.net>
 
-I find mount a natural interface for handling filesystem options,
-so that's what I've choosen. Feel free to yell at it at will if
-you disagree.
+[ Upstream commit 4ba991d3eb379fbaa22049e7002341e97a673685 ]
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
+The cpu compatible string we look for is "SPARC-T3".
+
+As far as memset/memcpy optimizations go, we treat this chip the same
+as Niagara-T2/T2+.  Use cache initializing stores for memset, and use
+perfetch, FPU block loads, cache initializing stores, and block stores
+for copies.
+
+We use the Niagara-T2 perf support, since T3 is a close relative in
+this regard.  Later we'll add support for the new events T3 can
+report, plus enable T3's new "sample" mode.
+
+For now I haven't added any new ELF hwcap flags.  We probably need
+to add a couple, for example:
+
+T2 and T3 both support the population count instruction in hardware.
+
+T3 supports VIS3 instructions, including support (finally) for
+partitioned shift.  One can also now move directly between float
+and integer registers.
+
+T3 supports instructions meant to help with Galois Field and other HPC
+calculations, such as XOR multiply.  Also there are "OP and negate"
+instructions, for example "fnmul" which is multiply-and-negate.
+
+T3 recognizes the transactional memory opcodes, however since
+transactional memory isn't supported: 1) 'commit' behaves as a NOP and
+2) 'chkpt' always branches 3) 'rdcps' returns all zeros and 4) 'wrcps'
+behaves as a NOP.
+
+So we'll need about 3 new elf capability flags in the end to represent
+all of these things.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/dcache.c            |    7 +++
- fs/namespace.c         |  105 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/dcache.h |    4 ++
- 3 files changed, 116 insertions(+), 0 deletions(-)
+ arch/sparc/include/asm/elf_64.h |    6 ++++--
+ arch/sparc/include/asm/xor_64.h |    3 ++-
+ arch/sparc/kernel/cpu.c         |    6 ++++++
+ arch/sparc/kernel/cpumap.c      |    1 +
+ arch/sparc/kernel/head_64.S     |   31 +++++++++++++++++++++++++++++++
+ arch/sparc/kernel/pcr.c         |    4 ++++
+ arch/sparc/kernel/perf_event.c  |    3 ++-
+ 7 files changed, 50 insertions(+), 4 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index ddd02a2..0551305 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1205,6 +1205,13 @@ static inline int dcache_mem_check(struct super_block *sb)
- 	return -ENOMEM;
- }
+--- a/arch/sparc/include/asm/elf_64.h
++++ b/arch/sparc/include/asm/elf_64.h
+@@ -177,9 +177,11 @@ static inline unsigned int sparc64_elf_h
+ 		cap |= HWCAP_SPARC_ULTRA3;
+ 	else if (tlb_type == hypervisor) {
+ 		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 ||
+-		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2)
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
+ 			cap |= HWCAP_SPARC_BLKINIT;
+-		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2)
++		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
++		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3)
+ 			cap |= HWCAP_SPARC_N2;
+ 	}
  
-+int vfs_set_dcache_size(struct super_block *sb, int size)
-+{
-+	sb->s_nr_dentry_max = size;
-+
-+	return dcache_mem_check(sb);
-+}
-+
- /**
-  * __d_alloc	-	allocate a dcache entry
-  * @sb: filesystem it will belong to
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 22bfe82..43b2cdb 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -31,6 +31,7 @@
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
- #include <linux/fsnotify.h>
-+#include <linux/parser.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -958,6 +959,9 @@ static int show_sb_opts(struct seq_file *m, struct super_block *sb)
- 	};
- 	const struct proc_fs_info *fs_infop;
+--- a/arch/sparc/include/asm/xor_64.h
++++ b/arch/sparc/include/asm/xor_64.h
+@@ -65,6 +65,7 @@ static struct xor_block_template xor_blo
+ #define XOR_SELECT_TEMPLATE(FASTEST) \
+ 	((tlb_type == hypervisor && \
+ 	  (sun4v_chip_type == SUN4V_CHIP_NIAGARA1 || \
+-	   sun4v_chip_type == SUN4V_CHIP_NIAGARA2)) ? \
++	   sun4v_chip_type == SUN4V_CHIP_NIAGARA2 || \
++	   sun4v_chip_type == SUN4V_CHIP_NIAGARA3)) ? \
+ 	 &xor_block_niagara : \
+ 	 &xor_block_VIS)
+--- a/arch/sparc/kernel/cpu.c
++++ b/arch/sparc/kernel/cpu.c
+@@ -474,6 +474,12 @@ static void __init sun4v_cpu_probe(void)
+ 		sparc_pmu_type = "niagara2";
+ 		break;
  
-+	if (sb->s_nr_dentry_max != INT_MAX)
-+		seq_printf(m, ",vfs_dcache_size=%d",sb->s_nr_dentry_max);
++	case SUN4V_CHIP_NIAGARA3:
++		sparc_cpu_type = "UltraSparc T3 (Niagara3)";
++		sparc_fpu_type = "UltraSparc T3 integrated FPU";
++		sparc_pmu_type = "niagara3";
++		break;
 +
- 	for (fs_infop = fs_info; fs_infop->flag; fs_infop++) {
- 		if (sb->s_flags & fs_infop->flag)
- 			seq_puts(m, fs_infop->str);
-@@ -2271,6 +2275,94 @@ int copy_mount_string(const void __user *data, char **where)
- 	return 0;
- }
+ 	default:
+ 		printk(KERN_WARNING "CPU: Unknown sun4v cpu type [%s]\n",
+ 		       prom_cpu_compatible);
+--- a/arch/sparc/kernel/cpumap.c
++++ b/arch/sparc/kernel/cpumap.c
+@@ -324,6 +324,7 @@ static int iterate_cpu(struct cpuinfo_tr
+ 	switch (sun4v_chip_type) {
+ 	case SUN4V_CHIP_NIAGARA1:
+ 	case SUN4V_CHIP_NIAGARA2:
++	case SUN4V_CHIP_NIAGARA3:
+ 		rover_inc_table = niagara_iterate_method;
+ 		break;
+ 	default:
+--- a/arch/sparc/kernel/head_64.S
++++ b/arch/sparc/kernel/head_64.S
+@@ -132,6 +132,8 @@ prom_sun4v_name:
+ 	.asciz	"sun4v"
+ prom_niagara_prefix:
+ 	.asciz	"SUNW,UltraSPARC-T"
++prom_sparc_prefix:
++	.asciz	"SPARC-T"
+ 	.align	4
+ prom_root_compatible:
+ 	.skip	64
+@@ -382,6 +384,22 @@ sun4v_chip_type:
+ 90:	ldub	[%g7], %g2
+ 	ldub	[%g1], %g4
+ 	cmp	%g2, %g4
++	bne,pn	%icc, 89f
++	 add	%g7, 1, %g7
++	subcc	%g3, 1, %g3
++	bne,pt	%xcc, 90b
++	 add	%g1, 1, %g1
++	ba,pt	%xcc, 91f
++	 nop
++
++89:	sethi	%hi(prom_cpu_compatible), %g1
++	or	%g1, %lo(prom_cpu_compatible), %g1
++	sethi	%hi(prom_sparc_prefix), %g7
++	or	%g7, %lo(prom_sparc_prefix), %g7
++	mov	7, %g3
++90:	ldub	[%g7], %g2
++	ldub	[%g1], %g4
++	cmp	%g2, %g4
+ 	bne,pn	%icc, 4f
+ 	 add	%g7, 1, %g7
+ 	subcc	%g3, 1, %g3
+@@ -390,6 +408,15 @@ sun4v_chip_type:
  
-+static const match_table_t tokens = {
-+	{1, "vfs_dcache_size=%u"},
-+};
+ 	sethi	%hi(prom_cpu_compatible), %g1
+ 	or	%g1, %lo(prom_cpu_compatible), %g1
++	ldub	[%g1 + 7], %g2
++	cmp	%g2, '3'
++	be,pt	%xcc, 5f
++	 mov	SUN4V_CHIP_NIAGARA3, %g4
++	ba,pt	%xcc, 4f
++	 nop
 +
-+struct vfs_options {
-+	unsigned long vfs_dcache_size;
-+};
++91:	sethi	%hi(prom_cpu_compatible), %g1
++	or	%g1, %lo(prom_cpu_compatible), %g1
+ 	ldub	[%g1 + 17], %g2
+ 	cmp	%g2, '1'
+ 	be,pt	%xcc, 5f
+@@ -397,6 +424,7 @@ sun4v_chip_type:
+ 	cmp	%g2, '2'
+ 	be,pt	%xcc, 5f
+ 	 mov	SUN4V_CHIP_NIAGARA2, %g4
 +
-+/**
-+ * Generic option parsing for the VFS.
-+ *
-+ * Since most of the filesystems already do their own option parsing, and with
-+ * very few code shared between them, this function strips out any options that
-+ * we succeed in parsing ourselves. Passing them forward would just give the
-+ * underlying fs an option it does not expect, leading it to fail.
-+ *
-+ * We don't yet have a pointer to the super block as well, since this is
-+ * pre-mount. We accumulate in struct vfs_options whatever data we collected,
-+ * and act on it later.
-+ */
-+static int vfs_parse_options(char *options, struct vfs_options *ops)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	int option;
-+	char *p;
-+	char *opt;
-+	char *start = NULL;
-+	int ret;
-+	
-+	if (!options)
-+		return 0;
-+
-+	opt = kstrdup(options, GFP_KERNEL);
-+	if (!opt)
-+		return 1;
-+	
-+	ret = 1;
-+
-+	start = opt;
-+	while ((p = strsep(&opt, ",")) != NULL) {
-+		int token;
-+		if (!*p)
-+			continue;
-+
-+		/*
-+		 * Initialize args struct so we know whether arg was
-+		 * found; some options take optional arguments.
-+		 */
-+		args[0].to = args[0].from = 0;
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case 1:
-+			if (!args[0].from)
-+				break;
-+
-+			if (match_int(&args[0], &option))
-+				break;
-+
-+			if (option < DCACHE_MIN_SIZE) {
-+				printk(KERN_INFO "dcache size %d smaller than "
-+				       "minimum (%d)\n", option, DCACHE_MIN_SIZE);
-+				option = DCACHE_MIN_SIZE;
-+			}
-+
-+			ops->vfs_dcache_size = option;
-+
-+			/*
-+			 * The actual filesystems don't expect any option
-+			 * they don't understand to be received in the option
-+			 * string. So we strip off anything we processed, and
-+			 * give them a clean options string.
-+			 */
-+			ret = 0;
-+			if (!opt) /* it is the last option listed */
-+				*(options + (p - start)) = '\0';
-+			else
-+				strcpy(options + (p - start), opt);
+ 4:
+ 	mov	SUN4V_CHIP_UNKNOWN, %g4
+ 5:	sethi	%hi(sun4v_chip_type), %g2
+@@ -514,6 +542,9 @@ niagara_tlb_fixup:
+ 	 cmp	%g1, SUN4V_CHIP_NIAGARA2
+ 	be,pt	%xcc, niagara2_patch
+ 	 nop
++	cmp	%g1, SUN4V_CHIP_NIAGARA3
++	be,pt	%xcc, niagara2_patch
++	 nop
+ 
+ 	call	generic_patch_copyops
+ 	 nop
+--- a/arch/sparc/kernel/pcr.c
++++ b/arch/sparc/kernel/pcr.c
+@@ -109,6 +109,10 @@ static int __init register_perf_hsvc(voi
+ 			perf_hsvc_group = HV_GRP_N2_CPU;
+ 			break;
+ 
++		case SUN4V_CHIP_NIAGARA3:
++			perf_hsvc_group = HV_GRP_KT_CPU;
 +			break;
-+		default:
-+			ret = 0;
-+			break;
-+		}
-+	}
 +
-+	kfree(start);
-+	return ret;
-+}
-+
- /*
-  * Flags is a 32-bit value that allows up to 31 non-fs dependent flags to
-  * be given to the mount() call (ie: read-only, no-dev, no-suid etc).
-@@ -2291,6 +2383,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	struct path path;
- 	int retval = 0;
- 	int mnt_flags = 0;
-+	struct vfs_options vfs_options;
- 
- 	/* Discard magic */
- 	if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
-@@ -2318,6 +2411,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	if (!(flags & MS_NOATIME))
- 		mnt_flags |= MNT_RELATIME;
- 
-+
-+	vfs_options.vfs_dcache_size = INT_MAX;
-+	retval = vfs_parse_options(data_page, &vfs_options);
-+	if (retval)
-+		goto dput_out;
-+
- 	/* Separate the per-mountpoint flags */
- 	if (flags & MS_NOSUID)
- 		mnt_flags |= MNT_NOSUID;
-@@ -2350,6 +2449,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	else
- 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
- 				      dev_name, data_page);
-+
-+	/* bind mounts get to respect their parents decision */
-+	if (!retval && !(flags & MS_BIND))
-+		vfs_set_dcache_size(path.mnt->mnt_sb,
-+				    vfs_options.vfs_dcache_size);
-+			
- dput_out:
- 	path_put(&path);
- 	return retval;
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index d37d2a7..1a309f3 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -251,6 +251,10 @@ extern int d_invalidate(struct dentry *);
- 
- /* only used at mount-time */
- extern struct dentry * d_alloc_root(struct inode *);
-+extern int vfs_set_dcache_size(struct super_block *sb, int size);
-+
-+#define DCACHE_MIN_SIZE 1024
-+extern int vfs_set_dcache_size(struct super_block *sb, int size);
- 
- /* <clickety>-<click> the ramfs-type tree */
- extern void d_genocide(struct dentry *);
--- 
-1.7.6
+ 		default:
+ 			return -ENODEV;
+ 		}
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1301,7 +1301,8 @@ static bool __init supported_pmu(void)
+ 		sparc_pmu = &niagara1_pmu;
+ 		return true;
+ 	}
+-	if (!strcmp(sparc_pmu_type, "niagara2")) {
++	if (!strcmp(sparc_pmu_type, "niagara2") ||
++	    !strcmp(sparc_pmu_type, "niagara3")) {
+ 		sparc_pmu = &niagara2_pmu;
+ 		return true;
+ 	}
+
 
