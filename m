@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab1HMGWn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 02:22:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33503 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1HMGWm (ORCPT
+	id S1751844Ab1HMGW6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 02:22:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50743 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab1HMGWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 02:22:42 -0400
-Date: Fri, 12 Aug 2011 23:22:35 -0700 (PDT)
-Message-Id: <20110812.232235.905351953818584023.davem@davemloft.net>
-To: justinmattock@gmail.com
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10]drivers:atm Remove pointless "@" from various
- parts of the kernel
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1313195235-4522-4-git-send-email-justinmattock@gmail.com>
-References: <1313195235-4522-1-git-send-email-justinmattock@gmail.com>
-	<1313195235-4522-4-git-send-email-justinmattock@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 12 Aug 2011 23:22:35 -0700 (PDT)
+	Sat, 13 Aug 2011 02:22:54 -0400
+Date: Sat, 13 Aug 2011 10:22:47 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
+Message-ID: <20110813062246.GC3851@albatros>
+References: <20110812150304.GC16880@albatros>
+ <4E45884B.8030303@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E45884B.8030303@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-Date: Fri, 12 Aug 2011 17:27:09 -0700
+On Fri, Aug 12, 2011 at 15:08 -0500, H. Peter Anvin wrote:
+> On 08/12/2011 10:03 AM, Vasiliy Kulikov wrote:
+> > This patch allows x86-64 systems with 32 bit syscalls support to lock a
+> > pid namespace to 32 or 64 bitness syscalls/tasks.  By denying rarely
+> > used compatibility syscalls it reduces an attack surface for 32 bit
+> > containers.
+> > 
+> > The new sysctl is introduced, abi.bitness_locked.  If set to 1, it locks
+> > all tasks inside of current pid namespace to the bitness of init task
+> > (pid_ns->child_reaper).  After that:
+> > 
+> > 1) a task trying to do a syscall of other bitness would get a signal as
+> > if the corresponding syscall is not enabled (IDT entry/MSR is not
+> > initialized).
+> > 
+> > 2) loading ELF binaries of another bitness is prohibited (as if the
+> > corresponding CONFIG_BINFMT_*=N).
+[...]
+> However, I have to question the value of this... if this is enabled in
+> the system as a whole (as opposed to compiled out) it seems kind of
+> pointless...
 
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
+No, it is not for the system as a whole, but for containers (however,
+it's possible to lock the whole system).  We use OpenVZ kernels with
+multiple containers, some of them are 32 bit, some are 64 bit.  64 bit
+syscalls are not needed for 32 bit containers and 32 bit syscalls are
+not needed for 64 bit containers.  As a needless interfaces they
+unreasonably increase the kernel attack surface.  Some compatibility 32
+bit syscalls are rarely used, sometimes they are not tested well.
+
+In IA-64 the IA-32 compatibility support was broken for 2 years:
+
+http://www.spinics.net/lists/linux-ia64/msg07840.html
+
+In amd64 some specific rarely used syscalls might behave similar way.
+Removing this attack vector is the goal of the patch.
+
+> if there are bugs we need to deal with them anyway.
+
+Definitely.
+
+> > Qestions/thoughts:
+> > 
+> > The patch adds a check in syscalls code.  Is it a significant
+> > slowdown for fast syscalls?  If so, probably it worth moving the check
+> > into scheduler code and enabling/disabling corresponding interrupt/MSRs
+> > on each task switch?
+> > 
 > 
-> The patch series below removes some pointless "@"'s in various parts of the kernel.
-> Note: some might be useful, but then again, some just seemed a waste of space.
-> (and since the kernel is become bloated, might as well diet! even if it's a few bits)
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> *YOU* are the person who needs to answer that question by providing
+> measurements.  Quite frankly I suspect checks in the syscall code *or*
+> task switching MSRs are going to be unacceptable from a performance
+> point of view.
 
-These are like "XXX" markers in comments, used so you can quickly look
-for areas that knowingly need improvement in the code.
+OK, I'll do it.
 
-I really think these patches are a waste of time and make things worse
-not better, the side effect of your patch is that we'll be losing
-information.
+Thank you,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
