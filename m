@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab1HMPoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 11:44:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43059 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab1HMPoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 11:44:09 -0400
-References: <20110812150304.GC16880@albatros> <4E45884B.8030303@zytor.com> <20110813062246.GC3851@albatros>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20110813062246.GC3851@albatros>
+	id S1751380Ab1HMPqu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 11:46:50 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51161 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab1HMPqs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 11:46:48 -0400
+Date: Sat, 13 Aug 2011 10:46:38 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mattia Dongili <malattia@debian.org>
+Subject: [BUG?] Moving drivers to drivers/cpufreq/ causes all to be loaded
+Message-ID: <20110813154638.GA1494@elie.gateway.2wire.net>
+References: <20110414094447.GA1611@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.00.1104211629300.24613@xanadu.home>
+ <201104261605.26791.arnd@arndb.de>
+ <201104261904.45923.rjw@sisk.pl>
+ <20110426181508.GB1908@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 13 Aug 2011 10:41:54 -0500
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Message-ID: <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110426181508.GB1908@redhat.com>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+(-cc: linux-arm-kernel, +cc: linux-kernel, Mattia)
+Hi,
 
->On Fri, Aug 12, 2011 at 15:08 -0500, H. Peter Anvin wrote:
->> On 08/12/2011 10:03 AM, Vasiliy Kulikov wrote:
->> > This patch allows x86-64 systems with 32 bit syscalls support to
->lock a
->> > pid namespace to 32 or 64 bitness syscalls/tasks.  By denying
->rarely
->> > used compatibility syscalls it reduces an attack surface for 32 bit
->> > containers.
->> > 
->> > The new sysctl is introduced, abi.bitness_locked.  If set to 1, it
->locks
->> > all tasks inside of current pid namespace to the bitness of init
->task
->> > (pid_ns->child_reaper).  After that:
->> > 
->> > 1) a task trying to do a syscall of other bitness would get a
->signal as
->> > if the corresponding syscall is not enabled (IDT entry/MSR is not
->> > initialized).
->> > 
->> > 2) loading ELF binaries of another bitness is prohibited (as if the
->> > corresponding CONFIG_BINFMT_*=N).
->[...]
->> However, I have to question the value of this... if this is enabled
->in
->> the system as a whole (as opposed to compiled out) it seems kind of
->> pointless...
->
->No, it is not for the system as a whole, but for containers (however,
->it's possible to lock the whole system).  We use OpenVZ kernels with
->multiple containers, some of them are 32 bit, some are 64 bit.  64 bit
->syscalls are not needed for 32 bit containers and 32 bit syscalls are
->not needed for 64 bit containers.  As a needless interfaces they
->unreasonably increase the kernel attack surface.  Some compatibility 32
->bit syscalls are rarely used, sometimes they are not tested well.
->
->In IA-64 the IA-32 compatibility support was broken for 2 years:
->
->http://www.spinics.net/lists/linux-ia64/msg07840.html
->
->In amd64 some specific rarely used syscalls might behave similar way.
->Removing this attack vector is the goal of the patch.
->
->> if there are bugs we need to deal with them anyway.
->
->Definitely.
->
->> > Qestions/thoughts:
->> > 
->> > The patch adds a check in syscalls code.  Is it a significant
->> > slowdown for fast syscalls?  If so, probably it worth moving the
->check
->> > into scheduler code and enabling/disabling corresponding
->interrupt/MSRs
->> > on each task switch?
->> > 
->> 
->> *YOU* are the person who needs to answer that question by providing
->> measurements.  Quite frankly I suspect checks in the syscall code
->*or*
->> task switching MSRs are going to be unacceptable from a performance
->> point of view.
->
->OK, I'll do it.
->
->Thank you,
->
->-- 
->Vasiliy Kulikov
->http://www.openwall.com - bringing security into open computing
->environments
+Dave Jones wrote:
 
-IA64 is totally different.  I'm extremely sceptical to this patch; it feels like putting code in a super-hot path to paper over a problem that has to be fixed anyway.
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+> in cpufreq.next I moved the x86 drivers over.  Someone look it over ?
+
+Some people[1] have been seeing regressions after this change (when
+moving from 2.6.39 to 3.0, presumably from commit bb0a56ecc4ba,
+"[CPUFREQ] Move x86 drivers to drivers/cpufreq/").  The first symptom
+was messages at boot:
+
+| Loading cpufreq kernel modules...FATAL: Error inserting powernow_k7 (/lib/modules/3.0.0-1-486/kernel/drivers/cpufreq/powernow-k7.ko): No such device
+| FATAL: Error inserting speedstep_ich (/lib/modules/3.0.0-1-486/kernel/drivers/cpufreq/speedstep-ich.ko): No such device
+| FATAL: Error inserting acpi_cpufreq (/lib/modules/3.0.0-1-486/kernel/drivers/cpufreq/acpi-cpufreq.ko): Device or resource busy
+[etc]
+
+The second symptom was the wrong cpufreq driver being loaded
+(p4-clockmod instead of acpi-cpufreq).  The cause seems to be some
+code in init scripts that originated in powernowd 0.97-2ubuntu1 (2007)
+or some time before that:
+
+|         #get list of available modules (governors and helpers)
+|         LOC="/lib/modules/$(uname -r)/kernel/drivers/cpufreq"
+|         if [ -d $LOC ]; then
+|           MODAVAIL=$( ( find $LOC -type f -name "*.o" -printf "basename %f .o\n"; \
+|               find $LOC -type f -name "*.ko" -printf "basename %f .ko\n" ) | /bin/sh)
+|         else
+|           MODAVAIL=""
+|         fi
+| 
+|         #echo "Loading cpufreq modules:"
+|         for mod in $MODAVAIL; do
+|         #        echo "     $mod"
+|                 echo $LIST| grep -q -w "$mod" || modprobe $mod >/dev/null || /bin/true
+|         done
+
+This takes all kernel modules in drivers/cpufreq, blindly assumes
+they must be governors or helpers, and loads them.  Nowadays it is
+in the loadcpufreq script in cpufrequtils; so in cpufrequtils 007-2
+(03 Aug 2011), the pattern changed to drivers/cpufreq/cpufreq_*.ko
+which just matches the governors and helpers and everybody's happy.
+
+Except:
+
+ (1) This is still incredibly fragile.  What *should* cpufrequtils
+     be doing to get the drivers it needs?
+
+ (2) Using the 3.0 or later kernel with old userspace gives bad
+     results (e.g., 30% increase in power consumption for one
+     reporter).  That's a regression.  Bad kernel, no biscuit.
+
+Ideas?
+
+[1] http://bugs.debian.org/635348
