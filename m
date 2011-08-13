@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab1HMIwt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 04:52:49 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33851 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab1HMIwq (ORCPT
+	id S1751022Ab1HMIzI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 04:55:08 -0400
+Received: from waldorf.bytemark.co.uk ([212.110.162.22]:44051 "EHLO
+	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab1HMIzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 04:52:46 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-Date: Sat, 13 Aug 2011 11:51:01 +0300
-Message-Id: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Sat, 13 Aug 2011 04:55:05 -0400
+Date: Sat, 13 Aug 2011 04:54:54 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Manohar Vanga <manohar.vanga@cern.ch>
+Cc: martyn.welch@ge.com, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110813085454.GA3409@flamenco.cs.columbia.edu>
+References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch>
+ <1313145051-13397-4-git-send-email-manohar.vanga@cern.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313145051-13397-4-git-send-email-manohar.vanga@cern.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAC of a virtio-net device is located at the first field of the device
-specific header. This header is located at offset 20 if the device doesn't
-support MSI-X or offset 24 if it does.
+On Fri, Aug 12, 2011 at 12:30:49 +0200, Manohar Vanga wrote:
+> This patch adds functions that allow for reference counting
+> bridge modules. The patch introduces the functions
+> 'vme_bridge_get()' and 'vme_bridge_put()'.
+(snip)
+> +int vme_bridge_get(unsigned int bus_id)
+(snip)
+> +void vme_bridge_put(struct vme_bridge *bridge)
 
-Current code in virtnet_probe() used to probe the MAC before checking for
-MSI-X, which means that the read was always made from offset 20 regardless
-of whether MSI-X in enabled or not.
+Note the input parameter imbalance; in fact this is serious
+(see my email on patch 5) because _get() needs to acquire
+vme_buses_lock, whereas _put() doesn't. Since a caller with
+bridge has bridge->num, but the opposite doesn't hold (num
+doesn't give you the bridge without acquiring vme_buses_lock),
+it seems reasonable to me to take the bus_id as the input for
+both functions, because the requirements on the caller are lower.
 
-This patch moves the MAC probe to after the detection of whether MSI-X is
-enabled. This way the MAC will be read from offset 24 if the device indeed
-supports MSI-X.
+But the locking needs to be handled with care, see my reply
+to patch 5.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- drivers/net/virtio_net.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 0c7321c..55ccf96 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -981,14 +981,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		/* (!csum && gso) case will be fixed by register_netdev() */
- 	}
- 
--	/* Configuration may specify what MAC to use.  Otherwise random. */
--	if (virtio_has_feature(vdev, VIRTIO_NET_F_MAC)) {
--		vdev->config->get(vdev,
--				  offsetof(struct virtio_net_config, mac),
--				  dev->dev_addr, dev->addr_len);
--	} else
--		random_ether_addr(dev->dev_addr);
--
- 	/* Set up our device-specific information */
- 	vi = netdev_priv(dev);
- 	netif_napi_add(dev, &vi->napi, virtnet_poll, napi_weight);
-@@ -1032,6 +1024,14 @@ static int virtnet_probe(struct virtio_device *vdev)
- 			dev->features |= NETIF_F_HW_VLAN_FILTER;
- 	}
- 
-+	/* Configuration may specify what MAC to use.  Otherwise random. */
-+	if (virtio_has_feature(vdev, VIRTIO_NET_F_MAC)) {
-+		vdev->config->get(vdev,
-+				  offsetof(struct virtio_net_config, mac),
-+				  dev->dev_addr, dev->addr_len);
-+	} else
-+		random_ether_addr(dev->dev_addr);
-+
- 	err = register_netdev(dev);
- 	if (err) {
- 		pr_debug("virtio_net: registering device failed\n");
--- 
-1.7.6
+		Emilio
 
