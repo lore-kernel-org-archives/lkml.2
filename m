@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab1HMQ2k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 12:28:40 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:45236 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab1HMQ2f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 12:28:35 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 8183EB41AB
-Date: Sat, 13 Aug 2011 18:28:26 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
+	id S1751562Ab1HMQ25 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 12:28:57 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:56678 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241Ab1HMQ2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 12:28:54 -0400
+Date: Sat, 13 Aug 2011 09:27:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
 Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
-Message-ID: <20110813162826.GA1646@thinkpad>
-References: <20110806084447.388624428@intel.com>
- <20110806094527.002914580@intel.com>
- <1312811234.10488.34.camel@twins>
- <20110808142318.GC22080@localhost>
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+Message-ID: <20110813162735.GA2650@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1313232790.25267.7.camel@twins>
+ <1313236135.4486.10.camel@marge.simson.net>
+ <1313236713.25267.10.camel@twins>
+ <1313243965.4486.36.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110808142318.GC22080@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1313243965.4486.36.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 10:23:18PM +0800, Wu Fengguang wrote:
-> On Mon, Aug 08, 2011 at 09:47:14PM +0800, Peter Zijlstra wrote:
-> > On Sat, 2011-08-06 at 16:44 +0800, Wu Fengguang wrote:
-> > > Add two fields to task_struct.
+On Sat, Aug 13, 2011 at 03:59:25PM +0200, Mike Galbraith wrote:
+> On Sat, 2011-08-13 at 13:58 +0200, Peter Zijlstra wrote:
+> > On Sat, 2011-08-13 at 13:48 +0200, Mike Galbraith wrote:
+> > > On Sat, 2011-08-13 at 12:53 +0200, Peter Zijlstra wrote:
+> > > > Whee, I can skip release announcements too!
+> > > > 
+> > > > So no the subject ain't no mistake its not, 3.0.1-rt11 is there for the
+> > > > grabs.
+> > > > 
+> > > > Changes include (including the missing -rt10):
+> > > > 
+> > > >   - hrtimer fix that should make RT_GROUP work again
+> > > >   - RCU fixes that should make the RCU stalls go away
 > > > 
-> > > 1) account dirtied pages in the individual tasks, for accuracy
-> > > 2) per-task balance_dirty_pages() call intervals, for flexibility
+> > > Oh goodie, I was just looking at some of those.
 > > > 
-> > > The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
-> > > scale near-sqrt to the safety gap between dirty pages and threshold.
+> > > coverdale:/abuild/mike/linux-3.0-rt/:[1]# wget http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0.1-rt11.tar.bz2
+> > > --2011-08-13 13:38:13--  http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0.1-rt11.tar.bz2
+> > > Resolving www.kernel.org... 130.239.17.5, 199.6.1.165, 2001:6b0:e:4017:1994:313:1:0, ...
+> > > Connecting to www.kernel.org|130.239.17.5|:80... connected.
+> > > HTTP request sent, awaiting response... 404 Not Found
+> > > 2011-08-13 13:38:13 ERROR 404: Not Found.
 > > > 
-> > > XXX: The main problem of per-task nr_dirtied is, if 10k tasks start
-> > > dirtying pages at exactly the same time, each task will be assigned a
-> > > large initial nr_dirtied_pause, so that the dirty threshold will be
-> > > exceeded long before each task reached its nr_dirtied_pause and hence
-> > > call balance_dirty_pages().
-> > > 
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > ---
-> > >  include/linux/sched.h |    7 ++
-> > >  mm/memory_hotplug.c   |    3 -
-> > >  mm/page-writeback.c   |  106 +++++++++-------------------------------
-> > >  3 files changed, 32 insertions(+), 84 deletions(-) 
+> > > Aw poo.  Darn mirrors. 
 > > 
-> > No fork() hooks? This way tasks inherit their parent's dirty count on
-> > clone().
+> > Try -rt10, except for an SMP=n build fix its identical.. kernel.org
+> > seems to experience some trouble atm..
 > 
-> btw, I do have another patch queued for improving the "leaked dirties
-> on exit" case :)
+> Hohum.  rt10 did change the symptom.  Box no longer gripes at some
+> random point while just idling along, now it gripes (and dies as well)
+> during boot.
 > 
-> Thanks,
-> Fengguang
-> ---
-> Subject: writeback: charge leaked page dirties to active tasks
-> Date: Tue Apr 05 13:21:19 CST 2011
+> First boot, it choked on sr0 a wee bit later, second boot here.
 > 
-> It's a years long problem that a large number of short-lived dirtiers
-> (eg. gcc instances in a fast kernel build) may starve long-run dirtiers
-> (eg. dd) as well as pushing the dirty pages to the global hard limit.
+> [   40.582256] igb 0000:01:00.1: Intel(R) Gigabit Ethernet Network Connection
+> [   40.582260] igb 0000:01:00.1: eth1: (PCIe:2.5Gb/s:Width x4) 08:00:69:15:c1:d5
+> [   40.582335] igb 0000:01:00.1: eth1: PBA No: FFFFFF-0FF
+> [   40.582338] igb 0000:01:00.1: Using MSI-X interrupts. 8 rx queue(s), 8 tx queue(s)
+> [  100.409012] INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by 21, t=60002 jiffies)
 > 
-> The solution is to charge the pages dirtied by the exited gcc to the
-> other random gcc/dd instances. It sounds not perfect, however should
-> behave good enough in practice.
+> Guess I should try x3550 M3 or Q6600.  They were griping the same way UV
+> box did earlier this morning (with an earlier -rt though), and they make
+> much smaller gripes.
 > 
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/writeback.h |    2 ++
->  kernel/exit.c             |    2 ++
->  mm/page-writeback.c       |   11 +++++++++++
->  3 files changed, 15 insertions(+)
-> 
-> --- linux-next.orig/include/linux/writeback.h	2011-08-08 21:45:58.000000000 +0800
-> +++ linux-next/include/linux/writeback.h	2011-08-08 21:45:58.000000000 +0800
-> @@ -7,6 +7,8 @@
->  #include <linux/sched.h>
->  #include <linux/fs.h>
->  
-> +DECLARE_PER_CPU(int, dirty_leaks);
-> +
->  /*
->   * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
->   *
-> --- linux-next.orig/mm/page-writeback.c	2011-08-08 21:45:58.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-08-08 22:21:50.000000000 +0800
-> @@ -190,6 +190,7 @@ int dirty_ratio_handler(struct ctl_table
->  	return ret;
->  }
->  
-> +DEFINE_PER_CPU(int, dirty_leaks) = 0;
->  
->  int dirty_bytes_handler(struct ctl_table *table, int write,
->  		void __user *buffer, size_t *lenp,
-> @@ -1150,6 +1151,7 @@ void balance_dirty_pages_ratelimited_nr(
->  {
->  	struct backing_dev_info *bdi = mapping->backing_dev_info;
->  	int ratelimit;
-> +	int *p;
->  
->  	if (!bdi_cap_account_dirty(bdi))
->  		return;
-> @@ -1158,6 +1160,15 @@ void balance_dirty_pages_ratelimited_nr(
->  	if (bdi->dirty_exceeded)
->  		ratelimit = 8;
->  
-> +	preempt_disable();
-> +	p = &__get_cpu_var(dirty_leaks);
-> +	if (*p > 0 && current->nr_dirtied < ratelimit) {
-> +		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-> +		*p -= nr_pages_dirtied;
-> +		current->nr_dirtied += nr_pages_dirtied;
-> +	}
-> +	preempt_enable();
-> +
+> Gripe attached.  Looks a lot like the old gripes to me, just earlier and
+> deadlier.  But I don't speak rcu.
 
-I think we are still leaking some dirty pages, when the condition is
-false nr_pages_dirtied is just ignored.
+Strange.  By the time it got around to printing the stall, no one was
+stalling:
 
-Why not doing something like this?
+[  100.409012] INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by 21, t=60002 jiffies)
 
-	current->nr_dirtied += nr_pages_dirtied;
-	if (current->nr_dirtied < ratelimit) {
-		p = &get_cpu_var(dirty_leaks);
-		if (*p > 0) {
-			nr_pages_dirtied = min(*p, ratelimit -
-							current->nr_dirtied);
-			*p -= nr_pages_dirtied;
-		} else
-			nr_pages_dirtied = 0;
-		put_cpu_var(dirty_leaks);
+Now it -is- possible for the stall to end just as we get ready to detect
+it, but that window is really really small.  The most recent occurrence
+of this sort of thing was due misconfigured timekeeping, but I don't see
+any sign of that in the trace.
 
-		current->nr_dirtied += nr_pages_dirtied;
-	}
+This happens repeatedly?
 
-Thanks,
--Andrea
-
->  	if (unlikely(current->nr_dirtied >= ratelimit))
->  		balance_dirty_pages(mapping, current->nr_dirtied);
->  }
-> --- linux-next.orig/kernel/exit.c	2011-08-08 21:43:37.000000000 +0800
-> +++ linux-next/kernel/exit.c	2011-08-08 21:45:58.000000000 +0800
-> @@ -1039,6 +1039,8 @@ NORET_TYPE void do_exit(long code)
->  	validate_creds_for_do_exit(tsk);
->  
->  	preempt_disable();
-> +	if (tsk->nr_dirtied)
-> +		__this_cpu_add(dirty_leaks, tsk->nr_dirtied);
->  	exit_rcu();
->  	/* causes final put_task_struct in finish_task_switch(). */
->  	tsk->state = TASK_DEAD;
+							Thanx, Paul
