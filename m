@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1HMA0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 20:26:43 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65438 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab1HMA0k (ORCPT
+	id S1753426Ab1HMA0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 20:26:47 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:45575 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab1HMA0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 20:26:40 -0400
+	Fri, 12 Aug 2011 20:26:43 -0400
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/4]drivers:atm:iphase.c Fix a typo "shud"
-Date: Fri, 12 Aug 2011 17:26:12 -0700
-Message-Id: <1313195174-4464-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 4/4]sound:pci Fix typo "shud"
+Date: Fri, 12 Aug 2011 17:26:14 -0700
+Message-Id: <1313195174-4464-4-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1313195174-4464-1-git-send-email-justinmattock@gmail.com>
 References: <1313195174-4464-1-git-send-email-justinmattock@gmail.com>
@@ -28,40 +28,22 @@ The patch below fixes a typo shud.
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/atm/iphase.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/au88x0/au88x0_a3d.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/atm/iphase.c b/drivers/atm/iphase.c
-index cb90f7a..bc6bf9e 100644
---- a/drivers/atm/iphase.c
-+++ b/drivers/atm/iphase.c
-@@ -1089,7 +1089,7 @@ static int rx_pkt(struct atm_dev *dev)
-                                     iadev->reass_ram, iadev->rfL.pcq_rd, desc);
-               printk(" pcq_wr_ptr = 0x%x\n",
-                                readw(iadev->reass_reg+PCQ_WR_PTR)&0xffff);)
--	/* update the read pointer  - maybe we shud do this in the end*/  
-+	/* update the read pointer  - maybe we should do this in the end*/  
- 	if ( iadev->rfL.pcq_rd== iadev->rfL.pcq_ed) 
- 		iadev->rfL.pcq_rd = iadev->rfL.pcq_st;  
- 	else  
-@@ -1167,7 +1167,7 @@ static int rx_pkt(struct atm_dev *dev)
- 	wr_ptr->bytes = len;	/* We don't know this do we ?? */  
- 	wr_ptr->mode = DMA_INT_ENABLE;  
-   
--	/* shud take care of wrap around here too. */  
-+	/* should take care of wrap around here too. */  
-         if(++wr_ptr == iadev->rx_dle_q.end)
-              wr_ptr = iadev->rx_dle_q.start;
- 	iadev->rx_dle_q.write = wr_ptr;  
-@@ -2509,7 +2509,7 @@ static int __devinit ia_start(struct atm_dev *dev)
- 			| CTRL_B64  
- 			| CTRL_B128  
- 			| CTRL_ERRMASK  
--			| CTRL_DLETMASK		/* shud be removed l8r */  
-+			| CTRL_DLETMASK		/* should be removed l8r */  
- 			| CTRL_DLERMASK  
- 			| CTRL_SEGMASK  
- 			| CTRL_REASSMASK 	  
+diff --git a/sound/pci/au88x0/au88x0_a3d.c b/sound/pci/au88x0/au88x0_a3d.c
+index 9ae8b3b..bae67c2 100644
+--- a/sound/pci/au88x0/au88x0_a3d.c
++++ b/sound/pci/au88x0/au88x0_a3d.c
+@@ -593,7 +593,7 @@ static int Vort3DRend_Initialize(vortex_t * v, unsigned short mode)
+ 
+ static int vortex_a3d_register_controls(vortex_t * vortex);
+ static void vortex_a3d_unregister_controls(vortex_t * vortex);
+-/* A3D base support init/shudown */
++/* A3D base support init/shutown */
+ static void __devinit vortex_Vort3D_enable(vortex_t * v)
+ {
+ 	int i;
 -- 
 1.7.6
 
