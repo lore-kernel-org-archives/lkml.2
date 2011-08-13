@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab1HMIAn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 04:00:43 -0400
-Received: from www17.your-server.de ([213.133.104.17]:54351 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab1HMIAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 04:00:41 -0400
-Subject: Re: [PATCH] n2_crypto: Fix a get/put_cpu() imbalance
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 13 Aug 2011 09:59:58 +0200
-In-Reply-To: <20110810105958.GA2607@gondor.apana.org.au>
-References: <1312619188.5589.27.camel@localhost.localdomain>
-	 <20110810105958.GA2607@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313222402.16820.12.camel@localhost.localdomain>
+	id S1751960Ab1HMIGE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 04:06:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48613 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750907Ab1HMIFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 04:05:52 -0400
+Date: Sat, 13 Aug 2011 18:05:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Andrea Merello <andreamrl@tiscali.it>,
+        Andre Nogueira <andre.neo.net@gmail.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefan Weil <weil@mail.berlios.de>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers/staging/rtl8187se: Don't pass huge struct
+ by value
+Message-Id: <20110813180531.34a47d9bf4851f8c1e9a227c@canb.auug.org.au>
+In-Reply-To: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+--Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fix a get/put_cpu() imbalance in the error case when qp == NULL
+Hi all,
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
+On Sat, 13 Aug 2011 01:04:36 +0200 (CEST) Jesper Juhl <jj@chaosbits.net> wr=
+ote:
+>
+> From: Jesper Juhl <jj@chaosbits.net>
+> Date: Sat, 13 Aug 2011 00:51:40 +0200
+>=20
+> struct ieee80211_network is fairly large (more than half a kilobyte),
+> so let's pass a pointer instead of passing the entire structure by
+> value when ieee80211_is_54g() and ieee80211_is_shortslot() need to
+> look at a few members.
+> Also remove parentheses around the values being returned from those
+> two functions - 'return' is not a function.
 
-Am Mittwoch, den 10.08.2011, 18:59 +0800 schrieb Herbert Xu:
-On Sat, Aug 06, 2011 at 08:26:25AM +0000, Thomas Meyer wrote:
-> > From: Thomas Meyer <thomas@m3y3r.de>
-> > 
-> > Fix a get/put_cpu() imbalance in the error case when qp == NULL
-> > 
-> > Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> 
-> I tried to apply your patch but it doesn't work as your mailer
-> has turned all the tabs into spaces.
-> 
+Also, is there some reason that they are not "static inline bool"
+functions defined directlt in ieee80211.h?
 
-Actually this was not my mailer's fault...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Please resend and make
-> sure that you can still apply the patch that the list forwards
-> back to you.
-> 
-> Thanks,
-> 
+--Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/crypto/n2_core.c b/drivers/crypto/n2_core.c
-index d0183ddb..8944dab 100644
---- a/drivers/crypto/n2_core.c
-+++ b/drivers/crypto/n2_core.c
-@@ -1006,9 +1006,9 @@ static int n2_do_ecb(struct ablkcipher_request *req, bool encrypt)
- 
- 	spin_unlock_irqrestore(&qp->lock, flags);
- 
-+out:
- 	put_cpu();
- 
--out:
- 	n2_chunk_complete(req, NULL);
- 	return err;
- }
-@@ -1096,9 +1096,9 @@ static int n2_do_chaining(struct ablkcipher_request *req, bool encrypt)
- 
- 	spin_unlock_irqrestore(&qp->lock, flags);
- 
-+out:
- 	put_cpu();
- 
--out:
- 	n2_chunk_complete(req, err ? NULL : final_iv_addr);
- 	return err;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJORjBLAAoJEDMEi1NhKgbsxHsH/2T6oRInmC3zpyPeRLSebI/X
+l2GvmTcgxhdTNWFXv/IDIlO+rXn7rjVRRK29uTtKYw6iF75ZWgzu3Fk3/P57VtFG
+r+bj/IUScZKyDVYcRJtWms3dmwd/nn0gScLtA5SftBLEeG491TYCA8j8ldOd21iC
+Up31bhPu/keECV2ZzkuVY+vsTZAt+QBw/CIIpJcIjGa6lcIADkwbelLAW7Q6RPX+
+1Vqzd+VMc1tojP7BSna5NTMmk73AsnpQlUPh+AfFZ+xQaW9dtt5EGZ7AcKSvMHMH
+IaFyLL6oA28PlmcJUeXcC1BJ8DqXo1GPXFFrhzZVs/YO6mcKPk5YD9+0QDST3ro=
+=C2Qq
+-----END PGP SIGNATURE-----
 
+--Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8--
