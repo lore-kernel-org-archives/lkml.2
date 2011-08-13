@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1HMDdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 23:33:10 -0400
+	id S1753272Ab1HMDdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 23:33:22 -0400
 Received: from mail-gx0-f174.google.com ([209.85.161.174]:51990 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1HMDdI (ORCPT
+	with ESMTP id S1753585Ab1HMDdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 23:33:08 -0400
-Subject: [PATCH] ASoC: s6000-pcm: remove unused variable 'dai'
+	Fri, 12 Aug 2011 23:33:15 -0400
+Subject: [PATCH] ASoC: sta32x: Fix a memory leak if snd_soc_register_codec
+ fails
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <daniel-gl@gmx.net>,
-        alsa-devel@alsa-project.org
+        Johannes Stezenbach <js@sig21.net>, alsa-devel@alsa-project.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Aug 2011 11:32:56 +0800
-Message-ID: <1313206376.29596.2.camel@phoenix>
+Date: Sat, 13 Aug 2011 11:33:08 +0800
+Message-ID: <1313206388.29596.3.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -26,21 +26,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/s6000/s6000-pcm.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ sound/soc/codecs/sta32x.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/s6000/s6000-pcm.c b/sound/soc/s6000/s6000-pcm.c
-index 80c85fd..55efc2b 100644
---- a/sound/soc/s6000/s6000-pcm.c
-+++ b/sound/soc/s6000/s6000-pcm.c
-@@ -446,7 +446,6 @@ static u64 s6000_pcm_dmamask = DMA_BIT_MASK(32);
- static int s6000_pcm_new(struct snd_soc_pcm_runtime *runtime)
- {
- 	struct snd_card *card = runtime->card->snd_card;
--	struct snd_soc_dai *dai = runtime->cpu_dai;
- 	struct snd_pcm *pcm = runtime->pcm;
- 	struct s6000_pcm_dma_params *params;
- 	int res;
+diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
+index 409d89d..fbd7eb9 100644
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -857,6 +857,7 @@ static __devinit int sta32x_i2c_probe(struct i2c_client *i2c,
+ 	ret = snd_soc_register_codec(&i2c->dev, &sta32x_codec, &sta32x_dai, 1);
+ 	if (ret != 0) {
+ 		dev_err(&i2c->dev, "Failed to register codec (%d)\n", ret);
++		kfree(sta32x);
+ 		return ret;
+ 	}
+ 
 -- 
 1.7.4.1
 
