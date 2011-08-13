@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab1HMOL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 10:11:56 -0400
-Received: from www17.your-server.de ([213.133.104.17]:56324 "EHLO
+	id S1752160Ab1HMOMC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 10:12:02 -0400
+Received: from www17.your-server.de ([213.133.104.17]:56375 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab1HMOLs (ORCPT
+	with ESMTP id S1752090Ab1HMOL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 10:11:48 -0400
-Subject: [PATCH] staging: ft1000: dont cast void* from kmalloc()
+	Sat, 13 Aug 2011 10:11:56 -0400
+Subject: [PATCH] Staging: rts_pstor: dont cast void* from kmalloc()
 From: Thomas Meyer <thomas@m3y3r.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Aug 2011 11:31:48 +0200
-Message-ID: <1313227908.16820.30.camel@localhost.localdomain>
+Date: Sat, 13 Aug 2011 11:28:50 +0200
+Message-ID: <1313227730.16820.27.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
@@ -36,17 +36,17 @@ From: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c 2011-07-26 00:46:09.646838687 +0200
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c 2011-08-01 19:56:17.237666237 +0200
-@@ -485,7 +485,7 @@ void card_send_command(struct ft1000_dev
+diff -u -p a/drivers/staging/rts_pstor/spi.c b/drivers/staging/rts_pstor/spi.c
+--- a/drivers/staging/rts_pstor/spi.c 2011-05-27 19:17:05.999541117 +0200
++++ b/drivers/staging/rts_pstor/spi.c 2011-08-01 19:57:11.534038755 +0200
+@@ -463,7 +463,7 @@ int spi_read_flash_id(struct scsi_cmnd *
+ 	}
  
- 	DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
+ 	if (len) {
+-		buf = (u8 *)kmalloc(len, GFP_KERNEL);
++		buf = kmalloc(len, GFP_KERNEL);
+ 		if (!buf)
+ 			TRACE_RET(chip, STATUS_ERROR);
  
--	commandbuf = (unsigned char *)kmalloc(size + 2, GFP_KERNEL);
-+	commandbuf = kmalloc(size + 2, GFP_KERNEL);
- 	memcpy((void *)commandbuf + 2, (void *)ptempbuffer, size);
- 
- 	ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
 
 
