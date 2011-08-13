@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1HMGdN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 02:33:13 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:51504 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab1HMGdK (ORCPT
+	id S1752025Ab1HMGeN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 02:34:13 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:47427 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab1HMGeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 02:33:10 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] semaphore: remove superfluous include of ftrace.h
-Date: Sat, 13 Aug 2011 02:32:53 -0400
-Message-Id: <1313217173-32103-1-git-send-email-cota@braap.org>
-X-Mailer: git-send-email 1.7.6
+	Sat, 13 Aug 2011 02:34:11 -0400
+Date: Sat, 13 Aug 2011 08:34:09 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+Message-ID: <20110813063409.GA29111@merkur.ravnborg.org>
+References: <4E457682.5020107@codeaurora.org> <1313175602-21834-1-git-send-email-sboyd@codeaurora.org> <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com> <20110812205520.GL4775@n2100.arm.linux.org.uk> <CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com> <20110812220316.GA28845@merkur.ravnborg.org> <CACqU3MUVir_hfAtVz24Y7NrQOHAa=WyyHnCN4M6BHLQ294Tdww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACqU3MUVir_hfAtVz24Y7NrQOHAa=WyyHnCN4M6BHLQ294Tdww@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Emilio G. Cota" <cota@braap.org>
+On Fri, Aug 12, 2011 at 06:17:25PM -0400, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Fri, Aug 12, 2011 at 6:03 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> >>
+> >> I suspect this would have done the job:
+> >>
+> >> $(obj)/font.o: $(srctree)/drivers/video/console/font_acorn_8x8.c
+> >>         $(cmd,cc_o_c)'
+> >
+> > I prefer using $(call,shipped) and let kbuild figure out how
+> > build an .o file from a .c file.
+> >
+> > In other words - avoiding use of the internal to Makefile.build
+> > variables in various places.
+> >
+> indeed, but I'd argue that 1) this would not be the first Makefile
+> using these internal macros (alpha and ia64 are using such construct
+> for aliasing) and 2) the `cmd_shipped' stuff is as internal than other
+> functions :-)
+A quick grep in Documentation/kbuild will show that only the shipped
+variant is documented.
 
-Inspecting the semaphore code I noticed the #include of ftrace.h,
-which wasn't there last time I checked (years ago). It was
-added by commit "74f4e36 ftrace: stacktrace fix", which
-was partially (and manually) reverted by "3e61e0c mmiotrace
-broken in linux-next (8-bit writes only)".
+We could implement a general copy command - this is needed in some places
+like this.
 
-Since 3e61e0c the include of ftrace.h has been superfluous;
-remove it.
-
-Signed-off-by: Emilio G. Cota <cota@braap.org>
----
- kernel/semaphore.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/semaphore.c b/kernel/semaphore.c
-index 94a62c0..4b63e1d 100644
---- a/kernel/semaphore.c
-+++ b/kernel/semaphore.c
-@@ -31,7 +31,6 @@
- #include <linux/sched.h>
- #include <linux/semaphore.h>
- #include <linux/spinlock.h>
--#include <linux/ftrace.h>
- 
- static noinline void __down(struct semaphore *sem);
- static noinline int __down_interruptible(struct semaphore *sem);
--- 
-1.7.6
-
+	Sam
