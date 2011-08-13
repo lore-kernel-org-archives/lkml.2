@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab1HMAtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 20:49:16 -0400
-Received: from pem.tanner.org ([208.73.81.103]:1891 "EHLO smtp.tanner.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753178Ab1HMAtL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 20:49:11 -0400
-X-Greylist: delayed 1234 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Aug 2011 20:49:11 EDT
-From: Nicolle Smith <nismith@tanner.org>
-Date: Fri, 12 Aug 2011 20:23:37 -0400
-Subject: Let op Let op! Te activeren! Webmail Quota Limiet
-Thread-Topic: Let op Let op! Te activeren! Webmail Quota Limiet
-Thread-Index: AQHMWU8+GCt+M0CE0kaAPoqxqjmyTg==
-Message-ID: <76A7ECD1A4104A4EB27A334A52BDC3BE01A99D46FC@EX2007MAIL.ths.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753733Ab1HMA4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 20:56:03 -0400
+Received: from raba.ibpc.fr ([193.49.234.245]:50373 "EHLO raba.ibpc.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753256Ab1HMA4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 20:56:00 -0400
 MIME-Version: 1.0
-X-SEF-7853D99-ADF1-478E-8894-213D316B8FFA: 1
-X-SEF-Processed: 7_3_0_01158__2011_08_12_20_23_39
-To: unlisted-recipients:; (no To-header on input)
+Date: Sat, 13 Aug 2011 02:50:31 +0200
+From: "Mr. Garry Moore" <Lili.Wei@ibpc.fr>
+To: undisclosed-recipients:;
+Subject: MTCN Numbers: 6096147516
+Reply-To: gmore_233@hotmail.my
+Message-ID: <7a5816abfddc737892d2398b75ea6962@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uw mailbox heeft overschreden de limiet van 1GB, die zo
-gedefinieerd door de beheerder, bent u draait op 5.9GB, mag u niet
-kunnen verzenden of ontvangen nieuwe berichten totdat u opnieuw valideren van uw
-mailbox. Om revalidates uw mailbox,
-Klik op onderstaande link:
 
-http://sindicato2.com/form/use/please/form1.html
 
-dank U
-Webmail System Administrator
-2011 ITS Help Desk.
+-- 
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries.
+Here is the information below.
+
+MTCN Numbers: 6096147516
+Sender Name Is = Patrick Lee Chun
+
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receivers Name
+to your name as stated by the Malaysian Government, send
+your Full Names and address via Email to: Mr Garry Moore
+to proceed.
+
+Note:
+
+You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Garry Moore.
+Tel: +(60) 166647187.
+For more info: www.g20.org
