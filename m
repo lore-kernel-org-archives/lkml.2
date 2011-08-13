@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab1HMUem (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 16:34:42 -0400
-Received: from smtp.multi.fi ([85.134.37.151]:58890 "EHLO smtp.multi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab1HMUek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 16:34:40 -0400
-X-Greylist: delayed 1105 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Aug 2011 16:34:39 EDT
-Message-ID: <4E46DAA3.4050706@mageia.org>
-Date: Sat, 13 Aug 2011 23:12:19 +0300
-From: Thomas Backlund <tmb@mageia.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752064Ab1HMUop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 16:44:45 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:63078 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab1HMUon convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 16:44:43 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [0/6] 2.6.33.18-longterm review
-References: <20110812211045.GA6497@kroah.com>
-In-Reply-To: <20110812211045.GA6497@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Sat, 13 Aug 2011 22:44:42 +0200
+X-Google-Sender-Auth: 6e1JeZmLEvba_kuOaYrMDV-WSLU
+Message-ID: <CAMuHMdVr9iAyqQJUgHq4gcLg+gp7GxF=sH+SBKBuqVWYymXs8Q@mail.gmail.com>
+Subject: Driver framework: binding a driver to two devices?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH skrev 13.8.2011 00:10:
-> This is the start of the stable review cycle for the 2.6.33.18 release.
-> There are 6 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let us know.  If anyone is a maintainer of the proper subsystem, and
-> wants to add a Signed-off-by: line to the patch, please respond with it.
->
-> Responses should be made by Monday, August 15, 2011, 20:00:00 UTC.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.19-rc1.gz
+As Amiga Zorro expansion boards have only one BAR (unlike PCI, which has
+multiple BARs), several Amiga graphics cards show up as two Zorro devices:
+one for the graphics memory and one for the graphics controller's registers.
 
-URL is wrong (and patch version above is wrong too)...
+Traditionally, a driver for such a device used
 
-Correct one is:
-kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.33.18-rc1.gz
+    dev1 = zorro_find_device(id1, ...)
+    dev2 = zorro_find_device(id2, ...)
+
+to find the two devices and match them.
+
+With the "new" driver framework, the matching with device id1 is now
+done using a
+struct zorro_driver with a table of IDs, while the matching with device id2 is
+still done by calling zorro_find_device(id2, ...).
+
+Recently (with cirrusfb) it turned out that the call to
+zorro_find_device(id2, ...)
+may fail to find the second device. I suspect this happens due to the second
+device haven't been probed for at the time the zorro_driver for the
+first device is
+initialized.
+
+I expect this can be fixed by delaying all calls to device_register() in
+amiga_zorro_probe() until all devices have been detected and added to the array
+used by zorro_find_device(). But I was wondering whether there's a more generic
+way in the driver framework to bind a driver to two devices?
+
+Are there any PCI devices that show similar behavior?
+I know some PCI drivers look up data in DMI tables, but that's not
+really the same.
+
+Thanks in advance!
+
+Gr{oetje,eeting}s,
+
+                        Geert
 
 --
-Thomas
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
