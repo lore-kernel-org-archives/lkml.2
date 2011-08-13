@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1HMOMz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 10:12:55 -0400
-Received: from www17.your-server.de ([213.133.104.17]:56358 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab1HMOLx (ORCPT
+	id S1752020Ab1HMOOc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 10:14:32 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:44255 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab1HMOOb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 10:11:53 -0400
-Subject: [PATCH] sctp: dont cast void* from kmalloc()
-From: Thomas Meyer <thomas@m3y3r.de>
-To: "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Aug 2011 11:41:42 +0200
-Message-ID: <1313228502.16820.40.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Sat, 13 Aug 2011 10:14:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313240299-24712-1-git-send-email-anarsoul@gmail.com>
+References: <201108131556.27301.anarsoul@gmail.com>
+	<1313240299-24712-1-git-send-email-anarsoul@gmail.com>
+Date: Sat, 13 Aug 2011 15:14:30 +0100
+X-Google-Sender-Auth: _0RiwHWPOnrVBAj4X9pLZwICCuw
+Message-ID: <CAHkRjk4p1kqwKGiW_XRFU0aap98QkvRGRs0hwsBR4CcfM5RKqA@mail.gmail.com>
+Subject: Re: [PATCH] Fix non-LPAE boot regression.
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+On Saturday, 13 August 2011, Vasily Khoruzhick <anarsoul@gmail.com> wrote:
+> It was introduced by  407f8b4cb07cbc5c1c7cc386f231224e2524ccea
+> ARM: LPAE: MMU setup for the 3-level page table format
+>
+> Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> ---
+>  arch/arm/kernel/head.S |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+> index 0bdafc4..5add5f5 100644
+> --- a/arch/arm/kernel/head.S
+> +++ b/arch/arm/kernel/head.S
+> @@ -206,7 +206,7 @@ __create_page_tables:
+>  1:     orr     r3, r7, r5, lsl #SECTION_SHIFT  @ flags + kernel base
+>         str     r3, [r4, r5, lsl #PMD_ORDER]    @ identity mapping
+>         cmp     r5, r6
+> -       addlo   r5, r5, #SECTION_SHIFT >> 20    @ next section
+> +       addlo   r5, r5, #1                      @ next section
+>         blo     1b
 
- Casting (void *) value returned by kmalloc is useless
- as mentioned in Documentation/CodingStyle, Chap 14.
+Thanks for this. The original code was indeed broken but I think the
+fix should be to use SECTION_SIZE instead of SHIFT. I'll have a look
+on Monday.
 
- The semantic patch that makes this output is available
- in scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci.
-
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-
-diff -u -p a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
---- a/include/net/sctp/sctp.h 2011-07-26 00:46:11.646827854 +0200
-+++ b/include/net/sctp/sctp.h 2011-08-01 19:40:06.389592439 +0200
-@@ -559,7 +559,7 @@ for (pos = chunk->subh.fwdtsn_hdr->skip;
- #define WORD_ROUND(s) (((s)+3)&~3)
- 
- /* Make a new instance of type.  */
--#define t_new(type, flags)	(type *)kzalloc(sizeof(type), flags)
-+#define t_new(type, flags)	kzalloc(sizeof(type), flags)
- 
- /* Compare two timevals.  */
- #define tv_lt(s, t) \
-
-
+-- 
+Catalin
