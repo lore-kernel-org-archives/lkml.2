@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab1HMLJq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 07:09:46 -0400
-Received: from smtp02-new-4.daemonmail.net ([216.104.163.149]:55459 "EHLO
-	smtp02-new-4.daemonmail.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751135Ab1HMLJm (ORCPT
+	id S1751492Ab1HMLPP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 07:15:15 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48835 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1HMLPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 07:09:42 -0400
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Aug 2011 07:09:42 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 6.179
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+	Sat, 13 Aug 2011 07:15:10 -0400
+Subject: [PATCH] ASoC: soc-jack: Fix checking return value of
+ request_any_context_irq
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Aug 2011 19:15:01 +0800
+Message-ID: <1313234101.23974.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Date: Sat, 13 Aug 2011 03:59:32 -0700
-From: "Mr. Kenneth Williams" <mrkennethwilliam@diamondsofnewyork.com>
-To: undisclosed-recipients:;
-Subject: RE:
-Organization: Mr. Kenneth Williams
-Reply-To: <mrkennetkennethwilla@yahoo.com.hk>
-Mail-Reply-To: <mrkennetkennethwilla@yahoo.com.hk>
-Message-ID: <cf51187759bc22a9548729683f996ddd@diamondsofnewyork.com>
-User-Agent: Roundcube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+request_any_context_irq() returns a negative value on failure.
+On success, it returns either IRQC_IS_HARDIRQ or IRQC_IS_NESTED.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/soc-jack.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
+index 7c17b98..38b0013 100644
+--- a/sound/soc/soc-jack.c
++++ b/sound/soc/soc-jack.c
+@@ -327,7 +327,7 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
+ 					      IRQF_TRIGGER_FALLING,
+ 					      gpios[i].name,
+ 					      &gpios[i]);
+-		if (ret)
++		if (ret < 0)
+ 			goto err;
+ 
+ 		if (gpios[i].wake) {
 -- 
-I am Mr. Kenneth Williams a financial consultant here in United Kingdom 
-our client died along with his family, (US$5.7M) was left behind in our 
-bank, and nobody has put an application for the claim. I am asking for 
-your assistant since I have all the details for you to claim the 
-Funds,if you are interested forward to me your names, cell, 
-Phone/fax,profession, age and address Phone:
+1.7.4.1
+
 
 
