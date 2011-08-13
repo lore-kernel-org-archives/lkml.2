@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab1HMA4D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 20:56:03 -0400
-Received: from raba.ibpc.fr ([193.49.234.245]:50373 "EHLO raba.ibpc.fr"
+	id S1752886Ab1HMBAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 21:00:09 -0400
+Received: from raba.ibpc.fr ([193.49.234.245]:48148 "EHLO raba.ibpc.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab1HMA4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 20:56:00 -0400
+	id S1752343Ab1HMBAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 21:00:07 -0400
 MIME-Version: 1.0
-Date: Sat, 13 Aug 2011 02:50:31 +0200
+Date: Sat, 13 Aug 2011 02:54:38 +0200
 From: "Mr. Garry Moore" <Lili.Wei@ibpc.fr>
 To: undisclosed-recipients:;
 Subject: MTCN Numbers: 6096147516
 Reply-To: gmore_233@hotmail.my
-Message-ID: <7a5816abfddc737892d2398b75ea6962@localhost>
+Message-ID: <2d0eb023e0c6acb2e5dd1eae4315e817@localhost>
 User-Agent: RoundCube Webmail/0.3.1
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
