@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424Ab1HMP6K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 11:58:10 -0400
-Received: from mail-out.mounties.k12.pa.us ([173.46.210.193]:41843 "HELO
-	mounties.k12.pa.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1750956Ab1HMP6I convert rfc822-to-8bit (ORCPT
+	id S1751307Ab1HMQCg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 12:02:36 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53233 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab1HMQCd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 11:58:08 -0400
-X-Greylist: delayed 1658 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Aug 2011 11:57:58 EDT
-X-Propel-Return-Path: <ctroutman-myers@mounties.k12.pa.us>
-From: Cindy Troutman-Myers <ctroutman-myers@mounties.k12.pa.us>
-To: "info@web.net" <info@web.net>
-Date: Sat, 13 Aug 2011 11:30:17 -0400
-Subject: Your mailbox is almost full. 
-Thread-Topic: Your mailbox is almost full. 
-Thread-Index: AQHMWc3nHVKtm7PxIUGmADTaScT+jw==
-Message-ID: <D2F901EFD07C1A48B572356098E156F862BD84F1FE@swasdmail.mounties.k12.pa.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 13 Aug 2011 12:02:33 -0400
 MIME-Version: 1.0
-X-Propel-ID: fUxWrb8dfup4
+In-Reply-To: <20110813063409.GA29111@merkur.ravnborg.org>
+References: <4E457682.5020107@codeaurora.org>
+	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
+	<CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
+	<20110812205520.GL4775@n2100.arm.linux.org.uk>
+	<CACqU3MX=-10ouxCqWcBP7MW3_O4_RSLG9wRY8X4iEh5ydQa1AQ@mail.gmail.com>
+	<20110812220316.GA28845@merkur.ravnborg.org>
+	<CACqU3MUVir_hfAtVz24Y7NrQOHAa=WyyHnCN4M6BHLQ294Tdww@mail.gmail.com>
+	<20110813063409.GA29111@merkur.ravnborg.org>
+Date: Sat, 13 Aug 2011 12:02:32 -0400
+Message-ID: <CACqU3MVHgF276SmQFWMcMRL470wz5F4=t0ZmKQ3YoK6Gy9=ETA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox is almost full.
-20GB            23GB
-Current size            Maximum size
+Hi,
 
-Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
-You Are Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
-Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+On Sat, Aug 13, 2011 at 2:34 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Fri, Aug 12, 2011 at 06:17:25PM -0400, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> On Fri, Aug 12, 2011 at 6:03 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> >>
+>> >> I suspect this would have done the job:
+>> >>
+>> >> $(obj)/font.o: $(srctree)/drivers/video/console/font_acorn_8x8.c
+>> >>         $(cmd,cc_o_c)'
+>> >
+>> > I prefer using $(call,shipped) and let kbuild figure out how
+>> > build an .o file from a .c file.
+>> >
+>> > In other words - avoiding use of the internal to Makefile.build
+>> > variables in various places.
+>> >
+>> indeed, but I'd argue that 1) this would not be the first Makefile
+>> using these internal macros (alpha and ia64 are using such construct
+>> for aliasing) and 2) the `cmd_shipped' stuff is as internal than other
+>> functions :-)
+> A quick grep in Documentation/kbuild will show that only the shipped
+> variant is documented.
+>
+> We could implement a general copy command - this is needed in some places
+> like this.
+>
+I was more thinking of a way to use a single source file, for multiple
+target, built in different location, without having to make useless
+copy or cross-subdirectory target dependencies, and removing all
+non-internal use of cc_c_o, and friends.
 
-Click Here<https://spreadsheets.google.com/a/blumail.org/spreadsheet/viewform?formkey=dGVWT2YwdkdiNVU3dWlxay1icGpPUVE6MQ> :
-
-Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
-Thanks
-HELP DESK
-
-
+ - Arnaud
