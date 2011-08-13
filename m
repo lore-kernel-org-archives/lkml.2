@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1HMOLy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 10:11:54 -0400
-Received: from www17.your-server.de ([213.133.104.17]:56300 "EHLO
+	id S1752117Ab1HMOMz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 10:12:55 -0400
+Received: from www17.your-server.de ([213.133.104.17]:56358 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab1HMOLo (ORCPT
+	with ESMTP id S1752008Ab1HMOLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 10:11:44 -0400
-Subject: [PATCH] staging: tidspbridge: dont cast void* from kmalloc()
+	Sat, 13 Aug 2011 10:11:53 -0400
+Subject: [PATCH] sctp: dont cast void* from kmalloc()
 From: Thomas Meyer <thomas@m3y3r.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+To: "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Aug 2011 11:39:08 +0200
-Message-ID: <1313228348.16820.37.camel@localhost.localdomain>
+Date: Sat, 13 Aug 2011 11:41:42 +0200
+Message-ID: <1313228502.16820.40.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
@@ -36,17 +36,17 @@ From: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/tidspbridge/gen/gh.c b/drivers/staging/tidspbridge/gen/gh.c
---- a/drivers/staging/tidspbridge/gen/gh.c 2011-04-14 10:34:38.600880635 +0200
-+++ b/drivers/staging/tidspbridge/gen/gh.c 2011-08-01 19:58:07.230403689 +0200
-@@ -55,7 +55,7 @@ struct gh_t_hash_tab *gh_create(u16 max_
- 	hash_tab->match = match;
- 	hash_tab->delete = delete == NULL ? noop : delete;
+diff -u -p a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+--- a/include/net/sctp/sctp.h 2011-07-26 00:46:11.646827854 +0200
++++ b/include/net/sctp/sctp.h 2011-08-01 19:40:06.389592439 +0200
+@@ -559,7 +559,7 @@ for (pos = chunk->subh.fwdtsn_hdr->skip;
+ #define WORD_ROUND(s) (((s)+3)&~3)
  
--	hash_tab->buckets = (struct element **)
-+	hash_tab->buckets =
- 	    kzalloc(sizeof(struct element *) * max_bucket, GFP_KERNEL);
- 	if (hash_tab->buckets == NULL) {
- 		gh_delete(hash_tab);
+ /* Make a new instance of type.  */
+-#define t_new(type, flags)	(type *)kzalloc(sizeof(type), flags)
++#define t_new(type, flags)	kzalloc(sizeof(type), flags)
+ 
+ /* Compare two timevals.  */
+ #define tv_lt(s, t) \
 
 
