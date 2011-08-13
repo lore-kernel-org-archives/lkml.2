@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1HMB6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 21:58:43 -0400
-Received: from raba.ibpc.fr ([193.49.234.245]:49738 "EHLO raba.ibpc.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820Ab1HMB6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 21:58:42 -0400
+	id S1751963Ab1HMCDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 22:03:40 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35639 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751093Ab1HMCDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 22:03:39 -0400
+X-Sasl-enc: xv7/bKNl3g7H7NyJ1hQvE7LqKcASWeiaHm7HMgF++E9U 1313201018
+Date: Fri, 12 Aug 2011 19:00:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Tonda <as@strmilov.cz>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Module hiding files controlled by sysfs
+Message-ID: <20110813020008.GA15554@kroah.com>
+References: <1313106903-18702-1-git-send-email-as@strmilov.cz>
 MIME-Version: 1.0
-Date: Sat, 13 Aug 2011 03:53:13 +0200
-From: "Mr. Garry Moore" <Lili.Wei@ibpc.fr>
-To: undisclosed-recipients:;
-Subject: MTCN Numbers: 6096147516
-Reply-To: gmore_233@hotmail.my
-Message-ID: <c1ec84244385806a357cc608101c928b@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313106903-18702-1-git-send-email-as@strmilov.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 12, 2011 at 01:55:03AM +0200, Tonda wrote:
+> diff --git a/fs/hidefiles/hidefiles.c b/fs/hidefiles/hidefiles.c
 
+You forgot your Signed-off-by: line and the rest of the changelog
+information explaining what this is, why we would want it, and how you
+are going to maintain it.
 
--- 
-My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries.
-Here is the information below.
+> +static void disable_write_protection(void)
+> +{
+> +	unsigned long value;
+> +	asm volatile("mov %%cr0,%0" : "=r"(value));
+> +	value &= (~WRITEABLE);
+> +	asm volatile("mov %0,%%cr0" : : "r"(value));
+> +}
+> +
+> +static void enable_write_protection(void)
+> +{
+> +	unsigned long value;
+> +	asm volatile("mov %%cr0,%0" : "=r"(value));
+> +	value |= WRITEABLE;
+> +	asm volatile ("mov %0,%%cr0" : : "r"(value));
+> +}
 
-MTCN Numbers: 6096147516
-Sender Name Is = Patrick Lee Chun
+Fun stuff, you can do nasty things to a system with this...
 
-I told him to keep sending you $7,500 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
-
-A certificate will be made to change the Receivers Name
-to your name as stated by the Malaysian Government, send
-your Full Names and address via Email to: Mr Garry Moore
-to proceed.
-
-Note:
-
-You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Garry Moore.
-Tel: +(60) 166647187.
-For more info: www.g20.org
