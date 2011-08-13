@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1HMAXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 20:23:45 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42632 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab1HMAXn convert rfc822-to-8bit (ORCPT
+	id S1753193Ab1HMA0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 20:26:39 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56742 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab1HMA0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 20:23:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1311957278-12290-1-git-send-email-lacombar@gmail.com>
-References: <1311957278-12290-1-git-send-email-lacombar@gmail.com>
-Date: Fri, 12 Aug 2011 20:23:42 -0400
-Message-ID: <CACqU3MWrPZQL476R5uhOWrkjKNpUqHbX0oX7rB_yYbt8mz0kFQ@mail.gmail.com>
-Subject: Re: [PATCH][-next] acpi/acpi_drivers.h: fix warnings when ACPI_DOCK
- is not enabled
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-next@vger.kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Jeff Garzik <jgarzik@redhat.com>, Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 12 Aug 2011 20:26:38 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/4]arch:mips:kernel Fix typo "shud"
+Date: Fri, 12 Aug 2011 17:26:11 -0700
+Message-Id: <1313195174-4464-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-On Fri, Jul 29, 2011 at 12:34 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> /src/linux/linux/drivers/ata/libata-acpi.c: In function 'ata_acpi_associate':
-> /src/linux/linux/drivers/ata/libata-acpi.c:266:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-> /src/linux/linux/include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
-> /src/linux/linux/drivers/ata/libata-acpi.c:275:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-> /src/linux/linux/include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
->
-ping ? next-20110811 is still bad.
+The patch below fixes a typo.
 
- - Arnaud
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-> Cc: Vasiliy Kulikov <segoon@openwall.com>
-> Cc: Jeff Garzik <jgarzik@redhat.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-> ---
->  include/acpi/acpi_drivers.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
-> index e49c36d..bb145e4 100644
-> --- a/include/acpi/acpi_drivers.h
-> +++ b/include/acpi/acpi_drivers.h
-> @@ -144,7 +144,7 @@ static inline void unregister_dock_notifier(struct notifier_block *nb)
->  {
->  }
->  static inline int register_hotplug_dock_device(acpi_handle handle,
-> -                                              struct acpi_dock_ops *ops,
-> +                                              const struct acpi_dock_ops *ops,
->                                               void *context)
->  {
->        return -ENODEV;
-> --
-> 1.7.6.153.g78432
->
->
+---
+ arch/mips/kernel/cevt-bcm1480.c |    2 +-
+ arch/mips/kernel/cevt-sb1250.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/kernel/cevt-bcm1480.c b/arch/mips/kernel/cevt-bcm1480.c
+index 36c3898..c8d0577 100644
+--- a/arch/mips/kernel/cevt-bcm1480.c
++++ b/arch/mips/kernel/cevt-bcm1480.c
+@@ -63,7 +63,7 @@ static void sibyte_set_mode(enum clock_event_mode mode,
+ 		__raw_writeq(0, cfg);
+ 		break;
+ 
+-	case CLOCK_EVT_MODE_UNUSED:	/* shuddup gcc */
++	case CLOCK_EVT_MODE_UNUSED:	/* quiet gcc */
+ 	case CLOCK_EVT_MODE_RESUME:
+ 		;
+ 	}
+diff --git a/arch/mips/kernel/cevt-sb1250.c b/arch/mips/kernel/cevt-sb1250.c
+index 590c54f..c189741 100644
+--- a/arch/mips/kernel/cevt-sb1250.c
++++ b/arch/mips/kernel/cevt-sb1250.c
+@@ -61,7 +61,7 @@ static void sibyte_set_mode(enum clock_event_mode mode,
+ 		__raw_writeq(0, cfg);
+ 		break;
+ 
+-	case CLOCK_EVT_MODE_UNUSED:	/* shuddup gcc */
++	case CLOCK_EVT_MODE_UNUSED:	/* quiet gcc */
+ 	case CLOCK_EVT_MODE_RESUME:
+ 		;
+ 	}
+-- 
+1.7.6
+
