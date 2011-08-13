@@ -1,272 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1HMAjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 20:39:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33250 "EHLO mail.zytor.com"
+	id S1753516Ab1HMAqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 20:46:36 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34725 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab1HMAjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 20:39:16 -0400
-References: <20110812102954.GA3496@albatros>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20110812102954.GA3496@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low addresses
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 12 Aug 2011 18:19:40 -0500
-To: Vasiliy Kulikov <segoon@openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: kernel-hardening@lists.openwall.com, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Message-ID: <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com>
+	id S1753168Ab1HMAqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 20:46:34 -0400
+Subject: Re: [net-next RFC PATCH 0/7] multiqueue support for tun/tap
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, davem@davemloft.net,
+        krkumar2@in.ibm.com, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
+        kvm@vger.kernel.org, mirq-linux@rere.qmqm.pl
+In-Reply-To: <20110812015221.31613.95001.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+References: <20110812015221.31613.95001.stgit@intel-e5620-16-2.englab.nay.redhat.com>
+Content-Type: text/plain
+Date: Fri, 12 Aug 2011 17:46:30 -0700
+Message-Id: <1313196390.28682.14.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+On Fri, 2011-08-12 at 09:54 +0800, Jason Wang wrote:
+> As multi-queue nics were commonly used for high-end servers,
+> current single queue based tap can not satisfy the
+> requirement of scaling guest network performance as the
+> numbers of vcpus increase. So the following series
+> implements multiple queue support in tun/tap.
+> 
+> In order to take advantages of this, a multi-queue capable
+> driver and qemu were also needed. I just rebase the latest
+> version of Krishna's multi-queue virtio-net driver into this
+> series to simplify the test. And for multiqueue supported
+> qemu, you can refer the patches I post in
+> http://www.spinics.net/lists/kvm/msg52808.html. Vhost is
+> also a must to achieve high performance and its code could
+> be used for multi-queue without modification. Alternatively,
+> this series can be also used for Krishna's M:N
+> implementation of multiqueue but I didn't test it.
+> 
+> The idea is simple: each socket were abstracted as a queue
+> for tun/tap, and userspace may open as many files as
+> required and then attach them to the devices. In order to
+> keep the ABI compatibility, device creation were still
+> finished in TUNSETIFF, and two new ioctls TUNATTACHQUEUE and
+> TUNDETACHQUEUE were added for user to manipulate the numbers
+> of queues for the tun/tap.
 
->This patch changes mmap base address allocator logic to incline to
->allocate addresses from the first 16 Mbs of address space.  These
->addresses start from zero byte (0x00AABBCC).  Using such addresses
->breaks ret2libc exploits abusing string buffer overflows.  As library
->addresses contain zero byte, addresses of library functions may not
->present in the string, which is used to overflow the buffer.  As a
->result, it makes it impossible to change the return address on the
->stack
->to the address of some library function (e.g. system(3)).
->
->The logic is applied to 32 bit tasks, both for 32 bit kernels and for
->32
->bit tasks running on 64 bit kernels.  64 bit tasks already have zero
->bytes in addresses of library functions.  Other architectures may reuse
->the logic.
->
->The first Mb is excluded from the range because of the compatibility
->with
->programs like Wine and Dosemu.
->
->If the sum of libraries sizes plus executable size doesn't exceed 15
->Mb,
->the only pages out of ASCII-protected range are VDSO and vsyscall.
->However, they don't provide enough material for obtaining arbitrary
->code
->execution and are not dangerous without using other executable pages.
->
->If 16 Mbs are over, we fallback to the old allocation algorithm.
->
->Without the patch:
->
->$ ldd /bin/ls
->	linux-gate.so.1 =>  (0xf779c000)
->        librt.so.1 => /lib/librt.so.1 (0xb7fcf000)
->        libtermcap.so.2 => /lib/libtermcap.so.2 (0xb7fca000)
->        libc.so.6 => /lib/libc.so.6 (0xb7eae000)
->        libpthread.so.0 => /lib/libpthread.so.0 (0xb7e5b000)
->        /lib/ld-linux.so.2 (0xb7fe6000)
->
->With the patch:
->
->$ ldd /bin/ls
->	linux-gate.so.1 =>  (0xf772a000)
->	librt.so.1 => /lib/librt.so.1 (0x0014a000)
->	libtermcap.so.2 => /lib/libtermcap.so.2 (0x0015e000)
->	libc.so.6 => /lib/libc.so.6 (0x00162000)
->	libpthread.so.0 => /lib/libpthread.so.0 (0x00283000)
->	/lib/ld-linux.so.2 (0x00131000)
->
->The same logic was used in -ow patch for 2.0-2.4 kernels and in
->exec-shield for 2.6.x kernels.  Parts of the code were taken from RHEL6
->version of exec-shield.
->
->Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
->--
-> arch/x86/mm/mmap.c       |    5 +++
-> include/linux/mm_types.h |    4 +++
-> include/linux/sched.h    |    3 ++
->mm/mmap.c                |   66
->++++++++++++++++++++++++++++++++++++++++++---
-> 4 files changed, 73 insertions(+), 5 deletions(-)
->
->diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
->index 1dab519..0c82a94 100644
->--- a/arch/x86/mm/mmap.c
->+++ b/arch/x86/mm/mmap.c
->@@ -131,6 +131,11 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
-> 	} else {
-> 		mm->mmap_base = mmap_base();
-> 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
->+		if (mmap_is_ia32()) {
->+			mm->get_unmapped_exec_area =
->+				arch_get_unmapped_exec_area;
->+			mm->lib_mmap_base = 0x00110000 + mmap_rnd();
->+		}
-> 		mm->unmap_area = arch_unmap_area_topdown;
-> 	}
-> }
->diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
->index 027935c..5f2dca9 100644
->--- a/include/linux/mm_types.h
->+++ b/include/linux/mm_types.h
->@@ -225,9 +225,13 @@ struct mm_struct {
-> 	unsigned long (*get_unmapped_area) (struct file *filp,
-> 				unsigned long addr, unsigned long len,
-> 				unsigned long pgoff, unsigned long flags);
->+	unsigned long (*get_unmapped_exec_area) (struct file *filp,
->+				unsigned long addr, unsigned long len,
->+				unsigned long pgoff, unsigned long flags);
-> 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
-> #endif
-> 	unsigned long mmap_base;		/* base of mmap area */
->+	unsigned long lib_mmap_base;		/* base of mmap libraries area
->(includes zero symbol) */
-> 	unsigned long task_size;		/* size of task vm space */
->	unsigned long cached_hole_size; 	/* if non-zero, the largest hole
->below free_area_cache */
->	unsigned long free_area_cache;		/* first hole of size cached_hole_size
->or larger */
->diff --git a/include/linux/sched.h b/include/linux/sched.h
->index f024c63..8feaba9 100644
->--- a/include/linux/sched.h
->+++ b/include/linux/sched.h
->@@ -394,6 +394,9 @@ arch_get_unmapped_area_topdown(struct file *filp,
->unsigned long addr,
-> 			  unsigned long flags);
-> extern void arch_unmap_area(struct mm_struct *, unsigned long);
->extern void arch_unmap_area_topdown(struct mm_struct *, unsigned long);
->+extern unsigned long
->+arch_get_unmapped_exec_area(struct file *, unsigned long,
->+		unsigned long, unsigned long, unsigned long);
-> #else
-> static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
-> #endif
->diff --git a/mm/mmap.c b/mm/mmap.c
->index d49736f..489510c 100644
->--- a/mm/mmap.c
->+++ b/mm/mmap.c
->@@ -50,6 +50,10 @@ static void unmap_region(struct mm_struct *mm,
-> 		struct vm_area_struct *vma, struct vm_area_struct *prev,
-> 		unsigned long start, unsigned long end);
-> 
->+static unsigned long
->+get_unmapped_area_prot(struct file *file, unsigned long addr, unsigned
->long len,
->+		unsigned long pgoff, unsigned long flags, bool exec);
->+
-> /*
->* WARNING: the debugging will use recursive algorithms so never enable
->this
->  * unless you know what you are doing.
->@@ -989,7 +993,8 @@ unsigned long do_mmap_pgoff(struct file *file,
->unsigned long addr,
-> 	/* Obtain the address to map to. we verify (or select) it and ensure
-> 	 * that it represents a valid section of the address space.
-> 	 */
->-	addr = get_unmapped_area(file, addr, len, pgoff, flags);
->+	addr = get_unmapped_area_prot(file, addr, len, pgoff, flags,
->+			prot & PROT_EXEC);
-> 	if (addr & ~PAGE_MASK)
-> 		return addr;
-> 
->@@ -1528,6 +1533,46 @@ bottomup:
-> }
-> #endif
-> 
->+unsigned long
->+arch_get_unmapped_exec_area(struct file *filp, unsigned long addr0,
->+		unsigned long len, unsigned long pgoff, unsigned long flags)
->+{
->+	unsigned long addr = addr0;
->+	struct mm_struct *mm = current->mm;
->+	struct vm_area_struct *vma;
->+
->+	if (len > TASK_SIZE)
->+		return -ENOMEM;
->+
->+	if (flags & MAP_FIXED)
->+		return addr;
->+
->+	/* We ALWAYS start from the beginning as base addresses
->+	 * with zero high bits is a valued resource */
->+	addr = max_t(unsigned long, mm->lib_mmap_base, mmap_min_addr);
->+
->+	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
->+		/* At this point:  (!vma || addr < vma->vm_end). */
->+		if (TASK_SIZE - len < addr)
->+			return -ENOMEM;
->+
->+		/* We don't want to touch brk of not DYNAMIC elf binaries */
->+		if (mm->brk && addr > mm->brk)
->+			goto failed;
->+
->+		if (!vma || addr + len <= vma->vm_start)
->+			return addr;
->+
->+		addr = vma->vm_end;
->+		/* If 0x01000000 is touched, the algo gives up */
->+		if (addr >= 0x01000000)
->+			goto failed;
->+	}
->+
->+failed:
->+	return current->mm->get_unmapped_area(filp, addr0, len, pgoff,
->flags);
->+}
->+
-> void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
-> {
-> 	/*
->@@ -1541,9 +1586,9 @@ void arch_unmap_area_topdown(struct mm_struct
->*mm, unsigned long addr)
-> 		mm->free_area_cache = mm->mmap_base;
-> }
-> 
->-unsigned long
->-get_unmapped_area(struct file *file, unsigned long addr, unsigned long
->len,
->-		unsigned long pgoff, unsigned long flags)
->+static unsigned long
->+get_unmapped_area_prot(struct file *file, unsigned long addr, unsigned
->long len,
->+		unsigned long pgoff, unsigned long flags, bool exec)
-> {
-> 	unsigned long (*get_area)(struct file *, unsigned long,
-> 				  unsigned long, unsigned long, unsigned long);
->@@ -1556,7 +1601,11 @@ get_unmapped_area(struct file *file, unsigned
->long addr, unsigned long len,
-> 	if (len > TASK_SIZE)
-> 		return -ENOMEM;
-> 
->-	get_area = current->mm->get_unmapped_area;
->+	if (exec && current->mm->get_unmapped_exec_area)
->+		get_area = current->mm->get_unmapped_exec_area;
->+	else
->+		get_area = current->mm->get_unmapped_area;
->+
-> 	if (file && file->f_op && file->f_op->get_unmapped_area)
-> 		get_area = file->f_op->get_unmapped_area;
-> 	addr = get_area(file, addr, len, pgoff, flags);
->@@ -1571,6 +1620,13 @@ get_unmapped_area(struct file *file, unsigned
->long addr, unsigned long len,
-> 	return arch_rebalance_pgtables(addr, len);
-> }
-> 
->+unsigned long
->+get_unmapped_area(struct file *file, unsigned long addr, unsigned long
->len,
->+		unsigned long pgoff, unsigned long flags)
->+{
->+	return get_unmapped_area_prot(file, addr, len, pgoff, flags, false);
->+}
->+
-> EXPORT_SYMBOL(get_unmapped_area);
-> 
->/* Look up the first VMA which satisfies  addr < vm_end,  NULL if none.
->*/
->---
+Is it possible to have tap create these queues automatically when
+TUNSETIFF is called instead of having userspace to do the new
+ioctls. I am just wondering if it is possible to get multi-queue
+to be enabled without any changes to qemu. I guess the number of queues
+could be based on the number of vhost threads/guest virtio-net queues.
 
-This also greatly reduces the address space available for randomization, and may get in the way of the default brk.  Is this a net win or lose?  Also, this zero byte is going to be at the last address, which means it might not help.  How about addresses of the form 0xAA00B000 instead?  The last bits are always 000 for a page address, of course...
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+Also, is it possible to enable multi-queue on the host alone without
+any guest virtio-net changes?
+
+Have you done any multiple TCP_RR/UDP_RR testing with small packet
+sizes? 256byte request/response with 50-100 instances? 
+
+> 
+> I've done some basic performance testing of multi queue
+> tap. For tun, I just test it through vpnc.
+> 
+> Notes:
+> - Test shows improvement when receving packets from
+> local/external host to guest, and send big packet from guest
+> to local/external host.
+> - Current multiqueue based virtio-net/tap introduce a
+> regression of send small packet (512 byte) from guest to
+> local/external host. I suspect it's the issue of queue
+> selection in both guest driver and tap. Would continue to
+> investigate.
+> - I would post the perforamnce numbers as a reply of this
+> mail.
+> 
+> TODO:
+> - solve the issue of packet transmission of small packets.
+> - addressing the comments of virtio-net driver
+> - performance tunning
+> 
+> Please review and comment it, Thanks.
+> 
+> ---
+> 
+> Jason Wang (5):
+>       tuntap: move socket/sock related structures to tun_file
+>       tuntap: categorize ioctl
+>       tuntap: introduce multiqueue related flags
+>       tuntap: multiqueue support
+>       tuntap: add ioctls to attach or detach a file form tap device
+> 
+> Krishna Kumar (2):
+>       Change virtqueue structure
+>       virtio-net changes
+> 
+> 
+>  drivers/net/tun.c           |  738 ++++++++++++++++++++++++++-----------------
+>  drivers/net/virtio_net.c    |  578 ++++++++++++++++++++++++----------
+>  drivers/virtio/virtio_pci.c |   10 -
+>  include/linux/if_tun.h      |    5 
+>  include/linux/virtio.h      |    1 
+>  include/linux/virtio_net.h  |    3 
+>  6 files changed, 867 insertions(+), 468 deletions(-)
+> 
+
