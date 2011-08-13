@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208Ab1HMEPI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 00:15:08 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:41807 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1HMEPF (ORCPT
+	id S1751277Ab1HMEQp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 00:16:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39531 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab1HMEQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 00:15:05 -0400
+	Sat, 13 Aug 2011 00:16:44 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 12 Aug 2011 22:14:43 -0600
-X-Google-Sender-Auth: GVz7tOlsjcAHGkbsVGsDMcXyle8
-Message-ID: <CACxGe6vU5iqwJ5tcYmAKyHVYUDkiNWtTfGCnGFQrFwMdU7qXrg@mail.gmail.com>
-Subject: [GIT PULL] devicetree bug fix
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Stephen Warren <SWarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1312824249.1539.40.camel@vkoul-udesk3>
+References: <CAJd=RBBU7SvVLmVqR_LmJMWG=rgya80DbdPNEc-nR=_d4YQrDQ@mail.gmail.com>
+	<1312824249.1539.40.camel@vkoul-udesk3>
+Date: Sat, 13 Aug 2011 12:16:43 +0800
+Message-ID: <CAJd=RBB2LPeqQ0Fg+NHQdSzPPR8Fg_PbquuOtp1RFt3xtRmjow@mail.gmail.com>
+Subject: [RFC patch resend] DMA engine/Langwell: release LLI pool
+From: Hillf Danton <dhillf@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+When releasing resources allocated before for DMA channel, checking LLI pool
+is added and it is reclaimed if necessary.
 
-Here's one patch needed to fix a bug in the Tegra i2c driver.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Thanks,
-g.
-
-The following changes since commit d55140ce3a7b36241171bd78c75a5ee85de20439:
-
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6
-(2011-08-10 11:08:06 -0700)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
-
-Stephen Warren (1):
-      dt: add empty of_get_property for non-dt
-
- include/linux/of.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+--- a/drivers/dma/intel_mid_dma.c	Sat Aug 13 11:44:46 2011
++++ intel_mid_dma.c	Sat Aug 13 12:21:41 2011
+@@ -833,6 +833,11 @@ static void intel_mid_dma_free_chan_reso
+ 	midc->descs_allocated = 0;
+ 	list_for_each_entry_safe(desc, _desc, &midc->active_list, desc_node) {
+ 		list_del(&desc->desc_node);
++		if (desc->lli != NULL) {
++			pci_pool_free(desc->lli_pool, desc->lli,
++					desc->lli_phys);
++			pci_pool_destroy(desc->lli_pool);
++		}
+ 		pci_pool_free(mid->dma_pool, desc, desc->txd.phys);
+ 	}
+ 	list_for_each_entry_safe(desc, _desc, &midc->free_list, desc_node) {
+@@ -841,6 +846,11 @@ static void intel_mid_dma_free_chan_reso
+ 	}
+ 	list_for_each_entry_safe(desc, _desc, &midc->queue, desc_node) {
+ 		list_del(&desc->desc_node);
++		if (desc->lli != NULL) {
++			pci_pool_free(desc->lli_pool, desc->lli,
++					desc->lli_phys);
++			pci_pool_destroy(desc->lli_pool);
++		}
+ 		pci_pool_free(mid->dma_pool, desc, desc->txd.phys);
+ 	}
+ 	spin_unlock_bh(&midc->lock);
