@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab1HMVbB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 17:31:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40465 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab1HMVbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 17:31:00 -0400
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net> <20110730235644.GA29671@suse.de> <CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com> <4E359A74.7090408@zytor.com> <20110813123401.76ffcfcc.rdunlap@xenotime.net>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20110813123401.76ffcfcc.rdunlap@xenotime.net>
+	id S1752637Ab1HMVet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 17:34:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58781 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1HMVep (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 17:34:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-doc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/4] msm_serial: Add devicetree support
+Date: Sat, 13 Aug 2011 23:34:15 +0200
+Message-ID: <65679699.l4XXDScc0T@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <20110813194645.GA23710@huya.qualcomm.com>
+References: <1313190008-7551-1-git-send-email-davidb@codeaurora.org> <1434305.ibxmc6q715@wuerfel> <20110813194645.GA23710@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 13 Aug 2011 17:29:52 -0400
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Message-ID: <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:rjYS2uBQkUhelQ2ynJDj5wk4tA+opIav4OvOnEEA0V5
+ 0BVTCzxk2CpoWEb0Z0YBNdVurN4U93FaW6b2muPuzb9MOyvDlF
+ PsqqmCdWpNmw/NKTNzWcmCEuId79Fo+fIgP5CeN7zh/Yl5Uv5U
+ I00Foch4DEp/vTIfrsoAZmZ7yGA6SYGSVewIKkVPu6u44sV5om
+ OUkWbgUjMLCmvpP4gTHfQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Saturday 13 August 2011 12:46:45 David Brown wrote:
+> 
+> I'm not sure actually what is best to use here.  I'm thinking that the
+> 'lite' identifier should perhaps go away.  MSM's have two UARTS on
+> them, an older "simple" PIO type of UART, and a newer one that can do
+> DMA (called the hsuart for high-speed).  The hsuart can also be used
+> in a non-DMA driver in a mostly compatible way with the old UART.
+> 
+> For non-high-speed applications, the user will probably just want to
+> use the non-DMA driver.  My question is then: if the device tree
+> describes it as
+> 
+>         compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+> 
+> and one driver matches qcom,msm-hsuart and another matches
+> qcom,msm-uart, which driver will get used.  Ideally, it would use the
+> earliest one in the list.
+> 
+> If that's the case, I'll get rid of the -lite suffix and just make the
+> non-DMA driver compatible with the plain "qcom,msm-uart".
 
->On Sun, 31 Jul 2011 11:09:56 -0700 H. Peter Anvin wrote:
->
->> On 07/31/2011 11:07 AM, Mike Waychison wrote:
->> >>>
->> >>> Internal-reference-ID: rdunlap.2011.0729.id1
->> >>>
->> > 
->> > Acked-by: Mike Waychison <mikew@google.com>
->> > 
->> 
->> Just to avoid namespace collisions, can we at least put the owner
->> somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google>
->and
->> so on?
->
->I would prefer to leave the text contents as unspecified, but I
->wouldn't
->mind recommending that users try to make them unique, e.g., by using
->a company-ID or owner-ID.  Would that be acceptable?
->
->
->---
->~Randy
->*** Remember to use Documentation/SubmitChecklist when testing your
->code ***
+I believe that unfortunately the answer is that the first driver that
+matches anything will get used. There are two possible ways that I can
+see to make it do what you want anyway:
 
-No, that wouldn't work when there is more than one tag from different users.  And yes, I fully expect to see that.
--- 
-Sent from my mobile phone. Please excuse my brevity and lack of formatting.
+1. In the probe function for the slow driver, you return an error
+when the device you get passed matches "qcom,msm-hsuart", possibly
+dependent on whether the other driver also got built.
+
+2. You register one platform driver that handles both names and
+gives the device to just one of the two drivers. This would probably
+require linking the two drivers into the same module, or having
+the non-DMA speed driver just act as a library.
+
+	Arnd
