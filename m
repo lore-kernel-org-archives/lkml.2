@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1HMIGE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 04:06:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48613 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab1HMIFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 04:05:52 -0400
-Date: Sat, 13 Aug 2011 18:05:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Andrea Merello <andreamrl@tiscali.it>,
-        Andre Nogueira <andre.neo.net@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Weil <weil@mail.berlios.de>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers/staging/rtl8187se: Don't pass huge struct
- by value
-Message-Id: <20110813180531.34a47d9bf4851f8c1e9a227c@canb.auug.org.au>
-In-Reply-To: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1751992Ab1HMIR4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 04:17:56 -0400
+Received: from www17.your-server.de ([213.133.104.17]:52734 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab1HMIRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 04:17:53 -0400
+Subject: [PATCH] i2c-dev: Use memdup_user
+From: Thomas Meyer <thomas@m3y3r.de>
+To: khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 13 Aug 2011 10:17:06 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1313223430.16820.14.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8"
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Thomas Meyer <thomas@m3y3r.de>
 
-Hi all,
+ Use kmemdup_user rather than duplicating its implementation
+ This is a little bit restricted to reduce false positives
 
-On Sat, 13 Aug 2011 01:04:36 +0200 (CEST) Jesper Juhl <jj@chaosbits.net> wr=
-ote:
->
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Sat, 13 Aug 2011 00:51:40 +0200
->=20
-> struct ieee80211_network is fairly large (more than half a kilobyte),
-> so let's pass a pointer instead of passing the entire structure by
-> value when ieee80211_is_54g() and ieee80211_is_shortslot() need to
-> look at a few members.
-> Also remove parentheses around the values being returned from those
-> two functions - 'return' is not a function.
+ The semantic patch that makes this output is available
+ in scripts/coccinelle/api/memdup_user.cocci.
 
-Also, is there some reason that they are not "static inline bool"
-functions defined directlt in ieee80211.h?
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
---Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8
-Content-Type: application/pgp-signature
+diff -u -p a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
+--- a/drivers/i2c/i2c-dev.c 2011-04-14 10:34:17.670994023 +0200
++++ b/drivers/i2c/i2c-dev.c 2011-08-01 22:08:25.888046385 +0200
+@@ -251,15 +251,10 @@ static noinline int i2cdev_ioctl_rdrw(st
+ 	if (rdwr_arg.nmsgs > I2C_RDRW_IOCTL_MAX_MSGS)
+ 		return -EINVAL;
+ 
+-	rdwr_pa = kmalloc(rdwr_arg.nmsgs * sizeof(struct i2c_msg), GFP_KERNEL);
+-	if (!rdwr_pa)
+-		return -ENOMEM;
+-
+-	if (copy_from_user(rdwr_pa, rdwr_arg.msgs,
+-			   rdwr_arg.nmsgs * sizeof(struct i2c_msg))) {
+-		kfree(rdwr_pa);
+-		return -EFAULT;
+-	}
++	rdwr_pa = memdup_user(rdwr_arg.msgs,
++			      rdwr_arg.nmsgs * sizeof(struct i2c_msg));
++	if (IS_ERR(rdwr_pa))
++		return PTR_ERR(rdwr_pa);
+ 
+ 	data_ptrs = kmalloc(rdwr_arg.nmsgs * sizeof(u8 __user *), GFP_KERNEL);
+ 	if (data_ptrs == NULL) {
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJORjBLAAoJEDMEi1NhKgbsxHsH/2T6oRInmC3zpyPeRLSebI/X
-l2GvmTcgxhdTNWFXv/IDIlO+rXn7rjVRRK29uTtKYw6iF75ZWgzu3Fk3/P57VtFG
-r+bj/IUScZKyDVYcRJtWms3dmwd/nn0gScLtA5SftBLEeG491TYCA8j8ldOd21iC
-Up31bhPu/keECV2ZzkuVY+vsTZAt+QBw/CIIpJcIjGa6lcIADkwbelLAW7Q6RPX+
-1Vqzd+VMc1tojP7BSna5NTMmk73AsnpQlUPh+AfFZ+xQaW9dtt5EGZ7AcKSvMHMH
-IaFyLL6oA28PlmcJUeXcC1BJ8DqXo1GPXFFrhzZVs/YO6mcKPk5YD9+0QDST3ro=
-=C2Qq
------END PGP SIGNATURE-----
-
---Signature=_Sat__13_Aug_2011_18_05_31_+1000_R9hXPCC5XbGmN6x8--
