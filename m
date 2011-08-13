@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277Ab1HMEQp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 00:16:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39531 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1HMEQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 00:16:44 -0400
+	id S1751335Ab1HMES2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 00:18:28 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:58168 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750860Ab1HMES0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 00:18:26 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
+Date: Fri, 12 Aug 2011 21:18:18 -0700
+Subject: [PATCH] power: max17042: divide by 0 Crash because r_sns init too
+ late
+Thread-Topic: [PATCH] power: max17042: divide by 0 Crash because r_sns init
+ too late
+Thread-Index: AcxZcAerCYz5f7n2RLOstgP1bww6Yw==
+Message-ID: <019FE779-4090-404F-9CE0-A2966384F14C@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1312824249.1539.40.camel@vkoul-udesk3>
-References: <CAJd=RBBU7SvVLmVqR_LmJMWG=rgya80DbdPNEc-nR=_d4YQrDQ@mail.gmail.com>
-	<1312824249.1539.40.camel@vkoul-udesk3>
-Date: Sat, 13 Aug 2011 12:16:43 +0800
-Message-ID: <CAJd=RBB2LPeqQ0Fg+NHQdSzPPR8Fg_PbquuOtp1RFt3xtRmjow@mail.gmail.com>
-Subject: [RFC patch resend] DMA engine/Langwell: release LLI pool
-From: Hillf Danton <dhillf@gmail.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When releasing resources allocated before for DMA channel, checking LLI pool
-is added and it is reclaimed if necessary.
+On MMP2 brownstone divide by 0 error since probe sets r_sns
+after calling power_supply_register.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Move the code up a few lines.  r_sns comes from the platform
+data.
+
+PROP_CURRENT_AVG and PROP_CURRENT divide the result by r_sns.
+
+Signed-off-by: Philip Rakity <prakity@marvell.com>
 ---
+ drivers/power/max17042_battery.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/dma/intel_mid_dma.c	Sat Aug 13 11:44:46 2011
-+++ intel_mid_dma.c	Sat Aug 13 12:21:41 2011
-@@ -833,6 +833,11 @@ static void intel_mid_dma_free_chan_reso
- 	midc->descs_allocated = 0;
- 	list_for_each_entry_safe(desc, _desc, &midc->active_list, desc_node) {
- 		list_del(&desc->desc_node);
-+		if (desc->lli != NULL) {
-+			pci_pool_free(desc->lli_pool, desc->lli,
-+					desc->lli_phys);
-+			pci_pool_destroy(desc->lli_pool);
-+		}
- 		pci_pool_free(mid->dma_pool, desc, desc->txd.phys);
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 9f0183c..4245806 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -210,6 +210,9 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 	if (!chip->pdata->enable_current_sense)
+ 		chip->battery.num_properties -= 2;
+ 
++	if (chip->pdata->r_sns == 0)
++		chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
++
+ 	ret = power_supply_register(&client->dev, &chip->battery);
+ 	if (ret) {
+ 		dev_err(&client->dev, "failed: power supply register\n");
+@@ -226,9 +229,6 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 		max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
+ 		max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
+ 		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
+-	} else {
+-		if (chip->pdata->r_sns == 0)
+-			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
  	}
- 	list_for_each_entry_safe(desc, _desc, &midc->free_list, desc_node) {
-@@ -841,6 +846,11 @@ static void intel_mid_dma_free_chan_reso
- 	}
- 	list_for_each_entry_safe(desc, _desc, &midc->queue, desc_node) {
- 		list_del(&desc->desc_node);
-+		if (desc->lli != NULL) {
-+			pci_pool_free(desc->lli_pool, desc->lli,
-+					desc->lli_phys);
-+			pci_pool_destroy(desc->lli_pool);
-+		}
- 		pci_pool_free(mid->dma_pool, desc, desc->txd.phys);
- 	}
- 	spin_unlock_bh(&midc->lock);
+ 
+ 	return 0;
+-- 
+1.7.0.4
+
+
