@@ -1,53 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1HMCWD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 22:22:03 -0400
-Received: from raba.ibpc.fr ([193.49.234.245]:48260 "EHLO raba.ibpc.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab1HMCWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 22:22:01 -0400
+	id S1752994Ab1HMCvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 22:51:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53360 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752511Ab1HMCvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Aug 2011 22:51:47 -0400
+Date: Sat, 13 Aug 2011 11:51:40 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [linux-next] ASoC: build failure with make eseries_pxa_defconfig
+Message-ID: <20110813025139.GA32506@opensource.wolfsonmicro.com>
+References: <1313201521.12790.2.camel@phoenix>
 MIME-Version: 1.0
-Date: Sat, 13 Aug 2011 04:16:31 +0200
-From: "Mr. Garry Moore" <Lili.Wei@ibpc.fr>
-To: undisclosed-recipients:;
-Subject: MTCN Numbers: 6096147516
-Reply-To: gmore_233@hotmail.my
-Message-ID: <bb1804cd9d3bce6ca2e6142155450839@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313201521.12790.2.camel@phoenix>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 13, 2011 at 10:12:01AM +0800, Axel Lin wrote:
 
+> In the case of build with "make eseries_pxa_defconfig;make",
+> both i2c and spi support are not configured.
+> Thus CONFIG_REGMAP is default to disable.
 
--- 
-My associate has helped me to send your first payment
-of $7,500 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries.
-Here is the information below.
-
-MTCN Numbers: 6096147516
-Sender Name Is = Patrick Lee Chun
-
-I told him to keep sending you $7,500 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
-
-A certificate will be made to change the Receivers Name
-to your name as stated by the Malaysian Government, send
-your Full Names and address via Email to: Mr Garry Moore
-to proceed.
-
-Note:
-
-You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Garry Moore.
-Tel: +(60) 166647187.
-For more info: www.g20.org
+Meh, right.  This is all due to Grant insisting on having direct
+registration functions for each bus, previously we could just select
+regmap.
