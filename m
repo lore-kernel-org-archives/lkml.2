@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab1HMG3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 02:29:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43655 "EHLO
+	id S1751830Ab1HMGca (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 02:32:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34714 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751121Ab1HMG3i (ORCPT
+	by vger.kernel.org with ESMTP id S1751121Ab1HMGc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 02:29:38 -0400
-Date: Sat, 13 Aug 2011 15:29:26 +0900
+	Sat, 13 Aug 2011 02:32:28 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [linux-next] ASoC: sound/soc/samsung/i2s.c build failure
-Message-ID: <20110813062925.GB16171@opensource.wolfsonmicro.com>
-References: <1313208043.29596.11.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313208043.29596.11.camel@phoenix>
-X-Cookie: Do not overtax your powers.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Add more checks for WM8994 being active during suspend
+Date: Sat, 13 Aug 2011 14:37:48 +0900
+Message-Id: <1313213868-14824-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 12:00:43PM +0800, Axel Lin wrote:
->   CC      sound/soc/samsung/i2s.o
-> sound/soc/samsung/i2s.c:24:18: error: idma.h: No such file or directory
-> sound/soc/samsung/i2s.c: In function 'samsung_i2s_dai_probe':
-> sound/soc/samsung/i2s.c:883: error: implicit declaration of function 'idma_reg_addr_init'
-> make[3]: *** [sound/soc/samsung/i2s.o] Error 1
-> make[2]: *** [sound/soc/samsung] Error 2
-> make[1]: *** [sound/soc] Error 2
-> make: *** [sound] Error 2
+Enhancements to the WM8994 audio driver and new features on more modern
+devices in the series mean that we can no longer rely on VMID being active
+as an indication that the device is active. Add further checks for digital
+paths and microphone detection.
 
-> It is caused by commit a0c27ab2421c47dc7c53f797fffcc0d17cdb122c
-> ASoC: Revert "ASoC: SAMSUNG: Add I2S0 internal dma driver"
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c |   34 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 34 insertions(+), 0 deletions(-)
 
-> To fix the build error, I think we also need to revert
-> commit 61100f405de5c16a0866de7843ed442090436e6a
-> "ASoC: SAMSUNG: Modify I2S driver to support idma".
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 5690102..5d6ba13 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -217,6 +217,40 @@ static int wm8994_suspend(struct device *dev)
+ 		return 0;
+ 	}
+ 
++	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_4);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read power status: %d\n", ret);
++	} else if (ret & (WM8994_AIF2ADCL_ENA | WM8994_AIF2ADCR_ENA |
++			  WM8994_AIF1ADC2L_ENA | WM8994_AIF1ADC2R_ENA |
++			  WM8994_AIF1ADC1L_ENA | WM8994_AIF1ADC1R_ENA)) {
++		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
++		return 0;
++	}
++
++	ret = wm8994_reg_read(wm8994, WM8994_POWER_MANAGEMENT_5);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read power status: %d\n", ret);
++	} else if (ret & (WM8994_AIF2DACL_ENA | WM8994_AIF2DACR_ENA |
++			  WM8994_AIF1DAC2L_ENA | WM8994_AIF1DAC2R_ENA |
++			  WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA)) {
++		dev_dbg(dev, "CODEC still active, ignoring suspend\n");
++		return 0;
++	}
++
++	switch (wm8994->type) {
++	case WM8958:
++		ret = wm8994_reg_read(wm8994, WM8958_MIC_DETECT_1);
++		if (ret < 0) {
++			dev_err(dev, "Failed to read power status: %d\n", ret);
++		} else if (ret & WM8958_MICD_ENA) {
++			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
++			return 0;
++		}
++		break;
++	default:
++		break;
++	}
++
+ 	/* Disable LDO pulldowns while the device is suspended if we
+ 	 * don't know that something will be driving them. */
+ 	if (!wm8994->ldo_ena_always_driven)
+-- 
+1.7.5.4
 
-This is already fixed by cherry picking back the original commit, it
-depended on some stuff from Kukjin's tree.
