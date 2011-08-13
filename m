@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1HMQd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 12:33:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43094 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1HMQd4 (ORCPT
+	id S1751611Ab1HMQf7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 12:35:59 -0400
+Received: from mail-out.mounties.k12.pa.us ([173.46.210.193]:58065 "HELO
+	mounties.k12.pa.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1751116Ab1HMQf6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 12:33:56 -0400
-Date: Sat, 13 Aug 2011 20:32:52 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, x86@kernel.org,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [RFC] x86: restrict pid namespaces to
- 32 or 64 bit syscalls
-Message-ID: <20110813163252.GA18458@albatros>
-References: <20110812150304.GC16880@albatros>
- <4E45884B.8030303@zytor.com>
- <20110813062246.GC3851@albatros>
- <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com>
+	Sat, 13 Aug 2011 12:35:58 -0400
+X-Propel-Return-Path: <ctroutman-myers@mounties.k12.pa.us>
+From: Cindy Troutman-Myers <ctroutman-myers@mounties.k12.pa.us>
+To: "info@web.net" <info@web.net>
+Date: Sat, 13 Aug 2011 12:31:31 -0400
+Subject: Your mailbox is almost full. 
+Thread-Topic: Your mailbox is almost full. 
+Thread-Index: AQHMWdZ1eZ6x3cnvHUa2JdlyjxWrLQ==
+Message-ID: <D2F901EFD07C1A48B572356098E156F862BD84F2B0@swasdmail.mounties.k12.pa.us>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Propel-ID: fUxWrb8dgyH7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 10:41 -0500, H. Peter Anvin wrote:
-> IA64 is totally different.
 
-I didn't say all IA-32 compatibility layer of x86 is a crap, surely no.
-But there is some code, which is poorly tested exactly because it is
-compatibility code.  One relatively recent example:
+Your mailbox is almost full.
+20GB            23GB
+Current size            Maximum size
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3e645d6b485446c54c6745c5e2cf5c528fe4deec
+Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
+You Are Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
+Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
 
->  I'm extremely sceptical to this patch;
-> it feels like putting code in a super-hot path to paper over a problem that has to be fixed anyway.
+Click Here<https://spreadsheets.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHh1U3NkQ2k4eHYyb0s3UU9Nd3lZN2c6MQ&ndplr=1> :
 
-I'll move the check to the tracesys branch, which is not a hot path, in
-the next RFC version, so this should not be a problem.
+Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
+Thanks
+HELP DESK
 
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
