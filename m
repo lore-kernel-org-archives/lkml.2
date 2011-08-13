@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1HMDpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Aug 2011 23:45:21 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56274 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab1HMDpU (ORCPT
+	id S1752954Ab1HMD5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Aug 2011 23:57:09 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:44639 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752194Ab1HMD5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Aug 2011 23:45:20 -0400
-Subject: [PATCH] ASoC: wm8750: Fix missing braces around initializer warning
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <richard@openedhand.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Aug 2011 11:45:14 +0800
-Message-ID: <1313207114.29596.6.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Aug 2011 23:57:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1312824486.1539.42.camel@vkoul-udesk3>
+References: <CAJd=RBDqKoqozsOg9GYicLMh4QELu-yESjNZJk8e--=QPzKVoQ@mail.gmail.com>
+	<1312824486.1539.42.camel@vkoul-udesk3>
+Date: Sat, 13 Aug 2011 11:57:05 +0800
+Message-ID: <CAJd=RBB8RBzS6LUWH3TS-7v3X7b695Bb92wyHqEYYBJQ19xAog@mail.gmail.com>
+Subject: [RFC patch resend] DMA engine/Langwell: process pending descriptors
+From: Hillf Danton <dhillf@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below warning:
-  CC      sound/soc/codecs/wm8750.o
-sound/soc/codecs/wm8750.c:784: warning: missing braces around initializer
-sound/soc/codecs/wm8750.c:784: warning: (near initialization for 'wm8750_spi_ids[2].name')
+Descriptors could be added onto the queue list, though pending descriptors are
+checked in intel_mid_dma_issue_pending(), they are not processed by scanning
+the queue list. Now it is added.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- sound/soc/codecs/wm8750.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8750.c b/sound/soc/codecs/wm8750.c
-index 82ac5fc..8983ab1 100644
---- a/sound/soc/codecs/wm8750.c
-+++ b/sound/soc/codecs/wm8750.c
-@@ -781,7 +781,7 @@ static int __devexit wm8750_spi_remove(struct spi_device *spi)
- static const struct spi_device_id wm8750_spi_ids[] = {
- 	{ "wm8750", 0 },
- 	{ "wm8987", 0 },
--	{ 0, 0 },
-+	{ }
- };
- MODULE_DEVICE_TABLE(spi, wm8750_spi_ids);
- 
--- 
-1.7.4.1
-
-
-
+--- a/drivers/dma/intel_mid_dma.c	Sat Aug 13 11:44:46 2011
++++ intel_mid_dma.c	Sat Aug 13 11:52:35 2011
+@@ -338,8 +338,12 @@ static void midc_scan_descriptors(struct
+ 		if (desc->status == DMA_IN_PROGRESS)
+ 			midc_descriptor_complete(midc, desc);
+ 	}
+-	return;
++	list_for_each_entry_safe(desc, _desc, &midc->queue, desc_node) {
++		if (desc->status == DMA_IN_PROGRESS)
++			midc_descriptor_complete(midc, desc);
+ 	}
++}
++
+ /**
+  * midc_lli_fill_sg -		Helper function to convert
+  *				SG list to Linked List Items.
