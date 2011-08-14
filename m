@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab1HNUuV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 16:50:21 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:40939 "EHLO smtp.gentoo.org"
+	id S1754182Ab1HNUum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 16:50:42 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:40947 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753713Ab1HNUuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 16:50:18 -0400
+	id S1753730Ab1HNUuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 16:50:20 -0400
 From: Sergei Trofimovich <slyfox@gentoo.org>
 To: linux-kernel@vger.kernel.org
 Cc: Sergei Trofimovich <slyfox@gentoo.org>,
+        Ben Collins <bcollins@bluecherry.net>,
         Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Marin Mitov <mitov@issp.bas.bg>,
+        =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>,
         devel@driverdev.osuosl.org
-Subject: [PATCH] dt3155v4l: fix build failure
-Date: Sun, 14 Aug 2011 23:52:52 +0300
-Message-Id: <1313355177-12605-2-git-send-email-slyfox@gentoo.org>
+Subject: =?UTF-8?q?=5BPATCH=5D=20staging=3A=20solo6x10/core=3A=20fix=20build=20failure?=
+Date: Sun, 14 Aug 2011 23:52:54 +0300
+Message-Id: <1313355177-12605-4-git-send-email-slyfox@gentoo.org>
 X-Mailer: git-send-email 1.7.3.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Found on allmodconfig build (ARCH=alpha)
 
-    drivers/staging/dt3155v4l/dt3155v4l.c: In function 'dt3155_open':
-    drivers/staging/dt3155v4l/dt3155v4l.c:410: error: implicit declaration of function 'kzalloc'
+    drivers/staging/solo6x10/core.c: In function 'solo_pci_probe':
+    drivers/staging/solo6x10/core.c:140: error: implicit declaration of function 'kzalloc'
 
 Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Cc: Ben Collins <bcollins@bluecherry.net>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Marin Mitov <mitov@issp.bas.bg>
+Cc: "Krzysztof Hałasa" <khalasa@piap.pl>
 Cc: devel@driverdev.osuosl.org
 ---
- drivers/staging/dt3155v4l/dt3155v4l.c |    1 +
+ drivers/staging/solo6x10/core.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/dt3155v4l/dt3155v4l.c b/drivers/staging/dt3155v4l/dt3155v4l.c
-index fe02d22..05aa41c 100644
---- a/drivers/staging/dt3155v4l/dt3155v4l.c
-+++ b/drivers/staging/dt3155v4l/dt3155v4l.c
-@@ -22,6 +22,7 @@
- #include <linux/stringify.h>
- #include <linux/delay.h>
- #include <linux/kthread.h>
+diff --git a/drivers/staging/solo6x10/core.c b/drivers/staging/solo6x10/core.c
+index 7677994..f974f64 100644
+--- a/drivers/staging/solo6x10/core.c
++++ b/drivers/staging/solo6x10/core.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
 +#include <linux/slab.h>
- #include <media/v4l2-dev.h>
- #include <media/v4l2-ioctl.h>
- #include <media/videobuf2-dma-contig.h>
+ #include <linux/videodev2.h>
+ #include "solo6x10.h"
+ #include "tw28.h"
 -- 
 1.7.3.4
 
