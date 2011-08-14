@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1HNBB5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 21:01:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48587 "EHLO
+	id S1752873Ab1HNBCL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 21:02:11 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48597 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab1HNBBy (ORCPT
+	with ESMTP id S1752758Ab1HNBCH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 21:01:54 -0400
-Date: Sat, 13 Aug 2011 18:01:43 -0700 (PDT)
-Message-Id: <20110813.180143.2121863777626096757.davem@davemloft.net>
-To: julia@diku.dk
-Cc: wg@grandegger.com, kernel-janitors@vger.kernel.org, joe@perches.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/can/sja1000/plx_pci.c: eliminate double
- free
+	Sat, 13 Aug 2011 21:02:07 -0400
+Date: Sat, 13 Aug 2011 18:01:59 -0700 (PDT)
+Message-Id: <20110813.180159.1540694388210461647.davem@davemloft.net>
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        sebastian.poehn@belden.com, wangshaoyan.pt@taobao.com
+Subject: Re: [PATCH RESEND] gianfar: reduce stack usage in gianfar_ethtool.c
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1312820931-28230-1-git-send-email-julia@diku.dk>
-References: <1312820931-28230-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1313118445-25594-1-git-send-email-wangshaoyan.pt@taobao.com>
+References: <1313118445-25594-1-git-send-email-wangshaoyan.pt@taobao.com>
 X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 13 Aug 2011 18:01:45 -0700 (PDT)
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 13 Aug 2011 18:02:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Mon,  8 Aug 2011 18:28:50 +0200
+From: stufever@gmail.com
+Date: Fri, 12 Aug 2011 11:07:25 +0800
 
-> From: Julia Lawall <julia@diku.dk>
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 > 
-> In this code, the failure_cleanup label calls the function
-> plx_pci_del_card, which frees everything in the card->net_dev array.  dev
-> is placed in this array immediately after allocation, so the two subsequent
-> jumps to failure_cleanup should not also call free_sja1000dev, but the
-> second one does.
+>   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
 > 
-> If plx_pci_check_sja1000 fails, then free_sja1000dev is also called on
-> dev.  Because dev is already in the card->net_dev array, this implies that
-> when plx_pci_del_card is later called, it may get freed again.  So that
-> entry is reset to NULL after the free.
-> 
-> Finally, if there is a problem with one channel, there will be a hole in the
-> array.  card->channels counts the number of channels that have succeeded,
-> and does not keep track of the index of the largest element in the array
-> that is valid.  So the loop in plx_pci_del_card is changed to go up to
-> PLX_PCI_MAX_CHAN, which is only 2.
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> Reviewed-and-tested-by: Sebastian Pöhn <sebastian.poehn@belden.com>
 
 Applied.
