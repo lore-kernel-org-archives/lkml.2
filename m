@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1HNTIG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:08:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab1HNTIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:08:01 -0400
-From: Jes.Sorensen@redhat.com
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Remove name and email address as maintainer for SN2
-Date: Sun, 14 Aug 2011 21:05:06 +0200
-Message-Id: <1313348706-16093-1-git-send-email-Jes.Sorensen@redhat.com>
+	id S1754777Ab1HNTJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:09:56 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43884 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab1HNTJy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 15:09:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E43EC49.1040803@mit.edu>
+References: <1311529994-7924-1-git-send-email-minipli@googlemail.com>
+	<1311529994-7924-3-git-send-email-minipli@googlemail.com>
+	<20110804064436.GA16247@gondor.apana.org.au>
+	<4E43EC49.1040803@mit.edu>
+Date: Sun, 14 Aug 2011 21:09:53 +0200
+Message-ID: <CA+rthh8WQ1KxFj+gHJ=MzdNVmLsWPQjG_-Opfd5drjR8nvdhQw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] crypto, x86: SSSE3 based SHA1 implementation for x86-64
+From: Mathias Krause <minipli@googlemail.com>
+To: Andy Lutomirski <luto@mit.edu>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Maxim Locktyukhin <maxim.locktyukhin@intel.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
+On Thu, Aug 11, 2011 at 4:50 PM, Andy Lutomirski <luto@mit.edu> wrote:
+> I have vague plans to clean up extended state handling and make
+> kernel_fpu_begin work efficiently from any context.  (i.e. the first
+> kernel_fpu_begin after a context switch could take up to ~60 ns on Sandy
+> Bridge, but further calls to kernel_fpu_begin would be a single branch.)
+>
+> The current code that handles context switches when user code is using
+> extended state is terrible and will almost certainly become faster in the
+> near future.
 
-Signed-off-by: Jes Sorensen <Jes.Sorensen@gmail.com>
----
- MAINTAINERS |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Sounds good! This would not only improve the performance of sha1_ssse3
+but of aesni as well.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1d445f5..79080e0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5921,7 +5921,6 @@ S:	Supported
- F:	drivers/net/smsc9420.*
- 
- SN-IA64 (Itanium) SUB-PLATFORM
--M:	Jes Sorensen <jes@sgi.com>
- L:	linux-altix@sgi.com
- L:	linux-ia64@vger.kernel.org
- W:	http://www.sgi.com/altix
--- 
-1.7.4.4
+> Hopefully I'll have patches for 3.2 or 3.3.
+>
+> IOW, please don't introduce another thing like the fpu crypto module quite
+> yet unless there's a good reason.  I'm looking forward to deleting the fpu
+> module entirely.
 
+I've no intention to. So please go ahead and do so.
+
+
+Mathias
