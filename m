@@ -1,71 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1HNVmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 17:42:05 -0400
-Received: from mail.gw90.de ([188.40.100.199]:38274 "EHLO mail.gw90.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754546Ab1HNVmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 17:42:03 -0400
-X-Greylist: delayed 2631 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Aug 2011 17:42:03 EDT
-Subject: [PATCH] scripts/package/Makefile: Fix typo: s/an deb package/a deb
- package/
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-btYkYwgJuCxSHxy9AZBv"
-Date: Sun, 14 Aug 2011 22:58:06 +0200
-Message-ID: <1313355486.3421.12.camel@mattotaupa>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1754889Ab1HNV56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 17:57:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45260 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511Ab1HNV55 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 17:57:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <bkwpSnItbJM.A.iJB.HOCSOB@chimera>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
+	<bkwpSnItbJM.A.iJB.HOCSOB@chimera>
+Date: Sun, 14 Aug 2011 14:57:56 -0700
+Message-ID: <CAAmnkzk=8NZRpFHUR47R179H-PUTu8BYhOr3Kn8b-Z4nvv9cHw@mail.gmail.com>
+Subject: Re: [Bug #38612] Boot time warnings in APIC
+From: "Bill Huey (hui)" <bill.huey@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It seemed like a hardware problem so change the state of the bug. I'll
+keep you folks update if I see it again.
 
---=-btYkYwgJuCxSHxy9AZBv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks
 
-=46rom 8b502382775b22405ed32e1db9c8559acec4b4c7 Mon Sep 17 00:00:00 2001
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-Date: Sun, 14 Aug 2011 17:53:00 +0200
-
-Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
-CC: Michal Marek <mmarek@suse.cz>
-CC: trivial@kernel.org
----
- scripts/package/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-index fa4a0a1..7d55cb3 100644
---- a/scripts/package/Makefile
-+++ b/scripts/package/Makefile
-@@ -89,7 +89,7 @@ clean-dirs +=3D $(objtree)/tar-install/
- help: FORCE
- 	@echo '  rpm-pkg         - Build both source and binary RPM kernel packag=
-es'
- 	@echo '  binrpm-pkg      - Build only the binary kernel package'
--	@echo '  deb-pkg         - Build the kernel as an deb package'
-+	@echo '  deb-pkg         - Build the kernel as a deb package'
- 	@echo '  tar-pkg         - Build the kernel as an uncompressed tarball'
- 	@echo '  targz-pkg       - Build the kernel as a gzip compressed tarball'
- 	@echo '  tarbz2-pkg      - Build the kernel as a bzip2 compressed tarball=
-'
---=20
-1.7.5.4
-
---=-btYkYwgJuCxSHxy9AZBv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAk5INtgACgkQPX1aK2wOHVisbQCfcxeSKt39I+wtXPOZxKzgdooL
-aSUAniRJKztE3QbS+OpnKWuEF2WwznOk
-=c0zp
------END PGP SIGNATURE-----
-
---=-btYkYwgJuCxSHxy9AZBv--
-
+bill
