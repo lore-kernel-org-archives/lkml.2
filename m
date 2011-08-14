@@ -1,64 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab1HNRBc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:01:32 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41610 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab1HNRB3 (ORCPT
+	id S1754167Ab1HNRCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:02:40 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57874 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab1HNRCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:01:29 -0400
-Date: Sun, 14 Aug 2011 12:01:24 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Dave Jones <davej@redhat.com>
-Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mattia Dongili <malattia@debian.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [BUG?] Moving drivers to drivers/cpufreq/ causes all to be loaded
-Message-ID: <20110814170124.GC12747@elie.gateway.2wire.net>
-References: <20110414094447.GA1611@n2100.arm.linux.org.uk>
- <alpine.LFD.2.00.1104211629300.24613@xanadu.home>
- <201104261605.26791.arnd@arndb.de>
- <201104261904.45923.rjw@sisk.pl>
- <20110426181508.GB1908@redhat.com>
- <20110813154638.GA1494@elie.gateway.2wire.net>
- <20110813190246.GA10412@elie.gateway.2wire.net>
- <20110813211142.GA1536@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110813211142.GA1536@redhat.com>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+	Sun, 14 Aug 2011 13:02:34 -0400
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: IS_ENABLED() and non-available symbols
+Date: Sun, 14 Aug 2011 13:02:26 -0400
+Message-Id: <1313341346-15605-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.6.153.g78432
+In-Reply-To: <CACqU3MU2pjcqgYDjn=S2asdLamU0mity+kLizH_mbTtJU5Fh2A@mail.gmail.com>
+References: <CACqU3MU2pjcqgYDjn=S2asdLamU0mity+kLizH_mbTtJU5Fh2A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(-cc: ARM/etc people; +cc: Kay)
+Hi,
 
-Dave Jones wrote:
+On Sun, Aug 14, 2011 at 12:55 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> The solution is trivial, but I am not sure we want to go that way: we
+> need to generated a __enabled_ entry for symbols for _all_ symbols in
+> the configuration, even internal one
+>
+That should do the job...
 
-> If we have to move stuff again, we could do drivers/cpufreq/x86/ etc..
+ -= NOT FOR MERGE =-
 
-Unfortunately the old script used "find", not "ls", so that wouldn't
-work. :/
+Not-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
-> What we used to do in Fedora grew more and more complex over time.
-> Here's the last incarnation: http://fpaste.org/uvDb/
+---
+ scripts/kconfig/confdata.c |   42 +++++++++++++++++++++++++++++++-----------
+ 1 files changed, 31 insertions(+), 11 deletions(-)
 
-The main difference from Debian seems to be that this script loads the
-module corresponding to the chosen governor, while Debian's init
-script loads all governor modules early (using a heuristic I would
-like to avoid that involves running "find" to list them) and chooses
-the governor to use later.
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 59b667c..e976ccb 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -503,17 +503,6 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+ 			fprintf(fp, "#define %s%s%s 1\n",
+ 			    CONFIG_, sym->name, suffix);
+ 		}
+-		/*
+-		 * Generate the __enabled_CONFIG_* and
+-		 * __enabled_CONFIG_*_MODULE macros for use by the
+-		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
+-		 * generated even for booleans so that the IS_ENABLED() macro
+-		 * works.
+-		 */
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+-				sym->name, (*value == 'y'));
+-		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
+-				sym->name, (*value == 'm'));
+ 		break;
+ 	}
+ 	case S_HEX: {
+@@ -565,6 +554,35 @@ static struct conf_printer header_printer_cb =
+ };
+ 
+ /*
++ * Generate the __enabled_CONFIG_* and __enabled_CONFIG_*_MODULE macros for
++ * use by the IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
++ * generated even for booleans so that the IS_ENABLED() macro works.
++ */
++static void
++header_print__enabled_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
++{
++
++	switch (sym->type) {
++	case S_BOOLEAN:
++	case S_TRISTATE: {
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
++		    sym->name, (*value == 'y'));
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
++		    sym->name, (*value == 'm'));
++		break;
++	}
++	default:
++		break;
++	}
++}
++
++static struct conf_printer header__enabled_printer_cb =
++{
++	.print_symbol = header_print__enabled_symbol,
++	.print_comment = header_print_comment,
++};
++
++/*
+  * Tristate printer
+  *
+  * This printer is used when generating the `include/config/tristate.conf' file.
+@@ -945,6 +963,8 @@ int conf_write_autoconf(void)
+ 	conf_write_heading(out_h, &header_printer_cb, NULL);
+ 
+ 	for_all_symbols(i, sym) {
++		conf_write_symbol(out_h, sym, &header__enabled_printer_cb, NULL);
++
+ 		sym_calc_value(sym);
+ 		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+ 			continue;
+-- 
+1.7.6.153.g78432
 
-> In an ideal world, we'd auto-load the right module on a hotplug event
-> from a cpu, but we're not there yet. I believe Kay is working on that.
-
-Yes, that is what I was hoping for.  Are there patches to test?
-
-The comment at
-http://thread.gmane.org/gmane.linux.kernel/796450/focus=796874 also
-looks promising.
-
-Thanks much for the help,
-Jonathan
