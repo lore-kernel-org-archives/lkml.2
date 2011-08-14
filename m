@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab1HNQcv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:32:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43480 "EHLO hera.kernel.org"
+	id S1753895Ab1HNQeU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:34:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43848 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753453Ab1HNQcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:32:48 -0400
-Date: Sun, 14 Aug 2011 16:32:29 GMT
+	id S1753574Ab1HNQeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:34:19 -0400
+Date: Sun, 14 Aug 2011 16:34:01 GMT
 From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-5238cdd3873e67a98b28c1161d65d2a615c320a3@git.kernel.org>
+Message-ID: <tip-8cb120d3e41a0464a559d639d519cef563717a4e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110721184757.886850167@google.com>
-References: <20110721184757.886850167@google.com>
+        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110721184757.989000590@google.com>
+References: <20110721184757.989000590@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Prevent buddy interactions with throttled entities
-Git-Commit-ID: 5238cdd3873e67a98b28c1161d65d2a615c320a3
+Subject: [tip:sched/core] sched: Migrate throttled tasks on HOTPLUG
+Git-Commit-ID: 8cb120d3e41a0464a559d639d519cef563717a4e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:32:32 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:34:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5238cdd3873e67a98b28c1161d65d2a615c320a3
-Gitweb:     http://git.kernel.org/tip/5238cdd3873e67a98b28c1161d65d2a615c320a3
+Commit-ID:  8cb120d3e41a0464a559d639d519cef563717a4e
+Gitweb:     http://git.kernel.org/tip/8cb120d3e41a0464a559d639d519cef563717a4e
 Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 21 Jul 2011 09:43:37 -0700
+AuthorDate: Thu, 21 Jul 2011 09:43:38 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 14 Aug 2011 12:03:42 +0200
+CommitDate: Sun, 14 Aug 2011 12:03:44 +0200
 
-sched: Prevent buddy interactions with throttled entities
+sched: Migrate throttled tasks on HOTPLUG
 
-Buddies allow us to select "on-rq" entities without actually selecting them
-from a cfs_rq's rb_tree.  As a result we must ensure that throttled entities
-are not falsely nominated as buddies.  The fact that entities are dequeued
-within throttle_entity is not sufficient for clearing buddy status as the
-nomination may occur after throttling.
+Throttled tasks are invisisble to cpu-offline since they are not eligible for
+selection by pick_next_task().  The regular 'escape' path for a thread that is
+blocked at offline is via ttwu->select_task_rq, however this will not handle a
+throttled group since there are no individual thread wakeups on an unthrottle.
+
+Resolve this by unthrottling offline cpus so that threads can be migrated.
 
 Signed-off-by: Paul Turner <pjt@google.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110721184757.886850167@google.com
+Link: http://lkml.kernel.org/r/20110721184757.989000590@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched_fair.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+ kernel/sched.c |   27 +++++++++++++++++++++++++++
+ 1 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5a20894..1d4acbe 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2348,6 +2348,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 	if (unlikely(se == pse))
- 		return;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 5db05f6..3973172 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -6335,6 +6335,30 @@ static void calc_global_load_remove(struct rq *rq)
+ 	rq->calc_load_active = 0;
+ }
  
-+	/*
-+	 * This is possible from callers such as pull_task(), in which we
-+	 * unconditionally check_prempt_curr() after an enqueue (which may have
-+	 * lead to a throttle).  This both saves work and prevents false
-+	 * next-buddy nomination below.
-+	 */
-+	if (unlikely(throttled_hierarchy(cfs_rq_of(pse))))
-+		return;
++#ifdef CONFIG_CFS_BANDWIDTH
++static void unthrottle_offline_cfs_rqs(struct rq *rq)
++{
++	struct cfs_rq *cfs_rq;
 +
- 	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK)) {
- 		set_next_buddy(pse);
- 		next_buddy_marked = 1;
-@@ -2356,6 +2365,12 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 	/*
- 	 * We can come here with TIF_NEED_RESCHED already set from new task
- 	 * wake up path.
-+	 *
-+	 * Note: this also catches the edge-case of curr being in a throttled
-+	 * group (e.g. via set_curr_task), since update_curr() (in the
-+	 * enqueue of curr) will have resulted in resched being set.  This
-+	 * prevents us from potentially nominating it as a false LAST_BUDDY
-+	 * below.
++	for_each_leaf_cfs_rq(rq, cfs_rq) {
++		struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
++
++		if (!cfs_rq->runtime_enabled)
++			continue;
++
++		/*
++		 * clock_task is not advancing so we just need to make sure
++		 * there's some valid quota amount
++		 */
++		cfs_rq->runtime_remaining = cfs_b->quota;
++		if (cfs_rq_throttled(cfs_rq))
++			unthrottle_cfs_rq(cfs_rq);
++	}
++}
++#else
++static void unthrottle_offline_cfs_rqs(struct rq *rq) {}
++#endif
++
+ /*
+  * Migrate all tasks from the rq, sleeping tasks will be migrated by
+  * try_to_wake_up()->select_task_rq().
+@@ -6360,6 +6384,9 @@ static void migrate_tasks(unsigned int dead_cpu)
  	 */
- 	if (test_tsk_need_resched(curr))
- 		return;
-@@ -2474,7 +2489,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
- {
- 	struct sched_entity *se = &p->se;
+ 	rq->stop = NULL;
  
--	if (!se->on_rq)
-+	/* throttled hierarchies are not runnable */
-+	if (!se->on_rq || throttled_hierarchy(cfs_rq_of(se)))
- 		return false;
- 
- 	/* Tell the scheduler that we'd really like pse to run next. */
++	/* Ensure any throttled groups are reachable by pick_next_task */
++	unthrottle_offline_cfs_rqs(rq);
++
+ 	for ( ; ; ) {
+ 		/*
+ 		 * There's this thread running, bail when that's the only
