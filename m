@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1HNBBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 21:01:40 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48583 "EHLO
+	id S1752849Ab1HNBB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 21:01:57 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48587 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab1HNBBi (ORCPT
+	with ESMTP id S1752823Ab1HNBBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 21:01:38 -0400
-Date: Sat, 13 Aug 2011 18:01:23 -0700 (PDT)
-Message-Id: <20110813.180123.46722618651238324.davem@davemloft.net>
-To: jwboyer@redhat.com
-Cc: oliver@neukum.org, alexey.orishko@stericsson.com, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v4] usbnet/cdc_ncm: Don't use stack variables for DMA
+	Sat, 13 Aug 2011 21:01:54 -0400
+Date: Sat, 13 Aug 2011 18:01:43 -0700 (PDT)
+Message-Id: <20110813.180143.2121863777626096757.davem@davemloft.net>
+To: julia@diku.dk
+Cc: wg@grandegger.com, kernel-janitors@vger.kernel.org, joe@perches.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/can/sja1000/plx_pci.c: eliminate double
+ free
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110808123406.GA2526@zod.bos.redhat.com>
-References: <20110808123406.GA2526@zod.bos.redhat.com>
+In-Reply-To: <1312820931-28230-1-git-send-email-julia@diku.dk>
+References: <1312820931-28230-1-git-send-email-julia@diku.dk>
 X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 13 Aug 2011 18:01:26 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 13 Aug 2011 18:01:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@redhat.com>
-Date: Mon, 8 Aug 2011 08:34:07 -0400
+From: Julia Lawall <julia@diku.dk>
+Date: Mon,  8 Aug 2011 18:28:50 +0200
 
-> The cdc_ncm driver still has a few places where stack variables are
-> passed to the cdc_ncm_do_request function.  This triggers a stack trace in
-> lib/dma-debug.c if the CONFIG_DEBUG_DMA_API option is set.
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Adjust these calls to pass parameters that have been allocated with
-> kzalloc.
+> In this code, the failure_cleanup label calls the function
+> plx_pci_del_card, which frees everything in the card->net_dev array.  dev
+> is placed in this array immediately after allocation, so the two subsequent
+> jumps to failure_cleanup should not also call free_sja1000dev, but the
+> second one does.
 > 
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> If plx_pci_check_sja1000 fails, then free_sja1000dev is also called on
+> dev.  Because dev is already in the card->net_dev array, this implies that
+> when plx_pci_del_card is later called, it may get freed again.  So that
+> entry is reset to NULL after the free.
+> 
+> Finally, if there is a problem with one channel, there will be a hole in the
+> array.  card->channels counts the number of channels that have succeeded,
+> and does not keep track of the index of the largest element in the array
+> that is valid.  So the loop in plx_pci_del_card is changed to go up to
+> PLX_PCI_MAX_CHAN, which is only 2.
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
 Applied.
