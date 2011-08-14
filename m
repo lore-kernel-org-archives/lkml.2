@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1HNRnI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:43:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab1HNRnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:43:05 -0400
-Date: Sun, 14 Aug 2011 19:40:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Paul Menage <menage@google.com>, Ben Blum <bblum@andrew.cmu.edu>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
-	questionable code in de_thread.
-Message-ID: <20110814174000.GA2381@redhat.com>
-References: <20110727171101.5e32d8eb@notabene.brown>
+	id S1754472Ab1HNRpq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:45:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58462 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab1HNRpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 13:45:44 -0400
+Message-ID: <4E4809BF.6040707@landley.net>
+Date: Sun, 14 Aug 2011 12:45:35 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727171101.5e32d8eb@notabene.brown>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org, Artem.Bityutskiy@nokia.com,
+        busybox@busybox.net
+Subject: [BUG] Linux 3.0 commit 3627924acf70a broke include/mtd/ubi_user.h.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay, just noticed this thread...
+"make headers_install" copies include/mtd/ubi_user.h to userspace, where
+things like busybox link against it.  With 3.0, building defconfig
+busybox gets this error:
 
-On 07/27, NeilBrown wrote:
->
->  The race as I understand it is with this code:
->
->
-> 		list_replace_rcu(&leader->tasks, &tsk->tasks);
-> 		list_replace_init(&leader->sibling, &tsk->sibling);
->
-> 		tsk->group_leader = tsk;
-> 		leader->group_leader = tsk;
->
->
->  which seems to be called with only tasklist_lock held, which doesn't seem to
->  be held in the cgroup code.
->
->  If the "thread_group_leader(leader)" call in cgroup_attach_proc() runs before
->  this chunk is run with the same value for 'leader', but the
->  while_each_thread is run after, then the while_read_thread() might loop
->  forever.  rcu_read_lock doesn't prevent this from happening.
+In file included from miscutils/ubi_tools.c:63:
+/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:329:
+error: conflicting types for '__packed'
+/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:313:
+error: previous declaration of '__packed' was here
 
-Yes. This was already discussed. See http://marc.info/?t=127688987300002
+This is due to the Linux 3.0 commit in the title:
 
-Damn. I forgot about this completely.
+    UBI: use __packed instead of __attribute__((packed))
 
->  The code in de_thread() is actually questionable by itself.
->  "list_replace_rcu" cannot really be used on the head of a list - it is only
->  meant to be used on a member of a list.
->  To move a list from one head to another you should be using
->  list_splice_init_rcu().
+This relies on __packed being defined in:
 
-Hmm... can't understand this part.
+  include/linux/compiler-gcc.h:
+  #define __packed			__attribute__((packed))
 
-And just in case... list_replace_rcu() looks fine afaics. The real problem
-is release_task(old_leader) which does list_del_rcu(old_leader->thread_group),
-this is what breaks while_each_thread().
+Which is not exported to userspace.
 
->  The ->tasks list doesn't seem to have a clearly distinguished 'head'
+I.E. this "cleanup" broke the ability for userspace to use this header,
+even though the header is exported to userspace by headers_install.
 
-Exactly. This is the problem.
-
-But: you seem to confused ->tasks and ->thread_group ;)
-
-Oleg.
-
+Rob
