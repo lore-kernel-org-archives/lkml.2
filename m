@@ -1,135 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1HNPlR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 11:41:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55830 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab1HNPlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 11:41:13 -0400
-Date: Sun, 14 Aug 2011 19:39:31 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        David Chinner <david@fromorbit.com>,
-        containers@lists.linux-foundation.org, Hugh Dickins <hughd@google.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] parse options in the vfs level
-Message-ID: <20110814153930.GA3996@albatros>
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
- <1313334832-1150-5-git-send-email-glommer@parallels.com>
+	id S1753232Ab1HNPm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 11:42:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45291 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688Ab1HNPmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 11:42:22 -0400
+Date: Sun, 14 Aug 2011 15:41:45 GMT
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Message-ID: <tip-b0e9cb2802d4bf50955cca8a7d87cf94ebf750a5@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        penberg@kernel.org, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, penberg@kernel.org,
+        peterz@infradead.org, masami.hiramatsu.pt@hitachi.com,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110811110241.19900.34994.stgit@fedora15>
+References: <20110811110241.19900.34994.stgit@fedora15>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf probe: Fix to search nested inlined functions in CU
+Git-Commit-ID: b0e9cb2802d4bf50955cca8a7d87cf94ebf750a5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1313334832-1150-5-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 15:41:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Glauber,
+Commit-ID:  b0e9cb2802d4bf50955cca8a7d87cf94ebf750a5
+Gitweb:     http://git.kernel.org/tip/b0e9cb2802d4bf50955cca8a7d87cf94ebf750a5
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Thu, 11 Aug 2011 20:02:41 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 12 Aug 2011 09:23:39 -0300
 
-On Sun, Aug 14, 2011 at 19:13 +0400, Glauber Costa wrote:
-> +/**
-> + * Generic option parsing for the VFS.
-> + *
-> + * Since most of the filesystems already do their own option parsing, and with
-> + * very few code shared between them, this function strips out any options that
-> + * we succeed in parsing ourselves. Passing them forward would just give the
-> + * underlying fs an option it does not expect, leading it to fail.
-> + *
-> + * We don't yet have a pointer to the super block as well, since this is
-> + * pre-mount. We accumulate in struct vfs_options whatever data we collected,
-> + * and act on it later.
-> + */
-> +static int vfs_parse_options(char *options, struct vfs_options *ops)
-> +{
-> +	substring_t args[MAX_OPT_ARGS];
-> +	int option;
-> +	char *p;
-> +	char *opt;
-> +	char *start = NULL;
-> +	int ret;
-> +	
-> +	if (!options)
-> +		return 0;
-> +
-> +	opt = kstrdup(options, GFP_KERNEL);
-> +	if (!opt)
-> +		return 1;
-> +	
-> +	ret = 1;
-> +
-> +	start = opt;
-> +	while ((p = strsep(&opt, ",")) != NULL) {
-> +		int token;
-> +		if (!*p)
-> +			continue;
-> +
-> +		/*
-> +		 * Initialize args struct so we know whether arg was
-> +		 * found; some options take optional arguments.
-> +		 */
-> +		args[0].to = args[0].from = 0;
-> +		token = match_token(p, tokens, args);
-> +		switch (token) {
-> +		case 1:
-> +			if (!args[0].from)
-> +				break;
-> +
-> +			if (match_int(&args[0], &option))
-> +				break;
+perf probe: Fix to search nested inlined functions in CU
 
-What if there are 2 passed options and the second fails?
+Fix perf probe to walk through the lines of all nested inlined function
+call sites and declared lines when a whole CU is passed to the line
+walker.
 
-   mount -o vfs_dcache_size=XXX,vfs_dcache_size=CRAP <dev> <mntpoint>
+The die_walk_lines() can have two different type of DIEs, subprogram (or
+inlined-subroutine) DIE and CU DIE.
 
-In this case you leave the second option and pass it to the fs option
-parser (as you already set ret=0), which is wrong.  I think you should
-explicitly return 1 where you know the option is related to VFS, but you
-failed to parse it.  It would look even simplier than current code.
+If a caller passes a subprogram DIE, this means that the walker walk on
+lines of given subprogram. In this case, it just needs to search on
+direct children of DIE tree for finding call-site information of inlined
+function which directly called from given subprogram.
 
-(Yes, this is a rare situation, but I can imagine some program that
-automatically adds mount options to the existing list and passes it to
-mount.)
+On the other hand, if a caller passes a CU DIE to the walker, this means
+that the walker have to walk on all lines in the source files included
+in given CU DIE. In this case, it has to search whole DIE trees of all
+subprograms to find the call-site information of all nested inlined
+functions.
 
-> +			if (option < DCACHE_MIN_SIZE) {
-> +				printk(KERN_INFO "dcache size %d smaller than "
-> +				       "minimum (%d)\n", option, DCACHE_MIN_SIZE);
-> +				option = DCACHE_MIN_SIZE;
-> +			}
-> +
-> +			ops->vfs_dcache_size = option;
-> +
-> +			/*
-> +			 * The actual filesystems don't expect any option
-> +			 * they don't understand to be received in the option
-> +			 * string. So we strip off anything we processed, and
-> +			 * give them a clean options string.
-> +			 */
-> +			ret = 0;
-> +			if (!opt) /* it is the last option listed */
-> +				*(options + (p - start)) = '\0';
-> +			else
-> +				strcpy(options + (p - start), opt);
-> +			break;
-> +		default:
-> +			ret = 0;
-> +			break;
-> +		}
-> +	}
-> +
-> +	kfree(start);
-> +	return ret;
-> +}
+Without this patch:
 
-Thanks,
+$ perf probe --line kernel/cpu.c:151-157
+</home/mhiramat/ksrc/linux-2.6/kernel/cpu.c:151>
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+         static int cpu_notify(unsigned long val, void *v)
+         {
+    154         return __cpu_notify(val, v, -1, NULL);
+         }
+
+With this:
+$ perf probe --line kernel/cpu.c:151-157
+</home/mhiramat/ksrc/linux-2.6/kernel/cpu.c:151>
+
+    152  static int cpu_notify(unsigned long val, void *v)
+         {
+    154         return __cpu_notify(val, v, -1, NULL);
+         }
+
+As you can see, --line option with source line range shows the declared
+lines as probe-able.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20110811110241.19900.34994.stgit@fedora15
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/dwarf-aux.c |   91 +++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/dwarf-aux.h |    3 +
+ 2 files changed, 82 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
+index d35b454..d9b8ad0 100644
+--- a/tools/perf/util/dwarf-aux.c
++++ b/tools/perf/util/dwarf-aux.c
+@@ -198,6 +198,19 @@ static int die_get_attr_udata(Dwarf_Die *tp_die, unsigned int attr_name,
+ 	return 0;
+ }
+ 
++/* Get attribute and translate it as a sdata */
++static int die_get_attr_sdata(Dwarf_Die *tp_die, unsigned int attr_name,
++			      Dwarf_Sword *result)
++{
++	Dwarf_Attribute attr;
++
++	if (dwarf_attr(tp_die, attr_name, &attr) == NULL ||
++	    dwarf_formsdata(&attr, result) != 0)
++		return -ENOENT;
++
++	return 0;
++}
++
+ /**
+  * die_is_signed_type - Check whether a type DIE is signed or not
+  * @tp_die: a DIE of a type
+@@ -250,6 +263,39 @@ int die_get_data_member_location(Dwarf_Die *mb_die, Dwarf_Word *offs)
+ 	return 0;
+ }
+ 
++/* Get the call file index number in CU DIE */
++static int die_get_call_fileno(Dwarf_Die *in_die)
++{
++	Dwarf_Sword idx;
++
++	if (die_get_attr_sdata(in_die, DW_AT_call_file, &idx) == 0)
++		return (int)idx;
++	else
++		return -ENOENT;
++}
++
++/**
++ * die_get_call_file - Get callsite file name of inlined function instance
++ * @in_die: a DIE of an inlined function instance
++ *
++ * Get call-site file name of @in_die. This means from which file the inline
++ * function is called.
++ */
++const char *die_get_call_file(Dwarf_Die *in_die)
++{
++	Dwarf_Die cu_die;
++	Dwarf_Files *files;
++	int idx;
++
++	idx = die_get_call_fileno(in_die);
++	if (idx < 0 || !dwarf_diecu(in_die, &cu_die, NULL, NULL) ||
++	    dwarf_getsrcfiles(&cu_die, &files, NULL) != 0)
++		return NULL;
++
++	return dwarf_filesrc(files, idx, NULL, NULL);
++}
++
++
+ /**
+  * die_find_child - Generic DIE search function in DIE tree
+  * @rt_die: a root DIE
+@@ -376,7 +422,7 @@ Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 
+ /* Line walker internal parameters */
+ struct __line_walk_param {
+-	const char *fname;
++	bool recursive;
+ 	line_walk_callback_t callback;
+ 	void *data;
+ 	int retval;
+@@ -385,39 +431,56 @@ struct __line_walk_param {
+ static int __die_walk_funclines_cb(Dwarf_Die *in_die, void *data)
+ {
+ 	struct __line_walk_param *lw = data;
+-	Dwarf_Addr addr;
++	Dwarf_Addr addr = 0;
++	const char *fname;
+ 	int lineno;
+ 
+ 	if (dwarf_tag(in_die) == DW_TAG_inlined_subroutine) {
++		fname = die_get_call_file(in_die);
+ 		lineno = die_get_call_lineno(in_die);
+-		if (lineno > 0 && dwarf_entrypc(in_die, &addr) == 0) {
+-			lw->retval = lw->callback(lw->fname, lineno, addr,
+-						  lw->data);
++		if (fname && lineno > 0 && dwarf_entrypc(in_die, &addr) == 0) {
++			lw->retval = lw->callback(fname, lineno, addr, lw->data);
+ 			if (lw->retval != 0)
+ 				return DIE_FIND_CB_END;
+ 		}
+ 	}
+-	return DIE_FIND_CB_SIBLING;
++	if (!lw->recursive)
++		/* Don't need to search recursively */
++		return DIE_FIND_CB_SIBLING;
++
++	if (addr) {
++		fname = dwarf_decl_file(in_die);
++		if (fname && dwarf_decl_line(in_die, &lineno) == 0) {
++			lw->retval = lw->callback(fname, lineno, addr, lw->data);
++			if (lw->retval != 0)
++				return DIE_FIND_CB_END;
++		}
++	}
++
++	/* Continue to search nested inlined function call-sites */
++	return DIE_FIND_CB_CONTINUE;
+ }
+ 
+ /* Walk on lines of blocks included in given DIE */
+-static int __die_walk_funclines(Dwarf_Die *sp_die,
++static int __die_walk_funclines(Dwarf_Die *sp_die, bool recursive,
+ 				line_walk_callback_t callback, void *data)
+ {
+ 	struct __line_walk_param lw = {
++		.recursive = recursive,
+ 		.callback = callback,
+ 		.data = data,
+ 		.retval = 0,
+ 	};
+ 	Dwarf_Die die_mem;
+ 	Dwarf_Addr addr;
++	const char *fname;
+ 	int lineno;
+ 
+ 	/* Handle function declaration line */
+-	lw.fname = dwarf_decl_file(sp_die);
+-	if (lw.fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
++	fname = dwarf_decl_file(sp_die);
++	if (fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
+ 	    dwarf_entrypc(sp_die, &addr) == 0) {
+-		lw.retval = callback(lw.fname, lineno, addr, data);
++		lw.retval = callback(fname, lineno, addr, data);
+ 		if (lw.retval != 0)
+ 			goto done;
+ 	}
+@@ -430,7 +493,7 @@ static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
+ {
+ 	struct __line_walk_param *lw = data;
+ 
+-	lw->retval = __die_walk_funclines(sp_die, lw->callback, lw->data);
++	lw->retval = __die_walk_funclines(sp_die, true, lw->callback, lw->data);
+ 	if (lw->retval != 0)
+ 		return DWARF_CB_ABORT;
+ 
+@@ -509,7 +572,11 @@ int die_walk_lines(Dwarf_Die *rt_die, line_walk_callback_t callback, void *data)
+ 	 * subroutines. We have to check functions list or given function.
+ 	 */
+ 	if (rt_die != cu_die)
+-		ret = __die_walk_funclines(rt_die, callback, data);
++		/*
++		 * Don't need walk functions recursively, because nested
++		 * inlined functions don't have lines of the specified DIE.
++		 */
++		ret = __die_walk_funclines(rt_die, false, callback, data);
+ 	else {
+ 		struct __line_walk_param param = {
+ 			.callback = callback,
+diff --git a/tools/perf/util/dwarf-aux.h b/tools/perf/util/dwarf-aux.h
+index bc3b211..c8e491b 100644
+--- a/tools/perf/util/dwarf-aux.h
++++ b/tools/perf/util/dwarf-aux.h
+@@ -40,6 +40,9 @@ extern bool die_compare_name(Dwarf_Die *dw_die, const char *tname);
+ /* Get callsite line number of inline-function instance */
+ extern int die_get_call_lineno(Dwarf_Die *in_die);
+ 
++/* Get callsite file name of inlined function instance */
++extern const char *die_get_call_file(Dwarf_Die *in_die);
++
+ /* Get type die */
+ extern Dwarf_Die *die_get_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem);
+ 
