@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab1HNQzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:55:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:45340 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab1HNQzl convert rfc822-to-8bit (ORCPT
+	id S1754123Ab1HNRBc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:01:32 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41610 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab1HNRB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:55:41 -0400
+	Sun, 14 Aug 2011 13:01:29 -0400
+Date: Sun, 14 Aug 2011 12:01:24 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mattia Dongili <malattia@debian.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [BUG?] Moving drivers to drivers/cpufreq/ causes all to be loaded
+Message-ID: <20110814170124.GC12747@elie.gateway.2wire.net>
+References: <20110414094447.GA1611@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.00.1104211629300.24613@xanadu.home>
+ <201104261605.26791.arnd@arndb.de>
+ <201104261904.45923.rjw@sisk.pl>
+ <20110426181508.GB1908@redhat.com>
+ <20110813154638.GA1494@elie.gateway.2wire.net>
+ <20110813190246.GA10412@elie.gateway.2wire.net>
+ <20110813211142.GA1536@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH+eYFD61keboBWfcnxEAwW-4PmoLpofZh08k606OkALg_VFuQ@mail.gmail.com>
-References: <CAH+eYFD61keboBWfcnxEAwW-4PmoLpofZh08k606OkALg_VFuQ@mail.gmail.com>
-Date: Sun, 14 Aug 2011 12:55:41 -0400
-Message-ID: <CACqU3MU2pjcqgYDjn=S2asdLamU0mity+kLizH_mbTtJU5Fh2A@mail.gmail.com>
-Subject: Re: IS_ENABLED() and non-available symbols
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110813211142.GA1536@redhat.com>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(-cc: ARM/etc people; +cc: Kay)
 
-On Sun, Aug 14, 2011 at 6:56 AM, Rabin Vincent <rabin@rab.in> wrote:
-> I'm trying to use the new IS_ENABLED() stuff, but it appears that it
-> only works if the symbol being tested has its dependencies met, and
-> results in compiler errors if that is not the case.
->
-> For example, I've added code using IS_ENABLED(CONFIG_THUMB2_KERNEL) as
-> in the below patch.  My config is arch/arm/configs/omap2plus_defconfig
-> which doesn't satisfy the dependencies for CONFIG_THUMB2_KERNEL (defined
-> in arch/arm/Kconfig).
->
-> Compiling results in the following errors (and indeed the macro hasn't
-> been generated in include/generated/autoconfg.h).  If I modify my config
-> to satisfy the dependencies for CONFIG_THUMB2_KERNEL so that it is
-> selectable, the __enabled_CONFIG_THUMB2_KERNEL macro gets generated.
->
-> arch/arm/kernel/setup.c: In function 'c_show':
-> arch/arm/kernel/setup.c:1056: error: '__enabled_CONFIG_THUMB2_KERNEL'
-> undeclared (first use in this function)
-> arch/arm/kernel/setup.c:1056: error: (Each undeclared identifier is
-> reported only once
-> arch/arm/kernel/setup.c:1056: error: for each function it appears in.)
-> arch/arm/kernel/setup.c:1056: error:
-> '__enabled_CONFIG_THUMB2_KERNEL_MODULE' undeclared (first use in this
-> function)
->
-> Kernel is latest linus (v3.1-rc1-272-g73e0881).
->
-Ahhh! That is why we have been stuck with #ifdef all these years!
+Dave Jones wrote:
 
-What you point out is quite interesting. I guess that we did not
-carefully understood the context in which this was printed. That is,
-we will only ends up printing something if the symbol is visible, or
-has been selected, or has a default. That said
-__enabled_CONFIG_THUMB2_KERNEL will get generated whenever it appears
-in the menuconfig (ie. it's dependency are met).
+> If we have to move stuff again, we could do drivers/cpufreq/x86/ etc..
 
-The solution is trivial, but I am not sure we want to go that way: we
-need to generated a __enabled_ entry for symbols for _all_ symbols in
-the configuration, even internal one, as I am sure someone will at
-some point do:
+Unfortunately the old script used "find", not "ls", so that wouldn't
+work. :/
 
-if (IS_ENABLED(CONFIG_WIRELESS_EXT)) {
-    ....
-}
+> What we used to do in Fedora grew more and more complex over time.
+> Here's the last incarnation: http://fpaste.org/uvDb/
 
-but this will continue to be broken until we have a global symbol
-namespace for all architecture, ie:
+The main difference from Debian seems to be that this script loads the
+module corresponding to the chosen governor, while Debian's init
+script loads all governor modules early (using a heuristic I would
+like to avoid that involves running "find" to list them) and chooses
+the governor to use later.
 
-if (IS_ENABLED(CONFIG_ARM)) {
-    ....
-}
+> In an ideal world, we'd auto-load the right module on a hotplug event
+> from a cpu, but we're not there yet. I believe Kay is working on that.
 
-will not be expected to work for an ARCH=mips build.
+Yes, that is what I was hoping for.  Are there patches to test?
 
- - Arnaud
+The comment at
+http://thread.gmane.org/gmane.linux.kernel/796450/focus=796874 also
+looks promising.
 
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index 70bca64..59aa480 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -1053,6 +1053,9 @@ static int c_show(struct seq_file *m, void *v)
->        seq_printf(m, "Serial\t\t: %08x%08x\n",
->                   system_serial_high, system_serial_low);
->
-> +       if (IS_ENABLED(CONFIG_THUMB2_KERNEL))
-> +               printk("Thumb-2\n");
-> +
->        return 0;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Thanks much for the help,
+Jonathan
