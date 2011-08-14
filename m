@@ -1,33 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1HNV56 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 17:57:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45260 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754511Ab1HNV55 (ORCPT
+	id S1754921Ab1HNWQc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 18:16:32 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:43872 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754546Ab1HNWQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 17:57:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <bkwpSnItbJM.A.iJB.HOCSOB@chimera>
-References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
-	<bkwpSnItbJM.A.iJB.HOCSOB@chimera>
-Date: Sun, 14 Aug 2011 14:57:56 -0700
-Message-ID: <CAAmnkzk=8NZRpFHUR47R179H-PUTu8BYhOr3Kn8b-Z4nvv9cHw@mail.gmail.com>
-Subject: Re: [Bug #38612] Boot time warnings in APIC
-From: "Bill Huey (hui)" <bill.huey@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 14 Aug 2011 18:16:31 -0400
+From: Joe Perches <joe@perches.com>
+To: Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH V2 net-next 0/3] bnx2x: Message logging cleanups
+Date: Sun, 14 Aug 2011 15:16:18 -0700
+Message-Id: <cover.1313360100.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seemed like a hardware problem so change the state of the bug. I'll
-keep you folks update if I see it again.
+Joe Perches (3):
+  bnx2x: Remove local defines for %pM and mac address
+  bnx2x: Coalesce pr_cont uses and fix DP typos
+  bnx2x: Use pr_fmt and message logging cleanups
 
-Thanks
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |   67 ++++-----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |   48 ++++---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h    |    4 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c    |    5 +-
+ .../net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c    |   23 ++--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c   |  153 ++++++++++----------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |   72 ++++-----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     |   67 ++++-----
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c  |   46 +++---
+ 9 files changed, 244 insertions(+), 241 deletions(-)
 
-bill
+-- 
+1.7.6.405.gc1be0
+
