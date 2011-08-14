@@ -1,119 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1HNQWn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:22:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36664 "EHLO mx2.suse.de"
+	id S1754430Ab1HNQXB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:23:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37510 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386Ab1HNQIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:08:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:56 2011
-Message-Id: <20110812210556.580630739@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:36 -0700
+	id S1754234Ab1HNQW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:22:57 -0400
+Date: Sun, 14 Aug 2011 09:18:42 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Robert Olsson <robert.olsson@its.uu.se>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [51/90] net: add IFF_SKB_TX_SHARED flag to priv_flags
-In-Reply-To: <20110812210626.GA4725@kroah.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/90] 3.0.2-stable review
+Message-ID: <20110814161842.GA7864@suse.de>
+References: <20110812210626.GA4725@kroah.com>
+ <4E47A400.1030607@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E47A400.1030607@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+On Sun, Aug 14, 2011 at 12:31:28PM +0200, Jiri Slaby wrote:
+> On 08/12/2011 11:06 PM, Greg KH wrote:
+> > This is the start of the stable review cycle for the 3.0.2 release.
+> > There are 90 patches in this series, all will be posted as a response
+> > to this one.
+> 
+> It looks like they didn't go through to LKML. Neither for 3.0.2, nor for
+> .32.45, nor for .33.18. Could you resend?
 
-------------------
+Sorry, none of them got sent, that was my fault.  I've now sent them
+all.
 
-
-From: Neil Horman <nhorman@tuxdriver.com>
-
-[ Upstream commit d8873315065f1f527c7c380402cf59b1e1d0ae36 ]
-
-Pktgen attempts to transmit shared skbs to net devices, which can't be used by
-some drivers as they keep state information in skbs.  This patch adds a flag
-marking drivers as being able to handle shared skbs in their tx path.  Drivers
-are defaulted to being unable to do so, but calling ether_setup enables this
-flag, as 90% of the drivers calling ether_setup touch real hardware and can
-handle shared skbs.  A subsequent patch will audit drivers to ensure that the
-flag is set properly
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Jiri Pirko <jpirko@redhat.com>
-CC: Robert Olsson <robert.olsson@its.uu.se>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: David S. Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/if.h |    2 ++
- net/core/pktgen.c  |    8 +++++---
- net/ethernet/eth.c |    1 +
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
---- a/include/linux/if.h
-+++ b/include/linux/if.h
-@@ -76,6 +76,8 @@
- #define IFF_BRIDGE_PORT	0x4000		/* device used as bridge port */
- #define IFF_OVS_DATAPATH	0x8000	/* device used as Open vSwitch
- 					 * datapath port */
-+#define IFF_TX_SKB_SHARING	0x10000	/* The interface supports sharing
-+					 * skbs on transmit */
- 
- #define IF_GET_IFACE	0x0001		/* for querying only */
- #define IF_GET_PROTO	0x0002
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -1070,7 +1070,9 @@ static ssize_t pktgen_if_write(struct fi
- 		len = num_arg(&user_buffer[i], 10, &value);
- 		if (len < 0)
- 			return len;
--
-+		if ((value > 0) &&
-+		    (!(pkt_dev->odev->priv_flags & IFF_TX_SKB_SHARING)))
-+			return -ENOTSUPP;
- 		i += len;
- 		pkt_dev->clone_skb = value;
- 
-@@ -3555,7 +3557,6 @@ static int pktgen_add_device(struct pktg
- 	pkt_dev->min_pkt_size = ETH_ZLEN;
- 	pkt_dev->max_pkt_size = ETH_ZLEN;
- 	pkt_dev->nfrags = 0;
--	pkt_dev->clone_skb = pg_clone_skb_d;
- 	pkt_dev->delay = pg_delay_d;
- 	pkt_dev->count = pg_count_d;
- 	pkt_dev->sofar = 0;
-@@ -3563,7 +3564,6 @@ static int pktgen_add_device(struct pktg
- 	pkt_dev->udp_src_max = 9;
- 	pkt_dev->udp_dst_min = 9;
- 	pkt_dev->udp_dst_max = 9;
--
- 	pkt_dev->vlan_p = 0;
- 	pkt_dev->vlan_cfi = 0;
- 	pkt_dev->vlan_id = 0xffff;
-@@ -3575,6 +3575,8 @@ static int pktgen_add_device(struct pktg
- 	err = pktgen_setup_dev(pkt_dev, ifname);
- 	if (err)
- 		goto out1;
-+	if (pkt_dev->odev->priv_flags & IFF_TX_SKB_SHARING)
-+		pkt_dev->clone_skb = pg_clone_skb_d;
- 
- 	pkt_dev->entry = proc_create_data(ifname, 0600, pg_proc_dir,
- 					  &pktgen_if_fops, pkt_dev);
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -340,6 +340,7 @@ void ether_setup(struct net_device *dev)
- 	dev->addr_len		= ETH_ALEN;
- 	dev->tx_queue_len	= 1000;	/* Ethernet wants good queues */
- 	dev->flags		= IFF_BROADCAST|IFF_MULTICAST;
-+	dev->priv_flags		= IFF_TX_SKB_SHARING;
- 
- 	memset(dev->broadcast, 0xFF, ETH_ALEN);
- 
-
-
+greg k-h
