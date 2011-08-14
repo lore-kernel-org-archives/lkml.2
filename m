@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1HNRkQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:40:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55150 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab1HNRkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:40:14 -0400
-Subject: Re: sch_generic: warning: the comparison will always evaluate as
- =?UTF-8?Q?=E2=80=98true=E2=80=99?= for the address of
- =?UTF-8?Q?=E2=80=98noop=5Fqdisc=E2=80=99?= will never be NULL
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Kevin Winchester <kjwinchester@gmail.com>
-Cc: hadi@cyberus.ca, davem@davemloft.net, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <CAELBVzA-ArFvp9MRp5ZvgsEpi4ikt9Nq=zHsNSLAOiD=TqZC=w@mail.gmail.com>
-References: <CAELBVzA-ArFvp9MRp5ZvgsEpi4ikt9Nq=zHsNSLAOiD=TqZC=w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 14 Aug 2011 19:39:58 +0200
-Message-ID: <1313343598.2798.12.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1754444Ab1HNRnI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:43:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab1HNRnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 13:43:05 -0400
+Date: Sun, 14 Aug 2011 19:40:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Paul Menage <menage@google.com>, Ben Blum <bblum@andrew.cmu.edu>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
+	questionable code in de_thread.
+Message-ID: <20110814174000.GA2381@redhat.com>
+References: <20110727171101.5e32d8eb@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727171101.5e32d8eb@notabene.brown>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 14 août 2011 à 10:44 -0300, Kevin Winchester a écrit :
-> With:
-> 
-> gcc (GCC) 4.6.1
-> 
-> I noticed the following warning appearing in my build:
-> 
-> net/sched/sch_generic.c: In function ‘dev_graft_qdisc’:
-> net/sched/sch_generic.c:678:2: warning: the comparison will always
-> evaluate as ‘true’ for the address of ‘noop_qdisc’ will never be NULL
-> [-Waddress]
-> 
-> The code in question runs:
-> 
-> 
->         /* ... and graft new one */
->         if (qdisc == NULL)
->                 qdisc = &noop_qdisc;
->         dev_queue->qdisc_sleeping = qdisc;
->         rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
-> 
-> where rcu_assign_pointer has a null check that does not apply to
-> noop_qdisc, which will never be null.
-> 
+Sorry for delay, just noticed this thread...
 
-gcc is a bit stupid here. Of course we know &noop_qdisc cannot be NULL.
+On 07/27, NeilBrown wrote:
+>
+>  The race as I understand it is with this code:
+>
+>
+> 		list_replace_rcu(&leader->tasks, &tsk->tasks);
+> 		list_replace_init(&leader->sibling, &tsk->sibling);
+>
+> 		tsk->group_leader = tsk;
+> 		leader->group_leader = tsk;
+>
+>
+>  which seems to be called with only tasklist_lock held, which doesn't seem to
+>  be held in the cgroup code.
+>
+>  If the "thread_group_leader(leader)" call in cgroup_attach_proc() runs before
+>  this chunk is run with the same value for 'leader', but the
+>  while_each_thread is run after, then the while_read_thread() might loop
+>  forever.  rcu_read_lock doesn't prevent this from happening.
 
-> My question is, should that really be assigning &noop_qdisc in there?
-> It seems odd to assign &noop_qdisc to qdisc only if qdisc is null, and
-> then unconditionally assign &noop_qdisc into dev_queue->qdisc.
-> 
-> Should the line be:
-> 
->         rcu_assign_pointer(dev_queue->qdisc, qdisc);
-> 
-> instead?
-> 
-> Just curious,
-> 
+Yes. This was already discussed. See http://marc.info/?t=127688987300002
 
-This was already taken into account, the trick is to make rcu_assign()
-not trying to be smart, and use RCU_INIT_POINTER() in places we want to
-assign NULL pointers.
+Damn. I forgot about this completely.
 
-So one patch is carried by Paul McKenney (RCU maintainer) for next
-kernel, and other one in net-next :
+>  The code in de_thread() is actually questionable by itself.
+>  "list_replace_rcu" cannot really be used on the head of a list - it is only
+>  meant to be used on a member of a list.
+>  To move a list from one head to another you should be using
+>  list_splice_init_rcu().
 
-http://git2.kernel.org/?p=linux/kernel/git/paulmck/linux-2.6-rcu.git;a=commitdiff;h=a7590ddfc2c855e75111ef18147a86578fe136e4
+Hmm... can't understand this part.
 
-http://git2.kernel.org/?p=linux/kernel/git/davem/net-next-2.6.git;a=commitdiff;h=a9b3cd7f323b2e57593e7215362a7b02fc933e3a
+And just in case... list_replace_rcu() looks fine afaics. The real problem
+is release_task(old_leader) which does list_del_rcu(old_leader->thread_group),
+this is what breaks while_each_thread().
 
+>  The ->tasks list doesn't seem to have a clearly distinguished 'head'
 
+Exactly. This is the problem.
+
+But: you seem to confused ->tasks and ->thread_group ;)
+
+Oleg.
 
