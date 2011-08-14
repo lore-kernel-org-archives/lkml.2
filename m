@@ -1,137 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab1HNGUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 02:20:06 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:56990 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab1HNGUD (ORCPT
+	id S1751457Ab1HNHCB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 03:02:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44871 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852Ab1HNHB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 02:20:03 -0400
-Date: Sun, 14 Aug 2011 02:19:41 -0400 (EDT)
-From: Jason Wang <jasowang@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: mst@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, davem@davemloft.net,
-        krkumar2@in.ibm.com, rusty@rustcorp.com.au, qemu-devel@nongnu.org,
-        kvm@vger.kernel.org, mirq-linux@rere.qmqm.pl
-Message-ID: <410484089.165922.1313302781804.JavaMail.root@zmail05.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1313196390.28682.14.camel@w-sridhar.beaverton.ibm.com>
-Subject: Re: [net-next RFC PATCH 0/7] multiqueue support for tun/tap
+	Sun, 14 Aug 2011 03:01:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 6.0.9_GA_2686 (ZimbraWebClient - FF3.0 (Linux)/6.0.9_GA_2686)
+X-Originating-IP: [81.235.222.155]
+In-Reply-To: <1313189697-21287-6-git-send-email-swarren@nvidia.com>
+References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
+	<1313189697-21287-6-git-send-email-swarren@nvidia.com>
+Date: Sun, 14 Aug 2011 00:01:57 -0700
+Message-ID: <CAOesGMj8firxDz-kqkh=jwsbC_QRW+YSFpf7dh3WaOhseCg91w@mail.gmail.com>
+Subject: Re: [RFC PATCH 05/12] arm/dt: Tegra: Add nvidia,gpios property to
+ GPIO controller
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 12, 2011 at 3:54 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Add board-specific gpio node for Harmony and Seaboard. This lists the
+> GPIOs used by the board. Note that not all GPIOs that exist on the board
+> are listed; only those used by devices currently supported by device
+> tree.
 
 
------ Original Message -----
-> On Fri, 2011-08-12 at 09:54 +0800, Jason Wang wrote:
-> > As multi-queue nics were commonly used for high-end servers,
-> > current single queue based tap can not satisfy the
-> > requirement of scaling guest network performance as the
-> > numbers of vcpus increase. So the following series
-> > implements multiple queue support in tun/tap.
-> >
-> > In order to take advantages of this, a multi-queue capable
-> > driver and qemu were also needed. I just rebase the latest
-> > version of Krishna's multi-queue virtio-net driver into this
-> > series to simplify the test. And for multiqueue supported
-> > qemu, you can refer the patches I post in
-> > http://www.spinics.net/lists/kvm/msg52808.html. Vhost is
-> > also a must to achieve high performance and its code could
-> > be used for multi-queue without modification. Alternatively,
-> > this series can be also used for Krishna's M:N
-> > implementation of multiqueue but I didn't test it.
-> >
-> > The idea is simple: each socket were abstracted as a queue
-> > for tun/tap, and userspace may open as many files as
-> > required and then attach them to the devices. In order to
-> > keep the ABI compatibility, device creation were still
-> > finished in TUNSETIFF, and two new ioctls TUNATTACHQUEUE and
-> > TUNDETACHQUEUE were added for user to manipulate the numbers
-> > of queues for the tun/tap.
-> 
-> Is it possible to have tap create these queues automatically when
-> TUNSETIFF is called instead of having userspace to do the new
-> ioctls. I am just wondering if it is possible to get multi-queue
-> to be enabled without any changes to qemu. I guess the number of
-> queues
-> could be based on the number of vhost threads/guest virtio-net queues.
+I don't want to bikeshed over this, but something like
+"nvidia,enabled-gpios" could be a bit more descriptive. Either way is
+OK though.
 
-It's possible but we need at least pass the number of queues
-through TUNSETIFF which may break the ABI? And this method
-is not flexible as adding new ioctls, consider we may
-disable some queues for some reaons such as running a single
-queue guest or pxe on an multiple virtio-net backened.
+The property should be documented under the bindings Documentation/
+hierarchy though.
 
-> 
-> Also, is it possible to enable multi-queue on the host alone without
-> any guest virtio-net changes?
 
-If we use current driver without changes, it can run on host
-that multiqueu enabled. But it can not make use all of the
-queues.
-
-> 
-> Have you done any multiple TCP_RR/UDP_RR testing with small packet
-> sizes? 256byte request/response with 50-100 instances?
-
-Not yet, I would do it after I was back from KVM Forum.
-
-> 
-> >
-> > I've done some basic performance testing of multi queue
-> > tap. For tun, I just test it through vpnc.
-> >
-> > Notes:
-> > - Test shows improvement when receving packets from
-> > local/external host to guest, and send big packet from guest
-> > to local/external host.
-> > - Current multiqueue based virtio-net/tap introduce a
-> > regression of send small packet (512 byte) from guest to
-> > local/external host. I suspect it's the issue of queue
-> > selection in both guest driver and tap. Would continue to
-> > investigate.
-> > - I would post the perforamnce numbers as a reply of this
-> > mail.
-> >
-> > TODO:
-> > - solve the issue of packet transmission of small packets.
-> > - addressing the comments of virtio-net driver
-> > - performance tunning
-> >
-> > Please review and comment it, Thanks.
-> >
-> > ---
-> >
-> > Jason Wang (5):
-> >       tuntap: move socket/sock related structures to tun_file
-> >       tuntap: categorize ioctl
-> >       tuntap: introduce multiqueue related flags
-> >       tuntap: multiqueue support
-> >       tuntap: add ioctls to attach or detach a file form tap device
-> >
-> > Krishna Kumar (2):
-> >       Change virtqueue structure
-> >       virtio-net changes
-> >
-> >
-> >  drivers/net/tun.c | 738 ++++++++++++++++++++++++++-----------------
-> >  drivers/net/virtio_net.c | 578 ++++++++++++++++++++++++----------
-> >  drivers/virtio/virtio_pci.c | 10 -
-> >  include/linux/if_tun.h | 5
-> >  include/linux/virtio.h | 1
-> >  include/linux/virtio_net.h | 3
-> >  6 files changed, 867 insertions(+), 468 deletions(-)
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
+-Olof
