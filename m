@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab1HNMkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 08:40:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52227 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab1HNMkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 08:40:07 -0400
-Date: Sun, 14 Aug 2011 14:40:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
-Subject: Re: x86 memcpy performance
-Message-ID: <20110814124002.GA1528@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Denys Vlasenko <vda.linux@googlemail.com>,
-	Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
-	linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
-References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com>
- <20110812195220.GA29051@elte.hu>
- <20110814095910.GA18809@liondog.tnic>
- <201108141313.56926.vda.linux@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201108141313.56926.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753366Ab1HNNLS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 09:11:18 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:48403 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab1HNNLP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 09:11:15 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 14 Aug 2011 15:10:53 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Clemens Ladisch <clemens@ladisch.de>,
+        Pavel Kysilka <goldenfish@linuxsoft.cz>,
+        "Matias A. Fonzo" <selk@dragora.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: fix wrong vmap address calculations with odd NR_CPUS
+ values
+Message-ID: <20110814151053.65ffc8fe@stein>
+In-Reply-To: <20110814145212.312c8626@stein>
+References: <20110814145212.312c8626@stein>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 01:13:56PM +0200, Denys Vlasenko wrote:
-> On Sunday 14 August 2011 11:59, Borislav Petkov wrote:
-> > Here's the SSE memcpy version I got so far, I haven't wired in the
-> > proper CPU feature detection yet because we want to run more benchmarks
-> > like netperf and stuff to see whether we see any positive results there.
-> > 
-> > The SYSTEM_RUNNING check is to take care of early boot situations where
-> > we can't handle FPU exceptions but we use memcpy. There's an aligned and
-> > misaligned variant which should handle any buffers and sizes although
-> > I've set the SSE memcpy threshold at 512 Bytes buffersize the least to
-> > cover context save/restore somewhat.
-> > 
-> > Comments are much appreciated! :-)
-> > 
-> > --- a/arch/x86/include/asm/string_64.h
-> > +++ b/arch/x86/include/asm/string_64.h
-> > @@ -28,10 +28,20 @@ static __always_inline void *__inline_memcpy(void *to, const void *from, size_t
-> >  
-> >  #define __HAVE_ARCH_MEMCPY 1
-> >  #ifndef CONFIG_KMEMCHECK
-> > +extern void *__memcpy(void *to, const void *from, size_t len);
-> > +extern void *__sse_memcpy(void *to, const void *from, size_t len);
-> >  #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4
-> > -extern void *memcpy(void *to, const void *from, size_t len);
-> > +#define memcpy(dst, src, len)					\
-> > +({								\
-> > +	size_t __len = (len);					\
-> > +	void *__ret;						\
-> > +	if (__len >= 512)					\
-> > +		__ret = __sse_memcpy((dst), (src), __len);	\
-> > +	else							\
-> > +		__ret = __memcpy((dst), (src), __len);		\
-> > +	__ret;							\
-> > +})
-> 
-> Please, no. Do not inline every memcpy invocation.
-> This is pure bloat (comsidering how many memcpy calls there are)
-> and it doesn't even win anything in speed, since there will be
-> a fucntion call either way.
-> Put the __len >= 512 check inside your memcpy instead.
+From: Clemens Ladisch <clemens@ladisch.de>
+Date: Tue, 21 Jun 2011 22:09:50 +0200
 
-In the __len < 512 case, this would actually cause two function calls,
-actually: once the __sse_memcpy and then the __memcpy one.
+Commit db64fe02258f (mm: rewrite vmap layer) introduced code that does
+address calculations under the assumption that VMAP_BLOCK_SIZE is
+a power of two.  However, this might not be true if CONFIG_NR_CPUS is
+not set to a power of two.
 
-> You may do the check if you know that __len is constant:
-> if (__builtin_constant_p(__len) && __len >= 512) ...
-> because in this case gcc will evaluate it at compile-time.
+Wrong vmap_block index/offset values could lead to memory corruption.
+However, this has never been observed in practice (or never been
+diagnosed correctly); what caught this was the BUG_ON in vb_alloc() that
+checks for inconsistent vmap_block indices.
 
-That could justify the bloat at least partially.
+To fix this, ensure that VMAP_BLOCK_SIZE always is a power of two.
 
-Actually, I had a version which sticks sse_memcpy code into memcpy_64.S
-and that would save us both the function call and the bloat. I might
-return to that one if it turns out that SSE memcpy makes sense for the
-kernel.
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=31572
+Reported-by: Pavel Kysilka <goldenfish@linuxsoft.cz>
+Reported-by: Matias A. Fonzo <selk@dragora.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: 2.6.28+ <stable@kernel.org>
+---
+Resend with corrected Cc list; sorry.
 
-Thanks.
+This fixes instant and fully repeatable crashes if NR_CPUS is not a power
+of two and vm_map_ram() or something like that is executed, for example
+firewire-ohci probe in its 2.6.38+ incarnation.
 
+ mm/vmalloc.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 1d34d75..d3d451b 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -732,9 +732,10 @@ static void free_unmap_vmap_area_addr(unsigned long addr)
+ #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
+ #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
+ #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
+-#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
+-					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
+-						VMALLOC_PAGES / NR_CPUS / 16))
++#define VMAP_BBMAP_BITS		\
++		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
++		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
++			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
+ 
+ #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.3.2
