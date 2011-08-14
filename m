@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab1HNRRm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:17:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44849 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab1HNRRi convert rfc822-to-8bit (ORCPT
+	id S1754184Ab1HNRip (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:38:45 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55525 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752705Ab1HNRim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:17:38 -0400
+	Sun, 14 Aug 2011 13:38:42 -0400
+X-Sasl-enc: mW1toJ8O3GUOgaLdjxcZSVJANzBNQe4ZG0LuvE51oYLu 1313343521
+Date: Sun, 14 Aug 2011 10:38:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: Driver framework: binding a driver to two devices?
+Message-ID: <20110814173816.GA10062@kroah.com>
+References: <CAMuHMdVr9iAyqQJUgHq4gcLg+gp7GxF=sH+SBKBuqVWYymXs8Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110814170124.GC12747@elie.gateway.2wire.net>
-References: <20110414094447.GA1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104211629300.24613@xanadu.home>
- <201104261605.26791.arnd@arndb.de> <201104261904.45923.rjw@sisk.pl>
- <20110426181508.GB1908@redhat.com> <20110813154638.GA1494@elie.gateway.2wire.net>
- <20110813190246.GA10412@elie.gateway.2wire.net> <20110813211142.GA1536@redhat.com>
- <20110814170124.GC12747@elie.gateway.2wire.net>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sun, 14 Aug 2011 19:17:18 +0200
-Message-ID: <CAPXgP102fk_7WPUY1QKq9izJuWH4saGeCVmYO5tJCReegTAEkA@mail.gmail.com>
-Subject: Re: [BUG?] Moving drivers to drivers/cpufreq/ causes all to be loaded
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mattia Dongili <malattia@debian.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVr9iAyqQJUgHq4gcLg+gp7GxF=sH+SBKBuqVWYymXs8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 19:01, Jonathan Nieder <jrnieder@gmail.com> wrote:
-> (-cc: ARM/etc people; +cc: Kay)
->
-> Dave Jones wrote:
->
->> If we have to move stuff again, we could do drivers/cpufreq/x86/ etc..
->
-> Unfortunately the old script used "find", not "ls", so that wouldn't
-> work. :/
->
->> What we used to do in Fedora grew more and more complex over time.
->> Here's the last incarnation: http://fpaste.org/uvDb/
->
-> The main difference from Debian seems to be that this script loads the
-> module corresponding to the chosen governor, while Debian's init
-> script loads all governor modules early (using a heuristic I would
-> like to avoid that involves running "find" to list them) and chooses
-> the governor to use later.
+On Sat, Aug 13, 2011 at 10:44:42PM +0200, Geert Uytterhoeven wrote:
+> As Amiga Zorro expansion boards have only one BAR (unlike PCI, which has
+> multiple BARs), several Amiga graphics cards show up as two Zorro devices:
+> one for the graphics memory and one for the graphics controller's registers.
+> 
+> Traditionally, a driver for such a device used
+> 
+>     dev1 = zorro_find_device(id1, ...)
+>     dev2 = zorro_find_device(id2, ...)
+> 
+> to find the two devices and match them.
+> 
+> With the "new" driver framework, the matching with device id1 is now
+> done using a
+> struct zorro_driver with a table of IDs, while the matching with device id2 is
+> still done by calling zorro_find_device(id2, ...).
+> 
+> Recently (with cirrusfb) it turned out that the call to
+> zorro_find_device(id2, ...)
+> may fail to find the second device. I suspect this happens due to the second
+> device haven't been probed for at the time the zorro_driver for the
+> first device is
+> initialized.
+> 
+> I expect this can be fixed by delaying all calls to device_register() in
+> amiga_zorro_probe() until all devices have been detected and added to the array
+> used by zorro_find_device(). But I was wondering whether there's a more generic
+> way in the driver framework to bind a driver to two devices?
 
-Right, loading cpufreq drivers from userspace is fragile, and can not
-properly work today. Only the kernel itself know which driver to try
-to bind in which order. Modular cpufreq kernel modules make no real
-sense here with the infrastructure we have available today.
+What you really want is the same "driver instance" bound to two devices,
+right?  That way the device would operate "knowing" about both physical
+devices so as to properly control the thing.
 
->> In an ideal world, we'd auto-load the right module on a hotplug event
->> from a cpu, but we're not there yet. I believe Kay is working on that.
->
-> Yes, that is what I was hoping for.  Are there patches to test?
+Right now, no, there's not a simple way to do this with the driver
+model.  USB does this on its own for some devices that need to have
+multiple "interfaces" (the USB equalivant for a "device") controlled at
+the same time, so you might want to look at how that happens (in the
+indivdual drivers, not in the USB core.)
 
-Yeah, it's on the TODO list, I just get too many 'really broken'
-things get sorted on top all time. :) But it will happen in the next
-months.
+Sorry,
 
-> The comment at
-> http://thread.gmane.org/gmane.linux.kernel/796450/focus=796874 also
-> looks promising.
-
-That could work, but we better go right for the CPU specific aliases
-and do not try to load all of them, even when for completely different
-systems. That would just encode another workaround into kernel
-modules, which we better solve properly.
-
-Kay
+greg k-h
