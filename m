@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1HNRyn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:54:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab1HNRyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:54:41 -0400
-Date: Sun, 14 Aug 2011 19:51:19 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: NeilBrown <neilb@suse.de>, Ben Blum <bblum@andrew.cmu.edu>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
-	questionable code in de_thread.
-Message-ID: <20110814175119.GC2381@redhat.com>
-References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu> <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown> <20110728121741.GB2427@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728121741.GB2427@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754602Ab1HNSIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 14:08:41 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:49524 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab1HNSIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 14:08:39 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 14 Aug 2011 20:03:22 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, Artem.Bityutskiy@nokia.com,
+        busybox@busybox.net
+Subject: Re: [BUG] Linux 3.0 commit 3627924acf70a broke
+ include/mtd/ubi_user.h.
+Message-ID: <20110814200322.3fa7109d@stein>
+In-Reply-To: <4E4809BF.6040707@landley.net>
+References: <4E4809BF.6040707@landley.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28, Paul E. McKenney wrote:
->
-> On Thu, Jul 28, 2011 at 11:08:13AM +1000, NeilBrown wrote:
-> >
-> > I disagree.  It also requires - by virtue of the use of while_each_thread() -
-> > that 'g' remains on the list that 't' is walking along.
->
-> Doesn't the following code in the loop body deal with this possibilty?
->
-> 	/* Exit if t or g was unhashed during refresh. */
-> 	if (t->state == TASK_DEAD || g->state == TASK_DEAD)
-> 		goto unlock;
+On Aug 14 Rob Landley wrote:
+> "make headers_install" copies include/mtd/ubi_user.h to userspace, where
+> things like busybox link against it.  With 3.0, building defconfig
+> busybox gets this error:
+> 
+> In file included from miscutils/ubi_tools.c:63:
+> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:329:
+> error: conflicting types for '__packed'
+> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:313:
+> error: previous declaration of '__packed' was here
+> 
+> This is due to the Linux 3.0 commit in the title:
+> 
+>     UBI: use __packed instead of __attribute__((packed))
+> 
+> This relies on __packed being defined in:
+> 
+>   include/linux/compiler-gcc.h:
+>   #define __packed			__attribute__((packed))
+> 
+> Which is not exported to userspace.
+> 
+> I.E. this "cleanup" broke the ability for userspace to use this header,
+> even though the header is exported to userspace by headers_install.
 
-This code is completely wrong even if while_each_thread() was fine.
-
-I sent the patch but it was ignored.
-
-	[PATCH] fix the racy check_hung_uninterruptible_tasks()->rcu_lock_break()
-	http://marc.info/?l=linux-kernel&m=127688790019041
-
-Oleg.
-
+As far as I can tell, the __packed or __attribute__((packed))
+qualifications are superfluous in include/mtd/ubi-user.h anyway.
+-- 
+Stefan Richter
+-=====-==-== =--- -===-
+http://arcgraph.de/sr/
