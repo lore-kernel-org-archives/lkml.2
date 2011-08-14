@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751164Ab1HNXMT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 19:12:19 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45222
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750866Ab1HNXMS (ORCPT
+	id S1751236Ab1HNXSZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 19:18:25 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65395 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1HNXSX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 19:12:18 -0400
-Date: Sun, 14 Aug 2011 19:12:17 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: XFS status update for July 2011
-Message-ID: <20110814231217.GA30171@infradead.org>
+	Sun, 14 Aug 2011 19:18:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110811142749.GA26109@maxin>
+References: <20110811142749.GA26109@maxin>
+Date: Mon, 15 Aug 2011 02:18:22 +0300
+Message-ID: <CAMhs6Yy_O33jZ5N7E5UuAtjoRyyEcUG8s4-PQwooX-TJ3Wh=2A@mail.gmail.com>
+Subject: Re: [PATCH] SCSI: OSD: Kconfig: Select SHA1 and HMAC for OSD
+ Initiator library
+From: Maxin B John <maxin.john@gmail.com>
+To: rdunlap@xenotime.net
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Benny Halevy <bhalevy@panasas.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        osd-dev@open-osd.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-July finally saw the release of Linux 3.0, including a relatively small XFS
-update:
+Ping..
 
-  37 files changed, 1168 insertions(+), 847 deletions(-)
-
-The primary news in this release is a complete rework of the busy extent
-tracking, which speeds up allocation heavy multithreaded workloads.  This
-feature also allowed adding support for discard support at transaction
-commit time using the discard mount option.  While the implementation of
-discards in XFS is state of the art it should be considered mostly a
-technology preview until various efficiency issue in the block layer
-discard support are sorted out.  Another important feature visible to
-users is that XFS now supports using external logs even when using volatile
-write caches, although the implementation is not fully optimized yet,
-the rest of the changes consists of the usual pile of bug fixes and a
-relatively small set of cleanups.  After the release of Linux 3.0 the
-merge window for Linux 3.1 also fell mostly into July.   The XFS merge
-for 3.1 included further speedups for the AIL code, and a huge amount
-of cleanups.
-
-On the userspace side the biggest item was the merge of the libxfs resync
-with the Linux 2.6.39 kernel code.  In addition to that xfsprogs saw small
-xfs_repair updates, xfstests saw various fixes to fsx, and various build
-system fixes were commit to all userspace repositories.
+On Thu, Aug 11, 2011 at 5:27 PM, Maxin B. John <maxin.john@gmail.com> wrote:
+> SCSI_OSD_INITIATOR should select CRYPTO_SHA1 and CRYPTO_HMAC. Express this
+> in Kconfig so that the requirements are met automatically.
+>
+> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> ---
+> diff --git a/drivers/scsi/osd/Kconfig b/drivers/scsi/osd/Kconfig
+> index 861b5ce..1535fe1 100644
+> --- a/drivers/scsi/osd/Kconfig
+> +++ b/drivers/scsi/osd/Kconfig
+> @@ -11,17 +11,16 @@
+>  # it under the terms of the GNU General Public version 2 License as
+>  # published by the Free Software Foundation
+>  #
+> -# FIXME: SCSI_OSD_INITIATOR should select CONFIG (HMAC) SHA1 somehow.
+> -#        How is it done properly?
+>  #
+>
+>  config SCSI_OSD_INITIATOR
+>        tristate "OSD-Initiator library"
+>        depends on SCSI
+> +       select CRYPTO
+> +       select CRYPTO_SHA1
+> +       select CRYPTO_HMAC
+>        help
+>                Enable the OSD-Initiator library (libosd.ko).
+> -               NOTE: You must also select CRYPTO_SHA1 + CRYPTO_HMAC and their
+> -               dependencies
+>
+>  config SCSI_OSD_ULD
+>        tristate "OSD Upper Level driver"
+>
