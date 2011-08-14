@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab1HNX6j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 19:58:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55832 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272Ab1HNX6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751377Ab1HNX6h (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 14 Aug 2011 19:58:37 -0400
-Date: Mon, 15 Aug 2011 09:58:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Andrea Merello <andreamrl@tiscali.it>,
-        Andre Nogueira <andre.neo.net@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefan Weil <weil@mail.berlios.de>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers/staging/rtl8187se: Don't pass huge struct
- by value
-Message-Id: <20110815095822.7f7e32c5c8ba237b40cca863@canb.auug.org.au>
-In-Reply-To: <alpine.LNX.2.00.1108142031330.14271@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1108130054220.7387@swampdragon.chaosbits.net>
-	<20110813180531.34a47d9bf4851f8c1e9a227c@canb.auug.org.au>
-	<alpine.LNX.2.00.1108142031330.14271@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Received: from cantor2.suse.de ([195.135.220.15]:49265 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab1HNX6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 19:58:36 -0400
+Date: Mon, 15 Aug 2011 09:58:20 +1000
+From: NeilBrown <neilb@suse.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
+ questionable code in de_thread.
+Message-ID: <20110815095820.33607862@notabene.brown>
+In-Reply-To: <20110814175119.GC2381@redhat.com>
+References: <20110727171101.5e32d8eb@notabene.brown>
+	<20110727150710.GB5242@unix33.andrew.cmu.edu>
+	<20110727234235.GA2318@linux.vnet.ibm.com>
+	<20110728110813.7ff84b13@notabene.brown>
+	<20110728121741.GB2427@linux.vnet.ibm.com>
+	<20110814175119.GC2381@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__15_Aug_2011_09_58_22_+1000_IIj2HV4fgswkLVGa"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__15_Aug_2011_09_58_22_+1000_IIj2HV4fgswkLVGa
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 14 Aug 2011 19:51:19 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
 
-Hi Jesper,
+> On 07/28, Paul E. McKenney wrote:
+> >
+> > On Thu, Jul 28, 2011 at 11:08:13AM +1000, NeilBrown wrote:
+> > >
+> > > I disagree.  It also requires - by virtue of the use of while_each_thread() -
+> > > that 'g' remains on the list that 't' is walking along.
+> >
+> > Doesn't the following code in the loop body deal with this possibilty?
+> >
+> > 	/* Exit if t or g was unhashed during refresh. */
+> > 	if (t->state == TASK_DEAD || g->state == TASK_DEAD)
+> > 		goto unlock;
+> 
+> This code is completely wrong even if while_each_thread() was fine.
+> 
+> I sent the patch but it was ignored.
+> 
+> 	[PATCH] fix the racy check_hung_uninterruptible_tasks()->rcu_lock_break()
+> 	http://marc.info/?l=linux-kernel&m=127688790019041
+> 
+> Oleg.
 
-On Sun, 14 Aug 2011 20:32:49 +0200 (CEST) Jesper Juhl <jj@chaosbits.net> wr=
-ote:
->
-> the "static inline" and defined in the header bits I didn't do because I=
-=20
-> was afraid that that was not valid in combination with EXPORT_SYMBOL().
 
-You don't need to/cannot EXPORT_SYMBOL() static inlines in header files.
-Any use in modules will pick up the static inline definition from the
-header file when they are built.  Unless, of course, someone takes the
-addresses of these functions, then you should not inline them.
+I agree with that patch.
+RCU only protects a task_struct until release_task() is called (which
+removes it from the task list).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So holding rcu_lock doesn't stop put_task_struct from freeing the memory
+unless we *know* that release_task hasn't been called.  This is exactly that
+pid_alive() tests.
 
---Signature=_Mon__15_Aug_2011_09_58_22_+1000_IIj2HV4fgswkLVGa
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I must say that handling of task_struct seems to violate the law of least
+surprise a little to often for my taste.  Maybe it is just a difficult
+problem and it needs a complex solution - but it would be really nice if it
+were a bit simpler :-(
 
-iQEcBAEBAgAGBQJOSGEeAAoJEDMEi1NhKgbsklEH/1D32CK1/+NkLmqjBsMhqPF7
-ieGmEnPRlVZs3K21bF/E2iU922J2ZKg/vMMMx/KnzqPy44UV4KfybUvCYaa/s75U
-7Kk9UKtG9/vgY7mzW+se2BdNSQCnTCQSFxDv3CAWwPssaUstinS9+f24CVXfnqyV
-1oNb5lY2ZbIeTIOeTUO2m631IQZpdqWc6d1r4n+RSUHSkEOuZ+TbF5ke4B0EtoF3
-cD1X3Q3hIXET7EQFlbih25UlXbgi8d767+ux2x2nHNMq9Qtwhr3/570n2/VvAZVF
-CmlgrFg8HJNrEe2zHXHSP9X5Yxrp7lZkPGCxrmWDB0rWP3xaJztl72F1+9PJsrs=
-=IvWb
------END PGP SIGNATURE-----
-
---Signature=_Mon__15_Aug_2011_09_58_22_+1000_IIj2HV4fgswkLVGa--
+NeilBrown
