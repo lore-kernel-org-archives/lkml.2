@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1HNTrM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:47:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40856 "EHLO ogre.sisk.pl"
+	id S1755302Ab1HNTsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:48:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40867 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755099Ab1HNTrH convert rfc822-to-8bit (ORCPT
+	id S1755210Ab1HNTrK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:47:07 -0400
+	Sun, 14 Aug 2011 15:47:10 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Tino Keitel" <tino.keitel@tikei.de>
+        "Stephan Seitz" <stse+lkml@fsing.rootsland.net>
 References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 In-Reply-To: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <bkwpSnItbJM.A.6Y.1MCSOB@chimera>
-Subject: [Bug #40062] USB related "unable to handle kernel paging request" in 3.0.0-rc7
+Message-ID: <bkwpSnItbJM.A.r-H.mMCSOB@chimera>
+Subject: [Bug #40282] IP forwarding regression since 3.0-rc6
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 14 Aug 2011 21:07:35 +0200 (CEST)
+Date: Sun, 14 Aug 2011 21:07:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,12 +34,11 @@ introduced between 2.6.39 and 3.0.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40062
-Subject		: USB related "unable to handle kernel paging request" in 3.0.0-rc7
-Submitter	: Tino Keitel <tino.keitel@tikei.de>
-Date		: 2011-07-22 19:27 (24 days old)
-Message-ID	: <20110722192722.GA9369@x61.home>
-References	: http://marc.info/?l=linux-kernel&m=131136334621623&w=2
-Patch		: https://lkml.org/lkml/2011/8/2/174
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40282
+Subject		: IP forwarding regression since 3.0-rc6
+Submitter	: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+Date		: 2011-07-25 12:51 (21 days old)
+Message-ID	: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+References	: http://marc.info/?l=linux-kernel&m=131159880004908&w=2
 
 
