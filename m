@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab1HNRpq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:45:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58462 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab1HNRpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:45:44 -0400
-Message-ID: <4E4809BF.6040707@landley.net>
-Date: Sun, 14 Aug 2011 12:45:35 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1754499Ab1HNRsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:48:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754175Ab1HNRsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 13:48:12 -0400
+Date: Sun, 14 Aug 2011 19:45:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: paulmck@linux.vnet.ibm.com, Ben Blum <bblum@andrew.cmu.edu>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
+	questionable code in de_thread.
+Message-ID: <20110814174516.GB2381@redhat.com>
+References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu> <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Artem.Bityutskiy@nokia.com,
-        busybox@busybox.net
-Subject: [BUG] Linux 3.0 commit 3627924acf70a broke include/mtd/ubi_user.h.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110728110813.7ff84b13@notabene.brown>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"make headers_install" copies include/mtd/ubi_user.h to userspace, where
-things like busybox link against it.  With 3.0, building defconfig
-busybox gets this error:
+On 07/28, NeilBrown wrote:
+>
+> +/* Thread group leader can change, so stop loop when we see one
+> + * even if it isn't 'g' */
+>  #define while_each_thread(g, t) \
+> -	while ((t = next_thread(t)) != g)
+> +	while ((t = next_thread(t)) != g && !thread_group_leader(t))
 
-In file included from miscutils/ubi_tools.c:63:
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:329:
-error: conflicting types for '__packed'
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:313:
-error: previous declaration of '__packed' was here
+This assumes that while_each_thread(g, t) always uses g == group_leader.
 
-This is due to the Linux 3.0 commit in the title:
+> @@ -70,8 +70,13 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+>  		list_del_rcu(&p->tasks);
+>  		list_del_init(&p->sibling);
+>  		__this_cpu_dec(process_counts);
+> -	}
+> -	list_del_rcu(&p->thread_group);
+> +	} else
+> +		/* only remove members from the thread group.
+> +		 * The thread group leader must stay so that
+> +		 * while_each_thread() uses can see the end of
+> +		 * the list and stop.
+> +		 */
+> +		list_del_rcu(&p->thread_group);
 
-    UBI: use __packed instead of __attribute__((packed))
+Hmm... this looks obvously wrong. This leaves the dead thread on
+the list.
 
-This relies on __packed being defined in:
+Oleg.
 
-  include/linux/compiler-gcc.h:
-  #define __packed			__attribute__((packed))
-
-Which is not exported to userspace.
-
-I.E. this "cleanup" broke the ability for userspace to use this header,
-even though the header is exported to userspace by headers_install.
-
-Rob
