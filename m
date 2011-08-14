@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1HNTsK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:48:10 -0400
+	id S1755261Ab1HNTsF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:48:05 -0400
 Received: from ogre.sisk.pl ([217.79.144.158]:40872 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755174Ab1HNTrJ convert rfc822-to-8bit (ORCPT
+	id S1755211Ab1HNTrK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:47:09 -0400
+	Sun, 14 Aug 2011 15:47:10 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Philip Armstrong" <phil@kantaka.co.uk>
+        "=?utf-8?q?Toralf=20F=C3=B6rster?=" <toralf.foerster@gmx.de>
 References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 In-Reply-To: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <bkwpSnItbJM.A.fL.vMCSOB@chimera>
-Subject: [Bug #40092] RCU stall in linux-3.0.0
+Message-ID: <bkwpSnItbJM.A.pR.yMCSOB@chimera>
+Subject: [Bug #40072] suspend/resume problems w/ kernel 3.0 and a *docked* ThinkPad T400, unless iwlagn unloaded
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 14 Aug 2011 21:07:35 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,9 +34,11 @@ introduced between 2.6.39 and 3.0.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40092
-Subject		: RCU stall in linux-3.0.0
-Submitter	: Philip Armstrong <phil@kantaka.co.uk>
-Date		: 2011-07-25 21:44 (21 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40072
+Subject		: suspend/resume problems w/ kernel 3.0 and a *docked* ThinkPad T400, unless iwlagn unloaded
+Submitter	: Toralf Förster <toralf.foerster@gmx.de>
+Date		: 2011-07-23 19:27 (23 days old)
+Message-ID	: <201107232127.34255.toralf.foerster@gmx.de>
+References	: http://marc.info/?l=linux-kernel&m=131144928023465&w=2
 
 
