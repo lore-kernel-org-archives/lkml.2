@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab1HNQEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:04:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63797 "EHLO mx1.redhat.com"
+	id S1753554Ab1HNQEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:04:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52033 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab1HNQEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:04:11 -0400
-Date: Sun, 14 Aug 2011 18:01:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: akpm@linux-foundation.org, bonbons@linux-vserver.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge@hallyn.com
-Subject: Re: [PATCH 2/2] Notify container-init parent a 'reboot' occured
-Message-ID: <20110814160112.GA29798@redhat.com>
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr>
+	id S1752582Ab1HNQER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:04:17 -0400
+Date: Sun, 14 Aug 2011 16:03:58 GMT
+From: tip-bot for Hillf Danton <dhillf@gmail.com>
+Message-ID: <tip-1812a643ccbfeb61a00a7f0d7219606e63d8815b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, efault@gmx.de, dhillf@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, yong.zhang0@gmail.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, dhillf@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de, yong.zhang0@gmail.com,
+        mingo@elte.hu
+In-Reply-To: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
+References: <BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Remove resetting exec_start in put_prev_task_rt()
+Git-Commit-ID: 1812a643ccbfeb61a00a7f0d7219606e63d8815b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:04:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11, Daniel Lezcano wrote:
->
-> When the reboot syscall is called and the pid namespace where the calling
-> process belongs to is not from the init pidns, we send a SIGCHLD with CLD_REBOOTED
-> to the parent of this pid namespace.
+Commit-ID:  1812a643ccbfeb61a00a7f0d7219606e63d8815b
+Gitweb:     http://git.kernel.org/tip/1812a643ccbfeb61a00a7f0d7219606e63d8815b
+Author:     Hillf Danton <dhillf@gmail.com>
+AuthorDate: Thu, 16 Jun 2011 21:55:21 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 14 Aug 2011 12:00:50 +0200
 
-OK, but why you can't simply send the signal?
+sched: Remove resetting exec_start in put_prev_task_rt()
 
-Why do you need the strange do_notify_parent_cldreboot() which tries
-to mimic do_notify_parent() for (afaics) no reason ?
+There's no reason to clean the exec_start in put_prev_task_rt() as it is reset
+when the task gets back to the run queue. This saves us doing a store() in the
+fast path.
 
-> +void do_notify_parent_cldreboot(struct task_struct *tsk, int why, char *buffer)
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Link: http://lkml.kernel.org/r/BANLkTimqWD=q6YnSDi-v9y=LMWecgEzEWg@mail.gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched_rt.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-buffer is not used. Why?
-
-> +	if (tsk->ptrace)
-> +		parent = tsk->parent;
-> +	else {
-> +		tsk = tsk->group_leader;
-> +		parent = tsk->real_parent;
-> +	}
-
-For what? I simply can't understand this...
-
-> +     sighand = parent->sighand;
-> +     spin_lock_irqsave(&sighand->siglock, flags);
-
-this is unsafe, we can't trust ->sighand and parent.
-
-> +	 * Even if SIGCHLD is not generated, we must wake up wait4 calls.
-
-but not in this case, afaics?
-
-> +	__wake_up_parent(tsk, parent);
-
-Why do you need __wake_up_parent()?
-
-> +static void pid_namespace_reboot(struct pid_namespace *pid_ns,
-> +				int cmd, char *buffer)
-> +{
-> +	struct task_struct *tsk = pid_ns->child_reaper;
-> +	do_notify_parent_cldreboot(tsk, cmd, buffer);
-
-nothing prevents ->child_reaper from exiting it it is multithreaded,
-this can crash the kernel.
-
-> @@ -426,10 +434,18 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  {
->  	char buffer[256];
-
-again, it is not used.
-
->  	int ret = 0;
-> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
-> +
-> +        /* We only trust the superuser with rebooting the system. */
-> +	if (!capable(CAP_SYS_BOOT)) {
-> +		/* If we are not in the initial pid namespace, we send a signal
-> +		 * to the parent of this init pid namespace, notifying a shutdown
-> +		 * occured */
-> +		if (pid_ns != &init_pid_ns)
-> +			pid_namespace_reboot(pid_ns, cmd, buffer);
-
-Hmm. Looks like pid_ns should be checked after CAP_SYS_BOOT?
-
-Oleg.
-
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 8e18945..70107a3 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1178,7 +1178,6 @@ static struct task_struct *pick_next_task_rt(struct rq *rq)
+ static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
+ {
+ 	update_curr_rt(rq);
+-	p->se.exec_start = 0;
+ 
+ 	/*
+ 	 * The previous task needs to be made eligible for pushing
