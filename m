@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1HNLOC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 07:14:02 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65022 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109Ab1HNLOA (ORCPT
+	id S1753228Ab1HNLRe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 07:17:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64096 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1HNLRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 07:14:00 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: x86 memcpy performance
-Date: Sun, 14 Aug 2011 13:13:56 +0200
-User-Agent: KMail/1.8.2
-Cc: Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
-References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com> <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic>
-In-Reply-To: <20110814095910.GA18809@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201108141313.56926.vda.linux@googlemail.com>
+	Sun, 14 Aug 2011 07:17:33 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH] defconfig: Build virtio paravirtualization features by default
+Date: Sun, 14 Aug 2011 14:16:21 +0300
+Message-Id: <1313320581-7050-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 14 August 2011 11:59, Borislav Petkov wrote:
-> Here's the SSE memcpy version I got so far, I haven't wired in the
-> proper CPU feature detection yet because we want to run more benchmarks
-> like netperf and stuff to see whether we see any positive results there.
-> 
-> The SYSTEM_RUNNING check is to take care of early boot situations where
-> we can't handle FPU exceptions but we use memcpy. There's an aligned and
-> misaligned variant which should handle any buffers and sizes although
-> I've set the SSE memcpy threshold at 512 Bytes buffersize the least to
-> cover context save/restore somewhat.
-> 
-> Comments are much appreciated! :-)
-> 
-> --- a/arch/x86/include/asm/string_64.h
-> +++ b/arch/x86/include/asm/string_64.h
-> @@ -28,10 +28,20 @@ static __always_inline void *__inline_memcpy(void *to, const void *from, size_t
->  
->  #define __HAVE_ARCH_MEMCPY 1
->  #ifndef CONFIG_KMEMCHECK
-> +extern void *__memcpy(void *to, const void *from, size_t len);
-> +extern void *__sse_memcpy(void *to, const void *from, size_t len);
->  #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4
-> -extern void *memcpy(void *to, const void *from, size_t len);
-> +#define memcpy(dst, src, len)					\
-> +({								\
-> +	size_t __len = (len);					\
-> +	void *__ret;						\
-> +	if (__len >= 512)					\
-> +		__ret = __sse_memcpy((dst), (src), __len);	\
-> +	else							\
-> +		__ret = __memcpy((dst), (src), __len);		\
-> +	__ret;							\
-> +})
+This patch adds guest paravirtualization config options to defconfig.
 
-Please, no. Do not inline every memcpy invocation.
-This is pure bloat (comsidering how many memcpy calls there are)
-and it doesn't even win anything in speed, since there will be
-a fucntion call either way.
-Put the __len >= 512 check inside your memcpy instead.
+The purpose is to allow defconfig kernels to run well in a virtualized
+enviroment.
 
-You may do the check if you know that __len is constant:
-if (__builtin_constant_p(__len) && __len >= 512) ...
-because in this case gcc will evaluate it at compile-time.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ arch/x86/configs/i386_defconfig   |   11 +++++++++++
+ arch/x86/configs/x86_64_defconfig |   11 +++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index 2bf18059f..3287152 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -337,3 +337,14 @@ CONFIG_SECURITY_SELINUX_DISABLE=y
+ CONFIG_CRYPTO_AES_586=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRC_T10DIF=y
++CONFIG_VIRTIO=y
++CONFIG_VIRTIO_RING=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BLK=y
++CONFIG_VIRTIO_NET=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
++CONFIG_9P_FS=y
++CONFIG_VIRTIO_BALLOON=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_HW_RANDOM_VIRTIO=y
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index 22a0dc8..1ee0e99 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -336,3 +336,14 @@ CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+ CONFIG_SECURITY_SELINUX_DISABLE=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRC_T10DIF=y
++CONFIG_VIRTIO=y
++CONFIG_VIRTIO_RING=y
++CONFIG_VIRTIO_PCI=y
++CONFIG_VIRTIO_BLK=y
++CONFIG_VIRTIO_NET=y
++CONFIG_NET_9P=y
++CONFIG_NET_9P_VIRTIO=y
++CONFIG_9P_FS=y
++CONFIG_VIRTIO_BALLOON=y
++CONFIG_VIRTIO_CONSOLE=y
++CONFIG_HW_RANDOM_VIRTIO=y
 -- 
-vda
+1.7.6
+
