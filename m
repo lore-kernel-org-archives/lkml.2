@@ -1,36 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab1HNE2i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 00:28:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53285 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750727Ab1HNE2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 00:28:37 -0400
-Date: Sun, 14 Aug 2011 13:28:28 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: soc-core: Fix checking return value of
- debugfs_create_dir
-Message-ID: <20110814042826.GC20423@opensource.wolfsonmicro.com>
-References: <1313292193.4421.1.camel@phoenix>
+	id S1752003Ab1HNFKX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 01:10:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42505 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab1HNFKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 01:10:20 -0400
+References: <20110812150304.GC16880@albatros> <4E45884B.8030303@zytor.com> <20110813062246.GC3851@albatros> <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com> <m2ei0olnua.fsf@firstfloor.org>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <m2ei0olnua.fsf@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313292193.4421.1.camel@phoenix>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 13 Aug 2011 22:08:57 -0700
+To: Andi Kleen <andi@firstfloor.org>
+CC: Vasiliy Kulikov <segoon@openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Message-ID: <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 11:23:13AM +0800, Axel Lin wrote:
-> We have CONFIG_DEBUG_FS guard around the place calling debugfs_create_dir,
-> thus debugfs_create_dir returns NULL on failure.
+Andi Kleen <andi@firstfloor.org> wrote:
 
-On the other hand the existing code doesn't actually have any problem,
-the IS_ERR() won't give false positives, so the changelog isn't really
-accurate and if anything we'll introduce a bug if someone cut'n'pastes
-the code elsewhere.
+>"H. Peter Anvin" <hpa@zytor.com> writes:
+>>
+>> IA64 is totally different.  I'm extremely sceptical to this patch; it
+>feels like putting code in a super-hot path to paper over a problem
+>that has to be fixed anyway.
+>
+>Sounds to me a better alternative would be more aggressive, pro-active
+>fuzzing of the compat calls.
+>
+>-Andi
+>
+>-- 
+>ak@linux.intel.com -- Speaking for myself only
+
+Agreed.  Other than that, I can see a fine-grained permission filter, but the compat vs noncompat axis is just spurious.
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
