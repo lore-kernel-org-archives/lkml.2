@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab1HNK5U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 06:57:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48929 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1HNK5S (ORCPT
+	id S1753210Ab1HNLOC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 07:14:02 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65022 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1HNLOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 06:57:18 -0400
+	Sun, 14 Aug 2011 07:14:00 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: x86 memcpy performance
+Date: Sun, 14 Aug 2011 13:13:56 +0200
+User-Agent: KMail/1.8.2
+Cc: Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com> <20110812195220.GA29051@elte.hu> <20110814095910.GA18809@liondog.tnic>
+In-Reply-To: <20110814095910.GA18809@liondog.tnic>
 MIME-Version: 1.0
-From: Rabin Vincent <rabin@rab.in>
-Date: Sun, 14 Aug 2011 16:26:34 +0530
-X-Google-Sender-Auth: ZULRT7B9Rz5rio6K1BA9yAk50ZA
-Message-ID: <CAH+eYFD61keboBWfcnxEAwW-4PmoLpofZh08k606OkALg_VFuQ@mail.gmail.com>
-Subject: IS_ENABLED() and non-available symbols
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201108141313.56926.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to use the new IS_ENABLED() stuff, but it appears that it
-only works if the symbol being tested has its dependencies met, and
-results in compiler errors if that is not the case.
+On Sunday 14 August 2011 11:59, Borislav Petkov wrote:
+> Here's the SSE memcpy version I got so far, I haven't wired in the
+> proper CPU feature detection yet because we want to run more benchmarks
+> like netperf and stuff to see whether we see any positive results there.
+> 
+> The SYSTEM_RUNNING check is to take care of early boot situations where
+> we can't handle FPU exceptions but we use memcpy. There's an aligned and
+> misaligned variant which should handle any buffers and sizes although
+> I've set the SSE memcpy threshold at 512 Bytes buffersize the least to
+> cover context save/restore somewhat.
+> 
+> Comments are much appreciated! :-)
+> 
+> --- a/arch/x86/include/asm/string_64.h
+> +++ b/arch/x86/include/asm/string_64.h
+> @@ -28,10 +28,20 @@ static __always_inline void *__inline_memcpy(void *to, const void *from, size_t
+>  
+>  #define __HAVE_ARCH_MEMCPY 1
+>  #ifndef CONFIG_KMEMCHECK
+> +extern void *__memcpy(void *to, const void *from, size_t len);
+> +extern void *__sse_memcpy(void *to, const void *from, size_t len);
+>  #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) || __GNUC__ > 4
+> -extern void *memcpy(void *to, const void *from, size_t len);
+> +#define memcpy(dst, src, len)					\
+> +({								\
+> +	size_t __len = (len);					\
+> +	void *__ret;						\
+> +	if (__len >= 512)					\
+> +		__ret = __sse_memcpy((dst), (src), __len);	\
+> +	else							\
+> +		__ret = __memcpy((dst), (src), __len);		\
+> +	__ret;							\
+> +})
 
-For example, I've added code using IS_ENABLED(CONFIG_THUMB2_KERNEL) as
-in the below patch.  My config is arch/arm/configs/omap2plus_defconfig
-which doesn't satisfy the dependencies for CONFIG_THUMB2_KERNEL (defined
-in arch/arm/Kconfig).
+Please, no. Do not inline every memcpy invocation.
+This is pure bloat (comsidering how many memcpy calls there are)
+and it doesn't even win anything in speed, since there will be
+a fucntion call either way.
+Put the __len >= 512 check inside your memcpy instead.
 
-Compiling results in the following errors (and indeed the macro hasn't
-been generated in include/generated/autoconfg.h).  If I modify my config
-to satisfy the dependencies for CONFIG_THUMB2_KERNEL so that it is
-selectable, the __enabled_CONFIG_THUMB2_KERNEL macro gets generated.
+You may do the check if you know that __len is constant:
+if (__builtin_constant_p(__len) && __len >= 512) ...
+because in this case gcc will evaluate it at compile-time.
 
-arch/arm/kernel/setup.c: In function 'c_show':
-arch/arm/kernel/setup.c:1056: error: '__enabled_CONFIG_THUMB2_KERNEL'
-undeclared (first use in this function)
-arch/arm/kernel/setup.c:1056: error: (Each undeclared identifier is
-reported only once
-arch/arm/kernel/setup.c:1056: error: for each function it appears in.)
-arch/arm/kernel/setup.c:1056: error:
-'__enabled_CONFIG_THUMB2_KERNEL_MODULE' undeclared (first use in this
-function)
-
-Kernel is latest linus (v3.1-rc1-272-g73e0881).
-
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 70bca64..59aa480 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -1053,6 +1053,9 @@ static int c_show(struct seq_file *m, void *v)
-        seq_printf(m, "Serial\t\t: %08x%08x\n",
-                   system_serial_high, system_serial_low);
-
-+       if (IS_ENABLED(CONFIG_THUMB2_KERNEL))
-+               printk("Thumb-2\n");
-+
-        return 0;
- }
+-- 
+vda
