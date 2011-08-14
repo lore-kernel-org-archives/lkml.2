@@ -1,230 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab1HNXps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 19:45:48 -0400
-Received: from mail.milwpc.com ([207.250.248.28]:1158 "EHLO mail.milwpc.com"
+	id S1751359Ab1HNXuH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 19:50:07 -0400
+Received: from lo.gmane.org ([80.91.229.12]:58186 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab1HNXpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 19:45:45 -0400
-X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Aug 2011 19:45:45 EDT
-X-Spam-Score: 8
-X-Spam-Score-scoring_explanation: (46%)	BODY: contains custom phrases
-	(28%)	BODY: contains text similar to "hidden charges"
-	(26%)	ATTACH: possible malware attachment
-X-Spam-Score-spf_status: fn
-X-Spam-Score-Spamcatcher1: 619431aecb81a1c439ffa510ed7baf54
-X-Spam-Score-Summary: 86,7.662,0,,d41d8cd98f00b204,notification@nigeriaembassyusa.org,,RULES_HIT:1:2:65:235:355:379:387:455:539:540:541:542:543:567:871:962:965:966:967:969:972:973:988:989:1000:1155:1260:1308:1309:1313:1314:1345:1432:1437:1516:1517:1518:1575:1587:1589:1590:1594:1730:1749:1764:1769:1792:1823:2073:2076:2194:2196:2197:2199:2200:2201:2379:2525:2559:2562:2682:2685:2693:2740:2741:2857:2859:2892:2894:2900:2909:2933:2937:2939:2942:2945:2947:2951:2954:2975:3000:3022:3138:3139:3140:3141:3142:3355:3538:3571:3620:3653:3690:3740:3865:3866:3867:3868:3869:3870:3871:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4050:4250:4385:4390:4395:4552:4641:4649:5007:6248:6354:6506:6760:7281:7602:7679:7903:7974:8595:8599:8603:8797:8829:8957:9009:9010:9025:9072:9163:9165:9190:9204:9388:9686:9704:10013:10030:10049:10265:10283:10394:11217:11256:11257:11604:11657:11658,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not
- bulk,SPF:fn,MSBL:,DNSBL:neutral,Custom_rules:0:14:0
-X-Spam-Score-rbl_summary: none
-X-Spam-Score-Phishing_status: no
-X-Spam-Score-Countries: 
-X-Spam-Score-Charsets: windows-1251
-X-Spam-Score: 8
-Message-ID: <B0072409437@mail.milwpc.com>
-Reply-To: <nigerian_embassy@mail2airforce.com>
-From: "Nigerian Embassy" <notification@nigeriaembassyusa.org>
-Subject: Your Email Has Qualified For A Free Visa To 16 Countries.
-Date: Sat, 13 Aug 2011 15:30:09 +0200
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0017_01C2A9A6.3A20BCF4"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	id S1751156Ab1HNXuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 19:50:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Oliver <oliver@first.in-berlin.de>
+Subject: ERESTARTNOINTR, when compiling/linking shotwell with -pg
+Date: Sun, 14 Aug 2011 23:45:51 +0000 (UTC)
+Message-ID: <loom.20110815T013533-483@post.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 85.178.14.47 (Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.18) Gecko/20110628 Ubuntu/10.04 (lucid) Firefox/3.6.18)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hello,
 
-------=_NextPart_000_0017_01C2A9A6.3A20BCF4
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+I added "-pg" switches to shotwell-Makefile and when running my
+profiling-shotwell, when quitting it, it hangs temporarily.
 
-Dear Email Holder,
+"temporarily" can be between about 9 and more than 38 minutes (any other value
+might also be possible... but these are some min/max numbers I experienced. In
+case of 38 minutes it was "only" 38 minutes, because I killed shotwell after
+that time.)
 
-We just finished our 2011 Visa pass hosted by the Nigerian Embassy and your email has emerged the 14th winner this year. For security reasons we have attached the full details in which you are required to download and view and get back to us within the next 24 hours. We await your urgent response.
+Without the "-pg" switch I did not got that problem.
 
-Yours Sincerely
-The Nigerian Embassy Visa Pass 2011
+Strace tells me, that the profiling timer expired.
 
-------=_NextPart_000_0017_01C2A9A6.3A20BCF4
-Content-Type: application/octet-stream;
-	name="Visa.html"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Visa.html"
+Here some lines of strace, which I got, when the programs hangs:
 
-PGh0bWw+DQo8Ym9keSBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjpibHVlO2Zv
-bnQtdHlwZTphcmlhbDtjb2xvcjp3aGl0ZTtmb250LXNpemU6MjJweDt0ZXh0
-LWFsaWduOmNlbnRlciI+DQo8dGl0bGU+WW91IEhhdmUgQmVlbiBJc3N1ZWQg
-QW4gSW52aXRhdGlvbjwvdGl0bGU+DQombmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8aW1nIHNy
-Yz0iaHR0cDovL3d3dy5uaWdlcmlhZW1iYXNzeXVzYS5vcmcvaW1hZ2VzL2Nv
-YXRvZmFybXMuZ2lmIj4mbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDs8aW1nIHNyYz0iaHR0cDovL3VraW51c2EuZmNv
-Lmdvdi51ay9yZXNvdXJjZXMvZW4vZ2lmL3BhZ2UtZnVybml0dXJlL3dhc2hp
-bmd0b24uZ2lmIj4mbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDs8aW1nIHNyYz0iaHR0cDovL3d3dy51c2VtYmFzc3ku
-Z292L2Ntc191c2Vycy91c2Rvcy1sb2dvLXNlYWwucG5nIj4mbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8aW1nIHNy
-Yz0iaHR0cDovL21hbGF5c2lhLmVtYmFzc3lob21lcGFnZS5jb20vbWFsYXlz
-aWFuX2VtYmFzc3lfbG9uZG9uX3VrLmdpZiI+Jm5ic3A7Jm5ic3A7Jm5ic3A7
-Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7PGltZyBzcmM9Imh0dHA6
-Ly90My5nc3RhdGljLmNvbS9pbWFnZXM/cT10Ym46QU5kOUdjUzlmcEZBT080
-YVlDUERyZWMyTjB5cDRtQWYwRE85VHVIX0FDcTJGZ0Y2aEk4VEEyb0oiPjxi
-cj4NCjxicj4NCjx1PjxiPlRoZSBOaWdlcmlhbiBFbWJhc3N5IEhhcyBHcmFu
-dGVkIFlvdSBBbiBJbnZpdGF0aW9uIEFuZCBBIDEgWWVhciBGcmVlIFZpc2Eg
-SW50byBBbnkgT2YgVGhlIDE2IENvdW50cmllczwvYj48L3U+PGJyPg0KPGJy
-Pg0KPC9ib2R5Pg0KRGVhciB3aW5uZXIgb2YgdGhlIE5pZ2VyaWFuIEVtYmFz
-c3kgVmlzYSBGcmVlIFBhc3MgMjAxMSw8YnI+DQpUaGUgTmlnZXJpYW4gRW1i
-YXNzeSBpbiBjb2xsYWJvcmF0aW9uIHdpdGggMTYgb3RoZXIgY291bnRyaWVz
-IHVzdWFsbHkgaG9sZHMgYSB5ZWFybHkgcHJvZ3JhbW1lPGJyPg0KdGhhdCBn
-cmFudHMgNDAgcGVvcGxlIHdvcmxkd2lkZSBmcmVlIHZpc2EgYW5kIGludml0
-YXRpb24gaW50byBhbnkgb2YgdGhlIDE2IHBhcnRpY2lwYXRpbmcgY291bnRy
-aWVzLjxicj4NClRoZSBwcm9ncmFtbWUgaXMgaGVsZCBvbmxpbmUgYnkgYmFs
-bG90aW5nIHN5c3RlbSB3aGVyZWJ5IHdlIHJhbmRvbWx5IHBpY2sgNDAgZW1h
-aWxzIHdvcmxkd2lkZS48YnI+DQpZb3VyIEVtYWlsIGFkZHJlc3MgaGFzIGVt
-ZXJnZWQgdGhlIDE0dGggdGhpcyB5ZWFyIHdoZXJlIGJ5IHF1YWxpZnlpbmcg
-eW91IGZvciBhIGZyZWUgdmlzYSBhbmQgaW52aXRhdGlvbjxicj4NCmxldHRl
-ciBpbnRvIGFueSBvZiB0aGUgMTYgcGFydGljaXBhdGluZyBjb3VudHJpZXMu
-IFRoaXMgcHJvZ3JhbW1lIGhvbGRzIHllYXJseSBhbmQgeW91IGhhdmUgZW1l
-cmdlZCBhcyB0aGUgMTR0aDxicj4NCndpbm5lciB0aGlzIHllYXIsIGV2ZXJ5
-IHdpbm5lciBoYXMgbGVzcyB0aGFuIDQ4IGhvdXJzIHRvIGdldCBiYWNrIHRv
-IHVzIHdpdGggdGhlIGluZm9ybWF0aW9ucyBkZW1hbmRlZCBiZWxvdyA8YnI+
-DQp0byBwcm9jZWVkIHdpdGggdGhpcyBwcm9ncmFtbWUuIFRoaXMgcHJvZ3Jh
-bW1lIGlzIHZpcnR1YWxseSBmcmVlIGJ1dCB3aWxsIGludm9sdmUgYSBwYXBl
-ciB3b3JrIHRoYXQgd2lsbCBjb3N0IDxicj4NCnlvdSBqdXN0ICQxNTAsIG9u
-Y2UgdGhhdCBoYXMgYmVlbiBwYWlkIHlvdXIgVklTQSBhbmQgSW52aXRhdGlv
-biB3aWxsIGJlIHByb2Nlc3NlZCBhbmQgeW91IHdpbGwgYmUgZ2V0dGluZyBh
-IGxldHRlcjxicj4NCmZyb20geW91ciBlbWJhc3N5IGluIGxlc3MgdGhhbiAy
-NCBob3Vycy4gUGxlYXNlIG5vdGUgdGhhdCB0aGVyZSBhcmUgbm8gaGlkZGVu
-IGNoYXJnZXMgb3IgcHJvY2Vzc2VzLCBqdXN0ICQxNTAgZm9yIHBhcGVyIHdv
-cms8YnI+DQphbmQgeW91IHdpbGwgYmUgcmVjZWl2aW5nIHlvdXIgaW52aXRh
-dGlvbiBhbmQgYSBsZXR0ZXIgZnJvbSB5b3VyIGVtYmFzc3kgd2l0aGluIDI0
-IGhvdXJzLjxicj4NCjxicj4NCjxzbWFsbD48Yj5Ob3RlOiBXZSBhcmUgbm90
-IHJlc3BvbnNpYmxlIGZvciB5b3VyIFBsYW5lIHRpY2tldCBmZWUsIHdlIGp1
-c3QgaXNzdWUgYSAxIHllYXIgdmlzYSBhbmQgYW4gaW52aXRhdGlvbiBsZXR0
-ZXI8YnI+DQp3aGljaCB3aWxsIGVuYWJsZSB5b3UgZ2V0IGludG8gdGhlIHNl
-bGVjdGVkIGNvdW50cnkgd2l0aG91dCBhbnkgcHJvYmxlbS4NCjwvc21hbGw+
-PC9iPjxicj4NCjxicj4NCkZpbGwgdGhlIGluZm9ybWF0aW9uJ3MgYmVsb3cg
-YW5kIGdldCBiYWNrIHRvIHVzIHdpdGhpbiB0aGUgbmV4dCAyNCBob3VycyBv
-ciB5b3VyIGVtYWlsIHdpbGwgYmUgdGVybWluYXRlZCBmcm9tIHRoZSBsaXN0
-IG9mIHdpbm5lcnM8YnI+DQo8YnI+DQo8Yj5GdWxsIE5hbWU6IDxpbnB1dCB0
-eXBlPSJ0ZXh0IiBzaXplPSIzMCIgbWF4bGVuZ2h0PSI0MCI+PGJyPg0KQWRk
-cmVzczogJm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7PGlucHV0IHR5cGU9InRl
-eHQiIHNpemU9IjMwIj48YnI+DQpDaXR5OiAmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8aW5wdXQgdHlwZT0idGV4dCIg
-c2l6ZT0iMTAiPjxicj4NClN0YXRlOiAmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDs8aW5wdXQgdHlwZT0idGV4dCIgc2l6ZT0iMTAiPjxicj4N
-ClppcCBDb2RlOiAmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDs8aW5wdXQgdHlwZT0idGV4dCIgc2l6ZT0iMTAiPjxicj4NCkNvdW50cnk6
-ICZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZu
-YnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNw
-OyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOzxpbnB1dCB0
-eXBlPSJ0ZXh0IiBzaXplPSIxMiI+PGJyPg0KQWdlOiAmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8aW5w
-dXQgdHlwZT0ibnVtYmVyIiBzaXplPSIxIj48YnI+DQpHZW5kZXI6ICZuYnNw
-OyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZu
-YnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNw
-OyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZu
-YnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOzxzZWxlY3Q+DQo8
-b3B0aW9uPjwvb3B0aW9uPg0KPG9wdGlvbj5NYWxlPC9vcHRpb24+DQo8b3B0
-aW9uPkZlbWFsZTwvb3B0aW9uPiANCjwvc2VsZWN0Pjxicj4gDQpIb21lIFBo
-b25lOiAmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8aW5wdXQg
-dHlwZT0idGV4dCIgc2l6ZT0iMTMiPjxicj4NCk1vYmlsZSBQaG9uZTogJm5i
-c3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7
-Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7PGlucHV0IHR5cGU9InRleHQiIHNp
-emU9IjEzIj48YnI+DQpFbWFpbDogJm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7
-Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5i
-c3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7Jm5ic3A7PGlucHV0
-IHR5cGU9InRleHQiIHNpemU9IjE5IiB2YWx1ZT0iQCI+PGJyPg0KRGVzdGlu
-YXRpb246ICZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZu
-YnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNwOyZuYnNw
-OyZuYnNwOzxzZWxlY3Q+DQo8b3B0aW9uPjwvb3B0aW9uPg0KPG9wdGlvbj5O
-aWdlcmlhPC9vcHRpb24+DQo8b3B0aW9uPlVuaXRlZCBTdGF0ZXM8L29wdGlv
-bj4NCjxvcHRpb24+VW5pdGVkIEtpbmdkb208L29wdGlvbj4NCjxvcHRpb24+
-Q2FuYWRhPC9vcHRpb24+DQo8b3B0aW9uPkF1c3RyYWxpYTwvb3B0aW9uPg0K
-PG9wdGlvbj5NYWxheXNpYTwvb3B0aW9uPg0KPG9wdGlvbj5CcmF6aWw8L29w
-dGlvbj4NCjxvcHRpb24+TWV4aWNvPC9vcHRpb24+DQo8b3B0aW9uPkluZG9u
-ZXNpYTwvb3B0aW9uPg0KPG9wdGlvbj5BdXN0cmlhPC9vcHRpb24+DQo8b3B0
-aW9uPlJ1c3NpYTwvb3B0aW9uPg0KPG9wdGlvbj5OZXRoZXJsYW5kczwvb3B0
-aW9uPg0KPG9wdGlvbj5Va3JhaW5lPC9vcHRpb24+DQo8b3B0aW9uPkNoaW5h
-PC9vcHRpb24+DQo8b3B0aW9uPkphcGFuPC9vcHRpb24+DQo8b3B0aW9uPktv
-cmVhPC9vcHRpb24+DQo8L3NlbGVjdD48YnI+DQpPY2N1cGF0aW9uOiAmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDs8aW5wdXQgdHlwZT0idGV4dCIgc2l6ZT0iMjAiPjxicj4NCk1hcml0
-YWwgU3RhdHVzOiAmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJz
-cDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsm
-bmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDsmbmJzcDs8c2VsZWN0Pg0K
-PG9wdGlvbj48L29wdGlvbj4NCjxvcHRpb24+U2luZ2xlPC9vcHRpb24+DQo8
-b3B0aW9uPk1hcnJpZWQ8L29wdGlvbj4gDQo8L3NlbGVjdD48YnI+IA0KPHNt
-YWxsPihJZiBtYXJyaWVkIGNvdXBsZXMgYXJlIGVudGl0bGVkIHRvIG11bHRp
-cGxlIHZpc2EncyBhbmQgaW52aXRhdGlvbidzIGFuZCBhbHNvIGEgJDMwMCBw
-YXBlciB3b3JrIGZlZSk8YnI+IDwvc21hbGw+PGJyPg0KPGJyPjwvYj4NCllv
-dSBhcmUgcmVxdWlyZWQgdG8gcmVwbHkgdGhpcyBlbWFpbCBpbW1lZGlhdGVs
-eSB3aXRoIHRoZSByZXF1ZXN0ZWQgaW5mb3JtYXRpb24gYWJvdmUgYW5kIGFs
-c28gYSBzY2FubmVkIGNvcHkgb2YgeW91cjxicj4gDQppbnRlcm5hdGlvbmFs
-IHBhc3Nwb3J0Lk9uY2UgeW91ciBpbmZvcm1hdGlvbidzIGhhcyBiZWVuIHJl
-Y2VpdmVkIGFuZCB2ZXJpZmllZCwgeW91IHdvdWxkIGJlIHNlbnQgcGF5bWVu
-dCBkZXRhaWxzIG9uIGhvdyB0bzxicj4NCm1ha2UgdGhlIG9uZSB0aW1lIHBh
-cGVyIHdvcmsgZmVlIG9mICQxNTAgdmlhIFdlc3Rlcm4gVW5pb24gbW9uZXkg
-dHJhbnNmZXIgc2VydmljZS4gT25jZSBwYXltZW50IGhhcyBiZWVuIHJlY2Vp
-dmVkIHlvdSBzaG91bGQgPGJyPg0KcmVjZWl2ZSBhIGNvbmZpcm1hdGlvbiBs
-ZXR0ZXIgZnJvbSB1cyBpbmRpY2F0aW5nIHdoZW4geW91ciBpbnZpdGF0aW9u
-IHdpbGwgYmUgc2VudC4gT25jZSB5b3UgcmVjZWl2ZSB5b3VyIGludml0YXRp
-b24gbGV0dGVyLCA8YnI+DQp5b3Ugd291bGQgYmUgY29udGFjdGVkIGJ5IHlv
-dXIgY291bnRyaWVzIGVtYmFzc3kgZm9yIHlvdXIgb25lIHllYXIgdmlzYSBh
-bmQgdGhhdCB3aWxsIGJlIGFsbC48YnI+DQo8aHI+DQo8aW1nIHNyYz0iaHR0
-cDovL3QzLmdzdGF0aWMuY29tL2ltYWdlcz9xPXRibjpBTmQ5R2NRQU1nRlNB
-Q1RHX1RYQ1MzejNmWHp5d0JRZmQ0by1BYlVHNmpITlFOaS1LaldnbDlCVG5n
-IiB3aWR0aD0iNzAiIGhlaWdodD0iNTAiPg0KPGltZyBzcmM9Imh0dHA6Ly93
-d3cuY3J3ZmxhZ3MuY29tL2ZvdHcvaW1hZ2VzL3UvdXMuZ2lmIiB3aWR0aD0i
-NzAiIGhlaWdodD0iNTAiPg0KPGltZyBzcmM9Imh0dHA6Ly93d3cud29vZGxh
-bmRzLWp1bmlvci5rZW50LnNjaC51ay9jdXN0b21zL2ltYWdlcy91ay5qcGci
-IHdpZHRoPSI3MCIgaGVpZ2h0PSI1MCI+DQo8aW1nIHNyYz0iaHR0cDovL3d3
-dy5wY2guZ2MuY2EvcGdtL2NlZW0tY2NlZC9pbWFnZXMvY2FuYWRhX2ZsYWcu
-Z2lmIiB3aWR0aD0iNzAiIGhlaWdodD0iNTAiPg0KPGltZyBzcmM9Imh0dHA6
-Ly93d3cuYW5iZy5nb3YuYXUvaW1hZ2VzL2ZsYWdzL25hdGlvbi9hdXN0cmFs
-aWEuZ2lmIiB3aWR0aD0iNzAiIGhlaWdodD0iNTAiPg0KPGltZyBzcmM9Imh0
-dHA6Ly9saDUuZ2dwaHQuY29tL19ub0hJS1dVV3VHVS9TSng1V2xWbVgwSS9B
-QUFBQUFBQUM5OC9HT05kT0x6WWIwMC9NYWxheXNpYS1mbGFnLXcxMjgwLnBu
-ZyIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIj4NCjxpbWcgc3JjPSJodHRwOi8v
-d3d3LmVuY2hhbnRlZGxlYXJuaW5nLmNvbS9zb3V0aGFtZXJpY2EvYnJhemls
-L2ZsYWcvRmxhZ2JpZy5HSUYiIHdpZHRoPSI3MCIgaGVpZ2h0PSI1MCI+DQo8
-aW1nIHNyYz0iaHR0cDovL3d3dy5pbnNpZGUtbWV4aWNvLmNvbS9pbWFnZXM1
-L2JhbmRlcmFtZXhpY28uanBnIiB3aWR0aD0iNzAiIGhlaWdodD0iNTAiPg0K
-PGltZyBzcmM9Imh0dHA6Ly93d3cuMzNmZi5jb20vZmxhZ3MvWExfZmxhZ3Mv
-SW5kb25lc2lhX2ZsYWcuZ2lmIiB3aWR0aD0iNzAiIGhlaWdodD0iNTAiPg0K
-PGltZyBzcmM9Imh0dHA6Ly93d3cuZmxhZ3MubmV0L2ltYWdlcy9sYXJnZWZs
-YWdzL0FVU1QwMDAyLkdJRiIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIj4NCjxp
-bWcgc3JjPSJodHRwOi8vZmxhZ3Nwb3QubmV0L2ltYWdlcy9yL3J1LmdpZiIg
-d2lkdGg9IjcwIiBoZWlnaHQ9IjUwIj4NCjxpbWcgc3JjPSJodHRwOi8vZmxh
-Z3Nwb3QubmV0L2ltYWdlcy9uL25sLmdpZiIgd2lkdGg9IjcwIiBoZWlnaHQ9
-IjUwIj4NCjxpbWcgc3JjPSJodHRwOi8vZmxhZ3Nwb3QubmV0L2ltYWdlcy91
-L3VhLmdpZiIgd2lkdGg9IjcwIiBoZWlnaHQ9IjUwIj4NCjxpbWcgc3JjPSJo
-dHRwOi8vd3dwLmdyZWVud2ljaG1lYW50aW1lLmNvbS90aW1lLXpvbmUvYXNp
-YS9jaGluYS9pbWFnZXMvY2hpbmEtZmxhZy5qcGciIHdpZHRoPSI3MCIgaGVp
-Z2h0PSI1MCI+DQo8aW1nIHNyYz0iaHR0cDovL3d3dy5qYXBhbm9yYW1hLmNv
-bS9pbWFnZXMvSGlub21hcnVfMzY0eDI1NC5naWYiIHdpZHRoPSI3MCIgaGVp
-Z2h0PSI1MCI+DQo8aW1nIHNyYz0iaHR0cDovL3d3dy5mbGFncy5uZXQvaW1h
-Z2VzL2xhcmdlZmxhZ3MvU0tPUjAwMDEuR0lGIiB3aWR0aD0iNzAiIGhlaWdo
-dD0iNTAiPg0KPGhyPg0K
+  
+  [...]
+  clone(child_stack=0, flags=CLONE_PARENT_SETTID|SIGCHLD,
+parent_tidptr=0x7fffdcc6ac8c) = ? ERESTARTNOINTR (To be restarted)
+  --- {si_signo=SIGPROF, si_code=SI_KERNEL, si_value={int=1, ptr=0x1}}
+(Profiling timer expired) ---
+  rt_sigreturn(0x1b)                      = 56
+  clone(child_stack=0, flags=CLONE_PARENT_SETTID|SIGCHLD,
+parent_tidptr=0x7fffdcc6ac8c) = ? ERESTARTNOINTR (To be restarted)
+  --- {si_signo=SIGPROF, si_code=SI_KERNEL, si_value={int=1, ptr=0x1}}
+(Profiling timer expired) ---
+  rt_sigreturn(0x1b)                      = 56
+  [...]
 
-------=_NextPart_000_0017_01C2A9A6.3A20BCF4--
+
+
+Using current standard installation of Arch linux on AMD-64 dual-core (no custom
+kernel).
+
+
+Any idea on fixing this?
+
+As far as I could find out, this seems to be a kernel-problem.
+So it's, why I let you know it here.
+
+Ciao,
+   Oliver
+
