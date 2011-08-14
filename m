@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1HNQDN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:03:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52003 "EHLO hera.kernel.org"
+	id S1753533Ab1HNQEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:04:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab1HNQDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:03:08 -0400
-Date: Sun, 14 Aug 2011 16:02:17 GMT
-From: tip-bot for Hillf Danton <dhillf@gmail.com>
-Message-ID: <tip-311e800e16f63d909136a64ed17ca353a160be59@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, dhillf@gmail.com, mgalbraith@gmx.de,
-        rostedt@goodmis.org, tglx@linutronix.de, yong.zhang0@gmail.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, dhillf@gmail.com, mgalbraith@gmx.de,
-        rostedt@goodmis.org, tglx@linutronix.de, yong.zhang0@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1306895385.4791.26.camel@marge.simson.net>
-References: <1306895385.4791.26.camel@marge.simson.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, rt: Fix rq->rt.pushable_tasks bug in push_rt_task()
-Git-Commit-ID: 311e800e16f63d909136a64ed17ca353a160be59
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752582Ab1HNQEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:04:11 -0400
+Date: Sun, 14 Aug 2011 18:01:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, bonbons@linux-vserver.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge@hallyn.com
+Subject: Re: [PATCH 2/2] Notify container-init parent a 'reboot' occured
+Message-ID: <20110814160112.GA29798@redhat.com>
+References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:02:20 +0000 (UTC)
+In-Reply-To: <1313094241-3674-3-git-send-email-daniel.lezcano@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  311e800e16f63d909136a64ed17ca353a160be59
-Gitweb:     http://git.kernel.org/tip/311e800e16f63d909136a64ed17ca353a160be59
-Author:     Hillf Danton <dhillf@gmail.com>
-AuthorDate: Thu, 16 Jun 2011 21:55:20 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 14 Aug 2011 12:00:48 +0200
+On 08/11, Daniel Lezcano wrote:
+>
+> When the reboot syscall is called and the pid namespace where the calling
+> process belongs to is not from the init pidns, we send a SIGCHLD with CLD_REBOOTED
+> to the parent of this pid namespace.
 
-sched, rt: Fix rq->rt.pushable_tasks bug in push_rt_task()
+OK, but why you can't simply send the signal?
 
-Do not call dequeue_pushable_task() when failing to push an eligible
-task, as it remains pushable, merely not at this particular moment.
+Why do you need the strange do_notify_parent_cldreboot() which tries
+to mimic do_notify_parent() for (afaics) no reason ?
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Signed-off-by: Mike Galbraith <mgalbraith@gmx.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Link: http://lkml.kernel.org/r/1306895385.4791.26.camel@marge.simson.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched_rt.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+> +void do_notify_parent_cldreboot(struct task_struct *tsk, int why, char *buffer)
 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index e2698c0..8e18945 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1394,6 +1394,7 @@ static int push_rt_task(struct rq *rq)
- {
- 	struct task_struct *next_task;
- 	struct rq *lowest_rq;
-+	int ret = 0;
- 
- 	if (!rq->rt.overloaded)
- 		return 0;
-@@ -1426,7 +1427,7 @@ retry:
- 	if (!lowest_rq) {
- 		struct task_struct *task;
- 		/*
--		 * find lock_lowest_rq releases rq->lock
-+		 * find_lock_lowest_rq releases rq->lock
- 		 * so it is possible that next_task has migrated.
- 		 *
- 		 * We need to make sure that the task is still on the same
-@@ -1436,12 +1437,11 @@ retry:
- 		task = pick_next_pushable_task(rq);
- 		if (task_cpu(next_task) == rq->cpu && task == next_task) {
- 			/*
--			 * If we get here, the task hasn't moved at all, but
--			 * it has failed to push.  We will not try again,
--			 * since the other cpus will pull from us when they
--			 * are ready.
-+			 * The task hasn't migrated, and is still the next
-+			 * eligible task, but we failed to find a run-queue
-+			 * to push it to.  Do not retry in this case, since
-+			 * other cpus will pull from us when ready.
- 			 */
--			dequeue_pushable_task(rq, next_task);
- 			goto out;
- 		}
- 
-@@ -1460,6 +1460,7 @@ retry:
- 	deactivate_task(rq, next_task, 0);
- 	set_task_cpu(next_task, lowest_rq->cpu);
- 	activate_task(lowest_rq, next_task, 0);
-+	ret = 1;
- 
- 	resched_task(lowest_rq->curr);
- 
-@@ -1468,7 +1469,7 @@ retry:
- out:
- 	put_task_struct(next_task);
- 
--	return 1;
-+	return ret;
- }
- 
- static void push_rt_tasks(struct rq *rq)
+buffer is not used. Why?
+
+> +	if (tsk->ptrace)
+> +		parent = tsk->parent;
+> +	else {
+> +		tsk = tsk->group_leader;
+> +		parent = tsk->real_parent;
+> +	}
+
+For what? I simply can't understand this...
+
+> +     sighand = parent->sighand;
+> +     spin_lock_irqsave(&sighand->siglock, flags);
+
+this is unsafe, we can't trust ->sighand and parent.
+
+> +	 * Even if SIGCHLD is not generated, we must wake up wait4 calls.
+
+but not in this case, afaics?
+
+> +	__wake_up_parent(tsk, parent);
+
+Why do you need __wake_up_parent()?
+
+> +static void pid_namespace_reboot(struct pid_namespace *pid_ns,
+> +				int cmd, char *buffer)
+> +{
+> +	struct task_struct *tsk = pid_ns->child_reaper;
+> +	do_notify_parent_cldreboot(tsk, cmd, buffer);
+
+nothing prevents ->child_reaper from exiting it it is multithreaded,
+this can crash the kernel.
+
+> @@ -426,10 +434,18 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  {
+>  	char buffer[256];
+
+again, it is not used.
+
+>  	int ret = 0;
+> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
+> +
+> +        /* We only trust the superuser with rebooting the system. */
+> +	if (!capable(CAP_SYS_BOOT)) {
+> +		/* If we are not in the initial pid namespace, we send a signal
+> +		 * to the parent of this init pid namespace, notifying a shutdown
+> +		 * occured */
+> +		if (pid_ns != &init_pid_ns)
+> +			pid_namespace_reboot(pid_ns, cmd, buffer);
+
+Hmm. Looks like pid_ns should be checked after CAP_SYS_BOOT?
+
+Oleg.
+
