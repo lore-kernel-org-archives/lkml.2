@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab1HNOeb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 10:34:31 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41005 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab1HNOe3 (ORCPT
+	id S1753362Ab1HNOmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 10:42:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39870 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1HNOmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 10:34:29 -0400
-Date: Sun, 14 Aug 2011 15:34:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Kenneth Heitke <kheitke@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
-        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
-        john.stultz@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
-        ohad@wizery.com, gregkh@suse.de, stefanr@s5r6.in-berlin.de,
-        lethal@linux-sh.org, linville@tuxdriver.com, zajec5@gmail.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20110814143401.GA25504@sirena.org.uk>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+	Sun, 14 Aug 2011 10:42:40 -0400
+Date: Sun, 14 Aug 2011 15:43:11 +0100
+From: Jeremiah Matthey <sprg86@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] usbhid: Add the malfunctioning SiGma Micro chip to the list
+ of hid-quirks
+Message-ID: <20110814144310.GA3303@netstar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
-X-Cookie: To make an enemy, do someone a favor.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 05:31:28PM -0600, Kenneth Heitke wrote:
+Patch to add SiGma Micro-based keyboards (1c4f:0002) to hid-quirks.
 
-> SLIMbus (Serial Low Power Interchip Media Bus) is a specification
-> developed by MIPI (Mobile Industry Processor Interface) alliance.
+These keyboards dont seem to allow the records to be initialized, and hence a
+timeout occurs when the usbhid driver attempts to initialize them. The patch
+just adds the signature for these keyboards to the hid-quirks list with the
+setting HID_QUIRK_NO_INIT_REPORTS. This removes the 5-10 second wait for the
+timeout to occur.
 
-Please CC me on any future spins of this patch.
+Patch was carried out against 3.0.1, although due to the simplicity, will
+probably work with HEAD even if someone has changed those files.
 
-> Signed-off-by: Sagar Dharia <sdharia@codeaurora.org>
 
-You ought to sign off the patch as well as you're part of the chain for
-it getting into the kernel.
 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int slim_legacy_suspend(struct device *dev, pm_message_t mesg)
-> +{
-> +	struct slim_device *slim_dev = NULL;
-
-Why have legacy stuff in a newly implemented subsystem?
-
-> +static int slim_drv_probe(struct device *dev)
-> +{
-> +	const struct slim_driver *sdrv = to_slim_driver(dev->driver);
-> +
-> +	if (sdrv->probe)
-> +		return sdrv->probe(to_slim_device(dev));
-> +	return -ENODEV;
-> +}
-
-Why all the -ENODEVs if there's no function?  I'd expect that if there's
-nothing to do it should be possible to omit functions from drivers.
-
-> +int slim_driver_register(struct slim_driver *drv)
-> +{
-> +	drv->driver.bus = &slimbus_type;
-> +	if (drv->probe)
-> +		drv->driver.probe = slim_drv_probe;
-
-Modifying the driver structure seems icky, why is this needed?  Other
-bus types appear to manage without.
-
-> +static u16 slim_slicecodefromsize(u32 req)
-> +{
-> +	u8 codetosize[8] = {1, 2, 3, 4, 6, 8, 12, 16};
-> +	if (req >= 8)
-> +		return 0;
-
-ARRAY_SIZE()?  I guess the table should be static too.
+diff -ru linux-3.0.1-clean/drivers/hid/hid-ids.h linux-3.0.1-patched/drivers/hid/hid-ids.h
+--- linux-3.0.1-clean/drivers/hid/hid-ids.h	2011-08-05 05:59:21.000000000 +0100
++++ linux-3.0.1-patched/drivers/hid/hid-ids.h	2011-08-14 15:25:58.129865922 +0100
+@@ -568,6 +568,9 @@
+ #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
+ #define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
+ 
++#define USB_VENDOR_ID_SIGMA_MICRO	0x1c4f
++#define USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD	0x0002
++
+ #define USB_VENDOR_ID_SKYCABLE			0x1223
+ #define	USB_DEVICE_ID_SKYCABLE_WIRELESS_PRESENTER	0x3F07
+ 
+diff -ru linux-3.0.1-clean/drivers/hid/usbhid/hid-quirks.c linux-3.0.1-patched/drivers/hid/usbhid/hid-quirks.c
+--- linux-3.0.1-clean/drivers/hid/usbhid/hid-quirks.c	2011-08-05 05:59:21.000000000 +0100
++++ linux-3.0.1-patched/drivers/hid/usbhid/hid-quirks.c	2011-08-14 15:26:06.289865845 +0100
+@@ -89,6 +89,7 @@
+ 
+ 	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_MULTI_TOUCH, HID_QUIRK_MULTI_INPUT },
+ 	{ USB_VENDOR_ID_CHICONY, USB_DEVICE_ID_CHICONY_WIRELESS, HID_QUIRK_MULTI_INPUT },
++	{ USB_VENDOR_ID_SIGMA_MICRO, USB_DEVICE_ID_SIGMA_MICRO_KEYBOARD, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ 0, 0 }
+ };
+ 
