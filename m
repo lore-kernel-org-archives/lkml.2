@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab1HNTJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:09:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43884 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab1HNTJy convert rfc822-to-8bit (ORCPT
+	id S1754842Ab1HNTLU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:11:20 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64061 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653Ab1HNTLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:09:54 -0400
+	Sun, 14 Aug 2011 15:11:20 -0400
+Message-ID: <4E481DD3.404@landley.net>
+Date: Sun, 14 Aug 2011 14:11:15 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <4E43EC49.1040803@mit.edu>
-References: <1311529994-7924-1-git-send-email-minipli@googlemail.com>
-	<1311529994-7924-3-git-send-email-minipli@googlemail.com>
-	<20110804064436.GA16247@gondor.apana.org.au>
-	<4E43EC49.1040803@mit.edu>
-Date: Sun, 14 Aug 2011 21:09:53 +0200
-Message-ID: <CA+rthh8WQ1KxFj+gHJ=MzdNVmLsWPQjG_-Opfd5drjR8nvdhQw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] crypto, x86: SSSE3 based SHA1 implementation for x86-64
-From: Mathias Krause <minipli@googlemail.com>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        Maxim Locktyukhin <maxim.locktyukhin@intel.com>,
-        linux-kernel@vger.kernel.org
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>, busybox@busybox.net
+Subject: Re: [BUG] Linux 3.0 commit 3627924acf70a broke include/mtd/ubi_user.h.
+References: <4E4809BF.6040707@landley.net> <20110814200322.3fa7109d@stein>
+In-Reply-To: <20110814200322.3fa7109d@stein>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 4:50 PM, Andy Lutomirski <luto@mit.edu> wrote:
-> I have vague plans to clean up extended state handling and make
-> kernel_fpu_begin work efficiently from any context.  (i.e. the first
-> kernel_fpu_begin after a context switch could take up to ~60 ns on Sandy
-> Bridge, but further calls to kernel_fpu_begin would be a single branch.)
->
-> The current code that handles context switches when user code is using
-> extended state is terrible and will almost certainly become faster in the
-> near future.
+On 08/14/2011 01:03 PM, Stefan Richter wrote:
+> On Aug 14 Rob Landley wrote:
+>> "make headers_install" copies include/mtd/ubi_user.h to userspace, where
+>> things like busybox link against it.  With 3.0, building defconfig
+>> busybox gets this error:
+>>
+>> In file included from miscutils/ubi_tools.c:63:
+>> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:329:
+>> error: conflicting types for '__packed'
+>> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:313:
+>> error: previous declaration of '__packed' was here
+>>
+>> This is due to the Linux 3.0 commit in the title:
+>>
+>>     UBI: use __packed instead of __attribute__((packed))
+>>
+>> This relies on __packed being defined in:
+>>
+>>   include/linux/compiler-gcc.h:
+>>   #define __packed			__attribute__((packed))
+>>
+>> Which is not exported to userspace.
+>>
+>> I.E. this "cleanup" broke the ability for userspace to use this header,
+>> even though the header is exported to userspace by headers_install.
+> 
+> As far as I can tell, the __packed or __attribute__((packed))
+> qualifications are superfluous in include/mtd/ubi-user.h anyway.
 
-Sounds good! This would not only improve the performance of sha1_ssse3
-but of aesni as well.
+And the email address he signed-off-by the broken commit from bounced,
+trying again with the one out of MAINTAINERS.
 
-> Hopefully I'll have patches for 3.2 or 3.3.
->
-> IOW, please don't introduce another thing like the fpu crypto module quite
-> yet unless there's a good reason.  I'm looking forward to deleting the fpu
-> module entirely.
-
-I've no intention to. So please go ahead and do so.
-
-
-Mathias
+Rob
