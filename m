@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1HND1t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 23:27:49 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61551 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab1HND1s (ORCPT
+	id S1752416Ab1HNDbO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 23:31:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57938 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1HNDbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 23:27:48 -0400
-Subject: Re: [PATCH 4/4]sound:pci Fix typo "shud"
-From: Calvin Walton <calvin.walton@kepstin.ca>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 13 Aug 2011 23:27:44 -0400
-In-Reply-To: <1313195174-4464-4-git-send-email-justinmattock@gmail.com>
-References: <1313195174-4464-1-git-send-email-justinmattock@gmail.com>
-	 <1313195174-4464-4-git-send-email-justinmattock@gmail.com>
+	Sat, 13 Aug 2011 23:31:13 -0400
+Subject: [PATCH] ASoC: sta32x: shortcut the for loop to get ir and mcs
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Johannes Stezenbach <js@sig21.net>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313292466.12679.1.camel@ayu>
+Date: Sun, 14 Aug 2011 11:31:04 +0800
+Message-ID: <1313292664.6074.1.camel@phoenix>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 17:26 -0700, Justin P. Mattock wrote:
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
-> 
-> The patch below fixes a typo shud.
+There is exactly one match or no match at all during the for loop iteration,
+thus we can break from the for loop once a match is found.
 
-> diff --git a/sound/pci/au88x0/au88x0_a3d.c b/sound/pci/au88x0/au88x0_a3d.c
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/sta32x.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-> -/* A3D base support init/shudown */
-> +/* A3D base support init/shutown */
-
-I agree that this is a typo, but you don't have the fix quite right :)
-"shutdown" would be better.
-
+diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
+index fbd7eb9..3d155f5 100644
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -524,13 +524,17 @@ static int sta32x_hw_params(struct snd_pcm_substream *substream,
+ 	rate = params_rate(params);
+ 	pr_debug("rate: %u\n", rate);
+ 	for (i = 0; i < ARRAY_SIZE(interpolation_ratios); i++)
+-		if (interpolation_ratios[i].fs == rate)
++		if (interpolation_ratios[i].fs == rate) {
+ 			ir = interpolation_ratios[i].ir;
++			break;
++		}
+ 	if (ir < 0)
+ 		return -EINVAL;
+ 	for (i = 0; mclk_ratios[ir][i].ratio; i++)
+-		if (mclk_ratios[ir][i].ratio * rate == sta32x->mclk)
++		if (mclk_ratios[ir][i].ratio * rate == sta32x->mclk) {
+ 			mcs = mclk_ratios[ir][i].mcs;
++			break;
++		}
+ 	if (mcs < 0)
+ 		return -EINVAL;
+ 
 -- 
-Calvin Walton <calvin.walton@kepstin.ca>
+1.7.4.1
+
+
 
