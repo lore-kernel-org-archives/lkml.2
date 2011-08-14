@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab1HNNLS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 09:11:18 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48403 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab1HNNLP (ORCPT
+	id S1753376Ab1HNNoa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 09:44:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55944 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab1HNNo1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 09:11:15 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 14 Aug 2011 15:10:53 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Clemens Ladisch <clemens@ladisch.de>,
-        Pavel Kysilka <goldenfish@linuxsoft.cz>,
-        "Matias A. Fonzo" <selk@dragora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: fix wrong vmap address calculations with odd NR_CPUS
- values
-Message-ID: <20110814151053.65ffc8fe@stein>
-In-Reply-To: <20110814145212.312c8626@stein>
-References: <20110814145212.312c8626@stein>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Aug 2011 09:44:27 -0400
+MIME-Version: 1.0
+Date: Sun, 14 Aug 2011 10:44:26 -0300
+Message-ID: <CAELBVzA-ArFvp9MRp5ZvgsEpi4ikt9Nq=zHsNSLAOiD=TqZC=w@mail.gmail.com>
+Subject: =?windows-1252?Q?sch=5Fgeneric=3A_warning=3A_the_comparison_will_always_eva?=
+	=?windows-1252?Q?luate_as_=91true=92_for_the_address_of_=91noop=5Fqdisc=92_will?=
+	=?windows-1252?Q?_never_be_NULL?=
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: hadi@cyberus.ca, davem@davemloft.net
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clemens Ladisch <clemens@ladisch.de>
-Date: Tue, 21 Jun 2011 22:09:50 +0200
+With:
 
-Commit db64fe02258f (mm: rewrite vmap layer) introduced code that does
-address calculations under the assumption that VMAP_BLOCK_SIZE is
-a power of two.  However, this might not be true if CONFIG_NR_CPUS is
-not set to a power of two.
+gcc (GCC) 4.6.1
 
-Wrong vmap_block index/offset values could lead to memory corruption.
-However, this has never been observed in practice (or never been
-diagnosed correctly); what caught this was the BUG_ON in vb_alloc() that
-checks for inconsistent vmap_block indices.
+I noticed the following warning appearing in my build:
 
-To fix this, ensure that VMAP_BLOCK_SIZE always is a power of two.
+net/sched/sch_generic.c: In function ‘dev_graft_qdisc’:
+net/sched/sch_generic.c:678:2: warning: the comparison will always
+evaluate as ‘true’ for the address of ‘noop_qdisc’ will never be NULL
+[-Waddress]
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=31572
-Reported-by: Pavel Kysilka <goldenfish@linuxsoft.cz>
-Reported-by: Matias A. Fonzo <selk@dragora.org>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: 2.6.28+ <stable@kernel.org>
----
-Resend with corrected Cc list; sorry.
+The code in question runs:
 
-This fixes instant and fully repeatable crashes if NR_CPUS is not a power
-of two and vm_map_ram() or something like that is executed, for example
-firewire-ohci probe in its 2.6.38+ incarnation.
 
- mm/vmalloc.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+        /* ... and graft new one */
+        if (qdisc == NULL)
+                qdisc = &noop_qdisc;
+        dev_queue->qdisc_sleeping = qdisc;
+        rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 1d34d75..d3d451b 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -732,9 +732,10 @@ static void free_unmap_vmap_area_addr(unsigned long addr)
- #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
- #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
- #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
--#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
--					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
--						VMALLOC_PAGES / NR_CPUS / 16))
-+#define VMAP_BBMAP_BITS		\
-+		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
-+		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
-+			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
- 
- #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
- 
+where rcu_assign_pointer has a null check that does not apply to
+noop_qdisc, which will never be null.
+
+My question is, should that really be assigning &noop_qdisc in there?
+It seems odd to assign &noop_qdisc to qdisc only if qdisc is null, and
+then unconditionally assign &noop_qdisc into dev_queue->qdisc.
+
+Should the line be:
+
+        rcu_assign_pointer(dev_queue->qdisc, qdisc);
+
+instead?
+
+Just curious,
+
 -- 
-1.7.3.2
+Kevin Winchester
