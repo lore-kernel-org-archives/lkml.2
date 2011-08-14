@@ -1,197 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab1HNQYl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:24:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36583 "EHLO mx2.suse.de"
+	id S1754228Ab1HNQZK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:25:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44779 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754183Ab1HNQH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:07:59 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:55 2011
-Message-Id: <20110812210555.799724197@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:04:27 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [42/90] ipv6: make fragment identifications less predictable
-In-Reply-To: <20110812210626.GA4725@kroah.com>
+	id S1754185Ab1HNQZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:25:04 -0400
+Date: Sun, 14 Aug 2011 16:24:40 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Message-ID: <tip-a9cf55b2861057a213e610da2fec52125439a11d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110721184757.379275352@google.com>
+References: <20110721184757.379275352@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Expire invalid runtime
+Git-Commit-ID: a9cf55b2861057a213e610da2fec52125439a11d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:24:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+Commit-ID:  a9cf55b2861057a213e610da2fec52125439a11d
+Gitweb:     http://git.kernel.org/tip/a9cf55b2861057a213e610da2fec52125439a11d
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Thu, 21 Jul 2011 09:43:32 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 14 Aug 2011 12:03:31 +0200
 
-------------------
+sched: Expire invalid runtime
 
+Since quota is managed using a global state but consumed on a per-cpu basis
+we need to ensure that our per-cpu state is appropriately synchronized.
+Most importantly, runtime that is state (from a previous period) should not be
+locally consumable.
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+We take advantage of existing sched_clock synchronization about the jiffy to
+efficiently detect whether we have (globally) crossed a quota boundary above.
 
-[ Backport of upstream commit 87c48fa3b4630905f98268dde838ee43626a060c ]
+One catch is that the direction of spread on sched_clock is undefined,
+specifically, we don't know whether our local clock is behind or ahead
+of the one responsible for the current expiration time.
 
-Fernando Gont reported current IPv6 fragment identification generation
-was not secure, because using a very predictable system-wide generator,
-allowing various attacks.
+Fortunately we can differentiate these by considering whether the
+global deadline has advanced.  If it has not, then we assume our clock to be
+"fast" and advance our local expiration; otherwise, we know the deadline has
+truly passed and we expire our local runtime.
 
-IPv4 uses inetpeer cache to address this problem and to get good
-performance. We'll use this mechanism when IPv6 inetpeer is stable
-enough in linux-3.1
-
-For the time being, we use jhash on destination address to provide less
-predictable identifications. Also remove a spinlock and use cmpxchg() to
-get better SMP performance.
-
-Reported-by: Fernando Gont <fernando@gont.com.ar>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Turner <pjt@google.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110721184757.379275352@google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/net/ipv6.h      |   12 +-----------
- include/net/transp_v6.h |    2 ++
- net/ipv6/af_inet6.c     |    2 ++
- net/ipv6/ip6_output.c   |   40 +++++++++++++++++++++++++++++++++++-----
- net/ipv6/udp.c          |    2 +-
- 5 files changed, 41 insertions(+), 17 deletions(-)
+ kernel/sched.c      |    4 ++-
+ kernel/sched_fair.c |   90 +++++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 84 insertions(+), 10 deletions(-)
 
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -463,17 +463,7 @@ static inline int ipv6_addr_diff(const s
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 34bf8e6..a2d5514 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -256,6 +256,7 @@ struct cfs_bandwidth {
+ 	ktime_t period;
+ 	u64 quota, runtime;
+ 	s64 hierarchal_quota;
++	u64 runtime_expires;
+ 
+ 	int idle, timer_active;
+ 	struct hrtimer period_timer;
+@@ -396,6 +397,7 @@ struct cfs_rq {
+ #endif
+ #ifdef CONFIG_CFS_BANDWIDTH
+ 	int runtime_enabled;
++	u64 runtime_expires;
+ 	s64 runtime_remaining;
+ #endif
+ #endif
+@@ -9166,8 +9168,8 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+ 	raw_spin_lock_irq(&cfs_b->lock);
+ 	cfs_b->period = ns_to_ktime(period);
+ 	cfs_b->quota = quota;
+-	cfs_b->runtime = quota;
+ 
++	__refill_cfs_bandwidth_runtime(cfs_b);
+ 	/* restart the period timer (if active) to handle new period expiry */
+ 	if (runtime_enabled && cfs_b->timer_active) {
+ 		/* force a reprogram */
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index af73a8a..9d1adbd 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1272,11 +1272,30 @@ static inline u64 sched_cfs_bandwidth_slice(void)
+ 	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
  }
  
--static __inline__ void ipv6_select_ident(struct frag_hdr *fhdr)
--{
--	static u32 ipv6_fragmentation_id = 1;
--	static DEFINE_SPINLOCK(ip6_id_lock);
--
--	spin_lock_bh(&ip6_id_lock);
--	fhdr->identification = htonl(ipv6_fragmentation_id);
--	if (++ipv6_fragmentation_id == 0)
--		ipv6_fragmentation_id = 1;
--	spin_unlock_bh(&ip6_id_lock);
--}
-+extern void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt);
- 
- /*
-  *	Prototypes exported by ipv6
---- a/include/net/transp_v6.h
-+++ b/include/net/transp_v6.h
-@@ -14,6 +14,8 @@ extern struct proto tcpv6_prot;
- 
- struct flowi6;
- 
-+extern void initialize_hashidentrnd(void);
++/*
++ * Replenish runtime according to assigned quota and update expiration time.
++ * We use sched_clock_cpu directly instead of rq->clock to avoid adding
++ * additional synchronization around rq->lock.
++ *
++ * requires cfs_b->lock
++ */
++static void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b)
++{
++	u64 now;
 +
- /* extension headers */
- extern int				ipv6_exthdrs_init(void);
- extern void				ipv6_exthdrs_exit(void);
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -1078,6 +1078,8 @@ static int __init inet6_init(void)
- 		goto out;
++	if (cfs_b->quota == RUNTIME_INF)
++		return;
++
++	now = sched_clock_cpu(smp_processor_id());
++	cfs_b->runtime = cfs_b->quota;
++	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
++}
++
+ static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ {
+ 	struct task_group *tg = cfs_rq->tg;
+ 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+-	u64 amount = 0, min_amount;
++	u64 amount = 0, min_amount, expires;
+ 
+ 	/* note: this is a positive sum as runtime_remaining <= 0 */
+ 	min_amount = sched_cfs_bandwidth_slice() - cfs_rq->runtime_remaining;
+@@ -1285,9 +1304,16 @@ static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ 	if (cfs_b->quota == RUNTIME_INF)
+ 		amount = min_amount;
+ 	else {
+-		/* ensure bandwidth timer remains active under consumption */
+-		if (!cfs_b->timer_active)
++		/*
++		 * If the bandwidth pool has become inactive, then at least one
++		 * period must have elapsed since the last consumption.
++		 * Refresh the global state and ensure bandwidth timer becomes
++		 * active.
++		 */
++		if (!cfs_b->timer_active) {
++			__refill_cfs_bandwidth_runtime(cfs_b);
+ 			__start_cfs_bandwidth(cfs_b);
++		}
+ 
+ 		if (cfs_b->runtime > 0) {
+ 			amount = min(cfs_b->runtime, min_amount);
+@@ -1295,19 +1321,61 @@ static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ 			cfs_b->idle = 0;
+ 		}
  	}
++	expires = cfs_b->runtime_expires;
+ 	raw_spin_unlock(&cfs_b->lock);
  
-+	initialize_hashidentrnd();
-+
- 	err = proto_register(&tcpv6_prot, 1);
- 	if (err)
- 		goto out;
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -596,6 +596,35 @@ int ip6_find_1stfragopt(struct sk_buff *
- 	return offset;
+ 	cfs_rq->runtime_remaining += amount;
++	/*
++	 * we may have advanced our local expiration to account for allowed
++	 * spread between our sched_clock and the one on which runtime was
++	 * issued.
++	 */
++	if ((s64)(expires - cfs_rq->runtime_expires) > 0)
++		cfs_rq->runtime_expires = expires;
  }
  
-+static u32 hashidentrnd __read_mostly;
-+#define FID_HASH_SZ 16
-+static u32 ipv6_fragmentation_id[FID_HASH_SZ];
-+
-+void __init initialize_hashidentrnd(void)
-+{
-+	get_random_bytes(&hashidentrnd, sizeof(hashidentrnd));
-+}
-+
-+static u32 __ipv6_select_ident(const struct in6_addr *addr)
-+{
-+	u32 newid, oldid, hash = jhash2((u32 *)addr, 4, hashidentrnd);
-+	u32 *pid = &ipv6_fragmentation_id[hash % FID_HASH_SZ];
-+
-+	do {
-+		oldid = *pid;
-+		newid = oldid + 1;
-+		if (!(hash + newid))
-+			newid++;
-+	} while (cmpxchg(pid, oldid, newid) != oldid);
-+
-+	return hash + newid;
-+}
-+
-+void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
-+{
-+	fhdr->identification = htonl(__ipv6_select_ident(&rt->rt6i_dst.addr));
-+}
-+
- int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
+-static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+-				     unsigned long delta_exec)
++/*
++ * Note: This depends on the synchronization provided by sched_clock and the
++ * fact that rq->clock snapshots this value.
++ */
++static void expire_cfs_rq_runtime(struct cfs_rq *cfs_rq)
  {
- 	struct sk_buff *frag;
-@@ -680,7 +709,7 @@ int ip6_fragment(struct sk_buff *skb, in
- 		skb_reset_network_header(skb);
- 		memcpy(skb_network_header(skb), tmp_hdr, hlen);
+-	if (!cfs_rq->runtime_enabled)
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
++	struct rq *rq = rq_of(cfs_rq);
++
++	/* if the deadline is ahead of our clock, nothing to do */
++	if (likely((s64)(rq->clock - cfs_rq->runtime_expires) < 0))
++		return;
++
++	if (cfs_rq->runtime_remaining < 0)
+ 		return;
  
--		ipv6_select_ident(fh);
-+		ipv6_select_ident(fh, rt);
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		fh->frag_off = htons(IP6_MF);
-@@ -826,7 +855,7 @@ slow_path:
- 		fh->nexthdr = nexthdr;
- 		fh->reserved = 0;
- 		if (!frag_id) {
--			ipv6_select_ident(fh);
-+			ipv6_select_ident(fh, rt);
- 			frag_id = fh->identification;
- 		} else
- 			fh->identification = frag_id;
-@@ -1072,7 +1101,8 @@ static inline int ip6_ufo_append_data(st
- 			int getfrag(void *from, char *to, int offset, int len,
- 			int odd, struct sk_buff *skb),
- 			void *from, int length, int hh_len, int fragheaderlen,
--			int transhdrlen, int mtu,unsigned int flags)
-+			int transhdrlen, int mtu,unsigned int flags,
-+			struct rt6_info *rt)
++	/*
++	 * If the local deadline has passed we have to consider the
++	 * possibility that our sched_clock is 'fast' and the global deadline
++	 * has not truly expired.
++	 *
++	 * Fortunately we can check determine whether this the case by checking
++	 * whether the global deadline has advanced.
++	 */
++
++	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
++		/* extend local deadline, drift is bounded above by 2 ticks */
++		cfs_rq->runtime_expires += TICK_NSEC;
++	} else {
++		/* global deadline is ahead, expiration has passed */
++		cfs_rq->runtime_remaining = 0;
++	}
++}
++
++static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
++				     unsigned long delta_exec)
++{
++	/* dock delta_exec before expiring quota (as it could span periods) */
+ 	cfs_rq->runtime_remaining -= delta_exec;
+-	if (cfs_rq->runtime_remaining > 0)
++	expire_cfs_rq_runtime(cfs_rq);
++
++	if (likely(cfs_rq->runtime_remaining > 0))
+ 		return;
  
- {
- 	struct sk_buff *skb;
-@@ -1116,7 +1146,7 @@ static inline int ip6_ufo_append_data(st
- 		skb_shinfo(skb)->gso_size = (mtu - fragheaderlen -
- 					     sizeof(struct frag_hdr)) & ~7;
- 		skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
--		ipv6_select_ident(&fhdr);
-+		ipv6_select_ident(&fhdr, rt);
- 		skb_shinfo(skb)->ip6_frag_id = fhdr.identification;
- 		__skb_queue_tail(&sk->sk_write_queue, skb);
+ 	assign_cfs_rq_runtime(cfs_rq);
+@@ -1338,7 +1406,12 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 		goto out_unlock;
  
-@@ -1282,7 +1312,7 @@ int ip6_append_data(struct sock *sk, int
+ 	idle = cfs_b->idle;
+-	cfs_b->runtime = cfs_b->quota;
++	/* if we're going inactive then everything else can be deferred */
++	if (idle)
++		goto out_unlock;
++
++	__refill_cfs_bandwidth_runtime(cfs_b);
++
  
- 			err = ip6_ufo_append_data(sk, getfrag, from, length,
- 						  hh_len, fragheaderlen,
--						  transhdrlen, mtu, flags);
-+						  transhdrlen, mtu, flags, rt);
- 			if (err)
- 				goto error;
- 			return 0;
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1359,7 +1359,7 @@ static struct sk_buff *udp6_ufo_fragment
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr);
-+	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
+ 	/* mark as potentially idle for the upcoming period */
+ 	cfs_b->idle = 1;
+@@ -1557,7 +1630,6 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
  
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
-
-
+ 	return wl;
+ }
+-
+ #else
+ 
+ static inline unsigned long effective_load(struct task_group *tg, int cpu,
