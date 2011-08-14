@@ -1,89 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab1HPKac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 06:30:32 -0400
-Received: from science.horizon.com ([71.41.210.146]:38266 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751587Ab1HPKaa (ORCPT
+	id S1752190Ab1HPKkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 06:40:14 -0400
+Received: from smtp.unlimitedmail.net ([94.127.184.244]:49131 "EHLO
+	dcnode-01.unlimitedmail.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751662Ab1HPKkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 06:30:30 -0400
-Date: 16 Aug 2011 06:30:28 -0400
-Message-ID: <20110816103028.1360.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: davem@davemloft.net, linux@horizon.com, mpm@selenic.com
-Subject: Re: get_random_int() should use hash[1]
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20110816.021031.1778295949152117484.davem@davemloft.net>
+	Tue, 16 Aug 2011 06:40:12 -0400
+Message-Id: <201108161040.p7GAdw3F000563@dcnode-01.unlimitedmail.net>
+Date: Sun, 14 Aug 2011 09:33:41 +0530
+From: "J. Bakshi" <j.bakshi@unlimitedmail.org>
+To: linux-kernel@vger.kernel.org
+Subject: bluetooth on by default
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAgMAAAAqbBEUAAAADFBMVEW2UCaWJQ3jnnRrCARshP4hAAACQElEQVQokRWSzU4aYRiFDwhiJjGAimxqRlzhbGpDm24wjmhTQtIIOlMag6GXUP92Tj5obcaaJqRJidvBlDi8N1FpbUzcFGgNK0MvgZKZsmHydVw+OWd1zgOiaH+98Ejt/SGCaTDlmZMYdl+cEmjMKQydBL97kJFAYlfbVab5KHS5AONrnoenPhVHbU1A4yezEYup+1crGRhtfuv9kPZtLRcz8Mw4ykJ1UPJF72Qkg09SdHFFxkY/iZW1HxNSY/zLSbS1B9sKLW7TaU3yB55DHXnjL4n0m1BSRNOZoKo8IXqx1YVqZ6is+C0YwS7Gml4q5/mdRFEbSkig95xbZEaHCMpEJ5x3yPRzyCEqzcTm0lMUscEEE0gfm/64RwPbpJyTIlPbLnNoMoku1JxNAHyTzhzQO2fWXL5PKgOD9H+fPQW4lUqnJk0OqkYEWorETE0SBzrmwFP0lj7Gn1r6qgZ4z8/jM/GVm7Mcg5apH4db8d43PccBoY6oHGAdPRuBX2m8DrSn+Y1+GALLNtLskjWFQHaEXsvMFvsFgc5sD4oyZT39wjiJQwu5ljRbSheqQnHIEfGfV2n+oL7KeBetvrcumQc1lbsQWJVj2fkDk/dceCwqi6qn4y7gcLxhlnCY71DgyGG4yNuvKnyPfBtzNipdRy6r/YXI9Pc+dM7WocqIHGU7KDlsSQn7wsHfSS9MVti9Dau5jfYkuU9Y13Z45+havZRg6H/Xhgk+au7c61L6FVD3XVu44IpkPpxUtnrqkiXRf3v/EFxxaZnHAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SOLTECSIS-MailScanner-ID: p7GAdw3F000563
+X-SOLTECSIS-MailScanner-From: j.bakshi@unlimitedmail.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From davem@davemloft.net Tue Aug 16 09:10:35 2011
-Date: Tue, 16 Aug 2011 02:10:31 -0700 (PDT)
-To: linux@horizon.com
-Cc: netdev@vger.kernel.org
-Subject: Re: get_random_int() should use hash[1]
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110816.020935.717525957035990843.davem@davemloft.net>
-References: <20110816090723.18492.qmail@science.horizon.com>
-	<20110816.020935.717525957035990843.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 16 Aug 2011 02:10:33 -0700 (PDT)
+Hi,
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 16 Aug 2011 02:09:35 -0700 (PDT)
+I have compiled the latest 3.0.1 kernel. Everything is fine,
+but bluetooth is always on after boot. How can I toggle this
+behavior ? 
 
-> From: "George Spelvin" <linux@horizon.com>
-> Date: 16 Aug 2011 05:07:23 -0400
-> 
->> Re: commit e997d47bff5a467262ef224b4cf8cbba2d3eceea
->> 
->> As long as you're using MD5, you should know that each round only
->> modifies one word of the state.  The order is [0], [3], [2], [1],
->> repeating 64 times.  Thus, on output, word [1] is the "most hashed"
->> word.  If you really wanted word [0], you could just skip the last
->> 3 rounds.
->> 
->> It's not really critical, but as long as you're performing the
->> rounds, you might as well use them...
-> 
-> Please provide a proper signoff with your change and properly
-> "-p1" base your patch.
-
-Not a problem.  This came up in the middle of a rebase operation so I
-didn't have a tree immediately at hand to work with.
-
-I'll also get the various uses in net/core/secure_seq.c.
-
-One thing about that commit I'm becoming more concerneed by: I notice that
-it eliminates the periodic reseeding of the secret.
-
-While the reduction in the number of random bits was a tradeoff (and it
-can be increased to 28 or so), it had two great advantages:
-- The usefulness of an attack drops off sharply after 5 minutes (you
-  can still attack connections established during the attack window,
-  but then you have to guess how much data has been sent across them).
-- An initial shortage of seed entropy does not become a persistent
-  problem.  Note that late_initcall() is still before any device
-  activity, much less entropy pool re-seeding from init scripts.
-
-Put together, an attacker has the system uptime to try to guess
-the low-entropy boot seed.  That's not clearly a security improvement.
-
-What I *really* wonder is whether such a change is really -stable
-material.  Cc: to Matt Mackall for comment.
-
-It seems at least worth figuring out a way to defer seeding until
-after /dev/random reseeding.  (E.g. until first non-loopback
-connection is made.)
-
-(There are also both better and faster algorithms than MD5 for
-the job, but that's a separate issue.)
-
-
-Just for example, as long as you're actually willing to spend more CPU
-time, you could do *both*.  Compute both a fixed-secret 32-bit value and a
-changing-secret 24-bit value and add them together.  Best of both worlds.
+Pls CC to me
+TIA
