@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab1HNVgR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 17:36:17 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:47877 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753910Ab1HNVgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 17:36:16 -0400
-Date: Sun, 14 Aug 2011 21:36:42 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>, akpm@linux-foundation.org,
-        bonbons@linux-vserver.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
- when reboot
-Message-ID: <20110814213642.GB13799@hallyn.com>
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr>
- <20110814161707.GB30846@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110814161707.GB30846@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754795Ab1HNVmF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 17:42:05 -0400
+Received: from mail.gw90.de ([188.40.100.199]:38274 "EHLO mail.gw90.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754546Ab1HNVmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 17:42:03 -0400
+X-Greylist: delayed 2631 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Aug 2011 17:42:03 EDT
+Subject: [PATCH] scripts/package/Makefile: Fix typo: s/an deb package/a deb
+ package/
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-btYkYwgJuCxSHxy9AZBv"
+Date: Sun, 14 Aug 2011 22:58:06 +0200
+Message-ID: <1313355486.3421.12.camel@mattotaupa>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleg Nesterov (oleg@redhat.com):
-> On 08/11, Daniel Lezcano wrote:
-> >
-> > In the case of a VPS, when we shutdown/halt/reboot the container, the
-> > reboot utility will invoke the sys_reboot syscall which has the bad
-> > effect to reboot the host.
-> 
-> Stupid question. Can't sys_reboot() simply kill init (and thus the whole
-> pid_ns) in this case?
 
-The goal is to be able to distinguish a request for reboot from shutdown.
-If we just kill the init, then the parent of init (the container monitor)
-cannot restart the container to emulate reboot.
+--=-btYkYwgJuCxSHxy9AZBv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-[ sorry if I misunderstand what you're asking ]
+=46rom 8b502382775b22405ed32e1db9c8559acec4b4c7 Mon Sep 17 00:00:00 2001
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+Date: Sun, 14 Aug 2011 17:53:00 +0200
 
--serge
+Signed-off-by: Paul Menzel <paulepanter@users.sourceforge.net>
+CC: Michal Marek <mmarek@suse.cz>
+CC: trivial@kernel.org
+---
+ scripts/package/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+index fa4a0a1..7d55cb3 100644
+--- a/scripts/package/Makefile
++++ b/scripts/package/Makefile
+@@ -89,7 +89,7 @@ clean-dirs +=3D $(objtree)/tar-install/
+ help: FORCE
+ 	@echo '  rpm-pkg         - Build both source and binary RPM kernel packag=
+es'
+ 	@echo '  binrpm-pkg      - Build only the binary kernel package'
+-	@echo '  deb-pkg         - Build the kernel as an deb package'
++	@echo '  deb-pkg         - Build the kernel as a deb package'
+ 	@echo '  tar-pkg         - Build the kernel as an uncompressed tarball'
+ 	@echo '  targz-pkg       - Build the kernel as a gzip compressed tarball'
+ 	@echo '  tarbz2-pkg      - Build the kernel as a bzip2 compressed tarball=
+'
+--=20
+1.7.5.4
+
+--=-btYkYwgJuCxSHxy9AZBv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk5INtgACgkQPX1aK2wOHVisbQCfcxeSKt39I+wtXPOZxKzgdooL
+aSUAniRJKztE3QbS+OpnKWuEF2WwznOk
+=c0zp
+-----END PGP SIGNATURE-----
+
+--=-btYkYwgJuCxSHxy9AZBv--
+
