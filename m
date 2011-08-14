@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab1HNTt2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:49:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40828 "EHLO ogre.sisk.pl"
+	id S1755321Ab1HNTtt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:49:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40825 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755156Ab1HNTqc convert rfc822-to-8bit (ORCPT
+	id S1755151Ab1HNTqb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:46:32 -0400
+	Sun, 14 Aug 2011 15:46:31 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "David Hill" <hilld@binarystorm.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+        "Witold Baryluk" <baryluk@smp.if.uj.edu.pl>
 References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 In-Reply-To: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <bkwpSnItbJM.A.i-.lNCSOB@chimera>
-Subject: [Bug #39132] Starting with 3.0.0-rc6, masquerading seems to be broken.
+Message-ID: <bkwpSnItbJM.A.rv.QNCSOB@chimera>
+Subject: [Bug #39732] JBD: Spotted dirty metadata buffer (dev = dm-2, blocknr = 2512725). There's a risk of filesystem corruption in case of system crash.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 14 Aug 2011 21:07:32 +0200 (CEST)
+Date: Sun, 14 Aug 2011 21:07:33 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,9 +34,9 @@ introduced between 2.6.39 and 3.0.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=39132
-Subject		: Starting with 3.0.0-rc6, masquerading seems to be broken.
-Submitter	: David Hill <hilld@binarystorm.net>
-Date		: 2011-07-10 19:45 (36 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=39732
+Subject		: JBD: Spotted dirty metadata buffer (dev = dm-2, blocknr = 2512725). There's a risk of filesystem corruption in case of system crash.
+Submitter	: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Date		: 2011-07-22 04:22 (24 days old)
 
 
