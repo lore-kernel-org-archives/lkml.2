@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1HNRip (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:38:45 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:55525 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752705Ab1HNRim (ORCPT
+	id S1754386Ab1HNRjD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:39:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44443 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab1HNRi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:38:42 -0400
-X-Sasl-enc: mW1toJ8O3GUOgaLdjxcZSVJANzBNQe4ZG0LuvE51oYLu 1313343521
-Date: Sun, 14 Aug 2011 10:38:16 -0700
-From: Greg KH <greg@kroah.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: Driver framework: binding a driver to two devices?
-Message-ID: <20110814173816.GA10062@kroah.com>
-References: <CAMuHMdVr9iAyqQJUgHq4gcLg+gp7GxF=sH+SBKBuqVWYymXs8Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVr9iAyqQJUgHq4gcLg+gp7GxF=sH+SBKBuqVWYymXs8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 14 Aug 2011 13:38:59 -0400
+Subject: Re: [PATCH v3 2/4] Keep nr_dentry per super block
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        David Chinner <david@fromorbit.com>
+In-Reply-To: <1313334832-1150-3-git-send-email-glommer@parallels.com>
+References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
+	 <1313334832-1150-3-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 14 Aug 2011 19:38:42 +0200
+Message-ID: <1313343522.2798.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 10:44:42PM +0200, Geert Uytterhoeven wrote:
-> As Amiga Zorro expansion boards have only one BAR (unlike PCI, which has
-> multiple BARs), several Amiga graphics cards show up as two Zorro devices:
-> one for the graphics memory and one for the graphics controller's registers.
+Le dimanche 14 août 2011 à 19:13 +0400, Glauber Costa a écrit :
+> Now that we have per-sb shrinkers, it makes sense to have nr_dentries
+> stored per sb as well. We turn them into per-cpu counters so we can
+> keep acessing them without locking.
 > 
-> Traditionally, a driver for such a device used
-> 
->     dev1 = zorro_find_device(id1, ...)
->     dev2 = zorro_find_device(id2, ...)
-> 
-> to find the two devices and match them.
-> 
-> With the "new" driver framework, the matching with device id1 is now
-> done using a
-> struct zorro_driver with a table of IDs, while the matching with device id2 is
-> still done by calling zorro_find_device(id2, ...).
-> 
-> Recently (with cirrusfb) it turned out that the call to
-> zorro_find_device(id2, ...)
-> may fail to find the second device. I suspect this happens due to the second
-> device haven't been probed for at the time the zorro_driver for the
-> first device is
-> initialized.
-> 
-> I expect this can be fixed by delaying all calls to device_register() in
-> amiga_zorro_probe() until all devices have been detected and added to the array
-> used by zorro_find_device(). But I was wondering whether there's a more generic
-> way in the driver framework to bind a driver to two devices?
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
 
-What you really want is the same "driver instance" bound to two devices,
-right?  That way the device would operate "knowing" about both physical
-devices so as to properly control the thing.
+>  }
+> diff --git a/fs/super.c b/fs/super.c
+> index 3f56a26..e95ac4f 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -119,6 +119,9 @@ static struct super_block *alloc_super(struct file_system_type *type)
+>  			s = NULL;
+>  			goto out;
+>  		}
+> +
+> +		percpu_counter_init(&s->s_nr_dentry, 0);
+> +
 
-Right now, no, there's not a simple way to do this with the driver
-model.  USB does this on its own for some devices that need to have
-multiple "interfaces" (the USB equalivant for a "device") controlled at
-the same time, so you might want to look at how that happens (in the
-indivdual drivers, not in the USB core.)
+You should take care of possible error return at this point.
 
-Sorry,
+(We probably should check the percpu_counter_init() done in tcp_init(),
+but they are done at boot time, with nearly no chance of failure)
 
-greg k-h
+
+
