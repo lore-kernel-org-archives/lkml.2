@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1HNTLU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 15:11:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64061 "EHLO
+	id S1754890Ab1HNTQe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 15:16:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49266 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab1HNTLU (ORCPT
+	with ESMTP id S1754653Ab1HNTQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 15:11:20 -0400
-Message-ID: <4E481DD3.404@landley.net>
-Date: Sun, 14 Aug 2011 14:11:15 -0500
+	Sun, 14 Aug 2011 15:16:33 -0400
+Message-ID: <4E481F0D.3090404@landley.net>
+Date: Sun, 14 Aug 2011 14:16:29 -0500
 From: Rob Landley <rob@landley.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
 To: Stefan Richter <stefanr@s5r6.in-berlin.de>
 CC: linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>, busybox@busybox.net
+        busybox@busybox.net
 Subject: Re: [BUG] Linux 3.0 commit 3627924acf70a broke include/mtd/ubi_user.h.
 References: <4E4809BF.6040707@landley.net> <20110814200322.3fa7109d@stein>
 In-Reply-To: <20110814200322.3fa7109d@stein>
@@ -53,7 +53,8 @@ On 08/14/2011 01:03 PM, Stefan Richter wrote:
 > As far as I can tell, the __packed or __attribute__((packed))
 > qualifications are superfluous in include/mtd/ubi-user.h anyway.
 
-And the email address he signed-off-by the broken commit from bounced,
-trying again with the one out of MAINTAINERS.
+And Adrian Hunter <adrian.hunter@nokia.com> (the other listed UBI
+maintainer) also bounces.  Did the developer exodus after Nokia decided
+to cozy up to The Black Widow take 'em both out?
 
 Rob
