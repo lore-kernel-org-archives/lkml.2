@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1HNPlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 11:41:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60942 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564Ab1HNPlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 11:41:06 -0400
-Date: Sun, 14 Aug 2011 15:40:45 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-a128405c6b40371c59c34b00cc66ed06285b9551@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        penberg@kernel.org, masami.hiramatsu@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, penberg@kernel.org,
-        peterz@infradead.org, masami.hiramatsu@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110811110235.19900.20614.stgit@fedora15>
-References: <20110811110235.19900.20614.stgit@fedora15>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Fix line walker to check CU correctly
-Git-Commit-ID: a128405c6b40371c59c34b00cc66ed06285b9551
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753271Ab1HNPlR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 11:41:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55830 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab1HNPlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 11:41:13 -0400
+Date: Sun, 14 Aug 2011 19:39:31 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        David Chinner <david@fromorbit.com>,
+        containers@lists.linux-foundation.org, Hugh Dickins <hughd@google.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] parse options in the vfs level
+Message-ID: <20110814153930.GA3996@albatros>
+References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
+ <1313334832-1150-5-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 15:40:48 +0000 (UTC)
+In-Reply-To: <1313334832-1150-5-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a128405c6b40371c59c34b00cc66ed06285b9551
-Gitweb:     http://git.kernel.org/tip/a128405c6b40371c59c34b00cc66ed06285b9551
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 11 Aug 2011 20:02:35 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 12 Aug 2011 09:22:46 -0300
+Hi Glauber,
 
-perf probe: Fix line walker to check CU correctly
+On Sun, Aug 14, 2011 at 19:13 +0400, Glauber Costa wrote:
+> +/**
+> + * Generic option parsing for the VFS.
+> + *
+> + * Since most of the filesystems already do their own option parsing, and with
+> + * very few code shared between them, this function strips out any options that
+> + * we succeed in parsing ourselves. Passing them forward would just give the
+> + * underlying fs an option it does not expect, leading it to fail.
+> + *
+> + * We don't yet have a pointer to the super block as well, since this is
+> + * pre-mount. We accumulate in struct vfs_options whatever data we collected,
+> + * and act on it later.
+> + */
+> +static int vfs_parse_options(char *options, struct vfs_options *ops)
+> +{
+> +	substring_t args[MAX_OPT_ARGS];
+> +	int option;
+> +	char *p;
+> +	char *opt;
+> +	char *start = NULL;
+> +	int ret;
+> +	
+> +	if (!options)
+> +		return 0;
+> +
+> +	opt = kstrdup(options, GFP_KERNEL);
+> +	if (!opt)
+> +		return 1;
+> +	
+> +	ret = 1;
+> +
+> +	start = opt;
+> +	while ((p = strsep(&opt, ",")) != NULL) {
+> +		int token;
+> +		if (!*p)
+> +			continue;
+> +
+> +		/*
+> +		 * Initialize args struct so we know whether arg was
+> +		 * found; some options take optional arguments.
+> +		 */
+> +		args[0].to = args[0].from = 0;
+> +		token = match_token(p, tokens, args);
+> +		switch (token) {
+> +		case 1:
+> +			if (!args[0].from)
+> +				break;
+> +
+> +			if (match_int(&args[0], &option))
+> +				break;
 
-Fix line walker to check whether a given DIE is CU or not.
+What if there are 2 passed options and the second fails?
 
-Actually this function accepts CU, subprogram and inlined_subroutine
-DIEs.
+   mount -o vfs_dcache_size=XXX,vfs_dcache_size=CRAP <dev> <mntpoint>
 
-Without this fix, perf probe always fails to analyze lines on inlined
-functions;
+In this case you leave the second option and pass it to the fs option
+parser (as you already set ret=0), which is wrong.  I think you should
+explicitly return 1 where you know the option is related to VFS, but you
+failed to parse it.  It would look even simplier than current code.
 
-$ perf probe -L pre_schedule
-Debuginfo analysis failed. (-2)
-  Error: Failed to show lines. (-2)
+(Yes, this is a rare situation, but I can imagine some program that
+automatically adds mount options to the existing list and passes it to
+mount.)
 
-This fixes that bug, as below.
+> +			if (option < DCACHE_MIN_SIZE) {
+> +				printk(KERN_INFO "dcache size %d smaller than "
+> +				       "minimum (%d)\n", option, DCACHE_MIN_SIZE);
+> +				option = DCACHE_MIN_SIZE;
+> +			}
+> +
+> +			ops->vfs_dcache_size = option;
+> +
+> +			/*
+> +			 * The actual filesystems don't expect any option
+> +			 * they don't understand to be received in the option
+> +			 * string. So we strip off anything we processed, and
+> +			 * give them a clean options string.
+> +			 */
+> +			ret = 0;
+> +			if (!opt) /* it is the last option listed */
+> +				*(options + (p - start)) = '\0';
+> +			else
+> +				strcpy(options + (p - start), opt);
+> +			break;
+> +		default:
+> +			ret = 0;
+> +			break;
+> +		}
+> +	}
+> +
+> +	kfree(start);
+> +	return ret;
+> +}
 
-$ perf probe -L pre_schedule
-<pre_schedule@/home/mhiramat/ksrc/linux-2.6/kernel/sched.c:0>
-      0  static inline void pre_schedule(struct rq *rq, struct task_struct *prev
-         {
-      2         if (prev->sched_class->pre_schedule)
-      3                 prev->sched_class->pre_schedule(rq, prev);
-         }
+Thanks,
 
-         /* rq->lock is NOT held, but preemption is disabled */
-
-Changes from v1:
- - Update against current tip tree.(Fix dwarf-aux.c)
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <masami.hiramatsu@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20110811110235.19900.20614.stgit@fedora15
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/dwarf-aux.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/util/dwarf-aux.c b/tools/perf/util/dwarf-aux.c
-index fddf40f..d35b454 100644
---- a/tools/perf/util/dwarf-aux.c
-+++ b/tools/perf/util/dwarf-aux.c
-@@ -439,7 +439,7 @@ static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
- 
- /**
-  * die_walk_lines - Walk on lines inside given DIE
-- * @rt_die: a root DIE (CU or subprogram)
-+ * @rt_die: a root DIE (CU, subprogram or inlined_subroutine)
-  * @callback: callback routine
-  * @data: user data
-  *
-@@ -460,12 +460,12 @@ int die_walk_lines(Dwarf_Die *rt_die, line_walk_callback_t callback, void *data)
- 	size_t nlines, i;
- 
- 	/* Get the CU die */
--	if (dwarf_tag(rt_die) == DW_TAG_subprogram)
-+	if (dwarf_tag(rt_die) != DW_TAG_compile_unit)
- 		cu_die = dwarf_diecu(rt_die, &die_mem, NULL, NULL);
- 	else
- 		cu_die = rt_die;
- 	if (!cu_die) {
--		pr_debug2("Failed to get CU from subprogram\n");
-+		pr_debug2("Failed to get CU from given DIE.\n");
- 		return -EINVAL;
- 	}
- 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
