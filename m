@@ -1,115 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1HNPwB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 11:52:01 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40176 "EHLO hera.kernel.org"
+	id S1753470Ab1HNPxN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 11:53:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40199 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab1HNPv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 11:51:59 -0400
-Date: Sun, 14 Aug 2011 15:51:36 GMT
+	id S1751135Ab1HNPxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 11:53:10 -0400
+Date: Sun, 14 Aug 2011 15:52:52 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-kwd4j6ayld5thrscvaxgjquv@git.kernel.org>
+Message-ID: <tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        francis.moro@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, francis.moro@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Avoid kfree() in CPU_STARTING
-Git-Commit-ID: 7fdba1ca10462f42ad2246b918fe6368f5ce488e
+Subject: [tip:perf/core] perf: Add PM notifiers to fix CPU hotplug races
+Git-Commit-ID: 144060fee07e9c22e179d00819c83c86fbcbf82c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 15:51:39 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 15:52:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7fdba1ca10462f42ad2246b918fe6368f5ce488e
-Gitweb:     http://git.kernel.org/tip/7fdba1ca10462f42ad2246b918fe6368f5ce488e
+Commit-ID:  144060fee07e9c22e179d00819c83c86fbcbf82c
+Gitweb:     http://git.kernel.org/tip/144060fee07e9c22e179d00819c83c86fbcbf82c
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 22 Jul 2011 13:41:54 +0200
+AuthorDate: Mon, 1 Aug 2011 12:49:14 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 14 Aug 2011 11:53:02 +0200
+CommitDate: Sun, 14 Aug 2011 11:53:03 +0200
 
-perf, x86: Avoid kfree() in CPU_STARTING
+perf: Add PM notifiers to fix CPU hotplug races
 
-On -rt kfree() can schedule, but CPU_STARTING is before the CPU is
-fully up and running. These are contradictory, so avoid it. Instead
-push the kfree() to CPU_ONLINE where we're free to schedule.
+Francis reports that s2r gets him spurious NMIs, this is because the
+suspend code leaves the boot cpu up and running.
 
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Cure this by adding a suspend notifier. The problem is that hotplug
+and suspend are completely un-serialized and the PM notifiers run
+before the suspend cpu unplug of all but the boot cpu.
+
+This leaves a window where the user can initialize another hotplug
+operation (either remove or add a cpu) resulting in either one too
+many or one too few hotplug ops. Thus we cannot use the hotplug code
+for the suspend case.
+
+There's another reason to not use the hotplug code, which is that the
+hotplug code totally destroys the perf state, we can do better for
+suspend and simply remove all counters from the PMU so that we can
+re-instate them on resume.
+
+Reported-by: Francis Moreau <francis.moro@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-kwd4j6ayld5thrscvaxgjquv@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    8 ++++++++
- arch/x86/kernel/cpu/perf_event_amd.c   |    2 +-
- arch/x86/kernel/cpu/perf_event_intel.c |    2 +-
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ kernel/events/core.c |   97 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 95 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..594d425 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -129,6 +129,8 @@ struct cpu_hw_events {
- 	 * AMD specific bits
- 	 */
- 	struct amd_nb		*amd_nb;
-+
-+	void			*kfree_on_online;
- };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b8785e2..d4c8542 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -29,6 +29,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/rculist.h>
+ #include <linux/uaccess.h>
++#include <linux/suspend.h>
+ #include <linux/syscalls.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/kernel_stat.h>
+@@ -6809,7 +6810,7 @@ static void __cpuinit perf_event_init_cpu(int cpu)
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
  
- #define __EVENT_CONSTRAINT(c, n, m, w) {\
-@@ -1466,10 +1468,12 @@ static int __cpuinit
- x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+ 	mutex_lock(&swhash->hlist_mutex);
+-	if (swhash->hlist_refcount > 0) {
++	if (swhash->hlist_refcount > 0 && !swhash->swevent_hlist) {
+ 		struct swevent_hlist *hlist;
+ 
+ 		hlist = kzalloc_node(sizeof(*hlist), GFP_KERNEL, cpu_to_node(cpu));
+@@ -6898,7 +6899,14 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
  {
  	unsigned int cpu = (long)hcpu;
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
- 	int ret = NOTIFY_OK;
  
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
-+		cpuc->kfree_on_online = NULL;
- 		if (x86_pmu.cpu_prepare)
- 			ret = x86_pmu.cpu_prepare(cpu);
- 		break;
-@@ -1479,6 +1483,10 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- 			x86_pmu.cpu_starting(cpu);
- 		break;
- 
-+	case CPU_ONLINE:
-+		kfree(cpuc->kfree_on_online);
-+		break;
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	/*
++	 * Ignore suspend/resume action, the perf_pm_notifier will
++	 * take care of that.
++	 */
++	if (action & CPU_TASKS_FROZEN)
++		return NOTIFY_OK;
 +
- 	case CPU_DYING:
- 		if (x86_pmu.cpu_dying)
- 			x86_pmu.cpu_dying(cpu);
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 941caa2..ee9436c 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -350,7 +350,7 @@ static void amd_pmu_cpu_starting(int cpu)
- 			continue;
++	switch (action) {
  
- 		if (nb->nb_id == nb_id) {
--			kfree(cpuc->amd_nb);
-+			cpuc->kfree_on_online = cpuc->amd_nb;
- 			cpuc->amd_nb = nb;
- 			break;
- 		}
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f88af2c..3751494 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1362,7 +1362,7 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	case CPU_UP_PREPARE:
+ 	case CPU_DOWN_FAILED:
+@@ -6917,6 +6925,90 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
+ 	return NOTIFY_OK;
+ }
  
- 		pc = per_cpu(cpu_hw_events, i).shared_regs;
- 		if (pc && pc->core_id == core_id) {
--			kfree(cpuc->shared_regs);
-+			cpuc->kfree_on_online = cpuc->shared_regs;
- 			cpuc->shared_regs = pc;
- 			break;
- 		}
++static void perf_pm_resume_cpu(void *unused)
++{
++	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *ctx;
++	struct pmu *pmu;
++	int idx;
++
++	idx = srcu_read_lock(&pmus_srcu);
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		ctx = cpuctx->task_ctx;
++
++		perf_ctx_lock(cpuctx, ctx);
++		perf_pmu_disable(cpuctx->ctx.pmu);
++
++		cpu_ctx_sched_out(cpuctx, EVENT_ALL);
++		if (ctx)
++			ctx_sched_out(ctx, cpuctx, EVENT_ALL);
++
++		perf_pmu_enable(cpuctx->ctx.pmu);
++		perf_ctx_unlock(cpuctx, ctx);
++	}
++	srcu_read_unlock(&pmus_srcu, idx);
++}
++
++static void perf_pm_suspend_cpu(void *unused)
++{
++	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *ctx;
++	struct pmu *pmu;
++	int idx;
++
++	idx = srcu_read_lock(&pmus_srcu);
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		ctx = cpuctx->task_ctx;
++
++		perf_ctx_lock(cpuctx, ctx);
++		perf_pmu_disable(cpuctx->ctx.pmu);
++
++		perf_event_sched_in(cpuctx, ctx, current);
++
++		perf_pmu_enable(cpuctx->ctx.pmu);
++		perf_ctx_unlock(cpuctx, ctx);
++	}
++	srcu_read_unlock(&pmus_srcu, idx);
++}
++
++static int perf_resume(void)
++{
++	get_online_cpus();
++	smp_call_function(perf_pm_resume_cpu, NULL, 1);
++	put_online_cpus();
++
++	return NOTIFY_OK;
++}
++
++static int perf_suspend(void)
++{
++	get_online_cpus();
++	smp_call_function(perf_pm_suspend_cpu, NULL, 1);
++	put_online_cpus();
++
++	return NOTIFY_OK;
++}
++
++static int perf_pm(struct notifier_block *self, unsigned long action, void *ptr)
++{
++	switch (action) {
++	case PM_POST_HIBERNATION:
++	case PM_POST_SUSPEND:
++		return perf_resume();
++	case PM_HIBERNATION_PREPARE:
++	case PM_SUSPEND_PREPARE:
++		return perf_suspend();
++	default:
++		return NOTIFY_DONE;
++	}
++}
++
++static struct notifier_block perf_pm_notifier = {
++	.notifier_call = perf_pm,
++};
++
+ void __init perf_event_init(void)
+ {
+ 	int ret;
+@@ -6931,6 +7023,7 @@ void __init perf_event_init(void)
+ 	perf_tp_register();
+ 	perf_cpu_notifier(perf_cpu_notify);
+ 	register_reboot_notifier(&perf_reboot_notifier);
++	register_pm_notifier(&perf_pm_notifier);
+ 
+ 	ret = init_hw_breakpoint();
+ 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
