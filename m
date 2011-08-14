@@ -1,73 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1HNN5n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 09:57:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55352 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1HNN5j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 09:57:39 -0400
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <878vqw9007.fsf@rustcorp.com.au>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-	 <878vqw9007.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Sun, 14 Aug 2011 16:57:32 +0300
-Message-ID: <1313330252.2422.12.camel@sasha>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1753416Ab1HNODH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 10:03:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40094 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753130Ab1HNODD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 10:03:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM / Domains: Fix build for CONFIG_PM_RUNTIME unset
+Date: Sun, 14 Aug 2011 16:04:44 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108141604.44304.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-08-14 at 12:23 +0930, Rusty Russell wrote:
-> On Sat, 13 Aug 2011 11:51:01 +0300, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > The MAC of a virtio-net device is located at the first field of the device
-> > specific header. This header is located at offset 20 if the device doesn't
-> > support MSI-X or offset 24 if it does.
-> 
-> Erk.  This means, in general, we have to do virtio_find_single_vq or
-> config->find_vqs before we examine any config options.
-> 
-> Look at virtio_blk, which has the same error.
-> 
-> Solutions in order of best to worst:
-> (1) Enable MSI-X before calling device probe.  This means reserving two
->     vectors in virtio_pci_probe to ensure we *can* do this, I think.  Michael?
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Do you mean reserving the vectors even before we probed the device for
-MSI-X support? Wouldn't we need 3 vectors then? (config, input, output).
+Function genpd_queue_power_off_work() is not defined for
+CONFIG_PM_RUNTIME, so pm_genpd_poweroff_unused() causes a build
+error to happen in that case.  Fix the problem by making
+pm_genpd_poweroff_unused() depend on CONFIG_PM_RUNTIME too.
 
-> (2) Ensure ordering of "find_vqs then access config space" statically.  This
->     probably means handing the vqs array to virtio_config_val, so noone
->     can call it before they have their virtqueues.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-Just noticed that only virtio-blk uses virtio_config_val(), while the
-others are still doing 'if(virtio_has_feature()) vdev->config->get()',
-I'll send patches to fix that regardless of what we end up doing here.
+This is 3.1 material if no one objects.
 
-Did you want to pass the vq array to virtio_config_val() just to check
-that they were already found? 
+Thanks,
+Rafael
 
-> (3) Ensure ordering dynamically, ie. BUG_ON() if they haven't done
->     find_vqs when they call the config accessors.
-> 
-> If (1) is too invasive for -stable, then we should rearrange the drivers
-> in separate patches (and cc: -stable), then fix it properly.
-> 
-> Good catch Sasha!
-> 
-> Cheers,
-> Rusty.
+---
+ drivers/base/power/domain.c |   30 +++++++++++++++---------------
+ include/linux/pm_domain.h   |   10 +++++++---
+ kernel/power/Kconfig        |    4 ++++
+ 3 files changed, 26 insertions(+), 18 deletions(-)
 
-
--- 
-
-Sasha.
-
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -72,8 +72,6 @@ extern int pm_genpd_remove_subdomain(str
+ extern void pm_genpd_init(struct generic_pm_domain *genpd,
+ 			  struct dev_power_governor *gov, bool is_off);
+ extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
+-extern void pm_genpd_poweroff_unused(void);
+-extern void genpd_queue_power_off_work(struct generic_pm_domain *genpd);
+ #else
+ static inline int pm_genpd_add_device(struct generic_pm_domain *genpd,
+ 				      struct device *dev)
+@@ -101,8 +99,14 @@ static inline int pm_genpd_poweron(struc
+ {
+ 	return -ENOSYS;
+ }
+-static inline void pm_genpd_poweroff_unused(void) {}
++#endif
++
++#ifdef CONFIG_PM_GENERIC_DOMAINS_RUNTIME
++extern void genpd_queue_power_off_work(struct generic_pm_domain *genpd);
++extern void pm_genpd_poweroff_unused(void);
++#else
+ static inline void genpd_queue_power_off_work(struct generic_pm_domain *gpd) {}
++static inline void pm_genpd_poweroff_unused(void) {}
+ #endif
+ 
+ #endif /* _LINUX_PM_DOMAIN_H */
+Index: linux/drivers/base/power/domain.c
+===================================================================
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -460,6 +460,21 @@ static int pm_genpd_runtime_resume(struc
+ 	return 0;
+ }
+ 
++/**
++ * pm_genpd_poweroff_unused - Power off all PM domains with no devices in use.
++ */
++void pm_genpd_poweroff_unused(void)
++{
++	struct generic_pm_domain *genpd;
++
++	mutex_lock(&gpd_list_lock);
++
++	list_for_each_entry(genpd, &gpd_list, gpd_list_node)
++		genpd_queue_power_off_work(genpd);
++
++	mutex_unlock(&gpd_list_lock);
++}
++
+ #else
+ 
+ static inline void genpd_power_off_work_fn(struct work_struct *work) {}
+@@ -1255,18 +1270,3 @@ void pm_genpd_init(struct generic_pm_dom
+ 	list_add(&genpd->gpd_list_node, &gpd_list);
+ 	mutex_unlock(&gpd_list_lock);
+ }
+-
+-/**
+- * pm_genpd_poweroff_unused - Power off all PM domains with no devices in use.
+- */
+-void pm_genpd_poweroff_unused(void)
+-{
+-	struct generic_pm_domain *genpd;
+-
+-	mutex_lock(&gpd_list_lock);
+-
+-	list_for_each_entry(genpd, &gpd_list, gpd_list_node)
+-		genpd_queue_power_off_work(genpd);
+-
+-	mutex_unlock(&gpd_list_lock);
+-}
+Index: linux/kernel/power/Kconfig
+===================================================================
+--- linux.orig/kernel/power/Kconfig
++++ linux/kernel/power/Kconfig
+@@ -231,3 +231,7 @@ config PM_CLK
+ config PM_GENERIC_DOMAINS
+ 	bool
+ 	depends on PM
++
++config PM_GENERIC_DOMAINS_RUNTIME
++	def_bool y
++	depends on PM_RUNTIME && PM_GENERIC_DOMAINS
