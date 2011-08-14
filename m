@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1HNRNI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:13:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932Ab1HNRNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:13:06 -0400
-Date: Sun, 14 Aug 2011 19:10:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] add SA_CLDREBOOT flag
-Message-ID: <20110814171007.GA2097@redhat.com>
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <1313094241-3674-2-git-send-email-daniel.lezcano@free.fr> <20110814161532.GA30846@redhat.com> <20110814183611.05937c96@neptune.home>
+	id S1754226Ab1HNRRm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:17:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44849 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab1HNRRi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 13:17:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110814183611.05937c96@neptune.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110814170124.GC12747@elie.gateway.2wire.net>
+References: <20110414094447.GA1611@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1104211629300.24613@xanadu.home>
+ <201104261605.26791.arnd@arndb.de> <201104261904.45923.rjw@sisk.pl>
+ <20110426181508.GB1908@redhat.com> <20110813154638.GA1494@elie.gateway.2wire.net>
+ <20110813190246.GA10412@elie.gateway.2wire.net> <20110813211142.GA1536@redhat.com>
+ <20110814170124.GC12747@elie.gateway.2wire.net>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sun, 14 Aug 2011 19:17:18 +0200
+Message-ID: <CAPXgP102fk_7WPUY1QKq9izJuWH4saGeCVmYO5tJCReegTAEkA@mail.gmail.com>
+Subject: Re: [BUG?] Moving drivers to drivers/cpufreq/ causes all to be loaded
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mattia Dongili <malattia@debian.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Bruno Prémont wrote:
+On Sun, Aug 14, 2011 at 19:01, Jonathan Nieder <jrnieder@gmail.com> wrote:
+> (-cc: ARM/etc people; +cc: Kay)
 >
-> On Sun, 14 August 2011 Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 08/11, Daniel Lezcano wrote:
-> > >
-> > > Add the SA_CLDREBOOT flag to enable the CLD_REBOOT on SIGCHLD
-> > > when a process of a child pid namespace calls the reboot syscall.
-> >
-> > I doubt this is really useful in general. SIGCHLD doesn't queue,
-> > if the parent of init already has the pending SIGCHLD it won't see
-> > CLD_REBOOTED anyway. Anyway, you do not need a special helper to
-> > fill siginfo.
-> >
-> > And personally I strongly dislike SA_CLDREBOOT. For what? Imho, this
-> > is unnecessary complication. If we want SIGCHLD-on-reboot, just send
-> > it unconditionally.
+> Dave Jones wrote:
 >
-> The information that is needed is what options the container did pass
-> to sys_reboot().
-> Did the container want a reboot or a power-off (or maybe just touch the
-> LINUX_REBOOT_CMD_CAD_* status)?
+>> If we have to move stuff again, we could do drivers/cpufreq/x86/ etc..
 >
-> As long as that information can reach parent/reaper of container's init
-> the needed functionality should be there.
+> Unfortunately the old script used "find", not "ls", so that wouldn't
+> work. :/
+>
+>> What we used to do in Fedora grew more and more complex over time.
+>> Here's the last incarnation: http://fpaste.org/uvDb/
+>
+> The main difference from Debian seems to be that this script loads the
+> module corresponding to the chosen governor, while Debian's init
+> script loads all governor modules early (using a heuristic I would
+> like to avoid that involves running "find" to list them) and chooses
+> the governor to use later.
 
-Sorry, can't understand.
+Right, loading cpufreq drivers from userspace is fragile, and can not
+properly work today. Only the kernel itself know which driver to try
+to bind in which order. Modular cpufreq kernel modules make no real
+sense here with the infrastructure we have available today.
 
-Once again, why do you want SA_CLDREBOOT?
+>> In an ideal world, we'd auto-load the right module on a hotplug event
+>> from a cpu, but we're not there yet. I believe Kay is working on that.
+>
+> Yes, that is what I was hoping for. Â Are there patches to test?
 
-OK, you may be need to pass some info via siginfo (but note that it can
-be lost, and you do not need a special helper for that). But why do you
-want this hack in sa_flags?
+Yeah, it's on the TODO list, I just get too many 'really broken'
+things get sorted on top all time. :) But it will happen in the next
+months.
 
-Oleg.
+> The comment at
+> http://thread.gmane.org/gmane.linux.kernel/796450/focus=796874 also
+> looks promising.
 
+That could work, but we better go right for the CPU specific aliases
+and do not try to load all of them, even when for completely different
+systems. That would just encode another workaround into kernel
+modules, which we better solve properly.
+
+Kay
