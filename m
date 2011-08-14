@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab1HNBCa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 21:02:30 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48614 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752822Ab1HNBC2 (ORCPT
+	id S1752463Ab1HNBhc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 21:37:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33740 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1HNBhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 21:02:28 -0400
-Date: Sat, 13 Aug 2011 18:02:22 -0700 (PDT)
-Message-Id: <20110813.180222.2091598025825238892.davem@davemloft.net>
-To: jpirko@redhat.com
-Cc: mguntsche@gmail.com, shemminger@vyatta.com,
-        sebastian.belden@googlemail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: Bisected Gianfar in bridge not forwarding packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110810111947.GC1909@minipsycho.brq.redhat.com>
-References: <CAMvAeqO2bLaPwmdW+c+7hz-ec=-tF6Z0EFBv=FA7+rU_QZ_wDA@mail.gmail.com>
-	<CAMvAeqM-oH1UzxEp9PgO6ZP-AKtqosuMg5za25_X8DpPJMDX2w@mail.gmail.com>
-	<20110810111947.GC1909@minipsycho.brq.redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 13 Aug 2011 18:02:24 -0700 (PDT)
+	Sat, 13 Aug 2011 21:37:31 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH V2 3/4]drivers:staging Fix typo "shud"
+Date: Sat, 13 Aug 2011 18:37:03 -0700
+Message-Id: <1313285824-1892-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Pirko <jpirko@redhat.com>
-Date: Wed, 10 Aug 2011 13:19:48 +0200
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> Subject: [patch net-2.6] gianfar: prevent buggy hw rx vlan tagging
-> 
-> On some buggy chips, "vlan tag present" flag is set which causes packet
-> loss. Fix this by checking if rx vlan accel is enabled in features.
-> 
-> Reported-by: Michael Guntsche <mguntsche@gmail.com>
-> Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+This is a resend from the original, since I made a mistake with the original
+patch. The below patch fixes a typo.
 
-Applied.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+---
+ drivers/staging/ath6kl/os/linux/ar6000_drv.c       |    2 +-
+ .../staging/intel_sst/intel_sst_app_interface.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/ath6kl/os/linux/ar6000_drv.c b/drivers/staging/ath6kl/os/linux/ar6000_drv.c
+index 32ee39a..b93e1b4 100644
+--- a/drivers/staging/ath6kl/os/linux/ar6000_drv.c
++++ b/drivers/staging/ath6kl/os/linux/ar6000_drv.c
+@@ -1934,7 +1934,7 @@ ar6000_stop_endpoint(struct net_device *dev, bool keepprofile, bool getdbglogs)
+             ar->arWmiEnabled = false;
+             ar->arWmi = NULL;
+             /* 
+-             * After wmi_shudown all WMI events will be dropped.
++             * After wmi_shutdown all WMI events will be dropped.
+              * We need to cleanup the buffers allocated in AP mode
+              * and give disconnect notification to stack, which usually
+              * happens in the disconnect_event. 
+diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
+index 93b41a2..e3efe63 100644
+--- a/drivers/staging/intel_sst/intel_sst_app_interface.c
++++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
+@@ -1288,7 +1288,7 @@ long intel_sst_ioctl(struct file *file_ptr, unsigned int cmd, unsigned long arg)
+ 
+ 		pr_debug("SNDRV_SST_DRIVER_INFO received\n");
+ 		info.version = SST_VERSION_NUM;
+-		/* hard coding, shud get sumhow later */
++		/* hard coding, should go somewhere later. */
+ 		info.active_pcm_streams = sst_drv_ctx->stream_cnt -
+ 						sst_drv_ctx->encoded_cnt;
+ 		info.active_enc_streams = sst_drv_ctx->encoded_cnt;
+-- 
+1.7.6
+
