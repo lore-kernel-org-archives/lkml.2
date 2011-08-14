@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab1HNQbq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:31:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36206 "EHLO mx2.suse.de"
+	id S1753664Ab1HNQcv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:32:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43480 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab1HNQFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:05:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:52 2011
-Message-Id: <20110812210552.323286198@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:03:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: [02/90] cris: fix a build error in sync_serial_open()
-In-Reply-To: <20110812210626.GA4725@kroah.com>
+	id S1753453Ab1HNQcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:32:48 -0400
+Date: Sun, 14 Aug 2011 16:32:29 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Message-ID: <tip-5238cdd3873e67a98b28c1161d65d2a615c320a3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110721184757.886850167@google.com>
+References: <20110721184757.886850167@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Prevent buddy interactions with throttled entities
+Git-Commit-ID: 5238cdd3873e67a98b28c1161d65d2a615c320a3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:32:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+Commit-ID:  5238cdd3873e67a98b28c1161d65d2a615c320a3
+Gitweb:     http://git.kernel.org/tip/5238cdd3873e67a98b28c1161d65d2a615c320a3
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Thu, 21 Jul 2011 09:43:37 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 14 Aug 2011 12:03:42 +0200
 
-------------------
+sched: Prevent buddy interactions with throttled entities
 
-From: WANG Cong <xiyou.wangcong@gmail.com>
+Buddies allow us to select "on-rq" entities without actually selecting them
+from a cfs_rq's rb_tree.  As a result we must ensure that throttled entities
+are not falsely nominated as buddies.  The fact that entities are dequeued
+within throttle_entity is not sufficient for clearing buddy status as the
+nomination may occur after throttling.
 
-commit 4b851d88192c22cf77418a0b4c45b5c789276837 upstream.
-
-Fix:
-
-  arch/cris/arch-v10/drivers/sync_serial.c:628: error: 'ret' undeclared (first use in this function)
-
-'ret' should be 'err'.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110721184757.886850167@google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/cris/arch-v10/drivers/sync_serial.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched_fair.c |   18 +++++++++++++++++-
+ 1 files changed, 17 insertions(+), 1 deletions(-)
 
---- a/arch/cris/arch-v10/drivers/sync_serial.c
-+++ b/arch/cris/arch-v10/drivers/sync_serial.c
-@@ -625,11 +625,11 @@ static int sync_serial_open(struct inode
- 			*R_IRQ_MASK1_SET = 1 << port->data_avail_bit;
- 		DEBUG(printk(KERN_DEBUG "sser%d rec started\n", dev));
- 	}
--	ret = 0;
-+	err = 0;
- 	
- out:
- 	mutex_unlock(&sync_serial_mutex);
--	return ret;
-+	return err;
- }
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5a20894..1d4acbe 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2348,6 +2348,15 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	if (unlikely(se == pse))
+ 		return;
  
- static int sync_serial_release(struct inode *inode, struct file *file)
-
-
++	/*
++	 * This is possible from callers such as pull_task(), in which we
++	 * unconditionally check_prempt_curr() after an enqueue (which may have
++	 * lead to a throttle).  This both saves work and prevents false
++	 * next-buddy nomination below.
++	 */
++	if (unlikely(throttled_hierarchy(cfs_rq_of(pse))))
++		return;
++
+ 	if (sched_feat(NEXT_BUDDY) && scale && !(wake_flags & WF_FORK)) {
+ 		set_next_buddy(pse);
+ 		next_buddy_marked = 1;
+@@ -2356,6 +2365,12 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	/*
+ 	 * We can come here with TIF_NEED_RESCHED already set from new task
+ 	 * wake up path.
++	 *
++	 * Note: this also catches the edge-case of curr being in a throttled
++	 * group (e.g. via set_curr_task), since update_curr() (in the
++	 * enqueue of curr) will have resulted in resched being set.  This
++	 * prevents us from potentially nominating it as a false LAST_BUDDY
++	 * below.
+ 	 */
+ 	if (test_tsk_need_resched(curr))
+ 		return;
+@@ -2474,7 +2489,8 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
+ {
+ 	struct sched_entity *se = &p->se;
+ 
+-	if (!se->on_rq)
++	/* throttled hierarchies are not runnable */
++	if (!se->on_rq || throttled_hierarchy(cfs_rq_of(se)))
+ 		return false;
+ 
+ 	/* Tell the scheduler that we'd really like pse to run next. */
