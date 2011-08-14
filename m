@@ -1,235 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab1HNAOv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Aug 2011 20:14:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39487 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589Ab1HNAOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Aug 2011 20:14:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
-Date: Sun, 14 Aug 2011 02:16:26 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>, Christoph <cr2005@u-club.de>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org
-References: <4E1C70AD.1010101@u-club.de> <201108062317.19033.rjw@sisk.pl> <20110807001446.GI3162@dastard>
-In-Reply-To: <20110807001446.GI3162@dastard>
+	id S1752778Ab1HNARs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Aug 2011 20:17:48 -0400
+Received: from 5.xs4all.nl ([82.95.233.223]:42468 "EHLO capsaicin.mamane.lu"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752589Ab1HNARq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Aug 2011 20:17:46 -0400
+X-Greylist: delayed 748 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Aug 2011 20:17:45 EDT
+Date: Sun, 14 Aug 2011 02:04:38 +0200
+From: Lionel Elie Mamane <lionel@mamane.lu>
+To: "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <jmorris@namei.org>, Patrick McHardy <kaber@trash.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sit tunnels: propagate IPv6 transport class to IPv4 Type
+ of Service
+Message-ID: <20110814000438.GA30127@capsaicin.mamane.lu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108140216.26340.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: GNU/Linux
+X-Request-PGP: http://www.mamane.lu/openpgp/rsa_v4_4096.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 07, 2011, Dave Chinner wrote:
-> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-...
-> > +	/*
-> > +	 * Freeze in reverse order so filesystems depending on others are
-> > +	 * frozen in the right order (eg. loopback on ext3).
-> > +	 */
-> > +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> > +		if (!sb->s_root || !sb->s_bdev ||
-> > +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
-> > +		    (sb->s_flags & MS_RDONLY))
-> > +			continue;
-> > +
-> > +		freeze_bdev(sb->s_bdev);
-> > +		sb->s_flags |= MS_FROZEN;
-> > +	}
-> 
-> AFAIK, that won't work for btrfs - you have to call freeze_super()
-> directly for btrfs because it has a special relationship with
-> sb->s_bdev. And besides, all freeze_bdev does is get an active
-> reference on the superblock and call freeze_super().
-> 
-> Also, that's traversing the list of superblock with locking and
-> dereferencing the superblock without properly checking that the
-> superblock is not being torn down. You should probably use
-> iterate_supers (or at least copy the code), with a function that
-> drops the s_umount read lock befor calling freeze_super() and then
-> picks it back up afterwards.
+sit tunnels (IPv6 tunnel over IPv4) do not implement the "tos inherit"
+case to copy the IPv6 transport class byte from the inner packet to
+the IPv4 type of service byte in the outer packet. By contrast, ipip
+tunnels and GRE tunnels do.
 
-So, what about the patch below?  It appears to work on my test boxes.
+This patch, adapted from the similar code in net/ipv4/ipip.c and
+net/ipv4/ip_gre.c, implements that.
 
-Thanks,
-Rafael
+This patch applies to 3.0.1, and has been tested on that version.
+
+
+Signed-off-by: Lionel Elie Mamane <lionel@mamane.lu>
 
 ---
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Freezer: Freeze filesystems while freezing processes (v3)
+ net/ipv6/sit.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Freeze all filesystems during the freezing of tasks by calling
-freeze_super() for all superblocks and thaw them during the thawing
-of tasks with the help of thaw_super().
-
-This is needed by hibernation, because some filesystems (e.g. XFS)
-deadlock with the preallocation of memory used by it if the memory
-pressure caused by it is too heavy.
-
-The additional benefit of this change is that, if something goes
-wrong after filesystems have been frozen, they will stay in a
-consistent state and journal replays won't be necessary (e.g. after
-a failing suspend or resume).  In particular, this should help to
-solve a long-standing issue that in some cases during resume from
-hibernation the boot loader causes the journal to be replied for the
-filesystem containing the kernel image and initrd causing it to
-become inconsistent with the information stored in the hibernation
-image.
-
-This change is based on earlier work by Nigel Cunningham.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- fs/super.c             |   70 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h     |    3 ++
- kernel/power/process.c |    9 +++++-
- 3 files changed, 81 insertions(+), 1 deletion(-)
-
-Index: linux/include/linux/fs.h
-===================================================================
---- linux.orig/include/linux/fs.h
-+++ linux/include/linux/fs.h
-@@ -211,6 +211,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_FROZEN	(1<<25) /* Frozen filesystem */
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
-@@ -2497,6 +2498,8 @@ extern void drop_super(struct super_bloc
- extern void iterate_supers(void (*)(struct super_block *, void *), void *);
- extern void iterate_supers_type(struct file_system_type *,
- 			        void (*)(struct super_block *, void *), void *);
-+extern int freeze_supers(void);
-+extern void thaw_supers(void);
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 1cca576..bbe2468 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -672,6 +672,10 @@ static netdev_tx_t ipip6_tunnel_xmit(struct sk_buff *skb,
+ 	if (skb->protocol != htons(ETH_P_IPV6))
+ 		goto tx_error;
  
- extern int dcache_dir_open(struct inode *, struct file *);
- extern int dcache_dir_close(struct inode *, struct file *);
-Index: linux/kernel/power/process.c
-===================================================================
---- linux.orig/kernel/power/process.c
-+++ linux/kernel/power/process.c
-@@ -12,10 +12,10 @@
- #include <linux/oom.h>
- #include <linux/suspend.h>
- #include <linux/module.h>
--#include <linux/syscalls.h>
- #include <linux/freezer.h>
- #include <linux/delay.h>
- #include <linux/workqueue.h>
-+#include <linux/fs.h>
- 
- /* 
-  * Timeout for stopping processes
-@@ -147,6 +147,12 @@ int freeze_processes(void)
- 		goto Exit;
- 	printk("done.\n");
- 
-+	printk("Freezing filesystems ... ");
-+	error = freeze_supers();
-+	if (error)
-+		goto Exit;
-+	printk("done.\n");
 +
- 	printk("Freezing remaining freezable tasks ... ");
- 	error = try_to_freeze_tasks(false);
- 	if (error)
-@@ -188,6 +194,7 @@ void thaw_processes(void)
- 	printk("Restarting tasks ... ");
- 	thaw_workqueues();
- 	thaw_tasks(true);
-+	thaw_supers();
- 	thaw_tasks(false);
- 	schedule();
- 	printk("done.\n");
-Index: linux/fs/super.c
-===================================================================
---- linux.orig/fs/super.c
-+++ linux/fs/super.c
-@@ -590,6 +590,76 @@ void iterate_supers_type(struct file_sys
- EXPORT_SYMBOL(iterate_supers_type);
- 
- /**
-+ *	freeze_supers - call freeze_super() for all superblocks
-+ */
-+int freeze_supers(void)
-+{
-+	struct super_block *sb, *p = NULL;
-+	int error = 0;
++	if (tos == 1)
++		tos = ipv6_get_dsfield(iph6);
 +
-+	spin_lock(&sb_lock);
-+	/*
-+	 * Freeze in reverse order so filesystems depending on others are
-+	 * frozen in the right order (eg. loopback on ext3).
-+	 */
-+	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-+		if (list_empty(&sb->s_instances))
-+			continue;
-+		sb->s_count++;
-+		spin_unlock(&sb_lock);
-+
-+		if (sb->s_root && sb->s_frozen != SB_FREEZE_TRANS
-+		    && !(sb->s_flags & MS_RDONLY)) {
-+			error = freeze_super(sb);
-+			if (!error)
-+				sb->s_flags |= MS_FROZEN;
-+		}
-+
-+		spin_lock(&sb_lock);
-+		if (error)
-+			break;
-+		if (p)
-+			__put_super(p);
-+		p = sb;
-+	}
-+	if (p)
-+		__put_super(p);
-+	spin_unlock(&sb_lock);
-+
-+	return error;
-+}
-+
-+/**
-+ *	thaw_supers - call thaw_super() for all superblocks
-+ */
-+void thaw_supers(void)
-+{
-+	struct super_block *sb, *p = NULL;
-+
-+	spin_lock(&sb_lock);
-+	list_for_each_entry(sb, &super_blocks, s_list) {
-+		if (list_empty(&sb->s_instances))
-+			continue;
-+		sb->s_count++;
-+		spin_unlock(&sb_lock);
-+
-+		if (sb->s_flags & MS_FROZEN) {
-+			thaw_super(sb);
-+			sb->s_flags &= ~MS_FROZEN;
-+		}
-+
-+		spin_lock(&sb_lock);
-+		if (p)
-+			__put_super(p);
-+		p = sb;
-+	}
-+	if (p)
-+		__put_super(p);
-+	spin_unlock(&sb_lock);
-+}
-+
-+
-+/**
-  *	get_super - get the superblock of a device
-  *	@bdev: device to get the superblock for
-  *	
+ 	/* ISATAP (RFC4214) - must come before 6to4 */
+ 	if (dev->priv_flags & IFF_ISATAP) {
+ 		struct neighbour *neigh = NULL;
+-- 
+Lionel Mamane
+
