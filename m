@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab1HNRsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 13:48:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab1HNRsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 13:48:12 -0400
-Date: Sun, 14 Aug 2011 19:45:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: paulmck@linux.vnet.ibm.com, Ben Blum <bblum@andrew.cmu.edu>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
-	questionable code in de_thread.
-Message-ID: <20110814174516.GB2381@redhat.com>
-References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu> <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
+	id S1754539Ab1HNRuv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 13:50:51 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49779 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab1HNRur (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 13:50:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728110813.7ff84b13@notabene.brown>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110812094129.GO19467@legolas.emea.dhcp.ti.com>
+References: <1312801266-11888-1-git-send-email-per.forlin@stericsson.com>
+	<20110812094129.GO19467@legolas.emea.dhcp.ti.com>
+Date: Sun, 14 Aug 2011 19:50:46 +0200
+Message-ID: <CAJ0pr18rnhN2XdP4p+o=PyKLJb6470OzsOuQpcNc29jtu1hS8w@mail.gmail.com>
+Subject: Re: [PATCH v2] usb: musb: ux500: optimize DMA callback routine
+From: Per Forlin <per.forlin@linaro.org>
+To: balbi@ti.com
+Cc: Per Forlin <per.forlin@stericsson.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28, NeilBrown wrote:
+On 12 August 2011 11:41, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> +/* Thread group leader can change, so stop loop when we see one
-> + * even if it isn't 'g' */
->  #define while_each_thread(g, t) \
-> -	while ((t = next_thread(t)) != g)
-> +	while ((t = next_thread(t)) != g && !thread_group_leader(t))
+> On Mon, Aug 08, 2011 at 01:01:06PM +0200, Per Forlin wrote:
+>> From: Per Forlin <per.forlin@linaro.org>
+>>
+>> Skip the use of work queue and call musb_dma_completion() directly from
+>> DMA callback context.
+>>
+>> Here follows measurements on a Snowball board with ondemand governor active.
+>>
+>> Performance using work queue:
+>> (105 MB) copied, 6.23758 s, 16.8 MB/s
+>> (105 MB) copied, 5.7151 s, 18.3 MB/s
+>> (105 MB) copied, 5.83583 s, 18.0 MB/s
+>> (105 MB) copied, 5.93611 s, 17.7 MB/s
+>>
+>> Performance without work queue
+>> (105 MB) copied, 5.62173 s, 18.7 MB/s
+>> (105 MB) copied, 5.61811 s, 18.7 MB/s
+>> (105 MB) copied, 5.57817 s, 18.8 MB/s
+>> (105 MB) copied, 5.58549 s, 18.8 MB/s
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+>
+> this patch doesn't apply anymore:
+>
+> $ patch -p1 --dry-run < ~/apply.diff
+> patching file drivers/usb/musb/ux500_dma.c
+> Hunk #2 FAILED at 55.
+> Hunk #3 succeeded at 325 (offset -4 lines).
+> Hunk #4 succeeded at 341 (offset -4 lines).
+> Hunk #5 succeeded at 367 (offset -4 lines).
+> 1 out of 5 hunks FAILED -- saving rejects to file drivers/usb/musb/ux500_dma.c.rej
+>
+> care to rebase on top of 3.1-rc1. Thanks
+>
+I can apply the patch on top of 3.1-rc1 but it has dependency to the
+patches I posted recently. This is the order the patches apply:
+0001-usb-musb-ux500-set-dma-config-for-both-src-and-dst.patch
+0002-usb-musb-ux500-replace-missing-DBG-with-dev_dbg.patch
+0003-usb-musb-ux500-optimize-DMA-callback-routine.patch
 
-This assumes that while_each_thread(g, t) always uses g == group_leader.
+Please let me know if I should reorder the patches. I can resend all
+three in one patchset.
 
-> @@ -70,8 +70,13 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
->  		list_del_rcu(&p->tasks);
->  		list_del_init(&p->sibling);
->  		__this_cpu_dec(process_counts);
-> -	}
-> -	list_del_rcu(&p->thread_group);
-> +	} else
-> +		/* only remove members from the thread group.
-> +		 * The thread group leader must stay so that
-> +		 * while_each_thread() uses can see the end of
-> +		 * the list and stop.
-> +		 */
-> +		list_del_rcu(&p->thread_group);
-
-Hmm... this looks obvously wrong. This leaves the dead thread on
-the list.
-
-Oleg.
-
+Thanks,
+Per
