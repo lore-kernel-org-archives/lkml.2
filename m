@@ -1,266 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab1HNQF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 12:05:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36235 "EHLO mx2.suse.de"
+	id S1753886Ab1HNQbO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 12:31:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49175 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab1HNQFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 12:05:54 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug 12 14:05:52 2011
-Message-Id: <20110812210552.559922734@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 12 Aug 2011 14:03:50 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Darren Hart <dvhart@linux.intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, zvonler@rgmadvisors.com, hughd@google.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [05/90] futex: Fix regression with read only mappings
-In-Reply-To: <20110812210626.GA4725@kroah.com>
+	id S1753790Ab1HNQbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 12:31:10 -0400
+Date: Sun, 14 Aug 2011 16:30:49 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Message-ID: <tip-64660c864f46202b932b911a69deb09805bdbaf8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, seto.hidetoshi@jp.fujitsu.com, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        seto.hidetoshi@jp.fujitsu.com, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110721184757.777916795@google.com>
+References: <20110721184757.777916795@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Prevent interactions with throttled entities
+Git-Commit-ID: 64660c864f46202b932b911a69deb09805bdbaf8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 14 Aug 2011 16:30:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+Commit-ID:  64660c864f46202b932b911a69deb09805bdbaf8
+Gitweb:     http://git.kernel.org/tip/64660c864f46202b932b911a69deb09805bdbaf8
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Thu, 21 Jul 2011 09:43:36 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 14 Aug 2011 12:03:40 +0200
 
-------------------
+sched: Prevent interactions with throttled entities
 
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+>From the perspective of load-balance and shares distribution, throttled
+entities should be invisible.
 
-commit 9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae upstream.
+However, both of these operations work on 'active' lists and are not
+inherently aware of what group hierarchies may be present.  In some cases this
+may be side-stepped (e.g. we could sideload via tg_load_down in load balance)
+while in others (e.g. update_shares()) it is more difficult to compute without
+incurring some O(n^2) costs.
 
-commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
-prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
-MAP_PRIVATE futex operations by forcing the COW to occur by
-unconditionally performing a write access get_user_pages_fast() to get
-the page.  The commit also introduced a user-mode regression in that it
-broke futex operations on read-only memory maps.  For example, this
-breaks workloads that have one or more reader processes doing a
-FUTEX_WAIT on a futex within a read only shared file mapping, and a
-writer processes that has a writable mapping issuing the FUTEX_WAKE.
+Instead, track hierarchicaal throttled state at time of transition.  This
+allows us to easily identify whether an entity belongs to a throttled hierarchy
+and avoid incorrect interactions with it.
 
-This fixes the regression for valid futex operations on RO mappings by
-trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
-fails. This change makes it necessary to also check for invalid use
-cases, such as anonymous RO mappings (which can never change) and the
-ZERO_PAGE which the commit referenced above was written to address.
+Also, when an entity leaves a throttled hierarchy we need to advance its
+time averaging for shares averaging so that the elapsed throttled time is not
+considered as part of the cfs_rq's operation.
 
-This patch does restore the original behavior with RO MAP_PRIVATE
-mappings, which have inherent user-mode usage problems and don't really
-make sense.  With this patch performing a FUTEX_WAIT within a RO
-MAP_PRIVATE mapping will be successfully woken provided another process
-updates the region of the underlying mapped file.  However, the mmap()
-man page states that for a MAP_PRIVATE mapping:
+We also use this information to prevent buddy interactions in the wakeup and
+yield_to() paths.
 
-  It is unspecified whether changes made to the file after
-  the mmap() call are visible in the mapped region.
-
-So user-mode users attempting to use futex operations on RO MAP_PRIVATE
-mappings are depending on unspecified behavior.  Additionally a
-RO MAP_PRIVATE mapping could fail to wake up in the following case.
-
-  Thread-A: call futex(FUTEX_WAIT, memory-region-A).
-            get_futex_key() return inode based key.
-            sleep on the key
-  Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
-  Thread-B: write memory-region-A.
-            COW happen. This process's memory-region-A become related
-            to new COWed private (ie PageAnon=1) page.
-  Thread-B: call futex(FUETX_WAKE, memory-region-A).
-            get_futex_key() return mm based key.
-            IOW, we fail to wake up Thread-A.
-
-Once again doing something like this is just silly and users who do
-something like this get what they deserve.
-
-While RO MAP_PRIVATE mappings are nonsensical, checking for a private
-mapping requires walking the vmas and was deemed too costly to avoid a
-userspace hang.
-
-This Patch is based on Peter Zijlstra's initial patch with modifications to
-only allow RO mappings for futex operations that need VERIFY_READ access.
-
-Reported-by: David Oliver <david@rgmadvisors.com>
-Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: peterz@infradead.org
-Cc: eric.dumazet@gmail.com
-Cc: zvonler@rgmadvisors.com
-Cc: hughd@google.com
-Link: http://lkml.kernel.org/r/1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Paul Turner <pjt@google.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110721184757.777916795@google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 42 insertions(+), 12 deletions(-)
+ kernel/sched.c      |    2 +-
+ kernel/sched_fair.c |   99 +++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 94 insertions(+), 7 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -218,6 +218,8 @@ static void drop_futex_key_refs(union fu
-  * @uaddr:	virtual address of the futex
-  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
-  * @key:	address where result is stored.
-+ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
-+ *              VERIFY_WRITE)
-  *
-  * Returns a negative error code or 0
-  * The key words are stored in *key on success.
-@@ -229,12 +231,12 @@ static void drop_futex_key_refs(union fu
-  * lock_page() might sleep, the caller should not hold a spinlock.
-  */
- static int
--get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
-+get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- {
- 	unsigned long address = (unsigned long)uaddr;
- 	struct mm_struct *mm = current->mm;
- 	struct page *page, *page_head;
--	int err;
-+	int err, ro = 0;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 8ec1e7a..5db05f6 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -402,7 +402,7 @@ struct cfs_rq {
+ 	u64 runtime_expires;
+ 	s64 runtime_remaining;
  
- 	/*
- 	 * The futex address must be "naturally" aligned.
-@@ -262,8 +264,18 @@ get_futex_key(u32 __user *uaddr, int fsh
- 
- again:
- 	err = get_user_pages_fast(address, 1, 1, &page);
-+	/*
-+	 * If write access is not required (eg. FUTEX_WAIT), try
-+	 * and get read-only access.
-+	 */
-+	if (err == -EFAULT && rw == VERIFY_READ) {
-+		err = get_user_pages_fast(address, 1, 0, &page);
-+		ro = 1;
-+	}
- 	if (err < 0)
- 		return err;
-+	else
-+		err = 0;
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- 	page_head = page;
-@@ -305,6 +317,13 @@ again:
- 	if (!page_head->mapping) {
- 		unlock_page(page_head);
- 		put_page(page_head);
-+		/*
-+		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
-+		* trying to find one. RW mapping would have COW'd (and thus
-+		* have a mapping) so this page is RO and won't ever change.
-+		*/
-+		if ((page_head == ZERO_PAGE(address)))
-+			return -EFAULT;
- 		goto again;
- 	}
- 
-@@ -316,6 +335,15 @@ again:
- 	 * the object not the particular process.
- 	 */
- 	if (PageAnon(page_head)) {
-+		/*
-+		 * A RO anonymous page will never change and thus doesn't make
-+		 * sense for futex operations.
-+		 */
-+		if (ro) {
-+			err = -EFAULT;
-+			goto out;
-+		}
-+
- 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
- 		key->private.mm = mm;
- 		key->private.address = address;
-@@ -327,9 +355,10 @@ again:
- 
- 	get_futex_key_refs(key);
- 
-+out:
- 	unlock_page(page_head);
- 	put_page(page_head);
--	return 0;
-+	return err;
+-	int throttled;
++	int throttled, throttle_count;
+ 	struct list_head throttled_list;
+ #endif
+ #endif
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 7641195..5a20894 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -706,6 +706,8 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
  }
  
- static inline void put_futex_key(union futex_key *key)
-@@ -940,7 +969,7 @@ futex_wake(u32 __user *uaddr, unsigned i
- 	if (!bitset)
- 		return -EINVAL;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++/* we need this in update_cfs_load and load-balance functions below */
++static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
+ # ifdef CONFIG_SMP
+ static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
+ 					    int global_update)
+@@ -728,7 +730,7 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ 	u64 now, delta;
+ 	unsigned long load = cfs_rq->load.weight;
  
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
+-	if (cfs_rq->tg == &root_task_group)
++	if (cfs_rq->tg == &root_task_group || throttled_hierarchy(cfs_rq))
+ 		return;
  
-@@ -986,10 +1015,10 @@ futex_wake_op(u32 __user *uaddr1, unsign
- 	int ret, op_ret;
+ 	now = rq_of(cfs_rq)->clock_task;
+@@ -837,7 +839,7 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq)
  
- retry:
--	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-+	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
+ 	tg = cfs_rq->tg;
+ 	se = tg->se[cpu_of(rq_of(cfs_rq))];
+-	if (!se)
++	if (!se || throttled_hierarchy(cfs_rq))
+ 		return;
+ #ifndef CONFIG_SMP
+ 	if (likely(se->load.weight == tg->shares))
+@@ -1403,6 +1405,65 @@ static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
+ 	return cfs_rq->throttled;
+ }
  
-@@ -1243,10 +1272,11 @@ retry:
- 		pi_state = NULL;
- 	}
++/* check whether cfs_rq, or any parent, is throttled */
++static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
++{
++	return cfs_rq->throttle_count;
++}
++
++/*
++ * Ensure that neither of the group entities corresponding to src_cpu or
++ * dest_cpu are members of a throttled hierarchy when performing group
++ * load-balance operations.
++ */
++static inline int throttled_lb_pair(struct task_group *tg,
++				    int src_cpu, int dest_cpu)
++{
++	struct cfs_rq *src_cfs_rq, *dest_cfs_rq;
++
++	src_cfs_rq = tg->cfs_rq[src_cpu];
++	dest_cfs_rq = tg->cfs_rq[dest_cpu];
++
++	return throttled_hierarchy(src_cfs_rq) ||
++	       throttled_hierarchy(dest_cfs_rq);
++}
++
++/* updated child weight may affect parent so we have to do this bottom up */
++static int tg_unthrottle_up(struct task_group *tg, void *data)
++{
++	struct rq *rq = data;
++	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu_of(rq)];
++
++	cfs_rq->throttle_count--;
++#ifdef CONFIG_SMP
++	if (!cfs_rq->throttle_count) {
++		u64 delta = rq->clock_task - cfs_rq->load_stamp;
++
++		/* leaving throttled state, advance shares averaging windows */
++		cfs_rq->load_stamp += delta;
++		cfs_rq->load_last += delta;
++
++		/* update entity weight now that we are on_rq again */
++		update_cfs_shares(cfs_rq);
++	}
++#endif
++
++	return 0;
++}
++
++static int tg_throttle_down(struct task_group *tg, void *data)
++{
++	struct rq *rq = data;
++	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu_of(rq)];
++
++	/* group is entering throttled state, record last load */
++	if (!cfs_rq->throttle_count)
++		update_cfs_load(cfs_rq, 0);
++	cfs_rq->throttle_count++;
++
++	return 0;
++}
++
+ static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ 	struct rq *rq = rq_of(cfs_rq);
+@@ -1413,7 +1474,9 @@ static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
  
--	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
-+	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out;
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
-+			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		goto out_put_key1;
+ 	/* account load preceding throttle */
+-	update_cfs_load(cfs_rq, 0);
++	rcu_read_lock();
++	walk_tg_tree_from(cfs_rq->tg, tg_throttle_down, tg_nop, (void *)rq);
++	rcu_read_unlock();
  
-@@ -1790,7 +1820,7 @@ static int futex_wait_setup(u32 __user *
- 	 * while the syscall executes.
+ 	task_delta = cfs_rq->h_nr_running;
+ 	for_each_sched_entity(se) {
+@@ -1454,6 +1517,10 @@ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	list_del_rcu(&cfs_rq->throttled_list);
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
++	update_rq_clock(rq);
++	/* update hierarchical throttle state */
++	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
++
+ 	if (!cfs_rq->load.weight)
+ 		return;
+ 
+@@ -1598,6 +1665,17 @@ static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
+ {
+ 	return 0;
+ }
++
++static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
++{
++	return 0;
++}
++
++static inline int throttled_lb_pair(struct task_group *tg,
++				    int src_cpu, int dest_cpu)
++{
++	return 0;
++}
+ #endif
+ 
+ /**************************************************
+@@ -2493,6 +2571,9 @@ move_one_task(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 
+ 	for_each_leaf_cfs_rq(busiest, cfs_rq) {
+ 		list_for_each_entry_safe(p, n, &cfs_rq->tasks, se.group_node) {
++			if (throttled_lb_pair(task_group(p),
++					      busiest->cpu, this_cpu))
++				break;
+ 
+ 			if (!can_migrate_task(p, busiest, this_cpu,
+ 						sd, idle, &pinned))
+@@ -2608,8 +2689,13 @@ static void update_shares(int cpu)
+ 	 * Iterates the task_group tree in a bottom up fashion, see
+ 	 * list_add_leaf_cfs_rq() for details.
  	 */
- retry:
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
- 	if (unlikely(ret != 0))
- 		return ret;
+-	for_each_leaf_cfs_rq(rq, cfs_rq)
++	for_each_leaf_cfs_rq(rq, cfs_rq) {
++		/* throttled entities do not contribute to load */
++		if (throttled_hierarchy(cfs_rq))
++			continue;
++
+ 		update_shares_cpu(cfs_rq->tg, cpu);
++	}
+ 	rcu_read_unlock();
+ }
  
-@@ -1941,7 +1971,7 @@ static int futex_lock_pi(u32 __user *uad
- 	}
+@@ -2659,9 +2745,10 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 		u64 rem_load, moved_load;
  
- retry:
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
+ 		/*
+-		 * empty group
++		 * empty group or part of a throttled hierarchy
+ 		 */
+-		if (!busiest_cfs_rq->task_weight)
++		if (!busiest_cfs_rq->task_weight ||
++		    throttled_lb_pair(busiest_cfs_rq->tg, cpu_of(busiest), this_cpu))
+ 			continue;
  
-@@ -2060,7 +2090,7 @@ retry:
- 	if ((uval & FUTEX_TID_MASK) != vpid)
- 		return -EPERM;
- 
--	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
-+	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-@@ -2249,7 +2279,7 @@ static int futex_wait_requeue_pi(u32 __u
- 	debug_rt_mutex_init_waiter(&rt_waiter);
- 	rt_waiter.task = NULL;
- 
--	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
-+	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
- 		goto out;
- 
-
-
+ 		rem_load = (u64)rem_load_move * busiest_weight;
