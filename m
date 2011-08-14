@@ -1,33 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289Ab1HNEDy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 00:03:54 -0400
-Received: from smtp.unlimitedmail.net ([94.127.184.244]:53661 "EHLO
-	dcnode-02.unlimitedmail.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750702Ab1HNEDx (ORCPT
+	id S1751517Ab1HNEX4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 00:23:56 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33474 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750727Ab1HNEXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 00:03:53 -0400
-Message-Id: <201108140403.p7E43h82025349@dcnode-02.unlimitedmail.net>
-Date: Sun, 14 Aug 2011 09:33:41 +0530
-From: "J. Bakshi" <j.bakshi@unlimitedmail.org>
-To: linux-kernel@vger.kernel.org
-Subject: bluetooth on by default
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAgMAAAAqbBEUAAAADFBMVEW2UCaWJQ3jnnRrCARshP4hAAACQElEQVQokRWSzU4aYRiFDwhiJjGAimxqRlzhbGpDm24wjmhTQtIIOlMag6GXUP92Tj5obcaaJqRJidvBlDi8N1FpbUzcFGgNK0MvgZKZsmHydVw+OWd1zgOiaH+98Ejt/SGCaTDlmZMYdl+cEmjMKQydBL97kJFAYlfbVab5KHS5AONrnoenPhVHbU1A4yezEYup+1crGRhtfuv9kPZtLRcz8Mw4ykJ1UPJF72Qkg09SdHFFxkY/iZW1HxNSY/zLSbS1B9sKLW7TaU3yB55DHXnjL4n0m1BSRNOZoKo8IXqx1YVqZ6is+C0YwS7Gml4q5/mdRFEbSkig95xbZEaHCMpEJ5x3yPRzyCEqzcTm0lMUscEEE0gfm/64RwPbpJyTIlPbLnNoMoku1JxNAHyTzhzQO2fWXL5PKgOD9H+fPQW4lUqnJk0OqkYEWorETE0SBzrmwFP0lj7Gn1r6qgZ4z8/jM/GVm7Mcg5apH4db8d43PccBoY6oHGAdPRuBX2m8DrSn+Y1+GALLNtLskjWFQHaEXsvMFvsFgc5sD4oyZT39wjiJQwu5ljRbSheqQnHIEfGfV2n+oL7KeBetvrcumQc1lbsQWJVj2fkDk/dceCwqi6qn4y7gcLxhlnCY71DgyGG4yNuvKnyPfBtzNipdRy6r/YXI9Pc+dM7WocqIHGU7KDlsSQn7wsHfSS9MVti9Dau5jfYkuU9Y13Z45+havZRg6H/Xhgk+au7c61L6FVD3XVu44IpkPpxUtnrqkiXRf3v/EFxxaZnHAAAAAElFTkSuQmCC
+	Sun, 14 Aug 2011 00:23:53 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18VZnV5LVgVXis0rWvOBtG//FlTJ4AwayipZO3cXq
+	NZAQKl8e91/RNn
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <20110813162735.GA2650@linux.vnet.ibm.com>
+References: <1313232790.25267.7.camel@twins>
+	 <1313236135.4486.10.camel@marge.simson.net>
+	 <1313236713.25267.10.camel@twins>
+	 <1313243965.4486.36.camel@marge.simson.net>
+	 <20110813162735.GA2650@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 14 Aug 2011 06:23:41 +0200
+Message-ID: <1313295821.6334.5.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-X-SOLTECSIS-MailScanner-ID: p7E43h82025349
-X-SOLTECSIS-MailScanner-From: j.bakshi@unlimitedmail.org
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 2011-08-13 at 09:27 -0700, Paul E. McKenney wrote:
 
-I have compiled the latest 3.0.1 kernel. Everything is fine,
-but bluetooth is always on after boot. How can I toggle this
-behavior ? 
+> Strange.  By the time it got around to printing the stall, no one was
+> stalling:
+> 
+> [  100.409012] INFO: rcu_preempt_state detected stalls on CPUs/tasks: {} (detected by 21, t=60002 jiffies)
+> 
+> Now it -is- possible for the stall to end just as we get ready to detect
+> it, but that window is really really small.  The most recent occurrence
+> of this sort of thing was due misconfigured timekeeping, but I don't see
+> any sign of that in the trace.
+> 
+> This happens repeatedly?
 
-Pls CC to me
-TIA
+Yeah.  When I put -rt9 on the UV box, it was doing the just idling, and
+boom thing I saw with earlier releases on both my Q6600 and x3550 M3
+boxes.  -rt10 seems to have just changed the timing.
+
+I'll update the x3550 M3, and see if it still gripes.  UV isn't virgin
+source, has to be twiddled a little. (symptom was identical though)
+
+	-Mike
+
