@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab1HOPpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:45:39 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41843 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753883Ab1HOPph (ORCPT
+	id S1754475Ab1HOPr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:47:57 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14224 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab1HOPry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:45:37 -0400
-X-Sasl-enc: Q89rTLn1RZitiJVNXoQXMA9BtoWfyI8nvdHo6pjKzlYS 1313423136
-Date: Mon, 15 Aug 2011 08:45:28 -0700
-From: Greg KH <greg@kroah.com>
-To: scameron@beardog.cce.hp.com
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
-Message-ID: <20110815154528.GB13244@kroah.com>
-References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com>
- <20110813020147.GB15554@kroah.com>
- <20110815144022.GR27723@beardog.cce.hp.com>
- <20110815150409.GS27723@beardog.cce.hp.com>
+	Mon, 15 Aug 2011 11:47:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 15 Aug 2011 08:47:30 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 15 Aug 2011 08:47:27 -0700
+Subject: RE: [RFC PATCH 08/12] gpio/tegra: Add device tree support
+Thread-Topic: [RFC PATCH 08/12] gpio/tegra: Add device tree support
+Thread-Index: AcxZnkYdJ8oj3aXGRPevQyYPr2/8kgBxCspg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA25048@HQMAIL01.nvidia.com>
+References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
+	<1313189697-21287-9-git-send-email-swarren@nvidia.com>
+ <CAAfyv34kOtwjerB0gMhEKNTwGd9w-LCE52MCUuvzTyYkXLY-dg@mail.gmail.com>
+In-Reply-To: <CAAfyv34kOtwjerB0gMhEKNTwGd9w-LCE52MCUuvzTyYkXLY-dg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815150409.GS27723@beardog.cce.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7FFm4L3024747
 
-On Mon, Aug 15, 2011 at 10:04:09AM -0500, scameron@beardog.cce.hp.com wrote:
-> On Mon, Aug 15, 2011 at 09:40:22AM -0500, scameron@beardog.cce.hp.com wrote:
-> > On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
-> > > On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
-> > > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > > 
-> > > > The cciss driver had a CCISS_HEARTBEAT ioctl which
-> > [...]
-> > > >  
-> > > > +  The "heartbeat" read-only attribute returns the value of a heartbeat
-> > > > +  counter register on a Smart Array controller as a 32 bit unsigned
-> > > > +  hexadecimal integer (e.g: "0x12345678").  The value should change
-> > > > +  periodically, not less than once per second.  If this value fails to
-> > > > +  change for a period longer than one second, it means something has
-> > > > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
-> > > > +
-> > > 
-> > > This all belongs in Documentation/ABI/ care to move it there instead?
-> > 
-> > Sure.
-> 
-> Now that I look, I'm not seeing where any of the generic scsi
-> host or device attributes are documented in Documenation/ABI.
+Belisko Marek wrote at Saturday, August 13, 2011 3:49 AM:
+> On Sat, Aug 13, 2011 at 12:54 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > ---
+> > Â drivers/gpio/gpio-tegra.c | Â  31 +++++++++++++++++++++++++++++++
+> > Â 1 files changed, 31 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+...
+> > +static void __init tegra_gpio_probe_dt(struct platform_device *pdev)
+> > +{
+> > + Â  Â  Â  const __be32 *gpios;
+> > + Â  Â  Â  u32 gpioslen;
+> > + Â  Â  Â  int i;
+> > +
+> > + Â  Â  Â  gpios = of_get_property(pdev->dev.of_node, "nvidia,gpios", &gpioslen);
+> > + Â  Â  Â  if (gpios == NULL)
+> > + Â  Â  Â  Â  Â  Â  Â  return;
+> > +
+> > + Â  Â  Â  gpioslen /= sizeof(*gpios);
+> > + Â  Â  Â  for (i = 0; i < gpioslen; i++, gpios++) {
+> > + Â  Â  Â  Â  Â  Â  Â  u32 gpio = be32_to_cpup(gpios);
+> > + Â  Â  Â  Â  Â  Â  Â  dev_err(&pdev->dev, "Enabling GPIO %d\n", gpio);
+>
+> Is really necessary to print all enabled gpio's to console? Also seen
+> same in pinmux probe.
 
-Then that's a SCSI bug :)
+Oops, that's certainly not necessary. That was debugging code, and I meant
+to convert to dev_dbg before posting.
 
-> It's not very clear to me where in Documentation/ABI I should
-> document a driver's custom scsi device and host attributes as
-> even the generic scsi device and host attributes seem to be
-> undocumented.
-> 
-> from scsi_sysfs.c, I see these, for example:
-> 
->         &dev_attr_device_blocked.attr,
->         &dev_attr_type.attr,
->         &dev_attr_scsi_level.attr,
->         &dev_attr_vendor.attr,
->         &dev_attr_model.attr,
->         &dev_attr_rev.attr,
->         &dev_attr_rescan.attr,
->         &dev_attr_delete.attr,
->         &dev_attr_state.attr,
->         &dev_attr_timeout.attr,
->         &dev_attr_iocounterbits.attr,
->         &dev_attr_iorequest_cnt.attr,
->         &dev_attr_iodone_cnt.attr,
->         &dev_attr_ioerr_cnt.attr,
->         &dev_attr_modalias.attr,
->         REF_EVT(media_change),
->         NULL
-> };
-> 
-> but I don't see them documented anywhere in Documentation/ABI,
-> and hpsa.c adds these custom sdev attrs:
-> 
-> static struct device_attribute *hpsa_sdev_attrs[] = {
->         &dev_attr_raid_level,
->         &dev_attr_lunid,
->         &dev_attr_unique_id,
->         NULL,
-> };
-> 
-> 
-> Likewise, there are generic scsi host attrs in scsi_sysfs.c:
-> 
-> static struct attribute *scsi_sysfs_shost_attrs[] = {
->         &dev_attr_unique_id.attr,
->         &dev_attr_host_busy.attr,
->         &dev_attr_cmd_per_lun.attr,
->         &dev_attr_can_queue.attr,
->         &dev_attr_sg_tablesize.attr,
->         &dev_attr_sg_prot_tablesize.attr,
->         &dev_attr_unchecked_isa_dma.attr,
->         &dev_attr_proc_name.attr,
->         &dev_attr_scan.attr,
->         &dev_attr_hstate.attr,
->         &dev_attr_supported_mode.attr,
->         &dev_attr_active_mode.attr,
->         &dev_attr_prot_capabilities.attr,
->         &dev_attr_prot_guard_type.attr,
->         NULL
-> 
-> Also undocumented.
-> 
-> hpsa.c adds custom host attrs:
-> static struct device_attribute *hpsa_shost_attrs[] = {
->         &dev_attr_rescan,
->         &dev_attr_firmware_revision,
->         &dev_attr_commands_outstanding,
->         &dev_attr_transport_mode,
->         &dev_attr_resettable,
->         &dev_attr_heartbeat,
->         NULL,
-> };
-> 
-> 
-> How should I proceed?
+-- 
+nvpublic
 
-Start by documenting the ones you add, and if you want, and can, it
-would be great to document the existing ones as well.
-
-thanks,
-
-greg k-h
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
