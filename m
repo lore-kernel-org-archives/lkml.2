@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab1HOPwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:52:50 -0400
+	id S1754731Ab1HOPxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:53:01 -0400
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:38331 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab1HOPwq (ORCPT
+	with ESMTP id S1754615Ab1HOPw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:52:46 -0400
+	Mon, 15 Aug 2011 11:52:59 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 02/32 RESEND] nohz: Drop ts->idle_active
-Date: Mon, 15 Aug 2011 17:51:59 +0200
-Message-Id: <1313423549-27093-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle enter/exit APIs
+Date: Mon, 15 Aug 2011 17:52:02 +0200
+Message-Id: <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,10 +29,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ts->idle_active is used to know if we want to account the idle sleep
-time. But ts->inidle is enough to check that.
+To prepare for nohz / idle logic split, pull out the rcu dynticks
+idle mode switching to strict idle entry/exit areas.
 
-So drop that field and use inidle instead. This simplifies the code.
+So we make the dyntick mode possible without always involving rcu
+extended quiescent state.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -47,79 +48,56 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- include/linux/tick.h     |    1 -
- kernel/time/tick-sched.c |   14 ++++++--------
- 2 files changed, 6 insertions(+), 9 deletions(-)
+ kernel/time/tick-sched.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b232ccc..532e650 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -56,7 +56,6 @@ struct tick_sched {
- 	unsigned long			idle_jiffies;
- 	unsigned long			idle_calls;
- 	unsigned long			idle_sleeps;
--	int				idle_active;
- 	ktime_t				idle_entrytime;
- 	ktime_t				idle_waketime;
- 	ktime_t				idle_exittime;
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 58e1a96..c4d7113 100644
+index df6bb4c..8937d4a 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -157,7 +157,7 @@ update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_upda
+@@ -385,7 +385,6 @@ static void tick_nohz_stop_sched_tick(ktime_t now)
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+-			rcu_enter_nohz();
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -429,9 +428,13 @@ out:
+ static void __tick_nohz_enter_idle(struct tick_sched *ts, int cpu)
  {
- 	ktime_t delta;
- 
--	if (ts->idle_active) {
-+	if (ts->inidle) {
- 		delta = ktime_sub(now, ts->idle_entrytime);
- 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
- 		if (nr_iowait_cpu(cpu) > 0)
-@@ -175,7 +175,6 @@ static void tick_nohz_stop_idle(int cpu, ktime_t now)
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 
- 	update_ts_time_stats(cpu, ts, now, NULL);
--	ts->idle_active = 0;
- 
- 	sched_clock_idle_wakeup_event(0);
- }
-@@ -186,7 +185,6 @@ static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
- 
- 	now = ktime_get();
- 	ts->idle_entrytime = now;
--	ts->idle_active = 1;
- 	sched_clock_idle_sleep_event();
- 	return now;
- }
-@@ -502,11 +500,11 @@ void tick_nohz_restart_sched_tick(void)
  	ktime_t now;
++	int was_stopped = ts->tick_stopped;
  
- 	local_irq_disable();
--	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
--		now = ktime_get();
+ 	now = tick_nohz_start_idle(cpu, ts);
+ 	tick_nohz_stop_sched_tick(now);
++
++	if (!was_stopped && ts->tick_stopped)
++		rcu_enter_nohz();
+ }
  
--	if (ts->idle_active)
-+	if (ts->inidle) {
-+		now = ktime_get();
- 		tick_nohz_stop_idle(cpu, now);
+ void tick_nohz_enter_idle(void)
+@@ -499,8 +502,6 @@ static void tick_nohz_restart_sched_tick(ktime_t now, struct tick_sched *ts)
+ 	unsigned long ticks;
+ #endif
+ 
+-	rcu_exit_nohz();
+-
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+@@ -547,8 +548,10 @@ void tick_nohz_exit_idle(void)
+ 	tick_nohz_stop_idle(smp_processor_id(), now);
+ 	ts->inidle = 0;
+ 
+-	if (ts->tick_stopped)
++	if (ts->tick_stopped) {
++		rcu_exit_nohz();
+ 		tick_nohz_restart_sched_tick(now, ts);
 +	}
  
- 	if (!ts->inidle || !ts->tick_stopped) {
- 		ts->inidle = 0;
-@@ -677,10 +675,10 @@ static inline void tick_check_nohz(int cpu)
- 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
- 	ktime_t now;
- 
--	if (!ts->idle_active && !ts->tick_stopped)
-+	if (!ts->inidle && !ts->tick_stopped)
- 		return;
- 	now = ktime_get();
--	if (ts->idle_active)
-+	if (ts->inidle)
- 		tick_nohz_stop_idle(cpu, now);
- 	if (ts->tick_stopped) {
- 		tick_nohz_update_jiffies(now);
+ 	local_irq_enable();
+ }
 -- 
 1.7.5.4
 
