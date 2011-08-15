@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1HOOqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:46:20 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54588
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753583Ab1HOOqT (ORCPT
+	id S1754173Ab1HOOsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:48:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37409 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab1HOOsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:46:19 -0400
-Date: Mon, 15 Aug 2011 10:46:10 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] xen-blkback: sync I/O after backend disconnected
-Message-ID: <20110815144610.GA3707@infradead.org>
-References: <4E48A6A6.4040706@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E48A6A6.4040706@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 15 Aug 2011 10:48:38 -0400
+Subject: Re: [PULL] lguest fix, virtio documentation
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>
+In-Reply-To: <87sjp37au3.fsf@rustcorp.com.au>
+References: <87sjp37au3.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 15 Aug 2011 17:48:32 +0300
+Message-ID: <1313419712.3004.1.camel@sasha>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
-> When backend disconnect, sync IO requests to the disk.
+On Mon, 2011-08-15 at 10:25 +0930, Rusty Russell wrote:
+> [ This adds a text copy of the virtio draft spec to the kernel source,
+>   which should make it easier for people to find and read.  The master
+>   is still the lyx document on my server, so I'll keep it in sync. ]
+> 
+> The following changes since commit 91d85ea6786107aa2837bef3e957165ad7c8b823:
+> 
+>   Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-08-13 18:37:28 -0700)
+> 
+> are available in the git repository at:
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git master
+> 
+> Rusty Russell (2):
+>       virtio: Add text copy of spec to Documentation/virtual.
 
-Care to explain why?
+The "Device Status" paragraph says FAILED is 8, while it should be 0x80.
 
-Also you'll just need a sync_blockdev, fsync_bdev does far to many
-things that don't make any sense when you don't have a file system
-mounted on a device.
+-- 
+
+Sasha.
 
