@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab1HOMWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 08:22:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48330 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab1HOMWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 08:22:21 -0400
-Date: Mon, 15 Aug 2011 14:22:18 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
-Message-ID: <20110815122218.GB6971@quack.suse.cz>
-References: <201108112329.23043.rjw@sisk.pl>
- <201108112331.13241.rjw@sisk.pl>
+	id S1753117Ab1HOMWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 08:22:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48340 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab1HOMWh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 08:22:37 -0400
+Message-ID: <4E490F8A.3090702@petalogix.com>
+Date: Mon, 15 Aug 2011 14:22:34 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108112331.13241.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eli Billauer <eli@billauer.co.il>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Microblaze, DMA and cache: Lack of sync functions?
+References: <4E464DF0.7030401@billauer.co.il>
+In-Reply-To: <4E464DF0.7030401@billauer.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
-On Thu 11-08-11 23:31:13, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+Eli Billauer wrote:
+> Hello,
 > 
-> In analogy with ext4 make ext3_freeze() always call
-> journal_unlock_updates() to prevent it from leaving a locked mutex
-> behind.  Accordingly, modify ext3_unfreeze() so that it doesn't
-> call journal_unlock_updates() any more.
 > 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
+> Before I make a needless hack, please correct me if I'm wrong: in 
+> arch/microblaze/kernel/dma.c, the sync_single_for_cpu, 
+> sync_single_for_device and friends are not set in the dma_direct_ops 
+> structure (and not implemented), so calls from drivers to the 
+> corresponding functions will do nothing. Since the Microblaze cache 
+> doesn't update automatically on DMA operations, this looks like a bug to 
+> me: The driver thinks the cache has been flushed or updated, but it 
+> actually hasn't.
 > 
-> Sorry for the duplicate, the previous one was sent too early.
 > 
-> ---
->  fs/ext3/super.c |   39 ++++++++++++++++++---------------------
->  1 file changed, 18 insertions(+), 21 deletions(-)
+> Map and unmap methods are indeed implemented and registered, and they 
+> both call an internal function to sync the cache. So why are there no 
+> sync functions?
 > 
-> Index: linux/fs/ext3/super.c
-> ===================================================================
-> --- linux.orig/fs/ext3/super.c
-> +++ linux/fs/ext3/super.c
-> @@ -2535,30 +2535,28 @@ static int ext3_sync_fs(struct super_blo
->   */
->  static int ext3_freeze(struct super_block *sb)
->  {
-> -	int error = 0;
-> +	int error;
->  	journal_t *journal;
->  
-> -	if (!(sb->s_flags & MS_RDONLY)) {
-> -		journal = EXT3_SB(sb)->s_journal;
-> +	if (sb->s_flags & MS_RDONLY)
-> +		return 0;
->  
-> -		/* Now we set up the journal barrier. */
-> -		journal_lock_updates(journal);
-> +	journal = EXT3_SB(sb)->s_journal;
->  
-> -		/*
-> -		 * We don't want to clear needs_recovery flag when we failed
-> -		 * to flush the journal.
-> -		 */
-> -		error = journal_flush(journal);
-> -		if (error < 0)
-> -			goto out;
-> -
-> -		/* Journal blocked and flushed, clear needs_recovery flag. */
-> -		EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
-> -		error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
-> -		if (error)
-> -			goto out;
-> -	}
-> -	return 0;
-> +	/* Now we set up the journal barrier. */
-> +	journal_lock_updates(journal);
-> +
-> +	/*
-> +	 * We don't want to clear needs_recovery flag when we failed
-> +	 * to flush the journal.
-> +	 */
-> +	error = journal_flush(journal);
-> +	if (error < 0)
-> +		goto out;
-> +
-> +	/* Journal blocked and flushed, clear needs_recovery flag. */
-> +	EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
-> +	error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
->  
->  out:
->  	journal_unlock_updates(journal);
-> @@ -2577,7 +2575,6 @@ static int ext3_unfreeze(struct super_bl
->  		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
->  		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
->  		unlock_super(sb);
-> -		journal_unlock_updates(EXT3_SB(sb)->s_journal);
->  	}
->  	return 0;
->  }
-  It's not so simple as this. Ext3 relies on the mutex (the one hidden in
-journal_lock_updates()) to make sure that new transaction cannot be started
-while the filesystem is frozen - that's essentially what makes the
-filesystem frozen. So if we want to get rid of the mutex we have to achieve
-blocking by something else - ext4 uses vfs_check_frozen() in
-ext4_journal_start().
-  BTW,  filesystem freezing never really worked for mmaped writes under
-ext3 - ext3 would have to implement page_mkwrite() callback for that - so
-if you want to rely on it for suspending, this will be non-trivial.
 
-								Honza
+It is not the bug just unimplemented feature and I haven't had any problem
+that these functions are not implemented.
+Implementation should be pretty straight forward. Patches welcomed.
+
+Thanks,
+Michal
+
+
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
