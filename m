@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab1HOU26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 16:28:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57425 "EHLO
+	id S1753354Ab1HOU3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 16:29:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53218 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab1HOU2y (ORCPT
+	with ESMTP id S1753267Ab1HOU3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 16:28:54 -0400
+	Mon, 15 Aug 2011 16:29:08 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
@@ -17,9 +17,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
         Sergei Shtylyov <sshtylyov@mvista.com>,
         Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH v2 05/13] arm/dt: Tegra: Add nvidia,gpios property to GPIO controller
-Date: Mon, 15 Aug 2011 14:28:12 -0600
-Message-Id: <1313440100-17131-6-git-send-email-swarren@nvidia.com>
+Subject: [RFC PATCH v2 09/13] gpio/tegra: Add device tree support
+Date: Mon, 15 Aug 2011 14:28:16 -0600
+Message-Id: <1313440100-17131-10-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
 References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
@@ -27,62 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add board-specific gpio node for Harmony and Seaboard. This lists the
-GPIOs used by the board. Note that not all GPIOs that exist on the board
-are listed; only those used by devices currently supported by device
-tree.
-
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/boot/dts/tegra-harmony.dts  |   15 +++++++++++++++
- arch/arm/boot/dts/tegra-seaboard.dts |    8 ++++++++
- 2 files changed, 23 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-tegra.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
-index 4c05334..d680707 100644
---- a/arch/arm/boot/dts/tegra-harmony.dts
-+++ b/arch/arm/boot/dts/tegra-harmony.dts
-@@ -15,6 +15,21 @@
- 		reg = < 0x00000000 0x40000000 >;
- 	};
+diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+index 4da4839..1d0a764 100644
+--- a/drivers/gpio/gpio-tegra.c
++++ b/drivers/gpio/gpio-tegra.c
+@@ -326,6 +326,30 @@ static struct irq_chip tegra_gpio_irq_chip = {
+ #endif
+ };
  
-+	gpio: gpio@6000d000 {
-+		nvidia,enabled-gpios = <
-+			69	// TEGRA_GPIO_PI5 SD2_CD
-+			57	// TEGRA_GPIO_PH1 SD2_WP
-+			155	// TEGRA_GPIO_PT3 SD2_POWER
-+			58	// TEGRA_GPIO_PH2 SD4_CD
-+			59	// TEGRA_GPIO_PH3 SD4_WP
-+			70	// TEGRA_GPIO_PI6 SD4_POWER
-+			187	// TEGRA_GPIO_PX3 CDC_IRQ
-+			178	// TEGRA_GPIO_PW2 HP_DET
-+			184	// TEGRA_GPIO_PX0 INT_MIC_EN
-+			185	// TEGRA_GPIO_PX1 EXT_MIC_EN
-+		>;
-+	};
++#ifdef CONFIG_OF
++static void __init tegra_gpio_probe_dt(struct platform_device *pdev)
++{
++	const __be32 *gpios;
++	u32 gpioslen;
++	int i;
 +
- 	i2c@7000c000 {
- 		clock-frequency = <400000>;
- 
-diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-index 1940cae..43c8b2c 100644
---- a/arch/arm/boot/dts/tegra-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra-seaboard.dts
-@@ -16,6 +16,14 @@
- 		reg = < 0x00000000 0x40000000 >;
- 	};
- 
-+	gpio: gpio@6000d000 {
-+		nvidia,enabled-gpios = <
-+			69 // TEGRA_GPIO_PI5 SD2_CD
-+			57 // TEGRA_GPIO_PH1 SD2_WP
-+			70 // TEGRA_GPIO_PI6 SD2_POWER
-+		>;
-+	};
++	gpios = of_get_property(pdev->dev.of_node, "nvidia,enabled-gpios",
++				&gpioslen);
++	if (gpios == NULL)
++		return;
 +
- 	serial@70006300 {
- 		clock-frequency = < 216000000 >;
- 	};
++	gpioslen /= sizeof(*gpios);
++	for (i = 0; i < gpioslen; i++, gpios++) {
++		u32 gpio = be32_to_cpup(gpios);
++		dev_dbg(&pdev->dev, "Enabling GPIO %d\n", gpio);
++		tegra_gpio_enable(gpio);
++	}
++}
++#else
++static inline void __init tegra_gpio_probe_dt(struct platform_device *pdev)
++{
++}
++#endif
+ 
+ /* This lock class tells lockdep that GPIO irqs are in a different
+  * category than their parents, so it won't report false recursion.
+@@ -371,13 +395,21 @@ static int __init tegra_gpio_probe(struct platform_device *pdev)
+ 			spin_lock_init(&bank->lvl_lock[j]);
+ 	}
+ 
++	tegra_gpio_probe_dt(pdev);
++
+ 	return 0;
+ }
+ 
++static struct of_device_id tegra_gpio_of_match[] __devinitdata = {
++	{ .compatible = "nvidia,tegra20-gpio", },
++	{ },
++};
++
+ static struct platform_driver tegra_gpio_driver = {
+ 	.driver		= {
+ 		.name	= "tegra-gpio",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = tegra_gpio_of_match,
+ 	},
+ 	.probe		= tegra_gpio_probe,
+ };
 -- 
 1.7.0.4
 
