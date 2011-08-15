@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab1HOPxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:53:48 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46598 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab1HOPxq (ORCPT
+	id S1754751Ab1HOPxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:53:06 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51689 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615Ab1HOPxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:53:46 -0400
+	Mon, 15 Aug 2011 11:53:02 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 19/32] nohz/cpuset: Restart tick when nohz flag is cleared on cpuset
-Date: Mon, 15 Aug 2011 17:52:16 +0200
-Message-Id: <1313423549-27093-20-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/32] nohz: Move idle ticks stats tracking out of nohz handlers
+Date: Mon, 15 Aug 2011 17:52:03 +0200
+Message-Id: <1313423549-27093-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,8 +29,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Issue an IPI to restart the tick on a CPU that belongs
-to a cpuset when its nohz flag gets cleared.
+Idle ticks time tracking is merged into nohz stop/restart
+handlers. Pull it out into idle entry/exit handlers instead,
+so that nohz APIs is more idle independant.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -45,81 +46,97 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- include/linux/cpuset.h |    1 +
- kernel/cpuset.c        |   21 +++++++++++++++++++++
- kernel/sched.c         |    8 ++++++++
- 3 files changed, 30 insertions(+), 0 deletions(-)
+ kernel/time/tick-sched.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 799b9a4..7f9d78d 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -265,6 +265,7 @@ static inline bool cpuset_adaptive_nohz(void)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 8937d4a..21b187c 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -384,7 +384,6 @@ static void tick_nohz_stop_sched_tick(ktime_t now)
+ 
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+-			ts->idle_jiffies = last_jiffies;
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -433,8 +432,10 @@ static void __tick_nohz_enter_idle(struct tick_sched *ts, int cpu)
+ 	now = tick_nohz_start_idle(cpu, ts);
+ 	tick_nohz_stop_sched_tick(now);
+ 
+-	if (!was_stopped && ts->tick_stopped)
++	if (!was_stopped && ts->tick_stopped) {
++		ts->idle_jiffies = ts->last_jiffies;
+ 		rcu_enter_nohz();
++	}
  }
  
- extern void cpuset_update_nohz(void);
-+extern void cpuset_exit_nohz_interrupt(void *unused);
- #else
- static inline void cpuset_update_nohz(void) { }
- 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 3135096..ee3b0d0 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1199,6 +1199,14 @@ static void cpuset_change_flag(struct task_struct *tsk,
- 
- DEFINE_PER_CPU(int, cpu_adaptive_nohz_ref);
- 
-+static void cpu_exit_nohz(int cpu)
-+{
-+	preempt_disable();
-+	smp_call_function_single(cpu, cpuset_exit_nohz_interrupt,
-+				 NULL, true);
-+	preempt_enable();
-+}
-+
- static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
- {
- 	int cpu;
-@@ -1212,6 +1220,19 @@ static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
- 			per_cpu(cpu_adaptive_nohz_ref, cpu) += 1;
- 		else
- 			per_cpu(cpu_adaptive_nohz_ref, cpu) -= 1;
-+
-+		val = per_cpu(cpu_adaptive_nohz_ref, cpu);
-+
-+		if (!val) {
-+			/*
-+			 * The update to cpu_adaptive_nohz_ref must be
-+			 * visible right away. So that once we restart the tick
-+			 * from the IPI, it won't be stopped again due to cache
-+			 * update lag.
-+			 */
-+			smp_mb();
-+			cpu_exit_nohz(cpu);
-+		}
- 	}
- }
- #else
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 78ea0a5..75378be 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2513,6 +2513,14 @@ void cpuset_update_nohz(void)
- 		cpuset_nohz_restart_tick();
- }
- 
-+void cpuset_exit_nohz_interrupt(void *unused)
-+{
-+	if (!tick_nohz_adaptive_mode())
-+		return;
-+
-+	cpuset_nohz_restart_tick();
-+}
-+
- static void cpuset_nohz_task_switch(struct task_struct *next)
+ void tick_nohz_enter_idle(void)
+@@ -498,16 +499,26 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+ static void tick_nohz_restart_sched_tick(ktime_t now, struct tick_sched *ts)
  {
  	int cpu = smp_processor_id();
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+-	unsigned long ticks;
+-#endif
+ 
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
+ 	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+ 
++	touch_softlockup_watchdog();
++	/*
++	 * Cancel the scheduled timer and restore the tick
++	 */
++	ts->tick_stopped  = 0;
++	ts->idle_exittime = now;
++
++	tick_nohz_restart(ts, now);
++}
++
++static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
++{
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
++	unsigned long ticks;
+ 	/*
+ 	 * We stopped the tick in idle. Update process times would miss the
+ 	 * time we slept as update_process_times does only a 1 tick
+@@ -520,15 +531,6 @@ static void tick_nohz_restart_sched_tick(ktime_t now, struct tick_sched *ts)
+ 	if (ticks && ticks < LONG_MAX)
+ 		account_idle_ticks(ticks);
+ #endif
+-
+-	touch_softlockup_watchdog();
+-	/*
+-	 * Cancel the scheduled timer and restore the tick
+-	 */
+-	ts->tick_stopped  = 0;
+-	ts->idle_exittime = now;
+-
+-	tick_nohz_restart(ts, now);
+ }
+ 
+ void tick_nohz_exit_idle(void)
+@@ -551,6 +553,7 @@ void tick_nohz_exit_idle(void)
+ 	if (ts->tick_stopped) {
+ 		rcu_exit_nohz();
+ 		tick_nohz_restart_sched_tick(now, ts);
++		tick_nohz_account_idle_ticks(ts);
+ 	}
+ 
+ 	local_irq_enable();
+@@ -766,7 +769,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 		 */
+ 		if (ts->tick_stopped) {
+ 			touch_softlockup_watchdog();
+-			ts->idle_jiffies++;
++			if (idle_cpu(cpu))
++				ts->idle_jiffies++;
+ 		}
+ 		update_process_times(user_mode(regs));
+ 		profile_tick(CPU_PROFILING);
 -- 
 1.7.5.4
 
