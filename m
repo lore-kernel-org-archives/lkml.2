@@ -1,99 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1HOPDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:03:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58444 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab1HOPDA (ORCPT
+	id S1754395Ab1HOPET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:04:19 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:13582 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754175Ab1HOPER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:03:00 -0400
-From: Yufeng Shen <miletus@chromium.org>
-To: linux-input@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Yufeng Shen <miletus@chromium.org>, linux-kernel@vger.kernel.org,
-        Michael Gong <Michael.Gong@atmel.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>
-Subject: [PATCH v3] Input: atmel_mxt_ts - Report pressure information from the driver
-Date: Mon, 15 Aug 2011 11:02:30 -0400
-Message-Id: <1313420550-5885-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Mon, 15 Aug 2011 11:04:17 -0400
+Date: Mon, 15 Aug 2011 10:04:09 -0500
+From: scameron@beardog.cce.hp.com
+To: Greg KH <greg@kroah.com>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
+Message-ID: <20110815150409.GS27723@beardog.cce.hp.com>
+References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com> <20110813020147.GB15554@kroah.com> <20110815144022.GR27723@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815144022.GR27723@beardog.cce.hp.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atmel mxt1386 touch controller has the touch pressure information but
-the current driver atmel_mxt_ts does not expose it to the user space.
-This patch makes the driver report the touch pressure information to
-user space.
+On Mon, Aug 15, 2011 at 09:40:22AM -0500, scameron@beardog.cce.hp.com wrote:
+> On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
+> > On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
+> > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > > 
+> > > The cciss driver had a CCISS_HEARTBEAT ioctl which
+> [...]
+> > >  
+> > > +  The "heartbeat" read-only attribute returns the value of a heartbeat
+> > > +  counter register on a Smart Array controller as a 32 bit unsigned
+> > > +  hexadecimal integer (e.g: "0x12345678").  The value should change
+> > > +  periodically, not less than once per second.  If this value fails to
+> > > +  change for a period longer than one second, it means something has
+> > > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
+> > > +
+> > 
+> > This all belongs in Documentation/ABI/ care to move it there instead?
+> 
+> Sure.
 
-ChangeLog:
-v2: fixed indentation as commented by Wanlong Gao
-v3: added signed-off-by
+Now that I look, I'm not seeing where any of the generic scsi
+host or device attributes are documented in Documenation/ABI.
 
-Change-Id: Ie0e4683a3cd5ec79222f7682b0ddc24f909af543
-Signed-off-by: Yufeng Shen <miletus@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+It's not very clear to me where in Documentation/ABI I should
+document a driver's custom scsi device and host attributes as
+even the generic scsi device and host attributes seem to be
+undocumented.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index ae00604..9bdf4e0 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -244,6 +244,7 @@ struct mxt_finger {
- 	int x;
- 	int y;
- 	int area;
-+	int pressure;
- };
- 
- /* Each client has this additional data */
-@@ -536,6 +537,8 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
- 					finger[id].x);
- 			input_report_abs(input_dev, ABS_MT_POSITION_Y,
- 					finger[id].y);
-+			input_report_abs(input_dev, ABS_MT_PRESSURE,
-+					finger[id].pressure);
- 		} else {
- 			finger[id].status = 0;
- 		}
-@@ -560,6 +563,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	int x;
- 	int y;
- 	int area;
-+	int pressure;
- 
- 	/* Check the touch is present on the screen */
- 	if (!(status & MXT_DETECT)) {
-@@ -584,6 +588,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 		y = y >> 2;
- 
- 	area = message->message[4];
-+	pressure = message->message[5];
- 
- 	dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
- 		status & MXT_MOVE ? "moved" : "pressed",
-@@ -594,6 +599,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	finger[id].x = x;
- 	finger[id].y = y;
- 	finger[id].area = area;
-+	finger[id].pressure = pressure;
- 
- 	mxt_input_report(data, id);
- }
-@@ -1125,6 +1131,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
- 			     0, data->max_x, 0, 0);
- 	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
- 			     0, data->max_y, 0, 0);
-+	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
-+			     0, 255, 0, 0);
- 
- 	input_set_drvdata(input_dev, data);
- 	i2c_set_clientdata(client, data);
--- 
-1.7.3.1
+from scsi_sysfs.c, I see these, for example:
+
+        &dev_attr_device_blocked.attr,
+        &dev_attr_type.attr,
+        &dev_attr_scsi_level.attr,
+        &dev_attr_vendor.attr,
+        &dev_attr_model.attr,
+        &dev_attr_rev.attr,
+        &dev_attr_rescan.attr,
+        &dev_attr_delete.attr,
+        &dev_attr_state.attr,
+        &dev_attr_timeout.attr,
+        &dev_attr_iocounterbits.attr,
+        &dev_attr_iorequest_cnt.attr,
+        &dev_attr_iodone_cnt.attr,
+        &dev_attr_ioerr_cnt.attr,
+        &dev_attr_modalias.attr,
+        REF_EVT(media_change),
+        NULL
+};
+
+but I don't see them documented anywhere in Documentation/ABI,
+and hpsa.c adds these custom sdev attrs:
+
+static struct device_attribute *hpsa_sdev_attrs[] = {
+        &dev_attr_raid_level,
+        &dev_attr_lunid,
+        &dev_attr_unique_id,
+        NULL,
+};
+
+
+Likewise, there are generic scsi host attrs in scsi_sysfs.c:
+
+static struct attribute *scsi_sysfs_shost_attrs[] = {
+        &dev_attr_unique_id.attr,
+        &dev_attr_host_busy.attr,
+        &dev_attr_cmd_per_lun.attr,
+        &dev_attr_can_queue.attr,
+        &dev_attr_sg_tablesize.attr,
+        &dev_attr_sg_prot_tablesize.attr,
+        &dev_attr_unchecked_isa_dma.attr,
+        &dev_attr_proc_name.attr,
+        &dev_attr_scan.attr,
+        &dev_attr_hstate.attr,
+        &dev_attr_supported_mode.attr,
+        &dev_attr_active_mode.attr,
+        &dev_attr_prot_capabilities.attr,
+        &dev_attr_prot_guard_type.attr,
+        NULL
+
+Also undocumented.
+
+hpsa.c adds custom host attrs:
+static struct device_attribute *hpsa_shost_attrs[] = {
+        &dev_attr_rescan,
+        &dev_attr_firmware_revision,
+        &dev_attr_commands_outstanding,
+        &dev_attr_transport_mode,
+        &dev_attr_resettable,
+        &dev_attr_heartbeat,
+        NULL,
+};
+
+
+How should I proceed?
+
+-- steve
 
