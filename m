@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1HOOt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:49:57 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44229
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754002Ab1HOOtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:49:55 -0400
-Date: Mon, 15 Aug 2011 10:49:46 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: linux-next: build failure after merge of the final tree (xfs
- tree related)
-Message-ID: <20110815144946.GA8256@infradead.org>
-References: <20110815161023.6227665ab11f8a35fd649e3a@canb.auug.org.au>
+	id S1754165Ab1HOOvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:51:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753600Ab1HOOvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 10:51:40 -0400
+Date: Mon, 15 Aug 2011 16:47:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>, akpm@linux-foundation.org,
+        bonbons@linux-vserver.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
+	when reboot
+Message-ID: <20110815144744.GA9660@redhat.com>
+References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <20110814161707.GB30846@redhat.com> <20110814213642.GB13799@hallyn.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110815161023.6227665ab11f8a35fd649e3a@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110814213642.GB13799@hallyn.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 04:10:23PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (a powerpc server
-> config) failed like this:
+On 08/14, Serge E. Hallyn wrote:
+>
+> Quoting Oleg Nesterov (oleg@redhat.com):
+> > On 08/11, Daniel Lezcano wrote:
+> > >
+> > > In the case of a VPS, when we shutdown/halt/reboot the container, the
+> > > reboot utility will invoke the sys_reboot syscall which has the bad
+> > > effect to reboot the host.
+> >
+> > Stupid question. Can't sys_reboot() simply kill init (and thus the whole
+> > pid_ns) in this case?
+>
+> The goal is to be able to distinguish a request for reboot from shutdown.
+> If we just kill the init, then the parent of init (the container monitor)
+> cannot restart the container to emulate reboot.
 
-You'll need the patch below.  Can you keep is as a fix-up for now until
-Alex returns from his vacation?
+OK, thanks.
 
----
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] xfs: fix tracing builds inside the source tree
+What if init reports the reason it was killed?
 
-The code really requires the current source directory to be in the
-header search path.  We already do this if building with an object
-tree separate from the source, but it needs to be added manually
-if building inside the source.  The cflags addition for it accidentally
-got removed when collapsing the xfs directory structure.
+Ignoring LINUX_REBOOT_CMD_CAD_/etc, I mean, roughly,
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+	- add "int reboot_cmd" into struct pid_namespace
 
-Index: xfs/fs/xfs/Makefile
-===================================================================
---- xfs.orig/fs/xfs/Makefile	2011-08-13 06:41:29.586063467 -0700
-+++ xfs/fs/xfs/Makefile	2011-08-13 06:41:58.245908204 -0700
-@@ -16,6 +16,8 @@
- # Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- #
- 
-+ccflags-y += -I$(src)			# needed for trace events
-+
- ccflags-$(CONFIG_XFS_DEBUG) += -g
- 
- obj-$(CONFIG_XFS_FS)		+= xfs.o
+	- sys_reboot(cmd) does
+
+		if (!global_namespace) {
+			task_active_pid_ns(current)->reboot_cmd = cmd;
+			sigkill_my_init();
+		}
+
+	- change zap_pid_ns_processes() to do
+
+		if (pid_ns->reboot_cmd)	// approximately
+			current->exit_state = pid_ns->reboot_cmd;
+
+Then its parent can look at status after wait(&status).
+
+
+Not that I think this is very nice, but signals are not reliable.
+And once again, SIGCHLD doesn't queue. And, perhaps this doesn't
+matter, but sys_reboot() sends SIGCHLD and returns -EPERM, this
+can confuse the container.
+
+
+In any case. If you want to send a signal, please do not introduce
+SA_CLDREBOOT. Please do not play with ptrace or __wake_up_parent, this
+is meaningless. Just fill siginfo and send SIGCHLD unconditionally.
+
+Oleg.
+
