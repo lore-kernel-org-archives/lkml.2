@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab1HOXbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 19:31:22 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:60363 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab1HOXbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 19:31:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110815231156.GC6867@unix33.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu> <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu> <20110815184957.GA16588@redhat.com>
- <20110815225003.GB29942@somewhere> <20110815231156.GC6867@unix33.andrew.cmu.edu>
-From: Paul Menage <menage@google.com>
-Date: Mon, 15 Aug 2011 16:31:01 -0700
-X-Google-Sender-Auth: Pq719eYiR3RWRXATdfKYNqAYrUc
-Message-ID: <CALdu-PBtcg=wYmyngANzNXw29VT4tbgfxR7pi4TZDRRryOjyxw@mail.gmail.com>
-Subject: Re: [PATCH][BUGFIX] cgroups: fix ordering of calls in cgroup_attach_proc
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752841Ab1HOXgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 19:36:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48588 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752084Ab1HOXgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 19:36:11 -0400
+Date: Tue, 16 Aug 2011 09:36:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus <torvalds@linux-foundation.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] regmap: using module facilities requires module.h
+Message-Id: <20110816093606.a764b904550c84f7db4c1b2d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 4:11 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
-> Fix ordering of cgroup_task_migrate and attach_task in cgroup_attach_proc.
->
-> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
+Commit b33f9cbd67ba ("regmap: Specify a module license") added a
+MODULES_LICENSE to this file without adding an include of module.h.
+module.h should ahve been included anyway, since this file has
+EXPORT_SYMBOLs as well.   With the pending module.h spliit up, this would
+probably caused build problems.
 
-Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/base/regmap/regmap-spi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-BTW, I left Google at the end of last week - if it's not bouncing
-already, menage@google.com isn't going to work for much longer. I'll
-try to get a patch out to the maintainers files.
+I am sorry that I have not even build tested this patch, but it is pretty
+obvious.
 
-Paul
+diff --git a/drivers/base/regmap/regmap-spi.c b/drivers/base/regmap/regmap-spi.c
+index 2bbc659..f839694 100644
+--- a/drivers/base/regmap/regmap-spi.c
++++ b/drivers/base/regmap/regmap-spi.c
+@@ -13,6 +13,7 @@
+ #include <linux/regmap.h>
+ #include <linux/spi/spi.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ 
+ static int regmap_spi_write(struct device *dev, const void *data, size_t count)
+ {
+-- 
+1.7.5.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
