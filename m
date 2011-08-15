@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1HORkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 13:40:15 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:59294 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1HORkN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 13:40:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=qQrr15VZhzsl1Fs0mhXnCc96EkQG1TAWx0Zfy1xlqMcK3Apc3IPs99e+aBqegtZEo
-	DN6jT1y28Ack0/IteU65w==
-MIME-Version: 1.0
-In-Reply-To: <4E48AC7D.4030908@zytor.com>
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net> <20110730235644.GA29671@suse.de>
- <CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com>
- <4E359A74.7090408@zytor.com> <20110813123401.76ffcfcc.rdunlap@xenotime.net>
- <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com> <20110814202322.16b50ff5.rdunlap@xenotime.net>
- <4E48AC7D.4030908@zytor.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 15 Aug 2011 10:39:48 -0700
-Message-ID: <CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
+	id S1752379Ab1HORmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 13:42:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42818 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302Ab1HORmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 13:42:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: 3.1-rc1-git9: Reported regressions 2.6.39 -> 3.0
+Date: Mon, 15 Aug 2011 19:43:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera> <20110815153759.GF2389@linux.vnet.ibm.com>
+In-Reply-To: <20110815153759.GF2389@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108151943.58179.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 10:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/14/2011 08:23 PM, Randy Dunlap wrote:
->>>
->>> No, that wouldn't work when there is more than one tag from different
->>> users.  And yes, I fully expect to see that.
->>> --
->>
->> I guess that's a NAK or at least not consensus.
->> Would you like to submit an alternative?
->>
->
-> I would like to see the <id@owner> format I mentioned.
+On Monday, August 15, 2011, Paul E. McKenney wrote:
+> On Sun, Aug 14, 2011 at 09:02:27PM +0200, Rafael J. Wysocki wrote:
+> > [NOTE:
+> >  We already have a bug entry for tracking regressions from 3.0:
+> > 
+> >  http://bugzilla.kernel.org/show_bug.cgi?id=40982
+> > 
+> >  but there are no reports linked to it, mostly because Maciej is on vacation,
+> >  but also because the frequency of reporting regressions has been low
+> >  recently.  So, if you're seeing a regression from 3.0, please let us know.]
+> > 
+> > This message contains a list of some post-2.6.39 regressions introduced before
+> > 3.0, for which there are no fixes in the mainline known to the tracking team.
+> > If any of them have been fixed already, please let us know.
+> > 
+> > If you know of any other unresolved post-2.6.39 regressions, please let us know
+> > either and we'll add them to the list.  Also, please let us know if any
+> > of the entries below are invalid.
+> > 
+> > Each entry from the list will be sent additionally in an automatic reply to
+> > this message with CCs to the people involved in reporting and handling the
+> > issue.
+> > 
+> > 
+> > Listed regressions statistics:
+> > 
+> >   Date          Total  Pending  Unresolved
+> >   ----------------------------------------
+> >   2011-08-14       63       22          19
+> > 
+> > 
+> > Unresolved regressions
+> > ----------------------
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40282
+> > Subject		: IP forwarding regression since 3.0-rc6
+> > Submitter	: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+> > Date		: 2011-07-25 12:51 (21 days old)
+> > Message-ID	: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+> > References	: http://marc.info/?l=linux-kernel&m=131159880004908&w=2
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40172
+> > Subject		: lockdep trace from post 3.0.
+> > Submitter	: Dave Jones <davej@redhat.com>
+> > Date		: 2011-07-24 1:32 (22 days old)
+> > Message-ID	: <20110724013257.GA6777@redhat.com>
+> > References	: http://marc.info/?l=linux-kernel&m=131147120206819&w=2
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40092
+> > Subject		: RCU stall in linux-3.0.0
+> > Submitter	: Philip Armstrong <phil@kantaka.co.uk>
+> > Date		: 2011-07-25 21:44 (21 days old)
+> 
+> This one was due the the CPU's idea of the current time getting way
+> out of sync (as in more than a minute's worth of disagreement, which is
+> pretty impressive when you think about it).  So what happened is that
+> one CPU decided that the current grace period was a full minute old
+> immediately, and thus started screaming piteously.  John Stultz provided
+> a configuration workaround, and he and Thomas Gleixner would be working
+> out the long-term fix.
 
-Is there a middle ground if we say:
+Thanks for the update!
 
-Internal-reference-ID: <arbitrarytextforid@owner>
-
-so
-
-Internal-reference-ID: <2011.0729.id1@rdunlap>
-Internal-reference-ID: <bug-45322143@google>
-
-?
+Rafael
