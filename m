@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1HOInd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 04:43:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36147 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1HOIna convert rfc822-to-8bit (ORCPT
+	id S1752870Ab1HOIoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 04:44:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38244 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab1HOIoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 04:43:30 -0400
+	Mon, 15 Aug 2011 04:44:22 -0400
+Message-ID: <4E48DC61.9080903@kernel.org>
+Date: Mon, 15 Aug 2011 11:44:17 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <1313377893.14434.5.camel@Lily>
-References: <1313377794-26721-1-git-send-email-leoy@marvell.com> <1313377893.14434.5.camel@Lily>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 15 Aug 2011 16:43:10 +0800
-Message-ID: <CAMPhdO8rkct4H74zXBzaDa183u5vrPArerXgiNXwvQWzZT67Ng@mail.gmail.com>
-Subject: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: Leo Yan <leoy@marvell.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Haojian Zhuang <hzhuang1@marvell.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>, Andi Kleen <andi@firstfloor.org>,
+        tj@kernel.org, Metathronius Galabant <m.galabant@googlemail.com>,
+        Matt Mackall <mpm@selenic.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Adrian Drzewiecki <z@drze.net>, linux-kernel@vger.kernel.org
+Subject: Re: [slub p4 0/7] slub: per cpu partial lists V4
+References: <20110809211221.831975979@linux.com> <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 11:11 AM, Haojian Zhuang
-<haojian.zhuang@marvell.com> wrote:
-> On Sun, 2011-08-14 at 20:09 -0700, Leo Yan wrote:
->> On mmp platform, there have two sram banks:
->> audio sram bank, and internal sram bank for video and PM.
->> So add the sram module to manage these sram banks.
+On 8/13/11 9:28 PM, David Rientjes wrote:
+> On Tue, 9 Aug 2011, Christoph Lameter wrote:
+>
+>> The following patchset introduces per cpu partial lists which allow
+>> a performance increase of around ~10-20% with hackbench on my Sandybridge
+>> processor.
 >>
->> And register the sram banks so can dynamically alloc/free
->> the buffer.
+>> These lists help to avoid per node locking overhead. Allocator latency
+>> could be further reduced by making these operations work without
+>> disabling interrupts (like the fastpath and the free slowpath) but that
+>> is another project.
 >>
->> Leo Yan (3):
->>   ARM: mmp: add sram allocator
->>   ARM: mmp: register audio sram bank
->>   ARM: mmp: register internal sram bank
+>> It is interesting to note that BSD has gone to a scheme with partial
+>> pages only per cpu (source: Adrian). Transfer of cpu ownerships is
+>> done using IPIs. Probably too much overhead for our taste. The approach
+>> here keeps the per node partial lists essentially meaning the "pages"
+>> in there have no cpu owner.
 >>
->>  arch/arm/Kconfig                      |    1 +
->>  arch/arm/mach-mmp/Makefile            |    2 +-
->>  arch/arm/mach-mmp/brownstone.c        |   11 ++
->>  arch/arm/mach-mmp/include/mach/mmp2.h |   13 +++
->>  arch/arm/mach-mmp/include/mach/sram.h |   35 +++++++
->>  arch/arm/mach-mmp/mmp2.c              |    3 +
->>  arch/arm/mach-mmp/sram.c              |  168 +++++++++++++++++++++++++++++++++
->>  7 files changed, 232 insertions(+), 1 deletions(-)
->>  create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
->>  create mode 100644 arch/arm/mach-mmp/sram.c
->>
-> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+>
+> I'm currently 35,000 feet above Chicago going about 611 mph, so what
+> better time to benchmark this patchset on my netperf testing rack!
+>
+> 	threads		before		after
+> 	 16		78031		74714  (-4.3%)
+> 	 32		118269		115810 (-2.1%)
+> 	 48		150787		150165 (-0.4%)
+> 	 64		189932		187766 (-1.1%)
+> 	 80		221189		223682 (+1.1%)
+> 	 96		239807		246222 (+2.7%)
+> 	112		262135		271329 (+3.5%)
+> 	128		273612		286782 (+4.8%)
+> 	144		280009		293943 (+5.0%)
+> 	160		285972		299798 (+4.8%)
+>
+> I'll review the patchset in detail, especially the cleanups and
+> optimizations, when my wifi isn't so sketchy.
 
-Looks good to me. Thanks Haojian. Applied to -devel.
+Andi, it'd be interesting to know your results for v4 of this patchset. 
+I'm hoping to get the patches reviewed and merged to linux-next this week.
+
+			Pekka
