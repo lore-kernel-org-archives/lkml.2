@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1HOUD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 16:03:58 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:38997 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751302Ab1HOUD4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 16:03:56 -0400
-Date: Mon, 15 Aug 2011 23:03:50 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: balbi@ti.com, Ben Dooks <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: tegra: Check for overflow errors with BUG_ON.
-Message-ID: <20110815200349.GA2616@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
- <20110815191745.GA7178@legolas.emea.dhcp.ti.com>
- <CAD=FV=Xd67iw=GXV9i4O5LKnJd20=BkYyfVuxPgxQ5GZRJEy4A@mail.gmail.com>
+	id S1752232Ab1HOUFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 16:05:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36712 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab1HOUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 16:05:15 -0400
+Date: Mon, 15 Aug 2011 22:05:10 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: melwyn lobo <linux.melwyn@gmail.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+Subject: Re: x86 memcpy performance
+Message-ID: <20110815200510.GA10141@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andrew Lutomirski <luto@mit.edu>,
+	melwyn lobo <linux.melwyn@gmail.com>,
+	Denys Vlasenko <vda.linux@googlemail.com>,
+	Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+ <4E493449.70907@mit.edu>
+ <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
+ <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com>
+ <9022c7d6f1724a37245fd744c8c16140.squirrel@www.skyhub.de>
+ <CAObL_7ExSmbucefJ386LhK9UccVn5wKRvxHdLq0j__5bG2apwA@mail.gmail.com>
+ <3175fc05afa1c2b0defd935d0fec22d5.squirrel@www.skyhub.de>
+ <CAObL_7HPssPSaMMKdc-9LFKQXUnreFxMy4g8g2b7KdiRkBPW7w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=Xd67iw=GXV9i4O5LKnJd20=BkYyfVuxPgxQ5GZRJEy4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAObL_7HPssPSaMMKdc-9LFKQXUnreFxMy4g8g2b7KdiRkBPW7w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 15, 2011 at 03:11:40PM -0400, Andrew Lutomirski wrote:
+> > Well, copy_from_user... does a bunch of rep; movsq - if the SSE version
+> > shows reasonable speedup there, we might need to make those work too.
+> 
+> I'm a little surprised that SSE beats fast string operations, but I
+> guess benchmarking always wins.
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If by fast string operations you mean X86_FEATURE_ERMS, then that's
+Intel-only and that actually would need to be benchmarked separately.
+Currently, I see speedup for large(r) buffers only vs rep; movsq. But I
+dunno about rep; movsb's enhanced rep string tricks Intel does.
 
-HI,
+> Yes.  But we don't nest that much, and the save/restore isn't all that
+> expensive.  And we don't have to save/restore unless kernel entries
+> nest and both entries try to use kernel_fpu_begin at the same time.
 
-On Mon, Aug 15, 2011 at 12:52:36PM -0700, Doug Anderson wrote:
-> Felipe,
->=20
-> On Mon, Aug 15, 2011 at 12:17 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > so due to a FIFO overflow you lock up the whole system ? Can't you e.g.
-> > reset the controller and reconfigure it rather than locking up the
-> > system ?
->=20
-> Certainly we could try to be more proactive and reset / retry / return
-> the error to the client.  However, since the only expected situation
-> where this BUG_ON should hit is due to a bug in this driver itself
-> (AKA: i2c clients shouldn't be able to do anything to cause the BUG_ON
-> to hit), that seems like a lot of added complexity.
+Yep.
 
-so at least just pass an error to the client, but hanging the entire
-system seems a bit too much, dont you think ?
+> This whole project may take awhile.  The code in there is a
+> poorly-documented mess, even after Hans' cleanups.  (It's a lot worse
+> without them, though.)
 
-> Also: if there is an arbitrary software bug that causing an overflow
-> condition to occur, I'm not sure how stable the system will be.
-> Specifically, the i2c controller is used (among other things) to talk
-> to the PMU and adjust voltages in the system.  If we just sent it a
-> random command, I'd rather report the bug right away so we don't get
-> hard to find/reproduce failures in other parts of the system.
+Oh yeah, this code could use lotsa scrubbing :)
 
-that's a good point, I still think that e.g. making a cellphone
-unresponsive until a watchdog reset triggers just because you got a FIFO
-overflow on the I2C controller is too much.
-
---=20
-balbi
-
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOSXukAAoJEAv8Txj19kN11pQIAJlIJw+kHOicIT917XAJFY6E
-ozSUe9rSBTkr7/jyBub7VGHWyMw5dJE6QvOOyuyl0Z+BMjcmEwRqTdRuX1rIM0AD
-RHCh5BsPa16mnO9v3CVCt+Jn0Cu96j+iNM730rduUMc1cJRDDA0cCLjwBye4DCUp
-u+7p+QfilZHuIsnlnuSOjMLdglE3FUszlhbcr58YObtc8F+tmqNuaNJdBtB6ZrHI
-vbX5xCXOV9TPm5ZBCDa+vvWv4wVbWd7qxUJKKjs1+eGXvMG1E4MjiE6V+6D5hwsc
-DJAumuKbeYPytN04liYsvhZIDrjzb9qolxMro+JN3NjdIPMPNxkBK2g/R3Rld8w=
-=WPkP
------END PGP SIGNATURE-----
-
---zhXaljGHf11kAtnf--
+-- 
+Regards/Gruss,
+    Boris.
