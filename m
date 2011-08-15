@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab1HOEzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 00:55:24 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:65490 "EHLO
+	id S1751892Ab1HOE5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 00:57:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:16907 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1HOEzV (ORCPT
+	with ESMTP id S1751435Ab1HOE5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 00:55:21 -0400
-Message-ID: <4E48A6A6.4040706@oracle.com>
-Date: Mon, 15 Aug 2011 12:55:02 +0800
+	Mon, 15 Aug 2011 00:57:40 -0400
+Message-ID: <4E48A723.8070906@oracle.com>
+Date: Mon, 15 Aug 2011 12:57:07 +0800
 From: Joe Jin <joe.jin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
@@ -20,57 +20,63 @@ CC: Greg Marsden <greg.marsden@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Joe Jin <joe.jin@oracle.com>
-Subject: [patch] xen-blkback: sync I/O after backend disconnected
+Subject: xen-blkback: fixed indentation and comments
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4E48A6B2.004C:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A090203.4E48A73F.002B:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When backend disconnect, sync IO requests to the disk.
+This patch fixes belows:
+
+1. Fix code style issue.
+2. Fix incorrect functions name in comments.
 
 Signed-off-by: Joe Jin <joe.jin@oracle.com>
 Cc: Jens Axboe <jaxboe@fusionio.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
 ---
- drivers/block/xen-blkback/xenbus.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/block/xen-blkback/common.h |    2 +-
+ drivers/block/xen-blkback/xenbus.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 9e40b28..00c57c9 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -46,7 +46,7 @@
+ 
+ #define DRV_PFX "xen-blkback:"
+ #define DPRINTK(fmt, args...)				\
+-	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",	\
++	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",		\
+ 		 __func__, __LINE__, ##args)
+ 
+ 
 diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 1a87f5b..da39d61 100644
+index da39d61..9fa9d07 100644
 --- a/drivers/block/xen-blkback/xenbus.c
 +++ b/drivers/block/xen-blkback/xenbus.c
-@@ -35,6 +35,7 @@ static void connect(struct backend_info *);
- static int connect_ring(struct backend_info *);
- static void backend_changed(struct xenbus_watch *, const char **,
- 			    unsigned int);
-+static void xen_vbd_sync(struct xen_vbd *vbd);
+@@ -598,7 +598,7 @@ static void frontend_changed(struct xenbus_device *dev,
  
- struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be)
- {
-@@ -232,6 +233,7 @@ static void xen_blkif_disconnect(struct xen_blkif *blkif)
- 		free_vm_area(blkif->blk_ring_area);
- 		blkif->blk_rings.common.sring = NULL;
- 	}
-+	xen_vbd_sync(&blkif->vbd);
- }
+ 		/*
+ 		 * Enforce precondition before potential leak point.
+-		 * blkif_disconnect() is idempotent.
++		 * xen_blkif_disconnect() is idempotent.
+ 		 */
+ 		xen_blkif_disconnect(be->blkif);
  
- void xen_blkif_free(struct xen_blkif *blkif)
-@@ -332,6 +334,12 @@ static void xen_vbd_free(struct xen_vbd *vbd)
- 	vbd->bdev = NULL;
- }
+@@ -619,7 +619,7 @@ static void frontend_changed(struct xenbus_device *dev,
+ 			break;
+ 		/* fall through if not online */
+ 	case XenbusStateUnknown:
+-		/* implies blkif_disconnect() via blkback_remove() */
++		/* implies xen_blkif_disconnect() via xen_blkbk_remove() */
+ 		device_unregister(&dev->dev);
+ 		break;
  
-+static void xen_vbd_sync(struct xen_vbd *vbd)
-+{
-+	if (vbd->bdev)
-+		fsync_bdev(vbd->bdev);
-+}
-+
- static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
- 			  unsigned major, unsigned minor, int readonly,
- 			  int cdrom)
 
