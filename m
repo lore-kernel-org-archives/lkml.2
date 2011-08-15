@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab1HOWRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:17:14 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49412 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1HOWRN (ORCPT
+	id S1751985Ab1HOWcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:32:31 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51816 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab1HOWc3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:17:13 -0400
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-In-Reply-To: <87vctz7c7d.fsf@rustcorp.com.au>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-	 <878vqw9007.fsf@rustcorp.com.au> <1313330252.2422.12.camel@sasha>
-	 <87vctz7c7d.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Tue, 16 Aug 2011 01:17:07 +0300
-Message-ID: <1313446627.3004.2.camel@sasha>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Aug 2011 18:32:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
+References: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 15 Aug 2011 18:32:09 -0400
+X-Google-Sender-Auth: ITHtwF79YphIot9mj3Pq8hHJOhY
+Message-ID: <CAObL_7G8qM_qq0qp-UHuuwyCretqzcVhVw-gc3O9TCQJN8zHkA@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: remove int 0xcc from entry_64.S documentation
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 09:55 +0930, Rusty Russell wrote:
-> On Sun, 14 Aug 2011 16:57:32 +0300, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Sun, 2011-08-14 at 12:23 +0930, Rusty Russell wrote:
-> > > On Sat, 13 Aug 2011 11:51:01 +0300, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > > > The MAC of a virtio-net device is located at the first field of the device
-> > > > specific header. This header is located at offset 20 if the device doesn't
-> > > > support MSI-X or offset 24 if it does.
-> > > 
-> > > Erk.  This means, in general, we have to do virtio_find_single_vq or
-> > > config->find_vqs before we examine any config options.
-> > > 
-> > > Look at virtio_blk, which has the same error.
-> > > 
-> > > Solutions in order of best to worst:
-> > > (1) Enable MSI-X before calling device probe.  This means reserving two
-> > >     vectors in virtio_pci_probe to ensure we *can* do this, I think.  Michael?
-> > 
-> > Do you mean reserving the vectors even before we probed the device for
-> > MSI-X support? Wouldn't we need 3 vectors then? (config, input, output).
-> 
-> We want three, but *need* two: see vp_find_vqs().  Also, the generic
-> code doesn't know how many virtqueues we have on the device.
+On Mon, Aug 15, 2011 at 6:26 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> Commit 3ae36655b97a03fa1decf72f04078ef945647c1a (x86-64: Rework vsyscall
+> emulation and add vsyscall= parameter) removed the special use of the
+> 0xcc IDT vector.
+>
+> Remove it from Documentation/x86/entry_64.txt also.
+>
+> Cc: Andy Lutomirski <luto@MIT.EDU>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> ---
+>  Documentation/x86/entry_64.txt |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
+> index 7869f14..bc7226e 100644
+> --- a/Documentation/x86/entry_64.txt
+> +++ b/Documentation/x86/entry_64.txt
+> @@ -27,9 +27,6 @@ Some of these entries are:
+>    magically-generated functions that make their way to do_IRQ with
+>    the interrupt number as a parameter.
+>
+> - - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
+> -   vsyscall emulation.
+> -
+>  - APIC interrupts: Various special-purpose interrupts for things
+>    like TLB shootdown.
+>
 
-We can just pci_enable_msix() and see if we can get 2 vectors, if we can
-- we assume the device has msix on, right?
+Acked-by: Andy Lutomirski <luto@mit.edu>
 
-
--- 
-
-Sasha.
-
+--Andy
