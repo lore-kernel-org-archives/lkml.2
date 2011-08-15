@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab1HOPeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:34:06 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42083 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab1HOPeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:34:04 -0400
-Date: Mon, 15 Aug 2011 16:33:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ralf Baechle <ralf@linux-mips.org>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: footbridge: Netwinder: Add KConfig select
-	CLKEVT_I8253 to fix build failure
-Message-ID: <20110815153338.GA525@n2100.arm.linux.org.uk>
-References: <1313422280-21942-1-git-send-email-peterhuewe@gmx.de>
+	id S1753860Ab1HOPfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:35:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45857 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752720Ab1HOPfI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:35:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313422280-21942-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110815131853.GL4926@sgi.com>
+References: <1313348706-16093-1-git-send-email-Jes.Sorensen@redhat.com>
+ <CA+55aFw4-3o9rX5z3Jtnim5v3K2LhsGyAbXWVG-8iyeCBjGezA@mail.gmail.com>
+ <4E483C88.8090709@redhat.com> <20110815131853.GL4926@sgi.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Aug 2011 08:34:15 -0700
+Message-ID: <CA+55aFyYn+c7beaBAFfpx1wX4WdcFnc-p7dNPWq-55P8cUVuww@mail.gmail.com>
+Subject: Re: [PATCH] Remove name and email address as maintainer for SN2
+To: Robin Holt <holt@sgi.com>
+Cc: Jes Sorensen <Jes.Sorensen@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 05:31:20PM +0200, Peter Huewe wrote:
-> diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
-> index dc26fff..c8e7afc 100644
-> --- a/arch/arm/mach-footbridge/Kconfig
-> +++ b/arch/arm/mach-footbridge/Kconfig
-> @@ -62,6 +62,7 @@ config ARCH_EBSA285_HOST
->  config ARCH_NETWINDER
->  	bool "NetWinder"
->  	select CLKSRC_I8253
-> +	select CLKEVT_I8253
+On Mon, Aug 15, 2011 at 6:18 AM, Robin Holt <holt@sgi.com> wrote:
+>
+> Why don't we just add me as the maintainer.  I can set up a script to
+> compile and boot it once a week on a few common configs.  I think I
+> already have that for testing the x86_64 drivers/misc/sgi-xp bits so it
+> should be no significant increase in work.
+>
+> I will work today on getting the linux-altix@sgi.com mailing list working
+> again if it is not already and then ensuring I am on that list.
 
-Could you please add this in alphabetical order, just like the rest of the
-'select' options here?
+Ok, just to be nice, I'd suggest you send me the patch to do that with
+authorship and sign-off. In fact, maybe we can just combine it with
+Jes' patch, and just have both of yours sign-off.
 
->  	select FOOTBRIDGE_HOST
->  	select ISA
->  	select ISA_DMA
-
-Then I'll take it through the patch system into my fixes branch.  Thanks.
+                     Linus
