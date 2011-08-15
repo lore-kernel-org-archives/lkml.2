@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab1HOHnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 03:43:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:38743 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469Ab1HOHnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 03:43:16 -0400
-Date: Mon, 15 Aug 2011 09:33:09 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        stable-review@kernel.org, stable@kernel.org
-Subject: Re: [Stable-review] Future of the -longterm kernel releases (i.e. how we pick them).
-Message-ID: <20110815073309.GB18367@1wt.eu>
-References: <20110815041524.GA7578@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815041524.GA7578@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1752278Ab1HOHqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 03:46:34 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:33381 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab1HOHqb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 03:46:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:x-system-of-record;
+	b=lesGY58TWO0ADgM2vKUSGgTld7ryzRVkh0BfdKjYGI/typ2Ijgp8iCWp90/QPL/bv
+	zPAqHtHYMqNWRksgJVDuw==
+MIME-Version: 1.0
+In-Reply-To: <20110812215253.GB9124@polaris.bitmath.org>
+References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
+ <1313169407-4358-7-git-send-email-djkurtz@chromium.org> <20110812215253.GB9124@polaris.bitmath.org>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Mon, 15 Aug 2011 15:46:07 +0800
+X-Google-Sender-Auth: R83cDQHRe0eL4wfCiUXGlVEvLGo
+Message-ID: <CAGS+omDpg51Bky7gu8+EpD=2QQz4j_o=SV997fVJDMzUSOv7SA@mail.gmail.com>
+Subject: Re: [PATCH 6/8 v3] Input: synaptics - process finger (<=3) transitions
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Henrik,
 
-On Sun, Aug 14, 2011 at 09:15:24PM -0700, Greg KH wrote:
-> As I'm giving a talk about the -stable and -longterm kernels this week
-> at LinuxCon in Vancouver, and I've been talking with a lot of different
-> people about the future of the -longterm kernels, here's some thoughts
-> as to what I'm considering:
-(...)
-> Thoughts?
+Thanks for the feedback.
 
-I think this is all good, and knowing in advance what next kernel will
-be picked will help a lot of users because they'll be able to focus on
-a given version.
+On Sat, Aug 13, 2011 at 5:52 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>
+> Hi Daniel,
+>
+> > Synaptics image sensor touchpads track 5 fingers, but only report 2.
+> > This patch attempts to deal with some idiosyncrasies of these
+> > touchpads:
+>
+> I appreciate the complexity of the protocol at hand, and the patch is
+> doing an excellent job documenting it. However, it does constitute a
+> fair deal of code... What about the statements below:
+>
+> 1. When two subsequent sgm packets report the same number of fingers
+> (and unless told otherwise in some other fashion?), the sgm and the
+> previous agm contains data for the same fingers as the previous (agm,
+> sgm) pair, i.e., there is no transition.
+>
+> 2. There is no general way to know which fingers are being reported
+> after a transition.
+>
+> If both points above are true, how about something like this:
+>
+> a) Always report slots zero and one (for two or more fingers)
+>
+> b) Keep a global number, trackid
+>
+> c) Parse are buffer agm
+>
+> d) Parse sgm
+>
+> e) If a transition occured, increase trackid by two
+>
+> f) Set TRACKING_ID to trackid in slot zero and trackid+1 in slot one.
+>
+> It seems to me the above will result in contiuous handling of two
+> unknown contacts in between transitions, and during transitions, new
+> contacts will be generated.
+>
+> The algorithm above could possibly be improved for the 2->1
+> transition, but from what I gather, 1->2 and 2->3 as well as 3->2 does
+> not seem to be generally solvable, hence resulting in the above
+> anyways.
+>
+> If any of points 1 and 2 are wrong, I am sure you will
+> enlighten/remind me. ;-)
+>
+> Cheers,
+> Henrik
 
-I just have one comment about the 2-years : new devices generally ship
-with something which is expected to be stable, so they won't ship with
-the shiny new 2-digit kernel that was just released. This means that a
-two-years lifecycle for the longterm kernels will allow less than 2
-years of life for the device.
+Actually, "in general", it is possible to know which fingers are being
+reported _after_ a transition.
 
-But possibly there are several types of products :
-  - the ones where an upgrade may be forced on the user about once a
-    year, so that the kernel can be between 1 and 2-years old
-  - the ones that have to live longer without upgrades
+However:
+  (1) Since the number of fingers is only reported in SGM packets, it
+is not possible, _during_ a transition, to know whether the AGM was
+sent for the old number of fingers, or the new number of fingers.
+  (2) There is no way to tell which fingers remain when going from
+3->2 fingers. Once we lose track, we can't really know what fingers we
+are tracking until:
+     (a) All fingers are removed
+     (b) All but the 'primary' (finger slot[0]) are removed
+     (c) 4 or 5 fingers are touched (this triggers an AGM_CONTACT
+packet, which properly resets the driver's state)
+  (3) Similarly, on 3->1 transitions, if the 'primary' (finger
+slot[0]) finger is NOT the one that remains, we don't know which
+finger remains.  Tracking state must be restored with (a), (b), or (c)
+above.
+  (4) A quick finger change, can generate a 1->1 (non-)transition with
+an intervening AGM packet. In this case, the new SGM is actually
+tracking slot[1], not slot[0].  If a second finger touches, this new
+second finger will fill the now-empty slot[0], and, thus, be reported
+in the SGM.
 
-I'm realizing that the second type is mostly the case for products
-that are not easy to validate and are kept as-is without update as
-long as they're supported, which is common in the network appliances
-world (this is the reason I picked 2.6.27 ;-)).
+This results in a lot of the special handling in the switch/cases.
 
-Also, since your kernels are pretty stable after 2 years, updates are
-quite rare and generally of minor importance. This is also the time I
-choose to pick them for use in products where planning a reboot takes
-weeks and an upgrade takes many months (I even know some people who are
-currently ordering hardware to deploy 2.4). So it's likely that in 6
-months I'll be interested in an almost frozen 2.6.32, and I will then
-propose you to take it over and prolong its life when you drop it.
+The resulting algorithm can accurately handle 1->2->1 transitions very
+well (including drum roll, and no matter which of the two fingers is
+being reported in the second '1' state).
+It can deal with 1->2->3 properly in the typical "adding fingers" case.
+Lastly, it also realizes when it has lost track (after 3->2 / 3->1
+transition), and handles subsequent (1->2, 2->1, 2->3) transitions
+carefully (by invalidating slots).
 
-And in the end, I think this development model makes a lot of sense :
-  - developers need a fast moving target
-  - desktop users need something up to date with latest drivers and
-    don't need the best stability => latest release or -stable are OK
-  - most servers are happy with -stable (mine are)
-  - distros need to focus on a recent -longterm and will contribute
-    to its stability
-  - some products need to ship with a very stable -longterm with
-    rare updates
+So, I think even if we started with a simpler "always use two new
+slots" approach, once we added back the special casing, it would be
+just as much code...
 
-You're interested in the 4th category above and I'm in the 5th. So
-in the end, I think that your proposal fits your expected target
-perfectly well, and that if I want it to fit mine, I'll just have
-to extend it myself as we've done till now. So that sounds good !
+A simple example:
+  On 2->3, even if we always used two new slots, we still couldn't
+report them accurately, immediately, because we don't know whether the
+AGM during the transition was for the "2" state, or the "3" state.
+Instead, we'd need to do something like what I'm doing now: report
+3:[0,-1] "three fingers down, the only one I can report is that the
+one in slot[0]"
 
-Thanks,
-Willy
-
+-Dan
