@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab1HODXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 23:23:25 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:53343 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751371Ab1HODXY (ORCPT
+	id S1751688Ab1HODjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 23:39:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37349 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab1HODj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 23:23:24 -0400
-Date: Sun, 14 Aug 2011 20:23:22 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-Message-Id: <20110814202322.16b50ff5.rdunlap@xenotime.net>
-In-Reply-To: <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net>
-	<20110730235644.GA29671@suse.de>
-	<CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com>
-	<4E359A74.7090408@zytor.com>
-	<20110813123401.76ffcfcc.rdunlap@xenotime.net>
-	<2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sun, 14 Aug 2011 23:39:29 -0400
+Subject: Re: [BUG] Linux 3.0 commit 3627924acf70a broke
+ include/mtd/ubi_user.h.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Rob Landley <rob@landley.net>, Michal Marek <mmarek@suse.cz>,
+        "Adrian.Hunter" <Adrian.Hunter@intel.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-kernel@vger.kernel.org,
+        busybox@busybox.net
+Date: Mon, 15 Aug 2011 06:39:22 +0300
+In-Reply-To: <4E481F0D.3090404@landley.net>
+References: <4E4809BF.6040707@landley.net> <20110814200322.3fa7109d@stein>
+	 <4E481F0D.3090404@landley.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1313379564.2200.9.camel@koala>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Aug 2011 17:29:52 -0400 H. Peter Anvin wrote:
-
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Sun, 2011-08-14 at 14:16 -0500, Rob Landley wrote:
+> On 08/14/2011 01:03 PM, Stefan Richter wrote:
+> > On Aug 14 Rob Landley wrote:
+> >> "make headers_install" copies include/mtd/ubi_user.h to userspace, where
+> >> things like busybox link against it.  With 3.0, building defconfig
+> >> busybox gets this error:
+> >>
+> >> In file included from miscutils/ubi_tools.c:63:
+> >> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:329:
+> >> error: conflicting types for '__packed'
+> >> /home/landley/aboriginal/aboriginal/build/simple-cross-compiler-i686/bin/../include/mtd/ubi-user.h:313:
+> >> error: previous declaration of '__packed' was here
+> >>
+> >> This is due to the Linux 3.0 commit in the title:
+> >>
+> >>     UBI: use __packed instead of __attribute__((packed))
+> >>
+> >> This relies on __packed being defined in:
+> >>
+> >>   include/linux/compiler-gcc.h:
+> >>   #define __packed			__attribute__((packed))
+> >>
+> >> Which is not exported to userspace.
+> >>
+> >> I.E. this "cleanup" broke the ability for userspace to use this header,
+> >> even though the header is exported to userspace by headers_install.
+> > 
+> > As far as I can tell, the __packed or __attribute__((packed))
+> > qualifications are superfluous in include/mtd/ubi-user.h anyway.
 > 
-> >On Sun, 31 Jul 2011 11:09:56 -0700 H. Peter Anvin wrote:
-> >
-> >> On 07/31/2011 11:07 AM, Mike Waychison wrote:
-> >> >>>
-> >> >>> Internal-reference-ID: rdunlap.2011.0729.id1
-> >> >>>
-> >> > 
-> >> > Acked-by: Mike Waychison <mikew@google.com>
-> >> > 
-> >> 
-> >> Just to avoid namespace collisions, can we at least put the owner
-> >> somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google>
-> >and
-> >> so on?
-> >
-> >I would prefer to leave the text contents as unspecified, but I
-> >wouldn't
-> >mind recommending that users try to make them unique, e.g., by using
-> >a company-ID or owner-ID.  Would that be acceptable?
-> >
-> >
-> >---
-> >~Randy
-> >*** Remember to use Documentation/SubmitChecklist when testing your
-> >code ***
-> 
-> No, that wouldn't work when there is more than one tag from different users.  And yes, I fully expect to see that.
-> -- 
+> And Adrian Hunter <adrian.hunter@nokia.com> (the other listed UBI
+> maintainer) also bounces.  Did the developer exodus after Nokia decided
+> to cozy up to The Black Widow take 'em both out?
 
-I guess that's a NAK or at least not consensus.
-Would you like to submit an alternative?
+Yes, both of us have left Nokia recently. Adrian should fix the
+"MAINTAINERS" file.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+WRT to the breakage - yes, it was my mistake to follow the new trend in
+the Linux kernel - the commit message has a reference to the other
+commit which inspired the check, and you can find out that some other
+projects made a similar change. Moreover, checkpatch.pl prints the
+following warning "WARN("__packed is preferred over
+__attribute__((packed))". So you hardly can blame :-)
+
+Anyways, this problem was discussed in the "__packed vs.
+__attribute__((packed)) in kernel headers" thread in LKML.
+
+Then a fix has been sent, see the "{PATCH] fix __packed in exported
+kernel headers" thread in LKML. This fix was accepted by "Michal Marek
+<mmarek@suse.cz>", whom I put to CC.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
