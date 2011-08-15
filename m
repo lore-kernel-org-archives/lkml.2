@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab1HOFHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:07:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37521 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab1HOFHp (ORCPT
+	id S1752086Ab1HOFH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:07:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57750 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab1HOFHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:07:45 -0400
+	Mon, 15 Aug 2011 01:07:55 -0400
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        x86@kernel.org
-Subject: [PATCH 04/11] arch/x86: do not use EXTRA_CFLAGS
-Date: Mon, 15 Aug 2011 01:07:07 -0400
-Message-Id: <1313384834-24433-5-git-send-email-lacombar@gmail.com>
+        Rasesh Mody <rmody@brocade.com>, netdev@vger.kernel.org
+Subject: [PATCH 06/11] drivers/net/bna: do not use EXTRA_CFLAGS
+Date: Mon, 15 Aug 2011 01:07:09 -0400
+Message-Id: <1313384834-24433-7-git-send-email-lacombar@gmail.com>
 X-Mailer: git-send-email 1.7.6.153.g78432
 In-Reply-To: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
@@ -36,39 +36,22 @@ likely to result in build failure or unexpected behavior.
 Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 
 Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: x86@kernel.org
+Cc: Rasesh Mody <rmody@brocade.com>
+Cc: netdev@vger.kernel.org
 ---
- arch/x86/math-emu/Makefile |    4 ++--
- arch/x86/pci/Makefile      |    4 +---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/bna/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/math-emu/Makefile b/arch/x86/math-emu/Makefile
-index 9b0c63b..60db1b8 100644
---- a/arch/x86/math-emu/Makefile
-+++ b/arch/x86/math-emu/Makefile
-@@ -5,8 +5,8 @@
- #DEBUG	= -DDEBUGGING
- DEBUG	=
- PARANOID = -DPARANOID
--EXTRA_CFLAGS	:= $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
--EXTRA_AFLAGS	:= $(PARANOID)
-+ccflags-y	:= $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
-+asflags-y	:= $(PARANOID)
+diff --git a/drivers/net/bna/Makefile b/drivers/net/bna/Makefile
+index a5d604d..babc25f 100644
+--- a/drivers/net/bna/Makefile
++++ b/drivers/net/bna/Makefile
+@@ -8,4 +8,4 @@ obj-$(CONFIG_BNA) += bna.o
+ bna-objs := bnad.o bnad_ethtool.o bna_ctrl.o bna_txrx.o
+ bna-objs += bfa_ioc.o bfa_ioc_ct.o bfa_cee.o cna_fwimg.o
  
- # From 'C' language sources:
- C_OBJS =fpu_entry.o errors.o \
-diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-index 6b8759f..aef971f 100644
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -22,6 +22,4 @@ obj-y				+= amd_bus.o bus_numa.o
- 
- obj-$(CONFIG_PCI_CNB20LE_QUIRK)	+= broadcom_bus.o
- 
--ifeq ($(CONFIG_PCI_DEBUG),y)
--EXTRA_CFLAGS += -DDEBUG
--endif
-+ccflags-$(CONFIG_PCI_DEBUG) += -DDEBUG
+-EXTRA_CFLAGS := -Idrivers/net/bna
++ccflags-y := -Idrivers/net/bna
 -- 
 1.7.6.153.g78432
 
