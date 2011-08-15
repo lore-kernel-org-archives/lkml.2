@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab1HOOpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:45:11 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64777 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab1HOOpJ (ORCPT
+	id S1754155Ab1HOOqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:46:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54588
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753583Ab1HOOqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:45:09 -0400
+	Mon, 15 Aug 2011 10:46:19 -0400
+Date: Mon, 15 Aug 2011 10:46:10 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] xen-blkback: sync I/O after backend disconnected
+Message-ID: <20110815144610.GA3707@infradead.org>
+References: <4E48A6A6.4040706@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.OSX.2.00.1108151724491.211@ibook.local>
-References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
-	<1313384834-24433-2-git-send-email-lacombar@gmail.com>
-	<alpine.OSX.2.00.1108151724491.211@ibook.local>
-Date: Mon, 15 Aug 2011 10:45:08 -0400
-Message-ID: <CACqU3MXUp2hWaGNDmnBm2dO=27p4FBFNjRV8heA7p04Yf-nkwQ@mail.gmail.com>
-Subject: Re: [PATCH 01/11] arch/m68k: do not use EXTRA_{A,C,LD}FLAGS
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        linux-m68k@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E48A6A6.4040706@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
+> When backend disconnect, sync IO requests to the disk.
 
-On Mon, Aug 15, 2011 at 3:26 AM, Finn Thain <fthain@telegraphics.com.au> wrote:
->
-> On Mon, 15 Aug 2011, Arnaud Lacombe wrote:
->
->> -# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
->> -# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
->> +# ccflags-y += -DTRAP_DBG_INTERRUPT
->> +# ccflags-y += -DTRAP_DBG_INTERRUPT
->
-> asflags-y?
->
-yes, indeed. I'll resend later on.
+Care to explain why?
 
- - Arnaud
+Also you'll just need a sync_blockdev, fsync_bdev does far to many
+things that don't make any sense when you don't have a file system
+mounted on a device.
 
-> Finn
->
