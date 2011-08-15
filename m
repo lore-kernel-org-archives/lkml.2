@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab1HODPb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 23:15:31 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:41137 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab1HODPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 23:15:30 -0400
-Date: Mon, 15 Aug 2011 06:18:33 +0300
-From: Sergei Trofimovich <slyfox@gentoo.org>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Marek Belisko <marek.belisko@gmail.com>,
-        Ondrej Zary <linux@rainbow-software.org>, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: ft1000: fix build failure
-Message-ID: <20110815061833.39bc5034@sf.home>
-In-Reply-To: <20110814222351.GA12930@suse.de>
-References: <1313355177-12605-3-git-send-email-slyfox@gentoo.org>
-	<20110814222351.GA12930@suse.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	id S1751712Ab1HODXZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 23:23:25 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:53343 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751371Ab1HODXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 23:23:24 -0400
+Date: Sun, 14 Aug 2011 20:23:22 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
+Message-Id: <20110814202322.16b50ff5.rdunlap@xenotime.net>
+In-Reply-To: <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
+References: <20110729180028.6a2091b3.rdunlap@xenotime.net>
+	<20110730235644.GA29671@suse.de>
+	<CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com>
+	<4E359A74.7090408@zytor.com>
+	<20110813123401.76ffcfcc.rdunlap@xenotime.net>
+	<2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/0kTGnIzCWQM1GuN0oj/6Kcy"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0kTGnIzCWQM1GuN0oj/6Kcy
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, 13 Aug 2011 17:29:52 -0400 H. Peter Anvin wrote:
 
-On Sun, 14 Aug 2011 15:23:51 -0700
-Greg KH <gregkh@suse.de> wrote:
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
+> 
+> >On Sun, 31 Jul 2011 11:09:56 -0700 H. Peter Anvin wrote:
+> >
+> >> On 07/31/2011 11:07 AM, Mike Waychison wrote:
+> >> >>>
+> >> >>> Internal-reference-ID: rdunlap.2011.0729.id1
+> >> >>>
+> >> > 
+> >> > Acked-by: Mike Waychison <mikew@google.com>
+> >> > 
+> >> 
+> >> Just to avoid namespace collisions, can we at least put the owner
+> >> somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google>
+> >and
+> >> so on?
+> >
+> >I would prefer to leave the text contents as unspecified, but I
+> >wouldn't
+> >mind recommending that users try to make them unique, e.g., by using
+> >a company-ID or owner-ID.  Would that be acceptable?
+> >
+> >
+> >---
+> >~Randy
+> >*** Remember to use Documentation/SubmitChecklist when testing your
+> >code ***
+> 
+> No, that wouldn't work when there is more than one tag from different users.  And yes, I fully expect to see that.
+> -- 
 
-> On Sun, Aug 14, 2011 at 11:52:53PM +0300, Sergei Trofimovich wrote:
-> > Found on allmodconfig build (ARCH=3Dalpha)
-> >=20
-> >     drivers/staging/ft1000/ft1000-pcmcia/ft1000.h: In function 'ft1000_=
-read_reg':
-> >     drivers/staging/ft1000/ft1000-pcmcia/ft1000.h:80: error: implicit d=
-eclaration of function 'inw'
-> >     drivers/staging/ft1000/ft1000-pcmcia/ft1000.h: In function 'ft1000_=
-write_reg':
-> >     drivers/staging/ft1000/ft1000-pcmcia/ft1000.h:86: error: implicit d=
-eclaration of function 'outw'
-> >=20
-> > Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-> > Cc: Marek Belisko <marek.belisko@gmail.com>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > Cc: Ondrej Zary <linux@rainbow-software.org>
-> > Cc: devel@driverdev.osuosl.org
-> > ---
-> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
->=20
-> This, and your other patches, are all not necessary in Linus's tree
-> right now, right?  I thought I already sent them to him.
->=20
-> Or am I mistaken?
+I guess that's a NAK or at least not consensus.
+Would you like to submit an alternative?
 
-Oh, some of them really are. My apologies!
-Only the one (nonstaging one) is still needed:
-
-    'pti: fix build failure'
-
-Thanks!
-
---=20
-
-  Sergei
-
---Sig_/0kTGnIzCWQM1GuN0oj/6Kcy
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iEYEARECAAYFAk5IkA8ACgkQcaHudmEf86owlwCdEhOT9hxpXuM5HqgOMTxbIIhs
-Q08AmgOpA2JecN0Hryl+34+iZbadNj5G
-=mWak
------END PGP SIGNATURE-----
-
---Sig_/0kTGnIzCWQM1GuN0oj/6Kcy--
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
