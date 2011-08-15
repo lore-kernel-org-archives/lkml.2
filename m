@@ -1,78 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab1HOXkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 19:40:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63938 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab1HOXkO convert rfc822-to-8bit (ORCPT
+	id S1753051Ab1HOXlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 19:41:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52812 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751807Ab1HOXlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 19:40:14 -0400
+	Mon, 15 Aug 2011 19:41:15 -0400
+Date: Tue, 16 Aug 2011 08:41:08 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] regmap: using module facilities requires module.h
+Message-ID: <20110815234106.GB14003@opensource.wolfsonmicro.com>
+References: <20110816093606.a764b904550c84f7db4c1b2d@canb.auug.org.au>
 MIME-Version: 1.0
-Date: Mon, 15 Aug 2011 20:40:13 -0300
-Message-ID: <CAELBVzAXXjfHDkUxSVM39coDC1QyNBtDc-gW27a-yascs2nVuA@mail.gmail.com>
-Subject: =?windows-1252?Q?warning=3A_=91x86=5Fget=5Fevent=5Fconstraints=92_defined_but?=
-	=?windows-1252?Q?_not_used?=
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: acme@ghostprotocols.net, mingo@elte.hu, a.p.zijlstra@chello.nl
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816093606.a764b904550c84f7db4c1b2d@canb.auug.org.au>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Aug 16, 2011 at 09:36:06AM +1000, Stephen Rothwell wrote:
+> Commit b33f9cbd67ba ("regmap: Specify a module license") added a
+> MODULES_LICENSE to this file without adding an include of module.h.
+> module.h should ahve been included anyway, since this file has
+> EXPORT_SYMBOLs as well.   With the pending module.h spliit up, this would
+> probably caused build problems.
 
-From:
-
-    gcc (GCC) 4.6.1
-
-I get the following warning:
-
-    arch/x86/kernel/cpu/perf_event.c:1444:1: warning:
-‘x86_get_event_constraints’ defined but not used [-Wunused-function]
-
-It appears that function is only called in some of the C files that
-are included into perf_event.c, namely perf_event_intel.c,
-perf_event_p4.c and perf_event_p6.c.  Each of those files is
-completely dependent on CONFIG_CPU_SUP_INTEL, which I obviously do not
-have enabled.
-
-At the moment, I have eliminated the warning with the patch below, but
-I do not consider that to be optimal.  Is there are reason why those C
-files are included directly in another C file rather than being linked
-together?  Or is there some other way the code could be improved and
-also remove the warning at the same time?
-
-I do not mind doing some coding here to make this happen.  I am very
-close to a warning-free build, so I would definitely like to take care
-of this one.
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..a37e7e9 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1440,6 +1440,7 @@ static __read_mostly struct notifier_block
-perf_event_nmi_notifier = {
- static struct event_constraint unconstrained;
- static struct event_constraint emptyconstraint;
-
-+#ifdef CONFIG_CPU_SUP_INTEL
- static struct event_constraint *
- x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
- {
-@@ -1454,6 +1455,7 @@ x86_get_event_constraints(struct cpu_hw_events
-*cpuc, struct perf_event *event)
-
-        return &unconstrained;
- }
-+#endif
-
- #include "perf_event_amd.c"
- #include "perf_event_p6.c"
-
-
-Thanks,
-
--- 
-Kevin Winchester
+Applied with a few typo fixes to the commit log, thanks.
