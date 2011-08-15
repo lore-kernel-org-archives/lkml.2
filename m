@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1HOO3r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:29:47 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:49128 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753020Ab1HOO3q (ORCPT
+	id S1754114Ab1HOO34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:29:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48845 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754030Ab1HOO3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:29:46 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jOIEuVwVM1kziYTZFHbOV4ycfo7nFq1V8kUNLUbTZrdr_1X
- VfeN91RmqgnIP2By3vOSX18GwQJsyi_aUoT2xsJLOPOWXMZGjkHd971xVkl3
- LZVJZrVT6BniFZZ3Vm8HlR8__9tHwFAKfFRAa2fU6MBcR_G2kN7LsKwxf0eT
- rMKiE3wpa.HbxE0OntpR2Eo7G.k0OwpD7jh9qLFPswFX8q3DWofKzsv4dsc_
- paa7i.WAt_GImmetNibl5kT0Suv.X8w8msujekwPULEO.khR2hTPC9UE88rY
- Mq1JQQg.xjtP67NdynO_7oFjojBlnoc1HkHGQaM7l9rismb5eDSfDJGnrDO5
- oBKPQsL3iKPoAo4fta6qJsrDtMmHQxdPaQWClLTcxFkUVDg--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 15 Aug 2011 09:29:42 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Andi Kleen <andi@firstfloor.org>,
-        tj@kernel.org, Metathronius Galabant <m.galabant@googlemail.com>,
-        Matt Mackall <mpm@selenic.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Adrian Drzewiecki <z@drze.net>, linux-kernel@vger.kernel.org
-Subject: Re: [slub p4 0/7] slub: per cpu partial lists V4
-In-Reply-To: <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1108150928200.24941@router.home>
-References: <20110809211221.831975979@linux.com> <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 15 Aug 2011 10:29:53 -0400
+Date: Mon, 15 Aug 2011 16:29:48 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 2/3] regulator: tps65910: fix list_voltage for VDD1 and
+ VDD2
+Message-ID: <20110815142948.GB4189@localhost>
+References: <1313405127-2724-1-git-send-email-jhovold@gmail.com>
+ <1313405127-2724-2-git-send-email-jhovold@gmail.com>
+ <20110815130910.GD3927@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815130910.GD3927@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Aug 2011, David Rientjes wrote:
+On Mon, Aug 15, 2011 at 10:09:13PM +0900, Mark Brown wrote:
+> On Mon, Aug 15, 2011 at 12:45:26PM +0200, Johan Hovold wrote:
+> > Fix regression introduced by commit
+> > a320e3c3d6351814afa5182159df88d2637e0f6f (regulator: tps65911: Add new
+> > chip version) which broke list_voltage for VDD1 and VDD2.
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> Why is this a separate patch to the previous one?
 
-> I'm currently 35,000 feet above Chicago going about 611 mph, so what
-> better time to benchmark this patchset on my netperf testing rack!
->
-> 	threads		before		after
-> 	 16		78031		74714  (-4.3%)
-> 	 32		118269		115810 (-2.1%)
-> 	 48		150787		150165 (-0.4%)
-> 	 64		189932		187766 (-1.1%)
-> 	 80		221189		223682 (+1.1%)
-> 	 96		239807		246222 (+2.7%)
-> 	112		262135		271329 (+3.5%)
-> 	128		273612		286782 (+4.8%)
-> 	144		280009		293943 (+5.0%)
-> 	160		285972		299798 (+4.8%)
+Because it fixes a different bug (although introduced by the same commit
+and the same kind of programming error).
 
-The higher the contention the better the performance. But the -4% on non
-contention is worrisome.
+Thanks,
+Johan
