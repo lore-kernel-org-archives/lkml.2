@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab1HOKd0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:33:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42826 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab1HOKdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:33:24 -0400
-Message-ID: <4E48F5F3.2020509@suse.cz>
-Date: Mon, 15 Aug 2011 12:33:23 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1751765Ab1HOKfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:35:46 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:49840 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab1HOKfm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:35:42 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Switch NUMA_BUILD and COMPACTION_BUILD to new IS_ENABLED()
- syntax
-References: <1312989160-737-1-git-send-email-mmarek@suse.cz> <20110815102707.GA3967@tiehlicka.suse.cz>
-In-Reply-To: <20110815102707.GA3967@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <bkwpSnItbJM.A.tc.-MCSOB@chimera>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
+	<bkwpSnItbJM.A.tc.-MCSOB@chimera>
+Date: Mon, 15 Aug 2011 13:35:39 +0300
+X-Google-Sender-Auth: m4kCmX7vwbAPanwyGGwzlAuRnT0
+Message-ID: <CAOJsxLH3McBv+83rbd9aCfu_OULx=68KWfKwEGoNL5ygK2iM8Q@mail.gmail.com>
+Subject: Re: [Bug #39922] WIFI becomes EXTREMELY slow ( ath9k ) making the
+ connection unusable
+From: Pekka Enberg <penberg@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Lukasz Olszewski <lcpak@epoczta.pl>, lrodriguez@atheros.com,
+        jmalinen@atheros.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.8.2011 12:27, Michal Hocko wrote:
-> On Wed 10-08-11 17:12:40, Michal Marek wrote:
->> Introduced in 3.1-rc1, IS_ENABLED(CONFIG_NUMA) expands to a true value
->> iff CONFIG_NUMA is set. This makes it easier to grep for code that
->> depends on CONFIG_NUMA.
-> 
-> It looks this doesn't work properly. I can see the following build
-> error:
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   UPD     include/generated/utsrelease.h
->   CC      arch/x86/kernel/asm-offsets.s
-> In file included from include/linux/kmod.h:22:0,
->                  from include/linux/module.h:13,
->                  from include/linux/crypto.h:21,
->                  from arch/x86/kernel/asm-offsets.c:8:
-> include/linux/gfp.h: In function â€˜gfp_zonelistâ€™:
-> include/linux/gfp.h:265:1: error: â€˜__enabled_CONFIG_NUMAâ€™ undeclared (first use in this function)
-> include/linux/gfp.h:265:1: note: each undeclared identifier is reported only once for each function it appears in
-> include/linux/gfp.h:265:1: error: â€˜__enabled_CONFIG_NUMA_MODULEâ€™ undeclared (first use in this function)
-> make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-> 
-> I do not have CONFIG_NUMA set so it seems to have issues with config
-> symbols which are not set to any value. Is this something that could be
-> fixed?
+On Sun, Aug 14, 2011 at 10:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.39 and 3.0.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.39 and 3.0.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=39922
+> Subject         : WIFI becomes EXTREMELY slow ( ath9k ) making the connection unusable
+> Submitter       : Lukasz Olszewski <lcpak@epoczta.pl>
+> Date            : 2011-07-24 09:20 (22 days old)
 
-It works if CONFIG_NUMA is not set, but it doesn't work if CONFIG_NUMA
-is not visible (if its dependencies are not met). The fix would be to
-generate the __enabled_* defines for all symbols, not only for the
-visible ones. I'll repost the patch once this is fixed.
-
-Michal
+There's no evidence in the bug report that the ath9k maintainers know
+about this. I'm CC'ing Luis and Jouni.
