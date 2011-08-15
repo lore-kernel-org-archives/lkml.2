@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1HOVAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 17:00:34 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57281 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752333Ab1HOVAd (ORCPT
+	id S1753109Ab1HOVEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 17:04:01 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37143 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751113Ab1HOVD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 17:00:33 -0400
-Date: Mon, 15 Aug 2011 14:00:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-Message-Id: <20110815140029.f9624d57.rdunlap@xenotime.net>
-In-Reply-To: <4E4985DB.20109@zytor.com>
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net>
-	<20110730235644.GA29671@suse.de>
-	<CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com>
-	<4E359A74.7090408@zytor.com>
-	<20110813123401.76ffcfcc.rdunlap@xenotime.net>
-	<2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
-	<20110814202322.16b50ff5.rdunlap@xenotime.net>
-	<4E48AC7D.4030908@zytor.com>
-	<CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com>
-	<4E496529.5080702@zytor.com>
-	<20110815132331.74cd0484.rdunlap@xenotime.net>
-	<4E4985DB.20109@zytor.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Mon, 15 Aug 2011 17:03:59 -0400
+Date: Mon, 15 Aug 2011 22:07:28 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jonathan Kunkee <jonathan.kunkee@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [RFC] Moving magnetometer HMC6352 into IIO subsystem
+Message-ID: <20110815220728.62f27e35@lxorguk.ukuu.org.uk>
+In-Reply-To: <CAGRJchidA8ZTMcJnmfJpoBjjpG1zYFC4XQT8KKxjQUm4o3CCng@mail.gmail.com>
+References: <CAGRJchidA8ZTMcJnmfJpoBjjpG1zYFC4XQT8KKxjQUm4o3CCng@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Aug 2011 13:47:23 -0700 H. Peter Anvin wrote:
+> Should the HMC6352 digital compass driver (drivers/misc/hmc6352.c)
+> be moved under the IIO subsystem (drivers/staging/iio/magnetometer)?
 
-> On 08/15/2011 01:23 PM, Randy Dunlap wrote:
-> > On Mon, 15 Aug 2011 11:27:53 -0700 H. Peter Anvin wrote:
-> > 
-> >> On 08/15/2011 10:39 AM, Mike Waychison wrote:
-> >>>>
-> >>>> I would like to see the <id@owner> format I mentioned.
-> >>>
-> >>> Is there a middle ground if we say:
-> >>>
-> >>> Internal-reference-ID: <arbitrarytextforid@owner>
-> >>>
-> >>> so
-> >>>
-> >>> Internal-reference-ID: <2011.0729.id1@rdunlap>
-> >>> Internal-reference-ID: <bug-45322143@google>
-> >>>
-> >>
-> >> Personally I don't care if they are separate lines or all on the same line.
-> > 
-> > I don't understand how that answers Mike's question...
-> > 
-> Then I don't understand the question.
+No - that would be a regression .. but read on
 
-OK, I see.
+> Magnetometers act as ADCs and can have high sampling rates and
+> complex internals, so I think that according to
+> drivers/staging/iio/Documentation/overview.txt they should almost always
+> land in IIO land.
 
-> I proposed:
-> 
-> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
+IIO is a staging project that may never go anywhere - some of us are
+using magnetometers in product so this alone isn't an answer that works
+right now.
 
-You said (on July-31):
-"Just to avoid namespace collisions, can we at least put the owner
-somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google> and
-so on?"
+> I would be willing to work on the change as I want to submit a similar
+> driver for the HMC6343 magnetometer/accelerometer as well.
 
-I read that as 2 different patches & 2 different IDs, but this more
-recent line:
-> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
+It would be great if it got added into the IIO subystem *as well*, and in
+time when and if IIO goes out of staging it would then eventually replace
+the existing drivers.
 
-would be for one patch with multiple IDs.
-
-
-> Mike proposed:
-> 
-> Internal-reference-ID: <2011.0729.id1@rdunlap>
-> Internal-reference-ID: <bug-45322143@google>
-
-I think that Mike was just giving 2 examples (for 2 patches).  His proposal
-was simply for:
-Internal-reference-ID: <arbitrarytextforid@owner>
-
-which matches your request fairly well AFAICT.
-
-But if we are changing things, I think I prefer your other suggestion
-for the ID tag:  "Patch-ID".  I like it because it's shorter and
-easier to type.  :)
-
-
-> The only difference I see is if they are on the same line, which I don't
-> personally care about.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Alan
