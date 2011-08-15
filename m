@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab1HOBB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 21:01:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:58999 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1HOBBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 21:01:54 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>, Amit Shah <amit.shah@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 3/3] virtio-net: Use virtio_config_val() for retrieving config
-In-Reply-To: <1313333553-23086-3-git-send-email-levinsasha928@gmail.com>
-References: <1313333553-23086-1-git-send-email-levinsasha928@gmail.com> <1313333553-23086-3-git-send-email-levinsasha928@gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 15 Aug 2011 10:28:05 +0930
-Message-ID: <87pqk77aoy.fsf@rustcorp.com.au>
+	id S1751522Ab1HOBL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 21:11:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55305 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751208Ab1HOBL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 21:11:58 -0400
+Date: Mon, 15 Aug 2011 10:11:49 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap fixes for 3.1
+Message-ID: <20110815011146.GA27355@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Cookie: Your lucky color has faded.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Aug 2011 17:52:33 +0300, Sasha Levin <levinsasha928@gmail.com> wrote:
-> This patch modifies virtio-net to use virtio_config_val() instead
-> of a 'if(virtio_has_feature()) vdev->config->get()' construct to retrieve
-> optional values from the config space.
+The following changes since commit 322a8b034003c0d46d39af85bf24fee27b902f48:
 
-Thanks, all applied.
+  Linux 3.1-rc1 (2011-08-07 18:23:30 -0700)
 
-Cheers,
-Rusty.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-linus
+
+Two small fixes, one stupid cut'n'paste bug which only comes up for the
+relatively rare bulk read case and the MODULE_LICENSE() fix from Stephen
+to fix modular builds after the last minute flip flopping we had about
+where to put the code.
+
+Mark Brown (1):
+      regmap: Fix bulk reads
+
+Stephen Warren (1):
+      regmap: Specify a module license
+
+ drivers/base/regmap/regmap-i2c.c |    1 +
+ drivers/base/regmap/regmap-spi.c |    2 ++
+ drivers/base/regmap/regmap.c     |    2 +-
+ 3 files changed, 4 insertions(+), 1 deletions(-)
