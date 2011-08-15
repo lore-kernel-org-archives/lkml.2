@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab1HOMck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 08:32:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44927 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab1HOMcj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 08:32:39 -0400
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] Fix non-LPAE boot regression.
-Date: Mon, 15 Aug 2011 15:31:44 +0300
-User-Agent: KMail/1.13.7 (Linux/3.0.1-gentoo-anarsoul; KDE/4.6.3; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <201108131556.27301.anarsoul@gmail.com> <1313240299-24712-1-git-send-email-anarsoul@gmail.com> <20110815120914.GB21596@e102109-lin.cambridge.arm.com>
-In-Reply-To: <20110815120914.GB21596@e102109-lin.cambridge.arm.com>
+	id S1753172Ab1HOMhs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 08:37:48 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:33791 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab1HOMhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 08:37:47 -0400
+Message-ID: <4E4912F0.8030705@parallels.com>
+Date: Mon, 15 Aug 2011 16:37:04 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Pekka Enberg <penberg@kernel.org>
+CC: Dave Chinner <david@fromorbit.com>, Glauber Costa <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 3/4] limit nr_dentries per superblock
+References: <1313334832-1150-1-git-send-email-glommer@parallels.com>	<1313334832-1150-4-git-send-email-glommer@parallels.com>	<CAOJsxLFYD9DkEU5R+9fZr-uaznteP8-BUC_Ti+FnNFqtbOCHSw@mail.gmail.com>	<20110815104656.GG26978@dastard>	<CAOJsxLGFJmqO-W=itQbO4Mh4DxSD4wrHOC8gQ5bWL5aE1YYeQw@mail.gmail.com>	<4E48FD8A.90401@parallels.com>	<CAOJsxLFjZffC9i5kQsBWjGy3eWdj3VMB5awz=yPcwgeKb5BG0Q@mail.gmail.com>	<4E4903C1.9050207@parallels.com>	<CAOJsxLErFcxuuqnWkRbOAHEFbeGrKp3YMZ-144=m16oBXCHJ2g@mail.gmail.com>	<4E490D47.8050105@parallels.com> <CAOJsxLEVfGrzUQv0fOpOyw3AaOLOHcWbvLJL1NdrHS6M2j5o1g@mail.gmail.com>
+In-Reply-To: <CAOJsxLEVfGrzUQv0fOpOyw3AaOLOHcWbvLJL1NdrHS6M2j5o1g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108151531.45469.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 August 2011 15:09:14 Catalin Marinas wrote:
-> Hi Vasily,
+>> Yes, this patchset does only the API part. The full idea is implemented (with poor API though) here:
+>> http://lwn.net/Articles/441164/
 > 
-> On Sat, Aug 13, 2011 at 01:58:19PM +0100, Vasily Khoruzhick wrote:
-> > It was introduced by  407f8b4cb07cbc5c1c7cc386f231224e2524ccea
-> > ARM: LPAE: MMU setup for the 3-level page table format
-> > 
-> > Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
-> > ---
-> > 
-> >  arch/arm/kernel/head.S |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> > index 0bdafc4..5add5f5 100644
-> > --- a/arch/arm/kernel/head.S
-> > +++ b/arch/arm/kernel/head.S
-> > 
-> > @@ -206,7 +206,7 @@ __create_page_tables:
-> >  1:	orr	r3, r7, r5, lsl #SECTION_SHIFT	@ flags + kernel base
-> >  
-> >  	str	r3, [r4, r5, lsl #PMD_ORDER]	@ identity mapping
-> >  	cmp	r5, r6
-> > 
-> > -	addlo	r5, r5, #SECTION_SHIFT >> 20	@ next section
-> > +	addlo	r5, r5, #1			@ next section
-> > 
-> >  	blo	1b
-> 
-> That's correct.
-> 
-> >  	/*
-> > 
-> > @@ -217,7 +217,7 @@ __create_page_tables:
-> >  	mov	r3, r3, lsr #SECTION_SHIFT
-> >  	orr	r3, r7, r3, lsl #SECTION_SHIFT
-> >  	add	r0, r4,  #(KERNEL_START & 0xff000000) >> (SECTION_SHIFT -
-> >  	PMD_ORDER)
-> > 
-> > -	str	r3, [r0, #(KERNEL_START & 0x00e00000) >> (SECTION_SHIFT -
-> > PMD_ORDER)]! +	str	r3, [r0, #(KERNEL_START & 0x00f00000) >>
-> > (SECTION_SHIFT - PMD_ORDER)]!
-> 
-> The reason for this was that the sections are 2MB with LPAE and a page
-> table entry is 64-bit wide. We always shift that value by 18 but with
-> LPAE we don't want to write in the middle of a page table entry if
-> KERNEL_START is not 2MB aligned.
-> 
-> But if KERNEL_START is not 2MB aligned, I think we get the wrong
-> physical address by 1MB (with the classic page table format).
+> OK. I suppose it's best to keep it separate of the slab code for now
+> then. Maybe you're able to come with something more generic that we
+> could make part of slab APIs later.
 
-Yep, for my case KERNEL_START is not 2MB aligned (TEXT_OFFSET is 0x00108000). 
-(CONFIG_PM_H1940 is set)
+Yup! We also have plans for having control over the kernel memory usage by containers, so
+we'll certainly get back to it :)
 
-> There are a few alternatives to fixing this:
+>                             Pekka
+> .
 > 
-> 1. Different KERNEL_START masking for classic or LPAE page tables.
-> 2. Always force 2MB section and the code above moving the phys addr into
->    r3 would need to take this into account.
-> 
-> I would go for 1 with some shifting like below:
-> 
-> +	str	r3, [r0, #((KERNEL_START & 0x00f00000) >> SECTION_SHIFT) <<
-> PMD_ORDER]!
-> 
-> This should give us 0x00f00000 with classic page tables and 0x00e00000
-> with LPAE.
-> 
-> Thanks.
 
-Ok, I'll test this change when I get home.
-
-Regards
-Vasily
