@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1HOEYi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 00:24:38 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63138 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab1HOEYg (ORCPT
+	id S1751878Ab1HOEwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 00:52:11 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17228 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1HOEwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 00:24:36 -0400
-Message-ID: <4E489F81.7060007@gmail.com>
-Date: Sun, 14 Aug 2011 22:24:33 -0600
-From: David Ahern <dsahern@gmail.com>
+	Mon, 15 Aug 2011 00:52:09 -0400
+Message-ID: <4E48A5D3.6020501@oracle.com>
+Date: Mon, 15 Aug 2011 12:51:31 +0800
+From: Joe Jin <joe.jin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>, acme@ghostprotocols.net
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, paulus@samba.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH 4/6] perf record: add time-of-day option
-References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490964-24714-1-git-send-email-dsahern@gmail.com> <20110617141425.GD25197@somewhere.redhat.com> <4DFB6345.3080007@gmail.com> <20110617151510.GG25197@somewhere.redhat.com>
-In-Reply-To: <20110617151510.GG25197@somewhere.redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Daniel Stodden <daniel.stodden@citrix.com>,
+        Annie Li <annie.li@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>
+CC: Greg Marsden <greg.marsden@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Jin <joe.jin@oracle.com>
+Subject: [PATCH] xen-blkback: Don't disconnect backend until state switched
+ to XenbusStateClosed.
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4E48A5F0.0028:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/17/2011 09:15 AM, Frederic Weisbecker wrote:
-> On Fri, Jun 17, 2011 at 08:23:01AM -0600, David Ahern wrote:
->> On 06/17/2011 08:14 AM, Frederic Weisbecker wrote:
->>>
->>> So I feel uncomfortable with this tod_sample_type hack. I think we can't really continue
->>> with this fixed sample_type per session given the kind of hacks that involves.
->>>
->>> One thing we could do is to split session->sample_type into an array with one sample
->>> type per event type (hardware, breakpoint, software, tracepoint).
->>>
->>> And then each builtin tool can provide their constraints on top of these values:
->>>
->>> - builtin-report wants sample_type[HARDWARE] == sample_type[SOFTWARE] == sample_type[TRACEPOINT] == sample_type[BREAKPOINT]
->>>   although that may be tunable by the time but we can start with that.
->>> - builtin-script has no specific constraints, except that sample_type[i] meets what the user passed as a parameter
->>> - etc..
->>>
->>> Constraints can probably default to sample_type[i] == sample_type[i+1] to mimic the current behaviour. Then tools
->>> can override that.
->>>
->>> What do you think?
->>
->> I started working on sample_type refactoring right after sending this
->> patchset (though I got sidetracked). Each evsel in the list has a
->> perf_attr struct which has a sample_type. Why not use that which allows
->> events to have their own sample type - versus a type per event type?
-> 
-> This can make sense, I can figure out some cases where such granularity can be
-> useful. Branch recording doesn't care about recording period for example I think.
-> 
->>
->> I'll see if I can get back to it in the next few days and get a better
->> idea of the pain involved with the refactoring.
-> 
-> Thanks a lot :)
+When do block-attach/block-detach test with below steps, umount hang
+in guest. Also shutdown ends up being stuck when umounting filesystems.
 
-Coming back to this one ....
+1. start guest.
+2. attach new block device by xm block-attach in Dom0.
+3. mount new disk in guest.
+4. execute xm block-detach to detach the block device in dom0 until timeout
+5. Any request to the disk will hung.
 
->From what I can see sample_type has to be a global per perf session and
-all samples have to use the same sample_type or a change is needed to
-the API/ABI.
+Root cause:
+  This issue caused by when setting backend device's state to
+  'XenbusStateClosing', which will send frontend XenbusStateClosing 
+  notification. When frontend receives the notification it tries to release
+  the disk by blkfront_closing(), but at that moment, the disk is still in use
+  by guest, so frontend refuses to close. 
+  In blkfront_closing(), it sets the disk state to XenbusStateClosing and send
+  a state switch to Closing notification to backend, when backend received the
+  event, it disconnect the vbd from real device, set the vbd device state to
+  XenbusStateClosing. For backend disconnected from real device/file, any IO
+  requests to the disk in guest will end up, leaving disk DEAD disk and set to
+  "XenbusStateClosing". For the disk have been disconnected, umount will hang
+  on blkif_release()->xlvbd_release_gendisk() for unable send any IO to the
+  disk, this prevent system clean shutdown.
 
-The perf_event_header does not have any information that uniquely
-associates it with a specific event type. Right now
-perf_evlist__id2evsel() is used to associate a sample with a specific
-event (evsel) in the list, but that function requires a parsed sample.
-To parse a sample we need the sample_type. So, the sample_type has to be
-a global and the same for all samples.
+Solution:
+  Don't disconnect backend until frontend state switch to XenbusStateClosed.
 
-David
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Cc: Daniel Stodden <daniel.stodden@citrix.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Annie Li <annie.li@oracle.com>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
+---
+ drivers/block/xen-blkback/xenbus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 3f129b4..1a87f5b 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -601,11 +601,11 @@ static void frontend_changed(struct xenbus_device *dev,
+ 		break;
+ 
+ 	case XenbusStateClosing:
+-		xen_blkif_disconnect(be->blkif);
+ 		xenbus_switch_state(dev, XenbusStateClosing);
+ 		break;
+ 
+ 	case XenbusStateClosed:
++		xen_blkif_disconnect(be->blkif);
+ 		xenbus_switch_state(dev, XenbusStateClosed);
+ 		if (xenbus_dev_is_online(dev))
+ 			break;
