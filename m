@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab1HOSCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:02:04 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:52722 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab1HOSCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:02:02 -0400
-Date: Mon, 15 Aug 2011 11:01:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: NeilBrown <neilb@suse.de>, Ben Blum <bblum@andrew.cmu.edu>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
- questionable code in de_thread.
-Message-ID: <20110815180155.GT2389@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728121741.GB2427@linux.vnet.ibm.com>
- <20110814175119.GC2381@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110814175119.GC2381@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752826Ab1HOSCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:02:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57411 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752566Ab1HOSCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 14:02:06 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/rApEh9jnr0ky4TeJ2pt5TOAgqz3QIOH1VD8XrY/
+	hucBtLMPh12E34
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] avr32/clock.c: Move '#include linux/export.h' to fix build failure
+Date: Mon, 15 Aug 2011 20:02:00 +0200
+Message-Id: <1313431320-17080-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 07:51:19PM +0200, Oleg Nesterov wrote:
-> On 07/28, Paul E. McKenney wrote:
-> >
-> > On Thu, Jul 28, 2011 at 11:08:13AM +1000, NeilBrown wrote:
-> > >
-> > > I disagree.  It also requires - by virtue of the use of while_each_thread() -
-> > > that 'g' remains on the list that 't' is walking along.
-> >
-> > Doesn't the following code in the loop body deal with this possibilty?
-> >
-> > 	/* Exit if t or g was unhashed during refresh. */
-> > 	if (t->state == TASK_DEAD || g->state == TASK_DEAD)
-> > 		goto unlock;
-> 
-> This code is completely wrong even if while_each_thread() was fine.
-> 
-> I sent the patch but it was ignored.
-> 
-> 	[PATCH] fix the racy check_hung_uninterruptible_tasks()->rcu_lock_break()
-> 	http://marc.info/?l=linux-kernel&m=127688790019041
+This patch fixes a build failure for the avr32 defconfig by moving the include
+of linux/export.h to the top of the file where it is needed.
 
-If it helps...
+Without the patch the build first warns about:
+arch/avr32/mach-at32ap/clock.c:62: warning: data definition has no type
+or storage class
+arch/avr32/mach-at32ap/clock.c:62: warning: type defaults to 'int' in
+declaration of 'EXPORT_SYMBOL'
+arch/avr32/mach-at32ap/clock.c:62: warning: parameter names (without
+types) in function declaration
+(...)
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+And then fails with
+ERROR: "clk_enable" [sound/spi/snd-at73c213.ko] undefined!
+ERROR: "clk_disable" [sound/spi/snd-at73c213.ko] undefined!
+(...)
 
-							Thanx, Paul
+This is because the definition of EXPORT_SYMBOL is needed before the
+first usage, and thus the include has to be on the top of the file.
+
+While at it, I sorted the include list alphabetically.
+
+KernelVersion: Linux-next 20110812
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ arch/avr32/mach-at32ap/clock.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/avr32/mach-at32ap/clock.c b/arch/avr32/mach-at32ap/clock.c
+index 579d619..78c873a 100644
+--- a/arch/avr32/mach-at32ap/clock.c
++++ b/arch/avr32/mach-at32ap/clock.c
+@@ -12,10 +12,11 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/clk.h>
+-#include <linux/err.h>
+ #include <linux/device.h>
+-#include <linux/string.h>
++#include <linux/err.h>
++#include <linux/export.h>
+ #include <linux/list.h>
++#include <linux/string.h>
+ 
+ #include <mach/chip.h>
+ 
+@@ -186,7 +187,6 @@ EXPORT_SYMBOL(clk_get_parent);
+ #include <linux/io.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+-#include <linux/export.h>
+ #include "pm.h"
+ 
+ 
+-- 
+1.7.3.4
+
