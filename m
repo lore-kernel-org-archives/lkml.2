@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab1HOEw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 00:52:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54579 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab1HOEw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 00:52:57 -0400
-Date: Mon, 15 Aug 2011 14:52:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@mit.edu>, Christopher Yeoh <cyeoh@au1.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20110815145251.d7c8089b567687d0da59e2dc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751898Ab1HOEzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 00:55:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:65490 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1HOEzV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 00:55:21 -0400
+Message-ID: <4E48A6A6.4040706@oracle.com>
+Date: Mon, 15 Aug 2011 12:55:02 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>
+CC: Greg Marsden <greg.marsden@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Jin <joe.jin@oracle.com>
+Subject: [patch] xen-blkback: sync I/O after backend disconnected
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E48A6B2.004C:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+When backend disconnect, sync IO requests to the disk.
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/include/asm/unistd_64.h between commit fce8dc06423d ("x86-64:
-Wire up getcpu syscall") from Linus' tree and commit  ("Add x86_64
-specific wire up") from the akpm tree.
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
+---
+ drivers/block/xen-blkback/xenbus.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-I have fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index d92641c..f9fff6a 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -683,6 +683,10 @@ __SYSCALL(__NR_sendmmsg, sys_sendmmsg)
- __SYSCALL(__NR_setns, sys_setns)
- #define __NR_getcpu				309
- __SYSCALL(__NR_getcpu, sys_getcpu)
-+#define __NR_process_vm_readv			310
-+__SYSCALL(__NR_process_vm_readv, sys_process_vm_readv)
-+#define __NR_process_vm_writev			311
-+__SYSCALL(__NR_process_vm_writev, sys_process_vm_writev)
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index 1a87f5b..da39d61 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -35,6 +35,7 @@ static void connect(struct backend_info *);
+ static int connect_ring(struct backend_info *);
+ static void backend_changed(struct xenbus_watch *, const char **,
+ 			    unsigned int);
++static void xen_vbd_sync(struct xen_vbd *vbd);
  
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
+ struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be)
+ {
+@@ -232,6 +233,7 @@ static void xen_blkif_disconnect(struct xen_blkif *blkif)
+ 		free_vm_area(blkif->blk_ring_area);
+ 		blkif->blk_rings.common.sring = NULL;
+ 	}
++	xen_vbd_sync(&blkif->vbd);
+ }
+ 
+ void xen_blkif_free(struct xen_blkif *blkif)
+@@ -332,6 +334,12 @@ static void xen_vbd_free(struct xen_vbd *vbd)
+ 	vbd->bdev = NULL;
+ }
+ 
++static void xen_vbd_sync(struct xen_vbd *vbd)
++{
++	if (vbd->bdev)
++		fsync_bdev(vbd->bdev);
++}
++
+ static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+ 			  unsigned major, unsigned minor, int readonly,
+ 			  int cdrom)
+
