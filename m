@@ -1,73 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab1HOJfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 05:35:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42921 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab1HOJfv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 05:35:51 -0400
+	id S1753138Ab1HOJjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 05:39:55 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50945 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752667Ab1HOJjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 05:39:54 -0400
+Date: Mon, 15 Aug 2011 11:39:12 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/8] mm: make per-memcg lru lists exclusive
+Message-ID: <20110815093912.GA15136@cmpxchg.org>
+References: <1306909519-7286-1-git-send-email-hannes@cmpxchg.org>
+ <1306909519-7286-9-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izVoN2s6J9t1TVj+1pMmHVxfiWYvq=uqeTL4C5-YsBwOw@mail.gmail.com>
+ <20110812083458.GB6916@cmpxchg.org>
+ <CALWz4iwE_L5nf7_YDyr0T+racbj0_j=Lf_U7vFCA+UPtoitsRA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110815091245.GC32705@game.jcrosoft.org>
-References: <1313377794-26721-1-git-send-email-leoy@marvell.com>
- <1313377893.14434.5.camel@Lily> <CAMPhdO8rkct4H74zXBzaDa183u5vrPArerXgiNXwvQWzZT67Ng@mail.gmail.com>
- <20110815091245.GC32705@game.jcrosoft.org>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 15 Aug 2011 17:35:31 +0800
-Message-ID: <CAMPhdO_StSa9fsYLNjJDd0KDkUyg6ep3gN2n5Gx-WmZ8t=bTFw@mail.gmail.com>
-Subject: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Leo Yan <leoy@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <hzhuang1@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4iwE_L5nf7_YDyr0T+racbj0_j=Lf_U7vFCA+UPtoitsRA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 5:12 PM, Jean-Christophe PLAGNIOL-VILLARD
-<plagnioj@jcrosoft.com> wrote:
-> On 16:43 Mon 15 Aug Â  Â  , Eric Miao wrote:
->> On Mon, Aug 15, 2011 at 11:11 AM, Haojian Zhuang
->> <haojian.zhuang@marvell.com> wrote:
->> > On Sun, 2011-08-14 at 20:09 -0700, Leo Yan wrote:
->> >> On mmp platform, there have two sram banks:
->> >> audio sram bank, and internal sram bank for video and PM.
->> >> So add the sram module to manage these sram banks.
->> >>
->> >> And register the sram banks so can dynamically alloc/free
->> >> the buffer.
->> >>
->> >> Leo Yan (3):
->> >> Â  ARM: mmp: add sram allocator
->> >> Â  ARM: mmp: register audio sram bank
->> >> Â  ARM: mmp: register internal sram bank
->> >>
->> >> Â arch/arm/Kconfig Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â | Â  Â 1 +
->> >> Â arch/arm/mach-mmp/Makefile Â  Â  Â  Â  Â  Â | Â  Â 2 +-
->> >> Â arch/arm/mach-mmp/brownstone.c Â  Â  Â  Â | Â  11 ++
->> >> Â arch/arm/mach-mmp/include/mach/mmp2.h | Â  13 +++
->> >> Â arch/arm/mach-mmp/include/mach/sram.h | Â  35 +++++++
->> >> Â arch/arm/mach-mmp/mmp2.c Â  Â  Â  Â  Â  Â  Â | Â  Â 3 +
->> >> Â arch/arm/mach-mmp/sram.c Â  Â  Â  Â  Â  Â  Â | Â 168 +++++++++++++++++++++++++++++++++
->> >> Â 7 files changed, 232 insertions(+), 1 deletions(-)
->> >> Â create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
->> >> Â create mode 100644 arch/arm/mach-mmp/sram.c
->> >>
->> > Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
->>
->> Looks good to me. Thanks Haojian. Applied to -devel.
-> I've some reserve on the named pool they need to be managed at generic level
-> not here
+On Sun, Aug 14, 2011 at 06:34:07PM -0700, Ying Han wrote:
+> On Fri, Aug 12, 2011 at 1:34 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Thu, Aug 11, 2011 at 01:33:05PM -0700, Ying Han wrote:
+> >> > Johannes, I wonder if we should include the following patch:
+> >>
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index 674823e..1513deb 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -832,7 +832,7 @@ static void
+> >> mem_cgroup_lru_del_before_commit_swapcache(struct page *page)
+> >>          * Forget old LRU when this page_cgroup is *not* used. This Used bit
+> >>          * is guarded by lock_page() because the page is SwapCache.
+> >>          */
+> >> -       if (!PageCgroupUsed(pc))
+> >> +       if (PageLRU(page) && !PageCgroupUsed(pc))
+> >>                 del_page_from_lru(zone, page);
+> >>         spin_unlock_irqrestore(&zone->lru_lock, flags);
+> >
+> > Yes, as the first PageLRU check is outside the lru_lock, PageLRU may
+> > indeed go away before grabbing the lock.  The page will already be
+> > unlinked and the LRU accounting will be off.
+> >
+> > The deeper problem, however, is that del_page_from_lru is wrong.  We
+> > can not keep the page off the LRU while leaving PageLRU set, or it
+> > won't be very meaningful after the commit, anyway.
+> 
+> So do you think we should include the patch:
+> -       if (!PageCgroupUsed(pc))
+> +       if (PageLRU(page) && !PageCgroupUsed(pc)) {
+> +              ClearPageLRU(page);
+>                 del_page_from_lru(zone, page);
+> }
+>         spin_unlock_irqrestore(&zone->lru_lock, flags);
 
-What are their names? And your suggestions to fix this?
+Nope.
 
->
-> Best Regards,
-> J.
->
+> > And in reality, we > only care about properly memcg-unaccounting
+> > the old lru state before > we change pc->mem_cgroup, so this
+> > becomes
+> >
+> >        if (!PageLRU(page))
+> >                return;
+> >        spin_lock_irqsave(&zone->lru_lock, flags);
+> >        if (!PageCgroupUsed(pc))
+> >                mem_cgroup_lru_del(page);
+> >        spin_unlock_irqrestore(&zone->lru_lock, flags);
+> >
+> > I don't see why we should care if the page stays physically linked to
+> > the list.  The PageLRU check outside the lock is still fine as the
+> > accounting has been done already if !PageLRU and a putback without
+> > PageCgroupUsed will not re-account to pc->mem_cgroup, as the comment
+> > above this code explains nicely.
+> 
+> Here is the comment above the code:
+> >-------/*
+> >------- * Doing this check without taking ->lru_lock seems wrong but this
+> >------- * is safe. Because if page_cgroup's USED bit is unset, the page
+> >------- * will not be added to any memcg's LRU. If page_cgroup's USED bit is
+> >------- * set, the commit after this will fail, anyway.
+> >------- * This all charge/uncharge is done under some mutual execustion.
+> >------- * So, we don't need to taking care of changes in USED bit.
+> >------- */
+> 
+> It says that page will not be added to any memcg's LRU if
+> !PageCgroupUsed, which seems not true after this patch series. page
+> will be added to either root or memcg's lru depending on the used bit.
+
+The phrasing is only partially wrong.  The page will be added to the
+root cgroup if unused.  But it's not accounted now, and won't be
+accounted when it's linked.
+
+The before-commit function is purely about accounting.
+
+> > The handling after committing the charge becomes this:
+> >
+> > -       if (likely(!PageLRU(page)))
+> > -               return;
+> >        spin_lock_irqsave(&zone->lru_lock, flags);
+> >        lru = page_lru(page);
+> >        if (PageLRU(page) && !PageCgroupAcctLRU(pc)) {
+> >                del_page_from_lru_list(zone, page, lru);
+> >                add_page_to_lru_list(zone, page, lru);
+> >        }
+> 
+> Is the function mem_cgroup_lru_add_after_commit() ? I don't understand
+> why we have del_page_from_lru_list() here?Here is how the function
+> looks like on my local tree:
+> 
+> static void mem_cgroup_lru_add_after_commit(struct page *page)
+> {
+> >-------unsigned long flags;
+> >-------struct zone *zone = page_zone(page);
+> >-------struct page_cgroup *pc = lookup_page_cgroup(page);
+> 
+> >-------/* taking care of that the page is added to LRU while we commit it */
+> >-------if (likely(!PageLRU(page)))
+> >------->-------return;
+> >-------spin_lock_irqsave(&zone->lru_lock, flags);
+> >-------/* link when the page is linked to LRU but page_cgroup isn't */
+> >-------if (PageLRU(page) && !PageCgroupAcctLRU(pc))
+> >------->-------mem_cgroup_add_lru_list(page, page_lru(page));
+> >-------spin_unlock_irqrestore(&zone->lru_lock, flags);
+> }
+> 
+>  I agree to move the PageLRU inside the lru_lock though.
+
+Currently, mem_cgroup_add_lru_list() does both accounting and linking.
+Later, mem_cgroup_lru_add_list() will only do memcg-accounting, never
+LRU list linking.  But it returns the lruvec the page has to sit on.
+
+The reason why we need to do del_page_from_lru_list() after my series
+is because the page may sit on the wrong lruvec and needs to be
+relinked.  So del, and readd.
