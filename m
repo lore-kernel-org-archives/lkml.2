@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668Ab1HOKLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:11:49 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44103 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1HOKLr convert rfc822-to-8bit (ORCPT
+	id S1751666Ab1HOKXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:23:18 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:35082 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab1HOKXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:11:47 -0400
+	Mon, 15 Aug 2011 06:23:16 -0400
+X-ASG-Debug-ID: 1313403795-082d21b80001-xx1T2L
+X-Barracuda-Envelope-From: leoy@marvell.com
+Message-ID: <4E48F420.3030101@marvell.com>
+Date: Mon, 15 Aug 2011 18:25:36 +0800
+From: Leo Yan <leoy@marvell.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20110814083618.GE4986@n2100.arm.linux.org.uk>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com>
-	<20110814083618.GE4986@n2100.arm.linux.org.uk>
-Date: Mon, 15 Aug 2011 12:11:46 +0200
-Message-ID: <CACRpkdYdXz=Xt6QU_jDvw=j4EAEH+kapcq2CU97QF5giCqVjQw@mail.gmail.com>
-Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len
- greater than one for slave transfers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>
-Cc: pratyush.anand@st.com, rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
-        shiraz.hashim@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Haojian Zhuang <hzhuang1@marvell.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+X-ASG-Orig-Subj: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
+Subject: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
+References: <1313377794-26721-1-git-send-email-leoy@marvell.com> <1313377893.14434.5.camel@Lily> <CAMPhdO8rkct4H74zXBzaDa183u5vrPArerXgiNXwvQWzZT67Ng@mail.gmail.com> <20110815091245.GC32705@game.jcrosoft.org> <CAMPhdO_StSa9fsYLNjJDd0KDkUyg6ep3gN2n5Gx-WmZ8t=bTFw@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
+In-Reply-To: <CAMPhdO_StSa9fsYLNjJDd0KDkUyg6ep3gN2n5Gx-WmZ8t=bTFw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1313403795
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 10:36 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Jul 29, 2011 at 04:19:26PM +0530, Viresh Kumar wrote:
->> Untill now, sg_len greater than one is not supported. This patch adds support to
->> do that.
+
+
+On 08/15/2011 05:35 PM, Eric Miao wrote:
+> On Mon, Aug 15, 2011 at 5:12 PM, Jean-Christophe PLAGNIOL-VILLARD
+> <plagnioj@jcrosoft.com>  wrote:
+>> On 16:43 Mon 15 Aug     , Eric Miao wrote:
+>>> On Mon, Aug 15, 2011 at 11:11 AM, Haojian Zhuang
+>>> <haojian.zhuang@marvell.com>  wrote:
+>>>> On Sun, 2011-08-14 at 20:09 -0700, Leo Yan wrote:
+>>>>> On mmp platform, there have two sram banks:
+>>>>> audio sram bank, and internal sram bank for video and PM.
+>>>>> So add the sram module to manage these sram banks.
+>>>>>
+>>>>> And register the sram banks so can dynamically alloc/free
+>>>>> the buffer.
+>>>>>
+>>>>> Leo Yan (3):
+>>>>>    ARM: mmp: add sram allocator
+>>>>>    ARM: mmp: register audio sram bank
+>>>>>    ARM: mmp: register internal sram bank
+>>>>>
+>>>>>   arch/arm/Kconfig                      |    1 +
+>>>>>   arch/arm/mach-mmp/Makefile            |    2 +-
+>>>>>   arch/arm/mach-mmp/brownstone.c        |   11 ++
+>>>>>   arch/arm/mach-mmp/include/mach/mmp2.h |   13 +++
+>>>>>   arch/arm/mach-mmp/include/mach/sram.h |   35 +++++++
+>>>>>   arch/arm/mach-mmp/mmp2.c              |    3 +
+>>>>>   arch/arm/mach-mmp/sram.c              |  168 +++++++++++++++++++++++++++++++++
+>>>>>   7 files changed, 232 insertions(+), 1 deletions(-)
+>>>>>   create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
+>>>>>   create mode 100644 arch/arm/mach-mmp/sram.c
+>>>>>
+>>>> Acked-by: Haojian Zhuang<haojian.zhuang@gmail.com>
+>>>
+>>> Looks good to me. Thanks Haojian. Applied to -devel.
+>> I've some reserve on the named pool they need to be managed at generic level
+>> not here
 >
-> I'm not sure that this is the correct approach.  memcpy()s can only be
-> used with one single buffer, so the sg stuff for that (and the unmapping
-> support) doesn't make sense at all.
-
-I agree, that part is fishy.
-
-> The only place where this makes sense is the slave sg stuff.  I wonder
-> whether we can better deal with that by having the LLI setup code deal
-> with one SG list entry at a time, and chain each together.
+> What are their names? And your suggestions to fix this?
 >
-> Something I've also been pondering which is related to this is linking
-> together DMA operations using the LLI chaining when interrupts and
-> callbacks aren't required.  It's a very similar problem.  Other DMA
-> engine drivers do this.
 
-Yeah. Viresh can you hold this patch off for the moment, move it to
-the end of the series and see if we can find some more optimal
-approach for this?
+For MMP platform have not only one bank, so now named the audio sram 
+bank as "asram", and another sram bank as "isram" which is used by 
+video/secure processor/pm.
+If other modules want to use the sram, just use the name string to
+get the gen pool handler, and then just call genalloc APIs.
 
-> Finally, note that some of the PL08x code assumes that for any TXD,
-> the LLI list is a contiguous array.  See the first part of
-> pl08x_getbytes_chan(). That needs fixing as soon as we start going to
-> more than one SG list entry.
+I just wander if maintain the name in genalloc, then the name string
+we should maintain in the pool's structure or chunk's structure?
 
-Actually, after the removal of the phantom boundary in the PL08x
-driver, the LLI handling code starts to resemble the stuff inside
-the coh901318.c driver an *awful lot*, so I'm now ever more
-convinced that that thing is a PL08x derivate. (I have asked the
-hardware designers but the people who made it are unreachable.)
-
-And the coh901318 code handles this by properly walking the LLIs
-in memory IIRC, so could be a good inspiration.
-
-I am aware that we need to consolidate that LLI handling so
-the coh901318 and PL08x share the same LLI code atleast, or I
-may even be able to merge all into pl08x.c. I have a mental note
-to get to that once we've got PL08x into shape, until then it
-can atleast be used for inspiration.
-
-Thanks,
-Linus Walleij
+>>
+>> Best Regards,
+>> J.
+>>
