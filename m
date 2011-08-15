@@ -1,82 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab1HOE5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 00:57:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:16907 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab1HOE5k (ORCPT
+	id S1751816Ab1HOFHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:07:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37521 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab1HOFH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 00:57:40 -0400
-Message-ID: <4E48A723.8070906@oracle.com>
-Date: Mon, 15 Aug 2011 12:57:07 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>
-CC: Greg Marsden <greg.marsden@oracle.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Jin <joe.jin@oracle.com>
-Subject: xen-blkback: fixed indentation and comments
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E48A73F.002B:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Mon, 15 Aug 2011 01:07:29 -0400
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH 00/11] Fix in-tree usage of EXTRA_{A,C,CPP,LD}FLAGS
+Date: Mon, 15 Aug 2011 01:07:03 -0400
+Message-Id: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.6.153.g78432
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes belows:
+Hi folks,
 
-1. Fix code style issue.
-2. Fix incorrect functions name in comments.
+The attached serie fix in-tree usage of EXTRA_{A,C,CPP,LD}FLAGS. Usage of
+these flags has been deprecated for nearly 4 years by:
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
----
- drivers/block/xen-blkback/common.h |    2 +-
- drivers/block/xen-blkback/xenbus.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+    commit f77bf01425b11947eeb3b5b54685212c302741b8
+    Author: Sam Ravnborg <sam@neptun.(none)>
+    Date:   Mon Oct 15 22:25:06 2007 +0200
 
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 9e40b28..00c57c9 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -46,7 +46,7 @@
- 
- #define DRV_PFX "xen-blkback:"
- #define DPRINTK(fmt, args...)				\
--	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",	\
-+	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",		\
- 		 __func__, __LINE__, ##args)
- 
- 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index da39d61..9fa9d07 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -598,7 +598,7 @@ static void frontend_changed(struct xenbus_device *dev,
- 
- 		/*
- 		 * Enforce precondition before potential leak point.
--		 * blkif_disconnect() is idempotent.
-+		 * xen_blkif_disconnect() is idempotent.
- 		 */
- 		xen_blkif_disconnect(be->blkif);
- 
-@@ -619,7 +619,7 @@ static void frontend_changed(struct xenbus_device *dev,
- 			break;
- 		/* fall through if not online */
- 	case XenbusStateUnknown:
--		/* implies blkif_disconnect() via blkback_remove() */
-+		/* implies xen_blkif_disconnect() via xen_blkbk_remove() */
- 		device_unregister(&dev->dev);
- 		break;
- 
+        kbuild: introduce ccflags-y, asflags-y and ldflags-y
+
+Moreover, these flags (at least EXTRA_CFLAGS) have been documented for command
+line use. By default, gmake(1) do not override command line setting, so this is
+likely to result in build failure or unexpected behavior.
+
+Their usage is replaced by Kbuild's `{as,cc,cpp,ld}flags-y'.
+
+This serie has been build-tested on x86-64 `allyesconfig' where it fixes the
+complete brokenness of the media tree, plus various other failure, espectially
+in the SCSI tree when EXTRA_CFLAGS is defined on the command-line.
+
+I did not build test other architectures.
+
+ - Arnaud
+
+Cc: Sam Ravnborg <sam@ravnborg.org>
+
+Arnaud Lacombe (11):
+  arch/m68k: do not use EXTRA_{A,C,LD}FLAGS
+  arch/mips: do not use EXTRA_CFLAGS
+  arch/unicore32: do not use EXTRA_AFLAGS or EXTRA_CFLAGS
+  arch/x86: do not use EXTRA_CFLAGS
+  drivers/media: do not use EXTRA_CFLAGS
+  drivers/net/bna: do not use EXTRA_CFLAGS
+  drivers/pps: do not use EXTRA_CFLAGS
+  drivers/scsi: do not use EXTRA_CFLAGS
+  drivers/staging: do not use EXTRA_CFLAGS
+  scripts/Makefile.build: do not reference EXTRA_CFLAGS as CFLAGS
+    replacement
+  script/checkpatch.pl: warn about deprecated use of
+    EXTRA_{A,C,CPP,LD}FLAGS
+
+ arch/m68k/fpsp040/Makefile                 |    2 +-
+ arch/m68k/ifpsp060/Makefile                |    2 +-
+ arch/m68k/platform/54xx/Makefile           |    4 ++--
+ arch/mips/netlogic/xlr/Makefile            |    2 +-
+ arch/unicore32/boot/compressed/Makefile    |    4 ++--
+ arch/x86/math-emu/Makefile                 |    4 ++--
+ arch/x86/pci/Makefile                      |    4 +---
+ drivers/media/common/tuners/Makefile       |    4 ++--
+ drivers/media/dvb/b2c2/Makefile            |    4 ++--
+ drivers/media/dvb/bt8xx/Makefile           |    8 ++++----
+ drivers/media/dvb/ddbridge/Makefile        |    8 ++++----
+ drivers/media/dvb/dm1105/Makefile          |    2 +-
+ drivers/media/dvb/dvb-usb/Makefile         |    4 ++--
+ drivers/media/dvb/frontends/Makefile       |    4 ++--
+ drivers/media/dvb/mantis/Makefile          |    2 +-
+ drivers/media/dvb/ngene/Makefile           |    8 ++++----
+ drivers/media/dvb/pluto2/Makefile          |    2 +-
+ drivers/media/dvb/pt1/Makefile             |    2 +-
+ drivers/media/dvb/siano/Makefile           |    4 ++--
+ drivers/media/dvb/ttpci/Makefile           |    4 ++--
+ drivers/media/dvb/ttusb-budget/Makefile    |    2 +-
+ drivers/media/dvb/ttusb-dec/Makefile       |    2 +-
+ drivers/media/radio/Makefile               |    2 +-
+ drivers/media/video/Makefile               |    6 +++---
+ drivers/media/video/au0828/Makefile        |    8 ++++----
+ drivers/media/video/bt8xx/Makefile         |    6 +++---
+ drivers/media/video/cx18/Makefile          |    6 +++---
+ drivers/media/video/cx231xx/Makefile       |   10 +++++-----
+ drivers/media/video/cx23885/Makefile       |   10 +++++-----
+ drivers/media/video/cx25840/Makefile       |    2 +-
+ drivers/media/video/cx88/Makefile          |    8 ++++----
+ drivers/media/video/em28xx/Makefile        |    8 ++++----
+ drivers/media/video/gspca/gl860/Makefile   |    2 +-
+ drivers/media/video/gspca/m5602/Makefile   |    2 +-
+ drivers/media/video/gspca/stv06xx/Makefile |    2 +-
+ drivers/media/video/hdpvr/Makefile         |    4 ++--
+ drivers/media/video/ivtv/Makefile          |    8 ++++----
+ drivers/media/video/omap3isp/Makefile      |    4 +---
+ drivers/media/video/pvrusb2/Makefile       |    8 ++++----
+ drivers/media/video/saa7134/Makefile       |    8 ++++----
+ drivers/media/video/saa7164/Makefile       |   10 +++++-----
+ drivers/media/video/tlg2300/Makefile       |    8 ++++----
+ drivers/media/video/usbvision/Makefile     |    4 ++--
+ drivers/net/bna/Makefile                   |    2 +-
+ drivers/pps/generators/Makefile            |    4 +---
+ drivers/scsi/cxgbi/cxgb3i/Kbuild           |    2 +-
+ drivers/scsi/cxgbi/cxgb4i/Kbuild           |    2 +-
+ drivers/staging/cxd2099/Makefile           |    6 +++---
+ drivers/staging/go7007/Makefile            |    8 ++------
+ drivers/staging/rtl8187se/Makefile         |    6 +++---
+ drivers/staging/rts_pstor/Makefile         |    2 +-
+ scripts/Makefile.build                     |    2 +-
+ scripts/checkpatch.pl                      |   14 ++++++++++++++
+ 53 files changed, 130 insertions(+), 126 deletions(-)
+
+-- 
+1.7.6.153.g78432
 
