@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1HOOsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:48:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37409 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab1HOOsi (ORCPT
+	id S1754191Ab1HOOtX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:49:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51901 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753952Ab1HOOtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:48:38 -0400
-Subject: Re: [PULL] lguest fix, virtio documentation
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>
-In-Reply-To: <87sjp37au3.fsf@rustcorp.com.au>
-References: <87sjp37au3.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Mon, 15 Aug 2011 17:48:32 +0300
-Message-ID: <1313419712.3004.1.camel@sasha>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Aug 2011 10:49:22 -0400
+Date: Mon, 15 Aug 2011 23:49:13 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 2/3] regulator: tps65910: fix list_voltage for VDD1 and
+ VDD2
+Message-ID: <20110815144910.GA29685@opensource.wolfsonmicro.com>
+References: <1313405127-2724-1-git-send-email-jhovold@gmail.com>
+ <1313405127-2724-2-git-send-email-jhovold@gmail.com>
+ <20110815130910.GD3927@opensource.wolfsonmicro.com>
+ <20110815142948.GB4189@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815142948.GB4189@localhost>
+X-Cookie: You are number 6!  Who is number one?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-15 at 10:25 +0930, Rusty Russell wrote:
-> [ This adds a text copy of the virtio draft spec to the kernel source,
->   which should make it easier for people to find and read.  The master
->   is still the lyx document on my server, so I'll keep it in sync. ]
-> 
-> The following changes since commit 91d85ea6786107aa2837bef3e957165ad7c8b823:
-> 
->   Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-08-13 18:37:28 -0700)
-> 
-> are available in the git repository at:
-> 
->   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git master
-> 
-> Rusty Russell (2):
->       virtio: Add text copy of spec to Documentation/virtual.
+On Mon, Aug 15, 2011 at 04:29:48PM +0200, Johan Hovold wrote:
+> On Mon, Aug 15, 2011 at 10:09:13PM +0900, Mark Brown wrote:
 
-The "Device Status" paragraph says FAILED is 8, while it should be 0x80.
+> > Why is this a separate patch to the previous one?
 
--- 
+> Because it fixes a different bug (although introduced by the same commit
+> and the same kind of programming error).
 
-Sasha.
-
+You've got a bunch of missing break statements introduced by the same
+commit in the same driver causing the same runtime issue...
