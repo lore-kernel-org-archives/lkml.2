@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1HOSyD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:54:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23461 "EHLO mx1.redhat.com"
+	id S1752090Ab1HOTAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 15:00:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51910 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab1HOSyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:54:01 -0400
-Date: Mon, 15 Aug 2011 20:49:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in
-	cgroup_attach_proc
-Message-ID: <20110815184957.GA16588@redhat.com>
-References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu> <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown> <20110728062616.GC15204@unix33.andrew.cmu.edu> <20110728171345.67d3797d@notabene.brown> <20110729142842.GA8462@unix33.andrew.cmu.edu>
+	id S1751242Ab1HOTAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 15:00:33 -0400
+Message-ID: <4E496CAC.3030103@zytor.com>
+Date: Mon, 15 Aug 2011 11:59:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729142842.GA8462@unix33.andrew.cmu.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Solar Designer <solar@openwall.com>
+CC: Andi Kleen <andi@firstfloor.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
+Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
+References: <20110812150304.GC16880@albatros> <4E45884B.8030303@zytor.com> <20110813062246.GC3851@albatros> <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com> <m2ei0olnua.fsf@firstfloor.org> <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com> <20110814092028.GB14293@openwall.com> <01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com> <20110815185114.GA20115@openwall.com>
+In-Reply-To: <20110815185114.GA20115@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29, Ben Blum wrote:
->
-> According to this thread - https://lkml.org/lkml/2011/7/27/243 - RCU is
-> not sufficient to guarantee the tasklist is stable w.r.t. de_thread and
-> exit. Taking tasklist_lock for reading, instead of rcu_read_lock,
-> ensures proper exclusion.
+On 08/15/2011 11:51 AM, Solar Designer wrote:
+> I agree with you that i386 vs x86-64 vs x32 is one axis and syscall
+> number is another axis.
 
-Yes.
+They are not.  ABI is ONE SUBSET OF SYSCALL NUMBERS.
 
-So far I still think we should fix while_each_thread() so that it works
-under rcu_read_lock() "as exepected", I'll try to think more.
+> Per-syscall restrictions are also useful, but primarily at a different
+> level - I'd expect them to be used in specific programs, such as Chrome
+> and vsftpd.  Those programs may also want to limit themselves to a
+> certain type of syscalls (that is, on the i386 vs x86-64 vs x32 axis),
+> thereby making use of both features at once.  Or they might even have to
+> do that, depending on how we implement the syscall restrictions.
+> 
+> Per your suggestion, if I understand correctly, any task that wants to
+> restrict itself on the i386 vs x86-64 vs x32 axis will have TIF_SECCOMP
+> set and will incur calls into __secure_computing().  This is unnecessary
+> overhead for the case when we have a restriction over this axis only,
+> without per-syscall restrictions.  Vasiliy's patch avoids such overhead.
 
-But whatever we do with while_each_thread(), this can't help
-cgroup_attach_proc(), it needs the locking.
+There is really no bloody difference between i386 vs x86-64 and, say,
+sys_oldstat versus sys_stat, or anything else along those lines.
+Putting in a bunch of ad hoc facilities because of semi-plausible
+performance wins rather than building a sane filtering facility which
+can be optimized as a single path is ridiculous.
 
-> -	rcu_read_lock();
-> +	read_lock(&tasklist_lock);
->  	if (!thread_group_leader(leader)) {
-
-Agreed, this should work.
-
-But can't we avoid the global list? thread_group_leader() or not, we do
-not really care. We only need to ensure we can safely find all threads.
-
-How about the patch below?
-
-
-With or without this/your patch this leader can die right after we
-drop the lock. ss->can_attach(leader) and ss->attach(leader) look
-suspicious. If a sub-thread execs, this task_struct has nothing to
-do with the threadgroup.
-
-
-
-Also. This is off-topic, but... Why cgroup_attach_proc() and
-cgroup_attach_task() do ->attach_task() + cgroup_task_migrate()
-in the different order? cgroup_attach_proc() looks wrong even
-if currently doesn't matter.
-
-
-Oleg.
-
---- x/kernel/cgroup.c
-+++ x/kernel/cgroup.c
-@@ -2000,6 +2000,7 @@ int cgroup_attach_proc(struct cgroup *cg
- 	/* threadgroup list cursor and array */
- 	struct task_struct *tsk;
- 	struct flex_array *group;
-+	unsigned long flags;
- 	/*
- 	 * we need to make sure we have css_sets for all the tasks we're
- 	 * going to move -before- we actually start moving them, so that in
-@@ -2027,19 +2028,10 @@ int cgroup_attach_proc(struct cgroup *cg
- 		goto out_free_group_list;
- 
- 	/* prevent changes to the threadgroup list while we take a snapshot. */
--	rcu_read_lock();
--	if (!thread_group_leader(leader)) {
--		/*
--		 * a race with de_thread from another thread's exec() may strip
--		 * us of our leadership, making while_each_thread unsafe to use
--		 * on this task. if this happens, there is no choice but to
--		 * throw this task away and try again (from cgroup_procs_write);
--		 * this is "double-double-toil-and-trouble-check locking".
--		 */
--		rcu_read_unlock();
--		retval = -EAGAIN;
-+	retval = -EAGAIN;
-+	if (!lock_task_sighand(leader, &flags))
- 		goto out_free_group_list;
--	}
-+
- 	/* take a reference on each task in the group to go in the array. */
- 	tsk = leader;
- 	i = 0;
-@@ -2055,9 +2047,9 @@ int cgroup_attach_proc(struct cgroup *cg
- 		BUG_ON(retval != 0);
- 		i++;
- 	} while_each_thread(leader, tsk);
-+	unlock_task_sighand(leader, &flags);
- 	/* remember the number of threads in the array for later. */
- 	group_size = i;
--	rcu_read_unlock();
- 
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
-
+	-hpa
