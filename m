@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1HOKuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:50:16 -0400
-Received: from ns1.kuva.fi ([193.167.128.252]:59935 "EHLO kaivo3.kuva.fi"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751633Ab1HOKuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:50:14 -0400
-X-Greylist: delayed 4624 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Aug 2011 06:50:14 EDT
-Message-ID: <1313400691.4e48e77380c08@webmail.kuva.fi>
-Date: Mon, 15 Aug 2011 12:31:31 +0300
-From: System Administrator <helpdeskz@optusnet.com.au>
-Reply-to: hechdeskz@aim.com
-Subject: Webmail Quota Has Exceeded The Set Limit
+	id S1751986Ab1HOKyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:54:31 -0400
+Received: from lucidpixels.com ([72.73.18.11]:60395 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab1HOKya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:54:30 -0400
+Date: Mon, 15 Aug 2011 06:54:29 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Jeff Layton <jlayton@samba.org>
+cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS
+In-Reply-To: <20110815064734.403b630f@corrin.poochiereds.net>
+Message-ID: <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.6
-X-Originating-IP: 66.197.235.213
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-Your mailbox has exceeded the storage limit which is 1GB as set by the default
-administrator, you are currently running low, you may not be able to send or
-receive new mail until you re-validate your mailbox. To re-validate your
-mailbox  please CLICK HERE:
+On Mon, 15 Aug 2011, Jeff Layton wrote:
 
+> On Mon, 15 Aug 2011 11:18:38 +0200 (CEST)
+> Jesper Juhl <jj@chaosbits.net> wrote:
+>
+> There was at least one known oops at mount time with 3.0:
+>
+>    https://bugzilla.redhat.com/show_bug.cgi?id=727927
+>
+> ...but I can't tell whether you hit that w/o seeing the oops messasge.
+>
+> It should be fixed in mainline and the patches for that and another
+> mount time problem will be in the next set of stable kernels. You may
+> want to pull these two commits into your kernel and try again:
+>
+> 80975d21aae2136ccae1ce914a1602dc1d8b0795
+> f9e8c45002cacad536b338dfa9e910e341a49c31
+>
 
-http://www.turktiger.com//tt-web/tiltviewer/account.html
+Thanks,
 
-Thanks
-System Administrator
+Patches applied to 3.0.1 and will try to mount the CIFS shares later today:
+
+# patch -p1 < /home/war/cifs1
+patching file fs/cifs/cifsfs.c
+# patch -p1 < /home/war/cifs2
+patching file fs/cifs/inode.c
+
+Justin.
+
