@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab1HOKfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:35:46 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:49840 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295Ab1HOKfm convert rfc822-to-8bit (ORCPT
+	id S1751828Ab1HOKmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:42:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61900 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab1HOKmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:35:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <bkwpSnItbJM.A.tc.-MCSOB@chimera>
-References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
-	<bkwpSnItbJM.A.tc.-MCSOB@chimera>
-Date: Mon, 15 Aug 2011 13:35:39 +0300
-X-Google-Sender-Auth: m4kCmX7vwbAPanwyGGwzlAuRnT0
-Message-ID: <CAOJsxLH3McBv+83rbd9aCfu_OULx=68KWfKwEGoNL5ygK2iM8Q@mail.gmail.com>
-Subject: Re: [Bug #39922] WIFI becomes EXTREMELY slow ( ath9k ) making the
- connection unusable
-From: Pekka Enberg <penberg@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Lukasz Olszewski <lcpak@epoczta.pl>, lrodriguez@atheros.com,
-        jmalinen@atheros.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Aug 2011 06:42:21 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        stable@kernel.org
+Subject: [PATCH] mfd: tps65910: fix initialisation of interrupts
+Date: Mon, 15 Aug 2011 12:42:03 +0200
+Message-Id: <1313404923-2502-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 10:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.39 and 3.0.
->
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.39 and 3.0.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=39922
-> Subject         : WIFI becomes EXTREMELY slow ( ath9k ) making the connection unusable
-> Submitter       : Lukasz Olszewski <lcpak@epoczta.pl>
-> Date            : 2011-07-24 09:20 (22 days old)
+Fix regression introduced by commit
+a2974732ca7614aaf0baf9d6dd3ad893d50ce1c5 (TPS65911: Add new irq
+definitions) which caused irq_num to be incorrectly set for tps65910.
 
-There's no evidence in the bug report that the ath9k maintainers know
-about this. I'm CC'ing Luis and Jouni.
+Cc: stable@kernel.org
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/mfd/tps65910-irq.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/tps65910-irq.c b/drivers/mfd/tps65910-irq.c
+index 2bfad5c..a56be93 100644
+--- a/drivers/mfd/tps65910-irq.c
++++ b/drivers/mfd/tps65910-irq.c
+@@ -178,8 +178,10 @@ int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 	switch (tps65910_chip_id(tps65910)) {
+ 	case TPS65910:
+ 		tps65910->irq_num = TPS65910_NUM_IRQ;
++		break;
+ 	case TPS65911:
+ 		tps65910->irq_num = TPS65911_NUM_IRQ;
++		break;
+ 	}
+ 
+ 	/* Register with genirq */
+-- 
+1.7.6
+
