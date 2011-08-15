@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1HOFLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:11:54 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47054 "EHLO
+	id S1751984Ab1HOFNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:13:37 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44765 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1HOFLw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751380Ab1HOFNe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:11:52 -0400
+	Mon, 15 Aug 2011 01:13:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313384834-24433-2-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313384834-24433-4-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
-	<1313384834-24433-2-git-send-email-lacombar@gmail.com>
-Date: Mon, 15 Aug 2011 01:11:52 -0400
-Message-ID: <CACqU3MUXhMGgVwgRYfwkC1N6cHj=U6zS+G8mSnZc5i6cn1PTug@mail.gmail.com>
-Subject: Re: [PATCH 01/11] arch/m68k: do not use EXTRA_{A,C,LD}FLAGS
+	<1313384834-24433-4-git-send-email-lacombar@gmail.com>
+Date: Mon, 15 Aug 2011 01:13:34 -0400
+Message-ID: <CACqU3MWTEFy+XV7WH=FEP2hTvBu8VCgcYj-HCcVnSjKxZBQeeA@mail.gmail.com>
+Subject: Re: [PATCH 03/11] arch/unicore32: do not use EXTRA_AFLAGS or EXTRA_CFLAGS
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-m68k@vger.kernel.org
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,54 +42,29 @@ On Mon, Aug 15, 2011 at 1:07 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
 > Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 >
 > Cc: Sam Ravnborg <sam@ravnborg.org>
-> Cc: linux-m68k@lists.linux-m68k.org
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
  - Arnaud
-
 > ---
->  arch/m68k/fpsp040/Makefile       |    2 +-
->  arch/m68k/ifpsp060/Makefile      |    2 +-
->  arch/m68k/platform/54xx/Makefile |    4 ++--
->  3 files changed, 4 insertions(+), 4 deletions(-)
+>  arch/unicore32/boot/compressed/Makefile |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/arch/m68k/fpsp040/Makefile b/arch/m68k/fpsp040/Makefile
-> index 9506d88..628a351 100644
-> --- a/arch/m68k/fpsp040/Makefile
-> +++ b/arch/m68k/fpsp040/Makefile
-> @@ -10,6 +10,6 @@ obj-y    := bindec.o binstr.o decbin.o do_func.o gen_except.o get_op.o \
->            x_bsun.o x_fline.o x_operr.o x_ovfl.o x_snan.o x_store.o \
->            x_unfl.o x_unimp.o x_unsupp.o bugfix.o skeleton.o
->
-> -EXTRA_LDFLAGS := -x
-> +ldflags-y := -x
->
->  $(OS_OBJS): fpsp.h
-> diff --git a/arch/m68k/ifpsp060/Makefile b/arch/m68k/ifpsp060/Makefile
-> index 43b4350..5ba2d1e 100644
-> --- a/arch/m68k/ifpsp060/Makefile
-> +++ b/arch/m68k/ifpsp060/Makefile
-> @@ -6,4 +6,4 @@
->
->  obj-y := fskeleton.o iskeleton.o os.o
->
-> -EXTRA_LDFLAGS := -x
-> +ldflags-y := -x
-> diff --git a/arch/m68k/platform/54xx/Makefile b/arch/m68k/platform/54xx/Makefile
-> index 6cfd090..967b51d 100644
-> --- a/arch/m68k/platform/54xx/Makefile
-> +++ b/arch/m68k/platform/54xx/Makefile
-> @@ -8,8 +8,8 @@
->  # on the console port whenever a DBG interrupt occurs. You have to
->  # set up you HW breakpoints to trigger a DBG interrupt:
->  #
-> -# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
-> -# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
-> +# ccflags-y += -DTRAP_DBG_INTERRUPT
-> +# ccflags-y += -DTRAP_DBG_INTERRUPT
+> diff --git a/arch/unicore32/boot/compressed/Makefile b/arch/unicore32/boot/compressed/Makefile
+> index b0954a2..950a9af 100644
+> --- a/arch/unicore32/boot/compressed/Makefile
+> +++ b/arch/unicore32/boot/compressed/Makefile
+> @@ -10,8 +10,8 @@
+>  # Copyright (C) 2001~2010 GUAN Xue-tao
 >  #
 >
->  asflags-$(CONFIG_FULLDEBUG) := -DDEBUGGER_COMPATIBLE_CACHE=1
+> -EXTRA_CFLAGS   := -fpic -fno-builtin
+> -EXTRA_AFLAGS   := -Wa,-march=all
+> +ccflags-y      := -fpic -fno-builtin
+> +asflags-y      := -Wa,-march=all
+>
+>  OBJS           := misc.o
+>
 > --
 > 1.7.6.153.g78432
 >
