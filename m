@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab1HOKzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:55:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43749 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1HOKzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:55:01 -0400
-Message-ID: <4E48FB04.9010903@suse.cz>
-Date: Mon, 15 Aug 2011 12:55:00 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752110Ab1HOK6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:58:05 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:40379 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab1HOK6C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:58:02 -0400
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: IS_ENABLED() and non-available symbols
-References: <CACqU3MU2pjcqgYDjn=S2asdLamU0mity+kLizH_mbTtJU5Fh2A@mail.gmail.com> <1313341346-15605-1-git-send-email-lacombar@gmail.com>
-In-Reply-To: <1313341346-15605-1-git-send-email-lacombar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110815104656.GG26978@dastard>
+References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
+	<1313334832-1150-4-git-send-email-glommer@parallels.com>
+	<CAOJsxLFYD9DkEU5R+9fZr-uaznteP8-BUC_Ti+FnNFqtbOCHSw@mail.gmail.com>
+	<20110815104656.GG26978@dastard>
+Date: Mon, 15 Aug 2011 13:58:01 +0300
+X-Google-Sender-Auth: gQxSuseWpEzs-kLQ5vzCmYdQtCY
+Message-ID: <CAOJsxLGFJmqO-W=itQbO4Mh4DxSD4wrHOC8gQ5bWL5aE1YYeQw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] limit nr_dentries per superblock
+From: Pekka Enberg <penberg@kernel.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.8.2011 19:02, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Sun, Aug 14, 2011 at 12:55 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> The solution is trivial, but I am not sure we want to go that way: we
->> need to generated a __enabled_ entry for symbols for _all_ symbols in
->> the configuration, even internal one
->>
-> That should do the job...
-> 
->  -= NOT FOR MERGE =-
-> 
-> Not-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-> 
-> ---
->  scripts/kconfig/confdata.c |   42 +++++++++++++++++++++++++++++++-----------
->  1 files changed, 31 insertions(+), 11 deletions(-)
-> 
->  	for_all_symbols(i, sym) {
-> +		conf_write_symbol(out_h, sym, &header__enabled_printer_cb, NULL);
-> +
->  		sym_calc_value(sym);
->  		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
->  			continue;
+Hi Dave,
 
-I like the approach, it will work even with not visible symbols and
-still catch typos (which #ifdef does not protect against). But with the
-patch as-is, the generated autoconf.h starts with lots of
+On Mon, Aug 15, 2011 at 1:46 PM, Dave Chinner <david@fromorbit.com> wrote:
+> That's usage for the entire slab, though, and we don't have a dentry
+> slab per superblock so I don't think that helps us. And with slab
+> merging, I think that even if we did have a slab per superblock,
+> they'd end up in the same slab context anyway, right?
 
-#define __enabled_CONFIG_(null) 1
-#define __enabled_CONFIG_(null)_MODULE 0
-#define __enabled_CONFIG_(null) 1
-#define __enabled_CONFIG_(null)_MODULE 0
-#define __enabled_CONFIG_(null) 0
+You could add a flag to disable slab merging but there's no sane way
+to fix the per-superblock thing in slab.
 
-Michal
+On Mon, Aug 15, 2011 at 1:46 PM, Dave Chinner <david@fromorbit.com> wrote:
+> Ideally what we need is a slab, LRU and shrinkers all rolled into a
+> single infrastructure handle so we can simply set them up per
+> object, per context etc and not have to re-invent the wheel for
+> every single slab cache/LRU/shrinker setup we have in the kernel.
+>
+> I've got a rough node-aware generic LRU/shrinker infrastructure
+> prototype that is generic enough for most of the existing slab
+> caches with shrinkers, but I haven't looked at what is needed to
+> integrate it with the slab cache code. That's mainly because I don't
+> like the idea of having to implement the same thing 3 times in 3
+> different ways and debug them all before anyone would consider it
+> for inclusion in the kernel.
+>
+> Once I've sorted out the select_parent() use-the-LRU-for-disposal
+> abuse and have a patch set that survives a 'rm -rf *' operation,
+> maybe we can then talk about what is needed to integrate stuff into
+> the slab caches....
+
+Well, now that I really understand what you're trying to do here, it's
+probably best to keep slab as-is and implement "slab accounting" on
+top of it.
+
+You'd have something like you do now but in slightly more generic form:
+
+  struct kmem_accounted_cache {
+                  struct kmem_cache *cache;
+                  /* ... statistics... */
+  }
+
+  void *kmem_accounted_alloc(struct kmem_accounted_cache *c)
+  {
+          if (/* within limits */)
+                  return kmem_cache_alloc(c->cache);
+
+          return NULL;
+  }
+
+Does something like that make sense to you?
+
+                        Pekka
