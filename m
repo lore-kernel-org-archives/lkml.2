@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab1HOPxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:53:13 -0400
+	id S1754846Ab1HOPxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:53:24 -0400
 Received: from mail-vx0-f174.google.com ([209.85.220.174]:51689 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab1HOPxL (ORCPT
+	with ESMTP id S1754797Ab1HOPxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:53:11 -0400
+	Mon, 15 Aug 2011 11:53:20 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 09/32] nohz: Move ts->idle_calls into strict idle logic
-Date: Mon, 15 Aug 2011 17:52:06 +0200
-Message-Id: <1313423549-27093-10-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 12/32] nohz: Try not to give the timekeeping duty to a cpuset nohz cpu
+Date: Mon, 15 Aug 2011 17:52:09 +0200
+Message-Id: <1313423549-27093-13-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,10 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the nohz switch in two parts, a first that checks if we can
-really stop the tick, and another that actually stop it. This
-way we can pull out idle_calls stat incrementation into strict
-idle logic.
+Try to give the timekeeing duty to a CPU that doesn't belong
+to any nohz cpuset when possible, so that we increase the chance
+for these nohz cpusets to run their CPUs out of periodic tick
+mode.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -47,127 +47,86 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- kernel/time/tick-sched.c |   87 ++++++++++++++++++++++++---------------------
- 1 files changed, 46 insertions(+), 41 deletions(-)
+ kernel/time/tick-sched.c |   52 ++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 41 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index de1b629..2794150 100644
+index f5e12da..5f41ef7 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -249,48 +249,14 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
-  * Called either from the idle loop or from irq_exit() when an idle period was
-  * just interrupted by an interrupt which did not cause a reschedule.
-  */
--static void tick_nohz_stop_sched_tick(ktime_t now)
-+static void tick_nohz_stop_sched_tick(ktime_t now, int cpu, struct tick_sched *ts)
- {
- 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
--	struct tick_sched *ts;
- 	ktime_t last_update, expires;
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
--	int cpu;
--
--	cpu = smp_processor_id();
--	ts = &per_cpu(tick_cpu_sched, cpu);
--
--	/*
--	 * If this cpu is offline and it is the one which updates
--	 * jiffies, then give up the assignment and let it be taken by
--	 * the cpu which runs the tick timer next. If we don't drop
--	 * this here the jiffies might be stale and do_timer() never
--	 * invoked.
--	 */
--	if (unlikely(!cpu_online(cpu))) {
--		if (cpu == tick_do_timer_cpu)
--			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
--	}
+@@ -20,6 +20,7 @@
+ #include <linux/profile.h>
+ #include <linux/sched.h>
+ #include <linux/module.h>
++#include <linux/cpuset.h>
  
--	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
--		return;
--
--	if (need_resched())
--		return;
--
--	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
--		static int ratelimit;
--
--		if (ratelimit < 10) {
--			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
--			       (unsigned int) local_softirq_pending());
--			ratelimit++;
--		}
--		return;
--	}
+ #include <asm/irq_regs.h>
  
--	ts->idle_calls++;
- 	/* Read jiffies and the time when jiffies were updated last */
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
-@@ -422,18 +388,57 @@ out:
- 	ts->sleep_length = ktime_sub(dev->next_event, now);
+@@ -729,6 +730,45 @@ void tick_check_idle(int cpu)
+ 	tick_check_nohz(cpu);
  }
  
-+static bool tick_nohz_can_stop_tick(int cpu, struct tick_sched *ts)
++#ifdef CONFIG_CPUSETS_NO_HZ
++
++/*
++ * Take the timer duty if nobody is taking care of it.
++ * If a CPU already does and and it's in a nohz cpuset,
++ * then take the charge so that it can switch to nohz mode.
++ */
++static void tick_do_timer_check_handler(int cpu)
 +{
-+	/*
-+	 * If this cpu is offline and it is the one which updates
-+	 * jiffies, then give up the assignment and let it be taken by
-+	 * the cpu which runs the tick timer next. If we don't drop
-+	 * this here the jiffies might be stale and do_timer() never
-+	 * invoked.
-+	 */
-+	if (unlikely(!cpu_online(cpu))) {
-+		if (cpu == tick_do_timer_cpu)
-+			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++	int handler = tick_do_timer_cpu;
++
++	if (unlikely(handler == TICK_DO_TIMER_NONE)) {
++		tick_do_timer_cpu = cpu;
++	} else {
++		if (!cpuset_adaptive_nohz() &&
++		    cpuset_cpu_adaptive_nohz(handler))
++			tick_do_timer_cpu = cpu;
 +	}
-+
-+	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
-+		return false;
-+
-+	if (need_resched())
-+		return false;
-+
-+	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
-+		static int ratelimit;
-+
-+		if (ratelimit < 10) {
-+			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
-+			       (unsigned int) local_softirq_pending());
-+			ratelimit++;
-+		}
-+		return false;
-+	}
-+
-+	return true;
 +}
 +
- static void __tick_nohz_enter_idle(struct tick_sched *ts, int cpu)
- {
- 	ktime_t now;
--	int was_stopped = ts->tick_stopped;
- 
- 	now = tick_nohz_start_idle(cpu, ts);
--	tick_nohz_stop_sched_tick(now);
- 
--	if (!was_stopped && ts->tick_stopped) {
--		ts->idle_jiffies = ts->last_jiffies;
--		select_nohz_load_balancer(1);
--		rcu_enter_nohz();
-+	if (tick_nohz_can_stop_tick(cpu, ts)) {
-+		int was_stopped = ts->tick_stopped;
++#else
 +
-+		ts->idle_calls++;
-+		tick_nohz_stop_sched_tick(now, cpu, ts);
++static void tick_do_timer_check_handler(int cpu)
++{
++#ifdef CONFIG_NO_HZ
++	/*
++	 * Check if the do_timer duty was dropped. We don't care about
++	 * concurrency: This happens only when the cpu in charge went
++	 * into a long sleep. If two cpus happen to assign themself to
++	 * this duty, then the jiffies update is still serialized by
++	 * xtime_lock.
++	 */
++	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
++		tick_do_timer_cpu = cpu;
++#endif
++}
 +
-+		if (!was_stopped && ts->tick_stopped) {
-+			ts->idle_jiffies = ts->last_jiffies;
-+			select_nohz_load_balancer(1);
-+			rcu_enter_nohz();
-+		}
- 	}
- }
++#endif /* CONFIG_CPUSETS_NO_HZ */
++
+ /*
+  * High resolution timer specific code
+  */
+@@ -745,17 +785,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 	ktime_t now = ktime_get();
+ 	int cpu = smp_processor_id();
  
+-#ifdef CONFIG_NO_HZ
+-	/*
+-	 * Check if the do_timer duty was dropped. We don't care about
+-	 * concurrency: This happens only when the cpu in charge went
+-	 * into a long sleep. If two cpus happen to assign themself to
+-	 * this duty, then the jiffies update is still serialized by
+-	 * xtime_lock.
+-	 */
+-	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
+-		tick_do_timer_cpu = cpu;
+-#endif
++	tick_do_timer_check_handler(cpu);
+ 
+ 	/* Check, if the jiffies need an update */
+ 	if (tick_do_timer_cpu == cpu)
 -- 
 1.7.5.4
 
