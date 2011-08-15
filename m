@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab1HOFIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:08:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54932 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752245Ab1HOFIR (ORCPT
+	id S1752152Ab1HOFIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:08:05 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33968 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab1HOFH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:08:17 -0400
+	Mon, 15 Aug 2011 01:07:59 -0400
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 11/11] script/checkpatch.pl: warn about deprecated use of EXTRA_{A,C,CPP,LD}FLAGS
-Date: Mon, 15 Aug 2011 01:07:14 -0400
-Message-Id: <1313384834-24433-12-git-send-email-lacombar@gmail.com>
+        Rodolfo Giometti <giometti@enneenne.com>, linuxpps@ml.enneenne.com
+Subject: [PATCH 07/11] drivers/pps: do not use EXTRA_CFLAGS
+Date: Mon, 15 Aug 2011 01:07:10 -0400
+Message-Id: <1313384834-24433-8-git-send-email-lacombar@gmail.com>
 X-Mailer: git-send-email 1.7.6.153.g78432
 In-Reply-To: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
@@ -33,39 +33,27 @@ Moreover, these flags (at least EXTRA_CFLAGS) have been documented for command
 line use. By default, gmake(1) do not override command line setting, so this is
 likely to result in build failure or unexpected behavior.
 
-Warn about their introduction in Makefile or Kbuild files.
+Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 
 Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Rodolfo Giometti <giometti@enneenne.com>
+Cc: linuxpps@ml.enneenne.com
 ---
- scripts/checkpatch.pl |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/pps/generators/Makefile |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9d761c9..955183a 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1661,6 +1661,20 @@ sub process {
- 			#print "is_end<$is_end> length<$length>\n";
- 		}
+diff --git a/drivers/pps/generators/Makefile b/drivers/pps/generators/Makefile
+index 303304a..21e5e3b 100644
+--- a/drivers/pps/generators/Makefile
++++ b/drivers/pps/generators/Makefile
+@@ -4,6 +4,4 @@
  
-+		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
-+		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
-+			my $flag = $1;
-+			my $replacement = {
-+				'EXTRA_AFLAGS' =>   'asflags-y',
-+				'EXTRA_CFLAGS' =>   'ccflags-y',
-+				'EXTRA_CPPFLAGS' => 'cppflags-y',
-+				'EXTRA_LDFLAGS' =>  'ldflags-y',
-+			};
-+
-+			WARN("DEPRECATED_VARIABLE",
-+			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
-+		}
-+
- # check we are in a valid source file if not then ignore this hunk
- 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
+ obj-$(CONFIG_PPS_GENERATOR_PARPORT) += pps_gen_parport.o
  
+-ifeq ($(CONFIG_PPS_DEBUG),y)
+-EXTRA_CFLAGS += -DDEBUG
+-endif
++ccflags-$(CONFIG_PPS_DEBUG) += -DDEBUG
 -- 
 1.7.6.153.g78432
 
