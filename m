@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab1HOUaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 16:30:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43634 "EHLO
+	id S1753254Ab1HOU3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 16:29:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55581 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab1HOU3L (ORCPT
+	with ESMTP id S1753104Ab1HOU26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 16:29:11 -0400
+	Mon, 15 Aug 2011 16:28:58 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
         Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
@@ -17,9 +17,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
         Sergei Shtylyov <sshtylyov@mvista.com>,
         Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH v2 10/13] arm/tegra: Convert pinmux driver to a platform device
-Date: Mon, 15 Aug 2011 14:28:17 -0600
-Message-Id: <1313440100-17131-11-git-send-email-swarren@nvidia.com>
+Subject: [RFC PATCH v2 06/13] docs/dt: Document nvidia,tegra20-pinmux binding
+Date: Mon, 15 Aug 2011 14:28:13 -0600
+Message-Id: <1313440100-17131-7-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
 References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
@@ -29,47 +29,310 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/mach-tegra/pinmux.c |   20 ++++++++++++++++++++
- 1 files changed, 20 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |  294 ++++++++++++++++++++
+ 1 files changed, 294 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
 
-diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-index f80d507..ed316f9 100644
---- a/arch/arm/mach-tegra/pinmux.c
-+++ b/arch/arm/mach-tegra/pinmux.c
-@@ -20,6 +20,7 @@
- #include <linux/errno.h>
- #include <linux/spinlock.h>
- #include <linux/io.h>
-+#include <linux/platform_device.h>
- 
- #include <mach/iomap.h>
- #include <mach/pinmux.h>
-@@ -665,6 +666,25 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
- 	}
- }
- 
-+static int __init tegra_pinmux_probe(struct platform_device *pdev)
-+{
-+	return 0;
-+}
+diff --git a/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+new file mode 100644
+index 0000000..744e1b7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+@@ -0,0 +1,294 @@
++NVIDIA Tegra 2 pinmux controller
 +
-+static struct platform_driver tegra_pinmux_driver = {
-+	.driver		= {
-+		.name	= "tegra-pinmux",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= tegra_pinmux_probe,
-+};
++Required properties:
++- compatible : "nvidia,tegra20-pinmux"
 +
-+static int __init tegra_pinmux_init(void)
-+{
-+	return platform_driver_register(&tegra_pinmux_driver);
-+}
-+postcore_initcall(tegra_pinmux_init);
++Optional sub-nodes:
++- nvidia,mux-groups : Mux group settings; see below.
++- nvidia,drive-groups : Drive group settings; see below.
 +
- #ifdef	CONFIG_DEBUG_FS
- 
- #include <linux/debugfs.h>
++nvidia,mux-groups sub-node:
++
++Each mux pin group is represented as a sub-node of the nvidia,mux-groups node.
++The name of the sub-node should be the name of the mux pingroup. The following
++names are valid:
++
++	ata
++	atb
++	atc
++	atd
++	ate
++	cdev1
++	cdev2
++	crtp
++	csus
++	dap1
++	dap2
++	dap3
++	dap4
++	ddc
++	dta
++	dtb
++	dtc
++	dtd
++	dte
++	dtf
++	gma
++	gmb
++	gmc
++	gmd
++	gme
++	gpu
++	gpu7
++	gpv
++	hdint
++	i2cp
++	irrx
++	irtx
++	kbca
++	kbcb
++	kbcc
++	kbcd
++	kbce
++	kbcf
++	lcsn
++	ld0
++	ld1
++	ld10
++	ld11
++	ld12
++	ld13
++	ld14
++	ld15
++	ld16
++	ld17
++	ld2
++	ld3
++	ld4
++	ld5
++	ld6
++	ld7
++	ld8
++	ld9
++	ldc
++	ldi
++	lhp0
++	lhp1
++	lhp2
++	lhs
++	lm0
++	lm1
++	lpp
++	lpw0
++	lpw1
++	lpw2
++	lsc0
++	lsc1
++	lsck
++	lsda
++	lsdi
++	lspi
++	lvp0
++	lvp1
++	lvs
++	owc
++	pmc
++	pta
++	rm
++	sdb
++	sdc
++	sdd
++	sdio1
++	slxa
++	slxc
++	slxd
++	slxk
++	spdi
++	spdo
++	spia
++	spib
++	spic
++	spid
++	spie
++	spif
++	spig
++	spih
++	uaa
++	uab
++	uac
++	uad
++	uca
++	ucb
++	uda
++	ck32
++	ddrc
++	pmca
++	pmcb
++	pmcc
++	pmcd
++	pmce
++	xm2c
++	xm2d
++
++Required subnode-properties:
++- nvidia,function : A string containing the name of the pinmux function to
++  mux to the pingroup. The following names are valid; see the Tegra TRM to
++  determine which are valid for each pingroup:
++
++	none (used for pingroups without muxing functionality)
++	ahb_clk
++	apb_clk
++	audio_sync
++	crt
++	dap1
++	dap2
++	dap3
++	dap4
++	dap5
++	displaya
++	displayb
++	emc_test0_dll
++	emc_test1_dll
++	gmi
++	gmi_int
++	hdmi
++	i2c
++	i2c2
++	i2c3
++	ide
++	irda
++	kbc
++	mio
++	mipi_hs
++	nand
++	osc
++	owr
++	pcie
++	plla_out
++	pllc_out1
++	pllm_out1
++	pllp_out2
++	pllp_out3
++	pllp_out4
++	pwm
++	pwr_intr
++	pwr_on
++	rtck
++	sdio1
++	sdio2
++	sdio3
++	sdio4
++	sflash
++	spdif
++	spi1
++	spi2
++	spi2_alt
++	spi3
++	spi4
++	trace
++	twc
++	uarta
++	uartb
++	uartc
++	uartd
++	uarte
++	ulpi
++	vi
++	vi_sensor_clk
++	xio
++
++optional subnode-properties:
++- nvidia,pull-up : Boolean, apply Tegra's internal pull-up to the pin.
++- nvidia,pull-down : Boolean, apply Tegra's internal pull-down to the pin.
++- nvidia,tristate : Boolean, tristate the pin. Otherwise, drive it.
++
++If both nvidia,pull-up and nvidia,pull-down are specified, nvidia,pull-up
++takes precedence.
++
++nvidia,drive-groups sub-node:
++
++Each drive pin group is represented as a sub-node of the nvidia,drive-groups
++node. The name of the sub-node should be the name of the drive pingroup. The
++following names are valid:
++
++	ao1
++	ao2
++	at1
++	at2
++	cdev1
++	cdev2
++	csus
++	dap1
++	dap2
++	dap3
++	dap4
++	dbg
++	lcd1
++	lcd2
++	sdmmc2
++	sdmmc3
++	spi
++	uaa
++	uab
++	uart2
++	uart3
++	vi1
++	vi2
++	xm2a
++	xm2c
++	xm2d
++	xm2clk
++	memcomp
++	sdio1
++	crt
++	ddc
++	gma
++	gmb
++	gmc
++	gmd
++	gme
++	owr
++	uad
++
++Required subnode-properties:
++- nvidia,high-speed-mode : Boolean, enable high speed mode the pins.
++- nvidia,schmitt : Boolean, enables Schmitt Trigger on the input.
++- nvidia,drive-power : Integer, valid values 0-3. 0 is least power, 3 is
++  most power. Controls the drive power or current. See "Low Power Mode"
++  or "LPMD1" and "LPMD0" in the Tegra TRM.
++- nvidia,pull-down-strength : Integer, valid values 0-31. Controls drive
++  strength. See "CAL_DRVDN" in the Tegra TRM.
++- nvidia,pull-up-strength : Integer, valid values 0-31. Controls drive
++  strength. See "CAL_DRVUP" in the Tegra TRM.
++- nvidia,slew_rate-rising : Integer, valid values 0-3. 0 is fastest, 3 is
++  slowest. See "DRVUP_SLWR" in the Tegra TRM.
++- nvidia,slew_rate-falling : Integer, valid values 0-3. 0 is fastest, 3 is
++  slowest. See "DRVDN_SLWR" in the Tegra TRM.
++
++Example of a gpio-controller node:
++
++	pinmux: pinmux@70000000 {
++		compatible = "nvidia,tegra20-pinmux";
++		reg = < 0x70000000 0xc00 >;
++		nvidia,mux-groups {
++			cdev1 {
++				nvidia,function = "plla_out";
++			};
++			cdev2 {
++				nvidia,function = "pllp_out4";
++				nvidia,pull-down;
++				nvidia,tristate;
++			};
++		};
++		nvidia,drive-groups {
++			sdio1 {
++				nvidia,schmitt;
++				nvidia,drive-power = <1>;
++				nvidia,pull-down-strength = <31>;
++				nvidia,pull-up-strength = <31>;
++				nvidia,slew-rate-rising = <3>;
++				nvidia,slew-rate-falling = <3>;
++			};
++		};
++	};
++
 -- 
 1.7.0.4
 
