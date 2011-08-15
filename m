@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1HOLy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 07:54:28 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46565 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab1HOLy0 (ORCPT
+	id S1752823Ab1HOLzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 07:55:16 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:42823 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1HOLzO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 07:54:26 -0400
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: David Wagner <david.wagner@free-electrons.com>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        tim.bird@am.sony.com
-Date: Mon, 15 Aug 2011 14:56:02 +0300
-In-Reply-To: <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
-	 <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313409368.2583.14.camel@sauron>
-Mime-Version: 1.0
+	Mon, 15 Aug 2011 07:55:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E4903C1.9050207@parallels.com>
+References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
+	<1313334832-1150-4-git-send-email-glommer@parallels.com>
+	<CAOJsxLFYD9DkEU5R+9fZr-uaznteP8-BUC_Ti+FnNFqtbOCHSw@mail.gmail.com>
+	<20110815104656.GG26978@dastard>
+	<CAOJsxLGFJmqO-W=itQbO4Mh4DxSD4wrHOC8gQ5bWL5aE1YYeQw@mail.gmail.com>
+	<4E48FD8A.90401@parallels.com>
+	<CAOJsxLFjZffC9i5kQsBWjGy3eWdj3VMB5awz=yPcwgeKb5BG0Q@mail.gmail.com>
+	<4E4903C1.9050207@parallels.com>
+Date: Mon, 15 Aug 2011 14:55:13 +0300
+X-Google-Sender-Auth: igUDZhqgAek0mwf9D8hT7a5sRr0
+Message-ID: <CAOJsxLErFcxuuqnWkRbOAHEFbeGrKp3YMZ-144=m16oBXCHJ2g@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] limit nr_dentries per superblock
+From: Pekka Enberg <penberg@kernel.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Dave Chinner <david@fromorbit.com>, Glauber Costa <glommer@parallels.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <jbottomley@parallels.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 14:27 +0200, David Wagner wrote:
-> Advantages of ubiblk over gluebi+mtdblock_ro:
-> 
->  * Simpler architecture
-> 
->  * The numbering of devices is much easier with ubiblk than with
->    gluebi+mtdblock_ro. With gluebi+mtdblock_ro, you get one additional
->    MTD device for each UBI volume, so the number of MTD devices grows
->    quite a lot and is a bit difficult to understand. For example,
->    mtdblock[0-4] might be your real MTD partitions, while mtdblock[5-9]
->    might be your UBI volumes.
->    It also means that if a new real MTD
->    partition is added, the number of all the MTD devices exposing UBI
->    volumes will be incremented by one, which is a bit
->    confusing/annoying.
->    As well, if you add an UBI volume, the mtdblock devices that are
->    emulated on top of volumes that come after this new one will have
->    their ID incremented.
-> 
->  * The performance appears to be slightly better with ubiblk than
->    gluebi+mtdblock_ro, according to our benchmarks (see
->    http://elinux.org/Flash_Filesystem_Benchmarks_2.6.39)
+On Mon, Aug 15, 2011 at 2:32 PM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> Couldn't you simply do per-container "struct kmem_accounted_cache" in struct superblock?
+>
+> If by this you mean "account for all the kmem associated with particular superblock" then
+> this is OK for us, but this can't be done in a simple
+>
+>        if (used + size > limit)
+>                return -ENOMEM
+>        else {
+>                used += size;
+>                return 0;
+>        }
+>
+> manner, since once we hit the limit we should shrink the unused dentries. And most of the
+> patches are about this.
 
-Hi, sounds good.
+So you want to shrink dentries that were allocated in the container
+that hit the dcache limit? How does this patch set deal with that? Or
+are you referring to some other patches?
 
-However, what I think is wrong is to follow the MTD + mtdblock approach:
-mtdblock creates a block device for every MTD device - this is wasteful
-and confusing. Indeed, it is wasteful because we end up with potentially
-many unneeded block devices which are not used but consume resources.
-Confusing is because people get impression that /dev/mtdblock* are the
-right interfaces to access the MTD devices, which is wrong.
-
-You can say that gluebi is also doing something like that - yes, this is
-because gluebi is kind of temporary solution for software which cannot
-work with UBI. We wanted to keep it very simple.
-
-My suggestion is to do something similar to UBI:
-
-* make ubiblk register its own character device (/dev/ubiblk_ctl,
-similar to /dev/ubi_ctl).
-* add a couple of ioclts to create / delete ubiblk devices (similar to
-UBI attach/detach)
-* add a couple of user-space tools to mtd-utils to create / delete
-ubiblk devices (similar to ubiattach / ubidetach).
-
-The other reason why I think this more complex approach is justified is
-that when / if you decide to add R/W support to ubiblk, you'd have
-troubles with the current approach (e.g., what if the UBI volume you are
-looking at is not ubiblk-formatted?)
-
-I think it should be rather easy to implement /dev/ubiblk_ctl.
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+                         Pekka
