@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1HOIio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 04:38:44 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64460 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab1HOIik (ORCPT
+	id S1752837Ab1HOInd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 04:43:33 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36147 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab1HOIna convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 04:38:40 -0400
-Subject: [PATCH] ASoC: nuc900-pcm: remove unused variable 'dai'
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Wan ZongShun <mcuos.com@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Aug 2011 16:38:34 +0800
-Message-ID: <1313397514.25061.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Aug 2011 04:43:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313377893.14434.5.camel@Lily>
+References: <1313377794-26721-1-git-send-email-leoy@marvell.com> <1313377893.14434.5.camel@Lily>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 15 Aug 2011 16:43:10 +0800
+Message-ID: <CAMPhdO8rkct4H74zXBzaDa183u5vrPArerXgiNXwvQWzZT67Ng@mail.gmail.com>
+Subject: Re: [PATCH V4 0/3] ARM: mmp: add audio sram support
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Leo Yan <leoy@marvell.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Haojian Zhuang <hzhuang1@marvell.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unused variable 'dai' to eliminate below warning.
+On Mon, Aug 15, 2011 at 11:11 AM, Haojian Zhuang
+<haojian.zhuang@marvell.com> wrote:
+> On Sun, 2011-08-14 at 20:09 -0700, Leo Yan wrote:
+>> On mmp platform, there have two sram banks:
+>> audio sram bank, and internal sram bank for video and PM.
+>> So add the sram module to manage these sram banks.
+>>
+>> And register the sram banks so can dynamically alloc/free
+>> the buffer.
+>>
+>> Leo Yan (3):
+>>   ARM: mmp: add sram allocator
+>>   ARM: mmp: register audio sram bank
+>>   ARM: mmp: register internal sram bank
+>>
+>>  arch/arm/Kconfig                      |    1 +
+>>  arch/arm/mach-mmp/Makefile            |    2 +-
+>>  arch/arm/mach-mmp/brownstone.c        |   11 ++
+>>  arch/arm/mach-mmp/include/mach/mmp2.h |   13 +++
+>>  arch/arm/mach-mmp/include/mach/sram.h |   35 +++++++
+>>  arch/arm/mach-mmp/mmp2.c              |    3 +
+>>  arch/arm/mach-mmp/sram.c              |  168 +++++++++++++++++++++++++++++++++
+>>  7 files changed, 232 insertions(+), 1 deletions(-)
+>>  create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
+>>  create mode 100644 arch/arm/mach-mmp/sram.c
+>>
+> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-  CC      sound/soc/nuc900/nuc900-pcm.o
-sound/soc/nuc900/nuc900-pcm.c: In function 'nuc900_dma_new':
-sound/soc/nuc900/nuc900-pcm.c:321: warning: unused variable 'dai'
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/nuc900/nuc900-pcm.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/sound/soc/nuc900/nuc900-pcm.c b/sound/soc/nuc900/nuc900-pcm.c
-index d589ef1..e46d551 100644
---- a/sound/soc/nuc900/nuc900-pcm.c
-+++ b/sound/soc/nuc900/nuc900-pcm.c
-@@ -318,7 +318,6 @@ static u64 nuc900_pcm_dmamask = DMA_BIT_MASK(32);
- static int nuc900_dma_new(struct snd_soc_pcm_runtime *rtd)
- {
- 	struct snd_card *card = rtd->card->snd_card;
--	struct snd_soc_dai *dai = rtd->cpu_dai;
- 	struct snd_pcm *pcm = rtd->pcm;
- 
- 	if (!card->dev->dma_mask)
--- 
-1.7.4.1
-
-
-
+Looks good to me. Thanks Haojian. Applied to -devel.
