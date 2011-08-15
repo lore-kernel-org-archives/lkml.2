@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1HOOhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:37:55 -0400
-Received: from relay1.orceo.com ([62.245.254.100]:47110 "HELO relay1.orceo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753600Ab1HOOhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:37:50 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Aug 2011 10:37:50 EDT
-Message-ID: <4E492CFF.7040905@pwrnet.de>
-Date: Mon, 15 Aug 2011 16:28:15 +0200
-From: Bernhard Roth <br@pwrnet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1754033Ab1HOOio (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:38:44 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:23629 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753279Ab1HOOin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 10:38:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: FNnSv5kVM1mwIXkLSABOZJ0d93ps3hgKJ82R0S_44CD8wId
+ EubWaDz8FKhOBz4k7OqkcYbE20CejCoo.lY90QeSIMv6EEzsEZ2wQnzWIoWY
+ sa8XcdhdC7YdL6n74cn7jv5Nx_bLRwY96S2xT37BQDZWMQ0rKjCFiYR4K4S2
+ .LK_8DWLKnABCJ14spUbSRQgHJvGF26Ibh8l9BOBGgD6q.B55TPv4ta7pT0t
+ rnuEhQW1.sVRSTguUgsU.QTKj0DJYm.J7_LoasQ0vM6WozBV91lwPve3oQlB
+ bFfaWVYfAow_SmmWINvJvmcNDvkAuzbTKFF2XQeQYrA8wnlIv98q64exj20k
+ GK.VrYi5ftat5H7NVYv9Ux4.ybOXu0ulGWaKdIQNyxqz5NoLPR4uJO_3nh8q
+ JkbK0_WSjvihb2dqk9N9rHQ--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 15 Aug 2011 09:38:40 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Iliyan Malchev <malchev@google.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] slub: name kmalloc slabs at creation time
+In-Reply-To: <1312839071-18064-1-git-send-email-malchev@google.com>
+Message-ID: <alpine.DEB.2.00.1108150934590.24941@router.home>
+References: <1312839071-18064-1-git-send-email-malchev@google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: nicolas.ferre@atmel.com
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, claudio@evidence.eu.com
-Subject: [PATCH] atmel_serial: RS485: receiving enabled when sending data
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Mon, 8 Aug 2011, Iliyan Malchev wrote:
 
-By default the atmel_serial driver in RS485 mode disables receiving data 
-until all data in the send buffer has been sent. This flag allows to 
-receive data even whilst sending data. This is very useful to
+> This patch reserves a small static array to hold the names of the kmalloc
+> slabs, and uses a small helper function __uitoa (unsigned integer to ascii) to
+> format names as appropriately
 
-- check if the data has been sent correctly over the RS485 bus
-- assure that no collision happened
-- check for short circuits/termination issues on the RS485 bus
+simple_strtoull etc is not satisfactory?
 
-Usually this functionality is realized by hardware, wether controlling 
-the RX-Enable pin of the RS485 transceiver with RTS (driver control 
-signal) or pulling it LOW permanently. The present atmel_serial driver 
-makes this impossible, thus requiring following patch.
+> +/* Convert a positive integer to its decimal string representation, starting at
+> + * the end of the buffer and going backwards, not exceeding maxlen characters.
+> + */
+> +static __init char *__pos_int_to_string(unsigned int value, char* string,
+> +					int maxindex, int maxlen)
+> +{
+> +	int i = maxindex - 1;
+> +	string[maxindex] = 0;
+> +	for (; value && i && maxlen; i--, maxlen--, value /= 10)
+> +		string[i] = '0' + (value % 10);
+> +	return string + i + 1;
+> +}
 
-Usage example:
+Please use the standard string operations of the kernel.
 
-     struct serial_rs485     rs485;
+> @@ -3652,8 +3671,15 @@ void __init kmem_cache_init(void)
+>  		caches++;
+>  	}
+>
+> +	name_start = kmalloc_cache_names;
+>  	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
+> -		kmalloc_caches[i] = create_kmalloc_cache("kmalloc", 1 << i, 0);
+> +		char *name = __pos_int_to_string(1 << i, name_start,
+> +					KMALLOC_NAME_MAX - 1,
+> +					KMALLOC_NAME_SUFFIX_MAX);
+> +		name -= 8;
 
-     memset(&rs485, 0, sizeof(rs485));
-     rs485.flags = SER_RS485_ENABLED | SER_RS485_RX_DURING_TX;
-     ioctl(fd, TIOCSRS485, &rs485);
-
-
-
-
-atmel_serial: RS485: receiving enabled when sending data
-
-By default the atmel_serial driver in RS485 mode disables receiving data 
-until
-all data in the send buffer has been sent. This flag allows to receive data
-even whilst sending data.
-
-Signed-off-by: Bernhard Roth <br@pwrnet.de>
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
----
-  drivers/tty/serial/atmel_serial.c |   17 ++++++++++-------
-  include/linux/serial.h            |    1 +
-  2 files changed, 11 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/tty/serial/atmel_serial.c 
-b/drivers/tty/serial/atmel_serial.c
-index af9b781..5f6c745 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -339,8 +339,9 @@ static void atmel_stop_tx(struct uart_port *port)
-      /* Disable interrupts */
-      UART_PUT_IDR(port, atmel_port->tx_done_mask);
-
--    if (atmel_port->rs485.flags & SER_RS485_ENABLED)
--        atmel_start_rx(port);
-+    if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+        !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
-+            atmel_start_rx(port);
-  }
-
-  /*
-@@ -356,8 +357,9 @@ static void atmel_start_tx(struct uart_port *port)
-                 really need this.*/
-              return;
-
--        if (atmel_port->rs485.flags & SER_RS485_ENABLED)
--            atmel_stop_rx(port);
-+        if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+            !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
-+                atmel_stop_rx(port);
-
-          /* re-enable PDC transmit */
-          UART_PUT_PTCR(port, ATMEL_PDC_TXTEN);
-@@ -680,9 +682,10 @@ static void atmel_tx_dma(struct uart_port *port)
-          /* Enable interrupts */
-          UART_PUT_IER(port, atmel_port->tx_done_mask);
-      } else {
--        if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
--            /* DMA done, stop TX, start RX for RS485 */
--            atmel_start_rx(port);
-+        if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+            !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX)) {
-+                /* DMA done, stop TX, start RX for RS485 */
-+                atmel_start_rx(port);
-          }
-      }
-
-diff --git a/include/linux/serial.h b/include/linux/serial.h
-index ef91406..97ff8e2 100644
---- a/include/linux/serial.h
-+++ b/include/linux/serial.h
-@@ -211,6 +211,7 @@ struct serial_rs485 {
-  #define SER_RS485_RTS_ON_SEND        (1 << 1)
-  #define SER_RS485_RTS_AFTER_SEND    (1 << 2)
-  #define SER_RS485_RTS_BEFORE_SEND    (1 << 3)
-+#define SER_RS485_RX_DURING_TX        (1 << 4)
-      __u32    delay_rts_before_send;    /* Milliseconds */
-      __u32    delay_rts_after_send;    /* Milliseconds */
-      __u32    padding[5];        /* Memory is cheap, new structs
--- 
-1.7.1
-
+8 is what? The length of "kmalloc-" right?
 
