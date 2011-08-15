@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab1HOMZQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 08:25:16 -0400
-Received: from bar.sig21.net ([80.81.252.164]:37377 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab1HOMZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 08:25:14 -0400
-Date: Mon, 15 Aug 2011 14:25:06 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: sta32x: shortcut the for loop to get ir and mcs
-Message-ID: <20110815122506.GA26490@sig21.net>
-References: <1313292664.6074.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313292664.6074.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=5.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=no
+	id S1753224Ab1HOM0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 08:26:07 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:36976 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752709Ab1HOM0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 08:26:06 -0400
+Subject: fs: why is lru_lock cachline_aligned_in_smp in the middle of
+ super_block?
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Dave Chinner <dchinner@redhat.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>
+Date: Mon, 15 Aug 2011 13:26:03 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1313411164.1954.18.camel@castor.rsk>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 11:31:04AM +0800, Axel Lin wrote:
-> There is exactly one match or no match at all during the for loop iteration,
-> thus we can break from the for loop once a match is found.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+In commit 09cc9fc7a7c3d872065426d7fb0f0ad6d3eb90fc lru_lock was added to
+super_block defined as :-
 
-Looks good.
+spinlock_t	s_inode_lru_lock ____cacheline_aligned_in_smp;
 
-Acked-by: Johannes Stezenbach <js@sig21.net>
+Due unfortunate placement in my 64 bit config, gcc has to add a lot of
+padding to super_block to honour this.
+I get 60 bytes before lru_lock & 32 bytes at the end of the structure.
+
+So I was wondering what access pattern are you trying to avoid ?
+And could it be prevented by just moving lru_lock and friends to
+somewhere else in the structure? 
+
+Even if they were at the end and still cacheline aligned then we would
+not have that nearly empty cacheline in the middle.
+
+If they are in the best place then at least add a comment to explain why
+this needs to be cacheline aligned?
+
+regards
+Richard
+
+ 
 
 
-Thanks,
-Johannes
 
-
-> ---
->  sound/soc/codecs/sta32x.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
-> index fbd7eb9..3d155f5 100644
-> --- a/sound/soc/codecs/sta32x.c
-> +++ b/sound/soc/codecs/sta32x.c
-> @@ -524,13 +524,17 @@ static int sta32x_hw_params(struct snd_pcm_substream *substream,
->  	rate = params_rate(params);
->  	pr_debug("rate: %u\n", rate);
->  	for (i = 0; i < ARRAY_SIZE(interpolation_ratios); i++)
-> -		if (interpolation_ratios[i].fs == rate)
-> +		if (interpolation_ratios[i].fs == rate) {
->  			ir = interpolation_ratios[i].ir;
-> +			break;
-> +		}
->  	if (ir < 0)
->  		return -EINVAL;
->  	for (i = 0; mclk_ratios[ir][i].ratio; i++)
-> -		if (mclk_ratios[ir][i].ratio * rate == sta32x->mclk)
-> +		if (mclk_ratios[ir][i].ratio * rate == sta32x->mclk) {
->  			mcs = mclk_ratios[ir][i].mcs;
-> +			break;
-> +		}
->  	if (mcs < 0)
->  		return -EINVAL;
->  
-> -- 
-> 1.7.4.1
-> 
-> 
-> 
-> 
