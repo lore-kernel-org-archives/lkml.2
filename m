@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab1HOJpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 05:45:12 -0400
-Received: from lo.gmane.org ([80.91.229.12]:39828 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab1HOJpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 05:45:09 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: scream <scream@wdk.dn.ua>
-Subject: Re: [BUG] null-pointer in =?utf-8?b?dGFza19ycV9sb2Nr?= (2.6.35 to 3.0-rc7)
-Date: Mon, 15 Aug 2011 07:22:29 +0000 (UTC)
-Message-ID: <loom.20110815T091606-71@post.gmane.org>
-References: <4E25E2F5.7090807@dasr.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752912Ab1HOJpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 05:45:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37811 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab1HOJpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 05:45:42 -0400
+Message-ID: <4E48EAA0.5020901@mvista.com>
+Date: Mon, 15 Aug 2011 13:45:04 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 02/11] arch/mips: do not use EXTRA_CFLAGS
+References: <1313384834-24433-1-git-send-email-lacombar@gmail.com> <1313384834-24433-3-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313384834-24433-3-git-send-email-lacombar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 89.105.229.75 (Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harald Laabs <kernelml <at> dasr.de> writes:
+Hello.
 
-> 
-> Hi,
-> reloading an apache httpd can crash the kernel since 2.6.35.
-> It seems that tasks are removed between creating the task-list and
-> calling wake_up_sem_queue_do in freeary. The pointers to the
-> task_struct elements end up in try_to_wake_up and sometimes contain
-> 0x0 there.
+On 15-08-2011 9:07, Arnaud Lacombe wrote:
 
+> Usage of these flags has been deprecated for nearly 4 years by:
 
-Had the same in production.
+>      commit f77bf01425b11947eeb3b5b54685212c302741b8
+>      Author: Sam Ravnborg<sam@neptun.(none)>
+>      Date:   Mon Oct 15 22:25:06 2007 +0200
 
-Linux version 2.6.35-22-server (buildd@allspice) (gcc version 4.4.5 
-(Ubuntu/Linaro 4.4.4-14ubuntu4) ) #33-Ubuntu SMP Sun Sep 19 20:48:58 UTC 2010 
-(Ubuntu 2.6.35-22.33-server 2.6.35.4)
+>          kbuild: introduce ccflags-y, asflags-y and ldflags-y
 
- Apache/2.2.16 (Ubuntu) PHP/5.3.3-1ubuntu9 with Suhosin-Patch mod_ssl/2.2.16 
-OpenSSL/0.9.8o
+> Moreover, these flags (at least EXTRA_CFLAGS) have been documented for command
+> line use. By default, gmake(1) do not override command line setting, so this is
+> likely to result in build failure or unexpected behavior.
 
-Appeared 2 times after apache2 reload during cron daily jobs.
+> Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 
+> Cc: Sam Ravnborg<sam@ravnborg.org>
+> Cc: linux-mips@linux-mips.org
 
+    You didn't sign off.
+
+WBR, Sergei
