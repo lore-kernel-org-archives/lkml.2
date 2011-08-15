@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab1HOQKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 12:10:03 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17057 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab1HOQKA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 12:10:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 15 Aug 2011 09:09:43 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Jamie Iles <jamie@jamieiles.com>
-CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Mon, 15 Aug 2011 09:09:40 -0700
-Subject: RE: [RFC PATCH 10/12] arm/tegra: Add device tree support to pinmux
- driver
-Thread-Topic: [RFC PATCH 10/12] arm/tegra: Add device tree support to pinmux
- driver
-Thread-Index: AcxZppyhURPNo9rsRpG8ue1i4rLcmQBvvckA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA25055@HQMAIL01.nvidia.com>
-References: <1313189697-21287-1-git-send-email-swarren@nvidia.com>
- <1313189697-21287-11-git-send-email-swarren@nvidia.com>
- <20110813104323.GC2643@pulham.picochip.com>
- <20110813104850.GD2643@pulham.picochip.com>
-In-Reply-To: <20110813104850.GD2643@pulham.picochip.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752827Ab1HOQMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 12:12:12 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49421 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab1HOQML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 12:12:11 -0400
+Message-ID: <9022c7d6f1724a37245fd744c8c16140.squirrel@www.skyhub.de>
+In-Reply-To: <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com>
+References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+    <4E493449.70907@mit.edu>
+    <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
+    <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com>
+Date: Mon, 15 Aug 2011 18:12:06 +0200 (CEST)
+Subject: Re: x86 memcpy performance
+From: "Borislav Petkov" <bp@alien8.de>
+To: "Andrew Lutomirski" <luto@mit.edu>
+Cc: "Borislav Petkov" <bp@alien8.de>, "melwyn lobo" <linux.melwyn@gmail.com>,
+        "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Ingo Molnar" <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jamie Iles wrote at Saturday, August 13, 2011 4:49 AM:
-> On Sat, Aug 13, 2011 at 11:43:23AM +0100, Jamie Iles wrote:
-> > Hi Stephen,
-> >
-> > On Fri, Aug 12, 2011 at 04:54:55PM -0600, Stephen Warren wrote:
-...
-> > > diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-...
-> > > +#ifdef CONFIG_OF
-> > > +static void __init tegra_pinmux_probe_dt(struct platform_device *pdev)
-> > > +{
-> > > +	int pg;
-> > > +
-> > > +	for (pg = 0; pg < TEGRA_MAX_PINGROUP; pg++) {
-> > > +		const char *pg_name = pingroup_name(pg);
-> > > +		struct tegra_pingroup_config config;
-> > > +		struct device_node *pg_node;
-> > > +		int ret;
-> > > +		const char *s;
-> > > +
-> > > +		pg_node = of_find_child_node_by_name(pdev->dev.of_node,
-> > > +						     pg_name);
-> > > +		if (pg_node == NULL)
-> > > +			continue;
-> >
-> > Rather than iterating over all of the mux names in the pinmux driver and
-> > searching for a matching DT node, could you not do it the other way
-> > round?  So do an for_each_child_of_node() on the pinmux node then find
-> > the matching pingroup keyed by the node name?  This would eliminate
-> > of_find_child_node_by_name().  You could also catch invalid
-> > configurations for non-existent pins this way.
-> 
-> I just re-read your introduction email and saw you've already discussed
-> this!  Would this require an explicit pin name property though or could
-> you just key off of the pg_node->name?
+On Mon, 15 August, 2011 5:36 pm, Andrew Lutomirski wrote:
+>> But still, irq_fpu_usable() still checks !in_interrupt() which means
+>> that we don't want to run SSE instructions in IRQ context. OTOH, we
+>> still are fine when running with CR0.TS. So what happens when we get an
+>> #NM as a result of executing an FPU instruction in an IRQ handler? We
+>> will have to do init_fpu() on the current task if the last hasn't used
+>> math yet and do the slab allocation of the FPU context area (I'm looking
+>> at math_state_restore, btw).
+>
+> IIRC kernel_fpu_begin does clts, so #NM won't happen.  But if we're in
+> an interrupt and TS=1, when we know that we're not in a
+> kernel_fpu_begin section, so it's safe to start one (and do clts).
 
-No, I think pg_node->name will work out fine; it's what of_find_child_node_by_name
-is using anyway.
+Doh, yes, I see it now. This way we save the math state of the current
+process if needed and "disable" #NM exceptions until kernel_fpu_end() by
+clearing CR0.TS, sure. Thanks.
+
+> IMO this code is not very good, and I plan to fix it sooner or later.
+
+Yep. Also, AFAIR, Hans did some FPU cleanup as part of his xsave rework.
+You could probably reuse some bits from there. The patchset should be in
+tip/x86/xsave.
+
+> I want kernel_fpu_begin (or its equivalent*) to be very fast and
+> usable from any context whatsoever.  Mucking with TS is slower than a
+> complete save and restore of YMM state.
+
+Well, I had a SSE memcpy which saved/restored the XMM regs on the stack.
+This would obviate the need to muck with contexts but that could get
+expensive wrt stack operations. The advantage is that I'm not dealing
+with the whole FPU state but only with 16 XMM regs. I should probably
+dust off that version again and retest.
+
+Or, if we want to use SSE stuff in the kernel, we might think of
+allocating its own FPU context(s) and handle those...
+
+> (*) kernel_fpu_begin is a bad name. It's only safe to use integer
+> instructions inside a kernel_fpu_begin section because MXCSR (and the
+> 387 equivalent) could contain garbage.
+
+Well, do we want to use floating point instructions in the kernel?
+
+Thanks.
 
 -- 
-nvpublic
+Regards/Gruss,
+Boris.
 
