@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1HOWeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:34:07 -0400
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:55871 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab1HOWeF (ORCPT
+	id S1752157Ab1HOWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:47:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35274 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab1HOWr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:34:05 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Aug 2011 18:34:05 EDT
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Andy Lutomirski <luto@MIT.EDU>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] x86-64: remove int 0xcc from entry_64.S documentation
-Date: Mon, 15 Aug 2011 19:26:50 -0300
-Message-Id: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 15 Aug 2011 18:47:26 -0400
+Date: Mon, 15 Aug 2011 15:47:23 -0700 (PDT)
+Message-Id: <20110815.154723.78978175770791283.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 15 Aug 2011 15:47:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 3ae36655b97a03fa1decf72f04078ef945647c1a (x86-64: Rework vsyscall
-emulation and add vsyscall= parameter) removed the special use of the
-0xcc IDT vector.
 
-Remove it from Documentation/x86/entry_64.txt also.
+Please pull to get these sparc changes, thanks!
 
-Cc: Andy Lutomirski <luto@MIT.EDU>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
----
- Documentation/x86/entry_64.txt |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+1) sparc32 unlock needs to use inline asm to avoid compiler
+   reordering.  From Mikael Pettersson.
 
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index 7869f14..bc7226e 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -27,9 +27,6 @@ Some of these entries are:
-    magically-generated functions that make their way to do_IRQ with
-    the interrupt number as a parameter.
- 
-- - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
--   vsyscall emulation.
--
-  - APIC interrupts: Various special-purpose interrupts for things
-    like TLB shootdown.
- 
--- 
-1.7.4.4
+2) Sparc should use the C based recordmcount, thanks to Steven Rostedt
+   for the tip.
 
+The following changes since commit 2f6a123821a7feaba7cee787ef0f21d2354d1730:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus (2011-08-15 08:46:11 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc.git master
+
+David S. Miller (1):
+      sparc64: Set HAVE_C_RECORDMCOUNT
+
+Mikael Pettersson (2):
+      sparc64: remove unnecessary macros from spinlock_64.h
+      sparc32: unbreak arch_write_unlock()
+
+ arch/sparc/Kconfig                   |    1 +
+ arch/sparc/include/asm/spinlock_32.h |   11 +++++++++--
+ arch/sparc/include/asm/spinlock_64.h |    6 ------
+ 3 files changed, 10 insertions(+), 8 deletions(-)
