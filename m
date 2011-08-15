@@ -1,48 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab1HOMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 08:16:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42564 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab1HOMQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 08:16:23 -0400
-Message-ID: <4E490E14.3060902@petalogix.com>
-Date: Mon, 15 Aug 2011 14:16:20 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1752822Ab1HOMWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 08:22:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48330 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018Ab1HOMWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 08:22:21 -0400
+Date: Mon, 15 Aug 2011 14:22:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
+Message-ID: <20110815122218.GB6971@quack.suse.cz>
+References: <201108112329.23043.rjw@sisk.pl>
+ <201108112331.13241.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Eli Billauer <eli@billauer.co.il>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] microblaze: Removed U-Boot image creation from simpleImage
- rule
-References: <4E3ABDB7.1000300@billauer.co.il>
-In-Reply-To: <4E3ABDB7.1000300@billauer.co.il>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108112331.13241.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eli Billauer wrote:
-> The simpleImage rule used to create a U-boot image as well, resulting in
-> a build error if the mkimage utility wasn't set up. A line in the Makefile
-> was removed, so "make simpleImage.(something)" now does what one should 
-> expect.
+  Hi,
+On Thu 11-08-11 23:31:13, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> In analogy with ext4 make ext3_freeze() always call
+> journal_unlock_updates() to prevent it from leaving a locked mutex
+> behind.  Accordingly, modify ext3_unfreeze() so that it doesn't
+> call journal_unlock_updates() any more.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+> 
+> Sorry for the duplicate, the previous one was sent too early.
+> 
+> ---
+>  fs/ext3/super.c |   39 ++++++++++++++++++---------------------
+>  1 file changed, 18 insertions(+), 21 deletions(-)
+> 
+> Index: linux/fs/ext3/super.c
+> ===================================================================
+> --- linux.orig/fs/ext3/super.c
+> +++ linux/fs/ext3/super.c
+> @@ -2535,30 +2535,28 @@ static int ext3_sync_fs(struct super_blo
+>   */
+>  static int ext3_freeze(struct super_block *sb)
+>  {
+> -	int error = 0;
+> +	int error;
+>  	journal_t *journal;
+>  
+> -	if (!(sb->s_flags & MS_RDONLY)) {
+> -		journal = EXT3_SB(sb)->s_journal;
+> +	if (sb->s_flags & MS_RDONLY)
+> +		return 0;
+>  
+> -		/* Now we set up the journal barrier. */
+> -		journal_lock_updates(journal);
+> +	journal = EXT3_SB(sb)->s_journal;
+>  
+> -		/*
+> -		 * We don't want to clear needs_recovery flag when we failed
+> -		 * to flush the journal.
+> -		 */
+> -		error = journal_flush(journal);
+> -		if (error < 0)
+> -			goto out;
+> -
+> -		/* Journal blocked and flushed, clear needs_recovery flag. */
+> -		EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+> -		error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+> -		if (error)
+> -			goto out;
+> -	}
+> -	return 0;
+> +	/* Now we set up the journal barrier. */
+> +	journal_lock_updates(journal);
+> +
+> +	/*
+> +	 * We don't want to clear needs_recovery flag when we failed
+> +	 * to flush the journal.
+> +	 */
+> +	error = journal_flush(journal);
+> +	if (error < 0)
+> +		goto out;
+> +
+> +	/* Journal blocked and flushed, clear needs_recovery flag. */
+> +	EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+> +	error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+>  
+>  out:
+>  	journal_unlock_updates(journal);
+> @@ -2577,7 +2575,6 @@ static int ext3_unfreeze(struct super_bl
+>  		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
+>  		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
+>  		unlock_super(sb);
+> -		journal_unlock_updates(EXT3_SB(sb)->s_journal);
+>  	}
+>  	return 0;
+>  }
+  It's not so simple as this. Ext3 relies on the mutex (the one hidden in
+journal_lock_updates()) to make sure that new transaction cannot be started
+while the filesystem is frozen - that's essentially what makes the
+filesystem frozen. So if we want to get rid of the mutex we have to achieve
+blocking by something else - ext4 uses vfs_check_frozen() in
+ext4_journal_start().
+  BTW,  filesystem freezing never really worked for mmaped writes under
+ext3 - ext3 would have to implement page_mkwrite() callback for that - so
+if you want to rely on it for suspending, this will be non-trivial.
 
-Agree that we should remove it but that patch is incomplete.
-Please do these two more changes.
-1. Remove uimage generation for linux.bin - the same reason as you describe
-2a. Add support for linux.bin.ub or uImage if you like
-2b. Add support for simpleImage.%.ub
-
-I don't want to lose possibility to create u-boot formats.
-
-Thanks,
-Michal
-
+								Honza
 -- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
