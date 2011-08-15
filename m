@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1HOFNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:13:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44765 "EHLO
+	id S1751996Ab1HOFOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:14:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33955 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1HOFNe convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751380Ab1HOFOF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:13:34 -0400
+	Mon, 15 Aug 2011 01:14:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313384834-24433-4-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313384834-24433-5-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
-	<1313384834-24433-4-git-send-email-lacombar@gmail.com>
-Date: Mon, 15 Aug 2011 01:13:34 -0400
-Message-ID: <CACqU3MWTEFy+XV7WH=FEP2hTvBu8VCgcYj-HCcVnSjKxZBQeeA@mail.gmail.com>
-Subject: Re: [PATCH 03/11] arch/unicore32: do not use EXTRA_AFLAGS or EXTRA_CFLAGS
+	<1313384834-24433-5-git-send-email-lacombar@gmail.com>
+Date: Mon, 15 Aug 2011 01:14:05 -0400
+Message-ID: <CACqU3MUJOFZtn6x53nTVVsiEfYD7W5-YV75dsKYgg5Aoy8LwbQ@mail.gmail.com>
+Subject: Re: [PATCH 04/11] arch/x86: do not use EXTRA_CFLAGS
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
+        x86@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,29 +42,43 @@ On Mon, Aug 15, 2011 at 1:07 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
 > Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 >
 > Cc: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: x86@kernel.org
 Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
  - Arnaud
+
 > ---
->  arch/unicore32/boot/compressed/Makefile |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  arch/x86/math-emu/Makefile |    4 ++--
+>  arch/x86/pci/Makefile      |    4 +---
+>  2 files changed, 3 insertions(+), 5 deletions(-)
 >
-> diff --git a/arch/unicore32/boot/compressed/Makefile b/arch/unicore32/boot/compressed/Makefile
-> index b0954a2..950a9af 100644
-> --- a/arch/unicore32/boot/compressed/Makefile
-> +++ b/arch/unicore32/boot/compressed/Makefile
-> @@ -10,8 +10,8 @@
->  # Copyright (C) 2001~2010 GUAN Xue-tao
->  #
+> diff --git a/arch/x86/math-emu/Makefile b/arch/x86/math-emu/Makefile
+> index 9b0c63b..60db1b8 100644
+> --- a/arch/x86/math-emu/Makefile
+> +++ b/arch/x86/math-emu/Makefile
+> @@ -5,8 +5,8 @@
+>  #DEBUG = -DDEBUGGING
+>  DEBUG  =
+>  PARANOID = -DPARANOID
+> -EXTRA_CFLAGS   := $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
+> -EXTRA_AFLAGS   := $(PARANOID)
+> +ccflags-y      := $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
+> +asflags-y      := $(PARANOID)
 >
-> -EXTRA_CFLAGS   := -fpic -fno-builtin
-> -EXTRA_AFLAGS   := -Wa,-march=all
-> +ccflags-y      := -fpic -fno-builtin
-> +asflags-y      := -Wa,-march=all
+>  # From 'C' language sources:
+>  C_OBJS =fpu_entry.o errors.o \
+> diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+> index 6b8759f..aef971f 100644
+> --- a/arch/x86/pci/Makefile
+> +++ b/arch/x86/pci/Makefile
+> @@ -22,6 +22,4 @@ obj-y                         += amd_bus.o bus_numa.o
 >
->  OBJS           := misc.o
+>  obj-$(CONFIG_PCI_CNB20LE_QUIRK)        += broadcom_bus.o
 >
+> -ifeq ($(CONFIG_PCI_DEBUG),y)
+> -EXTRA_CFLAGS += -DDEBUG
+> -endif
+> +ccflags-$(CONFIG_PCI_DEBUG) += -DDEBUG
 > --
 > 1.7.6.153.g78432
 >
