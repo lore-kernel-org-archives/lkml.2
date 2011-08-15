@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab1HORG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 13:06:26 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:27185 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab1HORGZ (ORCPT
+	id S1751975Ab1HORSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 13:18:50 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55644 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751259Ab1HORSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 13:06:25 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzGuK6Y79w=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4E4951C5.203@hartkopp.net>
-Date: Mon, 15 Aug 2011 19:05:09 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [Bug #37432] sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera> <bkwpSnItbJM.A.FcB.0OCSOB@chimera>
-In-Reply-To: <bkwpSnItbJM.A.FcB.0OCSOB@chimera>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Aug 2011 13:18:49 -0400
+Date: Mon, 15 Aug 2011 10:18:46 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>, x86@kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3.1-rc2] x86: fix mm/fault.c build
+Message-Id: <20110815101846.58809a89.rdunlap@xenotime.net>
+In-Reply-To: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
+References: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.08.2011 21:02, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.39 and 3.0.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.39 and 3.0.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37432
-> Subject		: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-> Submitter	: Oliver Hartkopp <socketcan@hartkopp.net>
-> Date		: 2011-06-07 20:06 (69 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/da7822e5ad71ec9b745b412639f1e5e0ba795a20
-> References	: http://article.gmane.org/gmane.linux.kernel.mmc/8442
-> 		  https://lkml.org/lkml/2011/6/23/660
-> 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hello Rafael,
+arch/x86/mm/fault.c needs to include asm/vsyscall.h to fix a
+build error:
 
-the regression has been solved for 3.0 by disabling the problematic code here:
+arch/x86/mm/fault.c: In function '__bad_area_nosemaphore':
+arch/x86/mm/fault.c:728: error: 'VSYSCALL_START' undeclared (first use in this function)
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f483d3923dc3a6394c483e28ccb3fe700bdf399e
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ arch/x86/mm/fault.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-When the new commandline argument 'pci=realloc' is not set (which is the
-default) the buggy code is disabled.
-
-Therefore this bug can be closed on the 2.6.39 -> 3.0 regression list.
-
-Thanks,
-Oliver
+--- lnx-31-rc2.orig/arch/x86/mm/fault.c
++++ lnx-31-rc2/arch/x86/mm/fault.c
+@@ -17,6 +17,7 @@
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
++#include <asm/vsyscall.h>
+ 
+ /*
+  * Page fault error code bits:
