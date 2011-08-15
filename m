@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab1HOOCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:02:37 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53798 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab1HOOCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:02:35 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 15 Aug 2011 16:01:31 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1753812Ab1HOOFM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:05:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753606Ab1HOOFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 10:05:10 -0400
+Date: Mon, 15 Aug 2011 10:04:17 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire fixes
-Message-ID: <20110815160131.063f453d@stein>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110815140416.GB2227@zod.bos.redhat.com>
+References: <20110805142245.GP2096@zod.bos.redhat.com>
+ <20110805170805.GB22164@somewhere>
+ <20110805222641.GB2245@linux.vnet.ibm.com>
+ <20110805231216.GE22164@somewhere>
+ <20110808020914.GC2385@linux.vnet.ibm.com>
+ <20110808025505.GF29058@somewhere>
+ <20110808031014.GE2385@linux.vnet.ibm.com>
+ <20110809113514.GA27301@somewhere.redhat.com>
+ <20110810124528.GC2566@zod.bos.redhat.com>
+ <20110814230453.GP2650@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110814230453.GP2650@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the fixes branch at
+On Sun, Aug 14, 2011 at 04:04:53PM -0700, Paul E. McKenney wrote:
+> > > > > Now rcu_init_percpu_data() still sets rdp->qs_pending to 1, and that
+> > > > > is going to stay as is as long as preemption is disabled.
+> > > > 
+> > > > But setting rdp->qs_pending to 1 in rcu_init_percpu_data() has no effect
+> > > > until a grace period starts.  So, if grace periods are prevented from
+> > 
+> > Er... really?  Because it gets set and __rcu_pending looks at it
+> > unconditionally in the case that is calling set_need_resched.  It
+> > doesn't check if there is anything about a grace period going on or not.
+> 
+> Frederic noted the condition that prevents this at boot time, but it
+> appears that newly onlined CPUs might send themselves needless resched
+> IPIs at runtime if RCU is idle.
+> 
+> > > > starting, no need to mess with rcu_init_percpu_data().  Especially given
+> > > > that rcu_init_percpu_data() is also used at late boot and runtime for
+> > > > CPU hotplug.
+> > > 
+> > > Ok.
+> > > 
+> > > > 
+> > > > So I believe that it is sufficient to change cpu_needs_another_gp()
+> > > > to check for boot being far enough along to allow grace periods.
+> > > 
+> > > Yep, sounds good.
+> > 
+> > I looked at doing this but got lost as to 1) how it would help the
+> > situtation I've reported, and 2) exactly how to do that.
+> 
+> It would prevent control from reaching that point, and that might
+> well be needed for other reasons.  (This bit about RCU needing to
+> work differently at boot time is, well, "interesting".)
+> 
+> > I'd be happy to test, but at the moment the proposed solution is
+> > confusing to me.
+> 
+> Please see the attached.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git fixes
+Fixed it up quickly to apply on top of -rc2 and it seems to solve the
+problem nicely.  Thanks for the patch.
 
-to receive a small update of the IEEE 1394 (FireWire) subsystem.  This addresses
-old but only recently reported bugs.  Thanks.
-
-Stefan Richter (2):
-      firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
-      firewire: ohci: fix DMA unmapping in an error path
-
- drivers/firewire/core-cdev.c |   24 +++++++++++++++++++++---
- drivers/firewire/ohci.c      |    9 +++++++--
- 2 files changed, 28 insertions(+), 5 deletions(-)
-
-
-Full log and diff:
-
-commit a01e836087881dd9d824417190994c9b2b0f1dbb
-Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Date:   Thu Aug 11 20:40:42 2011 +0200
-
-    firewire: ohci: fix DMA unmapping in an error path
-    
-    If request_irq failed, we would pass wrong arguments to
-    dma_free_coherent.  https://bugzilla.redhat.com/show_bug.cgi?id=728185
-    
-    Reported-by: Mads Kiilerich
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 4f6d72f..ded0c9b 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2178,8 +2178,13 @@ static int ohci_enable(struct fw_card *card,
- 			ohci_driver_name, ohci)) {
- 		fw_error("Failed to allocate interrupt %d.\n", dev->irq);
- 		pci_disable_msi(dev);
--		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
--				  ohci->config_rom, ohci->config_rom_bus);
-+
-+		if (config_rom) {
-+			dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
-+					  ohci->next_config_rom,
-+					  ohci->next_config_rom_bus);
-+			ohci->next_config_rom = NULL;
-+		}
- 		return -EIO;
- 	}
- 
-
-commit 9c1176b6a28850703ea6e3a0f0c703f6d6c61cd3
-Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Date:   Thu Aug 11 00:06:04 2011 +0200
-
-    firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
-    
-    Clemens points out that we need to use compat_ptr() in order to safely
-    cast from u64 to addresses of a 32-bit usermode client.
-    
-    Before, our conversion went wrong
-      - in practice if the client cast from pointer to integer such that
-        sign-extension happened, (libraw1394 and libdc1394 at least were not
-        doing that, IOW were not affected)
-    or
-      - in theory on s390 (which doesn't have FireWire though) and on the
-        tile architecture, regardless of what the client does.
-    The bug would usually be observed as the initial get_info ioctl failing
-    with "Bad address" (EFAULT).
-    
-    Reported-by: Carl Karsten <carl@personnelware.com>
-    Reported-by: Clemens Ladisch <clemens@ladisch.de>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index e6ad3bb..4799393 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -216,15 +216,33 @@ struct inbound_phy_packet_event {
- 	struct fw_cdev_event_phy_packet phy_packet;
- };
- 
--static inline void __user *u64_to_uptr(__u64 value)
-+#ifdef CONFIG_COMPAT
-+static void __user *u64_to_uptr(u64 value)
-+{
-+	if (is_compat_task())
-+		return compat_ptr(value);
-+	else
-+		return (void __user *)(unsigned long)value;
-+}
-+
-+static u64 uptr_to_u64(void __user *ptr)
-+{
-+	if (is_compat_task())
-+		return ptr_to_compat(ptr);
-+	else
-+		return (u64)(unsigned long)ptr;
-+}
-+#else
-+static inline void __user *u64_to_uptr(u64 value)
- {
- 	return (void __user *)(unsigned long)value;
- }
- 
--static inline __u64 uptr_to_u64(void __user *ptr)
-+static inline u64 uptr_to_u64(void __user *ptr)
- {
--	return (__u64)(unsigned long)ptr;
-+	return (u64)(unsigned long)ptr;
- }
-+#endif /* CONFIG_COMPAT */
- 
- static int fw_device_op_open(struct inode *inode, struct file *file)
- {
-
--- 
-Stefan Richter
--=====-==-== =--- -====
-http://arcgraph.de/sr/
+josh
