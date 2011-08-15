@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1HOHPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 03:15:33 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:46797 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab1HOHPb (ORCPT
+	id S1752688Ab1HOHQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 03:16:16 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59010 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1HOHQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 03:15:31 -0400
-Date: Mon, 15 Aug 2011 15:15:28 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: aesni-intel - Add ivsize to ablk_ecb_alg
-Message-ID: <20110815071528.GA29656@gondor.apana.org.au>
-References: <20110811164040.GB2167@zod.bos.redhat.com>
+	Mon, 15 Aug 2011 03:16:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110811164040.GB2167@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.02.1108150004520.24266@asgard.lang.hm>
+References: <20110815041524.GA7578@kroah.com>
+	<4E48C136.6090306@web.de>
+	<alpine.DEB.2.02.1108150004520.24266@asgard.lang.hm>
+Date: Mon, 15 Aug 2011 15:16:13 +0800
+Message-ID: <CAEwRVpMF-eN=9t_V8uFkJ8CAfp8fPd2kHh5a1gonEP5un6qk_A@mail.gmail.com>
+Subject: Re: Future of the -longterm kernel releases (i.e. how we pick them).
+From: Teck Choon Giam <giamteckchoon@gmail.com>
+To: david@lang.hm
+Cc: =?ISO-8859-1?Q?J=F6rg=2DVolker_Peetz?= <jvpeetz@web.de>,
+        linux-kernel@vger.kernel.org, stable@linux.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 12:40:41PM -0400, Josh Boyer wrote:
-> The ablkcipher structure in ablk_ecb_alg is lacking an ivsize setting.
-> This causes the algorithm to fail it's self-test when it's registered
-> with the error message:
-> 
-> [    0.806920] alg: skcipher: Failed to load transform for ecb-aes-aesni: -2
-> 
-> crypto_lookup_skcipher doesn't like a missing ivsize.  Adding the ivsize
-> allows the self-test lookup to pass.
+2011/8/15  <david@lang.hm>:
+> On Mon, 15 Aug 2011, J?rg-Volker Peetz wrote:
+>
+>> Greg KH wrote, on 08/15/11 06:15:
+>> <snip>
+>>>
+>>> - a new -longterm kernel is picked every year.
+>>> - a -longterm kernel is maintained for 2 years and then dropped.
+>>
+>> <snip>
+>>
+>> Just a little nitpick: with this scheme you will accumulate longterm
+>> kernels. If
+>> I understand it right, one longterm kernel is added every year.
+>
+> but with one new kernel being added each year, and then being dropped two
+> years later, there are only 2 long term kernels at any one time (that Greg
+> will be maintaining at least, nothing stops other people from maintaining
+> other long term kernels in addition)
 
-That's not right.  ECB does not require an IV and therefore it
-shouldn't have a non-zero IV size.
+Err... sorry from my understanding like this year... one new long term
+kernel added so it is N+1 then next year is N+1+1 and two years drop
+one so it is N+1+1-1... so every year there will be one new long term
+added and every two years there will be one overall long term kernel
+added to total number of long term kernels... since two are added
+within 2 years and one dropped every 2 years.  So there are not only 2
+long term kernels at any one time in this case... ... someone correct
+me if I am wrong.
 
-I'm not quite sure what you mean by crypto_lookup_skcipher not
-liking a missing IV size.  It appears to handle that case just
-fine by returning the algorithm as is.
+Thanks.
 
-Can you show me what your /proc/crypto contains after you get the
-aformentioned error?
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Kindest regards,
+Giam Teck Choon
