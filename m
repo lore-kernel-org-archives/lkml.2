@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab1HOWGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:06:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43275 "EHLO ogre.sisk.pl"
+	id S1753310Ab1HOWNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:13:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41402 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601Ab1HOWGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:06:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
-Date: Tue, 16 Aug 2011 00:07:50 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-References: <201108112329.23043.rjw@sisk.pl> <201108152009.13776.rjw@sisk.pl> <20110815205807.GC16369@quack.suse.cz>
-In-Reply-To: <20110815205807.GC16369@quack.suse.cz>
+	id S1752157Ab1HOWNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 18:13:18 -0400
+Message-ID: <4E4999EA.5060603@zytor.com>
+Date: Mon, 15 Aug 2011 15:12:58 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
+References: <20110729180028.6a2091b3.rdunlap@xenotime.net> <20110730235644.GA29671@suse.de> <CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com> <4E359A74.7090408@zytor.com> <20110813123401.76ffcfcc.rdunlap@xenotime.net> <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com> <20110814202322.16b50ff5.rdunlap@xenotime.net> <4E48AC7D.4030908@zytor.com> <CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com> <4E496529.5080702@zytor.com> <20110815132331.74cd0484.rdunlap@xenotime.net> <4E4985DB.20109@zytor.com> <20110815140029.f9624d57.rdunlap@xenotime.net>
+In-Reply-To: <20110815140029.f9624d57.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108160007.50528.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Monday, August 15, 2011, Jan Kara wrote:
->   Hello,
+On 08/15/2011 02:00 PM, Randy Dunlap wrote:
 > 
-> On Mon 15-08-11 20:09:13, Rafael J. Wysocki wrote:
-> > On Monday, August 15, 2011, Jan Kara wrote:
-...
-> > >   It's not so simple as this. Ext3 relies on the mutex (the one hidden in
-> > > journal_lock_updates()) to make sure that new transaction cannot be started
-> > > while the filesystem is frozen - that's essentially what makes the
-> > > filesystem frozen. So if we want to get rid of the mutex we have to achieve
-> > > blocking by something else - ext4 uses vfs_check_frozen() in
-> > > ext4_journal_start().
-> > 
-> > I see.  Still, freeze_bdev() may be called by user space through a syscall,
-> > as far as I can say, so it shouldn't leave the mutex locked.
->   Yes, I agree with you. That's an ugliness left over from a long time ago.
-> I'll have a look at fixing this...
+> You said (on July-31):
+> "Just to avoid namespace collisions, can we at least put the owner
+> somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google> and
+> so on?"
+> 
+> I read that as 2 different patches & 2 different IDs, but this more
+> recent line:
+>> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
+> 
+> would be for one patch with multiple IDs.
+> 
+>> Mike proposed:
+>>
+>> Internal-reference-ID: <2011.0729.id1@rdunlap>
+>> Internal-reference-ID: <bug-45322143@google>
+> 
+> I think that Mike was just giving 2 examples (for 2 patches).  His proposal
+> was simply for:
+> Internal-reference-ID: <arbitrarytextforid@owner>
+> 
+> which matches your request fairly well AFAICT.
+> 
 
-Thanks!
+Yes, that was my request.  But I also do observe that a single patch can
+be tracked in multiple internal databases; for example, if
+(hypothetically) Red Hat reports a bug to Google which ends up being
+tracked in both bug databases, they may both want to tag the same patch.
 
-> > >   BTW,  filesystem freezing never really worked for mmaped writes under
-> > > ext3 - ext3 would have to implement page_mkwrite() callback for that - so
-> > > if you want to rely on it for suspending, this will be non-trivial.
-> > 
-> > At this point the purpose of freezing filesystems is basically to
-> > prevent XFS from deadlocking with hibernation's memory preallocation.
-> > For other filesystems it may or may not make a difference depending on
-> > their implementation of freeze/unfreeze_super().
->   What's exactly the problem? Memory preallocation enters direct reclaim
-> and that deadlocks in the filesystem?
+> But if we are changing things, I think I prefer your other suggestion
+> for the ID tag:  "Patch-ID".  I like it because it's shorter and
+> easier to type.  :)
 
-Yes, that seems to be the case.
+Agreed.
 
-Thanks,
-Rafael
+	-hpa
+
