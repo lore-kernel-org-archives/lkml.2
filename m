@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1HOPwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:52:54 -0400
+	id S1754625Ab1HOPwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:52:46 -0400
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:38331 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab1HOPww (ORCPT
+	with ESMTP id S1754002Ab1HOPwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:52:52 -0400
+	Mon, 15 Aug 2011 11:52:43 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 03/32 RESEND] nohz: Drop useless ts->inidle check before rearming the tick
-Date: Mon, 15 Aug 2011 17:52:00 +0200
-Message-Id: <1313423549-27093-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 01/32 RESEND] nohz: Drop useless call in tick_nohz_start_idle()
+Date: Mon, 15 Aug 2011 17:51:58 +0200
+Message-Id: <1313423549-27093-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,9 +29,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only need to check if we have ts->stopped to ensure the tick
-was stopped and we want to re-enable it. Checking ts->inidle
-there is useless.
+The call to update_ts_time_stats() there is useless. All
+we need is to save the idle entry_time.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -46,32 +45,23 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- kernel/time/tick-sched.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ kernel/time/tick-sched.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index c4d7113..5934aee 100644
+index d5097c4..58e1a96 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -504,16 +504,14 @@ void tick_nohz_restart_sched_tick(void)
- 	if (ts->inidle) {
- 		now = ktime_get();
- 		tick_nohz_stop_idle(cpu, now);
-+		ts->inidle = 0;
- 	}
+@@ -185,9 +185,6 @@ static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
+ 	ktime_t now;
  
--	if (!ts->inidle || !ts->tick_stopped) {
--		ts->inidle = 0;
-+	if (!ts->tick_stopped) {
- 		local_irq_enable();
- 		return;
- 	}
- 
--	ts->inidle = 0;
+ 	now = ktime_get();
 -
- 	rcu_exit_nohz();
- 
- 	/* Update jiffies first */
+-	update_ts_time_stats(cpu, ts, now, NULL);
+-
+ 	ts->idle_entrytime = now;
+ 	ts->idle_active = 1;
+ 	sched_clock_idle_sleep_event();
 -- 
 1.7.5.4
 
