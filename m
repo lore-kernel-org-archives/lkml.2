@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab1HOSHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:07:33 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43206 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1HOSHc (ORCPT
+	id S1752554Ab1HOSJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:09:04 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38706 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab1HOSJC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:07:32 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Cc: npiggin@suse.de
-Subject: [PATCH] iov_iter: have iov_iter_advance decrement nr_segs appropriately
-Date: Mon, 15 Aug 2011 14:07:26 -0400
-Message-Id: <1313431646-14961-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.6
+	Mon, 15 Aug 2011 14:09:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+Date: Mon, 15 Aug 2011 13:09:01 -0500
+Message-ID: <CAH2r5mube6=0h_G=rvyWJs_ispNSmEQ3+zekazd6nKESs6FkvQ@mail.gmail.com>
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS
+From: Steve French <smfrench@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, when you call iov_iter_advance, then the pointer to the kvec
-array can be incremented, but it does not decrement the nr_segs value in
-the iov_iter struct. The result is a iov_iter struct with a nr_segs
-value that goes beyond the end of the array.
+With the more current cifs (ie  patches applied) does it fail on the
+mount? or after the mount on the df -h that you mentioned in your
+earlier note?
 
-While I'm not aware of anything that's specifically broken by this, it
-seems odd and a bit dangerous not to decrement that value. If someone
-were to trust the nr_segs value to be correct, then they could end up
-walking off the end of the array.
+Not immediately obvious to me if the oops has much to do with cifs
+code given the call stack, but we may be able to determine a little
+more by looking at a wireshark trace of the last network request
+and/or response (presumably parsing a cifs QFSInfo response from
+Windows 7).
 
-Changing this might also provide some micro-optimization when dealing
-with the last kvec in an array. Many of the other routines that deal
-with iov_iter have optimized codepaths when nr_segs == 1.
+I also run Windows 7 64 server in our test environment, will rebuild
+on laster 3.0.1-rc2 and retry but I would be surprised if I can
+reproduce this.
 
-Cc: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- mm/filemap.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On Mon, Aug 15, 2011 at 1:01 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Mon, 15 Aug 2011, Justin Piszcz wrote:
+>
+>>
+>>
+>> On Mon, 15 Aug 2011, Jeff Layton wrote:
+>>
+>>> On Mon, 15 Aug 2011 11:18:38 +0200 (CEST)
+>>> Jesper Juhl <jj@chaosbits.net> wrote:
+>>>
+>>> There was at least one known oops at mount time with 3.0:
+>>>
+>>>   https://bugzilla.redhat.com/show_bug.cgi?id=727927
+>>>
+>>> ...but I can't tell whether you hit that w/o seeing the oops messasge.
+>>>
+>>> It should be fixed in mainline and the patches for that and another
+>>> mount time problem will be in the next set of stable kernels. You may
+>>> want to pull these two commits into your kernel and try again:
+>>>
+>>> 80975d21aae2136ccae1ce914a1602dc1d8b0795
+>>> f9e8c45002cacad536b338dfa9e910e341a49c31
+>>>
+>>
+>> Thanks,
+>>
+>> Patches applied to 3.0.1 and will try to mount the CIFS shares later
+>> today:
+>>
+>> # patch -p1 < /home/war/cifs1
+>> patching file fs/cifs/cifsfs.c
+>> # patch -p1 < /home/war/cifs2
+>> patching file fs/cifs/inode.c
+>>
+>> Justin.
+>>
+>>
+>
+> Hello,
+>
+> It crashed again with the patches, this time I got a picture:
+> http://home.comcast.net/~jpiszcz/20110815/26030-kernel-crash-when-cifs-mount.jpg
+>
+> The machine is up no issues until you try and mount a CIFS share, then
+> the problem occurs, every time (and with the patches as well).
+>
+> 3.0.1+80975d21aae2136ccae1ce914a1602dc1d8b0795
+>     +f9e8c45002cacad536b338dfa9e910e341a49c31
+>
+> Same result.
+>
+> Justin.
+>
+>
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 645a080..86508cc 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2113,6 +2113,7 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
- 	} else {
- 		const struct iovec *iov = i->iov;
- 		size_t base = i->iov_offset;
-+		unsigned long nr_segs = i->nr_segs;
- 
- 		/*
- 		 * The !iov->iov_len check ensures we skip over unlikely
-@@ -2128,11 +2129,13 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
- 			base += copy;
- 			if (iov->iov_len == base) {
- 				iov++;
-+				nr_segs--;
- 				base = 0;
- 			}
- 		}
- 		i->iov = iov;
- 		i->iov_offset = base;
-+		i->nr_segs = nr_segs;
- 	}
- }
- EXPORT_SYMBOL(iov_iter_advance);
+
+
 -- 
-1.7.6
+Thanks,
 
+Steve
