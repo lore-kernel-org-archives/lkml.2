@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1HOOkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:40:32 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:5725 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab1HOOk3 (ORCPT
+	id S1754147Ab1HOOpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:45:11 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64777 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab1HOOpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:40:29 -0400
-Date: Mon, 15 Aug 2011 09:40:22 -0500
-From: scameron@beardog.cce.hp.com
-To: Greg KH <greg@kroah.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
-Message-ID: <20110815144022.GR27723@beardog.cce.hp.com>
-References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com> <20110813020147.GB15554@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110813020147.GB15554@kroah.com>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 15 Aug 2011 10:45:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.OSX.2.00.1108151724491.211@ibook.local>
+References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
+	<1313384834-24433-2-git-send-email-lacombar@gmail.com>
+	<alpine.OSX.2.00.1108151724491.211@ibook.local>
+Date: Mon, 15 Aug 2011 10:45:08 -0400
+Message-ID: <CACqU3MXUp2hWaGNDmnBm2dO=27p4FBFNjRV8heA7p04Yf-nkwQ@mail.gmail.com>
+Subject: Re: [PATCH 01/11] arch/m68k: do not use EXTRA_{A,C,LD}FLAGS
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        linux-m68k@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
-> On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
-> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > 
-> > The cciss driver had a CCISS_HEARTBEAT ioctl which
-[...]
-> >  
-> > +  The "heartbeat" read-only attribute returns the value of a heartbeat
-> > +  counter register on a Smart Array controller as a 32 bit unsigned
-> > +  hexadecimal integer (e.g: "0x12345678").  The value should change
-> > +  periodically, not less than once per second.  If this value fails to
-> > +  change for a period longer than one second, it means something has
-> > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
-> > +
-> 
-> This all belongs in Documentation/ABI/ care to move it there instead?
+Hi,
 
-Sure.
+On Mon, Aug 15, 2011 at 3:26 AM, Finn Thain <fthain@telegraphics.com.au> wrote:
+>
+> On Mon, 15 Aug 2011, Arnaud Lacombe wrote:
+>
+>> -# EXTRA_CFLAGS += -DTRAP_DBG_INTERRUPT
+>> -# EXTRA_AFLAGS += -DTRAP_DBG_INTERRUPT
+>> +# ccflags-y += -DTRAP_DBG_INTERRUPT
+>> +# ccflags-y += -DTRAP_DBG_INTERRUPT
+>
+> asflags-y?
+>
+yes, indeed. I'll resend later on.
 
--- steve
+ - Arnaud
 
+> Finn
+>
