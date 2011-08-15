@@ -1,136 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab1HOU6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 16:58:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51599 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab1HOU6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 16:58:10 -0400
-Date: Mon, 15 Aug 2011 22:58:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
-Message-ID: <20110815205807.GC16369@quack.suse.cz>
-References: <201108112329.23043.rjw@sisk.pl>
- <201108112331.13241.rjw@sisk.pl>
- <20110815122218.GB6971@quack.suse.cz>
- <201108152009.13776.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108152009.13776.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753036Ab1HOVAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 17:00:34 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57281 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752333Ab1HOVAd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 17:00:33 -0400
+Date: Mon, 15 Aug 2011 14:00:29 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
+Message-Id: <20110815140029.f9624d57.rdunlap@xenotime.net>
+In-Reply-To: <4E4985DB.20109@zytor.com>
+References: <20110729180028.6a2091b3.rdunlap@xenotime.net>
+	<20110730235644.GA29671@suse.de>
+	<CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com>
+	<4E359A74.7090408@zytor.com>
+	<20110813123401.76ffcfcc.rdunlap@xenotime.net>
+	<2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com>
+	<20110814202322.16b50ff5.rdunlap@xenotime.net>
+	<4E48AC7D.4030908@zytor.com>
+	<CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com>
+	<4E496529.5080702@zytor.com>
+	<20110815132331.74cd0484.rdunlap@xenotime.net>
+	<4E4985DB.20109@zytor.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Mon, 15 Aug 2011 13:47:23 -0700 H. Peter Anvin wrote:
 
-On Mon 15-08-11 20:09:13, Rafael J. Wysocki wrote:
-> On Monday, August 15, 2011, Jan Kara wrote:
-> >   Hi,
-> > On Thu 11-08-11 23:31:13, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > In analogy with ext4 make ext3_freeze() always call
-> > > journal_unlock_updates() to prevent it from leaving a locked mutex
-> > > behind.  Accordingly, modify ext3_unfreeze() so that it doesn't
-> > > call journal_unlock_updates() any more.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > ---
-> > > 
-> > > Sorry for the duplicate, the previous one was sent too early.
-> > > 
-> > > ---
-> > >  fs/ext3/super.c |   39 ++++++++++++++++++---------------------
-> > >  1 file changed, 18 insertions(+), 21 deletions(-)
-> > > 
-> > > Index: linux/fs/ext3/super.c
-> > > ===================================================================
-> > > --- linux.orig/fs/ext3/super.c
-> > > +++ linux/fs/ext3/super.c
-> > > @@ -2535,30 +2535,28 @@ static int ext3_sync_fs(struct super_blo
-> > >   */
-> > >  static int ext3_freeze(struct super_block *sb)
-> > >  {
-> > > -	int error = 0;
-> > > +	int error;
-> > >  	journal_t *journal;
-> > >  
-> > > -	if (!(sb->s_flags & MS_RDONLY)) {
-> > > -		journal = EXT3_SB(sb)->s_journal;
-> > > +	if (sb->s_flags & MS_RDONLY)
-> > > +		return 0;
-> > >  
-> > > -		/* Now we set up the journal barrier. */
-> > > -		journal_lock_updates(journal);
-> > > +	journal = EXT3_SB(sb)->s_journal;
-> > >  
-> > > -		/*
-> > > -		 * We don't want to clear needs_recovery flag when we failed
-> > > -		 * to flush the journal.
-> > > -		 */
-> > > -		error = journal_flush(journal);
-> > > -		if (error < 0)
-> > > -			goto out;
-> > > -
-> > > -		/* Journal blocked and flushed, clear needs_recovery flag. */
-> > > -		EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
-> > > -		error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
-> > > -		if (error)
-> > > -			goto out;
-> > > -	}
-> > > -	return 0;
-> > > +	/* Now we set up the journal barrier. */
-> > > +	journal_lock_updates(journal);
-> > > +
-> > > +	/*
-> > > +	 * We don't want to clear needs_recovery flag when we failed
-> > > +	 * to flush the journal.
-> > > +	 */
-> > > +	error = journal_flush(journal);
-> > > +	if (error < 0)
-> > > +		goto out;
-> > > +
-> > > +	/* Journal blocked and flushed, clear needs_recovery flag. */
-> > > +	EXT3_CLEAR_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
-> > > +	error = ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
-> > >  
-> > >  out:
-> > >  	journal_unlock_updates(journal);
-> > > @@ -2577,7 +2575,6 @@ static int ext3_unfreeze(struct super_bl
-> > >  		EXT3_SET_INCOMPAT_FEATURE(sb, EXT3_FEATURE_INCOMPAT_RECOVER);
-> > >  		ext3_commit_super(sb, EXT3_SB(sb)->s_es, 1);
-> > >  		unlock_super(sb);
-> > > -		journal_unlock_updates(EXT3_SB(sb)->s_journal);
-> > >  	}
-> > >  	return 0;
-> > >  }
-> >   It's not so simple as this. Ext3 relies on the mutex (the one hidden in
-> > journal_lock_updates()) to make sure that new transaction cannot be started
-> > while the filesystem is frozen - that's essentially what makes the
-> > filesystem frozen. So if we want to get rid of the mutex we have to achieve
-> > blocking by something else - ext4 uses vfs_check_frozen() in
-> > ext4_journal_start().
+> On 08/15/2011 01:23 PM, Randy Dunlap wrote:
+> > On Mon, 15 Aug 2011 11:27:53 -0700 H. Peter Anvin wrote:
+> > 
+> >> On 08/15/2011 10:39 AM, Mike Waychison wrote:
+> >>>>
+> >>>> I would like to see the <id@owner> format I mentioned.
+> >>>
+> >>> Is there a middle ground if we say:
+> >>>
+> >>> Internal-reference-ID: <arbitrarytextforid@owner>
+> >>>
+> >>> so
+> >>>
+> >>> Internal-reference-ID: <2011.0729.id1@rdunlap>
+> >>> Internal-reference-ID: <bug-45322143@google>
+> >>>
+> >>
+> >> Personally I don't care if they are separate lines or all on the same line.
+> > 
+> > I don't understand how that answers Mike's question...
+> > 
+> Then I don't understand the question.
+
+OK, I see.
+
+> I proposed:
 > 
-> I see.  Still, freeze_bdev() may be called by user space through a syscall,
-> as far as I can say, so it shouldn't leave the mutex locked.
-  Yes, I agree with you. That's an ugliness left over from a long time ago.
-I'll have a look at fixing this...
+> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
 
-> >   BTW,  filesystem freezing never really worked for mmaped writes under
-> > ext3 - ext3 would have to implement page_mkwrite() callback for that - so
-> > if you want to rely on it for suspending, this will be non-trivial.
+You said (on July-31):
+"Just to avoid namespace collisions, can we at least put the owner
+somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google> and
+so on?"
+
+I read that as 2 different patches & 2 different IDs, but this more
+recent line:
+> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
+
+would be for one patch with multiple IDs.
+
+
+> Mike proposed:
 > 
-> At this point the purpose of freezing filesystems is basically to
-> prevent XFS from deadlocking with hibernation's memory preallocation.
-> For other filesystems it may or may not make a difference depending on
-> their implementation of freeze/unfreeze_super().
-  What's exactly the problem? Memory preallocation enters direct reclaim
-and that deadlocks in the filesystem?
+> Internal-reference-ID: <2011.0729.id1@rdunlap>
+> Internal-reference-ID: <bug-45322143@google>
 
-								Honza
+I think that Mike was just giving 2 examples (for 2 patches).  His proposal
+was simply for:
+Internal-reference-ID: <arbitrarytextforid@owner>
+
+which matches your request fairly well AFAICT.
+
+But if we are changing things, I think I prefer your other suggestion
+for the ID tag:  "Patch-ID".  I like it because it's shorter and
+easier to type.  :)
+
+
+> The only difference I see is if they are on the same line, which I don't
+> personally care about.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
