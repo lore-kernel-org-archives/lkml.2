@@ -1,187 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1HOOCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:02:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36150 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab1HOOCN (ORCPT
+	id S1753822Ab1HOOCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:02:37 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:53798 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab1HOOCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:02:13 -0400
-Subject: [PATCH] loop: always allow userspace-created partitions and
- optionally support automatic kernel partition scanning
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: lkml <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Karel Zak <kzak@redhat.com>, "Davidlohr Bueso dave"@gnu.org
-Date: Mon, 15 Aug 2011 16:00:51 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313416853.982.3.camel@mop>
+	Mon, 15 Aug 2011 10:02:35 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 15 Aug 2011 16:01:31 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: [git pull] FireWire fixes
+Message-ID: <20110815160131.063f453d@stein>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: loop: always allow userspace-created partitions and optionally support automatic kernel partition scanning
+Linus, please pull from the fixes branch at
 
-Automatic partition scanning can be requested individually per loop
-device during its setup by setting LO_FLAGS_PARTSCAN. By default, no
-partition tables are scanned. Userspace can now always add and remove
-partitions from all loop devices, regardless the in-kernel partition
-scanner is enabled or not.
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git fixes
 
-The needed partition minor numbers are allocated from the extended
-minors space, the main loop device numbers will continue to match the
-loop minors, regardless of the number of partitions used.
+to receive a small update of the IEEE 1394 (FireWire) subsystem.  This addresses
+old but only recently reported bugs.  Thanks.
 
-  # grep . /sys/class/block/loop1/loop/*
-  /sys/block/loop1/loop/autoclear:0
-  /sys/block/loop1/loop/backing_file:/home/kay/data/stuff/part.img
-  /sys/block/loop1/loop/offset:0
-  /sys/block/loop1/loop/partscan:1
-  /sys/block/loop1/loop/sizelimit:0
+Stefan Richter (2):
+      firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
+      firewire: ohci: fix DMA unmapping in an error path
 
-  # ls -l /dev/loop*
-  brw-rw---- 1 root disk   7,   0 Aug 14 20:22 /dev/loop0
-  brw-rw---- 1 root disk   7,   1 Aug 14 20:23 /dev/loop1
-  brw-rw---- 1 root disk 259,   0 Aug 14 20:23 /dev/loop1p1
-  brw-rw---- 1 root disk 259,   1 Aug 14 20:23 /dev/loop1p2
-  brw-rw---- 1 root disk   7,  99 Aug 14 20:23 /dev/loop99
-  brw-rw---- 1 root disk 259,   2 Aug 14 20:23 /dev/loop99p1
-  brw-rw---- 1 root disk 259,   3 Aug 14 20:23 /dev/loop99p2
-  crw------T 1 root root  10, 237 Aug 14 20:22 /dev/loop-control
+ drivers/firewire/core-cdev.c |   24 +++++++++++++++++++++---
+ drivers/firewire/ohci.c      |    9 +++++++--
+ 2 files changed, 28 insertions(+), 5 deletions(-)
 
-Cc: Karel Zak  <kzak@redhat.com>
-Cc: Davidlohr Bueso dave@gnu.org
-Acked-By: Tejun Heo <tj@kernel.org>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
----
- drivers/block/loop.c |   49 +++++++++++++++++++++++++++++++++++++++++++++----
- include/linux/loop.h |    1 +
- 2 files changed, 46 insertions(+), 4 deletions(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -700,7 +700,7 @@ static int loop_change_fd(struct loop_de
- 		goto out_putf;
- 
- 	fput(old_file);
--	if (max_part > 0)
-+	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
- 	return 0;
- 
-@@ -777,16 +777,25 @@ static ssize_t loop_attr_autoclear_show(
- 	return sprintf(buf, "%s\n", autoclear ? "1" : "0");
- }
- 
-+static ssize_t loop_attr_partscan_show(struct loop_device *lo, char *buf)
-+{
-+	int partscan = (lo->lo_flags & LO_FLAGS_PARTSCAN);
+Full log and diff:
+
+commit a01e836087881dd9d824417190994c9b2b0f1dbb
+Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date:   Thu Aug 11 20:40:42 2011 +0200
+
+    firewire: ohci: fix DMA unmapping in an error path
+    
+    If request_irq failed, we would pass wrong arguments to
+    dma_free_coherent.  https://bugzilla.redhat.com/show_bug.cgi?id=728185
+    
+    Reported-by: Mads Kiilerich
+    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 4f6d72f..ded0c9b 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -2178,8 +2178,13 @@ static int ohci_enable(struct fw_card *card,
+ 			ohci_driver_name, ohci)) {
+ 		fw_error("Failed to allocate interrupt %d.\n", dev->irq);
+ 		pci_disable_msi(dev);
+-		dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
+-				  ohci->config_rom, ohci->config_rom_bus);
 +
-+	return sprintf(buf, "%s\n", partscan ? "1" : "0");
++		if (config_rom) {
++			dma_free_coherent(ohci->card.device, CONFIG_ROM_SIZE,
++					  ohci->next_config_rom,
++					  ohci->next_config_rom_bus);
++			ohci->next_config_rom = NULL;
++		}
+ 		return -EIO;
+ 	}
+ 
+
+commit 9c1176b6a28850703ea6e3a0f0c703f6d6c61cd3
+Author: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Date:   Thu Aug 11 00:06:04 2011 +0200
+
+    firewire: cdev: fix 32 bit userland on 64 bit kernel compat corner cases
+    
+    Clemens points out that we need to use compat_ptr() in order to safely
+    cast from u64 to addresses of a 32-bit usermode client.
+    
+    Before, our conversion went wrong
+      - in practice if the client cast from pointer to integer such that
+        sign-extension happened, (libraw1394 and libdc1394 at least were not
+        doing that, IOW were not affected)
+    or
+      - in theory on s390 (which doesn't have FireWire though) and on the
+        tile architecture, regardless of what the client does.
+    The bug would usually be observed as the initial get_info ioctl failing
+    with "Bad address" (EFAULT).
+    
+    Reported-by: Carl Karsten <carl@personnelware.com>
+    Reported-by: Clemens Ladisch <clemens@ladisch.de>
+    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+
+diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
+index e6ad3bb..4799393 100644
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -216,15 +216,33 @@ struct inbound_phy_packet_event {
+ 	struct fw_cdev_event_phy_packet phy_packet;
+ };
+ 
+-static inline void __user *u64_to_uptr(__u64 value)
++#ifdef CONFIG_COMPAT
++static void __user *u64_to_uptr(u64 value)
++{
++	if (is_compat_task())
++		return compat_ptr(value);
++	else
++		return (void __user *)(unsigned long)value;
 +}
 +
- LOOP_ATTR_RO(backing_file);
- LOOP_ATTR_RO(offset);
- LOOP_ATTR_RO(sizelimit);
- LOOP_ATTR_RO(autoclear);
-+LOOP_ATTR_RO(partscan);
++static u64 uptr_to_u64(void __user *ptr)
++{
++	if (is_compat_task())
++		return ptr_to_compat(ptr);
++	else
++		return (u64)(unsigned long)ptr;
++}
++#else
++static inline void __user *u64_to_uptr(u64 value)
+ {
+ 	return (void __user *)(unsigned long)value;
+ }
  
- static struct attribute *loop_attrs[] = {
- 	&loop_attr_backing_file.attr,
- 	&loop_attr_offset.attr,
- 	&loop_attr_sizelimit.attr,
- 	&loop_attr_autoclear.attr,
-+	&loop_attr_partscan.attr,
- 	NULL,
- };
+-static inline __u64 uptr_to_u64(void __user *ptr)
++static inline u64 uptr_to_u64(void __user *ptr)
+ {
+-	return (__u64)(unsigned long)ptr;
++	return (u64)(unsigned long)ptr;
+ }
++#endif /* CONFIG_COMPAT */
  
-@@ -919,7 +928,9 @@ static int loop_set_fd(struct loop_devic
- 	}
- 	lo->lo_state = Lo_bound;
- 	wake_up_process(lo->lo_thread);
--	if (max_part > 0)
-+	if (part_shift)
-+		lo->lo_flags |= LO_FLAGS_PARTSCAN;
-+	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
- 	return 0;
- 
-@@ -1012,7 +1023,6 @@ static int loop_clr_fd(struct loop_devic
- 	lo->lo_offset = 0;
- 	lo->lo_sizelimit = 0;
- 	lo->lo_encrypt_key_size = 0;
--	lo->lo_flags = 0;
- 	lo->lo_thread = NULL;
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
-@@ -1030,8 +1040,11 @@ static int loop_clr_fd(struct loop_devic
- 	lo->lo_state = Lo_unbound;
- 	/* This is safe: open() is still holding a reference. */
- 	module_put(THIS_MODULE);
--	if (max_part > 0 && bdev)
-+	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+	lo->lo_flags = 0;
-+	if (!part_shift)
-+		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
- 	mutex_unlock(&lo->lo_ctl_mutex);
- 	/*
- 	 * Need not hold lo_ctl_mutex to fput backing file.
-@@ -1100,6 +1113,13 @@ loop_set_status(struct loop_device *lo,
- 	     (info->lo_flags & LO_FLAGS_AUTOCLEAR))
- 		lo->lo_flags ^= LO_FLAGS_AUTOCLEAR;
- 
-+	if ((info->lo_flags & LO_FLAGS_PARTSCAN) &&
-+	     !(lo->lo_flags & LO_FLAGS_PARTSCAN)) {
-+		lo->lo_flags |= LO_FLAGS_PARTSCAN;
-+		lo->lo_disk->flags &= ~GENHD_FL_NO_PART_SCAN;
-+		ioctl_by_bdev(lo->lo_device, BLKRRPART, 0);
-+	}
-+
- 	lo->lo_encrypt_key_size = info->lo_encrypt_key_size;
- 	lo->lo_init[0] = info->lo_init[0];
- 	lo->lo_init[1] = info->lo_init[1];
-@@ -1635,6 +1655,27 @@ static int loop_add(struct loop_device *
- 	if (!disk)
- 		goto out_free_queue;
- 
-+	/*
-+	 * Disable partition scanning by default. The in-kernel partition
-+	 * scanning can be requested individually per-device during its
-+	 * setup. Userspace can always add and remove partitions from all
-+	 * devices. The needed partition minors are allocated from the
-+	 * extended minor space, the main loop device numbers will continue
-+	 * to match the loop minors, regardless of the number of partitions
-+	 * used.
-+	 *
-+	 * If max_part is given, partition scanning is globally enabled for
-+	 * all loop devices. The minors for the main loop devices will be
-+	 * multiples of max_part.
-+	 *
-+	 * Note: Global-for-all-devices, set-only-at-init, read-only module
-+	 * parameteters like 'max_loop' and 'max_part' make things needlessly
-+	 * complicated, are too static, inflexible and may surprise
-+	 * userspace tools. Parameters like this in general should be avoided.
-+	 */
-+	if (!part_shift)
-+		disk->flags |= GENHD_FL_NO_PART_SCAN;
-+	disk->flags |= GENHD_FL_EXT_DEVT;
- 	mutex_init(&lo->lo_ctl_mutex);
- 	lo->lo_number		= i;
- 	lo->lo_thread		= NULL;
---- a/include/linux/loop.h
-+++ b/include/linux/loop.h
-@@ -75,6 +75,7 @@ enum {
- 	LO_FLAGS_READ_ONLY	= 1,
- 	LO_FLAGS_USE_AOPS	= 2,
- 	LO_FLAGS_AUTOCLEAR	= 4,
-+	LO_FLAGS_PARTSCAN	= 8,
- };
- 
- #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
+ static int fw_device_op_open(struct inode *inode, struct file *file)
+ {
 
-
+-- 
+Stefan Richter
+-=====-==-== =--- -====
+http://arcgraph.de/sr/
