@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1HOMJe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 08:09:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62970 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752672Ab1HOMJd (ORCPT
+	id S1752874Ab1HOMLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 08:11:24 -0400
+Received: from verro.fugedabout.it ([78.46.95.7]:37280 "EHLO
+	verro.fugedabout.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1HOMLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 08:09:33 -0400
-Date: Mon, 15 Aug 2011 13:09:14 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Fix non-LPAE boot regression.
-Message-ID: <20110815120914.GB21596@e102109-lin.cambridge.arm.com>
-References: <201108131556.27301.anarsoul@gmail.com>
- <1313240299-24712-1-git-send-email-anarsoul@gmail.com>
+	Mon, 15 Aug 2011 08:11:23 -0400
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Aug 2011 08:11:23 EDT
+Message-ID: <4E490B2C.5000900@fabbione.net>
+Date: Mon, 15 Aug 2011 14:03:56 +0200
+From: "Fabio M. Di Nitto" <fabbione@fabbione.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313240299-24712-1-git-send-email-anarsoul@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] kernel/printk: do not turn off bootconsole in printk_late_init
+ if keep_bootcon
+References: <1312934553-17085-1-git-send-email-nacc@us.ibm.com>
+In-Reply-To: <1312934553-17085-1-git-send-email-nacc@us.ibm.com>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasily,
-
-On Sat, Aug 13, 2011 at 01:58:19PM +0100, Vasily Khoruzhick wrote:
-> It was introduced by  407f8b4cb07cbc5c1c7cc386f231224e2524ccea
-> ARM: LPAE: MMU setup for the 3-level page table format
+On 8/10/2011 2:02 AM, Nishanth Aravamudan wrote:
+> It seems that commit 7bf693951a8e5f7e600a45b74d91d962a453146e doesn't
+> always achieve what it aims, as printk_late_init() runs it
+> unconditionally turns off all boot consoles. With this patch, I am able
+> to see more messages on the boot console in KVM guests than I can
+> without, when keep_bootcon is specified.
 > 
-> Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+> Cc: David S. Miller <davem@davemloft.net>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: Greg KH <gregkh@suse.de>
 > ---
->  arch/arm/kernel/head.S |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  kernel/printk.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index 0bdafc4..5add5f5 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -206,7 +206,7 @@ __create_page_tables:
->  1:	orr	r3, r7, r5, lsl #SECTION_SHIFT	@ flags + kernel base
->  	str	r3, [r4, r5, lsl #PMD_ORDER]	@ identity mapping
->  	cmp	r5, r6
-> -	addlo	r5, r5, #SECTION_SHIFT >> 20	@ next section
-> +	addlo	r5, r5, #1			@ next section
->  	blo	1b
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 37dff34..293a6cc 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -1602,7 +1602,7 @@ static int __init printk_late_init(void)
+>  	struct console *con;
+>  
+>  	for_each_console(con) {
+> -		if (con->flags & CON_BOOT) {
+> +		if (!keep_bootcon && con->flags & CON_BOOT) {
+>  			printk(KERN_INFO "turn off boot console %s%d\n",
+>  				con->name, con->index);
+>  			unregister_console(con);
 
-That's correct.
+Patch looks ok to me, just send it through the right channels for inclusion.
 
->  	/*
-> @@ -217,7 +217,7 @@ __create_page_tables:
->  	mov	r3, r3, lsr #SECTION_SHIFT
->  	orr	r3, r7, r3, lsl #SECTION_SHIFT
->  	add	r0, r4,  #(KERNEL_START & 0xff000000) >> (SECTION_SHIFT - PMD_ORDER)
-> -	str	r3, [r0, #(KERNEL_START & 0x00e00000) >> (SECTION_SHIFT - PMD_ORDER)]!
-> +	str	r3, [r0, #(KERNEL_START & 0x00f00000) >> (SECTION_SHIFT - PMD_ORDER)]!
-
-The reason for this was that the sections are 2MB with LPAE and a page
-table entry is 64-bit wide. We always shift that value by 18 but with
-LPAE we don't want to write in the middle of a page table entry if
-KERNEL_START is not 2MB aligned.
-
-But if KERNEL_START is not 2MB aligned, I think we get the wrong
-physical address by 1MB (with the classic page table format).
-
-There are a few alternatives to fixing this:
-
-1. Different KERNEL_START masking for classic or LPAE page tables.
-2. Always force 2MB section and the code above moving the phys addr into
-   r3 would need to take this into account.
-
-I would go for 1 with some shifting like below:
-
-+	str	r3, [r0, #((KERNEL_START & 0x00f00000) >> SECTION_SHIFT) << PMD_ORDER]!
-
-This should give us 0x00f00000 with classic page tables and 0x00e00000
-with LPAE.
-
-Thanks.
-
--- 
-Catalin
+Fabio
