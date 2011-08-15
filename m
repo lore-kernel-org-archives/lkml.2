@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab1HOTU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 15:20:56 -0400
-Received: from lunge.queued.net ([173.255.254.236]:42498 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1HOTUz (ORCPT
+	id S1751873Ab1HOTXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 15:23:05 -0400
+Received: from mail.windriver.com ([147.11.1.11]:55394 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1HOTXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 15:20:55 -0400
-Date: Mon, 15 Aug 2011 12:20:51 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: dsd@laptop.org, cjb@laptop.org, linux-kernel@vger.kernel.org,
-        dcbw@redhat.com, libertas-dev@lists.infradead.org
-Subject: Re: [GIT PULL linux-firmware.git v3] OLPC libertas firmware blobs
-Message-ID: <20110815122051.73bd4bd0@debxo>
-In-Reply-To: <20110804154722.55ab153b@debxo>
-References: <20110804154722.55ab153b@debxo>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 15 Aug 2011 15:23:03 -0400
+Message-ID: <4E4971FC.3080601@windriver.com>
+Date: Mon, 15 Aug 2011 15:22:36 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Peter Huewe <peterhuewe@gmx.de>
+CC: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] avr32/clock.c: Move '#include linux/export.h' to fix
+ build failure
+References: <1313431320-17080-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1313431320-17080-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sounds like no one has any issues with this pull (and related libertas
-patch)?  If that's the case.. Dave, mind doing that pull?  Sorry for
-the multiple pull requests.
+On 11-08-15 02:02 PM, Peter Huewe wrote:
+> This patch fixes a build failure for the avr32 defconfig by moving the include
+> of linux/export.h to the top of the file where it is needed.
+> 
+> Without the patch the build first warns about:
+> arch/avr32/mach-at32ap/clock.c:62: warning: data definition has no type
+> or storage class
+> arch/avr32/mach-at32ap/clock.c:62: warning: type defaults to 'int' in
+> declaration of 'EXPORT_SYMBOL'
+> arch/avr32/mach-at32ap/clock.c:62: warning: parameter names (without
+> types) in function declaration
+> (...)
+> 
+> And then fails with
+> ERROR: "clk_enable" [sound/spi/snd-at73c213.ko] undefined!
+> ERROR: "clk_disable" [sound/spi/snd-at73c213.ko] undefined!
+> (...)
+> 
+> This is because the definition of EXPORT_SYMBOL is needed before the
+> first usage, and thus the include has to be on the top of the file.
 
+Thanks Peter,  I'll squish this fix into the commit that introduces
+the misplacement.  It was searching out the last "#include <linux/xyz.h>
+and appending after that.  Occasionally where someone has a large
+block of them in an #ifdef CONFIG_BLAH did it get misplaced.  And then
+it was only visible if the arch didn't set CONFIG_BLAH, as what has
+happened here on avr32 it seems.
 
-On Thu, 4
-Aug 2011 15:47:22 -0700 Andres Salomon <dilinger@queued.net> wrote:
+Paul.
 
-> The following changes since commit
-> 13f5008494268031d569f830d0955479bd5b9dfc:
 > 
->   Merge git://anongit.freedesktop.org/~dcbw/linux-firmware
-> (2011-07-31 00:15:37 +0100)
+> While at it, I sorted the include list alphabetically.
 > 
-> are available in the git repository at:
+> KernelVersion: Linux-next 20110812
 > 
->   git://lunge.queued.net/git/linux-firmware master
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+>  arch/avr32/mach-at32ap/clock.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> Andres Salomon (1):
->       libertas: add OLPC libertas blobs
-> 
->  LICENCE.OLPC              |   33 +++++++++++++++++++++++++++++++++
->  WHENCE                    |   17 +++++++++++++++++
->  libertas/lbtf_sdio.bin    |  Bin 0 -> 120924 bytes
->  libertas/lbtf_usb.bin     |  Bin 0 -> 118888 bytes
->  libertas/usb8388_olpc.bin |  Bin 0 -> 127824 bytes
->  5 files changed, 50 insertions(+), 0 deletions(-)
->  create mode 100644 LICENCE.OLPC
->  create mode 100644 libertas/lbtf_sdio.bin
->  create mode 100644 libertas/lbtf_usb.bin
->  create mode 100644 libertas/usb8388_olpc.bin
-
+> diff --git a/arch/avr32/mach-at32ap/clock.c b/arch/avr32/mach-at32ap/clock.c
+> index 579d619..78c873a 100644
+> --- a/arch/avr32/mach-at32ap/clock.c
+> +++ b/arch/avr32/mach-at32ap/clock.c
+> @@ -12,10 +12,11 @@
+>   * published by the Free Software Foundation.
+>   */
+>  #include <linux/clk.h>
+> -#include <linux/err.h>
+>  #include <linux/device.h>
+> -#include <linux/string.h>
+> +#include <linux/err.h>
+> +#include <linux/export.h>
+>  #include <linux/list.h>
+> +#include <linux/string.h>
+>  
+>  #include <mach/chip.h>
+>  
+> @@ -186,7 +187,6 @@ EXPORT_SYMBOL(clk_get_parent);
+>  #include <linux/io.h>
+>  #include <linux/debugfs.h>
+>  #include <linux/seq_file.h>
+> -#include <linux/export.h>
+>  #include "pm.h"
+>  
+>  
