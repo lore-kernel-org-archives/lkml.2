@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab1HOVhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 17:37:12 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:37505 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab1HOVhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 17:37:11 -0400
-Date: Mon, 15 Aug 2011 17:37:06 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Suppressing a plus from setlocalversion
-Message-ID: <20110815173706.12ccfdd4@mj>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+	id S1753306Ab1HOViO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 17:38:14 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:43439 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab1HOViM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 17:38:12 -0400
+Date: Mon, 15 Aug 2011 14:37:03 -0700 (PDT)
+Message-Id: <20110815.143703.755340393661399080.davem@davemloft.net>
+To: mikpe@it.uu.se
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparc64: remove unnecessary macros from spinlock_64.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20041.32055.652850.148995@pilspetsen.it.uu.se>
+References: <20041.32055.652850.148995@pilspetsen.it.uu.se>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 15 Aug 2011 14:37:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Mikael Pettersson <mikpe@it.uu.se>
+Date: Mon, 15 Aug 2011 22:10:31 +0200
 
-There is one annoyance in the build system that I cannot work around.
-Before I attempt hacking the code, I'd like to make sure I'm not
-missing anything obvious.
+> The sparc64 spinlock_64.h contains a number of operations defined
+> first as static inline functions, and then as macros with the same
+> names and parameters as the functions.  Maybe this was needed at
+> some point in the past, but now nothing seems to depend on these
+> macros (checked with a recursive grep looking for ifdefs on these
+> names).  Other archs don't define these identity-macros.
+> 
+> So this patch deletes these unnecessary macros.
+> 
+> Compile-tested with sparc64_defconfig.
+> 
+> Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
 
-Suppose that I have a kernel version 3.1-rc2.  I want to test some patch
-for some code that is compiled as a module.  I change the code and
-create a patch with STGit.  I recompile the modules, install them by
-"make module_install", unload the module I patched, load it again
-and find that there is no effect from my change.  It turns out that the
-modules were installed to "/lib/modules/3.1.0-rc2+" and the plus was
-added by scripts/localversion because the source tree is now modified.
-
-So I recompile the whole kernel, reboot and continue working on my
-patch.  Many days later, I'm about to send my patch, but I want to
-retest the system without it, so I "stg pop" it, recompile the
-module, install it and find that the unpatched module behaves just like
-the patched one.  Of course, it turns out that the unpatched
-module ended up in "/lib/modules/3.1.0-rc2", whereas modprobe keeps
-loading the modified module from "/lib/modules/3.1.0-rc2+"
-
-CONFIG_LOCALVERSION_AUTO is unset, but that doesn't stop
-scripts/localversion from adding the plus.  Setting CONFIG_LOCALVERSION
-doesn't help.  Setting LOCALVERSION on the make command line helps, but
-it needs to be done every time, and it's too easy to forget.  I don't
-want to write a wrapper around make, it would be too intrusive
-(actually, it's my solution for now).
-
-Adding anything to localversion* doesn't suppress the plus.  Keeping
-some patch in STGit all the time is quite annoying, I'll eventually end
-up sending it to some mailing list by mistake.  STGit cannot hide
-applied patches.  Besides, I'll need to be aware of the patch when
-switching branches.
-
-File .scmversion is only read from the source directory, so having it
-is equivalent to having a modified source all the time, which is what
-I'm trying to avoid.  Sure, I can keep .scmversion not in git, but I
-risk to clean it up with "git clean" eventually.
-
-If there is no simple solution with the existing code, maybe
-non-empty CONFIG_LOCALVERSION should suppress the plus just like
-LOCALVERSION?
-
-Or maybe CONFIG_LOCALVERSION_AUTO should be not yes/no, but
-full/minimal/no?
-
--- 
-Regards,
-Pavel Roskin
+Applied.
