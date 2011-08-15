@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab1HOWtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:49:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab1HOWtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:49:10 -0400
-Subject: Re: [PATCH v2] libertas: prioritize usb8388_olpc.bin firmware on
- OLPC machines
-From: Dan Williams <dcbw@redhat.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: David Woodhouse <dwmw2@infradead.org>, libertas-dev@lists.infradead.org,
-        dsd@laptop.org, cjb@laptop.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Aug 2011 17:51:18 -0500
-In-Reply-To: <20110804160652.2c87efef@debxo>
-References: <20110804160652.2c87efef@debxo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313448679.6103.13.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+	id S1752435Ab1HOWuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:50:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:34711 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab1HOWuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 18:50:10 -0400
+Date: Tue, 16 Aug 2011 00:50:06 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, NeilBrown <neilb@suse.de>,
+        paulmck@linux.vnet.ibm.com, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in
+ cgroup_attach_proc
+Message-ID: <20110815225003.GB29942@somewhere>
+References: <20110727171101.5e32d8eb@notabene.brown>
+ <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com>
+ <20110728110813.7ff84b13@notabene.brown>
+ <20110728062616.GC15204@unix33.andrew.cmu.edu>
+ <20110728171345.67d3797d@notabene.brown>
+ <20110729142842.GA8462@unix33.andrew.cmu.edu>
+ <20110815184957.GA16588@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815184957.GA16588@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 16:06 -0700, Andres Salomon wrote:
-> Normally, the v9 firmware will be loaded if it's available.  However, on
-> OLPC XO-1 machines, the olpc-specific firmware supports extra functionality.
-> This makes the libertas driver attempt to load the custom firmware first
-> if the machine is an OLPC machine; if that fails (or it's not an OLPC
-> machine), fall back to attempting to load the other firmwares.
+On Mon, Aug 15, 2011 at 08:49:57PM +0200, Oleg Nesterov wrote:
+> On 07/29, Ben Blum wrote:
+> >
+> > According to this thread - https://lkml.org/lkml/2011/7/27/243 - RCU is
+> > not sufficient to guarantee the tasklist is stable w.r.t. de_thread and
+> > exit. Taking tasklist_lock for reading, instead of rcu_read_lock,
+> > ensures proper exclusion.
 > 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-
-works for me...
-
-> ---
->  drivers/net/wireless/libertas/if_usb.c |   21 +++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
+> Yes.
 > 
-> diff --git a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
-> index b5acc39..527cb11 100644
-> --- a/drivers/net/wireless/libertas/if_usb.c
-> +++ b/drivers/net/wireless/libertas/if_usb.c
-> @@ -973,6 +973,23 @@ static const struct {
->  	{ MODEL_8682, "libertas/usb8682.bin" }
->  };
->  
-> +#ifdef CONFIG_OLPC
-> +
-> +static int try_olpc_fw(struct if_usb_card *cardp)
-> +{
-> +	int retval = -ENOENT;
-> +
-> +	/* try the OLPC firmware first; fall back to fw_table list */
-> +	if (machine_is_olpc() && cardp->model == MODEL_8388)
-> +		retval = request_firmware(&cardp->fw, "usb8388_olpc.bin",
-> +				&cardp->udev->dev);
-> +	return retval;
-> +}
-> +
-> +#else
-> +static int try_olpc_fw(struct if_usb_card *cardp) { return -ENOENT; }
-> +#endif /* !CONFIG_OLPC */
-> +
->  static int get_fw(struct if_usb_card *cardp, const char *fwname)
->  {
->  	int i;
-> @@ -981,6 +998,10 @@ static int get_fw(struct if_usb_card *cardp, const char *fwname)
->  	if (fwname)
->  		return request_firmware(&cardp->fw, fwname, &cardp->udev->dev);
->  
-> +	/* Handle OLPC firmware */
-> +	if (try_olpc_fw(cardp) == 0)
-> +		return 0;
-> +
->  	/* Otherwise search for firmware to use */
->  	for (i = 0; i < ARRAY_SIZE(fw_table); i++) {
->  		if (fw_table[i].model != cardp->model)
+> So far I still think we should fix while_each_thread() so that it works
+> under rcu_read_lock() "as exepected", I'll try to think more.
+> 
+> But whatever we do with while_each_thread(), this can't help
+> cgroup_attach_proc(), it needs the locking.
+> 
+> > -	rcu_read_lock();
+> > +	read_lock(&tasklist_lock);
+> >  	if (!thread_group_leader(leader)) {
+> 
+> Agreed, this should work.
+> 
+> But can't we avoid the global list? thread_group_leader() or not, we do
+> not really care. We only need to ensure we can safely find all threads.
+> 
+> How about the patch below?
+> 
+> 
+> With or without this/your patch this leader can die right after we
+> drop the lock. ss->can_attach(leader) and ss->attach(leader) look
+> suspicious. If a sub-thread execs, this task_struct has nothing to
+> do with the threadgroup.
+> 
+> 
+> 
+> Also. This is off-topic, but... Why cgroup_attach_proc() and
+> cgroup_attach_task() do ->attach_task() + cgroup_task_migrate()
+> in the different order? cgroup_attach_proc() looks wrong even
+> if currently doesn't matter.
 
+Right. As we concluded in our off-list discussion, if there
+is no strong reason for that, I'm going to fix that in my task
+counter patchset because there it really matters. If we can't
+migrate the thread because it has already exited, we really
+don't want to call ->attach_task() but rather cancel_attach_task().
 
+Thanks.
