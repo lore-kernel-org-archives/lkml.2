@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab1HOTAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 15:00:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51910 "EHLO mail.zytor.com"
+	id S1752238Ab1HOTCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 15:02:53 -0400
+Received: from lucidpixels.com ([72.73.18.11]:44273 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab1HOTAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 15:00:33 -0400
-Message-ID: <4E496CAC.3030103@zytor.com>
-Date: Mon, 15 Aug 2011 11:59:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1750790Ab1HOTCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 15:02:53 -0400
+Date: Mon, 15 Aug 2011 15:02:52 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Hugh Dickins <hughd@google.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
+In-Reply-To: <alpine.LSU.2.00.1108151109240.1524@sister.anvils>
+Message-ID: <alpine.DEB.2.02.1108151450190.30763@p34.internal.lan>
+References: <alpine.DEB.2.02.1108151241370.32349@p34.internal.lan> <alpine.LSU.2.00.1108151109240.1524@sister.anvils>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Solar Designer <solar@openwall.com>
-CC: Andi Kleen <andi@firstfloor.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-References: <20110812150304.GC16880@albatros> <4E45884B.8030303@zytor.com> <20110813062246.GC3851@albatros> <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com> <m2ei0olnua.fsf@firstfloor.org> <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com> <20110814092028.GB14293@openwall.com> <01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com> <20110815185114.GA20115@openwall.com>
-In-Reply-To: <20110815185114.GA20115@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2011 11:51 AM, Solar Designer wrote:
-> I agree with you that i386 vs x86-64 vs x32 is one axis and syscall
-> number is another axis.
 
-They are not.  ABI is ONE SUBSET OF SYSCALL NUMBERS.
 
-> Per-syscall restrictions are also useful, but primarily at a different
-> level - I'd expect them to be used in specific programs, such as Chrome
-> and vsftpd.  Those programs may also want to limit themselves to a
-> certain type of syscalls (that is, on the i386 vs x86-64 vs x32 axis),
-> thereby making use of both features at once.  Or they might even have to
-> do that, depending on how we implement the syscall restrictions.
-> 
-> Per your suggestion, if I understand correctly, any task that wants to
-> restrict itself on the i386 vs x86-64 vs x32 axis will have TIF_SECCOMP
-> set and will incur calls into __secure_computing().  This is unnecessary
-> overhead for the case when we have a restriction over this axis only,
-> without per-syscall restrictions.  Vasiliy's patch avoids such overhead.
+On Mon, 15 Aug 2011, Hugh Dickins wrote:
 
-There is really no bloody difference between i386 vs x86-64 and, say,
-sys_oldstat versus sys_stat, or anything else along those lines.
-Putting in a bunch of ad hoc facilities because of semi-plausible
-performance wins rather than building a sane filtering facility which
-can be optimized as a single path is ridiculous.
+> On Mon, 15 Aug 2011, Justin Piszcz wrote:
+>> Hello,
+>>
+>> What causes this(?) -- am I out of memory(?) or is this a kernel bug?
+>
+> It would be a kernel bug to lock up even if you are out of memory.
+This machine has 48GB of RAM and its just a linux router and some gqview's
+running..
 
-	-hpa
+>
+> It does look like you're under memory pressure, but I don't see any OOM.
+>
+> Is this something you've noticed just once, or does it happen repeatedly?
+This has happened once before (I've e-mailed LKML about it last weekend or
+thereabouts but nobody responded)
+
+It is here:
+http://lkml.org/lkml/2011/8/12/54 (down?)
+http://comments.gmane.org/gmane.linux.kernel/1178570
+
+>
+> Does it always hit somewhere in find_get_pages(), or does the loop span
+> wider than that?
+Per: http://comments.gmane.org/gmane.linux.kernel/1178570
+
+Slightly different (From August 12)
+
+   75 [330509.718763] Call Trace:
+   76 [330509.718771]  [<ffffffff81089e15>] ? pagevec_lookup+0x15/0x20
+   77 [330509.718776]  [<ffffffff8108b905>] ? invalidate_mapping_pages+0x55/0x130
+   78 [330509.718784]  [<ffffffff810d6835>] ? shrink_icache_memory+0x2c5/0x310
+   79 [330509.718788]  [<ffffffff8108c254>] ? shrink_slab+0x104/0x170
+   80 [330509.718793]  [<ffffffff8108eda2>] ? balance_pgdat+0x492/0x600
+   81 [330509.718798]  [<ffffffff8108efbc>] ? kswapd+0xac/0x250
+   82 [330509.718803]  [<ffffffff81050fd0>] ? abort_exclusive_wait+0xb0/0xb0
+   83 [330509.718807]  [<ffffffff8108ef10>] ? balance_pgdat+0x600/0x600
+   84 [330509.718811]  [<ffffffff8105082e>] ? kthread+0x7e/0x90
+   85 [330509.718818]  [<ffffffff815b4e14>] ? kernel_thread_helper+0x4/0x10
+   86 [330509.718822]  [<ffffffff810507b0>] ? kthread_worker_fn+0x120/0x120
+   87 [330509.718825]  [<ffffffff815b4e10>] ? gs_change+0xb/0xb
+
+The first time it happened was when running a lot of I/O \
+(dumps and streams/backups over SSH).
+
+>
+> I'm answering out of interest in find_get_pages(): which does contain
+> a number of gotos which could result in endless looping; except that
+> they're all supposed to be for very transitory conditions which a
+> second glance at the RCU-protected tree should correct.
+I am using 'server' for the workload type, not 'low latency' -- which exposes
+more bugs/problems..
+
+>
+> But if a radix_tree node got corrupted, then yes, it could loop forever.
+>
+> If it's repeatable, please try again with slab poisoning (and frame
+> pointers) enabled?
+I will enable frame pointers and wait for the next error/problem and report
+back if/when it recurs, thanks!
+
+Justin.
+
