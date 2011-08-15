@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab1HOSoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:44:14 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:60814 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab1HOSoN (ORCPT
+	id S1752512Ab1HOStY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:49:24 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:43775 "EHLO
+	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab1HOStX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:44:13 -0400
-Message-ID: <4E4968F0.9050108@panasas.com>
-Date: Mon, 15 Aug 2011 11:44:00 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Mon, 15 Aug 2011 14:49:23 -0400
+Date: Mon, 15 Aug 2011 14:49:07 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: martyn.welch@ge.com, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110815184907.GB22239@flamenco.cs.columbia.edu>
+References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch>
+ <1313145051-13397-4-git-send-email-manohar.vanga@cern.ch>
+ <20110813074714.GA32149@flamenco.cs.columbia.edu>
+ <20110815100503.GA22344@becoht-mvanga>
 MIME-Version: 1.0
-To: Maxin B John <maxin.john@gmail.com>
-CC: <rdunlap@xenotime.net>, Benny Halevy <bhalevy@panasas.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        <osd-dev@open-osd.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] SCSI: OSD: Kconfig: Select SHA1 and HMAC for OSD Initiator
- library
-References: <20110811142749.GA26109@maxin> <CAMhs6Yy_O33jZ5N7E5UuAtjoRyyEcUG8s4-PQwooX-TJ3Wh=2A@mail.gmail.com>
-In-Reply-To: <CAMhs6Yy_O33jZ5N7E5UuAtjoRyyEcUG8s4-PQwooX-TJ3Wh=2A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815100503.GA22344@becoht-mvanga>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2011 04:18 PM, Maxin B John wrote:
-> Ping..
+On Mon, Aug 15, 2011 at 12:05:03 +0200, Manohar Vanga wrote:
+> > If the driver doesn't provide a .probe, we would still increment
+> > the refcount of the bridge module. Is that reasonable? I dunno.
+(snip)
+> I picked this default behaviour from the PCI driver code (drivers/pci/pci-driver.c):
 > 
-> On Thu, Aug 11, 2011 at 5:27 PM, Maxin B. John <maxin.john@gmail.com> wrote:
->> SCSI_OSD_INITIATOR should select CRYPTO_SHA1 and CRYPTO_HMAC. Express this
->> in Kconfig so that the requirements are met automatically.
->>
->> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+> 	static int pci_device_probe(struct device * dev)
+> 	{
+> 		...
+> 		pci_dev_get(pci_dev);
+> 		error = __pci_device_probe(drv, pci_dev);
+> 		if (error)
+> 			pci_dev_put(pci_dev);
+> 	
+> 		return error;
+> 	}
+> 
+> The __pci_device_probe() function checks if probe is present or not.
 
-Yes sorry. It was on my todo and I never got to it.
+There is a subtle difference here; pci_dev is the _struct pci_device
+of the device_ being probed, and pci_dev_get increments its refcount.
 
-OK So actually current osd_initiator code does not use these libraries.
-It should, and I have very old code that started on that (hence the comment),
-but it was never submitted to Kernel. The OSD protocol calls for all kind of
-security levels that use these, but the current code only supports NO_SEC.
+In our case vme_bridge_get increments the refcount of the _bridge's
+module_; my concern was that if there was no .probe (which would
+only happen with a few special drivers), we'd increment the refcount
+of the bridge for perhaps no reason.
 
-I will keep your patch for when security code goes in. Meanwhile I should
-at least remove the stale comment.
+Anyway we don't have such esoteric drivers yet, so I wouldn't worry
+about this too much.
 
-Thanks
-Boaz
-
->> ---
->> diff --git a/drivers/scsi/osd/Kconfig b/drivers/scsi/osd/Kconfig
->> index 861b5ce..1535fe1 100644
->> --- a/drivers/scsi/osd/Kconfig
->> +++ b/drivers/scsi/osd/Kconfig
->> @@ -11,17 +11,16 @@
->>  # it under the terms of the GNU General Public version 2 License as
->>  # published by the Free Software Foundation
->>  #
->> -# FIXME: SCSI_OSD_INITIATOR should select CONFIG (HMAC) SHA1 somehow.
->> -#        How is it done properly?
->>  #
->>
->>  config SCSI_OSD_INITIATOR
->>        tristate "OSD-Initiator library"
->>        depends on SCSI
->> +       select CRYPTO
->> +       select CRYPTO_SHA1
->> +       select CRYPTO_HMAC
->>        help
->>                Enable the OSD-Initiator library (libosd.ko).
->> -               NOTE: You must also select CRYPTO_SHA1 + CRYPTO_HMAC and their
->> -               dependencies
->>
->>  config SCSI_OSD_ULD
->>        tristate "OSD Upper Level driver"
->>
-
+		Emilio
