@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab1HOPYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:24:41 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:16632 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab1HOPYi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:24:38 -0400
-Date: Mon, 15 Aug 2011 17:24:36 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: Josip Rodin <joy@entuzijast.net>, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH,SPARC] make sparc32 arch_write_unlock() match the
-	sparc64 version
-Message-ID: <20110815152436.GA31355@merkur.ravnborg.org>
-References: <20040.65109.439941.444670@pilspetsen.it.uu.se> <20110815133116.GA20563@entuzijast.net> <20041.11793.565236.115039@pilspetsen.it.uu.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20041.11793.565236.115039@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754559Ab1HOP12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:27:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35752 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754256Ab1HOP1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:27:25 -0400
+Date: Tue, 16 Aug 2011 01:27:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Elder <aelder@sgi.com>
+Subject: Re: linux-next: build failure after merge of the final tree (xfs
+ tree related)
+Message-Id: <20110816012715.42665b49723cc48b1bd97610@canb.auug.org.au>
+In-Reply-To: <20110815144946.GA8256@infradead.org>
+References: <20110815161023.6227665ab11f8a35fd649e3a@canb.auug.org.au>
+	<20110815144946.GA8256@infradead.org>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mikael.
+--Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  > > @@ -175,7 +184,7 @@ static inline int __arch_read_trylock(ar
->  > >  	res; \
->  > >  })
->  > >  
->  > > -#define arch_write_unlock(rw)	do { (rw)->lock = 0; } while(0)
->  > > +#define arch_write_unlock(rw)	arch_write_unlock(rw)
->  > >  
->  > >  #define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
->  > >  #define arch_read_lock_flags(rw, flags)   arch_read_lock(rw)
->  > 
->  > Why keep the tautological define? Just wondering.
-> 
-> Only because sparc64 does it that way.  I now see that no other
-> arch has the #define, so perhaps that bit should be deleted (from
-> both sparc64 and sparc32).
-Please kill the extra define in both sparc32 and sparc64.
-Preferably in two separate patches.
+Hi Christoph,
 
-For the subject of the patch please use:
-[PATCH] sparc32: bla bla
+On Mon, 15 Aug 2011 10:49:46 -0400 Christoph Hellwig <hch@infradead.org> wr=
+ote:
+>
+> On Mon, Aug 15, 2011 at 04:10:23PM +1000, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > After merging the final tree, today's linux-next build (a powerpc server
+> > config) failed like this:
+>=20
+> You'll need the patch below.  Can you keep is as a fix-up for now until
+> Alex returns from his vacation?
 
-Because when davem apply the patch everything in [] is zapped,
-and it is good to see in the shortlog that this is a sparc32 specific patch.
+Thanks.  I will add it starting tomorrow and remove it when it turns up
+in the xfs tree.
 
-For sparc64 we sometimes use "sparc64: bla bal", and sometimes use
-"sparc: bla bla".
-I prefer the first but no strong feelings.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-And btw thanks for looking at this! Looks like a very difficult bug to nail.
+--Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo
+Content-Type: application/pgp-signature
 
-	Sam
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSTrTAAoJEDMEi1NhKgbsEpYIAJAYYdVozfSSrHPyzYyoBIwn
+2IGn5HP1cwHiS3Manhc3RsPhjzNnGn8tDM7hM20FYmlAia4lMMgdSEMMRRyeqB1m
+kjnpHQ3DeCtH48fHnFhKeycLUe4wv6K7vpmMH2sQp1V5lfHaOBVr7gge01GeJNZr
+2aqf2irP+zXyGjNX80boj99d6v4lfDwPvQi/NfjnhEeAo5/XlRvf45SzIRvRkzNz
+XqaG2/YlzwGt+wlTjPndlHOQXjvNjlNUkb6wIbM3Z1XQVxe7zJHmsVitll0Psf0p
+gJJLbjP1wszDhVwKyuV20z/1B3xo/hQcM7uL2mQVeukkmIy+wQ0S+SeBmltI3zU=
+=Uwif
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo--
