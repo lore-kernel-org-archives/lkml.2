@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139Ab1HOQfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 12:35:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27056 "EHLO mga02.intel.com"
+	id S1751426Ab1HOQkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 12:40:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37112 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab1HOQfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 12:35:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="37933952"
-Message-ID: <4E494AED.7030005@linux.intel.com>
-Date: Mon, 15 Aug 2011 09:35:57 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
+	id S1750735Ab1HOQkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 12:40:45 -0400
+Date: Mon, 15 Aug 2011 18:40:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/10]include:linux Remove pointless "@" from various
+ parts of the kernel
+In-Reply-To: <20110815155101.GJ2389@linux.vnet.ibm.com>
+Message-ID: <alpine.LNX.2.00.1108151839570.27118@pobox.suse.cz>
+References: <1313195235-4522-1-git-send-email-justinmattock@gmail.com> <1313195235-4522-10-git-send-email-justinmattock@gmail.com> <20110815155101.GJ2389@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Sergei Trofimovich <slyfox@gentoo.org>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jeremy Rocher <rocher.jeremy@gmail.com>
-Subject: Re: [PATCH] pti: fix build failure
-References: <1313355177-12605-1-git-send-email-slyfox@gentoo.org>
-In-Reply-To: <1313355177-12605-1-git-send-email-slyfox@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2011 01:52 PM, Sergei Trofimovich wrote:
-> Found on allmodconfig build (ARCH=alpha)
->
->      drivers/misc/pti.c: In function 'get_id':
->      drivers/misc/pti.c:249: error: implicit declaration of function 'kmalloc'
->      drivers/misc/pti.c: In function 'pti_char_write':
->      drivers/misc/pti.c:658: error: implicit declaration of function 'copy_from_user'
->
-> Signed-off-by: Sergei Trofimovich<slyfox@gentoo.org>
-> Cc: Greg Kroah-Hartman<gregkh@suse.de>
-> Cc: J Freyensee<james_p_freyensee@linux.intel.com>
-> Cc: Jeremy Rocher<rocher.jeremy@gmail.com>
-> ---
->   drivers/misc/pti.c |    2 ++
->   1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
-> index 8653bd0..06df187 100644
-> --- a/drivers/misc/pti.c
-> +++ b/drivers/misc/pti.c
-> @@ -33,6 +33,8 @@
->   #include<linux/mutex.h>
->   #include<linux/miscdevice.h>
->   #include<linux/pti.h>
-> +#include<linux/slab.h>
-> +#include<linux/uaccess.h>
+On Mon, 15 Aug 2011, Paul E. McKenney wrote:
 
-Thanks for the patch fix, but a patch was emailed to Greg KH on 
-08/02/2011 fixing this:
+> > The patch series below removes some pointless "@"'s in various parts of the kernel.
+> > Note: some might be useful, but then again, some just seemed a waste of space.
+> > (and since the kernel is become bloated, might as well diet! even if it's a few bits)
+> 
+> I would like to keep the RCU "@@@", please!
 
-http://marc.info/?l=linux-next&m=131016084730837&w=2
+Don't worry, I am not taking this whole patchset.
 
->
->   #define DRIVERNAME		"pti"
->   #define PCINAME			"pciPTI"
-
+Justin, you are not really going to save any space in .text by removing 
+comments anyway.
 
 -- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+Jiri Kosina
+SUSE Labs
