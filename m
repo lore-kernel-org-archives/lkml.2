@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1HOXWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 19:22:24 -0400
-Received: from mail06-md.ns.itscom.net ([175.177.155.116]:36505 "EHLO
-	mail06-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1HOXWX (ORCPT
+	id S1752885Ab1HOXWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 19:22:52 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33647 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab1HOXWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 19:22:23 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-To: smfrench@gmail.com, linux-cifs@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, kirk w <kirkpuppy@yahoo.com>
-Subject: Q: cifs, freeing volume_info->UNCip
-Date: Tue, 16 Aug 2011 08:22:17 +0900
-Message-ID: <7087.1313450537@jrobl>
+	Mon, 15 Aug 2011 19:22:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110815220728.62f27e35@lxorguk.ukuu.org.uk>
+References: <CAGRJchidA8ZTMcJnmfJpoBjjpG1zYFC4XQT8KKxjQUm4o3CCng@mail.gmail.com>
+	<20110815220728.62f27e35@lxorguk.ukuu.org.uk>
+Date: Mon, 15 Aug 2011 17:22:50 -0600
+Message-ID: <CAGRJchgbqqG5xOLoR4EOXBz7YcxmBc0TNsRaH138Qs5k6-e8YA@mail.gmail.com>
+Subject: Re: [RFC] Moving magnetometer HMC6352 into IIO subsystem
+From: Jonathan Kunkee <jonathan.kunkee@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> Should the HMC6352 digital compass driver be moved [...]?
+>
+> No - that would be a regression .. but read on
 
-Hello,
+>> [...] they should almost always land in IIO land.
+>
+> IIO is a staging project that may never go anywhere - some of us are
+> using magnetometers in product so this alone isn't an answer that works
+> right now.
 
-CIFS cleanup_volume_info_contents() looks like having a memory
-corruption problem.
-When UNCip is set to "&vol->UNC[2]" in cifs_parse_mount_options(), it
-should not be kfree()-ed in cleanup_volume_info_contents().
+In my reading I failed to catch the how transient 'staging' is--I'll
+keep it mind, as I'm hoping my driver will not be so transient.
 
-If it is correct and the code in mainline is not fixed yet, then here is
-a patch.
+>> I would be willing to work on the change as I want to submit a similar
+>> driver for the HMC6343 magnetometer/accelerometer as well.
+>
+> It would be great if it got added into the IIO subystem *as well*, and in
+> time when and if IIO goes out of staging it would then eventually replace
+> the existing drivers.
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index ccc1afa..e0ea721 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2838,7 +2838,8 @@ cleanup_volume_info_contents(struct smb_vol *volume_info)
- 	kfree(volume_info->username);
- 	kzfree(volume_info->password);
- 	kfree(volume_info->UNC);
--	kfree(volume_info->UNCip);
-+	if (volume_info->UNCip != volume_info->UNC + 2)
-+		kfree(volume_info->UNCip);
- 	kfree(volume_info->domainname);
- 	kfree(volume_info->iocharset);
- 	kfree(volume_info->prepath);
+This would then necessitate maintaining both chunks of code, so I think
+for now I will develop my module in drivers/misc. After it has stabilized,
+I can add both modules to IIO as well with this in mind.
 
-
-J. R. Okajima
+Thanks!
+--Jon Kunkee
