@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1HOPET (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:04:19 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:13582 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175Ab1HOPER (ORCPT
+	id S1754387Ab1HOPMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:12:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:46703 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab1HOPMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:04:17 -0400
-Date: Mon, 15 Aug 2011 10:04:09 -0500
-From: scameron@beardog.cce.hp.com
-To: Greg KH <greg@kroah.com>
-Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
-Message-ID: <20110815150409.GS27723@beardog.cce.hp.com>
-References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com> <20110813020147.GB15554@kroah.com> <20110815144022.GR27723@beardog.cce.hp.com>
-Mime-Version: 1.0
+	Mon, 15 Aug 2011 11:12:19 -0400
+Date: Mon, 15 Aug 2011 11:10:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Joe Jin <joe.jin@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>
+Subject: Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend
+ disconnected
+Message-ID: <20110815151042.GA22541@dumpdata.com>
+References: <4E48A6A6.4040706@oracle.com>
+ <20110815144610.GA3707@infradead.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110815144022.GR27723@beardog.cce.hp.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20110815144610.GA3707@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090206.4E493700.014C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 09:40:22AM -0500, scameron@beardog.cce.hp.com wrote:
-> On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
-> > On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
-> > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > > 
-> > > The cciss driver had a CCISS_HEARTBEAT ioctl which
-> [...]
-> > >  
-> > > +  The "heartbeat" read-only attribute returns the value of a heartbeat
-> > > +  counter register on a Smart Array controller as a 32 bit unsigned
-> > > +  hexadecimal integer (e.g: "0x12345678").  The value should change
-> > > +  periodically, not less than once per second.  If this value fails to
-> > > +  change for a period longer than one second, it means something has
-> > > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
-> > > +
-> > 
-> > This all belongs in Documentation/ABI/ care to move it there instead?
+On Mon, Aug 15, 2011 at 10:46:10AM -0400, Christoph Hellwig wrote:
+> On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
+> > When backend disconnect, sync IO requests to the disk.
 > 
-> Sure.
+> Care to explain why?
 
-Now that I look, I'm not seeing where any of the generic scsi
-host or device attributes are documented in Documenation/ABI.
+I was thinking it might be a good idea to do that when a disk
+(file, LVM, real block device) is released from a guest just in case
+there is some outstanding I/Os. But then I realized that we
+bypasses the page cache anyhow - so there should be no outstanding I/O
+requests - unless they are in the disk queue.
 
-It's not very clear to me where in Documentation/ABI I should
-document a driver's custom scsi device and host attributes as
-even the generic scsi device and host attributes seem to be
-undocumented.
+And the guest would normally issues a FLUSH when unmounting the
+disk. Hm, I wonder what the conditions are when we forcibly kill the
+guest - there might be outstanding I/Os in the disk's cache -
+at which point we should probably sync the write cache, no?
 
-from scsi_sysfs.c, I see these, for example:
-
-        &dev_attr_device_blocked.attr,
-        &dev_attr_type.attr,
-        &dev_attr_scsi_level.attr,
-        &dev_attr_vendor.attr,
-        &dev_attr_model.attr,
-        &dev_attr_rev.attr,
-        &dev_attr_rescan.attr,
-        &dev_attr_delete.attr,
-        &dev_attr_state.attr,
-        &dev_attr_timeout.attr,
-        &dev_attr_iocounterbits.attr,
-        &dev_attr_iorequest_cnt.attr,
-        &dev_attr_iodone_cnt.attr,
-        &dev_attr_ioerr_cnt.attr,
-        &dev_attr_modalias.attr,
-        REF_EVT(media_change),
-        NULL
-};
-
-but I don't see them documented anywhere in Documentation/ABI,
-and hpsa.c adds these custom sdev attrs:
-
-static struct device_attribute *hpsa_sdev_attrs[] = {
-        &dev_attr_raid_level,
-        &dev_attr_lunid,
-        &dev_attr_unique_id,
-        NULL,
-};
-
-
-Likewise, there are generic scsi host attrs in scsi_sysfs.c:
-
-static struct attribute *scsi_sysfs_shost_attrs[] = {
-        &dev_attr_unique_id.attr,
-        &dev_attr_host_busy.attr,
-        &dev_attr_cmd_per_lun.attr,
-        &dev_attr_can_queue.attr,
-        &dev_attr_sg_tablesize.attr,
-        &dev_attr_sg_prot_tablesize.attr,
-        &dev_attr_unchecked_isa_dma.attr,
-        &dev_attr_proc_name.attr,
-        &dev_attr_scan.attr,
-        &dev_attr_hstate.attr,
-        &dev_attr_supported_mode.attr,
-        &dev_attr_active_mode.attr,
-        &dev_attr_prot_capabilities.attr,
-        &dev_attr_prot_guard_type.attr,
-        NULL
-
-Also undocumented.
-
-hpsa.c adds custom host attrs:
-static struct device_attribute *hpsa_shost_attrs[] = {
-        &dev_attr_rescan,
-        &dev_attr_firmware_revision,
-        &dev_attr_commands_outstanding,
-        &dev_attr_transport_mode,
-        &dev_attr_resettable,
-        &dev_attr_heartbeat,
-        NULL,
-};
-
-
-How should I proceed?
-
--- steve
-
+> 
+> Also you'll just need a sync_blockdev, fsync_bdev does far to many
+> things that don't make any sense when you don't have a file system
+> mounted on a device.
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
