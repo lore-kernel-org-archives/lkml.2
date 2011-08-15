@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab1HOFlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:41:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36458 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1HOFln (ORCPT
+	id S1752096Ab1HOFpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:45:43 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39163 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1HOFpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:41:43 -0400
-Subject: [PATCH] [ARM] davinci: gpio: eliminate unused variable warnings
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Aug 2011 13:41:33 +0800
-Message-ID: <1313386893.25484.1.camel@phoenix>
+	Mon, 15 Aug 2011 01:45:40 -0400
+Date: Sun, 14 Aug 2011 22:45:36 -0700 (PDT)
+Message-Id: <20110814.224536.1330937123770047026.davem@davemloft.net>
+To: justinmattock@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: ip_rt_bug: 10.0.0.52 -> 255.255.255.255, ?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4E4898F5.8050605@gmail.com>
+References: <4E4898F5.8050605@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 14 Aug 2011 22:45:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 5093aec872e5be7a55d8dd2b639e8a3818dc19db
-"arm: davinci: Cleanup irq chip code", 
-the variable 'mask' and 'g' are not being used in gpio_irq_type.
 
-This patch eliminate below unused variable warnings:
+First, please contact netdev@vger.kernel.org for networking issues.
 
-  CC      arch/arm/mach-davinci/gpio.o
-arch/arm/mach-davinci/gpio.c: In function 'gpio_irq_type':
-arch/arm/mach-davinci/gpio.c:234: warning: unused variable 'mask'
-arch/arm/mach-davinci/gpio.c:233: warning: unused variable 'g'
+Second, this is fixed already:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/mach-davinci/gpio.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+commit d547f727df86059104af2234804fdd538e112015
+Author: Julian Anastasov <ja@ssi.bg>
+Date:   Sun Aug 7 22:20:20 2011 -0700
 
-diff --git a/arch/arm/mach-davinci/gpio.c b/arch/arm/mach-davinci/gpio.c
-index a8066e8..df0d595 100644
---- a/arch/arm/mach-davinci/gpio.c
-+++ b/arch/arm/mach-davinci/gpio.c
-@@ -230,9 +230,6 @@ static void gpio_irq_enable(struct irq_data *d)
- 
- static int gpio_irq_type(struct irq_data *d, unsigned trigger)
- {
--	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
--	u32 mask = (u32) irq_data_get_irq_handler_data(d);
--
- 	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
- 		return -EINVAL;
- 
--- 
-1.7.4.1
+    ipv4: fix the reusing of routing cache entries
+    
+    	compare_keys and ip_route_input_common rely on
+    rt_oif for distinguishing of input and output routes
+    with same keys values. But sometimes the input route has
+    also same hash chain (keyed by iif != 0) with the output
+    routes (keyed by orig_oif=0). Problem visible if running
+    with small number of rhash_entries.
+    
+    	Fix them to use rt_route_iif instead. By this way
+    input route can not be returned to users that request
+    output route.
+    
+    	The patch fixes the ip_rt_bug errors that were
+    reported in ip_local_out context, mostly for 255.255.255.255
+    destinations.
+    
+    Signed-off-by: Julian Anastasov <ja@ssi.bg>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index e3dec1c..cb7efe0 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -731,6 +731,7 @@ static inline int compare_keys(struct rtable *rt1, struct rtable *rt2)
+ 		((__force u32)rt1->rt_key_src ^ (__force u32)rt2->rt_key_src) |
+ 		(rt1->rt_mark ^ rt2->rt_mark) |
+ 		(rt1->rt_key_tos ^ rt2->rt_key_tos) |
++		(rt1->rt_route_iif ^ rt2->rt_route_iif) |
+ 		(rt1->rt_oif ^ rt2->rt_oif) |
+ 		(rt1->rt_iif ^ rt2->rt_iif)) == 0;
+ }
+@@ -2321,8 +2322,8 @@ int ip_route_input_common(struct sk_buff *skb, __be32 daddr, __be32 saddr,
+ 		if ((((__force u32)rth->rt_key_dst ^ (__force u32)daddr) |
+ 		     ((__force u32)rth->rt_key_src ^ (__force u32)saddr) |
+ 		     (rth->rt_iif ^ iif) |
+-		     rth->rt_oif |
+ 		     (rth->rt_key_tos ^ tos)) == 0 &&
++		    rt_is_input_route(rth) &&
+ 		    rth->rt_mark == skb->mark &&
+ 		    net_eq(dev_net(rth->dst.dev), net) &&
+ 		    !rt_is_expired(rth)) {
 
 
