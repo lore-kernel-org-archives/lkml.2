@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab1HOOk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:40:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41735 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab1HOOkZ (ORCPT
+	id S1754161Ab1HOOkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:40:32 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:5725 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab1HOOk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:40:25 -0400
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kconfig: fix set but not used variables
-Date: Mon, 15 Aug 2011 11:41:09 -0300
-Message-Id: <1313419269-3860-1-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.7.6
+	Mon, 15 Aug 2011 10:40:29 -0400
+Date: Mon, 15 Aug 2011 09:40:22 -0500
+From: scameron@beardog.cce.hp.com
+To: Greg KH <greg@kroah.com>
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
+Message-ID: <20110815144022.GR27723@beardog.cce.hp.com>
+References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com> <20110813020147.GB15554@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110813020147.GB15554@kroah.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some variables were being set but never used, which was triggering
-warnings in recent versions of GCC.
+On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
+> On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > 
+> > The cciss driver had a CCISS_HEARTBEAT ioctl which
+[...]
+> >  
+> > +  The "heartbeat" read-only attribute returns the value of a heartbeat
+> > +  counter register on a Smart Array controller as a 32 bit unsigned
+> > +  hexadecimal integer (e.g: "0x12345678").  The value should change
+> > +  periodically, not less than once per second.  If this value fails to
+> > +  change for a period longer than one second, it means something has
+> > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
+> > +
+> 
+> This all belongs in Documentation/ABI/ care to move it there instead?
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
----
- scripts/kconfig/lxdialog/textbox.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Sure.
 
-diff --git a/scripts/kconfig/lxdialog/textbox.c b/scripts/kconfig/lxdialog/textbox.c
-index c704712..154c2dd 100644
---- a/scripts/kconfig/lxdialog/textbox.c
-+++ b/scripts/kconfig/lxdialog/textbox.c
-@@ -320,7 +320,6 @@ static void print_page(WINDOW * win, int height, int width)
-  */
- static void print_line(WINDOW * win, int row, int width)
- {
--	int y, x;
- 	char *line;
- 
- 	line = get_line();
-@@ -329,10 +328,10 @@ static void print_line(WINDOW * win, int row, int width)
- 	waddch(win, ' ');
- 	waddnstr(win, line, MIN(strlen(line), width - 2));
- 
--	getyx(win, y, x);
- 	/* Clear 'residue' of previous line */
- #if OLD_NCURSES
- 	{
-+		int x = getcurx(win);
- 		int i;
- 		for (i = 0; i < width - x; i++)
- 			waddch(win, ' ');
--- 
-1.7.6
+-- steve
 
