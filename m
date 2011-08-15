@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1HOWuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:50:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34711 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab1HOWuK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:50:10 -0400
-Date: Tue, 16 Aug 2011 00:50:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, NeilBrown <neilb@suse.de>,
-        paulmck@linux.vnet.ibm.com, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in
- cgroup_attach_proc
-Message-ID: <20110815225003.GB29942@somewhere>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
- <20110728062616.GC15204@unix33.andrew.cmu.edu>
- <20110728171345.67d3797d@notabene.brown>
- <20110729142842.GA8462@unix33.andrew.cmu.edu>
- <20110815184957.GA16588@redhat.com>
+	id S1752333Ab1HOWzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:55:35 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:41136
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751091Ab1HOWzd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 18:55:33 -0400
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371K1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Julia Lawall <julia@diku.dk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
+Thread-Topic: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
+Thread-Index: AQHMVbzpcXnSfWNej0qPWJW3FUvaz5Ue5Q4A
+Date: Mon, 15 Aug 2011 22:55:00 +0000
+Message-ID: <CAOZdJXX_BS7GMtmyqiS91QByhrjANtKpbqrstR8g-L80r_N8qg@mail.gmail.com>
+References: <1312802283-9107-8-git-send-email-julia@diku.dk>
+In-Reply-To: <1312802283-9107-8-git-send-email-julia@diku.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [174.129.36.64]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-ID: <C1BD117AA95FC74B86848765DD286164@freescale.net>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815184957.GA16588@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 08:49:57PM +0200, Oleg Nesterov wrote:
-> On 07/29, Ben Blum wrote:
-> >
-> > According to this thread - https://lkml.org/lkml/2011/7/27/243 - RCU is
-> > not sufficient to guarantee the tasklist is stable w.r.t. de_thread and
-> > exit. Taking tasklist_lock for reading, instead of rcu_read_lock,
-> > ensures proper exclusion.
-> 
-> Yes.
-> 
-> So far I still think we should fix while_each_thread() so that it works
-> under rcu_read_lock() "as exepected", I'll try to think more.
-> 
-> But whatever we do with while_each_thread(), this can't help
-> cgroup_attach_proc(), it needs the locking.
-> 
-> > -	rcu_read_lock();
-> > +	read_lock(&tasklist_lock);
-> >  	if (!thread_group_leader(leader)) {
-> 
-> Agreed, this should work.
-> 
-> But can't we avoid the global list? thread_group_leader() or not, we do
-> not really care. We only need to ensure we can safely find all threads.
-> 
-> How about the patch below?
-> 
-> 
-> With or without this/your patch this leader can die right after we
-> drop the lock. ss->can_attach(leader) and ss->attach(leader) look
-> suspicious. If a sub-thread execs, this task_struct has nothing to
-> do with the threadgroup.
-> 
-> 
-> 
-> Also. This is off-topic, but... Why cgroup_attach_proc() and
-> cgroup_attach_task() do ->attach_task() + cgroup_task_migrate()
-> in the different order? cgroup_attach_proc() looks wrong even
-> if currently doesn't matter.
+On Mon, Aug 8, 2011 at 7:18 AM, Julia Lawall <julia@diku.dk> wrote:
 
-Right. As we concluded in our off-list discussion, if there
-is no strong reason for that, I'm going to fix that in my task
-counter patchset because there it really matters. If we can't
-migrate the thread because it has already exited, we really
-don't want to call ->attach_task() but rather cancel_attach_task().
+> diff --git a/arch/powerpc/sysdev/ehv_pic.c b/arch/powerpc/sysdev/ehv_pic.c
+> index af1a5df..b6731e4 100644
+> --- a/arch/powerpc/sysdev/ehv_pic.c
+> +++ b/arch/powerpc/sysdev/ehv_pic.c
+> @@ -280,6 +280,7 @@ void __init ehv_pic_init(void)
+>
+>        if (!ehv_pic->irqhost) {
+>                of_node_put(np);
+> +               kfree(ehv_pic);
+>                return;
+>        }
 
-Thanks.
+Although the fix is correct, I think there is another bug in this
+function.  'np' is not released when the function finishes
+successfully.   I've looked at other functions that use
+irq_alloc_host(), and most of them do the same thing: they don't call
+of_node_put() on the device node pointer.  The only exception I've
+found is mpc5121_ads_cpld_pic_init().
+
+Ben, Kumar: am I missing something?  irq_alloc_host() calls of_node_get():
+
+	host->of_node = of_node_get(of_node);
+
+so doesn't that mean that the caller of irq_alloc_host() should
+release the device node pointer?
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
