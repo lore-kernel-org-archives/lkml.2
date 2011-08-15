@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab1HOGjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 02:39:15 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:21647 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab1HOGjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 02:39:14 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 15 Aug 2011 14:47:20 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: David Miller <davem@davemloft.net>
-CC: <shawn.guo@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <patches@linaro.org>
-Subject: Re: [PATCH] dt: add of_alias_scan and of_alias_get_id
-Message-ID: <20110815064719.GK7244@S2100-06.ap.freescale.net>
-References: <20110815060708.GH7244@S2100-06.ap.freescale.net>
- <20110814.230529.611834234177280886.davem@davemloft.net>
- <20110815063643.GI7244@S2100-06.ap.freescale.net>
- <20110814.233559.1395275660949133114.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110814.233559.1395275660949133114.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1752319Ab1HOGoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 02:44:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40342 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751306Ab1HOGoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 02:44:15 -0400
+Date: Mon, 15 Aug 2011 16:44:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: add missing inclusion of
+ linux/module.h
+Message-Id: <20110815164407.9dee291afbc627e0dafe6b6c@canb.auug.org.au>
+In-Reply-To: <CAAQ0ZWSqRiaPRF0ofyQL75QyYJov1VVnQjgs2LWAgSgp804NpQ@mail.gmail.com>
+References: <1313375298-18546-1-git-send-email-shawn.guo@linaro.org>
+	<m2mxfbmirn.fsf@bob.laptop.org>
+	<CAAQ0ZWRX_POwMZY9m9ath=oC0OS538+wRcfj-vay5VSkSRkzEg@mail.gmail.com>
+	<20110815154607.8c34ffd02558b4d86e17e396@canb.auug.org.au>
+	<CAAQ0ZWSqRiaPRF0ofyQL75QyYJov1VVnQjgs2LWAgSgp804NpQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__15_Aug_2011_16_44_07_+1000_eExonE/6_y0zE02_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 11:35:59PM -0700, David Miller wrote:
-> From: Shawn Guo <shawn.guo@freescale.com>
-> Date: Mon, 15 Aug 2011 14:36:44 +0800
-> 
-> > @@ -245,4 +245,11 @@ void __init of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops)
-> >         nextp = &allnodes->allnext;
-> >         allnodes->child = of_pdt_build_tree(allnodes,
-> >                         of_pdt_prom_ops->getchild(allnodes->phandle), &nextp);
-> > +
-> > +       /* Get pointer to "/chosen" and "/aliasas" nodes for use everywhere */
-> > +       of_chosen = of_find_node_by_path("/chosen");
-> > +       if (of_chosen == NULL)
-> > +               of_chosen = of_find_node_by_path("/chosen@0");
-> > +       of_aliases = of_find_node_by_path("/aliases");
-> > +       of_alias_scan(dt_alloc);
-> >  }
-> 
-> There is no dt_alloc variable visible in this function.
-> 
-> I didn't need to use a compiler to find this problem, and neither
-> do you.
-> 
-I should have found that before sending it even for comment.  Yeah,
-you beat me to that!
+--Signature=_Mon__15_Aug_2011_16_44_07_+1000_eExonE/6_y0zE02_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Regards,
-Shawn
+Hi Shawn,
 
+On Mon, 15 Aug 2011 14:05:49 +0800 Shawn Guo <shawn.guo@linaro.org> wrote:
+>
+> My .config is attached.  It's used to build i.mx53 image.
+
+Thanks.
+
+> Before you start building it, you need to cherry-pick the following
+> commit from Linus' tree to fix another error.
+>=20
+> commit d9c927833a42b4eaae4addd031f780f4530f7a2d
+> Author: Arnaud Patard (Rtp) <arnaud.patard@rtp-net.org>
+> Date:   Fri Aug 5 09:32:41 2011 +0200
+>=20
+>     iMX: Fix build for iMX53
+
+That is included in today's linux-next.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__15_Aug_2011_16_44_07_+1000_eExonE/6_y0zE02_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSMA3AAoJEDMEi1NhKgbs/iEH+we5TjWoPRZa71iqNahB06Dx
+oxPh+xJXlalkcRPHUVOuikBoHKZUb+p17Gp/ObnKUoY6bPUdJTNJRQkZJBJqhi6p
+w028pedyl/u3FaZE489glXm7oeZ2GwPffZzVD3Q7QOlvP6e4sKgD/0h9ALeTAeDV
+d8G8m4YMPtUWr3GJiVzo9SZ/w9Pkfqy4qhdasghOKht9dM3WGV2oqEYjABSUK3Cq
+1WOPMywfj1NBarGOLwImC+CsiIaBp5Py3fBiUmtiWI82aiVwCVCM7YkTDRDow78f
+2m9ytAsw7zNDSVgtNvPdmSH1h/MVnL3fBq1efJZBvkMaOte+E+8CMkVA2lpGR0k=
+=ruSJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__15_Aug_2011_16_44_07_+1000_eExonE/6_y0zE02_--
