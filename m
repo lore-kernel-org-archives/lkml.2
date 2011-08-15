@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1HOUO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 16:14:27 -0400
-Received: from mother.openwall.net ([195.42.179.200]:35346 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751528Ab1HOUO0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 16:14:26 -0400
-Date: Tue, 16 Aug 2011 00:14:19 +0400
-From: Solar Designer <solar@openwall.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-Message-ID: <20110815201419.GA20296@openwall.com>
-References: <20110812150304.GC16880@albatros> <4E45884B.8030303@zytor.com> <20110813062246.GC3851@albatros> <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com> <m2ei0olnua.fsf@firstfloor.org> <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com> <20110814092028.GB14293@openwall.com> <01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com> <20110815185114.GA20115@openwall.com> <4E496CAC.3030103@zytor.com>
+	id S1752858Ab1HOUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 16:17:27 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:59707 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751351Ab1HOURZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 16:17:25 -0400
+Date: Mon, 15 Aug 2011 22:17:05 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Jay Ren <yongjie.ren@intel.com>, stefanha@linux.vnet.ibm.com,
+        KVM General <kvm@vger.kernel.org>
+Subject: Re: [Bug #39412] Win Vista and Win2K8 guests' network breaks down
+Message-ID: <20110815221705.768b56f8@schatten.dmk.lab>
+In-Reply-To: <4E496E7C.30303@redhat.com>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
+	<bkwpSnItbJM.A.nx.VNCSOB@chimera>
+	<CAOJsxLEToaQe3DrhUQx5FizMnzATxwG8XGCPwZpRFpuBQpq1ug@mail.gmail.com>
+	<4E49215A.5080103@redhat.com>
+	<1313416232.32391.13.camel@jaguar>
+	<4E4928A1.1050104@redhat.com>
+	<20110815163142.0182ce35@schatten.dmk.lab>
+	<4E496E7C.30303@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E496CAC.3030103@zytor.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 11:59:56AM -0700, H. Peter Anvin wrote:
-> There is really no bloody difference between i386 vs x86-64 and, say,
-> sys_oldstat versus sys_stat, or anything else along those lines.
+On Mon, 15 Aug 2011 12:07:40 -0700
+Avi Kivity <avi@redhat.com> wrote:
 
-There is a difference from a sysadmin standpoint: a sysadmin knows that
-certain containers have Linux distro userlands for i386 and certain
-others for x86-64, so he/she can configure things accordingly.  Even if
-a customer using one of those containers installs extra software
-packages, this extra software will work just fine as long as it's for
-the same ABI.  The same doesn't hold true for sys_oldstat versus
-sys_stat, etc.
+> On 08/15/2011 07:31 AM, Florian Mickler wrote:
+> > On Mon, 15 Aug 2011 07:09:37 -0700
+> > Avi Kivity<avi@redhat.com>  wrote:
+> >
+> > >  On 08/15/2011 06:50 AM, Pekka Enberg wrote:
+> > >  >  Heh, sorry about that, that's the commit SHA mentioned in the above
+> > >  >  bugzilla report. :-)
+> > >  >
+> > >  >
+> > >
+> > >  Think of it as 'git bisect good' input, rather than output.
+> > >
+> >
+> > Can you post a comment to the bug when Linus pulled that tree?
+> 
+> Most likely kvm.git got that commit from Linus - I don't think the fix 
+> came from kvm.git.
+> 
 
-> Putting in a bunch of ad hoc facilities because of semi-plausible
-> performance wins rather than building a sane filtering facility which
-> can be optimized as a single path is ridiculous.
+Hm ok. But the tree tested by the reporter is contained in kvm/master
+and kvm/next and not in Linus tree. 
 
-I don't mind having a general filtering facility if it gets accepted
-into the kernel (somehow Will's patch is not applied yet), and I don't
-mind optimizing it to the point where it's not any slower for the "all
-syscalls permitted but not all ABIs are" case.  I suspect that the
-result of such optimizations will be similar to having these things
-implemented separately, though - but I could be wrong.
+Anyhow, Rafael did ask the correct question on the bug to resolve
+this. :)
 
-So how do we proceed from here?  Start by getting Will's patch applied?
+Regards,
+Flo
 
-Alexander
