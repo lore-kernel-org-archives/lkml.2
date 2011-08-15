@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab1HOXYr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 19:24:47 -0400
-Received: from tundra.namei.org ([65.99.196.166]:32928 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752205Ab1HOXYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 19:24:46 -0400
-Date: Tue, 16 Aug 2011 09:24:31 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-security-module@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH] evm: building without EVM enabled fixes cont
-In-Reply-To: <1313413756-4920-1-git-send-email-zohar@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.00.1108160924171.7242@tundra.namei.org>
-References: <1313413756-4920-1-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752893Ab1HOX0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 19:26:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53243 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751991Ab1HOXZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 19:25:59 -0400
+Date: Tue, 16 Aug 2011 08:25:51 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH 1/4] ASoC: DAPM: Allow multiple mixer sources to be
+ routed via the same switch
+Message-ID: <20110815232549.GA14003@opensource.wolfsonmicro.com>
+References: <1313432124-22591-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313432124-22591-1-git-send-email-lars@metafoo.de>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Aug 2011, Mimi Zohar wrote:
+On Mon, Aug 15, 2011 at 08:15:21PM +0200, Lars-Peter Clausen wrote:
+> Currently it is only possible to route one source per switch into a mixer.
+> This patch modifies the code, so that it is possible to route multiple sources
+> into a mixer via the same switch. One use-case for this is routing a stereo
+> channel pair into a mono-mixer via the same switch.
 
-> - Make the previously missing security_old_inode_init_security() stub
->   function definition static inline.
-> 
-> - The stub security_inode_init_security() function previously returned
->   -EOPNOTSUPP and relied on the callers to change it to 0.  The stub
->   security/security_old_inode_init_security() functions now return 0.
-> 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
-
--- 
-James Morris
-<jmorris@namei.org>
+Applied, thanks.
