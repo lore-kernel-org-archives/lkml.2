@@ -1,141 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab1HOFiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:38:21 -0400
-Received: from mx.ctc-g.co.jp ([131.248.58.1]:59918 "EHLO mx.ctc.ctc-g.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1HOFiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:38:19 -0400
-Date: Mon, 15 Aug 2011 14:38:11 +0900
-From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
-Subject: [PATCH] net: configurable sysctl parameter "net.core.tcp_lowat" for
- sk_stream_min_wspace()
+	id S1751990Ab1HOFlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:41:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36458 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1HOFln (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 01:41:43 -0400
+Subject: [PATCH] [ARM] davinci: gpio: eliminate unused variable warnings
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: "omega-g1@ctc-g.co.jp" <omega-g1@ctc-g.co.jp>, notsuki@redhat.com,
-        "Kozaki, Motokazu" <motokazu.kozaki@hp.com>,
-        Hajime Taira <htaira@redhat.com>, netdev@vger.kernel.org,
-        TomohikoTAKAHASHI <tomohiko.takahashi@ctc-g.co.jp>,
-        Kotaro Sakai <kotaro.sakai@ctc-g.co.jp>,
-        ken sugawara <ken.sugawara@ctc-g.co.jp>
-Reply-to: jun.kondo@ctc-g.co.jp
-Message-id: <4E48B0C3.2010203@ctc-g.co.jp>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-2022-JP
-Content-transfer-encoding: 7bit
-X-post-Received: by post01.ctc-g.co.jp (CTC-GN 2006/10/01) id 4D7AB76E7;	Mon,
- 15 Aug 2011 14:38:08 +0900 (JST)
-X-vs: by localhost.is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 200905BEFD;
-	Mon, 15 Aug 2011 14:38:08 +0900 (JST)
-X-vs: by is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 13C9A5BC16;	Mon,
- 15 Aug 2011 14:38:08 +0900 (JST)
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; ja; rv:1.9.2.12)
- Gecko/20101027 Thunderbird/3.1.6
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Aug 2011 13:41:33 +0800
+Message-ID: <1313386893.25484.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CTC had the following demand;
+Since commit 5093aec872e5be7a55d8dd2b639e8a3818dc19db
+"arm: davinci: Cleanup irq chip code", 
+the variable 'mask' and 'g' are not being used in gpio_irq_type.
 
-1. to ensure high throughput from the beginning of
-tcp connection at normal times by acquiring large
-default transmission buffer value
+This patch eliminate below unused variable warnings:
 
-2. to limit the block time of the write in order to
-prevent the timeout of upper layer applications
-even when the connection has low throughput, such
-as low rate streaming
+  CC      arch/arm/mach-davinci/gpio.o
+arch/arm/mach-davinci/gpio.c: In function 'gpio_irq_type':
+arch/arm/mach-davinci/gpio.c:234: warning: unused variable 'mask'
+arch/arm/mach-davinci/gpio.c:233: warning: unused variable 'g'
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/mach-davinci/gpio.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-The root of the issue;
-
-2 can not be achieved with the configuration that
-satisfies 1.
-
-The current behavior is as follows;
-
-Write is blocked when tcp transmission buffer (wmem)
-becomes full.
-In order to write again after that, one third of the
-transmission buffer (sk_wmem_queued/2) must be freed.
-
-When the throughput is low, timeout occurs by the time
-when the free buffer space is created, which affects
-streaming service.
-
-
-The effect of the patch;
-
-By putting xxx into the variable yyy, the portion of
-the transmission buffer becomes zzz, thus timeout will
-not occur in the low throughput network environment.
-
-xxx → integer(e.g. 4)
-yyy → "sysctl_tcp_lowat"
-zzz → "sk_wmem_queued >> 4"
-
-Also, we think one third of the transmission buffer
-(sk_wmem_queued/2) is too deterministic, and it should
-be configurable.
-
---------------------------------------------------
---- linux-mainline/include/net/sock.h.orig	2011-07-27 14:26:43.000000000 +0900
-+++ linux-mainline/include/net/sock.h	2011-08-15 11:40:20.000000000 +0900
-@@ -604,9 +604,11 @@ static inline int sk_acceptq_is_full(str
- /*
-  * Compute minimal free write space needed to queue new packets.
-  */
-+extern __u32 sysctl_tcp_lowat;
-+
- static inline int sk_stream_min_wspace(struct sock *sk)
+diff --git a/arch/arm/mach-davinci/gpio.c b/arch/arm/mach-davinci/gpio.c
+index a8066e8..df0d595 100644
+--- a/arch/arm/mach-davinci/gpio.c
++++ b/arch/arm/mach-davinci/gpio.c
+@@ -230,9 +230,6 @@ static void gpio_irq_enable(struct irq_data *d)
+ 
+ static int gpio_irq_type(struct irq_data *d, unsigned trigger)
  {
--	return sk->sk_wmem_queued >> 1;
-+	return sk->sk_wmem_queued >> sysctl_tcp_lowat;
- }
+-	struct davinci_gpio_regs __iomem *g = irq2regs(d->irq);
+-	u32 mask = (u32) irq_data_get_irq_handler_data(d);
+-
+ 	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
+ 		return -EINVAL;
  
- static inline int sk_stream_wspace(struct sock *sk)
---- linux-mainline/net/core/sock.c.orig	2011-07-24 05:04:06.000000000 +0900
-+++ linux-mainline/net/core/sock.c	2011-08-15 11:34:27.000000000 +0900
-@@ -217,6 +217,9 @@ __u32 sysctl_rmem_max __read_mostly = SK
- __u32 sysctl_wmem_default __read_mostly = SK_WMEM_MAX;
- __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
- 
-+__u32 sysctl_tcp_lowat = 1;
-+EXPORT_SYMBOL(sysctl_tcp_lowat);
-+
- /* Maximal space eaten by iovec or ancillary data plus some space */
- int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
- EXPORT_SYMBOL(sysctl_optmem_max);
-@@ -1330,6 +1333,8 @@ void __init sk_init(void)
- 		sysctl_wmem_max = 131071;
- 		sysctl_rmem_max = 131071;
- 	}
-+
-+	sysctl_tcp_lowat = 1;
- }
- 
- /*
---- linux-mainline/net/core/sysctl_net_core.c.orig	2011-05-29 06:01:16.000000000 +0900
-+++ linux-mainline/net/core/sysctl_net_core.c	2011-08-15 11:05:38.000000000 +0900
-@@ -168,6 +168,13 @@ static struct ctl_table net_core_table[]
- 		.proc_handler	= rps_sock_flow_sysctl
- 	},
- #endif
-+	{
-+		.procname	= "tcp_lowat",
-+		.data		= &sysctl_tcp_lowat,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= &proc_dointvec
-+	},
- #endif /* CONFIG_NET */
- 	{
- 		.procname	= "netdev_budget",
+-- 
+1.7.4.1
 
---------------------------------------------------
 
-------------------------------------------
-Jun.Kondo
-ITOCHU TECHNO-SOLUTIONS Corporation(CTC)
-tel:+81-3-6238-6607
-fax:+81-3-5226-2369
-------------------------------------------
+
