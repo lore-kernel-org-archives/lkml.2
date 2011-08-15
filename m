@@ -1,48 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab1HOPoK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:44:10 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33065 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753691Ab1HOPoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:44:07 -0400
-Date: Mon, 15 Aug 2011 10:44:06 -0500
-From: Robin Holt <holt@sgi.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Remove name and email address as maintainer for SN2
-Message-ID: <20110815154406.GQ4926@sgi.com>
-References: <1313348706-16093-1-git-send-email-Jes.Sorensen@redhat.com>
- <CA+55aFw4-3o9rX5z3Jtnim5v3K2LhsGyAbXWVG-8iyeCBjGezA@mail.gmail.com>
- <4E483C88.8090709@redhat.com>
- <20110815131853.GL4926@sgi.com>
- <CA+55aFyYn+c7beaBAFfpx1wX4WdcFnc-p7dNPWq-55P8cUVuww@mail.gmail.com>
+	id S1754331Ab1HOPpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:45:39 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:41843 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753883Ab1HOPph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:45:37 -0400
+X-Sasl-enc: Q89rTLn1RZitiJVNXoQXMA9BtoWfyI8nvdHo6pjKzlYS 1313423136
+Date: Mon, 15 Aug 2011 08:45:28 -0700
+From: Greg KH <greg@kroah.com>
+To: scameron@beardog.cce.hp.com
+Cc: james.bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        thenzl@redhat.com, akpm@linux-foundation.org, mikem@beardog.cce.hp.com
+Subject: Re: [PATCH] hpsa: add heartbeat sysfs host attribute
+Message-ID: <20110815154528.GB13244@kroah.com>
+References: <20110812180314.21808.59261.stgit@beardog.cce.hp.com>
+ <20110813020147.GB15554@kroah.com>
+ <20110815144022.GR27723@beardog.cce.hp.com>
+ <20110815150409.GS27723@beardog.cce.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyYn+c7beaBAFfpx1wX4WdcFnc-p7dNPWq-55P8cUVuww@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110815150409.GS27723@beardog.cce.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 08:34:15AM -0700, Linus Torvalds wrote:
-> On Mon, Aug 15, 2011 at 6:18 AM, Robin Holt <holt@sgi.com> wrote:
-> >
-> > Why don't we just add me as the maintainer.  I can set up a script to
-> > compile and boot it once a week on a few common configs.  I think I
-> > already have that for testing the x86_64 drivers/misc/sgi-xp bits so it
-> > should be no significant increase in work.
-> >
-> > I will work today on getting the linux-altix@sgi.com mailing list working
-> > again if it is not already and then ensuring I am on that list.
+On Mon, Aug 15, 2011 at 10:04:09AM -0500, scameron@beardog.cce.hp.com wrote:
+> On Mon, Aug 15, 2011 at 09:40:22AM -0500, scameron@beardog.cce.hp.com wrote:
+> > On Fri, Aug 12, 2011 at 07:01:47PM -0700, Greg KH wrote:
+> > > On Fri, Aug 12, 2011 at 01:03:14PM -0500, Stephen M. Cameron wrote:
+> > > > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > > > 
+> > > > The cciss driver had a CCISS_HEARTBEAT ioctl which
+> > [...]
+> > > >  
+> > > > +  The "heartbeat" read-only attribute returns the value of a heartbeat
+> > > > +  counter register on a Smart Array controller as a 32 bit unsigned
+> > > > +  hexadecimal integer (e.g: "0x12345678").  The value should change
+> > > > +  periodically, not less than once per second.  If this value fails to
+> > > > +  change for a period longer than one second, it means something has
+> > > > +  gone wrong (e.g. Smart Array controller firmware has locked up.)
+> > > > +
+> > > 
+> > > This all belongs in Documentation/ABI/ care to move it there instead?
+> > 
+> > Sure.
 > 
-> Ok, just to be nice, I'd suggest you send me the patch to do that with
-> authorship and sign-off. In fact, maybe we can just combine it with
-> Jes' patch, and just have both of yours sign-off.
+> Now that I look, I'm not seeing where any of the generic scsi
+> host or device attributes are documented in Documenation/ABI.
 
-I will do that as soon as I get the linux-altix mailing list straightened out.
+Then that's a SCSI bug :)
 
-Robin
+> It's not very clear to me where in Documentation/ABI I should
+> document a driver's custom scsi device and host attributes as
+> even the generic scsi device and host attributes seem to be
+> undocumented.
+> 
+> from scsi_sysfs.c, I see these, for example:
+> 
+>         &dev_attr_device_blocked.attr,
+>         &dev_attr_type.attr,
+>         &dev_attr_scsi_level.attr,
+>         &dev_attr_vendor.attr,
+>         &dev_attr_model.attr,
+>         &dev_attr_rev.attr,
+>         &dev_attr_rescan.attr,
+>         &dev_attr_delete.attr,
+>         &dev_attr_state.attr,
+>         &dev_attr_timeout.attr,
+>         &dev_attr_iocounterbits.attr,
+>         &dev_attr_iorequest_cnt.attr,
+>         &dev_attr_iodone_cnt.attr,
+>         &dev_attr_ioerr_cnt.attr,
+>         &dev_attr_modalias.attr,
+>         REF_EVT(media_change),
+>         NULL
+> };
+> 
+> but I don't see them documented anywhere in Documentation/ABI,
+> and hpsa.c adds these custom sdev attrs:
+> 
+> static struct device_attribute *hpsa_sdev_attrs[] = {
+>         &dev_attr_raid_level,
+>         &dev_attr_lunid,
+>         &dev_attr_unique_id,
+>         NULL,
+> };
+> 
+> 
+> Likewise, there are generic scsi host attrs in scsi_sysfs.c:
+> 
+> static struct attribute *scsi_sysfs_shost_attrs[] = {
+>         &dev_attr_unique_id.attr,
+>         &dev_attr_host_busy.attr,
+>         &dev_attr_cmd_per_lun.attr,
+>         &dev_attr_can_queue.attr,
+>         &dev_attr_sg_tablesize.attr,
+>         &dev_attr_sg_prot_tablesize.attr,
+>         &dev_attr_unchecked_isa_dma.attr,
+>         &dev_attr_proc_name.attr,
+>         &dev_attr_scan.attr,
+>         &dev_attr_hstate.attr,
+>         &dev_attr_supported_mode.attr,
+>         &dev_attr_active_mode.attr,
+>         &dev_attr_prot_capabilities.attr,
+>         &dev_attr_prot_guard_type.attr,
+>         NULL
+> 
+> Also undocumented.
+> 
+> hpsa.c adds custom host attrs:
+> static struct device_attribute *hpsa_shost_attrs[] = {
+>         &dev_attr_rescan,
+>         &dev_attr_firmware_revision,
+>         &dev_attr_commands_outstanding,
+>         &dev_attr_transport_mode,
+>         &dev_attr_resettable,
+>         &dev_attr_heartbeat,
+>         NULL,
+> };
+> 
+> 
+> How should I proceed?
+
+Start by documenting the ones you add, and if you want, and can, it
+would be great to document the existing ones as well.
+
+thanks,
+
+greg k-h
