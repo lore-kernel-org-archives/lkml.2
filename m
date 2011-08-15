@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab1HOWNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:13:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41402 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab1HOWNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:13:18 -0400
-Message-ID: <4E4999EA.5060603@zytor.com>
-Date: Mon, 15 Aug 2011 15:12:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1753415Ab1HOWNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:13:54 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:52915 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753213Ab1HOWNw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 18:13:52 -0400
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Mike Waychison <mikew@google.com>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net> <20110730235644.GA29671@suse.de> <CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com> <4E359A74.7090408@zytor.com> <20110813123401.76ffcfcc.rdunlap@xenotime.net> <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com> <20110814202322.16b50ff5.rdunlap@xenotime.net> <4E48AC7D.4030908@zytor.com> <CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com> <4E496529.5080702@zytor.com> <20110815132331.74cd0484.rdunlap@xenotime.net> <4E4985DB.20109@zytor.com> <20110815140029.f9624d57.rdunlap@xenotime.net>
-In-Reply-To: <20110815140029.f9624d57.rdunlap@xenotime.net>
+In-Reply-To: <20110815201419.GA20296@openwall.com>
+References: <20110812150304.GC16880@albatros>
+	<4E45884B.8030303@zytor.com>
+	<20110813062246.GC3851@albatros>
+	<36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com>
+	<m2ei0olnua.fsf@firstfloor.org>
+	<632d03b0-6725-431e-b100-13f5046b03e9@email.android.com>
+	<20110814092028.GB14293@openwall.com>
+	<01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com>
+	<20110815185114.GA20115@openwall.com>
+	<4E496CAC.3030103@zytor.com>
+	<20110815201419.GA20296@openwall.com>
+Date: Mon, 15 Aug 2011 18:13:51 -0400
+Message-ID: <CACLa4puLxL+azpYjQsD6eDKU=LPJ1mrF1LUrc5Gy-89a8fvjpQ@mail.gmail.com>
+Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
+From: Eric Paris <eparis@parisplace.org>
+To: Solar Designer <solar@openwall.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2011 02:00 PM, Randy Dunlap wrote:
-> 
-> You said (on July-31):
-> "Just to avoid namespace collisions, can we at least put the owner
-> somewhere standardized, e.g. <2011.0729.id1@rdunlap>, <33999@google> and
-> so on?"
-> 
-> I read that as 2 different patches & 2 different IDs, but this more
-> recent line:
->> Internal-reference-ID: <2011.0729.id1@rdunlap> <33999@google>
-> 
-> would be for one patch with multiple IDs.
-> 
->> Mike proposed:
->>
->> Internal-reference-ID: <2011.0729.id1@rdunlap>
->> Internal-reference-ID: <bug-45322143@google>
-> 
-> I think that Mike was just giving 2 examples (for 2 patches).  His proposal
-> was simply for:
-> Internal-reference-ID: <arbitrarytextforid@owner>
-> 
-> which matches your request fairly well AFAICT.
-> 
+On Mon, Aug 15, 2011 at 4:14 PM, Solar Designer <solar@openwall.com> wrote:
 
-Yes, that was my request.  But I also do observe that a single patch can
-be tracked in multiple internal databases; for example, if
-(hypothetically) Red Hat reports a bug to Google which ends up being
-tracked in both bug databases, they may both want to tag the same patch.
+> So how do we proceed from here?  Start by getting Will's patch applied?
 
-> But if we are changing things, I think I prefer your other suggestion
-> for the ID tag:  "Patch-ID".  I like it because it's shorter and
-> easier to type.  :)
+How to move forward with Will's patch is supposed to be discussed at
+the invite only kernel summit October 23 - 25, 2011.  As one of the
+many people who have written a replacement for seccomp I wished I had
+been invited to participate, but was not.  Will is in a hard place
+because Ingo insists he take his patch in one direction while tglx and
+Steven Rostedt have both explicitly NAKd such a direction.  Hopefully
+when those 3 sit down in person a solution can be found and we can get
+some traction on a useful seccomp interface, but it's still a while
+out....
 
-Agreed.
-
-	-hpa
-
+-Eric
