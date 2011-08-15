@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1HORh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 13:37:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42788 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab1HORh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 13:37:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oliver Hartkopp <socketcan@hartkopp.net>
-Subject: Re: [Bug #37432] sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-Date: Mon, 15 Aug 2011 19:39:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>
-References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera> <bkwpSnItbJM.A.FcB.0OCSOB@chimera> <4E4951C5.203@hartkopp.net>
-In-Reply-To: <4E4951C5.203@hartkopp.net>
+	id S1752231Ab1HORjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 13:39:14 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45284 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751302Ab1HORjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 13:39:13 -0400
+Date: Mon, 15 Aug 2011 17:39:40 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>, akpm@linux-foundation.org,
+        bonbons@linux-vserver.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
+ when reboot
+Message-ID: <20110815173940.GA19620@hallyn.com>
+References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr>
+ <20110814161707.GB30846@redhat.com>
+ <20110814213642.GB13799@hallyn.com>
+ <20110815144744.GA9660@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108151939.10007.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815144744.GA9660@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 15, 2011, Oliver Hartkopp wrote:
-> On 14.08.2011 21:02, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.39 and 3.0.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.39 and 3.0.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37432
-> > Subject		: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-> > Submitter	: Oliver Hartkopp <socketcan@hartkopp.net>
-> > Date		: 2011-06-07 20:06 (69 days old)
-> > First-Bad-Commit: http://git.kernel.org/linus/da7822e5ad71ec9b745b412639f1e5e0ba795a20
-> > References	: http://article.gmane.org/gmane.linux.kernel.mmc/8442
-> > 		  https://lkml.org/lkml/2011/6/23/660
-> > 
+Quoting Oleg Nesterov (oleg@redhat.com):
+> On 08/14, Serge E. Hallyn wrote:
+> >
+> > Quoting Oleg Nesterov (oleg@redhat.com):
+> > > On 08/11, Daniel Lezcano wrote:
+> > > >
+> > > > In the case of a VPS, when we shutdown/halt/reboot the container, the
+> > > > reboot utility will invoke the sys_reboot syscall which has the bad
+> > > > effect to reboot the host.
+> > >
+> > > Stupid question. Can't sys_reboot() simply kill init (and thus the whole
+> > > pid_ns) in this case?
+> >
+> > The goal is to be able to distinguish a request for reboot from shutdown.
+> > If we just kill the init, then the parent of init (the container monitor)
+> > cannot restart the container to emulate reboot.
 > 
-> Hello Rafael,
+> OK, thanks.
 > 
-> the regression has been solved for 3.0 by disabling the problematic code here:
+> What if init reports the reason it was killed?
 > 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f483d3923dc3a6394c483e28ccb3fe700bdf399e
+> Ignoring LINUX_REBOOT_CMD_CAD_/etc, I mean, roughly,
 > 
-> When the new commandline argument 'pci=realloc' is not set (which is the
-> default) the buggy code is disabled.
+> 	- add "int reboot_cmd" into struct pid_namespace
 > 
-> Therefore this bug can be closed on the 2.6.39 -> 3.0 regression list.
+> 	- sys_reboot(cmd) does
+> 
+> 		if (!global_namespace) {
+> 			task_active_pid_ns(current)->reboot_cmd = cmd;
+> 			sigkill_my_init();
+> 		}
+> 
+> 	- change zap_pid_ns_processes() to do
+> 
+> 		if (pid_ns->reboot_cmd)	// approximately
+> 			current->exit_state = pid_ns->reboot_cmd;
+> 
+> Then its parent can look at status after wait(&status).
 
-Thanks, closing!
+That looks good to me.  Daniel, is there a reason this wouldn't work?
 
-Rafael
+> Not that I think this is very nice, but signals are not reliable.
+> And once again, SIGCHLD doesn't queue. And, perhaps this doesn't
+> matter, but sys_reboot() sends SIGCHLD and returns -EPERM, this
+> can confuse the container.
+
+I think you're looking at an older (Aug 11) version.  Daniel's newer
+patch should do the right thing (but I don't seem to have it in front
+of me atm)
+
+> In any case. If you want to send a signal, please do not introduce
+> SA_CLDREBOOT. Please do not play with ptrace or __wake_up_parent, this
+> is meaningless. Just fill siginfo and send SIGCHLD unconditionally.
+> 
+> Oleg.
+
+Thanks for the help, Oleg.
+
+-serge
