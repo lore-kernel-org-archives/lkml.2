@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab1HOVxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 17:53:51 -0400
-Received: from smtp.ac-nice.fr ([194.167.84.68]:44485 "EHLO smtp.ac-nice.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab1HOVxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 17:53:48 -0400
-X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Aug 2011 17:53:48 EDT
-From: <Gerard.Thibaut@ac-nice.fr>
-Reply-To: mrallenailliams0@hotmail.co.uk
-Message-ID: <ff29aa267293a773.4e492eb1@ac-nice.fr>
-Date: Mon, 15 Aug 2011 14:35:29 -0700
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-7.05 (built Sep  5
- 2006)
+	id S1753559Ab1HOVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 17:54:09 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62461 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab1HOVyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 17:54:07 -0400
+From: William Douglas <william.r.douglas@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCHv2] printk: Remove bounds checking for log_prefix
+References: <877h6e2x7r.fsf@intel.com>
+Date: Mon, 15 Aug 2011 14:54:04 -0700
+In-Reply-To: <877h6e2x7r.fsf@intel.com> (William Douglas's message of "Mon, 15
+	Aug 2011 14:15:04 -0700")
+Message-ID: <871uwm2ver.fsf@intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Language: en
-X-Accept-Language: en
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently log_prefix is testing that the first character of the
+log level and facility is less than '0' and greater than '9' (which
+is always false).
 
+Since the code being updated works because strtoul bombs out (endp isn't
+updated) and 0 is returned anyway just remove the check and don't change
+the behavior of the function.
+Signed-off-by: William Douglas <william.douglas@intel.com>
+---
+ kernel/printk.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Dear beneficiary,
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 37dff34..4a0d2ed 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -590,9 +590,6 @@ static size_t log_prefix(const char *p, unsigned int *level, char *special)
+ 		/* multi digit including the level and facility number */
+ 		char *endp = NULL;
+ 
+-		if (p[1] < '0' && p[1] > '9')
+-			return 0;
+-
+ 		lev = (simple_strtoul(&p[1], &endp, 10) & 7);
+ 		if (endp == NULL || endp[0] != '>')
+ 			return 0;
+-- 
+1.7.6
 
-This is to re-notify you of the $300,000.00 USD that was deposited 
-here in the western union office in your name is available for pickup. 
-Contact us via email for your M.T.C.N Numbers.
-
-Contact Person:Mr. Allen Williams
-Email: mrallenailliams0@hotmail.co.uk
-Tel. +447024037299
