@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1HOKyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:54:31 -0400
-Received: from lucidpixels.com ([72.73.18.11]:60395 "EHLO lucidpixels.com"
+	id S1752154Ab1HOKzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:55:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43749 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1HOKya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:54:30 -0400
-Date: Mon, 15 Aug 2011 06:54:29 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jeff Layton <jlayton@samba.org>
-cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS
-In-Reply-To: <20110815064734.403b630f@corrin.poochiereds.net>
-Message-ID: <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751736Ab1HOKzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:55:01 -0400
+Message-ID: <4E48FB04.9010903@suse.cz>
+Date: Mon, 15 Aug 2011 12:55:00 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Rabin Vincent <rabin@rab.in>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: IS_ENABLED() and non-available symbols
+References: <CACqU3MU2pjcqgYDjn=S2asdLamU0mity+kLizH_mbTtJU5Fh2A@mail.gmail.com> <1313341346-15605-1-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313341346-15605-1-git-send-email-lacombar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14.8.2011 19:02, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Sun, Aug 14, 2011 at 12:55 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> The solution is trivial, but I am not sure we want to go that way: we
+>> need to generated a __enabled_ entry for symbols for _all_ symbols in
+>> the configuration, even internal one
+>>
+> That should do the job...
+> 
+>  -= NOT FOR MERGE =-
+> 
+> Not-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+> 
+> ---
+>  scripts/kconfig/confdata.c |   42 +++++++++++++++++++++++++++++++-----------
+>  1 files changed, 31 insertions(+), 11 deletions(-)
+> 
+>  	for_all_symbols(i, sym) {
+> +		conf_write_symbol(out_h, sym, &header__enabled_printer_cb, NULL);
+> +
+>  		sym_calc_value(sym);
+>  		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+>  			continue;
 
+I like the approach, it will work even with not visible symbols and
+still catch typos (which #ifdef does not protect against). But with the
+patch as-is, the generated autoconf.h starts with lots of
 
-On Mon, 15 Aug 2011, Jeff Layton wrote:
+#define __enabled_CONFIG_(null) 1
+#define __enabled_CONFIG_(null)_MODULE 0
+#define __enabled_CONFIG_(null) 1
+#define __enabled_CONFIG_(null)_MODULE 0
+#define __enabled_CONFIG_(null) 0
 
-> On Mon, 15 Aug 2011 11:18:38 +0200 (CEST)
-> Jesper Juhl <jj@chaosbits.net> wrote:
->
-> There was at least one known oops at mount time with 3.0:
->
->    https://bugzilla.redhat.com/show_bug.cgi?id=727927
->
-> ...but I can't tell whether you hit that w/o seeing the oops messasge.
->
-> It should be fixed in mainline and the patches for that and another
-> mount time problem will be in the next set of stable kernels. You may
-> want to pull these two commits into your kernel and try again:
->
-> 80975d21aae2136ccae1ce914a1602dc1d8b0795
-> f9e8c45002cacad536b338dfa9e910e341a49c31
->
-
-Thanks,
-
-Patches applied to 3.0.1 and will try to mount the CIFS shares later today:
-
-# patch -p1 < /home/war/cifs1
-patching file fs/cifs/cifsfs.c
-# patch -p1 < /home/war/cifs2
-patching file fs/cifs/inode.c
-
-Justin.
-
+Michal
