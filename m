@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab1HOTpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 15:45:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab1HOTpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 15:45:43 -0400
-Date: Mon, 15 Aug 2011 21:42:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 0/3] make vfork killable
-Message-ID: <20110815194209.GA19239@redhat.com>
-References: <20110727163159.GA23785@redhat.com> <20110729192358.GB31717@mtj.dyndns.org> <20110812175550.GA7484@redhat.com> <20110813161814.GE4254@htj.dyndns.org>
+	id S1752534Ab1HOTwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 15:52:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54663 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1HOTwj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 15:52:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=N0y6XluToV5R3Gc2fBZ6HcxxvgLAmqKP3l0CqD4zayaN8d4x+SW9KKqza0hJOfVws
+	NLDkE0/T830DDY207D/Rg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110813161814.GE4254@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110815191745.GA7178@legolas.emea.dhcp.ti.com>
+References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+	<20110815191745.GA7178@legolas.emea.dhcp.ti.com>
+Date: Mon, 15 Aug 2011 12:52:36 -0700
+X-Google-Sender-Auth: L6cFP7KRoP2lHoS9Eo70xAskXFU
+Message-ID: <CAD=FV=Xd67iw=GXV9i4O5LKnJd20=BkYyfVuxPgxQ5GZRJEy4A@mail.gmail.com>
+Subject: Re: [PATCH] i2c: tegra: Check for overflow errors with BUG_ON.
+From: Doug Anderson <dianders@chromium.org>
+To: balbi@ti.com
+Cc: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
+        Rakesh Iyer <riyer@nvidia.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Felipe,
 
-On 08/13, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Fri, Aug 12, 2011 at 07:55:50PM +0200, Oleg Nesterov wrote:
-> > > an alternative approach
-> > > could be handling vfork waiting as a type of job control stop.
-> >
-> > Well, I didn't see the code, but to be honest this doesn't look
-> > like a good idea to me. Firstly, personally I do not think this
-> > has something to do with the job control stop.
-> >
-> > And, to me sys_restart_syscall() looks like the very natural
-> > approach, and simple.
->
-> I've been playing with this and it does a bit further than
-> implementation simplicity.  Currently, we have three different modes
-> of stopping a task.
->
-> * Regular job control and ptrace.
-> * vfork wait.
-> * cgroup freeze.
+On Mon, Aug 15, 2011 at 12:17 PM, Felipe Balbi <balbi@ti.com> wrote:
+> so due to a FIFO overflow you lock up the whole system ? Can't you e.g.
+> reset the controller and reconfigure it rather than locking up the
+> system ?
 
-I still can't understand what exactly you have in mind.
+Certainly we could try to be more proactive and reset / retry / return
+the error to the client.  However, since the only expected situation
+where this BUG_ON should hit is due to a bug in this driver itself
+(AKA: i2c clients shouldn't be able to do anything to cause the BUG_ON
+to hit), that seems like a lot of added complexity.
 
-And to me vfork() is closer to nanoslep() than to cgroup_freezer.
-(As for cgroup_freezer, I agree it would be nice to reimplent it
- in any case).
+Also: if there is an arbitrary software bug that causing an overflow
+condition to occur, I'm not sure how stable the system will be.
+Specifically, the i2c controller is used (among other things) to talk
+to the PMU and adjust voltages in the system.  If we just sent it a
+random command, I'd rather report the bug right away so we don't get
+hard to find/reproduce failures in other parts of the system.
 
-> The downside is that that wouldn't work with cgroup freeze at
-> all - there's no syscall to restart.
+What do others think?
 
-Sure. Still I don't understand why restart is not suitable for vfork
-and why it would be better to unify freezer/vfork.
-
-OK. Let's discuss this later, I hope you will cc me ;)
-
-
-But what do you think about this series? It is simple, it doesn't
-play with restarts. In some sense it even simplifies the code because
-it removes one user of ->vfork_done. I don't think these patches can
-complicate the further changes you are going to do.
-
-No?
-
-Oleg.
-
+-Doug
