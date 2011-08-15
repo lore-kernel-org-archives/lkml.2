@@ -1,50 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab1HOFgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:36:01 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:60449 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab1HOFf7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:35:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <m2mxfbmirn.fsf@bob.laptop.org>
-References: <1313375298-18546-1-git-send-email-shawn.guo@linaro.org>
-	<m2mxfbmirn.fsf@bob.laptop.org>
-Date: Mon, 15 Aug 2011 13:35:58 +0800
-Message-ID: <CAAQ0ZWRX_POwMZY9m9ath=oC0OS538+wRcfj-vay5VSkSRkzEg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-esdhc-imx: add missing inclusion of linux/module.h
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751963Ab1HOFiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:38:21 -0400
+Received: from mx.ctc-g.co.jp ([131.248.58.1]:59918 "EHLO mx.ctc.ctc-g.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab1HOFiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 01:38:19 -0400
+Date: Mon, 15 Aug 2011 14:38:11 +0900
+From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
+Subject: [PATCH] net: configurable sysctl parameter "net.core.tcp_lowat" for
+ sk_stream_min_wspace()
+To: linux-kernel@vger.kernel.org
+Cc: "omega-g1@ctc-g.co.jp" <omega-g1@ctc-g.co.jp>, notsuki@redhat.com,
+        "Kozaki, Motokazu" <motokazu.kozaki@hp.com>,
+        Hajime Taira <htaira@redhat.com>, netdev@vger.kernel.org,
+        TomohikoTAKAHASHI <tomohiko.takahashi@ctc-g.co.jp>,
+        Kotaro Sakai <kotaro.sakai@ctc-g.co.jp>,
+        ken sugawara <ken.sugawara@ctc-g.co.jp>
+Reply-to: jun.kondo@ctc-g.co.jp
+Message-id: <4E48B0C3.2010203@ctc-g.co.jp>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-2022-JP
+Content-transfer-encoding: 7bit
+X-post-Received: by post01.ctc-g.co.jp (CTC-GN 2006/10/01) id 4D7AB76E7;	Mon,
+ 15 Aug 2011 14:38:08 +0900 (JST)
+X-vs: by localhost.is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 200905BEFD;
+	Mon, 15 Aug 2011 14:38:08 +0900 (JST)
+X-vs: by is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 13C9A5BC16;	Mon,
+ 15 Aug 2011 14:38:08 +0900 (JST)
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; ja; rv:1.9.2.12)
+ Gecko/20101027 Thunderbird/3.1.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+CTC had the following demand;
 
-On 15 August 2011 11:54, Chris Ball <cjb@laptop.org> wrote:
-> Hi Shawn,
->
-> On Sun, Aug 14 2011, Shawn Guo wrote:
->> There are following warning and error when compiling the driver.
->> The patch adds the missing inclusion of linux/module.h to fix them.
->>
->> drivers/mmc/host/sdhci-esdhc-imx.c:87:1: warning: data definition has
->> no type or storage class
->
-> Pushed to mmc-next for 3.1.  I don't see these on my imx build with
-> CONFIG_MMC_SDHCI_ESDHC_IMX=m, so it'd be useful to see your .config
-> so that I'm able to reproduce in future.
->
-I guess it's not about .config but sources.  I spot this on
-linux-next-20110812.  Are you trying the same tree?  I will test
-v3.1-rc2 tag when I can actually fetch it.  (Linus released it, but it
-has not been available with 'git fetch' yet.)
+1. to ensure high throughput from the beginning of
+tcp connection at normal times by acquiring large
+default transmission buffer value
 
--- 
-Regards,
-Shawn
+2. to limit the block time of the write in order to
+prevent the timeout of upper layer applications
+even when the connection has low throughput, such
+as low rate streaming
+
+
+The root of the issue;
+
+2 can not be achieved with the configuration that
+satisfies 1.
+
+The current behavior is as follows;
+
+Write is blocked when tcp transmission buffer (wmem)
+becomes full.
+In order to write again after that, one third of the
+transmission buffer (sk_wmem_queued/2) must be freed.
+
+When the throughput is low, timeout occurs by the time
+when the free buffer space is created, which affects
+streaming service.
+
+
+The effect of the patch;
+
+By putting xxx into the variable yyy, the portion of
+the transmission buffer becomes zzz, thus timeout will
+not occur in the low throughput network environment.
+
+xxx $B"*(B integer(e.g. 4)
+yyy $B"*(B "sysctl_tcp_lowat"
+zzz $B"*(B "sk_wmem_queued >> 4"
+
+Also, we think one third of the transmission buffer
+(sk_wmem_queued/2) is too deterministic, and it should
+be configurable.
+
+--------------------------------------------------
+--- linux-mainline/include/net/sock.h.orig	2011-07-27 14:26:43.000000000 +0900
++++ linux-mainline/include/net/sock.h	2011-08-15 11:40:20.000000000 +0900
+@@ -604,9 +604,11 @@ static inline int sk_acceptq_is_full(str
+ /*
+  * Compute minimal free write space needed to queue new packets.
+  */
++extern __u32 sysctl_tcp_lowat;
++
+ static inline int sk_stream_min_wspace(struct sock *sk)
+ {
+-	return sk->sk_wmem_queued >> 1;
++	return sk->sk_wmem_queued >> sysctl_tcp_lowat;
+ }
+ 
+ static inline int sk_stream_wspace(struct sock *sk)
+--- linux-mainline/net/core/sock.c.orig	2011-07-24 05:04:06.000000000 +0900
++++ linux-mainline/net/core/sock.c	2011-08-15 11:34:27.000000000 +0900
+@@ -217,6 +217,9 @@ __u32 sysctl_rmem_max __read_mostly = SK
+ __u32 sysctl_wmem_default __read_mostly = SK_WMEM_MAX;
+ __u32 sysctl_rmem_default __read_mostly = SK_RMEM_MAX;
+ 
++__u32 sysctl_tcp_lowat = 1;
++EXPORT_SYMBOL(sysctl_tcp_lowat);
++
+ /* Maximal space eaten by iovec or ancillary data plus some space */
+ int sysctl_optmem_max __read_mostly = sizeof(unsigned long)*(2*UIO_MAXIOV+512);
+ EXPORT_SYMBOL(sysctl_optmem_max);
+@@ -1330,6 +1333,8 @@ void __init sk_init(void)
+ 		sysctl_wmem_max = 131071;
+ 		sysctl_rmem_max = 131071;
+ 	}
++
++	sysctl_tcp_lowat = 1;
+ }
+ 
+ /*
+--- linux-mainline/net/core/sysctl_net_core.c.orig	2011-05-29 06:01:16.000000000 +0900
++++ linux-mainline/net/core/sysctl_net_core.c	2011-08-15 11:05:38.000000000 +0900
+@@ -168,6 +168,13 @@ static struct ctl_table net_core_table[]
+ 		.proc_handler	= rps_sock_flow_sysctl
+ 	},
+ #endif
++	{
++		.procname	= "tcp_lowat",
++		.data		= &sysctl_tcp_lowat,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec
++	},
+ #endif /* CONFIG_NET */
+ 	{
+ 		.procname	= "netdev_budget",
+
+--------------------------------------------------
+
+------------------------------------------
+Jun.Kondo
+ITOCHU TECHNO-SOLUTIONS Corporation(CTC)
+tel:+81-3-6238-6607
+fax:+81-3-5226-2369
+------------------------------------------
