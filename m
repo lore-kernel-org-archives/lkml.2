@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab1HOK6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:58:05 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:40379 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1HOK6C (ORCPT
+	id S1752122Ab1HOLAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 07:00:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53981 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab1HOLAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:58:02 -0400
+	Mon, 15 Aug 2011 07:00:19 -0400
+Date: Mon, 15 Aug 2011 13:00:15 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, kernel@pengutronix.de,
+        trivial@kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] drivers/char/applicom.c: remove cvs ID and French
+ in-file changelog
+Message-ID: <20110815110015.GI11398@pengutronix.de>
+References: <20101206151929.GA21020@pengutronix.de>
+ <1302101111-23992-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20110815104656.GG26978@dastard>
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
-	<1313334832-1150-4-git-send-email-glommer@parallels.com>
-	<CAOJsxLFYD9DkEU5R+9fZr-uaznteP8-BUC_Ti+FnNFqtbOCHSw@mail.gmail.com>
-	<20110815104656.GG26978@dastard>
-Date: Mon, 15 Aug 2011 13:58:01 +0300
-X-Google-Sender-Auth: gQxSuseWpEzs-kLQ5vzCmYdQtCY
-Message-ID: <CAOJsxLGFJmqO-W=itQbO4Mh4DxSD4wrHOC8gQ5bWL5aE1YYeQw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/4] limit nr_dentries per superblock
-From: Pekka Enberg <penberg@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1302101111-23992-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hello,
 
-On Mon, Aug 15, 2011 at 1:46 PM, Dave Chinner <david@fromorbit.com> wrote:
-> That's usage for the entire slab, though, and we don't have a dentry
-> slab per superblock so I don't think that helps us. And with slab
-> merging, I think that even if we did have a slab per superblock,
-> they'd end up in the same slab context anyway, right?
+On Wed, Apr 06, 2011 at 04:45:11PM +0200, Uwe Kleine-König wrote:
+> My script that finds typos always wants to do s/acces/access/ and
+> claims that "addresse" is wrong.  While at it remove obsolete cvs id and
+> outdated reference to kernel version.
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  drivers/char/applicom.c |   19 +------------------
+>  1 files changed, 1 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+> index 25373df..3e7af43 100644
+> --- a/drivers/char/applicom.c
+> +++ b/drivers/char/applicom.c
+> @@ -1,24 +1,7 @@
+>  /* Derived from Applicom driver ac.c for SCO Unix                            */
+>  /* Ported by David Woodhouse, Axiom (Cambridge) Ltd.                         */
+>  /* dwmw2@infradead.org 30/8/98                                               */
+> -/* $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $			     */
+> -/* This module is for Linux 2.1 and 2.2 series kernels.                      */
+> -/*****************************************************************************/
+> -/* J PAGET 18/02/94 passage V2.4.2 ioctl avec code 2 reset to les interrupt  */
+> -/* ceci pour reseter correctement apres une sortie sauvage                   */
+> -/* J PAGET 02/05/94 passage V2.4.3 dans le traitement de d'interruption,     */
+> -/* LoopCount n'etait pas initialise a 0.                                     */
+> -/* F LAFORSE 04/07/95 version V2.6.0 lecture bidon apres acces a une carte   */
+> -/*           pour liberer le bus                                             */
+> -/* J.PAGET 19/11/95 version V2.6.1 Nombre, addresse,irq n'est plus configure */
+> -/* et passe en argument a acinit, mais est scrute sur le bus pour s'adapter  */
+> -/* au nombre de cartes presentes sur le bus. IOCL code 6 affichait V2.4.3    */
+> -/* F.LAFORSE 28/11/95 creation de fichiers acXX.o avec les differentes       */
+> -/* addresses de base des cartes, IOCTL 6 plus complet                         */
+> -/* J.PAGET le 19/08/96 copie de la version V2.6 en V2.8.0 sans modification  */
+> -/* de code autre que le texte V2.6.1 en V2.8.0                               */
+> -/*****************************************************************************/
+> -
+> +/* several changes by J. Paget and F. Laforse in 1994-1996 */
+Is this material for trivial (added to Cc:)? Or should it go via akpm?
+>  
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
 
-You could add a flag to disable slab merging but there's no sane way
-to fix the per-superblock thing in slab.
+Best regards
+Uwe
 
-On Mon, Aug 15, 2011 at 1:46 PM, Dave Chinner <david@fromorbit.com> wrote:
-> Ideally what we need is a slab, LRU and shrinkers all rolled into a
-> single infrastructure handle so we can simply set them up per
-> object, per context etc and not have to re-invent the wheel for
-> every single slab cache/LRU/shrinker setup we have in the kernel.
->
-> I've got a rough node-aware generic LRU/shrinker infrastructure
-> prototype that is generic enough for most of the existing slab
-> caches with shrinkers, but I haven't looked at what is needed to
-> integrate it with the slab cache code. That's mainly because I don't
-> like the idea of having to implement the same thing 3 times in 3
-> different ways and debug them all before anyone would consider it
-> for inclusion in the kernel.
->
-> Once I've sorted out the select_parent() use-the-LRU-for-disposal
-> abuse and have a patch set that survives a 'rm -rf *' operation,
-> maybe we can then talk about what is needed to integrate stuff into
-> the slab caches....
-
-Well, now that I really understand what you're trying to do here, it's
-probably best to keep slab as-is and implement "slab accounting" on
-top of it.
-
-You'd have something like you do now but in slightly more generic form:
-
-  struct kmem_accounted_cache {
-                  struct kmem_cache *cache;
-                  /* ... statistics... */
-  }
-
-  void *kmem_accounted_alloc(struct kmem_accounted_cache *c)
-  {
-          if (/* within limits */)
-                  return kmem_cache_alloc(c->cache);
-
-          return NULL;
-  }
-
-Does something like that make sense to you?
-
-                        Pekka
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
