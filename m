@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416Ab1HOAE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 20:04:26 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:47159 "EHLO mx2.parallels.com"
+	id S1751218Ab1HOAL5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 20:11:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49842 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab1HOAEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 20:04:25 -0400
-Message-ID: <4E486268.60205@parallels.com>
-Date: Sun, 14 Aug 2011 17:03:52 -0700
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: <linux-kernel@vger.kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        David Chinner <david@fromorbit.com>,
-        <containers@lists.linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/4] parse options in the vfs level
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com> <1313334832-1150-5-git-send-email-glommer@parallels.com> <20110814153930.GA3996@albatros>
-In-Reply-To: <20110814153930.GA3996@albatros>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1750786Ab1HOAL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 20:11:56 -0400
+Date: Mon, 15 Aug 2011 10:11:44 +1000
+From: NeilBrown <neilb@suse.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul Menage <menage@google.com>, Ben Blum <bblum@andrew.cmu.edu>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
+ questionable code in de_thread.
+Message-ID: <20110815101144.39812e9f@notabene.brown>
+In-Reply-To: <20110814174000.GA2381@redhat.com>
+References: <20110727171101.5e32d8eb@notabene.brown>
+	<20110814174000.GA2381@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.191.100.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2011 08:39 AM, Vasiliy Kulikov wrote:
-> Hi Glauber,
->
-> On Sun, Aug 14, 2011 at 19:13 +0400, Glauber Costa wrote:
->> +/**
->> + * Generic option parsing for the VFS.
->> + *
->> + * Since most of the filesystems already do their own option parsing, and with
->> + * very few code shared between them, this function strips out any options that
->> + * we succeed in parsing ourselves. Passing them forward would just give the
->> + * underlying fs an option it does not expect, leading it to fail.
->> + *
->> + * We don't yet have a pointer to the super block as well, since this is
->> + * pre-mount. We accumulate in struct vfs_options whatever data we collected,
->> + * and act on it later.
->> + */
->> +static int vfs_parse_options(char *options, struct vfs_options *ops)
->> +{
->> +	substring_t args[MAX_OPT_ARGS];
->> +	int option;
->> +	char *p;
->> +	char *opt;
->> +	char *start = NULL;
->> +	int ret;
->> +	
->> +	if (!options)
->> +		return 0;
->> +
->> +	opt = kstrdup(options, GFP_KERNEL);
->> +	if (!opt)
->> +		return 1;
->> +	
->> +	ret = 1;
->> +
->> +	start = opt;
->> +	while ((p = strsep(&opt, ",")) != NULL) {
->> +		int token;
->> +		if (!*p)
->> +			continue;
->> +
->> +		/*
->> +		 * Initialize args struct so we know whether arg was
->> +		 * found; some options take optional arguments.
->> +		 */
->> +		args[0].to = args[0].from = 0;
->> +		token = match_token(p, tokens, args);
->> +		switch (token) {
->> +		case 1:
->> +			if (!args[0].from)
->> +				break;
->> +
->> +			if (match_int(&args[0],&option))
->> +				break;
->
-> What if there are 2 passed options and the second fails?
->
->     mount -o vfs_dcache_size=XXX,vfs_dcache_size=CRAP<dev>  <mntpoint>
->
-> In this case you leave the second option and pass it to the fs option
-> parser (as you already set ret=0), which is wrong.  I think you should
-> explicitly return 1 where you know the option is related to VFS, but you
-> failed to parse it.  It would look even simplier than current code.
+On Sun, 14 Aug 2011 19:40:00 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
 
-Good point, thank you. I agree.
+> Sorry for delay, just noticed this thread...
+> 
+> On 07/27, NeilBrown wrote:
+> >
+> >  The race as I understand it is with this code:
+> >
+> >
+> > 		list_replace_rcu(&leader->tasks, &tsk->tasks);
+> > 		list_replace_init(&leader->sibling, &tsk->sibling);
+> >
+> > 		tsk->group_leader = tsk;
+> > 		leader->group_leader = tsk;
+> >
+> >
+> >  which seems to be called with only tasklist_lock held, which doesn't seem to
+> >  be held in the cgroup code.
+> >
+> >  If the "thread_group_leader(leader)" call in cgroup_attach_proc() runs before
+> >  this chunk is run with the same value for 'leader', but the
+> >  while_each_thread is run after, then the while_read_thread() might loop
+> >  forever.  rcu_read_lock doesn't prevent this from happening.
+> 
+> Yes. This was already discussed. See http://marc.info/?t=127688987300002
+> 
+> Damn. I forgot about this completely.
+> 
+> >  The code in de_thread() is actually questionable by itself.
+> >  "list_replace_rcu" cannot really be used on the head of a list - it is only
+> >  meant to be used on a member of a list.
+> >  To move a list from one head to another you should be using
+> >  list_splice_init_rcu().
+> 
+> Hmm... can't understand this part.
+> 
+> And just in case... list_replace_rcu() looks fine afaics. The real problem
+> is release_task(old_leader) which does list_del_rcu(old_leader->thread_group),
+> this is what breaks while_each_thread().
+> 
+> >  The ->tasks list doesn't seem to have a clearly distinguished 'head'
+> 
+> Exactly. This is the problem.
+> 
+> But: you seem to confused ->tasks and ->thread_group ;)
+> 
 
-> (Yes, this is a rare situation, but I can imagine some program that
-> automatically adds mount options to the existing list and passes it to
-> mount.)
->
-Absolutely.
+That last point is certainly correct.  I caught myself confusing the two
+several time and wouldn't be at all surprised if I did it without catching
+myself.
+
+de_thread can change the group_leader of a thread_group, and release_task can
+remove a non-leader while leaving the rest of the thread_group intact.  So
+any while_each_thread() loop needs some extra care to ensure that it doesn't
+loop infinitely, because the "head" that it is looking for might not be there
+any more.
+Maybe there are other rules that ensure this can never happen, but they sure
+aren't obvious to me (i.e. if you know them - please tell ;-)
+
+NeilBrown
