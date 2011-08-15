@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1HOP12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:27:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35752 "EHLO smtps.tip.net.au"
+	id S1754555Ab1HOPaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:30:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35238 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754256Ab1HOP1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:27:25 -0400
-Date: Tue, 16 Aug 2011 01:27:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Elder <aelder@sgi.com>
-Subject: Re: linux-next: build failure after merge of the final tree (xfs
- tree related)
-Message-Id: <20110816012715.42665b49723cc48b1bd97610@canb.auug.org.au>
-In-Reply-To: <20110815144946.GA8256@infradead.org>
-References: <20110815161023.6227665ab11f8a35fd649e3a@canb.auug.org.au>
-	<20110815144946.GA8256@infradead.org>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo"
+	id S1754256Ab1HOPaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:30:00 -0400
+Message-ID: <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
+In-Reply-To: <4E493449.70907@mit.edu>
+References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+    <4E493449.70907@mit.edu>
+Date: Mon, 15 Aug 2011 17:29:54 +0200 (CEST)
+Subject: Re: x86 memcpy performance
+From: "Borislav Petkov" <bp@alien8.de>
+To: "Andy Lutomirski" <luto@MIT.EDU>
+Cc: "Borislav Petkov" <bp@alien8.de>, "melwyn lobo" <linux.melwyn@gmail.com>,
+        "Denys Vlasenko" <vda.linux@googlemail.com>,
+        "Ingo Molnar" <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Christoph,
-
-On Mon, 15 Aug 2011 10:49:46 -0400 Christoph Hellwig <hch@infradead.org> wr=
-ote:
+On Mon, 15 August, 2011 4:59 pm, Andy Lutomirski wrote:
+>>> So what is the reason we cannot use sse_memcpy in interrupt context.
+>>> (fpu registers not saved ? )
+>>
+>> Because, AFAICT, when we handle an #NM exception while running
+>> sse_memcpy in an IRQ handler, we might need to allocate FPU save state
+>> area, which in turn, can sleep. Then, we might get another IRQ while
+>> sleeping and we should be deadlocked.
+>>
+>> But let me stress on the "AFAICT" above, someone who actually knows the
+>> FPU code should correct me if I'm missing something.
 >
-> On Mon, Aug 15, 2011 at 04:10:23PM +1000, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > After merging the final tree, today's linux-next build (a powerpc server
-> > config) failed like this:
->=20
-> You'll need the patch below.  Can you keep is as a fix-up for now until
-> Alex returns from his vacation?
+> I don't think you ever get #NM as a result of kernel_fpu_begin, but you
+> can certainly have problems when kernel_fpu_begin nests by accident.
+> There's irq_fpu_usable() for this.
+>
+> (irq_fpu_usable() reads cr0 sometimes and I suspect it can be slow.)
 
-Thanks.  I will add it starting tomorrow and remove it when it turns up
-in the xfs tree.
+Oh I didn't know about irq_fpu_usable(), thanks.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+But still, irq_fpu_usable() still checks !in_interrupt() which means
+that we don't want to run SSE instructions in IRQ context. OTOH, we
+still are fine when running with CR0.TS. So what happens when we get an
+#NM as a result of executing an FPU instruction in an IRQ handler? We
+will have to do init_fpu() on the current task if the last hasn't used
+math yet and do the slab allocation of the FPU context area (I'm looking
+at math_state_restore, btw).
 
---Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+-- 
+Regards/Gruss,
+Boris.
 
-iQEcBAEBAgAGBQJOSTrTAAoJEDMEi1NhKgbsEpYIAJAYYdVozfSSrHPyzYyoBIwn
-2IGn5HP1cwHiS3Manhc3RsPhjzNnGn8tDM7hM20FYmlAia4lMMgdSEMMRRyeqB1m
-kjnpHQ3DeCtH48fHnFhKeycLUe4wv6K7vpmMH2sQp1V5lfHaOBVr7gge01GeJNZr
-2aqf2irP+zXyGjNX80boj99d6v4lfDwPvQi/NfjnhEeAo5/XlRvf45SzIRvRkzNz
-XqaG2/YlzwGt+wlTjPndlHOQXjvNjlNUkb6wIbM3Z1XQVxe7zJHmsVitll0Psf0p
-gJJLbjP1wszDhVwKyuV20z/1B3xo/hQcM7uL2mQVeukkmIy+wQ0S+SeBmltI3zU=
-=Uwif
------END PGP SIGNATURE-----
-
---Signature=_Tue__16_Aug_2011_01_27_15_+1000_3hN6tPnRno/bUedo--
