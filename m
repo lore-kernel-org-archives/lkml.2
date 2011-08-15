@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab1HOPxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:53:46 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46598 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab1HOPxm (ORCPT
+	id S1752832Ab1HOP5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:57:19 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43560 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab1HOPxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:53:42 -0400
+	Mon, 15 Aug 2011 11:53:30 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 18/32] nohz/cpuset: Don't stop the tick if posix cpu timers are running
-Date: Mon, 15 Aug 2011 17:52:15 +0200
-Message-Id: <1313423549-27093-19-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 15/32] nohz/cpuset: Restart tick when switching to idle task
+Date: Mon, 15 Aug 2011 17:52:12 +0200
+Message-Id: <1313423549-27093-16-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,13 +29,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If either a per thread or a per process posix cpu timer is running,
-don't stop the tick.
+Ideally if we are in adaptive nohz mode and we switch to the
+the idle task, we shouldn't restart the tick since it's going
+to stop the tick soon anyway.
 
-TODO: restart the tick if it is stopped and a posix cpu timer is
-enqueued. Check we probably need a memory barrier for the per
-process posix timer that can be enqueued from another task
-of the group.
+That optimization requires some minor tweaks here and there
+though, lets handle that later.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -50,75 +49,40 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- include/linux/posix-timers.h |    1 +
- kernel/posix-cpu-timers.c    |   12 ++++++++++++
- kernel/sched.c               |    4 ++++
- 3 files changed, 17 insertions(+), 0 deletions(-)
+ kernel/sched.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 959c141..5092cfd 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -116,6 +116,7 @@ int posix_timer_event(struct k_itimer *timr, int si_private);
- void posix_cpu_timer_schedule(struct k_itimer *timer);
- 
- void run_posix_cpu_timers(struct task_struct *task);
-+bool posix_cpu_timers_running(struct task_struct *tsk);
- void posix_cpu_timers_exit(struct task_struct *task);
- void posix_cpu_timers_exit_group(struct task_struct *task);
- 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 58f405b..f284fa4 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -6,6 +6,7 @@
- #include <linux/posix-timers.h>
- #include <linux/errno.h>
- #include <linux/math64.h>
-+#include <linux/cpuset.h>
- #include <asm/uaccess.h>
- #include <linux/kernel_stat.h>
- #include <trace/events/timer.h>
-@@ -1300,6 +1301,17 @@ static inline int fastpath_timer_check(struct task_struct *tsk)
- 	return 0;
- }
- 
-+bool posix_cpu_timers_running(struct task_struct *tsk)
-+{
-+	if (!task_cputime_zero(&tsk->cputime_expires))
-+		return true;
-+
-+	if (tsk->signal->cputimer.running)
-+		return true;
-+
-+	return false;
-+}
-+
- /*
-  * This is called from the timer interrupt handler.  The irq handler has
-  * already updated our counts.  We need to check if any timers fire now.
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 8bf8280..78ea0a5 100644
+index 353a66f..9b6b8eb 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -71,6 +71,7 @@
- #include <linux/ctype.h>
- #include <linux/ftrace.h>
- #include <linux/slab.h>
-+#include <linux/posix-timers.h>
- 
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
-@@ -2491,6 +2492,9 @@ bool cpuset_nohz_can_stop_tick(void)
- 	if (rcu_pending(cpu))
- 		return false;
- 
-+	if (posix_cpu_timers_running(current))
-+		return false;
-+
- 	return true;
+@@ -2477,6 +2477,18 @@ void cpuset_update_nohz(void)
+ 	if (!cpuset_nohz_can_stop_tick())
+ 		cpuset_nohz_restart_tick();
  }
++
++static void cpuset_nohz_task_switch(struct task_struct *next)
++{
++	int cpu = smp_processor_id();
++
++	if (tick_nohz_adaptive_mode() && next == idle_task(cpu))
++		cpuset_nohz_restart_tick();
++}
++#else
++static void cpuset_nohz_task_switch(struct task_struct *next)
++{
++}
+ #endif
  
+ static void
+@@ -3023,6 +3035,7 @@ static inline void
+ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 		    struct task_struct *next)
+ {
++	cpuset_nohz_task_switch(next);
+ 	sched_info_switch(prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
 -- 
 1.7.5.4
 
