@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1HOSRx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:17:53 -0400
-Received: from smtp-out-020.synserver.de ([212.40.185.20]:1078 "HELO
-	smtp-out-020.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750790Ab1HOSRm (ORCPT
+	id S1752941Ab1HOSSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:18:10 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:41915 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752005Ab1HOSSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:17:42 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 10030
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH 4/4] Blackfin: bf537: Stamp: Register ASoC EVAL-ADAU1373 board driver
-Date: Mon, 15 Aug 2011 20:15:24 +0200
-Message-Id: <1313432124-22591-4-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1313432124-22591-1-git-send-email-lars@metafoo.de>
-References: <1313432124-22591-1-git-send-email-lars@metafoo.de>
+	Mon, 15 Aug 2011 14:18:06 -0400
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+From: Matt Fleming <matt@console-pimps.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, hpa@linux.intel.com,
+        Avi Kivity <avi@redhat.com>, mjg@redhat.com,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        johnstultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4E429FE30200007800050910@nat28.tlf.novell.com>
+References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
+	 <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <4E4009A50200007800050258@nat28.tlf.novell.com>
+	 <20110810090330.GF26762@elte.hu>
+	 <4E426D4702000078000508B5@nat28.tlf.novell.com>
+	 <20110810095140.GB21059@elte.hu>
+	 <4E429FE30200007800050910@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Aug 2011 19:18:03 +0100
+Message-ID: <1313432283.3436.110.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mike Frysinger <vapier@gentoo.org>
----
- arch/blackfin/mach-bf537/boards/stamp.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+On Wed, 2011-08-10 at 14:12 +0100, Jan Beulich wrote:
+> Bottom line - the fix here is needed for 32-bit booting only (and
+> hence isn't - afaic - as critical as I first thought). But the adjustment
+> I'm holding is a necessary one (and I don't even understand why,
+> when 32- and 64-bit EFI code got merged, this was left 32-bit only),
+> and the NX consolidation change needs to be fixed too (basically as
+> a prerequisite).
 
-diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-index 4037043..6662c37 100644
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -2674,6 +2674,13 @@ static struct platform_device iio_gpio_trigger = {
- };
- #endif
- 
-+#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1373) || \
-+	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1373_MODULE)
-+static struct platform_device bf5xx_adau1373_device = {
-+	.name = "bfin-eval-adau1373",
-+};
-+#endif
-+
- #if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701) || \
- 	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701_MODULE)
- static struct platform_device bf5xx_adau1701_device = {
-@@ -2842,6 +2849,11 @@ static struct platform_device *stamp_devices[] __initdata = {
- 	&iio_gpio_trigger,
- #endif
- 
-+#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1373) || \
-+	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1373_MODULE)
-+	&bf5xx_adau1373_device,
-+#endif
-+
- #if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701) || \
- 	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701_MODULE)
- 	&bf5xx_adau1701_device,
+But the rtc-lock patch is independent and can be merged on its own,
+right? Sure the other issues need fixing but there's no sense in holding
+up the rtc-lock patch, since with it applied my machine actually boots.
+
 -- 
-1.7.2.5
+Matt Fleming, Intel Open Source Technology Center
 
