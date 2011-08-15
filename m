@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab1HOLAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 07:00:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53981 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1HOLAT (ORCPT
+	id S1752215Ab1HOLKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 07:10:30 -0400
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:34108 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751736Ab1HOLK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 07:00:19 -0400
-Date: Mon, 15 Aug 2011 13:00:15 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, kernel@pengutronix.de,
-        trivial@kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] drivers/char/applicom.c: remove cvs ID and French
- in-file changelog
-Message-ID: <20110815110015.GI11398@pengutronix.de>
-References: <20101206151929.GA21020@pengutronix.de>
- <1302101111-23992-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Mon, 15 Aug 2011 07:10:28 -0400
+Date: Mon, 15 Aug 2011 14:10:23 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: balbi@ti.com, Per Forlin <per.forlin@stericsson.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
+Subject: Re: [PATCH v2] usb: musb: ux500: optimize DMA callback routine
+Message-ID: <20110815111022.GN32750@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1312801266-11888-1-git-send-email-per.forlin@stericsson.com>
+ <20110812094129.GO19467@legolas.emea.dhcp.ti.com>
+ <CAJ0pr18rnhN2XdP4p+o=PyKLJb6470OzsOuQpcNc29jtu1hS8w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EqVOK5mkaJAMmtSx"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1302101111-23992-1-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <CAJ0pr18rnhN2XdP4p+o=PyKLJb6470OzsOuQpcNc29jtu1hS8w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wed, Apr 06, 2011 at 04:45:11PM +0200, Uwe Kleine-König wrote:
-> My script that finds typos always wants to do s/acces/access/ and
-> claims that "addresse" is wrong.  While at it remove obsolete cvs id and
-> outdated reference to kernel version.
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/char/applicom.c |   19 +------------------
->  1 files changed, 1 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-> index 25373df..3e7af43 100644
-> --- a/drivers/char/applicom.c
-> +++ b/drivers/char/applicom.c
-> @@ -1,24 +1,7 @@
->  /* Derived from Applicom driver ac.c for SCO Unix                            */
->  /* Ported by David Woodhouse, Axiom (Cambridge) Ltd.                         */
->  /* dwmw2@infradead.org 30/8/98                                               */
-> -/* $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $			     */
-> -/* This module is for Linux 2.1 and 2.2 series kernels.                      */
-> -/*****************************************************************************/
-> -/* J PAGET 18/02/94 passage V2.4.2 ioctl avec code 2 reset to les interrupt  */
-> -/* ceci pour reseter correctement apres une sortie sauvage                   */
-> -/* J PAGET 02/05/94 passage V2.4.3 dans le traitement de d'interruption,     */
-> -/* LoopCount n'etait pas initialise a 0.                                     */
-> -/* F LAFORSE 04/07/95 version V2.6.0 lecture bidon apres acces a une carte   */
-> -/*           pour liberer le bus                                             */
-> -/* J.PAGET 19/11/95 version V2.6.1 Nombre, addresse,irq n'est plus configure */
-> -/* et passe en argument a acinit, mais est scrute sur le bus pour s'adapter  */
-> -/* au nombre de cartes presentes sur le bus. IOCL code 6 affichait V2.4.3    */
-> -/* F.LAFORSE 28/11/95 creation de fichiers acXX.o avec les differentes       */
-> -/* addresses de base des cartes, IOCTL 6 plus complet                         */
-> -/* J.PAGET le 19/08/96 copie de la version V2.6 en V2.8.0 sans modification  */
-> -/* de code autre que le texte V2.6.1 en V2.8.0                               */
-> -/*****************************************************************************/
-> -
-> +/* several changes by J. Paget and F. Laforse in 1994-1996 */
-Is this material for trivial (added to Cc:)? Or should it go via akpm?
->  
->  #include <linux/kernel.h>
->  #include <linux/module.h>
+--EqVOK5mkaJAMmtSx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best regards
-Uwe
+Hi,
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+On Sun, Aug 14, 2011 at 07:50:46PM +0200, Per Forlin wrote:
+> On 12 August 2011 11:41, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Mon, Aug 08, 2011 at 01:01:06PM +0200, Per Forlin wrote:
+> >> From: Per Forlin <per.forlin@linaro.org>
+> >>
+> >> Skip the use of work queue and call musb_dma_completion() directly from
+> >> DMA callback context.
+> >>
+> >> Here follows measurements on a Snowball board with ondemand governor a=
+ctive.
+> >>
+> >> Performance using work queue:
+> >> (105 MB) copied, 6.23758 s, 16.8 MB/s
+> >> (105 MB) copied, 5.7151 s, 18.3 MB/s
+> >> (105 MB) copied, 5.83583 s, 18.0 MB/s
+> >> (105 MB) copied, 5.93611 s, 17.7 MB/s
+> >>
+> >> Performance without work queue
+> >> (105 MB) copied, 5.62173 s, 18.7 MB/s
+> >> (105 MB) copied, 5.61811 s, 18.7 MB/s
+> >> (105 MB) copied, 5.57817 s, 18.8 MB/s
+> >> (105 MB) copied, 5.58549 s, 18.8 MB/s
+> >>
+> >> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> >> Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+> >
+> > this patch doesn't apply anymore:
+> >
+> > $ patch -p1 --dry-run < ~/apply.diff
+> > patching file drivers/usb/musb/ux500_dma.c
+> > Hunk #2 FAILED at 55.
+> > Hunk #3 succeeded at 325 (offset -4 lines).
+> > Hunk #4 succeeded at 341 (offset -4 lines).
+> > Hunk #5 succeeded at 367 (offset -4 lines).
+> > 1 out of 5 hunks FAILED -- saving rejects to file drivers/usb/musb/ux50=
+0_dma.c.rej
+> >
+> > care to rebase on top of 3.1-rc1. Thanks
+> >
+> I can apply the patch on top of 3.1-rc1 but it has dependency to the
+> patches I posted recently. This is the order the patches apply:
+> 0001-usb-musb-ux500-set-dma-config-for-both-src-and-dst.patch
+> 0002-usb-musb-ux500-replace-missing-DBG-with-dev_dbg.patch
+> 0003-usb-musb-ux500-optimize-DMA-callback-routine.patch
+>=20
+> Please let me know if I should reorder the patches. I can resend all
+> three in one patchset.
+
+ok, please see if you can drop the dependency between them. $SUBJECT
+isn't a fix and as such should go on next merge window.
+
+--=20
+balbi
+
+--EqVOK5mkaJAMmtSx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSP6eAAoJEAv8Txj19kN1ypgIAKtSZddg2/rXBvb8zOY/et7F
+KYSRzlviZIeLBQgE7445554rh3pZ17SWVsMGBhtzmx9vyi1TriWaaJkHUknfNiy+
+hxE7804aquLl4as/q5nHh29Z84ppXcKUxiVaBwC8z8UD0Z/avQrh0lziE+sAd8I+
+pDitFqgHGidyqzptmH6VWjk8cpYFAHK2J8X0Z9B72MdA22v0Ejb9pgdI3yH4gH+k
+IdtNU5EPVKNQv1l6lTbEy00i9zOANey6z9Rv+FDBBoV6ZRYkKdcptVtpFP45+MrH
+w/eBulxaKvtDSXNm9cb0qiVSv1e7/DLchUsoEOVVAQGR8ZJM6lEgdnRIZI1Oi1o=
+=Yuoz
+-----END PGP SIGNATURE-----
+
+--EqVOK5mkaJAMmtSx--
