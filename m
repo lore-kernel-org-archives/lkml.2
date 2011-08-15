@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab1HOFOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:14:12 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:33955 "EHLO
+	id S1751988Ab1HOFPC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:15:02 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:49089 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1HOFOF convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751380Ab1HOFPB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:14:05 -0400
+	Mon, 15 Aug 2011 01:15:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313384834-24433-5-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1313384834-24433-10-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
-	<1313384834-24433-5-git-send-email-lacombar@gmail.com>
-Date: Mon, 15 Aug 2011 01:14:05 -0400
-Message-ID: <CACqU3MUJOFZtn6x53nTVVsiEfYD7W5-YV75dsKYgg5Aoy8LwbQ@mail.gmail.com>
-Subject: Re: [PATCH 04/11] arch/x86: do not use EXTRA_CFLAGS
+	<1313384834-24433-10-git-send-email-lacombar@gmail.com>
+Date: Mon, 15 Aug 2011 01:15:00 -0400
+Message-ID: <CACqU3MX1L6POxKbvgTBV+ffyyJVP80aM5YC__kUsCdBmHXNGrA@mail.gmail.com>
+Subject: Re: [PATCH 09/11] drivers/staging: do not use EXTRA_CFLAGS
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        x86@kernel.org
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,43 +42,79 @@ On Mon, Aug 15, 2011 at 1:07 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
 > Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 >
 > Cc: Sam Ravnborg <sam@ravnborg.org>
-> Cc: x86@kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: devel@driverdev.osuosl.org
 Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
  - Arnaud
 
 > ---
->  arch/x86/math-emu/Makefile |    4 ++--
->  arch/x86/pci/Makefile      |    4 +---
->  2 files changed, 3 insertions(+), 5 deletions(-)
+>  drivers/staging/cxd2099/Makefile   |    6 +++---
+>  drivers/staging/go7007/Makefile    |    8 ++------
+>  drivers/staging/rtl8187se/Makefile |    6 +++---
+>  drivers/staging/rts_pstor/Makefile |    2 +-
+>  4 files changed, 9 insertions(+), 13 deletions(-)
 >
-> diff --git a/arch/x86/math-emu/Makefile b/arch/x86/math-emu/Makefile
-> index 9b0c63b..60db1b8 100644
-> --- a/arch/x86/math-emu/Makefile
-> +++ b/arch/x86/math-emu/Makefile
-> @@ -5,8 +5,8 @@
->  #DEBUG = -DDEBUGGING
->  DEBUG  =
->  PARANOID = -DPARANOID
-> -EXTRA_CFLAGS   := $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
-> -EXTRA_AFLAGS   := $(PARANOID)
-> +ccflags-y      := $(PARANOID) $(DEBUG) -fno-builtin $(MATH_EMULATION)
-> +asflags-y      := $(PARANOID)
+> diff --git a/drivers/staging/cxd2099/Makefile b/drivers/staging/cxd2099/Makefile
+> index 72b1455..64cfc77 100644
+> --- a/drivers/staging/cxd2099/Makefile
+> +++ b/drivers/staging/cxd2099/Makefile
+> @@ -1,5 +1,5 @@
+>  obj-$(CONFIG_DVB_CXD2099) += cxd2099.o
 >
->  # From 'C' language sources:
->  C_OBJS =fpu_entry.o errors.o \
-> diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-> index 6b8759f..aef971f 100644
-> --- a/arch/x86/pci/Makefile
-> +++ b/arch/x86/pci/Makefile
-> @@ -22,6 +22,4 @@ obj-y                         += amd_bus.o bus_numa.o
+> -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core/
+> -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends/
+> -EXTRA_CFLAGS += -Idrivers/media/common/tuners/
+> +ccflags-y += -Idrivers/media/dvb/dvb-core/
+> +ccflags-y += -Idrivers/media/dvb/frontends/
+> +ccflags-y += -Idrivers/media/common/tuners/
+> diff --git a/drivers/staging/go7007/Makefile b/drivers/staging/go7007/Makefile
+> index 60a9185..6ee837c 100644
+> --- a/drivers/staging/go7007/Makefile
+> +++ b/drivers/staging/go7007/Makefile
+> @@ -20,15 +20,11 @@ go7007-y := go7007-v4l2.o go7007-driver.o go7007-i2c.o go7007-fw.o \
+>  s2250-y := s2250-board.o
 >
->  obj-$(CONFIG_PCI_CNB20LE_QUIRK)        += broadcom_bus.o
+>  # Uncomment when the saa7134 patches get into upstream
+> -#ifneq ($(CONFIG_VIDEO_SAA7134),)
+>  #obj-$(CONFIG_VIDEO_SAA7134) += saa7134-go7007.o
+> -#EXTRA_CFLAGS += -Idrivers/media/video/saa7134 -DSAA7134_MPEG_GO7007=3
+> -#endif
+> +#ccflags-$(CONFIG_VIDEO_SAA7134:m=y) += -Idrivers/media/video/saa7134 -DSAA7134_MPEG_GO7007=3
 >
-> -ifeq ($(CONFIG_PCI_DEBUG),y)
-> -EXTRA_CFLAGS += -DDEBUG
+>  # S2250 needs cypress ezusb loader from dvb-usb
+> -ifneq ($(CONFIG_VIDEO_GO7007_USB_S2250_BOARD),)
+> -ccflags-y := -Idrivers/media/dvb/dvb-usb
 > -endif
-> +ccflags-$(CONFIG_PCI_DEBUG) += -DDEBUG
+> +ccflags-$(CONFIG_VIDEO_GO7007_USB_S2250_BOARD:m=y) += -Idrivers/media/dvb/dvb-usb
+>
+>  ccflags-y += -Idrivers/media/dvb/frontends
+>  ccflags-y += -Idrivers/media/dvb/dvb-core
+> diff --git a/drivers/staging/rtl8187se/Makefile b/drivers/staging/rtl8187se/Makefile
+> index 11a9226..72db504 100644
+> --- a/drivers/staging/rtl8187se/Makefile
+> +++ b/drivers/staging/rtl8187se/Makefile
+> @@ -1,7 +1,7 @@
+>
+> -#EXTRA_CFLAGS += -DCONFIG_IEEE80211_NOWEP=y
+> -#EXTRA_CFLAGS += -std=gnu89
+> -#EXTRA_CFLAGS += -O2
+> +#ccflags-y += -DCONFIG_IEEE80211_NOWEP=y
+> +#ccflags-y += -std=gnu89
+> +#ccflags-y += -O2
+>  #CC            = gcc
+>
+>  ccflags-y := -DSW_ANTE
+> diff --git a/drivers/staging/rts_pstor/Makefile b/drivers/staging/rts_pstor/Makefile
+> index 61609ae..42533d3 100644
+> --- a/drivers/staging/rts_pstor/Makefile
+> +++ b/drivers/staging/rts_pstor/Makefile
+> @@ -1,4 +1,4 @@
+> -EXTRA_CFLAGS   := -Idrivers/scsi
+> +ccflags := -Idrivers/scsi
+>
+>  obj-$(CONFIG_RTS_PSTOR)        := rts_pstor.o
+>
 > --
 > 1.7.6.153.g78432
 >
