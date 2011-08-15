@@ -1,75 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab1HOJyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 05:54:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41925 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab1HOJyA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 05:54:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [Resend][PATCH] ACPI: Drop ACPI_NO_HARDWARE_INIT
-Date: Mon, 15 Aug 2011 11:55:43 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+	id S1751534Ab1HOKCN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:02:13 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:46753 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab1HOKCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:02:11 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: mohan@imap.linux.ibm.com
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V9fs-developer] [PATCH] fs/9p: Update zero-copy implementation in 9p
+In-Reply-To: <20110815052742.Horde.dzIweZir309OSOaO6aTWOGA@imap.linux.ibm.com>
+References: <1312965749-19683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20110815052742.Horde.dzIweZir309OSOaO6aTWOGA@imap.linux.ibm.com>
+User-Agent: Notmuch/0.5-318-g52e4ded (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Mon, 15 Aug 2011 15:31:02 +0530
+Message-ID: <874o1j0za9.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108151155.43201.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Mon, 15 Aug 2011 05:27:42 -0400, mohan@imap.linux.ibm.com wrote:
+> 
+> [snip]
+> 
+> > + * p9_client_zc_rpc - issue a request and wait for a response
+> > + * @c: client session
+> > + * @type: type of request
+> > + * @uidata: user bffer that should be ued for zero copy read
+> > + * @uodata: user buffer that shoud be user for zero copy write
+> > + * @inlen: read buffer size
+> > + * @olen: write buffer size
+> > + * @hdrlen: reader header size, This is the size of response protocol data
+> > + * @fmt: protocol format string (see protocol.c)
+> > + *
+> > + * Returns request structure (which client must free using p9_free_req)
+> > + */
+> > +static struct p9_req_t *p9_client_zc_rpc(struct p9_client *c, int8_t type,
+> > +					 char *uidata, char *uodata,
+> > +					 int inlen, int olen, int in_hdrlen,
+> > +					 int kern_buf, const char *fmt, ...)
+> 
+> Most of the code is duplicated from p9_client_rpc, is it possible to write a
+> helper routine which can be used by both p9_client_rpc &
+> p9_client_zc_rpc?
 
-ACPI_NO_HARDWARE_INIT is only used by acpi_early_init() and
-acpi_bus_init() when calling acpi_enable_subsystem(), but
-acpi_enable_subsystem() doesn't check that flag, so it can be
-dropped.
+I will try that.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/bus.c     |    8 ++------
- include/acpi/actypes.h |    1 -
- 2 files changed, 2 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/drivers/acpi/bus.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/bus.c
-+++ linux-2.6/drivers/acpi/bus.c
-@@ -911,10 +911,7 @@ void __init acpi_early_init(void)
- 	}
- #endif
- 
--	status =
--	    acpi_enable_subsystem(~
--				  (ACPI_NO_HARDWARE_INIT |
--				   ACPI_NO_ACPI_ENABLE));
-+	status = acpi_enable_subsystem(~ACPI_NO_ACPI_ENABLE);
- 	if (ACPI_FAILURE(status)) {
- 		printk(KERN_ERR PREFIX "Unable to enable ACPI\n");
- 		goto error0;
-@@ -935,8 +932,7 @@ static int __init acpi_bus_init(void)
- 
- 	acpi_os_initialize1();
- 
--	status =
--	    acpi_enable_subsystem(ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE);
-+	status = acpi_enable_subsystem(ACPI_NO_ACPI_ENABLE);
- 	if (ACPI_FAILURE(status)) {
- 		printk(KERN_ERR PREFIX
- 		       "Unable to start the ACPI Interpreter\n");
-Index: linux-2.6/include/acpi/actypes.h
-===================================================================
---- linux-2.6.orig/include/acpi/actypes.h
-+++ linux-2.6/include/acpi/actypes.h
-@@ -470,7 +470,6 @@ typedef u64 acpi_integer;
-  */
- #define ACPI_FULL_INITIALIZATION        0x00
- #define ACPI_NO_ADDRESS_SPACE_INIT      0x01
--#define ACPI_NO_HARDWARE_INIT           0x02
- #define ACPI_NO_EVENT_INIT              0x04
- #define ACPI_NO_HANDLER_INIT            0x08
- #define ACPI_NO_ACPI_ENABLE             0x10
+> > +{
+> > +	va_list ap;
+> > +	int tag, err;
+> > +	struct p9_req_t *req;
+> > +	unsigned long flags;
+> > +	int sigpending;
+> > +
+> > +	P9_DPRINTK(P9_DEBUG_MUX, "client %p op %d\n", c, type);
+> > +
+> > +	/* we allow for any status other than disconnected */
+> > +	if (c->status == Disconnected)
+> > +		return ERR_PTR(-EIO);
+> > +
+> > +	/* If we are called with KERNEL_DS force kern_buf */
+> > +	if (segment_eq(get_fs(), KERNEL_DS))
+> > +		kern_buf = 1;
+> > +
+> > +	/* if status is begin_disconnected we allow only clunk request */
+> > +	if ((c->status == BeginDisconnect) && (type != P9_TCLUNK))
+> > +		return ERR_PTR(-EIO);
+> > +
+> > +	if (signal_pending(current)) {
+> > +		sigpending = 1;
+> > +		clear_thread_flag(TIF_SIGPENDING);
+> > +	} else
+> > +		sigpending = 0;
+> > +
+> > +	tag = P9_NOTAG;
+> > +	if (type != P9_TVERSION) {
+> > +		tag = p9_idpool_get(c->tagpool);
+> > +		if (tag < 0)
+> > +			return ERR_PTR(-ENOMEM);
+> > +	}
+> > +	/*
+> > +	 * We allocate a inline protocol data of only 4k bytes.
+> > +	 * The actual content is passed in zero-copy fashion.
+> > +	 */
+> > +	req = p9_tag_alloc(c, tag, P9_ZC_HDR_SZ);
+> > +	if (IS_ERR(req))
+> > +		return req;
+> > +
+> > +	/* marshall the data */
+> > +	p9pdu_prepare(req->tc, tag, type);
+> > +	va_start(ap, fmt);
+> > +	err = p9pdu_vwritef(req->tc, c->proto_version, fmt, ap);
+> > +	va_end(ap);
+> > +	if (err)
+> > +		goto reterr;
+> > +	p9pdu_finalize(req->tc);
+> > +
+> > +	err = c->trans_mod->zc_request(c, req, uidata, uodata,
+> > +				       inlen, olen, in_hdrlen, kern_buf);
+> > +	if (err < 0) {
+> > +		if (err == -EIO)
+> > +			c->status = Disconnected;
+> > +		goto reterr;
+> > +	}
+> > +	if (req->status == REQ_STATUS_ERROR) {
+> > +		P9_DPRINTK(P9_DEBUG_ERROR, "req_status error %d\n", req->t_err);
+> > +		err = req->t_err;
+> > +	}
+> > +	if ((err == -ERESTARTSYS) && (c->status == Connected)) {
+> > +		P9_DPRINTK(P9_DEBUG_MUX, "flushing\n");
+> > +		sigpending = 1;
+> > +		clear_thread_flag(TIF_SIGPENDING);
+> > +
+> > +		if (c->trans_mod->cancel(c, req))
+> > +			p9_client_flush(c, req);
+> > +
+> > +		/* if we received the response anyway, don't signal error */
+> > +		if (req->status == REQ_STATUS_RCVD)
+> > +			err = 0;
+> > +	}
+> > +	if (sigpending) {
+> > +		spin_lock_irqsave(&current->sighand->siglock, flags);
+> > +		recalc_sigpending();
+> > +		spin_unlock_irqrestore(&current->sighand->siglock, flags);
+> > +	}
+> > +	if (err < 0)
+> > +		goto reterr;
+> > +
+> > +	err = p9_check_zc_errors(c, req, uidata, in_hdrlen, kern_buf);
+> > +	if (!err) {
+> > +		P9_DPRINTK(P9_DEBUG_MUX, "exit: client %p op %d\n", c, type);
+> > +		return req;
+> > +	}
+> > +reterr:
+> > +	P9_DPRINTK(P9_DEBUG_MUX, "exit: client %p op %d error: %d\n", c, type,
+> > +									err);
+> > +	p9_free_req(c, req);
+> > +	return ERR_PTR(err);
+> > +}
+> > +
+> >  static struct p9_fid *p9_fid_create(struct p9_client *clnt)
+> >  {
+> >  	int ret;
+> > @@ -1329,13 +1512,15 @@ int
+> >  p9_client_read(struct p9_fid *fid, char *data, char __user *udata,  
+> > u64 offset,
+> >  								u32 count)
+> >  {
+> > -	int err, rsize;
+> > -	struct p9_client *clnt;
+> > -	struct p9_req_t *req;
+> >  	char *dataptr;
+> > +	int kernel_buf = 0;
+> > +	struct p9_req_t *req;
+> > +	struct p9_client *clnt;
+> > +	int err, rsize, non_zc = 0;
+> > +
+> >
+> > -	P9_DPRINTK(P9_DEBUG_9P, ">>> TREAD fid %d offset %llu %d\n", fid->fid,
+> > -					(long long unsigned) offset, count);
+> > +	P9_DPRINTK(P9_DEBUG_9P, ">>> TREAD fid %d offset %llu %d\n",
+> > +		   fid->fid, (long long unsigned) offset, count);
+> >  	err = 0;
+> >  	clnt = fid->clnt;
+> >
+> > @@ -1346,14 +1531,25 @@ p9_client_read(struct p9_fid *fid, char  
+> > *data, char __user *udata, u64 offset,
+> >  	if (count < rsize)
+> >  		rsize = count;
+> >
+> > -	/* Don't bother zerocopy for small IO (< 1024) */
+> > -	if (((clnt->trans_mod->pref & P9_TRANS_PREF_PAYLOAD_MASK) ==
+> > -			P9_TRANS_PREF_PAYLOAD_SEP) && (rsize > 1024)) {
+> > -		req = p9_client_rpc(clnt, P9_TREAD, "dqE", fid->fid, offset,
+> > -				rsize, data, udata);
+> > +	/* Don't bother zerocopy form small IO (< 1024) */
+> form Typo?
+
+Yes. Will fix in next update.
+
+> > +	if (clnt->trans_mod->zc_request && rsize > 1024) {
+> > +		char *indata;
+> > +		if (data) {
+> > +			kernel_buf = 1;
+> > +			indata = data;
+> > +		} else
+> > +			indata = (char *)udata;
+> > +		/*
+> > +		 * response header len is 11
+> > +		 * PDU Header(7) + IO Size (4)
+> > +		 */
+> > +		req = p9_client_zc_rpc(clnt, P9_TREAD, indata, NULL, rsize, 0,
+> > +				       11, kernel_buf, "dqd", fid->fid,
+> > +				       offset, rsize);
+> 
+
+-aneesh
