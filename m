@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab1HOWzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 18:55:35 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:41136
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751091Ab1HOWzd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 18:55:33 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371K1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Julia Lawall <julia@diku.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
-Thread-Topic: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
-Thread-Index: AQHMVbzpcXnSfWNej0qPWJW3FUvaz5Ue5Q4A
-Date: Mon, 15 Aug 2011 22:55:00 +0000
-Message-ID: <CAOZdJXX_BS7GMtmyqiS91QByhrjANtKpbqrstR8g-L80r_N8qg@mail.gmail.com>
-References: <1312802283-9107-8-git-send-email-julia@diku.dk>
-In-Reply-To: <1312802283-9107-8-git-send-email-julia@diku.dk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [174.129.36.64]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <C1BD117AA95FC74B86848765DD286164@freescale.net>
-Content-Transfer-Encoding: 8BIT
+	id S1752601Ab1HOW6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 18:58:05 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:38611 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab1HOW6C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 18:58:02 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAKxaRTKtCOR7WHcpaTaVj8wqGoLpO04Vt3_aJ-Qfk=4X6CW0NQ@mail.gmail.com>
+References: <CAKxaRTKtCOR7WHcpaTaVj8wqGoLpO04Vt3_aJ-Qfk=4X6CW0NQ@mail.gmail.com>
+Date: Mon, 15 Aug 2011 18:58:02 -0400
+Message-ID: <CACqU3MXNjTTqHs22GNLWS1mrTi5=EQcMYbbStHsuOk9Msd838A@mail.gmail.com>
+Subject: Re: Linux 3.0.1 compile problem on different locales..
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: =?ISO-8859-1?B?U2VyZGFyIEvWWUzc?= <s.koylux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 7:18 AM, Julia Lawall <julia@diku.dk> wrote:
+Hi,
 
-> diff --git a/arch/powerpc/sysdev/ehv_pic.c b/arch/powerpc/sysdev/ehv_pic.c
-> index af1a5df..b6731e4 100644
-> --- a/arch/powerpc/sysdev/ehv_pic.c
-> +++ b/arch/powerpc/sysdev/ehv_pic.c
-> @@ -280,6 +280,7 @@ void __init ehv_pic_init(void)
+[Added linux-kbuild@ to the CC list.]
+
+2011/8/15 Serdar KÖYLÜ <s.koylux@gmail.com>:
+> FYI.
 >
->        if (!ehv_pic->irqhost) {
->                of_node_put(np);
-> +               kfree(ehv_pic);
->                return;
->        }
+> I download latest stable version and try compile it. But process
+> terminated with an error message, such as:
+>
+> error config/modversions.h, file or directory not found (Message is my
+> original language, in Turkish).
+>
+> I check manually this file, found it as:
+>
+> foo/linux-3.0.1/include/config/modversIons.h
+>
+> And all other "i" chars, translated into "I" chars. I run a grep, find this:
+>
+> [root@localhost kconfig]# grep -in tolower *.c
+> confdata.c:730:                 c = tolower(c);
+>
+> I set env. vars such as "LC_CTYPE=C" manually, retry compile kernel,
+> yes, it's compiled now.
+>
+> I don't know best solutions for this problem. A solutions can be write
+> some warnings in related documents. An other solution, make a patch,
+> such as:
+>
+> - confdata.c:730:                 c = tolower(c);
+> +#define TOLOWER(x) ((x) | 0x20)
+> +confdata.c:730:                 c = TOLOWER(c);
+>
+> or makefiles set locale to "C". I don't sure best solution. But this
+> problem occured in turkish and can be occurred other langs.
+>
+What is the Turkish locale you were using originally ?
 
-Although the fix is correct, I think there is another bug in this
-function.  'np' is not released when the function finishes
-successfully.   I've looked at other functions that use
-irq_alloc_host(), and most of them do the same thing: they don't call
-of_node_put() on the device node pointer.  The only exception I've
-found is mpc5121_ads_cpld_pic_init().
+Thanks,
+ - Arnaud
 
-Ben, Kumar: am I missing something?  irq_alloc_host() calls of_node_get():
-
-	host->of_node = of_node_get(of_node);
-
-so doesn't that mean that the caller of irq_alloc_host() should
-release the device node pointer?
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> Thanks, best regards..
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
