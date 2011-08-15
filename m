@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1HOPR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:17:28 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34730 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1HOPRY convert rfc822-to-8bit (ORCPT
+	id S1754561Ab1HOPSF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:18:05 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53071 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab1HOPSB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:17:24 -0400
+	Mon, 15 Aug 2011 11:18:01 -0400
 MIME-Version: 1.0
 In-Reply-To: <4E4937A4.5070204@linutronix.de>
 References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
  <1313419901-13492-2-git-send-email-bigeasy@linutronix.de> <CACxGe6us1vaUgMmiZR-D9iSCQdw+vbVyZdBCkET_9p3AGyHwRQ@mail.gmail.com>
  <4E4937A4.5070204@linutronix.de>
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 15 Aug 2011 09:17:01 -0600
-X-Google-Sender-Auth: U-h0cQlTNBnX5fsQAXUD9dmceUY
-Message-ID: <CACxGe6vAG9REwBGk6M225-ZH=h=uGPY2dL7onA1-ct5wpzf1tA@mail.gmail.com>
+Date: Mon, 15 Aug 2011 09:17:41 -0600
+X-Google-Sender-Auth: G34_2sJ8eOge7oFQehEjrpQLHLM
+Message-ID: <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
 Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for uevent
 To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
@@ -48,7 +48,9 @@ On Mon, Aug 15, 2011 at 9:13 AM, Sebastian Andrzej Siewior
 > Why different? The code matches (pdev->name == id->name) or
 > (pdev->name ==  driver->name) so in both cases it should be equal to
 > pdev->name.
+>
+> Are you or Greg taking this?
 
-Ah, true.  So not only was the code wrong, it was completely redundant.  :-)
+This one is all Greg.
 
 g.
