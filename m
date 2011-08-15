@@ -1,148 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab1HOKDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 06:03:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13337 "EHLO mga03.intel.com"
+	id S1751875Ab1HOKDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 06:03:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32774 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab1HOKDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 06:03:10 -0400
+	id S1751404Ab1HOKDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 06:03:11 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,373,1309762800"; 
-   d="scan'208";a="7185987"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="37838828"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-mmc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, cjb@laptop.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2] mmc: add functions to enable/disable aggressive clock gating
-Date: Mon, 15 Aug 2011 13:03:37 +0300
-Message-Id: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
+Subject: [PATCH 2/2] mmc: prevent aggressive clock gating to race with ios updates
+Date: Mon, 15 Aug 2011 13:03:38 +0300
+Message-Id: <0dc3a92a831137a432482adc04a9c68815c137b7.1313400777.git.mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
+References: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
+In-Reply-To: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
+References: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are few places where we want to make sure that no clock gating takes
-place. For example when we are updating several related fields in ios
-structure and we don't want to accidentally pass the partially filled ios
-to the host driver.
+We have seen at least two different races when clock gating kicks in in a
+middle of ios structure update.
 
-To solve this we add two functions to enable/disable the aggressive clock
-gating where this is needed.
+First one happens when ios->clock is changed outside of aggressive clock
+gating framework, for example via mmc_set_clock(). The race might happen
+when we run following code:
+
+mmc_set_ios():
+	...
+	if (ios->clock > 0)
+		mmc_set_ungated(host);
+
+Now if gating kicks in right after the condition check we end up setting
+host->gated to false even though we have just gated the clock. Next time a
+request is started we try to ungate and restore the clock in
+mmc_host_clk_ungate(). However since we have host->gated set to false the
+original clock is not restored.
+
+This eventually will cause the host controller to hang since its clock is
+disabled while we are trying to issue a request. For example on Intel
+Medfield platform we see:
+
+[   13.818610] mmc2: Timeout waiting for hardware interrupt.
+[   13.818698] sdhci: =========== REGISTER DUMP (mmc2)===========
+[   13.818753] sdhci: Sys addr: 0x00000000 | Version:  0x00008901
+[   13.818804] sdhci: Blk size: 0x00000000 | Blk cnt:  0x00000000
+[   13.818853] sdhci: Argument: 0x00000000 | Trn mode: 0x00000000
+[   13.818903] sdhci: Present:  0x1fff0000 | Host ctl: 0x00000001
+[   13.818951] sdhci: Power:    0x0000000d | Blk gap:  0x00000000
+[   13.819000] sdhci: Wake-up:  0x00000000 | Clock:    0x00000000
+[   13.819049] sdhci: Timeout:  0x00000000 | Int stat: 0x00000000
+[   13.819098] sdhci: Int enab: 0x00ff00c3 | Sig enab: 0x00ff00c3
+[   13.819147] sdhci: AC12 err: 0x00000000 | Slot int: 0x00000000
+[   13.819196] sdhci: Caps:     0x6bee32b2 | Caps_1:   0x00000000
+[   13.819245] sdhci: Cmd:      0x00000000 | Max curr: 0x00000000
+[   13.819292] sdhci: Host ctl2: 0x00000000
+[   13.819331] sdhci: ADMA Err: 0x00000000 | ADMA Ptr: 0x00000000
+[   13.819377] sdhci: ===========================================
+[   13.919605] mmc2: Reset 0x2 never completed.
+
+and it never recovers.
+
+Second race might happen while running mmc_power_off():
+
+static void mmc_power_off(struct mmc_host *host)
+{
+	host->ios.clock = 0;
+	host->ios.vdd = 0;
+
+[ clock gating kicks in here ]
+
+	/*
+	 * Reset ocr mask to be the highest possible voltage supported for
+	 * this mmc host. This value will be used at next power up.
+	 */
+	host->ocr = 1 << (fls(host->ocr_avail) - 1);
+
+	if (!mmc_host_is_spi(host)) {
+		host->ios.bus_mode = MMC_BUSMODE_OPENDRAIN;
+		host->ios.chip_select = MMC_CS_DONTCARE;
+	}
+	host->ios.power_mode = MMC_POWER_OFF;
+	host->ios.bus_width = MMC_BUS_WIDTH_1;
+	host->ios.timing = MMC_TIMING_LEGACY;
+	mmc_set_ios(host);
+}
+
+If the clock gating worker kicks in while we are only partially updated the
+ios structure the host controller gets incomplete ios and might not work as
+supposed. Again on Intel Medfield platform we get:
+
+[    4.185349] kernel BUG at drivers/mmc/host/sdhci.c:1155!
+[    4.185422] invalid opcode: 0000 [#1] PREEMPT SMP
+[    4.185509] Modules linked in:
+[    4.185565]
+[    4.185608] Pid: 4, comm: kworker/0:0 Not tainted 3.0.0+ #240 Intel Corporation Medfield/iCDKA
+[    4.185742] EIP: 0060:[<c136364e>] EFLAGS: 00010083 CPU: 0
+[    4.185827] EIP is at sdhci_set_power+0x3e/0xd0
+[    4.185891] EAX: f5ff98e0 EBX: f5ff98e0 ECX: 00000000 EDX: 00000001
+[    4.185970] ESI: f5ff977c EDI: f5ff9904 EBP: f644fe98 ESP: f644fe94
+[    4.186049]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[    4.186125] Process kworker/0:0 (pid: 4, ti=f644e000 task=f644c0e0 task.ti=f644e000)
+[    4.186219] Stack:
+[    4.186257]  f5ff98e0 f644feb0 c1365173 00000282 f5ff9460 f5ff96e0 f5ff96e0 f644feec
+[    4.186418]  c1355bd8 f644c0e0 c1499c3d f5ff96e0 f644fed4 00000006 f5ff96e0 00000286
+[    4.186579]  f644fedc c107922b f644feec 00000286 f5ff9460 f5ff9700 f644ff10 c135839e
+[    4.186739] Call Trace:
+[    4.186802]  [<c1365173>] sdhci_set_ios+0x1c3/0x340
+[    4.186883]  [<c1355bd8>] mmc_gate_clock+0x68/0x120
+[    4.186963]  [<c1499c3d>] ? _raw_spin_unlock_irqrestore+0x4d/0x60
+[    4.187052]  [<c107922b>] ? trace_hardirqs_on+0xb/0x10
+[    4.187134]  [<c135839e>] mmc_host_clk_gate_delayed+0xbe/0x130
+[    4.187219]  [<c105ec09>] ? process_one_work+0xf9/0x5b0
+[    4.187300]  [<c135841d>] mmc_host_clk_gate_work+0xd/0x10
+[    4.187379]  [<c105ec82>] process_one_work+0x172/0x5b0
+[    4.187457]  [<c105ec09>] ? process_one_work+0xf9/0x5b0
+[    4.187538]  [<c1358410>] ? mmc_host_clk_gate_delayed+0x130/0x130
+[    4.187625]  [<c105f3c8>] worker_thread+0x118/0x330
+[    4.187700]  [<c1496cee>] ? preempt_schedule+0x2e/0x50
+[    4.187779]  [<c105f2b0>] ? rescuer_thread+0x1f0/0x1f0
+[    4.187857]  [<c1062cf4>] kthread+0x74/0x80
+[    4.187931]  [<c1062c80>] ? __init_kthread_worker+0x60/0x60
+[    4.188015]  [<c149acfa>] kernel_thread_helper+0x6/0xd
+[    4.188079] Code: 81 fa 00 00 04 00 0f 84 a7 00 00 00 7f 21 81 fa 80 00 00 00 0f 84 92 00 00 00 81 fa 00 00 0
+[    4.188780] EIP: [<c136364e>] sdhci_set_power+0x3e/0xd0 SS:ESP 0068:f644fe94
+[    4.188898] ---[ end trace a7b23eecc71777e4 ]---
+
+This BUG() comes from the fact that ios.power_mode was still in previous
+value (MMC_POWER_ON) and ios.vdd was set to zero.
+
+We prevent these by disabling the clock gating while we update the ios
+structure.
+
+Both problems can be reproduced by simply running the device in a reboot
+loop.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/core/host.c  |   39 ++++++++++++++++++++++++++++++++++++++-
- drivers/mmc/core/host.h  |   11 +++++++++++
- include/linux/mmc/host.h |    1 +
- 3 files changed, 50 insertions(+), 1 deletions(-)
+I'm not sure whether this is the best way of preventing the races. Two
+alternatives come into mind:
 
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index b29d3e8..ee52246 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -178,7 +178,7 @@ void mmc_host_clk_gate(struct mmc_host *host)
- 	spin_lock_irqsave(&host->clk_lock, flags);
- 	host->clk_requests--;
- 	if (mmc_host_may_gate_card(host->card) &&
--	    !host->clk_requests)
-+	    !host->clk_requests && !host->clk_disabled)
- 		schedule_work(&host->clk_gate_work);
- 	spin_unlock_irqrestore(&host->clk_lock, flags);
+	1. make a copy of ios at the beginning of each function and pass
+	this copy to the mmc_set_ios().
+
+	2. make the host controller drivers to check if the ios structure
+	is sane and only then commit the changes.
+
+Please comment.
+
+ drivers/mmc/core/core.c |   31 +++++++++++++++++++++++++++++--
+ 1 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 91a0a74..ba2df27 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -728,15 +728,17 @@ static inline void mmc_set_ios(struct mmc_host *host)
+  */
+ void mmc_set_chip_select(struct mmc_host *host, int mode)
+ {
++	mmc_host_clk_gate_disable(host);
+ 	host->ios.chip_select = mode;
+ 	mmc_set_ios(host);
++	mmc_host_clk_gate_enable(host);
  }
-@@ -204,6 +204,42 @@ unsigned int mmc_host_clk_rate(struct mmc_host *host)
+ 
+ /*
+  * Sets the host clock to the highest possible frequency that
+  * is below "hz".
+  */
+-void mmc_set_clock(struct mmc_host *host, unsigned int hz)
++static void __mmc_set_clock(struct mmc_host *host, unsigned int hz)
+ {
+ 	WARN_ON(hz < host->f_min);
+ 
+@@ -747,6 +749,13 @@ void mmc_set_clock(struct mmc_host *host, unsigned int hz)
+ 	mmc_set_ios(host);
+ }
+ 
++void mmc_set_clock(struct mmc_host *host, unsigned int hz)
++{
++	mmc_host_clk_gate_disable(host);
++	__mmc_set_clock(host, hz);
++	mmc_host_clk_gate_enable(host);
++}
++
+ #ifdef CONFIG_MMC_CLKGATE
+ /*
+  * This gates the clock by setting it to 0 Hz.
+@@ -779,7 +788,7 @@ void mmc_ungate_clock(struct mmc_host *host)
+ 	if (host->clk_old) {
+ 		BUG_ON(host->ios.clock);
+ 		/* This call will also set host->clk_gated to false */
+-		mmc_set_clock(host, host->clk_old);
++		__mmc_set_clock(host, host->clk_old);
+ 	}
+ }
+ 
+@@ -807,8 +816,10 @@ void mmc_set_ungated(struct mmc_host *host)
+  */
+ void mmc_set_bus_mode(struct mmc_host *host, unsigned int mode)
+ {
++	mmc_host_clk_gate_disable(host);
+ 	host->ios.bus_mode = mode;
+ 	mmc_set_ios(host);
++	mmc_host_clk_gate_enable(host);
+ }
+ 
+ /*
+@@ -816,8 +827,10 @@ void mmc_set_bus_mode(struct mmc_host *host, unsigned int mode)
+  */
+ void mmc_set_bus_width(struct mmc_host *host, unsigned int width)
+ {
++	mmc_host_clk_gate_disable(host);
+ 	host->ios.bus_width = width;
+ 	mmc_set_ios(host);
++	mmc_host_clk_gate_enable(host);
  }
  
  /**
-+ *	mmc_host_clk_gate_disable - temporarily disable clock gating
-+ *	@host: host to disable clock gating
-+ *
-+ *	Function temporarily disables aggressive clock gating. This is to
-+ *	prevent clock gating worker to kick in for example in a middle of
-+ *	ios structure update.
-+ *
-+ *	After this function returns, it is guaranteed that no clock gating
-+ *	takes place until it is re-enabled again.
-+ */
-+void mmc_host_clk_gate_disable(struct mmc_host *host)
-+{
-+	spin_lock_irq(&host->clk_lock);
-+	WARN_ON(host->clk_disabled);
-+	host->clk_disabled = true;
-+	spin_unlock_irq(&host->clk_lock);
-+
-+	cancel_work_sync(&host->clk_gate_work);
-+}
-+
-+/**
-+ *	mmc_host_clk_gate_enable - re-enables clock gating
-+ *	@host: host to re-enable clock gating
-+ *
-+ *	Allows aggressive clock gating framework to continue gating the
-+ *	host clock.
-+ */
-+void mmc_host_clk_gate_enable(struct mmc_host *host)
-+{
-+	spin_lock_irq(&host->clk_lock);
-+	WARN_ON(!host->clk_disabled);
-+	host->clk_disabled = false;
-+	spin_unlock_irq(&host->clk_lock);
-+}
-+
-+/**
-  *	mmc_host_clk_init - set up clock gating code
-  *	@host: host with potential clock to control
+@@ -1015,8 +1028,10 @@ u32 mmc_select_voltage(struct mmc_host *host, u32 ocr)
+ 
+ 		ocr &= 3 << bit;
+ 
++		mmc_host_clk_gate_disable(host);
+ 		host->ios.vdd = bit;
+ 		mmc_set_ios(host);
++		mmc_host_clk_gate_enable(host);
+ 	} else {
+ 		pr_warning("%s: host doesn't support card's voltages\n",
+ 				mmc_hostname(host));
+@@ -1063,8 +1078,10 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage, bool cmd11
   */
-@@ -213,6 +249,7 @@ static inline void mmc_host_clk_init(struct mmc_host *host)
- 	/* Hold MCI clock for 8 cycles by default */
- 	host->clk_delay = 8;
- 	host->clk_gated = false;
-+	host->clk_disabled = false;
- 	INIT_WORK(&host->clk_gate_work, mmc_host_clk_gate_work);
- 	spin_lock_init(&host->clk_lock);
- 	mutex_init(&host->clk_gate_mutex);
-diff --git a/drivers/mmc/core/host.h b/drivers/mmc/core/host.h
-index de199f9..7148b24 100644
---- a/drivers/mmc/core/host.h
-+++ b/drivers/mmc/core/host.h
-@@ -19,6 +19,8 @@ void mmc_unregister_host_class(void);
- void mmc_host_clk_ungate(struct mmc_host *host);
- void mmc_host_clk_gate(struct mmc_host *host);
- unsigned int mmc_host_clk_rate(struct mmc_host *host);
-+void mmc_host_clk_gate_disable(struct mmc_host *host);
-+void mmc_host_clk_gate_enable(struct mmc_host *host);
- 
- #else
- static inline void mmc_host_clk_ungate(struct mmc_host *host)
-@@ -33,6 +35,15 @@ static inline unsigned int mmc_host_clk_rate(struct mmc_host *host)
+ void mmc_set_timing(struct mmc_host *host, unsigned int timing)
  {
- 	return host->ios.clock;
++	mmc_host_clk_gate_disable(host);
+ 	host->ios.timing = timing;
+ 	mmc_set_ios(host);
++	mmc_host_clk_gate_enable(host);
  }
-+
-+static inline void mmc_host_clk_gate_disable(struct mmc_host *host)
-+{
-+}
-+
-+static inline void mmc_host_clk_gate_enable(struct mmc_host *host)
-+{
-+}
-+
- #endif
  
- void mmc_host_deeper_disable(struct work_struct *work);
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 1d09562..dea6350 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -240,6 +240,7 @@ struct mmc_host {
- 	unsigned int		clk_old;	/* old clock value cache */
- 	spinlock_t		clk_lock;	/* lock for clk fields */
- 	struct mutex		clk_gate_mutex;	/* mutex for clock gating */
-+	bool			clk_disabled;	/* gating is temporarily disabled */
- #endif
+ /*
+@@ -1072,8 +1089,10 @@ void mmc_set_timing(struct mmc_host *host, unsigned int timing)
+  */
+ void mmc_set_driver_type(struct mmc_host *host, unsigned int drv_type)
+ {
++	mmc_host_clk_gate_disable(host);
+ 	host->ios.drv_type = drv_type;
+ 	mmc_set_ios(host);
++	mmc_host_clk_gate_enable(host);
+ }
  
- 	/* host specific block data */
+ /*
+@@ -1091,6 +1110,8 @@ static void mmc_power_up(struct mmc_host *host)
+ {
+ 	int bit;
+ 
++	mmc_host_clk_gate_disable(host);
++
+ 	/* If ocr is set, we use it */
+ 	if (host->ocr)
+ 		bit = ffs(host->ocr) - 1;
+@@ -1126,10 +1147,14 @@ static void mmc_power_up(struct mmc_host *host)
+ 	 * time required to reach a stable voltage.
+ 	 */
+ 	mmc_delay(10);
++
++	mmc_host_clk_gate_enable(host);
+ }
+ 
+ static void mmc_power_off(struct mmc_host *host)
+ {
++	mmc_host_clk_gate_disable(host);
++
+ 	host->ios.clock = 0;
+ 	host->ios.vdd = 0;
+ 
+@@ -1147,6 +1172,8 @@ static void mmc_power_off(struct mmc_host *host)
+ 	host->ios.bus_width = MMC_BUS_WIDTH_1;
+ 	host->ios.timing = MMC_TIMING_LEGACY;
+ 	mmc_set_ios(host);
++
++	mmc_host_clk_gate_enable(host);
+ }
+ 
+ /*
 -- 
 1.7.5.4
 
