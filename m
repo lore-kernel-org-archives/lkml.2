@@ -1,252 +1,753 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab1HOQs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 12:48:56 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58144 "EHLO
+	id S1751698Ab1HOQvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 12:51:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58372 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751334Ab1HOQsz (ORCPT
+	by vger.kernel.org with ESMTP id S1750735Ab1HOQvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 12:48:55 -0400
-Date: Mon, 15 Aug 2011 17:48:42 +0100
+	Mon, 15 Aug 2011 12:51:46 -0400
+Date: Mon, 15 Aug 2011 17:51:33 +0100
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
 Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v7 03/16] ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead
- of PGDIR_*
-Message-ID: <20110815164842.GE3392@e102109-lin.cambridge.arm.com>
+Subject: Re: [PATCH v7 09/16] ARM: LPAE: MMU setup for the 3-level page
+ table format
+Message-ID: <20110815165133.GF3392@e102109-lin.cambridge.arm.com>
 References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
- <1312988619-16804-4-git-send-email-catalin.marinas@arm.com>
+ <1312988619-16804-10-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312988619-16804-4-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1312988619-16804-10-git-send-email-catalin.marinas@arm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 04:03:26PM +0100, Catalin Marinas wrote:
-> PGDIR_SHIFT and PMD_SHIFT for the classic 2-level page table format have
-> the same value (21). This patch converts the PGDIR_* uses in the kernel
-> to the PMD_* equivalent so that LPAE builds can reuse the same code.
+On Wed, Aug 10, 2011 at 04:03:32PM +0100, Catalin Marinas wrote:
+> This patch adds the MMU initialisation for the LPAE page table format.
+> The swapper_pg_dir size with LPAE is 5 rather than 4 pages. A new
+> proc-v7lpae.S file contains the initialisation, context switch and
+> save/restore code for ARMv7 with the LPAE. The TTBRx split is based on
+> the PAGE_OFFSET with TTBR1 used for the kernel mappings. The 36-bit
+> mappings (supersections) and a few other memory types in mmu.c are
+> conditionally compiled.
 > 
 > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Following Russell's advice to split the MMU setup patch, the diff below
-will be folded into this patch for easier reviewing (and the commit will
-be changed slightly to reflect this):
+Following the split of this patch, it becomes:
 
-8<-----------------------
+8<--------------------
 
->From 98b3fe02dd44b6e9fabd05123135e77a794f2ebc Mon Sep 17 00:00:00 2001
+>From f73eaa061658f04e20a27b3c68e8e1c6ff235c99 Mon Sep 17 00:00:00 2001
 From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 15 Aug 2011 17:34:52 +0100
-Subject: [PATCH 1/1] fixup! ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*
+Date: Mon, 31 Jan 2011 13:50:43 +0000
+Subject: [PATCH 1/1] ARM: LPAE: MMU setup for the 3-level page table format
 
-Convert the hard-coded shift and mask values in head.S and mmu.c to
-SECTION_SHIFT and PMD_ORDER for easier integration of the LPAE support.
+This patch adds the MMU initialisation for the LPAE page table format.
+The swapper_pg_dir size with LPAE is 5 rather than 4 pages. A new
+proc-v7lpae.S file contains the initialisation, context switch and
+save/restore code for ARMv7 with the LPAE. The TTBRx split is based on
+the PAGE_OFFSET with TTBR1 used for the kernel mappings. The 36-bit
+mappings (supersections) and a few other memory types in mmu.c are
+conditionally compiled.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/kernel/head.S |   74 +++++++++++++++++++++++++----------------------
- arch/arm/mm/mmu.c      |    4 ++-
- 2 files changed, 42 insertions(+), 36 deletions(-)
+ arch/arm/kernel/head.S    |   43 +++++-
+ arch/arm/mm/Makefile      |    4 +
+ arch/arm/mm/mmu.c         |   30 ++++
+ arch/arm/mm/proc-macros.S |    5 +-
+ arch/arm/mm/proc-v7lpae.S |  422 +++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 500 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/mm/proc-v7lpae.S
 
 diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index d8231b2..45e5e60 100644
+index 45e5e60..a400a4d 100644
 --- a/arch/arm/kernel/head.S
 +++ b/arch/arm/kernel/head.S
-@@ -21,6 +21,7 @@
- #include <asm/memory.h>
- #include <asm/thread_info.h>
- #include <asm/system.h>
-+#include <asm/pgtable.h>
- 
- #ifdef CONFIG_DEBUG_LL
- #include <mach/debug-macro.S>
-@@ -38,11 +39,14 @@
+@@ -39,8 +39,14 @@
  #error KERNEL_RAM_VADDR must start at 0xXXXX8000
  #endif
  
-+#define PG_DIR_SIZE	0x4000
-+#define PMD_ORDER	2
-+
++#ifdef CONFIG_ARM_LPAE
++	/* LPAE requires an additional page for the PGD */
++#define PG_DIR_SIZE	0x5000
++#define PMD_ORDER	3
++#else
+ #define PG_DIR_SIZE	0x4000
+ #define PMD_ORDER	2
++#endif
+ 
  	.globl	swapper_pg_dir
--	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - 0x4000
-+	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - PG_DIR_SIZE
+ 	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - PG_DIR_SIZE
+@@ -164,6 +170,25 @@ __create_page_tables:
+ 	teq	r0, r6
+ 	bne	1b
  
- 	.macro	pgtbl, rd, phys
--	add	\rd, \phys, #TEXT_OFFSET - 0x4000
-+	add	\rd, \phys, #TEXT_OFFSET - PG_DIR_SIZE
- 	.endm
- 
- #ifdef CONFIG_XIP_KERNEL
-@@ -148,11 +152,11 @@ __create_page_tables:
- 	pgtbl	r4, r8				@ page table address
- 
- 	/*
--	 * Clear the 16K level 1 swapper page table
-+	 * Clear the swapper page table
- 	 */
- 	mov	r0, r4
- 	mov	r3, #0
--	add	r6, r0, #0x4000
-+	add	r6, r0, #PG_DIR_SIZE
- 1:	str	r3, [r0], #4
- 	str	r3, [r0], #4
- 	str	r3, [r0], #4
-@@ -171,30 +175,30 @@ __create_page_tables:
- 	sub	r0, r0, r3			@ virt->phys offset
- 	add	r5, r5, r0			@ phys __enable_mmu
- 	add	r6, r6, r0			@ phys __enable_mmu_end
--	mov	r5, r5, lsr #20
--	mov	r6, r6, lsr #20
-+	mov	r5, r5, lsr #SECTION_SHIFT
-+	mov	r6, r6, lsr #SECTION_SHIFT
- 
--1:	orr	r3, r7, r5, lsl #20		@ flags + kernel base
--	str	r3, [r4, r5, lsl #2]		@ identity mapping
--	teq	r5, r6
--	addne	r5, r5, #1			@ next section
--	bne	1b
-+1:	orr	r3, r7, r5, lsl #SECTION_SHIFT	@ flags + kernel base
-+	str	r3, [r4, r5, lsl #PMD_ORDER]	@ identity mapping
-+	cmp	r5, r6
-+	addlo	r5, r5, #1			@ next section
-+	blo	1b
++#ifdef CONFIG_ARM_LPAE
++	/*
++	 * Build the PGD table (first level) to point to the PMD table. A PGD
++	 * entry is 64-bit wide.
++	 */
++	mov	r0, r4
++	add	r3, r4, #0x1000			@ first PMD table address
++	orr	r3, r3, #3			@ PGD block type
++	mov	r6, #4				@ PTRS_PER_PGD
++	mov	r7, #1 << (55 - 32)		@ L_PGD_SWAPPER
++1:	str	r3, [r0], #4			@ set bottom PGD entry bits
++	str	r7, [r0], #4			@ set top PGD entry bits
++	add	r3, r3, #0x1000			@ next PMD table
++	subs	r6, r6, #1
++	bne	1b
++
++	add	r4, r4, #0x1000			@ point to the PMD tables
++#endif
++
+ 	ldr	r7, [r10, #PROCINFO_MM_MMUFLAGS] @ mm_mmuflags
  
  	/*
- 	 * Now setup the pagetables for our kernel direct
- 	 * mapped region.
- 	 */
- 	mov	r3, pc
--	mov	r3, r3, lsr #20
--	orr	r3, r7, r3, lsl #20
--	add	r0, r4,  #(KERNEL_START & 0xff000000) >> 18
--	str	r3, [r0, #(KERNEL_START & 0x00f00000) >> 18]!
-+	mov	r3, r3, lsr #SECTION_SHIFT
-+	orr	r3, r7, r3, lsl #SECTION_SHIFT
-+	add	r0, r4,  #(KERNEL_START & 0xff000000) >> (SECTION_SHIFT - PMD_ORDER)
-+	str	r3, [r0, #((KERNEL_START & 0x00f00000) >> SECTION_SHIFT) << PMD_ORDER]!
- 	ldr	r6, =(KERNEL_END - 1)
--	add	r0, r0, #4
--	add	r6, r4, r6, lsr #18
-+	add	r0, r0, #1 << PMD_ORDER
-+	add	r6, r4, r6, lsr #(SECTION_SHIFT - PMD_ORDER)
- 1:	cmp	r0, r6
--	add	r3, r3, #1 << 20
--	strls	r3, [r0], #4
-+	add	r3, r3, #1 << SECTION_SHIFT
-+	strls	r3, [r0], #1 << PMD_ORDER
- 	bls	1b
+@@ -219,8 +244,8 @@ __create_page_tables:
+ #endif
  
- #ifdef CONFIG_XIP_KERNEL
-@@ -203,11 +207,11 @@ __create_page_tables:
+ 	/*
+-	 * Then map boot params address in r2 or
+-	 * the first 1MB of ram if boot params address is not specified.
++	 * Then map boot params address in r2 or the first 1MB (2MB with LPAE)
++	 * of ram if boot params address is not specified.
  	 */
- 	add	r3, r8, #TEXT_OFFSET
- 	orr	r3, r3, r7
--	add	r0, r4,  #(KERNEL_RAM_VADDR & 0xff000000) >> 18
--	str	r3, [r0, #(KERNEL_RAM_VADDR & 0x00f00000) >> 18]!
-+	add	r0, r4,  #(KERNEL_RAM_VADDR & 0xff000000) >> (SECTION_SHIFT - PMD_ORDER)
-+	str	r3, [r0, #(KERNEL_RAM_VADDR & 0x00f00000) >> (SECTION_SHIFT - PMD_ORDER)]!
- 	ldr	r6, =(_end - 1)
- 	add	r0, r0, #4
--	add	r6, r4, r6, lsr #18
-+	add	r6, r4, r6, lsr #(SECTION_SHIFT - PMD_ORDER)
- 1:	cmp	r0, r6
- 	add	r3, r3, #1 << 20
- 	strls	r3, [r0], #4
-@@ -218,12 +222,12 @@ __create_page_tables:
- 	 * Then map boot params address in r2 or
- 	 * the first 1MB of ram if boot params address is not specified.
- 	 */
--	mov	r0, r2, lsr #20
--	movs	r0, r0, lsl #20
-+	mov	r0, r2, lsr #SECTION_SHIFT
-+	movs	r0, r0, lsl #SECTION_SHIFT
- 	moveq	r0, r8
- 	sub	r3, r0, r8
- 	add	r3, r3, #PAGE_OFFSET
--	add	r3, r4, r3, lsr #18
-+	add	r3, r4, r3, lsr #(SECTION_SHIFT - PMD_ORDER)
- 	orr	r6, r7, r0
- 	str	r6, [r3]
- 
-@@ -236,21 +240,21 @@ __create_page_tables:
- 	 */
- 	addruart r7, r3
- 
--	mov	r3, r3, lsr #20
--	mov	r3, r3, lsl #2
-+	mov	r3, r3, lsr #SECTION_SHIFT
-+	mov	r3, r3, lsl #PMD_ORDER
- 
- 	add	r0, r4, r3
- 	rsb	r3, r3, #0x4000			@ PTRS_PER_PGD*sizeof(long)
- 	cmp	r3, #0x0800			@ limit to 512MB
- 	movhi	r3, #0x0800
- 	add	r6, r0, r3
--	mov	r3, r7, lsr #20
-+	mov	r3, r7, lsr #SECTION_SHIFT
+ 	mov	r0, r2, lsr #SECTION_SHIFT
+ 	movs	r0, r0, lsl #SECTION_SHIFT
+@@ -251,7 +276,13 @@ __create_page_tables:
+ 	mov	r3, r7, lsr #SECTION_SHIFT
  	ldr	r7, [r10, #PROCINFO_IO_MMUFLAGS] @ io_mmuflags
--	orr	r3, r7, r3, lsl #20
-+	orr	r3, r7, r3, lsl #SECTION_SHIFT
+ 	orr	r3, r7, r3, lsl #SECTION_SHIFT
++#ifdef CONFIG_ARM_LPAE
++	mov	r7, #1 << (54 - 32)		@ XN
++#endif
  1:	str	r3, [r0], #4
--	add	r3, r3, #1 << 20
--	teq	r0, r6
--	bne	1b
-+	add	r3, r3, #1 << SECTION_SHIFT
-+	cmp	r0, r6
-+	blo	1b
++#ifdef CONFIG_ARM_LPAE
++	str	r7, [r0], #4
++#endif
+ 	add	r3, r3, #1 << SECTION_SHIFT
+ 	cmp	r0, r6
+ 	blo	1b
+@@ -283,6 +314,9 @@ __create_page_tables:
+ 	str	r3, [r0]
+ #endif
+ #endif
++#ifdef CONFIG_ARM_LPAE
++	sub	r4, r4, #0x1000		@ point to the PGD table
++#endif
+ 	mov	pc, lr
+ ENDPROC(__create_page_tables)
+ 	.ltorg
+@@ -374,12 +408,17 @@ __enable_mmu:
+ #ifdef CONFIG_CPU_ICACHE_DISABLE
+ 	bic	r0, r0, #CR_I
+ #endif
++#ifdef CONFIG_ARM_LPAE
++	mov	r5, #0
++	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
++#else
+ 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
+ 		      domain_val(DOMAIN_IO, DOMAIN_CLIENT))
+ 	mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
+ 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
++#endif
+ 	b	__turn_mmu_on
+ ENDPROC(__enable_mmu)
  
- #else /* CONFIG_DEBUG_ICEDCC */
- 	/* we don't need any serial debugging mappings for ICEDCC */
-@@ -262,7 +266,7 @@ __create_page_tables:
- 	 * If we're using the NetWinder or CATS, we also need to map
- 	 * in the 16550-type serial port for the debug messages
- 	 */
--	add	r0, r4, #0xff000000 >> 18
-+	add	r0, r4, #0xff000000 >> (SECTION_SHIFT - PMD_ORDER)
- 	orr	r3, r7, #0x7c000000
- 	str	r3, [r0]
- #endif
-@@ -272,10 +276,10 @@ __create_page_tables:
- 	 * Similar reasons here - for debug.  This is
- 	 * only for Acorn RiscPC architectures.
- 	 */
--	add	r0, r4, #0x02000000 >> 18
-+	add	r0, r4, #0x02000000 >> (SECTION_SHIFT - PMD_ORDER)
- 	orr	r3, r7, #0x02000000
- 	str	r3, [r0]
--	add	r0, r4, #0xd8000000 >> 18
-+	add	r0, r4, #0xd8000000 >> (SECTION_SHIFT - PMD_ORDER)
- 	str	r3, [r0]
- #endif
- #endif
+diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+index bca7e61..48639e7 100644
+--- a/arch/arm/mm/Makefile
++++ b/arch/arm/mm/Makefile
+@@ -91,7 +91,11 @@ obj-$(CONFIG_CPU_MOHAWK)	+= proc-mohawk.o
+ obj-$(CONFIG_CPU_FEROCEON)	+= proc-feroceon.o
+ obj-$(CONFIG_CPU_V6)		+= proc-v6.o
+ obj-$(CONFIG_CPU_V6K)		+= proc-v6.o
++ifeq ($(CONFIG_ARM_LPAE),y)
++obj-$(CONFIG_CPU_V7)		+= proc-v7lpae.o
++else
+ obj-$(CONFIG_CPU_V7)		+= proc-v7.o
++endif
+ 
+ AFLAGS_proc-v6.o	:=-Wa,-march=armv6
+ AFLAGS_proc-v7.o	:=-Wa,-march=armv7-a
 diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index dc26858..36e983d 100644
+index 226f180..1ba2a5a 100644
 --- a/arch/arm/mm/mmu.c
 +++ b/arch/arm/mm/mmu.c
-@@ -889,6 +889,8 @@ static inline void prepare_page_table(void)
+@@ -150,6 +150,7 @@ static int __init early_nowrite(char *__unused)
+ }
+ early_param("nowb", early_nowrite);
+ 
++#ifndef CONFIG_ARM_LPAE
+ static int __init early_ecc(char *p)
+ {
+ 	if (memcmp(p, "on", 2) == 0)
+@@ -159,6 +160,7 @@ static int __init early_ecc(char *p)
+ 	return 0;
+ }
+ early_param("ecc", early_ecc);
++#endif
+ 
+ static int __init noalign_setup(char *__unused)
+ {
+@@ -228,10 +230,12 @@ static struct mem_type mem_types[] = {
+ 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_XN,
+ 		.domain    = DOMAIN_KERNEL,
+ 	},
++#ifndef CONFIG_ARM_LPAE
+ 	[MT_MINICLEAN] = {
+ 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_XN | PMD_SECT_MINICACHE,
+ 		.domain    = DOMAIN_KERNEL,
+ 	},
++#endif
+ 	[MT_LOW_VECTORS] = {
+ 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+ 				L_PTE_RDONLY,
+@@ -421,6 +425,7 @@ static void __init build_mem_type_table(void)
+ 	 * ARMv6 and above have extended page tables.
+ 	 */
+ 	if (cpu_arch >= CPU_ARCH_ARMv6 && (cr & CR_XP)) {
++#ifndef CONFIG_ARM_LPAE
+ 		/*
+ 		 * Mark cache clean areas and XIP ROM read only
+ 		 * from SVC mode and no access from userspace.
+@@ -428,6 +433,7 @@ static void __init build_mem_type_table(void)
+ 		mem_types[MT_ROM].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
+ 		mem_types[MT_MINICLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
+ 		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
++#endif
+ 
+ 		if (is_smp()) {
+ 			/*
+@@ -466,6 +472,18 @@ static void __init build_mem_type_table(void)
+ 		mem_types[MT_MEMORY_NONCACHED].prot_sect |= PMD_SECT_BUFFERABLE;
+ 	}
+ 
++#ifdef CONFIG_ARM_LPAE
++	/*
++	 * Do not generate access flag faults for the kernel mappings.
++	 */
++	for (i = 0; i < ARRAY_SIZE(mem_types); i++) {
++		mem_types[i].prot_pte |= PTE_EXT_AF;
++		mem_types[i].prot_sect |= PMD_SECT_AF;
++	}
++	kern_pgprot |= PTE_EXT_AF;
++	vecs_pgprot |= PTE_EXT_AF;
++#endif
++
+ 	for (i = 0; i < 16; i++) {
+ 		unsigned long v = pgprot_val(protection_map[i]);
+ 		protection_map[i] = __pgprot(v | user_pgprot);
+@@ -564,8 +582,10 @@ static void __init alloc_init_section(pud_t *pud, unsigned long addr,
+ 	if (((addr | end | phys) & ~SECTION_MASK) == 0) {
+ 		pmd_t *p = pmd;
+ 
++#ifndef CONFIG_ARM_LPAE
+ 		if (addr & SECTION_SIZE)
+ 			pmd++;
++#endif
+ 
+ 		do {
+ 			*pmd = __pmd(phys | type->prot_sect);
+@@ -595,6 +615,7 @@ static void alloc_init_pud(pgd_t *pgd, unsigned long addr, unsigned long end,
+ 	} while (pud++, addr = next, addr != end);
+ }
+ 
++#ifndef CONFIG_ARM_LPAE
+ static void __init create_36bit_mapping(struct map_desc *md,
+ 					const struct mem_type *type)
+ {
+@@ -654,6 +675,7 @@ static void __init create_36bit_mapping(struct map_desc *md,
+ 		pgd += SUPERSECTION_SIZE >> PGDIR_SHIFT;
+ 	} while (addr != end);
+ }
++#endif	/* !CONFIG_ARM_LPAE */
+ 
+ /*
+  * Create the page directory entries and any necessary
+@@ -685,6 +707,7 @@ static void __init create_mapping(struct map_desc *md)
+ 
+ 	type = &mem_types[md->type];
+ 
++#ifndef CONFIG_ARM_LPAE
+ 	/*
+ 	 * Catch 36-bit addresses
+ 	 */
+@@ -692,6 +715,7 @@ static void __init create_mapping(struct map_desc *md)
+ 		create_36bit_mapping(md, type);
+ 		return;
+ 	}
++#endif
+ 
+ 	addr = md->virtual & PAGE_MASK;
+ 	phys = __pfn_to_phys(md->pfn);
+@@ -889,7 +913,13 @@ static inline void prepare_page_table(void)
  		pmd_clear(pmd_off_k(addr));
  }
  
-+#define SWAPPER_PG_DIR_SIZE	(PTRS_PER_PGD * sizeof(pgd_t))
-+
++#ifdef CONFIG_ARM_LPAE
++/* the first page is reserved for pgd */
++#define SWAPPER_PG_DIR_SIZE	(PAGE_SIZE + \
++				 PTRS_PER_PGD * PTRS_PER_PMD * sizeof(pmd_t))
++#else
+ #define SWAPPER_PG_DIR_SIZE	(PTRS_PER_PGD * sizeof(pgd_t))
++#endif
+ 
  /*
   * Reserve the special regions of memory
-  */
-@@ -898,7 +900,7 @@ void __init arm_mm_memblock_reserve(void)
- 	 * Reserve the page tables.  These are already in use,
- 	 * and can only be in node 0.
- 	 */
--	memblock_reserve(__pa(swapper_pg_dir), PTRS_PER_PGD * sizeof(pgd_t));
-+	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_PG_DIR_SIZE);
- 
- #ifdef CONFIG_SA1111
- 	/*
+diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
+index 307a4de..2d8ff3a 100644
+--- a/arch/arm/mm/proc-macros.S
++++ b/arch/arm/mm/proc-macros.S
+@@ -91,8 +91,9 @@
+ #if L_PTE_SHARED != PTE_EXT_SHARED
+ #error PTE shared bit mismatch
+ #endif
+-#if (L_PTE_XN+L_PTE_USER+L_PTE_RDONLY+L_PTE_DIRTY+L_PTE_YOUNG+\
+-     L_PTE_FILE+L_PTE_PRESENT) > L_PTE_SHARED
++#if !defined (CONFIG_ARM_LPAE) && \
++	(L_PTE_XN+L_PTE_USER+L_PTE_RDONLY+L_PTE_DIRTY+L_PTE_YOUNG+\
++	 L_PTE_FILE+L_PTE_PRESENT) > L_PTE_SHARED
+ #error Invalid Linux PTE bit settings
+ #endif
+ #endif	/* CONFIG_MMU */
+diff --git a/arch/arm/mm/proc-v7lpae.S b/arch/arm/mm/proc-v7lpae.S
+new file mode 100644
+index 0000000..0bee213
+--- /dev/null
++++ b/arch/arm/mm/proc-v7lpae.S
+@@ -0,0 +1,422 @@
++/*
++ * arch/arm/mm/proc-v7lpae.S
++ *
++ * Copyright (C) 2001 Deep Blue Solutions Ltd.
++ * Copyright (C) 2011 ARM Ltd.
++ * Author: Catalin Marinas <catalin.marinas@arm.com>
++ *   based on arch/arm/mm/proc-v7.S
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++#include <linux/init.h>
++#include <linux/linkage.h>
++#include <asm/assembler.h>
++#include <asm/asm-offsets.h>
++#include <asm/hwcap.h>
++#include <asm/pgtable-hwdef.h>
++#include <asm/pgtable.h>
++
++#include "proc-macros.S"
++
++#define TTB_IRGN_NC	(0 << 8)
++#define TTB_IRGN_WBWA	(1 << 8)
++#define TTB_IRGN_WT	(2 << 8)
++#define TTB_IRGN_WB	(3 << 8)
++#define TTB_RGN_NC	(0 << 10)
++#define TTB_RGN_OC_WBWA	(1 << 10)
++#define TTB_RGN_OC_WT	(2 << 10)
++#define TTB_RGN_OC_WB	(3 << 10)
++#define TTB_S		(3 << 12)
++#define TTB_EAE		(1 << 31)
++
++/* PTWs cacheable, inner WB not shareable, outer WB not shareable */
++#define TTB_FLAGS_UP	(TTB_IRGN_WB|TTB_RGN_OC_WB)
++#define PMD_FLAGS_UP	(PMD_SECT_WB)
++
++/* PTWs cacheable, inner WBWA shareable, outer WBWA not shareable */
++#define TTB_FLAGS_SMP	(TTB_IRGN_WBWA|TTB_S|TTB_RGN_OC_WBWA)
++#define PMD_FLAGS_SMP	(PMD_SECT_WBWA|PMD_SECT_S)
++
++ENTRY(cpu_v7_proc_init)
++	mov	pc, lr
++ENDPROC(cpu_v7_proc_init)
++
++ENTRY(cpu_v7_proc_fin)
++	mrc	p15, 0, r0, c1, c0, 0		@ ctrl register
++	bic	r0, r0, #0x1000			@ ...i............
++	bic	r0, r0, #0x0006			@ .............ca.
++	mcr	p15, 0, r0, c1, c0, 0		@ disable caches
++	mov	pc, lr
++ENDPROC(cpu_v7_proc_fin)
++
++/*
++ *	cpu_v7_reset(loc)
++ *
++ *	Perform a soft reset of the system.  Put the CPU into the
++ *	same state as it would be if it had been reset, and branch
++ *	to what would be the reset vector.
++ *
++ *	- loc   - location to jump to for soft reset
++ */
++	.align	5
++ENTRY(cpu_v7_reset)
++	mov	pc, r0
++ENDPROC(cpu_v7_reset)
++
++/*
++ *	cpu_v7_do_idle()
++ *
++ *	Idle the processor (eg, wait for interrupt).
++ *
++ *	IRQs are already disabled.
++ */
++ENTRY(cpu_v7_do_idle)
++	dsb					@ WFI may enter a low-power mode
++	wfi
++	mov	pc, lr
++ENDPROC(cpu_v7_do_idle)
++
++ENTRY(cpu_v7_dcache_clean_area)
++#ifndef TLB_CAN_READ_FROM_L1_CACHE
++	dcache_line_size r2, r3
++1:	mcr	p15, 0, r0, c7, c10, 1		@ clean D entry
++	add	r0, r0, r2
++	subs	r1, r1, r2
++	bhi	1b
++	dsb
++#endif
++	mov	pc, lr
++ENDPROC(cpu_v7_dcache_clean_area)
++
++/*
++ *	cpu_v7_switch_mm(pgd_phys, tsk)
++ *
++ *	Set the translation table base pointer to be pgd_phys
++ *
++ *	- pgd_phys - physical address of new TTB
++ *
++ *	It is assumed that:
++ *	- we are not using split page tables
++ */
++ENTRY(cpu_v7_switch_mm)
++#ifdef CONFIG_MMU
++	ldr	r1, [r1, #MM_CONTEXT_ID]	@ get mm->context.id
++	mov	r2, #0
++	and	r3, r1, #0xff
++	mov	r3, r3, lsl #(48 - 32)		@ ASID
++	mcrr	p15, 0, r0, r3, c2		@ set TTB 0
++	isb
++#endif
++	mov	pc, lr
++ENDPROC(cpu_v7_switch_mm)
++
++/*
++ *	cpu_v7_set_pte_ext(ptep, pte)
++ *
++ *	Set a level 2 translation table entry.
++ *
++ *	- ptep  - pointer to level 2 translation table entry
++ *		  (hardware version is stored at +2048 bytes)
++ *	- pte   - PTE value to store
++ *	- ext	- value for extended PTE bits
++ */
++ENTRY(cpu_v7_set_pte_ext)
++#ifdef CONFIG_MMU
++	tst	r2, #L_PTE_PRESENT
++	beq	1f
++	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
++	orreq	r2, #L_PTE_RDONLY
++1:	strd	r2, r3, [r0]
++	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
++#endif
++	mov	pc, lr
++ENDPROC(cpu_v7_set_pte_ext)
++
++cpu_v7_name:
++	.ascii	"ARMv7 Processor"
++	.align
++
++	/*
++	 * Memory region attributes for LPAE (defined in pgtable-3level.h):
++	 *
++	 *   n = AttrIndx[2:0]
++	 *
++	 *			n	MAIR
++	 *   UNCACHED		000	00000000
++	 *   BUFFERABLE		001	01000100
++	 *   DEV_WC		001	01000100
++	 *   WRITETHROUGH	010	10101010
++	 *   WRITEBACK		011	11101110
++	 *   DEV_CACHED		011	11101110
++	 *   DEV_SHARED		100	00000100
++	 *   DEV_NONSHARED	100	00000100
++	 *   unused		101
++	 *   unused		110
++	 *   WRITEALLOC		111	11111111
++	 */
++.equ	MAIR0,	0xeeaa4400			@ MAIR0
++.equ	MAIR1,	0xff000004			@ MAIR1
++
++/* Suspend/resume support: derived from arch/arm/mach-s5pv210/sleep.S */
++.globl	cpu_v7_suspend_size
++.equ	cpu_v7_suspend_size, 4 * 10
++#ifdef CONFIG_PM_SLEEP
++ENTRY(cpu_v7_do_suspend)
++	stmfd	sp!, {r4 - r11, lr}
++	mrc	p15, 0, r4, c13, c0, 0	@ FCSE/PID
++	mrc	p15, 0, r5, c13, c0, 1	@ Context ID
++	mrc	p15, 0, r6, c3, c0, 0	@ Domain ID
++	mrrc	p15, 0, r7, r8, c2	@ TTB 0
++	mrrc	p15, 1, r2, r3, c2	@ TTB 1
++	mrc	p15, 0, r9, c1, c0, 0	@ Control register
++	mrc	p15, 0, r10, c1, c0, 1	@ Auxiliary control register
++	mrc	p15, 0, r11, c1, c0, 2	@ Co-processor access control
++	stmia	r0, {r2 - r11}
++	ldmfd	sp!, {r4 - r11, pc}
++ENDPROC(cpu_v7_do_suspend)
++
++ENTRY(cpu_v7_do_resume)
++	mov	ip, #0
++	mcr	p15, 0, ip, c8, c7, 0	@ invalidate TLBs
++	mcr	p15, 0, ip, c7, c5, 0	@ invalidate I cache
++	ldmia	r0, {r2 - r11}
++	mcr	p15, 0, r4, c13, c0, 0	@ FCSE/PID
++	mcr	p15, 0, r5, c13, c0, 1	@ Context ID
++	mcr	p15, 0, r6, c3, c0, 0	@ Domain ID
++	mcrr	p15, 0, r7, r8, c2	@ TTB 0
++	mcrr	p15, 1, r2, r3, c2	@ TTB 1
++	mcr	p15, 0, ip, c2, c0, 2	@ TTB control register
++	mcr	p15, 0, r10, c1, c0, 1	@ Auxiliary control register
++	mcr	p15, 0, r11, c1, c0, 2	@ Co-processor access control
++	ldr	r4, =MAIR0
++	ldr	r5, =MAIR1
++	mcr	p15, 0, r4, c10, c2, 0	@ write MAIR0
++	mcr	p15, 0, r5, c10, c2, 1	@ write MAIR1
++	isb
++	mov	r0, r9			@ control register
++	mov	r2, r7, lsr #14		@ get TTB0 base
++	mov	r2, r2, lsl #14
++	ldr	r3, cpu_resume_l1_flags
++	b	cpu_resume_mmu
++ENDPROC(cpu_v7_do_resume)
++cpu_resume_l1_flags:
++	ALT_SMP(.long PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_FLAGS_SMP)
++	ALT_UP(.long  PMD_TYPE_SECT | PMD_SECT_AP_WRITE | PMD_FLAGS_UP)
++#else
++#define cpu_v7_do_suspend	0
++#define cpu_v7_do_resume	0
++#endif
++
++	__CPUINIT
++
++/*
++ *	__v7_setup
++ *
++ *	Initialise TLB, Caches, and MMU state ready to switch the MMU
++ *	on. Return in r0 the new CP15 C1 control register setting.
++ *
++ *	This should be able to cover all ARMv7 cores with LPAE.
++ *
++ *	It is assumed that:
++ *	- cache type register is implemented
++ */
++__v7_ca15mp_setup:
++	mov	r10, #0
++1:
++#ifdef CONFIG_SMP
++	ALT_SMP(mrc	p15, 0, r0, c1, c0, 1)
++	ALT_UP(mov	r0, #(1 << 6))		@ fake it for UP
++	tst	r0, #(1 << 6)			@ SMP/nAMP mode enabled?
++	orreq	r0, r0, #(1 << 6)		@ Enable SMP/nAMP mode
++	orreq	r0, r0, r10			@ Enable CPU-specific SMP bits
++	mcreq	p15, 0, r0, c1, c0, 1
++#endif
++__v7_setup:
++	adr	r12, __v7_setup_stack		@ the local stack
++	stmia	r12, {r0-r5, r7, r9, r11, lr}
++	bl	v7_flush_dcache_all
++	ldmia	r12, {r0-r5, r7, r9, r11, lr}
++
++	mov	r10, #0
++	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
++	dsb
++#ifdef CONFIG_MMU
++	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
++	mov	r5, #TTB_EAE
++	ALT_SMP(orr	r5, r5, #TTB_FLAGS_SMP)
++	ALT_SMP(orr	r5, r5, #TTB_FLAGS_SMP << 16)
++	ALT_UP(orr	r5, r5, #TTB_FLAGS_UP)
++	ALT_UP(orr	r5, r5, #TTB_FLAGS_UP << 16)
++	mrc	p15, 0, r10, c2, c0, 2
++	orr	r10, r10, r5
++#if PHYS_OFFSET <= PAGE_OFFSET
++	/*
++	 * TTBR0/TTBR1 split (PAGE_OFFSET):
++	 *   0x40000000: T0SZ = 2, T1SZ = 0 (not used)
++	 *   0x80000000: T0SZ = 0, T1SZ = 1
++	 *   0xc0000000: T0SZ = 0, T1SZ = 2
++	 *
++	 * Only use this feature if PAGE_OFFSET <=  PAGE_OFFSET, otherwise
++	 * booting secondary CPUs would end up using TTBR1 for the identity
++	 * mapping set up in TTBR0.
++	 */
++	orr	r10, r10, #(((PAGE_OFFSET >> 30) - 1) << 16)	@ TTBCR.T1SZ
++#endif
++	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
++	mov	r5, #0
++#if defined CONFIG_VMSPLIT_2G
++	/* PAGE_OFFSET == 0x80000000, T1SZ == 1 */
++	add	r6, r8, #1 << 4			@ skip two L1 entries
++#elif defined CONFIG_VMSPLIT_3G
++	/* PAGE_OFFSET == 0xc0000000, T1SZ == 2 */
++	add	r6, r8, #4096 * (1 + 3)		@ only L2 used, skip pgd+3*pmd
++#else
++	mov	r6, r8
++#endif
++	mcrr	p15, 1, r6, r5, c2		@ load TTBR1
++	ldr	r5, =MAIR0
++	ldr	r6, =MAIR1
++	mcr	p15, 0, r5, c10, c2, 0		@ write MAIR0
++	mcr	p15, 0, r6, c10, c2, 1		@ write MAIR1
++#endif
++	adr	r5, v7_crval
++	ldmia	r5, {r5, r6}
++#ifdef CONFIG_CPU_ENDIAN_BE8
++	orr	r6, r6, #1 << 25		@ big-endian page tables
++#endif
++#ifdef CONFIG_SWP_EMULATE
++	orr     r5, r5, #(1 << 10)              @ set SW bit in "clear"
++	bic     r6, r6, #(1 << 10)              @ clear it in "mmuset"
++#endif
++	mrc	p15, 0, r0, c1, c0, 0		@ read control register
++	bic	r0, r0, r5			@ clear bits them
++	orr	r0, r0, r6			@ set them
++ THUMB(	orr	r0, r0, #1 << 30	)	@ Thumb exceptions
++	mov	pc, lr				@ return to head.S:__ret
++ENDPROC(__v7_setup)
++
++	/*   AT
++	 *  TFR   EV X F   IHD LR    S
++	 * .EEE ..EE PUI. .TAT 4RVI ZWRS BLDP WCAM
++	 * rxxx rrxx xxx0 0101 xxxx xxxx x111 xxxx < forced
++	 *   11    0 110    1  0011 1100 .111 1101 < we want
++	 */
++	.type	v7_crval, #object
++v7_crval:
++	crval	clear=0x0120c302, mmuset=0x30c23c7d, ucset=0x00c01c7c
++
++__v7_setup_stack:
++	.space	4 * 11				@ 11 registers
++
++	__INITDATA
++
++	.type	v7_processor_functions, #object
++ENTRY(v7_processor_functions)
++	.word	v7_early_abort
++	.word	v7_pabort
++	.word	cpu_v7_proc_init
++	.word	cpu_v7_proc_fin
++	.word	cpu_v7_reset
++	.word	cpu_v7_do_idle
++	.word	cpu_v7_dcache_clean_area
++	.word	cpu_v7_switch_mm
++	.word	cpu_v7_set_pte_ext
++	.word	0
++	.word	0
++	.word	0
++	.size	v7_processor_functions, . - v7_processor_functions
++
++	.section ".rodata"
++
++	.type	cpu_arch_name, #object
++cpu_arch_name:
++	.asciz	"armv7"
++	.size	cpu_arch_name, . - cpu_arch_name
++
++	.type	cpu_elf_name, #object
++cpu_elf_name:
++	.asciz	"v7"
++	.size	cpu_elf_name, . - cpu_elf_name
++	.align
++
++	.section ".proc.info.init", #alloc, #execinstr
++
++	.type	__v7_ca15mp_proc_info, #object
++__v7_ca15mp_proc_info:
++	.long	0x410fc0f0		@ Required ID value
++	.long	0xff0ffff0		@ Mask for ID
++	ALT_SMP(.long \
++		PMD_TYPE_SECT | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF | \
++		PMD_FLAGS_SMP)
++	ALT_UP(.long \
++		PMD_TYPE_SECT | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF | \
++		PMD_FLAGS_UP)
++		/* PMD_SECT_XN is set explicitly in head.S for LPAE */
++	.long   PMD_TYPE_SECT | \
++		PMD_SECT_XN | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF
++	b	__v7_ca15mp_setup
++	.long	cpu_arch_name
++	.long	cpu_elf_name
++	.long	HWCAP_SWP|HWCAP_HALF|HWCAP_THUMB|HWCAP_FAST_MULT|HWCAP_EDSP|HWCAP_TLS
++	.long	cpu_v7_name
++	.long	v7_processor_functions
++	.long	v7wbi_tlb_fns
++	.long	v6_user_fns
++	.long	v7_cache_fns
++	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
++
++	/*
++	 * Match any ARMv7 processor core.
++	 */
++	.type	__v7_proc_info, #object
++__v7_proc_info:
++	.long	0x000f0000		@ Required ID value
++	.long	0x000f0000		@ Mask for ID
++	ALT_SMP(.long \
++		PMD_TYPE_SECT | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF | \
++		PMD_FLAGS_SMP)
++	ALT_UP(.long \
++		PMD_TYPE_SECT | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF | \
++		PMD_FLAGS_UP)
++		/* PMD_SECT_XN is set explicitly in head.S for LPAE */
++	.long   PMD_TYPE_SECT | \
++		PMD_SECT_XN | \
++		PMD_SECT_AP_WRITE | \
++		PMD_SECT_AP_READ | \
++		PMD_SECT_AF
++	W(b)	__v7_setup
++	.long	cpu_arch_name
++	.long	cpu_elf_name
++	.long	HWCAP_SWP|HWCAP_HALF|HWCAP_THUMB|HWCAP_FAST_MULT|HWCAP_EDSP|HWCAP_TLS
++	.long	cpu_v7_name
++	.long	v7_processor_functions
++	.long	v7wbi_tlb_fns
++	.long	v6_user_fns
++	.long	v7_cache_fns
++	.size	__v7_proc_info, . - __v7_proc_info
 
 -- 
 Catalin
