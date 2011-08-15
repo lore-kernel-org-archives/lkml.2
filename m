@@ -1,62 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab1HOPMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:12:22 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:46703 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab1HOPMT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:12:19 -0400
-Date: Mon, 15 Aug 2011 11:10:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Joe Jin <joe.jin@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>
-Subject: Re: [Xen-devel] Re: [patch] xen-blkback: sync I/O after backend
- disconnected
-Message-ID: <20110815151042.GA22541@dumpdata.com>
-References: <4E48A6A6.4040706@oracle.com>
- <20110815144610.GA3707@infradead.org>
+	id S1754473Ab1HOPMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:12:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754431Ab1HOPM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:12:26 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, shaohua <shli@kernel.org>,
+        Vivek Goyal <vgoyal@in.ibm.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Mike Snitzer <msnitzer@redhat.com>
+Subject: Re: [patch,v2] block: fix flush machinery for stacking drivers with differring flush flags
+References: <x497h6iphx4.fsf@segfault.boston.devel.redhat.com>
+	<20110813132910.GB4254@htj.dyndns.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 15 Aug 2011 11:12:03 -0400
+In-Reply-To: <20110813132910.GB4254@htj.dyndns.org> (Tejun Heo's message of
+	"Sat, 13 Aug 2011 15:29:10 +0200")
+Message-ID: <x49zkja7lq4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815144610.GA3707@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4E493700.014C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 10:46:10AM -0400, Christoph Hellwig wrote:
-> On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
-> > When backend disconnect, sync IO requests to the disk.
-> 
-> Care to explain why?
+Tejun Heo <tj@kernel.org> writes:
 
-I was thinking it might be a good idea to do that when a disk
-(file, LVM, real block device) is released from a guest just in case
-there is some outstanding I/Os. But then I realized that we
-bypasses the page cache anyhow - so there should be no outstanding I/O
-requests - unless they are in the disk queue.
+> Hello,
+>
+> On Fri, Aug 12, 2011 at 03:07:51PM -0400, Jeff Moyer wrote:
+>> Changes from v1->v2:
+>> - Moved the detection of empty flush requests into blk_insert_flush.
+>> - Got rid of REQ_FLUSH_SEQ in the CLONE_FLAGS.
+>
+> Heh yeah, this looks pretty good to me. :)
+>
+>> @@ -312,6 +309,19 @@ void blk_insert_flush(struct request *rq)
+>>  		rq->cmd_flags &= ~REQ_FUA;
+>>  
+>>  	/*
+>> +	 * An empty flush handed down from a stacking driver may
+>> +	 * translate into nothing if the underlying device does not
+>> +	 * advertise a write-back cache.  In this case, simply
+>> +	 * complete the request.
+>> +	 */
+>> +	if (!policy && !blk_rq_bytes(rq)) {
+>> +		__blk_end_bidi_request(rq, 0, 0, 0);
+>> +		return;
+>> +	}
+>
+> Hmmm... doesn't !policy imply !blk_rq_bytes() with your change just
+> merged to Jens' tree?
 
-And the guest would normally issues a FLUSH when unmounting the
-disk. Hm, I wonder what the conditions are when we forcibly kill the
-guest - there might be outstanding I/Os in the disk's cache -
-at which point we should probably sync the write cache, no?
+Yes, I'll fix that up.
 
-> 
-> Also you'll just need a sync_blockdev, fsync_bdev does far to many
-> things that don't make any sense when you don't have a file system
-> mounted on a device.
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+>> @@ -319,6 +329,7 @@ void blk_insert_flush(struct request *rq)
+>>  	if ((policy & REQ_FSEQ_DATA) &&
+>>  	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
+>>  		list_add_tail(&rq->queuelist, &q->queue_head);
+>> +		blk_run_queue_async(q);
+>>  		return;
+>>  	}
+>
+> In the other message, you said,
+>
+>> Well, the only time we need to run the queue is when the request has
+>> data, has REQ_FUA set, and the underlying queue's flush flags contain
+>> only REQ_FUA.  In code:
+>> 
+>> if (rq->cmd_flags & REQ_FUA && q->flush_flags == REQ_FUA)
+>>        blk_run_queue_async(q);
+>
+> But this can't happen because a queue can't have REQ_FUA without
+> REQ_FLUSH (it doesn't make any sense).  blk_queue_flush() will trigger
+> WARN_ON_ONCE() and turn off REQ_FUA in such cases.
+
+I confused REQ_FSEQ_DATA with REQ_FUA.  The bottom line is that the
+logic in blk_insert_flush would have to be duplicated in
+blk_insert_cloned_request in order to move the queue kick up the call
+stack.  I don't think that's a clean way to do things.
+
+> That said, it's kinda unclear who should be responsible for kicking
+> the queue.  __elv_add_request() does it for some but not all.
+> __make_request() always activates the queue which sometimes ends up
+> doing it again after __elv_add_request().  I think kicking the queue
+> after short circuit insert probably is the right thing to do.
+
+OK.  I'll post a follow-up with that one fix above.  Hopefully that will
+do it.  ;-)
+
+Cheers,
+Jeff
