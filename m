@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab1HOEEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 00:04:08 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45506 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab1HOEEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 00:04:04 -0400
-Message-ID: <4E489AAF.7080906@gmail.com>
-Date: Sun, 14 Aug 2011 22:03:59 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: peterz@infradead.org, tglx@linutronix.de
-CC: Frederic Weisbecker <fweisbec@gmail.com>, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@elte.hu,
-        paulus@samba.org, johnstul@us.ibm.com, rostedt@goodmis.org
-Subject: Re: [PATCH 1/6] trace: add tracepoints to timekeeping code - xtime
- changes
-References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490903-24600-1-git-send-email-dsahern@gmail.com> <20110617132322.GB25197@somewhere.redhat.com> <4DFB60FF.1080500@gmail.com>
-In-Reply-To: <4DFB60FF.1080500@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751841Ab1HOEFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 00:05:19 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46888 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab1HOEFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 00:05:14 -0400
+Date: Mon, 15 Aug 2011 14:04:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the security-testing
+ tree
+Message-Id: <20110815140457.e26185cd86f51defd5e562a3@canb.auug.org.au>
+In-Reply-To: <20110812124723.30fe0e364394fdd4900cb2e3@canb.auug.org.au>
+References: <20110812124723.30fe0e364394fdd4900cb2e3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__15_Aug_2011_14_04_57_+1000_GXF1FaSmIrT6gkFt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas/Peter:
+--Signature=_Mon__15_Aug_2011_14_04_57_+1000_GXF1FaSmIrT6gkFt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 06/17/2011 08:13 AM, David Ahern wrote:
-> 
-> 
-> On 06/17/2011 07:23 AM, Frederic Weisbecker wrote:
->> On Tue, Jun 07, 2011 at 05:55:03PM -0600, David Ahern wrote:
->>> Trace points in timekeeping.c where xtime is modified by a user
->>> or ntp.
->>>
->>> Signed-off-by: David Ahern <dsahern@gmail.com>
->>> ---
->>>  include/trace/events/timekeeping.h |   43 ++++++++++++++++++++++++++++++++++++
->>>  kernel/time/timekeeping.c          |    8 ++++++
->>>  2 files changed, 51 insertions(+), 0 deletions(-)
->>>  create mode 100644 include/trace/events/timekeeping.h
->>>
->>> diff --git a/include/trace/events/timekeeping.h b/include/trace/events/timekeeping.h
->>> new file mode 100644
->>> index 0000000..3d5d083
->>> --- /dev/null
->>> +++ b/include/trace/events/timekeeping.h
->>> @@ -0,0 +1,43 @@
->>> +#undef TRACE_SYSTEM
->>> +#define TRACE_SYSTEM timekeeping
->>> +
->>> +#if !defined(_TRACE_TIMEKEEP_H) || defined(TRACE_HEADER_MULTI_READ)
->>> +#define _TRACE_TIMEKEEP_H
->>> +
->>> +#include <linux/tracepoint.h>
->>> +#include <linux/time.h>
->>> +
->>> +DECLARE_EVENT_CLASS(tod_template,
->>> +
->>> +	TP_PROTO(const struct timespec *tv),
->>> +
->>> +	TP_ARGS(tv),
->>> +
->>> +	TP_STRUCT__entry(
->>> +		__field( __kernel_time_t,	tv_sec)
->>> +		__field( long,			tv_nsec)
->>> +	),
->>> +
->>> +	TP_fast_assign(
->>> +		__entry->tv_sec  = tv->tv_sec;
->>> +		__entry->tv_nsec = tv->tv_nsec;
->>> +	),
->>> +
->>> +	TP_printk("tv_sec=%ld tv_nsec=%ld", __entry->tv_sec, __entry->tv_nsec)
->>> +);
->>> +
->>> +DEFINE_EVENT(tod_template, settimeofday,
->>> +	TP_PROTO(const struct timespec *tv),
->>> +	TP_ARGS(tv));
->>> +
->>> +DEFINE_EVENT(tod_template, timekeeping_inject_offset,
->>> +	TP_PROTO(const struct timespec *tv),
->>> +	TP_ARGS(tv));
->>> +
->>> +DEFINE_EVENT(tod_template, timekeeping_inject_sleeptime,
->>> +	TP_PROTO(const struct timespec *tv),
->>> +	TP_ARGS(tv));
->>
->> Does the fact it's any of the three way of updating xtime make any
->> difference from the user point of view?
-> 
-> This use case only cares that xtime is updated.
-> 
->>
->> If not can we rather factorize that in a single settimeofday tracepoint?
->> Or update_time_of_day if we don't want to confuse the user with the
->> syscall.
-> 
-> Peter and Thomas expressed interest in timekeeping tracepoints. How the
-> update happens might be wanted. If desired I can consolidate xtime = *tv
-> into a single update function and put the trace point there.
+Hi James,
 
-Any comments on the proposed trace points in the timekeeping code? I am
-working on a new spin of the patches and would like to know if there are
-changes needed here too.
+On Fri, 12 Aug 2011 12:47:23 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the security-testing tree, today's linux-next build
+> (powerpc ppc64_defconfig) failed like this:
+>=20
+> init/mounts.o: In function `security_old_inode_init_security':
+> (.opd+0xf0): multiple definition of `security_old_inode_init_security'
+> init/main.o:(.opd+0x108): first defined here
+> init/mounts.o: In function `.security_old_inode_init_security':
+> (.text+0x50): multiple definition of `.security_old_inode_init_security'
+> init/main.o:(.text+0x110): first defined here
+>=20
+> etc ... (lots and lots)
+>=20
+> Casued by commit e1c9b23adbe8 ("evm: building without EVM enabled fixes").
+>=20
+> Please, please, build test this stuff.  This is the same error that that
+> patch was supposed to fix but on another function ...
+>=20
+> I have used the security-tree tree from next-20110809 again.
 
-Thanks,
-David
+I am still getting this ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__15_Aug_2011_14_04_57_+1000_GXF1FaSmIrT6gkFt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSJrpAAoJEDMEi1NhKgbs7VEH/RbUcTnS+fbTwjblR/RCexAK
+c09NVBLOsSs0PLTx9YtX+JWqV9SSHClK9oPQABGF4PxrYSjs67aW0NbTjohosO+D
+XhZI4p0GtooS/zXEnIsSuCwxT4WKpnyAcE11it24zfZHPhqwpTSibYHt4zxEwRIz
+whv/NRaoCqmOK8A8YTpsBZx7huxHbu8vwgegz0F/TpTEqAvqKbhZRISCHm9MZd6N
+6N1Sl6CVixfaiLxpbgi2UNrZTOaKfVVGWnxEyukdhNJE1r2W4rWuPfVR7x0iyATl
+4oMyBGU7ife6woM2jJ53+4nKTVjyZXAVMKc/Ii1clLlftpme9emqmXnjQncpvqw=
+=/UxF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__15_Aug_2011_14_04_57_+1000_GXF1FaSmIrT6gkFt--
