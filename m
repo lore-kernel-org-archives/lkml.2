@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab1HOSeC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:34:02 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:56074 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab1HOSeB (ORCPT
+	id S1752330Ab1HOSfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:35:47 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:62176 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab1HOSfq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:34:01 -0400
-Date: Mon, 15 Aug 2011 20:33:59 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Pavel Roskin <proski@gnu.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sparse: always enable endian checks
-Message-ID: <20110815183358.GA31530@merkur.ravnborg.org>
-References: <20110815160440.6296.95762.stgit@mj>
+	Mon, 15 Aug 2011 14:35:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815160440.6296.95762.stgit@mj>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E4964F1.1020900@zytor.com>
+References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+ <4E493449.70907@mit.edu> <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
+ <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com>
+ <4E494557.8080708@zytor.com> <CAObL_7HAhSaknKRD=0BGWYdZaanX9fOc+i2B74K844T=1r6yGg@mail.gmail.com>
+ <4E4964F1.1020900@zytor.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 15 Aug 2011 14:35:26 -0400
+X-Google-Sender-Auth: -sDfOzprbk5BrXQqzIAMspNYNg4
+Message-ID: <CAObL_7GNyj2u1smn+tmg1W+Su4uXL9OgYCT-k+9KPuSS4v0gXQ@mail.gmail.com>
+Subject: Re: x86 memcpy performance
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, melwyn lobo <linux.melwyn@gmail.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 12:04:41PM -0400, Pavel Roskin wrote:
-> Checks enabled by __CHECK_ENDIAN__ produce less than a half of the
-> sparse warnings.  For instance, the allyesconfig configuration on
-> linux-next (tag next-20110812) produces on x86_64:
-> 
->                  no __CHECK_ENDIAN__   with __CHECK_ENDIAN__
-> stderr bytes:    1155037               1992954 (73% increase)
-> stderr lines:    10716                 18657   (74% increase)
-> affected files:  1191                  1458    (22% increase)
-> 
-> It is no longer true that __CHECK_ENDIAN__ produces so many warnings
-> that other sparse warnings drown in the noise.
-> 
-> Janitors going through the whole tree are already prepared to search for
-> the warnings they want to fix.
-> 
-> The main point of this patch is to make sure that developers of a
-> particular driver who use sparse rarely get all the warnings for their
-> code even if they forget to specify __CHECK_ENDIAN__ or mistype it.
-> 
-> Some developers actually added __CHECK_ENDIAN__ to the driver makefiles
-> so they don't forget to use it.  Remove them now.
-> 
-> Remove all references to __CHECK_ENDIAN__ from the documentation except
-> the Chinese version, which would need to be updated separately.
-> 
-> Signed-off-by: Pavel Roskin <proski@gnu.org>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+On Mon, Aug 15, 2011 at 2:26 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 08/15/2011 09:58 AM, Andrew Lutomirski wrote:
+>> On Mon, Aug 15, 2011 at 12:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 08/15/2011 08:36 AM, Andrew Lutomirski wrote:
+>>>>
+>>>> (*)  kernel_fpu_begin is a bad name.  It's only safe to use integer
+>>>> instructions inside a kernel_fpu_begin section because MXCSR (and the
+>>>> 387 equivalent) could contain garbage.
+>>>>
+>>>
+>>> Uh... no, it just means you have to initialize the settings.  It's a
+>>> perfectly good name, it's called kernel_fpu_begin, not kernel_fp_begin.
+>>
+>> I prefer get_xstate / put_xstate, but this could rapidly devolve into
+>> bikeshedding. :)
+>>
+>
+> a) Quite.
+>
+> b) xstate is not architecture-neutral.
 
-Maybe ask Michal to merge it?
+Are there any architecture-neutral users of this thing?  If I were
+writing generic code, I would expect:
 
-	Sam
+kernel_fpu_begin();
+foo *= 1.5;
+kernel_fpu_end();
+
+to work, but I would not expect:
+
+kernel_fpu_begin();
+use_xmm_registers();
+kernel_fpu_end();
+
+to make any sense.
+
+Since the former does not actually work, I would hope that there is no
+non-x86-specific user.
+
+--Andy
