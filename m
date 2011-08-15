@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab1HOS2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:28:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57665 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab1HOS2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:28:39 -0400
-Message-ID: <4E496529.5080702@zytor.com>
-Date: Mon, 15 Aug 2011 11:27:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752167Ab1HOSeC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:34:02 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:56074 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790Ab1HOSeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 14:34:01 -0400
+Date: Mon, 15 Aug 2011 20:33:59 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Pavel Roskin <proski@gnu.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sparse: always enable endian checks
+Message-ID: <20110815183358.GA31530@merkur.ravnborg.org>
+References: <20110815160440.6296.95762.stgit@mj>
 MIME-Version: 1.0
-To: Mike Waychison <mikew@google.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Greg KH <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation: add Internal-reference-ID: patch tag
-References: <20110729180028.6a2091b3.rdunlap@xenotime.net> <20110730235644.GA29671@suse.de> <CAGTjWtDXeMnHWZMmRezTSYmHr3D1N1KRXzzdjQh9HJMxvj8pwg@mail.gmail.com> <4E359A74.7090408@zytor.com> <20110813123401.76ffcfcc.rdunlap@xenotime.net> <2d50505d-3500-47d8-84d4-b32850bdec7e@email.android.com> <20110814202322.16b50ff5.rdunlap@xenotime.net> <4E48AC7D.4030908@zytor.com> <CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com>
-In-Reply-To: <CAGTjWtD2Xz6gE6mDM6zOqDic=JZ5A9UtRzTLnUTAputc=KEZ+Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815160440.6296.95762.stgit@mj>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2011 10:39 AM, Mike Waychison wrote:
->>
->> I would like to see the <id@owner> format I mentioned.
+On Mon, Aug 15, 2011 at 12:04:41PM -0400, Pavel Roskin wrote:
+> Checks enabled by __CHECK_ENDIAN__ produce less than a half of the
+> sparse warnings.  For instance, the allyesconfig configuration on
+> linux-next (tag next-20110812) produces on x86_64:
 > 
-> Is there a middle ground if we say:
+>                  no __CHECK_ENDIAN__   with __CHECK_ENDIAN__
+> stderr bytes:    1155037               1992954 (73% increase)
+> stderr lines:    10716                 18657   (74% increase)
+> affected files:  1191                  1458    (22% increase)
 > 
-> Internal-reference-ID: <arbitrarytextforid@owner>
+> It is no longer true that __CHECK_ENDIAN__ produces so many warnings
+> that other sparse warnings drown in the noise.
 > 
-> so
+> Janitors going through the whole tree are already prepared to search for
+> the warnings they want to fix.
 > 
-> Internal-reference-ID: <2011.0729.id1@rdunlap>
-> Internal-reference-ID: <bug-45322143@google>
+> The main point of this patch is to make sure that developers of a
+> particular driver who use sparse rarely get all the warnings for their
+> code even if they forget to specify __CHECK_ENDIAN__ or mistype it.
 > 
+> Some developers actually added __CHECK_ENDIAN__ to the driver makefiles
+> so they don't forget to use it.  Remove them now.
+> 
+> Remove all references to __CHECK_ENDIAN__ from the documentation except
+> the Chinese version, which would need to be updated separately.
+> 
+> Signed-off-by: Pavel Roskin <proski@gnu.org>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-Personally I don't care if they are separate lines or all on the same line.
+Maybe ask Michal to merge it?
 
-	-hpa
-
+	Sam
