@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab1HOPMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:12:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754431Ab1HOPM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:12:26 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, shaohua <shli@kernel.org>,
-        Vivek Goyal <vgoyal@in.ibm.com>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, Mike Snitzer <msnitzer@redhat.com>
-Subject: Re: [patch,v2] block: fix flush machinery for stacking drivers with differring flush flags
-References: <x497h6iphx4.fsf@segfault.boston.devel.redhat.com>
-	<20110813132910.GB4254@htj.dyndns.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 15 Aug 2011 11:12:03 -0400
-In-Reply-To: <20110813132910.GB4254@htj.dyndns.org> (Tejun Heo's message of
-	"Sat, 13 Aug 2011 15:29:10 +0200")
-Message-ID: <x49zkja7lq4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754526Ab1HOPM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:12:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63323 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab1HOPM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 11:12:57 -0400
+Date: Mon, 15 Aug 2011 17:12:53 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 2/3] regulator: tps65910: fix list_voltage for VDD1 and
+ VDD2
+Message-ID: <20110815151253.GC4189@localhost>
+References: <1313405127-2724-1-git-send-email-jhovold@gmail.com>
+ <1313405127-2724-2-git-send-email-jhovold@gmail.com>
+ <20110815130910.GD3927@opensource.wolfsonmicro.com>
+ <20110815142948.GB4189@localhost>
+ <20110815144910.GA29685@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815144910.GA29685@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Mon, Aug 15, 2011 at 11:49:13PM +0900, Mark Brown wrote:
+> On Mon, Aug 15, 2011 at 04:29:48PM +0200, Johan Hovold wrote:
+> > On Mon, Aug 15, 2011 at 10:09:13PM +0900, Mark Brown wrote:
+> 
+> > > Why is this a separate patch to the previous one?
+> 
+> > Because it fixes a different bug (although introduced by the same commit
+> > and the same kind of programming error).
+> 
+> You've got a bunch of missing break statements introduced by the same
+> commit in the same driver causing the same runtime issue...
 
-> Hello,
->
-> On Fri, Aug 12, 2011 at 03:07:51PM -0400, Jeff Moyer wrote:
->> Changes from v1->v2:
->> - Moved the detection of empty flush requests into blk_insert_flush.
->> - Got rid of REQ_FLUSH_SEQ in the CLONE_FLAGS.
->
-> Heh yeah, this looks pretty good to me. :)
->
->> @@ -312,6 +309,19 @@ void blk_insert_flush(struct request *rq)
->>  		rq->cmd_flags &= ~REQ_FUA;
->>  
->>  	/*
->> +	 * An empty flush handed down from a stacking driver may
->> +	 * translate into nothing if the underlying device does not
->> +	 * advertise a write-back cache.  In this case, simply
->> +	 * complete the request.
->> +	 */
->> +	if (!policy && !blk_rq_bytes(rq)) {
->> +		__blk_end_bidi_request(rq, 0, 0, 0);
->> +		return;
->> +	}
->
-> Hmmm... doesn't !policy imply !blk_rq_bytes() with your change just
-> merged to Jens' tree?
+Well, the first bug prevents any device from being used at all (as probe
+always fails). The second bug makes list_voltage return the wrong value
+for two regulators.
 
-Yes, I'll fix that up.
+I simply prefer fixing them separately as it will be more clear from the
+changelog what behaviours are being fixed -- especially as they are
+marked for stable.
 
->> @@ -319,6 +329,7 @@ void blk_insert_flush(struct request *rq)
->>  	if ((policy & REQ_FSEQ_DATA) &&
->>  	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
->>  		list_add_tail(&rq->queuelist, &q->queue_head);
->> +		blk_run_queue_async(q);
->>  		return;
->>  	}
->
-> In the other message, you said,
->
->> Well, the only time we need to run the queue is when the request has
->> data, has REQ_FUA set, and the underlying queue's flush flags contain
->> only REQ_FUA.  In code:
->> 
->> if (rq->cmd_flags & REQ_FUA && q->flush_flags == REQ_FUA)
->>        blk_run_queue_async(q);
->
-> But this can't happen because a queue can't have REQ_FUA without
-> REQ_FLUSH (it doesn't make any sense).  blk_queue_flush() will trigger
-> WARN_ON_ONCE() and turn off REQ_FUA in such cases.
-
-I confused REQ_FSEQ_DATA with REQ_FUA.  The bottom line is that the
-logic in blk_insert_flush would have to be duplicated in
-blk_insert_cloned_request in order to move the queue kick up the call
-stack.  I don't think that's a clean way to do things.
-
-> That said, it's kinda unclear who should be responsible for kicking
-> the queue.  __elv_add_request() does it for some but not all.
-> __make_request() always activates the queue which sometimes ends up
-> doing it again after __elv_add_request().  I think kicking the queue
-> after short circuit insert probably is the right thing to do.
-
-OK.  I'll post a follow-up with that one fix above.  Hopefully that will
-do it.  ;-)
-
-Cheers,
-Jeff
+Thanks,
+Johan
