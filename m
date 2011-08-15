@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab1HONCC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 09:02:02 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:56702 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab1HONCA (ORCPT
+	id S1752974Ab1HONGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 09:06:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:51076 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab1HONGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 09:02:00 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: Re: [PATCH 2/2] omap3: ISP: Kernel crash when attempting suspend
-Date: Mon, 15 Aug 2011 15:02:06 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mchehab@infradead.org, linux-omap@vger.kernel.org,
-        Abhilash K V <abhilash.kv@ti.com>
-References: <1312985006-19345-1-git-send-email-deepthy.ravi@ti.com>
-In-Reply-To: <1312985006-19345-1-git-send-email-deepthy.ravi@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 15 Aug 2011 09:06:06 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=_E3Q4npPQ1wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=yu6Fyl-I2SbDMTBwaBgA:9 a=b0tvHVN0wDhPKIYee44A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on
+ ftrace nops
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+In-Reply-To: <4E47A33E.5020202@hitachi.com>
+References: <20110810162222.017387055@goodmis.org>
+	 <4E43209D.7090104@hitachi.com>
+	 <1313022842.18583.282.camel@gandalf.stny.rr.com>
+	 <4E43769C.9000901@hitachi.com>
+	 <1313067691.18583.290.camel@gandalf.stny.rr.com>
+	 <4E44967C.1090101@hitachi.com>
+	 <1313154537.18583.319.camel@gandalf.stny.rr.com>
+	 <4E464D6C.9020807@hitachi.com>
+	 <1313290684.18583.362.camel@gandalf.stny.rr.com>
+	 <4E47A33E.5020202@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 15 Aug 2011 09:06:02 -0400
+Message-ID: <1313413562.15704.5.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108151502.07234.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 2011-08-14 at 19:28 +0900, Masami Hiramatsu wrote:
 
-On Wednesday 10 August 2011 16:03:26 Deepthy Ravi wrote:
-> From: Abhilash K V <abhilash.kv@ti.com>
+> > The point I was making is, if I need to get ftrace function tracing
+> > being good enough for function graph tracer, then it should work with
+> > kprobes without any issues.
 > 
-> This patch fixes the kernel crash introduced by the previous
-> patch:
-> 	omap3: ISP: Fix the failure of CCDC capture during
-> 	suspend/resume.
-> This null pointer exception happens when attempting suspend
-> while the ISP driver is not being used. The current patch
-> fixes this by deferring the code (as introduced in the
-> aforementioned patch) to handle  buffer-starvation to get
-> called only if the ISP reference count is non-zero.
-> An additional safety check is also added to ensure that
-> buffer-starvation logic kicks in for an empty dmaqueue only
-> if the ISP pipeline is not in the stopped state.
+> No, I don't think so, because kprobes user may trace a flags register or
+> segment registers. However, function graph tracer only needs stack
+> register etc. Thus, if ftrace function tracing is good enough for
+> kprobes handlers, it is enough for function graph tracer too.
 
-What about squashing this with the previous patch then ?
+The added code needed for ftrace is not much more. We just need to save
+all of pt_regs and that should work (I already save most of it). The
+flags can be saved, but things like compare flags will be useless, as
+those are used. But compare flags are undefined when calling a function
+anyway.
 
-I'll review patch 1/2, just give me a bit more time. The race condition is 
-tricky so I need to rest a bit before attacking it :-)
 
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
-> ---
->  drivers/media/video/omap3isp/isp.c      |   12 ++++++------
->  drivers/media/video/omap3isp/ispvideo.c |    4 +++-
->  2 files changed, 9 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/media/video/omap3isp/isp.c
-> b/drivers/media/video/omap3isp/isp.c index 6604fbd..6acdedc 100644
-> --- a/drivers/media/video/omap3isp/isp.c
-> +++ b/drivers/media/video/omap3isp/isp.c
-> @@ -1573,6 +1573,9 @@ static int isp_pm_prepare(struct device *dev)
->  	unsigned long flags;
+> > If I need to do the work anyway (for
+> > function graph tracing) then why not use it directly with kprobes
+> > instead of doing more hooks just in the kprobe_trace?
 > 
->  	WARN_ON(mutex_is_locked(&isp->isp_mutex));
-> +	if (isp->ref_count == 0)
-> +		return 0;
-> +
->  	spin_lock_irqsave(&pipe->lock, flags);
->  	pipe->state |= ISP_PIPELINE_PREPARE_SUSPEND;
->  	spin_unlock_irqrestore(&pipe->lock, flags);
-> @@ -1581,9 +1584,6 @@ static int isp_pm_prepare(struct device *dev)
->  	if (err < 0)
->  		return err;
-> 
-> -	if (isp->ref_count == 0)
-> -		return 0;
-> -
->  	reset = isp_suspend_modules(isp);
->  	isp_disable_interrupts(isp);
->  	isp_save_ctx(isp);
-> @@ -1613,13 +1613,13 @@ static int isp_pm_resume(struct device *dev)
->  	struct isp_pipeline *pipe = to_isp_pipeline(&video->video.entity);
->  	unsigned long flags;
-> 
-> +	if (isp->ref_count == 0)
-> +		return 0;
-> +
->  	spin_lock_irqsave(&pipe->lock, flags);
->  	pipe->state &= ~ISP_PIPELINE_PREPARE_SUSPEND;
->  	spin_unlock_irqrestore(&pipe->lock, flags);
-> 
-> -	if (isp->ref_count == 0)
-> -		return 0;
-> -
->  	return isp_enable_clocks(isp);
->  }
-> 
-> diff --git a/drivers/media/video/omap3isp/ispvideo.c
-> b/drivers/media/video/omap3isp/ispvideo.c index bf149a7..ffb339c 100644
-> --- a/drivers/media/video/omap3isp/ispvideo.c
-> +++ b/drivers/media/video/omap3isp/ispvideo.c
-> @@ -726,8 +726,10 @@ int isp_video_handle_buffer_starvation(struct
-> isp_video *video) struct isp_video_queue *queue = video->queue;
->  	struct isp_video_buffer *buf;
->  	struct list_head *head = &video->dmaqueue;
-> +	struct isp_ccdc_device *ccdc = &video->isp->isp_ccdc;
-> 
-> -	if (list_empty(&video->dmaqueue)) {
-> +	if (list_empty(&video->dmaqueue)
-> +		&& ccdc->state != ISP_PIPELINE_STREAM_STOPPED) {
->  		err = isp_video_deq_enq(queue);
->  	} else if (head->next->next == head) {
->  		/* only one buffer is left on dmaqueue */
+> >From the kprobe-tracer point of view, I don't mind. I just care
+> about complexity, and compatibility of kprobe handlers.
 
--- 
-Regards,
+Right, so far there's not much changes to the kprobe side. I'll see if I
+can make ftrace do all the hard work to get the proper registers. I want
+to make as much as possible stay in the generic kprobe code, and not
+touch the arch code. But I may still need to do something like
+'increment rip' or whatever.
 
-Laurent Pinchart
+Note, we will need to touch kprobes one way or another. Either we have
+kprobes hook to ftrace, or we need to do the nop skip trick, which will
+probably be as intrusive in the kprobe code.
+
+Thanks!
+
+-- Steve
+
+
