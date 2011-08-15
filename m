@@ -1,55 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1HNUyk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Aug 2011 16:54:40 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:51059 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638Ab1HNUyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Aug 2011 16:54:39 -0400
-From: Sergei Trofimovich <slyfox@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Sergei Trofimovich <slyfox@gentoo.org>,
-        Ben Collins <bcollins@bluecherry.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        =?UTF-8?q?Krzysztof=20Ha=C5=82asa?= <khalasa@piap.pl>,
-        devel@driverdev.osuosl.org
-Subject: =?UTF-8?q?=5BPATCH=5D=20staging=3A=20solo6x10/g723=3A=20fix=20build=20failure?=
-Date: Sun, 14 Aug 2011 23:52:57 +0300
-Message-Id: <1313355177-12605-7-git-send-email-slyfox@gentoo.org>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754162Ab1HNVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Aug 2011 17:09:29 -0400
+Received: from mail.najdschools.edu.sa ([212.119.79.83]:43953 "EHLO
+	mail.najdschools.edu.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab1HNVJ2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Aug 2011 17:09:28 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Re: Thanks
+To: Recipients <info@mail.com>
+From: Song Li <info@mail.com>
+Date: Mon, 15 Aug 2011 05:13:46 -0700
+Reply-To: lilsong@w.cn
+Message-Id: <20110814210127.D1E7549EC2E@mail.najdschools.edu.sa>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found on allmodconfig build (ARCH=alpha)
-
-    drivers/staging/solo6x10/g723.c: In function 'snd_solo_pcm_open':
-    drivers/staging/solo6x10/g723.c:139: error: implicit declaration of function 'kzalloc'
-
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-Cc: Ben Collins <bcollins@bluecherry.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: "Krzysztof Hałasa" <khalasa@piap.pl>
-Cc: devel@driverdev.osuosl.org
----
- drivers/staging/solo6x10/g723.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/solo6x10/g723.c b/drivers/staging/solo6x10/g723.c
-index bd8eb92..1a4f19e 100644
---- a/drivers/staging/solo6x10/g723.c
-+++ b/drivers/staging/solo6x10/g723.c
-@@ -22,6 +22,7 @@
- #include <linux/poll.h>
- #include <linux/kthread.h>
- #include <linux/freezer.h>
-+#include <linux/slab.h>
- #include <sound/core.h>
- #include <sound/initval.h>
- #include <sound/pcm.h>
--- 
-1.7.3.4
-
+l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
+together in transferring $19,500,000.USD from my bank to you account.
+Finally if you are interested I shall provide you with more details.
