@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1HOPxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 11:53:01 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38331 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab1HOPw7 (ORCPT
+	id S1754804Ab1HOPxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 11:53:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51689 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab1HOPxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 11:52:59 -0400
+	Mon, 15 Aug 2011 11:53:11 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -19,9 +19,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: [PATCH 05/32] nohz: Move rcu dynticks idle mode handling to idle enter/exit APIs
-Date: Mon, 15 Aug 2011 17:52:02 +0200
-Message-Id: <1313423549-27093-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 09/32] nohz: Move ts->idle_calls into strict idle logic
+Date: Mon, 15 Aug 2011 17:52:06 +0200
+Message-Id: <1313423549-27093-10-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
 References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
@@ -29,11 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To prepare for nohz / idle logic split, pull out the rcu dynticks
-idle mode switching to strict idle entry/exit areas.
-
-So we make the dyntick mode possible without always involving rcu
-extended quiescent state.
+Split the nohz switch in two parts, a first that checks if we can
+really stop the tick, and another that actually stop it. This
+way we can pull out idle_calls stat incrementation into strict
+idle logic.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -48,56 +47,127 @@ Cc: Stephen Hemminger <shemminger@vyatta.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
 ---
- kernel/time/tick-sched.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ kernel/time/tick-sched.c |   87 ++++++++++++++++++++++++---------------------
+ 1 files changed, 46 insertions(+), 41 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index df6bb4c..8937d4a 100644
+index de1b629..2794150 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -385,7 +385,6 @@ static void tick_nohz_stop_sched_tick(ktime_t now)
- 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
- 			ts->idle_jiffies = last_jiffies;
--			rcu_enter_nohz();
- 		}
+@@ -249,48 +249,14 @@ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+  * Called either from the idle loop or from irq_exit() when an idle period was
+  * just interrupted by an interrupt which did not cause a reschedule.
+  */
+-static void tick_nohz_stop_sched_tick(ktime_t now)
++static void tick_nohz_stop_sched_tick(ktime_t now, int cpu, struct tick_sched *ts)
+ {
+ 	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
+-	struct tick_sched *ts;
+ 	ktime_t last_update, expires;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
+-	int cpu;
+-
+-	cpu = smp_processor_id();
+-	ts = &per_cpu(tick_cpu_sched, cpu);
+-
+-	/*
+-	 * If this cpu is offline and it is the one which updates
+-	 * jiffies, then give up the assignment and let it be taken by
+-	 * the cpu which runs the tick timer next. If we don't drop
+-	 * this here the jiffies might be stale and do_timer() never
+-	 * invoked.
+-	 */
+-	if (unlikely(!cpu_online(cpu))) {
+-		if (cpu == tick_do_timer_cpu)
+-			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+-	}
  
- 		ts->idle_sleeps++;
-@@ -429,9 +428,13 @@ out:
+-	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
+-		return;
+-
+-	if (need_resched())
+-		return;
+-
+-	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+-		static int ratelimit;
+-
+-		if (ratelimit < 10) {
+-			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
+-			       (unsigned int) local_softirq_pending());
+-			ratelimit++;
+-		}
+-		return;
+-	}
+ 
+-	ts->idle_calls++;
+ 	/* Read jiffies and the time when jiffies were updated last */
+ 	do {
+ 		seq = read_seqbegin(&xtime_lock);
+@@ -422,18 +388,57 @@ out:
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+ }
+ 
++static bool tick_nohz_can_stop_tick(int cpu, struct tick_sched *ts)
++{
++	/*
++	 * If this cpu is offline and it is the one which updates
++	 * jiffies, then give up the assignment and let it be taken by
++	 * the cpu which runs the tick timer next. If we don't drop
++	 * this here the jiffies might be stale and do_timer() never
++	 * invoked.
++	 */
++	if (unlikely(!cpu_online(cpu))) {
++		if (cpu == tick_do_timer_cpu)
++			tick_do_timer_cpu = TICK_DO_TIMER_NONE;
++	}
++
++	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
++		return false;
++
++	if (need_resched())
++		return false;
++
++	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
++		static int ratelimit;
++
++		if (ratelimit < 10) {
++			printk(KERN_ERR "NOHZ: local_softirq_pending %02x\n",
++			       (unsigned int) local_softirq_pending());
++			ratelimit++;
++		}
++		return false;
++	}
++
++	return true;
++}
++
  static void __tick_nohz_enter_idle(struct tick_sched *ts, int cpu)
  {
  	ktime_t now;
-+	int was_stopped = ts->tick_stopped;
+-	int was_stopped = ts->tick_stopped;
  
  	now = tick_nohz_start_idle(cpu, ts);
- 	tick_nohz_stop_sched_tick(now);
+-	tick_nohz_stop_sched_tick(now);
+ 
+-	if (!was_stopped && ts->tick_stopped) {
+-		ts->idle_jiffies = ts->last_jiffies;
+-		select_nohz_load_balancer(1);
+-		rcu_enter_nohz();
++	if (tick_nohz_can_stop_tick(cpu, ts)) {
++		int was_stopped = ts->tick_stopped;
 +
-+	if (!was_stopped && ts->tick_stopped)
-+		rcu_enter_nohz();
++		ts->idle_calls++;
++		tick_nohz_stop_sched_tick(now, cpu, ts);
++
++		if (!was_stopped && ts->tick_stopped) {
++			ts->idle_jiffies = ts->last_jiffies;
++			select_nohz_load_balancer(1);
++			rcu_enter_nohz();
++		}
+ 	}
  }
  
- void tick_nohz_enter_idle(void)
-@@ -499,8 +502,6 @@ static void tick_nohz_restart_sched_tick(ktime_t now, struct tick_sched *ts)
- 	unsigned long ticks;
- #endif
- 
--	rcu_exit_nohz();
--
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
- 	tick_do_update_jiffies64(now);
-@@ -547,8 +548,10 @@ void tick_nohz_exit_idle(void)
- 	tick_nohz_stop_idle(smp_processor_id(), now);
- 	ts->inidle = 0;
- 
--	if (ts->tick_stopped)
-+	if (ts->tick_stopped) {
-+		rcu_exit_nohz();
- 		tick_nohz_restart_sched_tick(now, ts);
-+	}
- 
- 	local_irq_enable();
- }
 -- 
 1.7.5.4
 
