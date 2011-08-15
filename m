@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1HOLmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 07:42:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61294 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751634Ab1HOLmH (ORCPT
+	id S1752656Ab1HOLqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 07:46:50 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:38643 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1HOLqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 07:42:07 -0400
-Date: Mon, 15 Aug 2011 12:41:47 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Vasily Khoruzhick <anarsoul@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Fix non-LPAE boot regression.
-Message-ID: <20110815114146.GA21596@e102109-lin.cambridge.arm.com>
-References: <201108131556.27301.anarsoul@gmail.com>
- <1313240299-24712-1-git-send-email-anarsoul@gmail.com>
- <CAHkRjk4p1kqwKGiW_XRFU0aap98QkvRGRs0hwsBR4CcfM5RKqA@mail.gmail.com>
- <20110813143903.GQ4775@n2100.arm.linux.org.uk>
+	Mon, 15 Aug 2011 07:46:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110813143903.GQ4775@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <63D130AC-E6DF-4A61-BB69-30212D238F37@tonyibbs.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk>
+	<201105171050.38903.florian@openwrt.org>
+	<37F5AF18-99E5-4516-B31F-00F7BD348ADE@tonyibbs.co.uk>
+	<201107061815.36294.florian@openwrt.org>
+	<5F531701-B760-45F0-989D-669013409FE8@tonyibbs.co.uk>
+	<CAOJsxLFSdPO2ebjM9W9JaNcX80COzn=Y3hFukXZjn+1yY4ivZQ@mail.gmail.com>
+	<63D130AC-E6DF-4A61-BB69-30212D238F37@tonyibbs.co.uk>
+Date: Mon, 15 Aug 2011 14:46:46 +0300
+X-Google-Sender-Auth: zV6PTGFKhvZOb4S6iLA183Ssrq4
+Message-ID: <CAOJsxLEg-9hAQG99TkM+tqdTjZkpZwubOu1qM-6m7B5apZmh_w@mail.gmail.com>
+Subject: Re: RFC: [Restatement] KBUS messaging subsystem
+From: Pekka Enberg <penberg@kernel.org>
+To: Tony Ibbs <tibs@tonyibbs.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux-embedded <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 03:39:03PM +0100, Russell King - ARM Linux wrote:
-> I think this patch is trying to do too much in one go.  It needs splitting
-> up into two, just like is done with the C PGDIR_SHIFT vs PMD_SHIFT stuff
-> (and arguably the first part should be combined with the patch fixing the
-> PGDIR_SHIFT stuff.)
+Hi Tony,
 
-OK, I'll do this and repost the two patches in reply to this one (and
-merge one of them with the PMD_SHIFT but I would avoid reposting the
-full series again).
+On Sun, Aug 7, 2011 at 11:24 PM, Tony Ibbs <tibs@tonyibbs.co.uk> wrote:
+> Real examples of usage that aren't the STB are a bit difficult to give
+> because they belong to customer projects that we're not allowed to
+> talk about.
 
-For patch clarity, I'll fold Vasily's fix as well rather than keeping it
-in a separate patch.
+That's part of the problem, I suppose. We usually don't merge new
+kernel facilities unless we're able to understand (and see) real
+applications that need them.
 
--- 
-Catalin
+On Sun, Aug 7, 2011 at 11:24 PM, Tony Ibbs <tibs@tonyibbs.co.uk> wrote:
+> I assume the real point of your post is that I wrote about the reasons
+> why we made KBUS a kernel module, but did not really address the
+> reasons why KBUS might want to be a kernel module in general usage.
+
+I simply don't see a convincing argument why existing IPC and other
+kernel mechanisms are not sufficient to implement what you need. I'm
+sure there is one but it's not apparent from your emails.
+
+The whole thing feels more like "lets put a message broker into the
+kernel" rather than set of kernel APIs that make sense. I suppose the
+rather extensive ioctl() ABI is partly to blame here.
+
+I'm not saying you need to implement everything in userspace but I'm
+also not convinced we want _all of this_ in the kernel.
+
+                          Pekka
