@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab1HOFH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 01:07:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57750 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab1HOFHz (ORCPT
+	id S1752188Ab1HOFIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 01:08:06 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37521 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986Ab1HOFID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 01:07:55 -0400
+	Mon, 15 Aug 2011 01:08:03 -0400
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Rasesh Mody <rmody@brocade.com>, netdev@vger.kernel.org
-Subject: [PATCH 06/11] drivers/net/bna: do not use EXTRA_CFLAGS
-Date: Mon, 15 Aug 2011 01:07:09 -0400
-Message-Id: <1313384834-24433-7-git-send-email-lacombar@gmail.com>
+        kxie@chelsio.com, James Bottomley <James.Bottomley@suse.de>
+Subject: [PATCH 08/11] drivers/scsi: do not use EXTRA_CFLAGS
+Date: Mon, 15 Aug 2011 01:07:11 -0400
+Message-Id: <1313384834-24433-9-git-send-email-lacombar@gmail.com>
 X-Mailer: git-send-email 1.7.6.153.g78432
 In-Reply-To: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
 References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
@@ -35,23 +35,34 @@ likely to result in build failure or unexpected behavior.
 
 Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
 
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Rasesh Mody <rmody@brocade.com>
-Cc: netdev@vger.kernel.org
----
- drivers/net/bna/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+In the same time, do not needlessly reference $(srctree) in the -I argument.
 
-diff --git a/drivers/net/bna/Makefile b/drivers/net/bna/Makefile
-index a5d604d..babc25f 100644
---- a/drivers/net/bna/Makefile
-+++ b/drivers/net/bna/Makefile
-@@ -8,4 +8,4 @@ obj-$(CONFIG_BNA) += bna.o
- bna-objs := bnad.o bnad_ethtool.o bna_ctrl.o bna_txrx.o
- bna-objs += bfa_ioc.o bfa_ioc_ct.o bfa_cee.o cna_fwimg.o
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: kxie@chelsio.com
+Cc: James Bottomley <James.Bottomley@suse.de>
+---
+ drivers/scsi/cxgbi/cxgb3i/Kbuild |    2 +-
+ drivers/scsi/cxgbi/cxgb4i/Kbuild |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/cxgbi/cxgb3i/Kbuild b/drivers/scsi/cxgbi/cxgb3i/Kbuild
+index 09dbf9e..b3197c9 100644
+--- a/drivers/scsi/cxgbi/cxgb3i/Kbuild
++++ b/drivers/scsi/cxgbi/cxgb3i/Kbuild
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS += -I$(srctree)/drivers/net/cxgb3
++ccflags-y += -Idrivers/net/cxgb3
  
--EXTRA_CFLAGS := -Idrivers/net/bna
-+ccflags-y := -Idrivers/net/bna
+ obj-$(CONFIG_SCSI_CXGB3_ISCSI) += cxgb3i.o
+diff --git a/drivers/scsi/cxgbi/cxgb4i/Kbuild b/drivers/scsi/cxgbi/cxgb4i/Kbuild
+index b9f4af7..4873a25 100644
+--- a/drivers/scsi/cxgbi/cxgb4i/Kbuild
++++ b/drivers/scsi/cxgbi/cxgb4i/Kbuild
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS += -I$(srctree)/drivers/net/cxgb4
++ccflags-y += -Idrivers/net/cxgb4
+ 
+ obj-$(CONFIG_SCSI_CXGB4_ISCSI) += cxgb4i.o
 -- 
 1.7.6.153.g78432
 
