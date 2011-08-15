@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab1HOQ6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 12:58:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44218 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab1HOQ6o convert rfc822-to-8bit (ORCPT
+	id S1751614Ab1HORDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 13:03:02 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41523 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab1HORDB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 12:58:44 -0400
+	Mon, 15 Aug 2011 13:03:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E494557.8080708@zytor.com>
-References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
- <4E493449.70907@mit.edu> <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
- <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com> <4E494557.8080708@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Mon, 15 Aug 2011 12:58:24 -0400
-X-Google-Sender-Auth: FaiA_r1xP5lbIK4Ew61EvJSVzSY
-Message-ID: <CAObL_7HAhSaknKRD=0BGWYdZaanX9fOc+i2B74K844T=1r6yGg@mail.gmail.com>
-Subject: Re: x86 memcpy performance
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, melwyn lobo <linux.melwyn@gmail.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [192.91.66.186]
+In-Reply-To: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
+References: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
+Date: Mon, 15 Aug 2011 12:03:00 -0500
+Message-ID: <CABUK1agNHcS8zB2RKPRg0LO8WRe3Z72CWyO+V1UY9M_+V6VO9Q@mail.gmail.com>
+Subject: Re: [PATCH 0/8] drivers:misc: ti-st: fixes
+From: Pavan Savoy <pavan_savoy@sify.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 12:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/15/2011 08:36 AM, Andrew Lutomirski wrote:
->>
->> (*) �kernel_fpu_begin is a bad name. �It's only safe to use integer
->> instructions inside a kernel_fpu_begin section because MXCSR (and the
->> 387 equivalent) could contain garbage.
->>
+On Wed, Aug 10, 2011 at 10:18 AM,  <pavan_savoy@ti.com> wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+
+Greg,
+
+Resent, this time seems to have appeared properly ... So please review.
+
+
+> resending with fixed up commit messages.
 >
-> Uh... no, it just means you have to initialize the settings. �It's a
-> perfectly good name, it's called kernel_fpu_begin, not kernel_fp_begin.
-
-I prefer get_xstate / put_xstate, but this could rapidly devolve into
-bikeshedding. :)
-
---Andy
+> Pavan Savoy (7):
+>  drivers:misc: ti-st: avoid a misleading dbg msg
+>  drivers:misc:ti-st: platform hooks for chip states
+>  drivers:misc: ti-st: reinit completion on ver read
+>  drivers:misc: ti-st: reinit completion before send
+>  drivers:misc: ti-st: wait for completion at fail
+>  drivers:misc: ti-st: free skb on firmware download
+>  drivers:misc: ti-st: fix unexpected UART close
+>
+> Vijay Badawadagi (1):
+>  drivers:misc: ti-st: fail-safe on wrong pkt type
+>
+>  drivers/misc/ti-st/st_core.c |   10 +++++++++-
+>  drivers/misc/ti-st/st_kim.c  |   33 +++++++++++++++++++++++++++++++++
+>  drivers/misc/ti-st/st_ll.c   |   19 +++++++++++++++++++
+>  include/linux/ti_wilink_st.h |   27 ++++++++++++++++++++++++++-
+>  4 files changed, 87 insertions(+), 2 deletions(-)
+>
+> --
+> 1.7.4.1
+>
+>
