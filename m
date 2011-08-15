@@ -1,139 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1HOO0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:26:46 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:47419 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1HOO0o (ORCPT
+	id S1754010Ab1HOO3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:29:47 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:49128 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753020Ab1HOO3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:26:44 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com DA549B41AB
-Date: Mon, 15 Aug 2011 16:26:37 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
-Message-ID: <20110815142637.GB2791@thinkpad>
-References: <20110806084447.388624428@intel.com>
- <20110806094527.002914580@intel.com>
- <1312811234.10488.34.camel@twins>
- <20110808142318.GC22080@localhost>
- <20110813162826.GA1646@thinkpad>
- <20110815142141.GC23601@localhost>
+	Mon, 15 Aug 2011 10:29:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: jOIEuVwVM1kziYTZFHbOV4ycfo7nFq1V8kUNLUbTZrdr_1X
+ VfeN91RmqgnIP2By3vOSX18GwQJsyi_aUoT2xsJLOPOWXMZGjkHd971xVkl3
+ LZVJZrVT6BniFZZ3Vm8HlR8__9tHwFAKfFRAa2fU6MBcR_G2kN7LsKwxf0eT
+ rMKiE3wpa.HbxE0OntpR2Eo7G.k0OwpD7jh9qLFPswFX8q3DWofKzsv4dsc_
+ paa7i.WAt_GImmetNibl5kT0Suv.X8w8msujekwPULEO.khR2hTPC9UE88rY
+ Mq1JQQg.xjtP67NdynO_7oFjojBlnoc1HkHGQaM7l9rismb5eDSfDJGnrDO5
+ oBKPQsL3iKPoAo4fta6qJsrDtMmHQxdPaQWClLTcxFkUVDg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 15 Aug 2011 09:29:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, Andi Kleen <andi@firstfloor.org>,
+        tj@kernel.org, Metathronius Galabant <m.galabant@googlemail.com>,
+        Matt Mackall <mpm@selenic.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Adrian Drzewiecki <z@drze.net>, linux-kernel@vger.kernel.org
+Subject: Re: [slub p4 0/7] slub: per cpu partial lists V4
+In-Reply-To: <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1108150928200.24941@router.home>
+References: <20110809211221.831975979@linux.com> <alpine.DEB.2.00.1108131118001.32762@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815142141.GC23601@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 10:21:41PM +0800, Wu Fengguang wrote:
-> Andrea,
-> 
-> > > @@ -1158,6 +1160,15 @@ void balance_dirty_pages_ratelimited_nr(
-> > >  	if (bdi->dirty_exceeded)
-> > >  		ratelimit = 8;
-> > >  
-> > > +	preempt_disable();
-> > > +	p = &__get_cpu_var(dirty_leaks);
-> > > +	if (*p > 0 && current->nr_dirtied < ratelimit) {
-> > > +		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-> > > +		*p -= nr_pages_dirtied;
-> > > +		current->nr_dirtied += nr_pages_dirtied;
-> > > +	}
-> > > +	preempt_enable();
-> > > +
-> > 
-> > I think we are still leaking some dirty pages, when the condition is
-> > false nr_pages_dirtied is just ignored.
-> > 
-> > Why not doing something like this?
-> > 
-> > 	current->nr_dirtied += nr_pages_dirtied;
-> 
-> You must mean the above line. Sorry I failed to provide another patch
-> before this one (attached this time). With that preparation patch, it
-> effectively become equal to the logic below :)
+On Sat, 13 Aug 2011, David Rientjes wrote:
 
-OK. This is even better than my proposal, because it doesn't charge
-pages that are dirtied multiple times. Sounds good.
+> I'm currently 35,000 feet above Chicago going about 611 mph, so what
+> better time to benchmark this patchset on my netperf testing rack!
+>
+> 	threads		before		after
+> 	 16		78031		74714  (-4.3%)
+> 	 32		118269		115810 (-2.1%)
+> 	 48		150787		150165 (-0.4%)
+> 	 64		189932		187766 (-1.1%)
+> 	 80		221189		223682 (+1.1%)
+> 	 96		239807		246222 (+2.7%)
+> 	112		262135		271329 (+3.5%)
+> 	128		273612		286782 (+4.8%)
+> 	144		280009		293943 (+5.0%)
+> 	160		285972		299798 (+4.8%)
 
-Thanks,
--Andrea
-
-> 
-> > 	if (current->nr_dirtied < ratelimit) {
-> > 		p = &get_cpu_var(dirty_leaks);
-> > 		if (*p > 0) {
-> > 			nr_pages_dirtied = min(*p, ratelimit -
-> > 							current->nr_dirtied);
-> > 			*p -= nr_pages_dirtied;
-> > 		} else
-> > 			nr_pages_dirtied = 0;
-> > 		put_cpu_var(dirty_leaks);
-> > 
-> > 		current->nr_dirtied += nr_pages_dirtied;
-> > 	}
-> 
-> Thanks,
-> Fengguang
-> 
-> > >  	if (unlikely(current->nr_dirtied >= ratelimit))
-> > >  		balance_dirty_pages(mapping, current->nr_dirtied);
-> > >  }
-> > > --- linux-next.orig/kernel/exit.c	2011-08-08 21:43:37.000000000 +0800
-> > > +++ linux-next/kernel/exit.c	2011-08-08 21:45:58.000000000 +0800
-> > > @@ -1039,6 +1039,8 @@ NORET_TYPE void do_exit(long code)
-> > >  	validate_creds_for_do_exit(tsk);
-> > >  
-> > >  	preempt_disable();
-> > > +	if (tsk->nr_dirtied)
-> > > +		__this_cpu_add(dirty_leaks, tsk->nr_dirtied);
-> > >  	exit_rcu();
-> > >  	/* causes final put_task_struct in finish_task_switch(). */
-> > >  	tsk->state = TASK_DEAD;
-
-> Subject: writeback: fix dirtied pages accounting on sub-page writes
-> Date: Thu Apr 14 07:52:37 CST 2011
-> 
-> When dd in 512bytes, generic_perform_write() calls
-> balance_dirty_pages_ratelimited() 8 times for the same page, but
-> obviously the page is only dirtied once.
-> 
-> Fix it by accounting nr_dirtied at page dirty time.
-> 
-> This will allow further simplification of the
-> balance_dirty_pages_ratelimited_nr() calls.
-> 
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2011-08-15 22:12:14.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2011-08-15 22:12:27.000000000 +0800
-> @@ -1211,8 +1211,6 @@ void balance_dirty_pages_ratelimited_nr(
->  	else
->  		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
->  
-> -	current->nr_dirtied += nr_pages_dirtied;
-> -
->  	preempt_disable();
->  	/*
->  	 * This prevents one CPU to accumulate too many dirtied pages without
-> @@ -1711,6 +1709,7 @@ void account_page_dirtied(struct page *p
->  		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
->  		task_dirty_inc(current);
->  		task_io_account_write(PAGE_CACHE_SIZE);
-> +		current->nr_dirtied++;
->  	}
->  }
->  EXPORT_SYMBOL(account_page_dirtied);
+The higher the contention the better the performance. But the -4% on non
+contention is worrisome.
