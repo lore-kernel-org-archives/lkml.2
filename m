@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1HOOFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 10:05:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52213 "EHLO mx1.redhat.com"
+	id S1753858Ab1HOOFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 10:05:20 -0400
+Received: from gateway.hbm.com ([213.157.30.2]:45711 "EHLO hbmntx5.hbm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab1HOOFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 10:05:10 -0400
-Date: Mon, 15 Aug 2011 10:04:17 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110815140416.GB2227@zod.bos.redhat.com>
-References: <20110805142245.GP2096@zod.bos.redhat.com>
- <20110805170805.GB22164@somewhere>
- <20110805222641.GB2245@linux.vnet.ibm.com>
- <20110805231216.GE22164@somewhere>
- <20110808020914.GC2385@linux.vnet.ibm.com>
- <20110808025505.GF29058@somewhere>
- <20110808031014.GE2385@linux.vnet.ibm.com>
- <20110809113514.GA27301@somewhere.redhat.com>
- <20110810124528.GC2566@zod.bos.redhat.com>
- <20110814230453.GP2650@linux.vnet.ibm.com>
+	id S1753819Ab1HOOFO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 10:05:14 -0400
+Thread-Index: AcxbVFnMBoPpsJLhSHKxpjGszAJjsA==
+Thread-Topic: CONFIG_PEEMPT_RT_FULL vs. CONFIG_PREEMPT_RTB
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "linux-rt-users" <linux-rt-users@vger.kernel.org>
+Subject: CONFIG_PEEMPT_RT_FULL vs. CONFIG_PREEMPT_RTB
+Date: Mon, 15 Aug 2011 16:04:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
+Cc: "Peter Zijlstra" <peterz@infradead.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Remy Bohmer" <linux@bohmer.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110814230453.GP2650@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201108151604.54251.tim.sander@hbm.com>
+X-OriginalArrivalTime: 15 Aug 2011 14:05:12.0680 (UTC) FILETIME=[59AD1E80:01CC5B54]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 04:04:53PM -0700, Paul E. McKenney wrote:
-> > > > > Now rcu_init_percpu_data() still sets rdp->qs_pending to 1, and that
-> > > > > is going to stay as is as long as preemption is disabled.
-> > > > 
-> > > > But setting rdp->qs_pending to 1 in rcu_init_percpu_data() has no effect
-> > > > until a grace period starts.  So, if grace periods are prevented from
-> > 
-> > Er... really?  Because it gets set and __rcu_pending looks at it
-> > unconditionally in the case that is calling set_need_resched.  It
-> > doesn't check if there is anything about a grace period going on or not.
-> 
-> Frederic noted the condition that prevents this at boot time, but it
-> appears that newly onlined CPUs might send themselves needless resched
-> IPIs at runtime if RCU is idle.
-> 
-> > > > starting, no need to mess with rcu_init_percpu_data().  Especially given
-> > > > that rcu_init_percpu_data() is also used at late boot and runtime for
-> > > > CPU hotplug.
-> > > 
-> > > Ok.
-> > > 
-> > > > 
-> > > > So I believe that it is sufficient to change cpu_needs_another_gp()
-> > > > to check for boot being far enough along to allow grace periods.
-> > > 
-> > > Yep, sounds good.
-> > 
-> > I looked at doing this but got lost as to 1) how it would help the
-> > situtation I've reported, and 2) exactly how to do that.
-> 
-> It would prevent control from reaching that point, and that might
-> well be needed for other reasons.  (This bit about RCU needing to
-> work differently at boot time is, well, "interesting".)
-> 
-> > I'd be happy to test, but at the moment the proposed solution is
-> > confusing to me.
-> 
-> Please see the attached.
+Hi
 
-Fixed it up quickly to apply on top of -rc2 and it seems to solve the
-problem nicely.  Thanks for the patch.
+I have more than twice as much cpu load when running the  
+CONFIG_PREEMPT_RT_FULL=y kernel compared to CONFIG_PREEMPT_RTB=y. First i 
+thought that might be the difference that one config had softirqs enabled and 
+the other not. Now i realized that softirqs are already enabled with 
+CONFIG_PREEMPT_RTB so i don't see a good reason why the CONFIG_PREEMPT_RT_FULL 
+option should have two times more cpu load than CONFIG_PREEMPT_RTB.
 
-josh
+The arm1136 cpu (533Mhz pcm043) has 9.6khz interrupt rate so i surely expect 
+some load. But i wouldn't expect so much difference between 
+CONFIG_PREEMPT_RT_FULL and CONFIG_PREEMPT_RTB. So does anybody has an idea 
+what might a reason to so much more cpu load when going to full preemption?
+
+Besides of the cpu load i also found out that with rt11 i can again wake up 
+usermode from a IRQF_NO_THREAD waiting on a waitqueue. So the steps outlined 
+in this mail http://www.spinics.net/lists/linux-rt-users/msg06834.html do not 
+seem to be neccessary anymore? Or does this create an error and than some high 
+load?
+
+Best regards
+Tim
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+
