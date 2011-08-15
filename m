@@ -1,110 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1HOSuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 14:50:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44551 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab1HOSuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 14:50:00 -0400
-Message-ID: <3175fc05afa1c2b0defd935d0fec22d5.squirrel@www.skyhub.de>
-In-Reply-To: <CAObL_7ExSmbucefJ386LhK9UccVn5wKRvxHdLq0j__5bG2apwA@mail.gmail.com>
-References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
-    <4E493449.70907@mit.edu>
-    <be840e9d6d1ff3fdb94ce2ac23a15338.squirrel@www.skyhub.de>
-    <CAObL_7GmMPBKa4QwcnUeehowzvTUdqXN7yswAfXsy8q71ZJzmg@mail.gmail.com>
-    <9022c7d6f1724a37245fd744c8c16140.squirrel@www.skyhub.de>
-    <CAObL_7ExSmbucefJ386LhK9UccVn5wKRvxHdLq0j__5bG2apwA@mail.gmail.com>
-Date: Mon, 15 Aug 2011 20:49:56 +0200 (CEST)
-Subject: Re: x86 memcpy performance
-From: "Borislav Petkov" <bp@alien8.de>
-To: "Andrew Lutomirski" <luto@mit.edu>
-Cc: "Borislav Petkov" <bp@alien8.de>, "melwyn lobo" <linux.melwyn@gmail.com>,
-        "Denys Vlasenko" <vda.linux@googlemail.com>,
-        "Ingo Molnar" <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
-User-Agent: SquirrelMail/1.4.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1752890Ab1HOSuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 14:50:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27892 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab1HOSuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 14:50:23 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] i2c: tegra: Check for overflow errors with BUG_ON.
+Date: Mon, 15 Aug 2011 11:49:32 -0700
+Message-Id: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 August, 2011 7:04 pm, Andrew Lutomirski wrote:
->> Well, I had a SSE memcpy which saved/restored the XMM regs on the stack.
->> This would obviate the need to muck with contexts but that could get
->> expensive wrt stack operations. The advantage is that I'm not dealing
->> with the whole FPU state but only with 16 XMM regs. I should probably
->> dust off that version again and retest.
->
-> I bet it won't be a significant win.  On Sandy Bridge, clts/stts takes
-> 80 ns and a full state save+restore is only ~60 ns.
-> Without infrastructure changes, I don't think you can avoid the clts
-> and stts.
+This change doesn't fix any known problems but turns
+on the overflow detection feature of the i2c controller
+in the hopes of flushing out any current (or future)
+bugs in the i2c driver.
 
-Yeah, probably.
+Inspired by a change on nvidia's git server:
+  http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=commit;h=266d1b7397284505e55d06254b497cb32be07b69
 
-> You might be able to get away with turning off IRQs, reading CR0 to
-> check TS, pushing XMM regs, and being very certain that you don't
-> accidentally generate any VEX-coded instructions.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/i2c/busses/i2c-tegra.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-That's ok - I'm using movaps/movups. But, the problem is that I still
-need to save FPU state if the task I'm interrupting has been using FPU
-instructions. So, I can't get away without saving the context in which
-case I don't need to save the XMM regs anyway.
-
->> Or, if we want to use SSE stuff in the kernel, we might think of
->> allocating its own FPU context(s) and handle those...
->
-> I'm thinking of having a stack of FPU states to parallel irq stacks
-> and IST stacks.
-
-... I'm guessing with the same nesting as hardirqs? Making FPU
-instructions usable in irq contexts too.
-
-> It gets a little hairy when code inside kernel_fpu_begin traps for a
-> non-irq non-IST reason, though.
-
-How does that happen? You're in the kernel with preemption disabled and
-TS cleared, what would cause the #NM? I think that if you need to switch
-context, you simply "push" the current FPU context, allocate a new one
-and clts as part of the FPU context switching, no?
-
-> Fortunately, those are rare and all of the EX_TABLE users could mark
-> xmm regs as clobbered (except for copy_from_user...).
-
-Well, copy_from_user... does a bunch of rep; movsq - if the SSE version
-shows reasonable speedup there, we might need to make those work too.
-
-> Keeping kernel_fpu_begin non-preemptable makes it less bad because the
-> extra FPU state can be per-cpu and not per-task.
-
-Yep.
-
-> This is extra fun on 32 bit, which IIRC doesn't have IST stacks.
->
-> The major speedup will come from saving state in kernel_fpu_begin but
-> not restoring it until the code in entry_??.S restores registers.
-
-But you'd need to save each kernel FPU state when nesting, no?
-
->>> (*) kernel_fpu_begin is a bad name. It's only safe to use integer
->>> instructions inside a kernel_fpu_begin section because MXCSR (and the
->>> 387 equivalent) could contain garbage.
->>
->> Well, do we want to use floating point instructions in the kernel?
->
-> The only use I could find is in staging.
-
-Exactly my point - I think we should do it only when it's really worth
-the trouble.
-
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 2440b74..4dbba23 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -367,7 +367,8 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ {
+ 	u32 status;
+-	const u32 status_err = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
++	const u32 status_err = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
++		I2C_INT_TX_FIFO_OVERFLOW;
+ 	struct tegra_i2c_dev *i2c_dev = dev_id;
+ 
+ 	status = i2c_readl(i2c_dev, I2C_INT_STATUS);
+@@ -389,6 +390,9 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	if (unlikely(status & status_err)) {
++		/* Don't pass this back--it can only happen due to a bug. */
++		BUG_ON(status & I2C_INT_TX_FIFO_OVERFLOW);
++
+ 		if (status & I2C_INT_NO_ACK)
+ 			i2c_dev->msg_err |= I2C_ERR_NO_ACK;
+ 		if (status & I2C_INT_ARBITRATION_LOST)
+@@ -423,7 +427,7 @@ err:
+ 	/* An error occurred, mask all interrupts */
+ 	tegra_i2c_mask_irq(i2c_dev, I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
+ 		I2C_INT_PACKET_XFER_COMPLETE | I2C_INT_TX_FIFO_DATA_REQ |
+-		I2C_INT_RX_FIFO_DATA_REQ);
++		I2C_INT_RX_FIFO_DATA_REQ | I2C_INT_TX_FIFO_OVERFLOW);
+ 	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
+ 	if (i2c_dev->is_dvc)
+ 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
+@@ -473,7 +477,8 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	if (!(msg->flags & I2C_M_RD))
+ 		tegra_i2c_fill_tx_fifo(i2c_dev);
+ 
+-	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
++	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
++		I2C_INT_TX_FIFO_OVERFLOW;
+ 	if (msg->flags & I2C_M_RD)
+ 		int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
+ 	else if (i2c_dev->msg_buf_remaining)
 -- 
-Regards/Gruss,
-Boris.
+1.7.3.1
 
