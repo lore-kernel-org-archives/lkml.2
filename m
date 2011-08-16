@@ -1,141 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab1HPWpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 18:45:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48964 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab1HPWpi (ORCPT
+	id S1752511Ab1HPWr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 18:47:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:62297 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab1HPWr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 18:45:38 -0400
-Date: Wed, 17 Aug 2011 00:45:00 +0200
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: 3.0-rc2 failed s2ram: Freezing of tasks failed after 20.00
- seconds
-Message-ID: <20110816224500.GA3152@Pilar.site>
-References: <20110816094245.GA2042@Pilar.site>
- <201108162013.55341.rjw@sisk.pl>
- <20110816211358.GA2251@Pilar.site>
- <201108162320.28297.rjw@sisk.pl>
+	Tue, 16 Aug 2011 18:47:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=o11NJMggqGhfMLWLYsVZSEEaF/tXEbjpa12qw/BYWqHiITx4bnXGqjJfY4Xi8tYgu
+	qHAmwONu74XwXsJCTvwMw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108162320.28297.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPnjgZ3x-nTVuoqO4xX5+kzuxZv21A7aAHpu7N4Xj4tCjsMkOA@mail.gmail.com>
+References: <1311926200-24806-1-git-send-email-sjg@chromium.org>
+	<4E41B19C.3040209@codeaurora.org>
+	<CAPnjgZ3x-nTVuoqO4xX5+kzuxZv21A7aAHpu7N4Xj4tCjsMkOA@mail.gmail.com>
+Date: Tue, 16 Aug 2011 15:47:24 -0700
+X-Google-Sender-Auth: 5dTSTZIY9UZp0VwgfYLiBHviqYQ
+Message-ID: <CAPnjgZ1RRuEMNXRdFp=DxDjM6pCL_5R+eVhGnfxt5pybr20fgw@mail.gmail.com>
+Subject: Re: [PATCH v5] ARM: Use generic BUG() handler
+From: Simon Glass <sjg@chromium.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dave Martin <dave.martin@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Aug 2011 at 23:20:28 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > On Tue, 16 Aug 2011 at 20:13:55 +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > > > I started testing 3.0-rc2 yesterday and after a few successful suspend to ram
-> > > > it did not suspend anymore and I got this:
-> > > > 
-> > > >  PM: Syncing filesystems ... done.
-> > > >  PM: Preparing system for mem sleep
-> > > >  Freezing user space processes ... 
-> > > >  Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
-> > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00800004
-> > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > >  Call Trace:
-> > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > >  
-> > > >  Restarting tasks ... done.
-> > > >  video LNXVIDEO:01: Restoring backlight state
-> > > >  acpid: 1 client rule loaded
-> > > >  EXT4-fs (sda2): re-mounted. Opts: discard,commit=600
-> > > >  INFO: task udisks-daemon:5848 blocked for more than 120 seconds.
-> > > >  "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00000004
-> > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > >  Call Trace:
-> > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > >   
-> > > > 
-> > > > and there are some more of these traces in the logs, but they all look the 
-> > > > same.
-> > > 
-> > > It looks like udisks-daemon is waiting for a completion that's
-> > > never completed.
-> > > 
-> > > Do you use any removable storage devices?
-> > 
-> > Yes, external harddisks connected via USB. But none were mounted
-> > when I closed the lid to suspend.
-> 
-> Were they connected to the USB ports?
+> On Tue, Aug 9, 2011 at 3:15 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 07/29/2011 12:56 AM, Simon Glass wrote:
+>>> From: Simon Glass <sjg@google.com>
+>>>
+>>> ARM uses its own BUG() handler which makes its output slightly different
+>>> from other archtectures.
+>>>
+>>> One of the problems is that the ARM implementation doesn't report the function
+>>> with the BUG() in it, but always reports the PC being in __bug(). The generic
+>>> implementation doesn't have this problem.
+>>>
+>>> Currently we get something like:
+>>>
+>>> kernel BUG at fs/proc/breakme.c:35!
+>>> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+>>> ...
+>>> PC is at __bug+0x20/0x2c
+>>>
+>>> With this patch it displays:
+>>>
+>>> kernel BUG at fs/proc/breakme.c:35!
+>>> Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
+>>> ...
+>>> PC is at write_breakme+0xd0/0x1b4
+>>>
+>>> This implementation uses an undefined instruction to implement BUG, and sets up
+>>> a bug table containing the relevant information. Many versions of gcc do not
+>>> support %c properly for ARM (inserting a # when they shouldn't) so we work
+>>> around this using distasteful macro magic.
+>>>
+>>> v1: Initial version to replace existing ARM BUG() implementation with something
+>>> more similar to other architectures.
+>>>
+>>> v2: Add Thumb support, remove backtrace whitespace output changes. Change to
+>>> use macros instead of requiring the asm %d flag to work (thanks to
+>>> Dave Martin <dave.martin@linaro.org>)
+>>>
+>>> v3: Remove old BUG() implementation in favor of this one.
+>>> Remove the Backtrace: message (will submit this separately).
+>>> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
+>>> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
+>>> define GENERIC_BUG this might be academic.)
+>>> Rebase to linux-2.6.git master.
+>>>
+>>> v4: Allow BUGS in modules (these were not reported correctly in v3)
+>>> (thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
+>>> Remove __bug() as this is no longer needed.
+>>>
+>>> v5: Add %progbits as the section flags.
+>>
+>> Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>>> ---
+>>>
+>>
+>> Can you update the patch in the patch tracker? It would be great to see
+>> this in the next merge window.
 
-No.
+Hi,
 
-> > PS: I made a mistake in the Subject:, the kernel is 3.1-rc2 and
-> > not 3.0-rc2.
-> 
-> Did 3.0 work correctly?
+I have done this against 3.1-rc2 and it is here:
 
-I didn't test 3.0, but 2.6.39 always worked.
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7017/1
+
+Please let me know if there are any problems.
+
+Regards,
+Simon
+
+>>
+>> --
+>> Sent by an employee of the Qualcomm Innovation Center, Inc.
+>> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>>
+>>
+>
