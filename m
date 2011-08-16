@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1HPOhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 10:37:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61688 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab1HPOhU (ORCPT
+	id S1752153Ab1HPOlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 10:41:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34129 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab1HPOln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 10:37:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-Date: Tue, 16 Aug 2011 16:37:16 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-References: <1313440100-17131-1-git-send-email-swarren@nvidia.com> <201108161509.17157.arnd@arndb.de> <CACRpkdaVx=6AJ5DFjVN1ZYQ++hu9pT6WxD9n+pqmYVaCf1xawg@mail.gmail.com>
-In-Reply-To: <CACRpkdaVx=6AJ5DFjVN1ZYQ++hu9pT6WxD9n+pqmYVaCf1xawg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108161637.16620.arnd@arndb.de>
-X-Provags-ID: V02:K0:XOsNxKqcHhoN6luYnfGhFnnLxN4IkFY7H3F5xWlncWI
- ITiwYAk3E3Zi4KVb8mLJ2ICwclbN4KXXWDgRIJIidGYgcsGuB3
- 4nislUukht3vhQZdmj5p3t87jz1/JtDd+NxhTtPdzESma/VeOP
- K2WsB/JaXsuD7Z74YvcPjT39+CJJjGUzu706sS7+0VXfQ6jgUP
- MM5t+X39/4gv9j+3Znttw==
+	Tue, 16 Aug 2011 10:41:43 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/6] perf tools: Fix error handling of unknown events
+Date: Tue, 16 Aug 2011 11:41:32 -0300
+Message-Id: <1313505695-20724-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1313505695-20724-1-git-send-email-acme@infradead.org>
+References: <1313505695-20724-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 August 2011, Linus Walleij wrote:
-> One specific thing worries me: Grant asked me to make sure
-> to NOT create a global pin number space for the pinmuxes (and thus
-> pinctrl). This means that in order to proceed, mappings of pinmux
-> groups or pincontrol (such as bias) groups, each device using such
-> an entity need to reference the intended pincontroller/mux instance.
-> 
-> Say mmc instance 0 need pingroup foo on pincontroller bar
-> means that there must be a specific reference from mmc.0:s
-> struct device * to pinctrl bar:s struct device *. Maybe this is
-> peanuts in DT, sorry not enough insight.
+From: Stephane Eranian <eranian@google.com>
 
-I think what you are looking for is the equivalent of the
-interrupt-parent property for pinmux. The idea is that each
-node in the device tree can point to a device managing the
-pinmux, so reference would point to a local number in that
-space. We have discussed this for the GPIO case already, and
-I suspect that the two should be identical (gpio-controller
-and pinmux-controller using the same device node and same
-property to refer to them). Since the pinmux-parent
-(gpio-parent, ...) property gets inherited by all child
-devices, you only need to set it once at the root of the
-device tree for the simple case where there is only one
-controller.
+There was a problem with the parse_events() code not printing the
+correct event name when an event was unknown and starting with an 'r'.
+The source of the problem was the way raw notation was parsed.
 
-	Arnd
+Without the patch:
+	$ perf stat -e retired_foo
+	invalid event modifier: 'tired_foo'
+
+With the patch:
+	$ perf stat -e retired_foo
+	invalid or unsupported event: 'retired_foo'
+
+This also covers the case where the name of the event was not printed at
+all when perf was linked with libpfm4.
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20110723021043.GA20178@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d93f3ce..928918b 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -697,7 +697,11 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
+ 		return EVT_FAILED;
+ 	n = hex2u64(str + 1, &config);
+ 	if (n > 0) {
+-		*strp = str + n + 1;
++		const char *end = str + n + 1;
++		if (*end != '\0' && *end != ',' && *end != ':')
++			return EVT_FAILED;
++
++		*strp = end;
+ 		attr->type = PERF_TYPE_RAW;
+ 		attr->config = config;
+ 		return EVT_HANDLED;
+-- 
+1.6.2.5
+
