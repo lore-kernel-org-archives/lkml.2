@@ -1,34 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504Ab1HPEQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 00:16:07 -0400
-Received: from filtromx9.unal.edu.co ([168.176.5.62]:50820 "EHLO
-	filtromx9.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1HPEQG (ORCPT
+	id S1751431Ab1HPElq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 00:41:46 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:54327 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750721Ab1HPElp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 00:16:06 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 00:16:05 EDT
-X-AuditID: a8b0053d-b7b3cae000004685-d2-4e49eb7d7b76
-To: undisclosed-recipients:;
-Date: Mon, 15 Aug 2011 21:00:59 -0700
-From: Jully Viviana Caceres Perez <jvcaceresp@unal.edu.co>
-Subject: Your e-mail id has won for you 950.000.00 pounds from the Mercedes
- Benz Award promotion. Send your details as follow for claim:
-Message-id: <f7d3caa31feb.4e49890b@unal.edu.co>
-MIME-version: 1.0
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
-Content-type: text/plain; charset=us-ascii
-Content-language: en
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-X-Accept-Language: en
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 16 Aug 2011 00:41:45 -0400
+Date: Mon, 15 Aug 2011 21:41:43 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3.1-rc2] xen: self-balloon needs module.h
+Message-Id: <20110815214143.ed2fa458.rdunlap@xenotime.net>
+In-Reply-To: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
+References: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
+Fix build errors (found when CONFIG_SYSFS is not enabled):
 
-Full Names:.........
-Age:..........
-Country:..........
+drivers/xen/xen-selfballoon.c:446: warning: data definition has no type or storage class
+drivers/xen/xen-selfballoon.c:446: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+drivers/xen/xen-selfballoon.c:446: warning: parameter names (without types) in function declaration
+drivers/xen/xen-selfballoon.c:485: error: expected declaration specifiers or '...' before string constant
+drivers/xen/xen-selfballoon.c:485: warning: data definition has no type or storage class
+drivers/xen/xen-selfballoon.c:485: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/xen/xen-selfballoon.c:485: warning: function declaration isn't a prototype
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/xen/xen-selfballoon.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+and will need <linux/export.h> when module.h is split up.
+
+--- lnx-31-rc2.orig/drivers/xen/xen-selfballoon.c
++++ lnx-31-rc2/drivers/xen/xen-selfballoon.c
+@@ -70,6 +70,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/mman.h>
++#include <linux/module.h>
+ #include <linux/workqueue.h>
+ #include <xen/balloon.h>
+ #include <xen/tmem.h>
