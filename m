@@ -1,92 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab1HPEMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 00:12:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42592 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab1HPEMX (ORCPT
+	id S1751504Ab1HPEQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 00:16:07 -0400
+Received: from filtromx9.unal.edu.co ([168.176.5.62]:50820 "EHLO
+	filtromx9.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab1HPEQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 00:12:23 -0400
-From: jeffbrown@android.com
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz, rydberg@euromail.se,
-        benjamin.tissoires@enac.fr, chatty@enac.fr,
-        Jeff Brown <jeffbrown@android.com>
-Subject: [PATCH] hid-multitouch: Add LG Display Multitouch device.
-Date: Mon, 15 Aug 2011 21:12:09 -0700
-Message-Id: <1313467929-28250-1-git-send-email-jeffbrown@android.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 16 Aug 2011 00:16:06 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 00:16:05 EDT
+X-AuditID: a8b0053d-b7b3cae000004685-d2-4e49eb7d7b76
+To: undisclosed-recipients:;
+Date: Mon, 15 Aug 2011 21:00:59 -0700
+From: Jully Viviana Caceres Perez <jvcaceresp@unal.edu.co>
+Subject: Your e-mail id has won for you 950.000.00 pounds from the Mercedes
+ Benz Award promotion. Send your details as follow for claim:
+Message-id: <f7d3caa31feb.4e49890b@unal.edu.co>
+MIME-version: 1.0
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
+Content-type: text/plain; charset=us-ascii
+Content-language: en
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+X-Accept-Language: en
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Brown <jeffbrown@android.com>
 
-This panel is also known as the Dell ST2220Tc.
 
-Signed-off-by: jeffbrown@android.com
-
----
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-core.c       |    1 +
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    5 +++++
- 4 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 306b15f..3cbe8cc 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -328,6 +328,7 @@ config HID_MULTITOUCH
- 	  - Hanvon dual touch panels
- 	  - Ilitek dual touch panels
- 	  - IrTouch Infrared USB panels
-+	  - LG Display panels (Dell ST2220Tc)
- 	  - Lumio CrystalTouch panels
- 	  - MosArt dual-touch panels
- 	  - PenMount dual touch panels
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 1a5cf0c..11b3b39 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1396,6 +1396,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index db63ccf..637e6e9 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -419,6 +419,9 @@
- #define USB_DEVICE_ID_LD_HYBRID		0x2090
- #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
- 
-+#define USB_VENDOR_ID_LG		0x1fd2
-+#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
-+
- #define USB_VENDOR_ID_LOGITECH		0x046d
- #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
- #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 58d0e7a..9fc15e1 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -672,6 +672,11 @@ static const struct hid_device_id mt_devices[] = {
- 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
- 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 
-+	/* LG Display panels */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_LG,
-+			USB_DEVICE_ID_LG_MULTITOUCH) },
-+
- 	/* Lumio panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
--- 
-1.7.0.4
-
+Full Names:.........
+Age:..........
+Country:..........
