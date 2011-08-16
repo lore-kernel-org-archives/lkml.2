@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab1HPSKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 14:10:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab1HPSKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 14:10:52 -0400
-Message-ID: <4E4AB287.50600@redhat.com>
-Date: Tue, 16 Aug 2011 11:10:15 -0700
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752746Ab1HPSLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 14:11:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55424 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751952Ab1HPSLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 14:11:50 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm-devel <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM updates for 3.1-rc2
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110816175901.GB25099@suse.de>
+References: <20110812210626.GA4725@kroah.com> <CACqU3MWri2+MMT8qX4UXGUL-H-bk6Hy7dg00VubU6PLsMVUg9g@mail.gmail.com>
+ <20110816175901.GB25099@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Aug 2011 11:10:54 -0700
+Message-ID: <CA+55aFx5aJYa-Wq73XHi6sOn0ibgmSOszokpVpceEyuBe0XLFQ@mail.gmail.com>
+Subject: Re: [00/90] 3.0.2-stable review
+To: Greg KH <gregkh@suse.de>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, Aug 16, 2011 at 10:59 AM, Greg KH <gregkh@suse.de> wrote:
+>
+> kernel.org is having mirroring problems at the moment, sorry.
 
-Please pull from
+Yeah, not just mirroring problems, there's been other problems there
+too. And for the last week or so, load average has hovered in the
+fifty range due to checksumming.
 
-   ssh://master.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.1
+There's also been vacations, and people are traveling this week due to
+LinuxCon Vancouver too. So it's not getting fixed quite as quickly as
+it might have been otherwise.
 
-to receive fixes for Kconfig problems introduced by the KVM steal time 
-implementation.
-
-Randy Dunlap (2):
-       KVM: fix TASK_DELAY_ACCT kconfig warning
-       KVM: uses TASKSTATS, depends on NET
-
-  arch/x86/kvm/Kconfig |    3 +++
-  1 files changed, 3 insertions(+), 0 deletions(-)
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+                  Linus
