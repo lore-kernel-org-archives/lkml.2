@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab1HPTmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:42:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48216 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab1HPTmJ (ORCPT
+	id S1752744Ab1HPTmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:42:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65197 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab1HPTmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:42:09 -0400
-Date: Tue, 16 Aug 2011 21:42:04 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 0/3] make vfork killable
-Message-ID: <20110816194204.GF2803@mtj.dyndns.org>
-References: <20110727163159.GA23785@redhat.com>
- <20110729192358.GB31717@mtj.dyndns.org>
- <20110812175550.GA7484@redhat.com>
- <20110813161814.GE4254@htj.dyndns.org>
- <20110815194209.GA19239@redhat.com>
+	Tue, 16 Aug 2011 15:42:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jean Delvare <khali@linux-fr.org>, Hans Berglund <hb@spacetec.no>,
+        Jonas Bonn <jonas@southpole.se>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: I2C_ELEKTOR should depend on HAS_IOPORT
+Date: Tue, 16 Aug 2011 21:42:06 +0200
+Message-ID: <4991605.b7BYCfYE3S@wuerfel>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
+References: <1312802446-19154-1-git-send-email-geert@linux-m68k.org> <20110816195033.014f302b@endymion.delvare> <CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815194209.GA19239@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VKB0y8E4BztXQoVONyJsUzRnSOXtFPHY86RrNGq0Kut
+ vVCI7IJtWRQbhRCGtPRfO6sI/XUpIzlQdcMbZwbHZ1ywEsZXJj
+ 1EbJkVHeOlY7EtpcI4T6BhbaOeU0Lkg9ZfFgvAR25gLmPcyOBX
+ Mjm78EKc4RQT717LPrEh6ILTn5B8oL65pixgY7AceMLnyemJUN
+ Cxs4jAvn6m8YTiMAY0/ZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
-
-On Mon, Aug 15, 2011 at 09:42:09PM +0200, Oleg Nesterov wrote:
-> > * Regular job control and ptrace.
-> > * vfork wait.
-> > * cgroup freeze.
+On Tuesday 16 August 2011 21:14:42 Geert Uytterhoeven wrote:
+> >>  config I2C_ELEKTOR
+> >>       tristate "Elektor ISA card"
+> >> -     depends on ISA && BROKEN_ON_SMP
+> >> +     depends on ISA && HAS_IOPORT && BROKEN_ON_SMP
+> >>       select I2C_ALGOPCF
+> >>       help
+> >>         This supports the PCF8584 ISA bus I2C adapter.  Say Y if you own
+> >
+> > How can ISA be set if HAS_IOPORT is not? This shouldn't be allowed.
 > 
-> I still can't understand what exactly you have in mind.
->
-> And to me vfork() is closer to nanoslep() than to cgroup_freezer.
-> (As for cgroup_freezer, I agree it would be nice to reimplent it
->  in any case).
+> It's always been like that. With CONFIG_ISA, we have inb() and friends. But not
+> ioport_map(), which was introduced more recently.
 
-Maybe, it would be better to handle vfork() that way.  I'm not sure,
-but if we can handle all three waits in the same manner, that would be
-a plus too.  I'll think more about it.
+Right. BTW, I'd really like to change that once I've picked up and fixed the
+use of inb() in 8250.c. I think we should change CONFIG_HAS_IOPORT to mean
+that inb(), ioport_resource and /proc/ioports are available, while a new
+CONFIG_HAS_IOPORT_MAP can then replace the current CONFIG_HAS_IOPORT symbol.
 
-> > The downside is that that wouldn't work with cgroup freeze at
-> > all - there's no syscall to restart.
-> 
-> Sure. Still I don't understand why restart is not suitable for vfork
-> and why it would be better to unify freezer/vfork.
-
-It's still in the works but the user visible behavior is more
-consistent both with and without ptrace.  I'm still trying to wrap my
-head around consolidating freezer into it.  Let's see how it fans out.
-
-> OK. Let's discuss this later, I hope you will cc me ;)
-
-Oh, no need to worry about that. :)
-
-> But what do you think about this series? It is simple, it doesn't
-> play with restarts. In some sense it even simplifies the code because
-> it removes one user of ->vfork_done. I don't think these patches can
-> complicate the further changes you are going to do.
-> 
-> No?
-
-Was too lost in the freezer land.  Will review first thing tomorrow.
-
-Thank you.
-
--- 
-tejun
+	Arnd
