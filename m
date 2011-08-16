@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab1HPUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 16:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28398 "EHLO mx1.redhat.com"
+	id S1752576Ab1HPUEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:04:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64909 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab1HPUBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 16:01:24 -0400
-Date: Tue, 16 Aug 2011 21:58:34 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/41] signal: Use set_current_blocked()
-Message-ID: <20110816195834.GC6602@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751684Ab1HPUEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 16:04:05 -0400
+Message-Id: <f80fcd$183avu@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,235,1312182000"; 
+   d="scan'208";a="42052606"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH] Drivers: i915: Fix all space related issues.
+To: Akshay Joshi <me@akshayjoshi.com>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Akshay Joshi <me@akshayjoshi.com>
+In-Reply-To: <1313523255-13629-1-git-send-email-me@akshayjoshi.com>
+References: <1313523255-13629-1-git-send-email-me@akshayjoshi.com>
+Date: Tue, 16 Aug 2011 21:03:58 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11, Matt Fleming wrote:
->
-> I did a tree wide scan of all the code that modifies current->blocked
-> without using the set_current_blocked() accessor. This patch series is
-> the result of the conversion to the new accessor functions.
+On Tue, 16 Aug 2011 15:34:10 -0400, Akshay Joshi <me@akshayjoshi.com> wrote:
+> Various issues involved with the space character were generating
+> warnings in the checkpatch.pl file. This patch removes most of those
+> warnings.
+> @@ -622,7 +622,7 @@
+>  
+>  #define ILK_DISPLAY_CHICKEN1	0x42000
+>  #define   ILK_FBCQ_DIS		(1<<22)
+> -#define   ILK_PABSTRETCH_DIS 	(1<<21)
+> +#define	  ILK_PABSTRETCH_DIS	(1<<21)
 
-Thanks Matt.
+The others are space indented so the replacement tab looks wrong.
 
-The whole series looks fine, except the nits I sent. Still I hope the
-maintainers can recheck.
+And that was the oddity I could spot in the patch.
+-Chris
 
-One more nit... Every handle_signal() in arch/ does
-current->blocked |= ka->sa.sa_mask plus SA_NODEFER code. May be we
-should start with the patch below?
-
-The only problem is, I can't invent the good name for this helper.
-Also, in this case you need to rediff a lot of patches in this
-series, so I won't insist.
-
-Oleg.
-
-
---- x/arch/x86/kernel/signal.c
-+++ x/arch/x86/kernel/signal.c
-@@ -678,11 +678,20 @@ setup_rt_frame(int sig, struct k_sigacti
- 	return ret;
- }
- 
-+void xxx(struct k_sigaction *ka)
-+{
-+	sigset_t blocked;
-+
-+	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
-+		sigaddset(&blocked, sig);
-+	set_current_blocked(&blocked);
-+}
-+
- static int
- handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 		struct pt_regs *regs)
- {
--	sigset_t blocked;
- 	int ret;
- 
- 	/* Are we from a system call? */
-@@ -733,10 +742,7 @@ handle_signal(unsigned long sig, siginfo
- 	 */
- 	regs->flags &= ~X86_EFLAGS_TF;
- 
--	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&blocked, sig);
--	set_current_blocked(&blocked);
-+	xxx(ka);
- 
- 	tracehook_signal_handler(sig, info, ka, regs,
- 				 test_thread_flag(TIF_SINGLESTEP));
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
