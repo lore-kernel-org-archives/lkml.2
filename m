@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1HPKHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 06:07:00 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:38295 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752064Ab1HPKG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 06:06:58 -0400
-Date: Tue, 16 Aug 2011 11:05:45 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: "Jayachandran C." <jayachandranc@netlogicmicro.com>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 02/11] arch/mips: do not use EXTRA_CFLAGS
-Message-ID: <20110816100544.GA12658@linux-mips.org>
-References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
- <1313384834-24433-3-git-send-email-lacombar@gmail.com>
- <4E48EAA0.5020901@mvista.com>
- <20110815135515.GA1441@linux-mips.org>
- <CACqU3MVyg_hA1m+1sJZ+aTHdxvzxviVXr0Fvom7p9EEHXVOMtA@mail.gmail.com>
- <CA+7sy7DEBgcUYCf895yf8cKMS=iDgz-n9Nh7R8_EO_O-QX3MfA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+7sy7DEBgcUYCf895yf8cKMS=iDgz-n9Nh7R8_EO_O-QX3MfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752339Ab1HPKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 06:18:09 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9796 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab1HPKSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 06:18:06 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Tue, 16 Aug 2011 12:17:30 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
+In-reply-to: <201108121453.05898.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>
+Message-id: <004301cc5bfd$b50048d0$1f00da70$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AcxY7umCzwNZCqTbRRCWw2jnfxVpiwDCDRRg
+References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com>
+ <1313146711-1767-8-git-send-email-m.szyprowski@samsung.com>
+ <201108121453.05898.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 10:58:27PM +0530, Jayachandran C. wrote:
+Hello,
 
-> On Mon, Aug 15, 2011 at 9:49 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> > Hi,
+On Friday, August 12, 2011 2:53 PM Arnd Bergmann wrote:
+
+> On Friday 12 August 2011, Marek Szyprowski wrote:
 > >
-> > On Mon, Aug 15, 2011 at 9:55 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> >> On Mon, Aug 15, 2011 at 01:45:04PM +0400, Sergei Shtylyov wrote:
-> >>
-> >>>    You didn't sign off.
-> >>
-> >> True - but I won't make a big fuzz about that for a one-line.  I'm sure
-> >> Arnaud will vow to do right the next time :-)
-> >>
-> > You are welcome to slap me. If it's not too late:
+> > From: Russell King <rmk+kernel@arm.linux.org.uk>
 > >
-> > Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+> > Steal memory from the kernel to provide coherent DMA memory to drivers.
+> > This avoids the problem with multiple mappings with differing attributes
+> > on later CPUs.
+> >
+> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > [m.szyprowski: rebased onto 3.1-rc1]
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 > 
-> Thanks for fixing this up.   Looks like an acked-by is not needed :)
+> Hi Marek,
+> 
+> Is this the same patch that Russell had to revert because it didn't
+> work on some of the older machines, in particular those using
+> dmabounce?
 
-No - but generally an Acked-by: a maintainer or Reviewed-by: or Tested-by:
-somebody else is always welcome.  The more eyeballs, the better :-)
+Yes.
+ 
+> I thought that our discussion ended with the plan to use this only
+> for ARMv6+ (which has a problem with double mapping) but not on ARMv5
+> and below (which don't have this problem but might need dmabounce).
 
-  Ralf
+Ok, my fault. I've forgot to mention that this patch was almost ready 
+during Linaro meeting, but I didn't manage to post it that time. Of course 
+it doesn't fulfill all the agreements from that discussion.
+
+I was only unsure if we should care about the case where CMA is not enabled
+for ARMv6+ or not. This patch was prepared in assumption that 
+dma_alloc_coherent should work in both cases - with and without CMA.
+
+Now I assume that for ARMv6+ the CMA should be enabled unconditionally.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
