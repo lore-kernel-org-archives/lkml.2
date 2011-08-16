@@ -1,112 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab1HPC1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:27:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51328 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752028Ab1HPC1B (ORCPT
+	id S1753006Ab1HPCgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:36:40 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:39251 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab1HPCgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:27:01 -0400
-Subject: Re: [Stable-review] Future of the -longterm kernel releases (i.e.
- how we pick them).
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: david@lang.hm, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable@kernel.org, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20110815142142.GC11358@kroah.com>
-References: <20110815041524.GA7578@kroah.com>
-	 <alpine.DEB.2.02.1108150007100.24266@asgard.lang.hm>
-	 <20110815142142.GC11358@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-78EEG2n3SuYfSb8k8wWW"
-Date: Tue, 16 Aug 2011 03:26:56 +0100
-Message-ID: <1313461616.2981.92.camel@deadeye>
+	Mon, 15 Aug 2011 22:36:39 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@elte.hu>, melwyn lobo <linux.melwyn@gmail.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+Subject: Re: x86 memcpy performance
+In-Reply-To: Your message of "Sun, 14 Aug 2011 11:59:10 +0200."
+             <20110814095910.GA18809@liondog.tnic>
+From: Valdis.Kletnieks@vt.edu
+References: <CAHSGOutFRcXWtn9d2zwLbkQG==kwPEUZh-ZigKS5AnMN6ty2-w@mail.gmail.com> <20110812195220.GA29051@elte.hu>
+            <20110814095910.GA18809@liondog.tnic>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; boundary="==_Exmh_1313462075_2709P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 15 Aug 2011 22:34:35 -0400
+Message-ID: <6296.1313462075@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4E49D741.0051,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1313462075_2709P
+Content-Type: text/plain; charset=us-ascii
 
---=-78EEG2n3SuYfSb8k8wWW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, 14 Aug 2011 11:59:10 +0200, Borislav Petkov said:
 
-On Mon, 2011-08-15 at 07:21 -0700, Greg KH wrote:
-> On Mon, Aug 15, 2011 at 12:21:59AM -0700, david@lang.hm wrote:
-> > rather than having a hard schedule (the first kernel released after
-> > July 1 each year for example I know this is not the exact proposal),
-> > I think that it would be better to pick the -longterm kernel a few
-> > months after it has been released (3.4 is looking very good, the
-> > normal minor driver fixes in -stable, but no fundamental regressions
-> > have been reported, it's the new -longerm kernel for example)
-> >=20
-> > doing so doesn't give the predictability that some people will want
-> > in knowing that their September release will always have a fresh new
-> > -longerm kernel, but I think the result would be better -longterm
-> > kernels. However, to get the information about how good the kernels
-> > are, I think that the -stable timeframe would need to be extended to
-> > give the kernels time to settle and gather reports. I would then
-> > suggest scheduling that once a year you look at the last couple
-> > -stable kernels and pick one of them rather than designating the new
-> > -longterm kernel ahead of time.
->=20
-> Yes, that's a very good idea.  I've seen problems in the past when
-> distros have made a time-based decision to pick a kernel version and
-> then the problems that this can cause if it happens that a subsystem
-> really had issues for that release.
->=20
-> So yes, I'll take a look at the bug reports and how things are working
-> out to pick the next -longterm.  I'll also take into consideration any
-> companies/major users that are going to be using that release as well,
-> so it greatly behooves people to talk to me about their plans (hint,
-> hint...)
-[...]
+> Benchmarking with 10000 iterations, average results:
+> size    XM              MM              speedup
+> 119     540.58          449.491         0.8314969419
 
-This might be a good discussion to have at Kernel Summit, if enough
-distro people are going to be there.
+> 12273   2307.86         4042.88         1.751787902
+> 13924   2431.8          4224.48         1.737184756
+> 14335   2469.4          4218.82         1.708440514
+> 15018   2675.67         1904.07         0.711622886
+> 16374   2989.75         5296.26         1.771470902
+> 24564   4262.15         7696.86         1.805863077
+> 27852   4362.53         3347.72         0.7673805572
+> 28672   5122.8          7113.14         1.388524413
+> 30033   4874.62         8740.04         1.792967931
 
-The next stable release of Debian will have a feature-freeze in June
-2012, so we need to make a choice some time before then.  However I know
-that Ubuntu will need to make a decision rather earlier for the 12.04
-LTS release.
+The numbers for 15018 and 27852 are *way* odd for the MM case. I don't feel
+really good about this till we understand what happened for those two cases.
 
-Are any other distributions aiming to make long-term-supported releases
-in 2012?
-
-Also, in Debian we just added an 'rt' build of the kernel using the
-PREEMPT_RT patches.  We don't want to use different upstream versions as
-a basis for specific builds, so if we're going to include PREEMPT_RT in
-a stable distribution release we would ideally want to see some interest
-in maintaining this patchset on top of the longterm series.  (Hopefully
-it's going to be significantly smaller by then, of course.)
-
-Ben.
+Also, anytime I see "10000 iterations",  I ask myself if the benchmark rigging
+took proper note of hot/cold cache issues.  That *may* explain the two oddball
+results we see above - but not knowing more about how it was benched, it's hard
+to say.
 
 
---=-78EEG2n3SuYfSb8k8wWW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--==_Exmh_1313462075_2709P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQIVAwUATknVaue/yOyVhhEJAQo34RAAqkIGVy+rPcGFYOvbU4EQoJByZykKtT8P
-lrs/WK5uXcs4UlN2OyIFjQkOAPmkyHqtrmkkFcQtMJvlP4hHBkuVfOsdF9KC2wMk
-QiwHlZ0pA04E7Nz6kLBSGV4wJeLwVN94XGdzPVF3Dmk8ljtNLQ1JrRw692lBzqA7
-bF3C6aVbIgXTIaiA5utk+AS7fuW+uL6Sn/KMY9rg7hSlGSJTbbAaRsnpelonLPRz
-AYwkxCmi72VxwzPs1fYkqwkLhKm6PuKRxxJbNM5Hwy19rQo8e1eBesUuWOPskRgS
-1C2ysqJdwvbrHwcfJI7kN/bgx1ZC4AxjGa01A168Z6BIri4dxY601RY48FwHiiUo
-o3/F3A2QyiwyjXaHFDztczkaMauHf5BC3EpIEol7MC1wVKtVsEiunZRTBumdiP/Q
-BM3bG1OcE5Su7+Y5OLEsOUg0OWhzSk0WIKcyg17NQbdQo2TmXwY+mNUHDL5jU7aH
-jjZsspIrZjp/ahPWwXCu0XuTol82HmXohx392bkP2iuMH+XeMTa8M9wQOv6OtDJM
-YRAGgVUjvHJrUDGu2Z+YeoQ0ANw0tggmauc5boJFNIwp5CH0GzKje19Zc6jEhAre
-/wch9P4Z7NklomBOn4FYzXdjEiQ3m0Ogp7bL2MQITRfCd4cKR/MN4H/ZUedwLlPv
-XqysZb/frAk=
-=steN
+iD8DBQFOSdc7cC3lWbTT17ARAr/1AJ9quwosDW/OPJDNOh40a1bS8i7QXwCgpxFh
+8UCMlMWC3cBCx7YH+JUORvk=
+=IvNi
 -----END PGP SIGNATURE-----
 
---=-78EEG2n3SuYfSb8k8wWW--
+--==_Exmh_1313462075_2709P--
+
