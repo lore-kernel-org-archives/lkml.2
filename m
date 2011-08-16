@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab1HPTgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:36:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54663 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab1HPTgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:36:38 -0400
-Date: Tue, 16 Aug 2011 21:36:34 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kentaro Takeda <takedakn@nttdata.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tomoyo: remove tomoyo_gc_thread()->daemonize()
-Message-ID: <20110816193634.GE2803@mtj.dyndns.org>
-References: <20110816183405.GA3257@redhat.com>
+	id S1752073Ab1HPTjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:39:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38820 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab1HPTjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:39:13 -0400
+Date: Tue, 16 Aug 2011 21:36:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>
+Subject: Re: [PATCH 39/41] dlm: Remove another superfluous call to
+	recalc_sigpending()
+Message-ID: <20110816193623.GA6411@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-40-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110816183405.GA3257@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1313071035-12047-40-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 08:34:05PM +0200, Oleg Nesterov wrote:
-> daemonize() is only needed when a user-space task does kernel_thread().
-> 
-> tomoyo_gc_thread() is kthread_create()'ed and thus it doesn't need
-> the soon-to-be-deprecated daemonize().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On 08/11, Matt Fleming wrote:
+>
+> recalc_sigpending() is called within sigprocmask(), so there is no
+> need call it again after sigprocmask() has returned.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+And more, this is simply wrong. This can race with signal_wake_up().
 
--- 
-tejun
+ACK. but may me you can update the changelog although I won't insist.
+
+Oleg.
+
