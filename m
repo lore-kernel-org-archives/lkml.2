@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1HPPXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:23:47 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33575 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751559Ab1HPPXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:23:45 -0400
-Date: Wed, 17 Aug 2011 00:23:34 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20110816152333.GB15484@opensource.wolfsonmicro.com>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
- <201108111455.56319.arnd@arndb.de>
- <20110812164608.GC28150@sirena.org.uk>
- <201108161537.28612.arnd@arndb.de>
+	id S1752231Ab1HPP15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:27:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44478 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1HPP1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 11:27:54 -0400
+Date: Tue, 16 Aug 2011 15:27:18 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Message-ID: <tip-fab1167c4698e3ff11ebb06281d78def6c53728b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        rdunlap@xenotime.net, hpa@linux.intel.com
+In-Reply-To: <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+References: <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vsyscall: Add missing <asm/fixmap.h> to arch/x86/mm/fault.c
+Git-Commit-ID: fab1167c4698e3ff11ebb06281d78def6c53728b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <201108161537.28612.arnd@arndb.de>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Aug 2011 15:27:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 03:37:28PM +0200, Arnd Bergmann wrote:
-> On Friday 12 August 2011, Mark Brown wrote:
+Commit-ID:  fab1167c4698e3ff11ebb06281d78def6c53728b
+Gitweb:     http://git.kernel.org/tip/fab1167c4698e3ff11ebb06281d78def6c53728b
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 15 Aug 2011 22:28:56 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 16 Aug 2011 08:04:02 -0700
 
-> > > I don't think this should be exported: AFAICT, the set of slim_devices
-> > > is a property of the platform, so I don't see how any other device driver
-> > > would add another device.
+x86, vsyscall: Add missing <asm/fixmap.h> to arch/x86/mm/fault.c
 
-> > The platform may be comprised of multiple hardwaare modules with
-> > functionality on daughtercards which can be probed at runtime.  You may
-> > also find someone constructing a PCI card or something with a slimbus
-> > controller on it at some point.
+arch/x86/mm/fault.c now depend on having the symbol VSYSCALL_START
+defined, which is best handled by including <asm/fixmap.h> (it isn't
+unreasonable we may want other fixed addresses in this file in the
+future, and so it is cleaner than including <asm/vsyscall.h>
+directly.)
 
-> This is theoretically true, but IIRC David mentioned that the bus is
-> only present on few SoCs and has since been abandoned in favor of standard
-> busses for new devices.
+This addresses an x86-64 allnoconfig build failure.  On other
+configurations it was masked by an indirect path:
 
-No, that's not the case at all - I'm not sure what gave you that
-impression.  This is new technology which is rolling out at the minute.
-It is a standard bus.
+<asm/smp.h> -> <asm/apic.h> -> <asm/fixmap.h> -> <asm/vsyscall.h>
 
-> > It seems a bit extreme to prevent anyone implementing a subsystem for
-> > their platform until they've converted it into device tree.  Though with
-> > slimbus it should be at least somewhat probeable IIRC?
+... however, the first such include is conditional on CONFIG_X86_LOCAL_APIC.
 
-> From what I've heard (and seen in the code), there is no support for
-> probing, just like in I2C.
+Originally-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/CA%2B55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5%2BfqMp_exQ@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/fault.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-That's what the code does, yes.  I'd need to recheck the spec but I do
-seem to recall some device IDs in there.
-
-> The platform is in the process of getting converted to device tree
-> already, the first patches were posted on Saturday. I don't know what
-> the timeline is for this, or how many board with slimbus are supported
-> in mainline or still waiting to get merged, but my guess is that the
-> bulk is still out of tree. If that's true, it's definitely cleaner to
-> convert it over to device tree before merging, instead of having to
-> change all the board files again when doing the conversion.
-
-That's one platform, this is not at all constructive for other devices
-(or worse, architectures) implementing slimbus support.  Insisting that
-new ARM platforms use device tree is one thing, insisting that new bus
-implementations only work with device tree is quite a different thing.
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 247aae3..f2d4c9d 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -17,6 +17,7 @@
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
++#include <asm/fixmap.h>			/* VSYSCALL_START		*/
+ 
+ /*
+  * Page fault error code bits:
