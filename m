@@ -1,143 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab1HPUNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 16:13:50 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37159 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab1HPUNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 16:13:48 -0400
-Date: Tue, 16 Aug 2011 13:13:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Paul Menage <menage@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 14/32] nohz/cpuset: Don't turn off the tick if rcu
- needs it
-Message-ID: <20110816201342.GG2404@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
+	id S1752294Ab1HPUO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:14:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42197 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab1HPUOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 16:14:55 -0400
+Date: Tue, 16 Aug 2011 13:57:14 -0600
+From: Alex Chiang <achiang@canonical.com>
+To: gregkh@suse.de
+Cc: ajb@spheresystems.co.uk, linux-usb@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] USB option driver add PID of Huawei Vodafone K3806
+Message-ID: <20110816195713.GB31609@canonical.com>
+Mail-Followup-To: Alex Chiang <achiang@canonical.com>, gregkh@suse.de,
+	ajb@spheresystems.co.uk, linux-usb@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 05:52:11PM +0200, Frederic Weisbecker wrote:
-> If RCU is waiting for the current CPU to complete a grace
-> period, don't turn off the tick. Unlike dynctik-idle, we
+From: Andrew Bird <ajb@spheresystems.co.uk>
 
-s/dynctik/dyntick/  ;-)
+This patch adds the product ID of Huawei's Vodafone K3806 mobile broadband
+modem to option.c. This is necessary so that the driver gets loaded on
+demand without the intervention of usb_modeswitch. This has the benefit of
+it becoming available faster and also ensures that the option driver is not
+bound to a network interface that should be claimed by cdc_ether.
 
-> are not necessarily going to enter into rcu extended quiescent
-> state, so we may need to keep the tick to note current CPU's
-> quiescent states.
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Signed-off-by: Alex Chiang <achiang@canonical.com>
+---
+ This patch might be useful for -stable too, but I'm not
+ personally too concerned if it hits that tree or not.
 
-One question below...
+ drivers/usb/serial/option.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-							Thanx, Paul
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 8156561..6e04222 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -148,6 +148,7 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
++#define HUAWEI_PRODUCT_K3806			0x14AE
+ #define HUAWEI_PRODUCT_K3770			0x14C9
+ #define HUAWEI_PRODUCT_K3771			0x14CA
+ #define HUAWEI_PRODUCT_K4510			0x14CB
+@@ -551,6 +552,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+-- 
+1.7.4.1
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Anton Blanchard <anton@au1.ibm.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Paul E . McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> ---
->  include/linux/rcupdate.h |    1 +
->  kernel/rcutree.c         |    3 +--
->  kernel/sched.c           |   14 ++++++++++++++
->  3 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 99f9aa7..55a482a 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -133,6 +133,7 @@ static inline int rcu_preempt_depth(void)
->  extern void rcu_sched_qs(int cpu);
->  extern void rcu_bh_qs(int cpu);
->  extern void rcu_check_callbacks(int cpu, int user);
-> +extern int rcu_pending(int cpu);
->  struct notifier_block;
-> 
->  #ifdef CONFIG_NO_HZ
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index ba06207..0009bfc 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -205,7 +205,6 @@ int rcu_cpu_stall_suppress __read_mostly;
->  module_param(rcu_cpu_stall_suppress, int, 0644);
-> 
->  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
-> -static int rcu_pending(int cpu);
-> 
->  /*
->   * Return the number of RCU-sched batches processed thus far for debug & stats.
-> @@ -1729,7 +1728,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
->   * by the current CPU, returning 1 if so.  This function is part of the
->   * RCU implementation; it is -not- an exported member of the RCU API.
->   */
-> -static int rcu_pending(int cpu)
-> +int rcu_pending(int cpu)
->  {
->  	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
->  	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 0e1aa4e..353a66f 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2439,6 +2439,7 @@ DEFINE_PER_CPU(int, task_nohz_mode);
->  bool cpuset_nohz_can_stop_tick(void)
->  {
->  	struct rq *rq;
-> +	int cpu;
-> 
->  	rq = this_rq();
-> 
-> @@ -2446,6 +2447,19 @@ bool cpuset_nohz_can_stop_tick(void)
->  	if (rq->nr_running > 1)
->  		return false;
-> 
-> +	cpu = smp_processor_id();
-> +
-> +	/*
-> +	 * FIXME: will probably be removed soon as it's
-> +	 * already checked from tick_nohz_stop_sched_tick()
-> +	 */
-> +	if (rcu_needs_cpu(cpu))
-> +		return false;
-> +
-> +	/* Is there a grace period to complete ? */
-> +	if (rcu_pending(cpu))
-
-This is from a quiescent state for both RCU and RCU-bh, right?
-Or can their be RCU or RCU-bh read-side critical sections held
-across here?  (It would be mildly bad if so.)
-
-But force_quiescent_state() will catch cases where RCU needs
-quiescent states from CPUs, so is this check really needed?
-
-> +		return false;
-> +
->  	return true;
->  }
-> 
-> -- 
-> 1.7.5.4
-> 
