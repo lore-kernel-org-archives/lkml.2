@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab1HPFzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:55:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45181 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab1HPFzq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:55:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
-	<1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com>
-Date: Mon, 15 Aug 2011 22:55:45 -0700
-Message-ID: <CAF8ieYV_3skMFo4Mc59hX1g1tFEjg8Fjnag36ZQwU9w=CPkLLQ@mail.gmail.com>
-Subject: Re: avr32: handle_signal() bug?
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753133Ab1HPGAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:00:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60975 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab1HPGAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 02:00:49 -0400
+Date: Tue, 16 Aug 2011 16:00:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Andy Lutomirski <luto@mit.edu>,
+        Peter Anvin <hpa@linux.intel.com>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Rule 1 (Was: Re: [PATCH 3.1-rc2] x86: fix mm/fault.c build)
+Message-Id: <20110816160036.859d2c65dc1aeb94ad5b76d6@canb.auug.org.au>
+In-Reply-To: <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+References: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
+	<20110815101846.58809a89.rdunlap@xenotime.net>
+	<CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__16_Aug_2011_16_00_36_+1000_WlTgPpQ5CWlo_wIn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Tue__16_Aug_2011_16_00_36_+1000_WlTgPpQ5CWlo_wIn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for taking so long to test this.
+Hi Linus,
 
-On Mon, Aug 8, 2011 at 3:25 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Sun, 2011-08-07 at 10:20 -0700, Håvard Skinnemoen wrote:
->> Looks good to me. I'm not sure how to test it though...I can try to
->> build a kernel, run it on my board and see if it explodes, but I
->> suspect this bug is a lot more subtle than that.
+On Mon, 15 Aug 2011 19:09:57 -0700 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
 >
-> I suspect the best test would be one that makes use of SA_NODEFER.
-> Something like this,
+> Urgh. I *hate* those kinds of "some configs work" cases.
 
-Thanks for the test. Unfortunately, the result is the same regardless
-of whether I apply the patches or not. In both cases:
+Or "some architectures/platforms work" ... That's why we added Rule 1 to
+Documentation/SubmitChecklist.  :-)
 
-/root # ./nodefer
-SIGUSR2: not blocked
-SIGTERM: not blocked
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-On my desktop, it behaves as expected:
+--Signature=_Tue__16_Aug_2011_16_00_36_+1000_WlTgPpQ5CWlo_wIn
+Content-Type: application/pgp-signature
 
-$ ./nodefer-pc
-SIGUSR2: blocked
-SIGTERM: blocked
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Your patch doesn't appear to do any harm though, and it looks correct
-to me. Perhaps there's another bug lurking somewhere as well. Some
-preliminary debugging makes me suspicious about libc, but I can't tell
-for sure yet.
+iQEcBAEBAgAGBQJOSgeEAAoJEDMEi1NhKgbsXRAH/ReTkreURZxXeWMBq0uS3yGS
+/PqGjTaXUElb8YTD5sH4TItMsIxYE/pStUfA+zr1X2pUjeHh6hMP4FttkDhegxVc
+Heb4BQcuyUhhh2/QtJ1LjASC+MXhnl2ExXjPcNjBb6c/t3xRK7/gtNrWPqUiXBTQ
+hIVRwyNxGa6LfUwKaUQq9DgBhMJV30V2aY7wxPxKUA3pPL08w5jG76hxSw1lueJM
+sld7C0naMU9KZekvd/0HVQBwZuvCNGNan7Azk0xF4fOHW7LHtijY8HmGkaZcAkfK
+g7XKh7qlIQ35oZQe0em5L1b1qQuk2Q0vPyhylQRUjOE75tgs0gQyEB71T7Z5HVw=
+=4D80
+-----END PGP SIGNATURE-----
 
-Havard
+--Signature=_Tue__16_Aug_2011_16_00_36_+1000_WlTgPpQ5CWlo_wIn--
