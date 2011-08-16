@@ -1,75 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1HPTd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:33:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:55245 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996Ab1HPTdZ (ORCPT
+	id S1752349Ab1HPTeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:34:22 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:30285 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab1HPTeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:33:25 -0400
-Subject: Re: [PATCH 18/41] OpenRISC: Don't reimplement force_sigsegv()
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <20110816164928.GA29190@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
-	 <1313071035-12047-19-git-send-email-matt@console-pimps.org>
-	 <20110816164928.GA29190@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Aug 2011 20:33:22 +0100
-Message-ID: <1313523202.3436.180.camel@mfleming-mobl1.ger.corp.intel.com>
+	Tue, 16 Aug 2011 15:34:20 -0400
+Date: Tue, 16 Aug 2011 21:33:49 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
+        john.stultz@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        ohad@wizery.com, gregkh@suse.de, stefanr@s5r6.in-berlin.de,
+        lethal@linux-sh.org, linville@tuxdriver.com, zajec5@gmail.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20110816213349.5b042f80@endymion.delvare>
+In-Reply-To: <20110815193724.GB2465@flint.arm.linux.org.uk>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+	<20110815193724.GB2465@flint.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 18:49 +0200, Oleg Nesterov wrote:
-> On 08/11, Matt Fleming wrote:
-> >
-> > Instead of open coding the sequence from force_sigsegv() just call
-> > it. This also fixes a race because sa_handler was being modified
-> > without holding ->sighand->siglock.
-> >
-> > --- a/arch/openrisc/kernel/signal.c
-> > +++ b/arch/openrisc/kernel/signal.c
-> > @@ -257,9 +257,7 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-> >  	return;
-> >
-> >  give_sigsegv:
-> > -	if (sig == SIGSEGV)
-> > -		ka->sa.sa_handler = SIG_DFL;
-> > -	force_sig(SIGSEGV, current);
-> > +	force_sigsegv(sig, current);
-> >  }
+Hi Russell,
+
+On Mon, 15 Aug 2011 20:37:24 +0100, Russell King wrote:
+> On Wed, Aug 10, 2011 at 05:31:28PM -0600, Kenneth Heitke wrote:
+> > From: Sagar Dharia <sdharia@codeaurora.org>
+> > 
+> > SLIMbus (Serial Low Power Interchip Media Bus) is a specification
+> > developed by MIPI (Mobile Industry Processor Interface) alliance.
+> > SLIMbus is a 2-wire implementation, which is used to communicate with
+> > peripheral components like audio. Commonly used digital audio
+> > interfaces such as I2S, PCM are intended for point-to-point connection
+> > between application processor and single audio device and support one
+> > or two channels. Adding more channels or functions is difficult
+> > without increasing number of bus structures and hence pin count.
+> > In parallel to audio channels, control buses such as I2C are typically
+> > used for low-bandwidth control tasks.
+> > SLIMbus replaces many digital audio buses and control buses by
+> > providing flexible and dynamic bus-bandwidth between data-functions
+> > and control-functions.
+> > 
+> > The framework supports message APIs, channel scheduling for SLIMbus.
+> > Message APIs are used for status/control type of communication with a
+> > device. Data Channel APIs are used for setting data channels between
+> > SLIMbus devices.
+> > 
+> > Framework supports multiple busses (1 controller per bus) and multiple
+> > clients/slave devices per controller.
 > 
-> Agreed, but...
+> This looks like another bus doing the same thing as SPI and I2C.
 > 
-> I don't really understand the changelog, which race this patch fix?
+> We seem to be having a growing number of bus_types which:
 > 
-> Yes, we shouldn't change sa_handler lockless, this "breaks the rules"
-> but I do not see any immediate problem. And since force_sigsegv() drops
-> the lock after setting SIG_DFL we can "race" with the sub-thread anyway.
+> 1. Supply some kind of boardinfo array containing device names against
+>    a device.
+> struct i2c_board_info {
+>         char            type[I2C_NAME_SIZE];
+>         unsigned short  flags;
+>         unsigned short  addr;
+>         void            *platform_data;
+>         struct dev_archdata     *archdata;
+>         struct device_node *of_node;
+>         int             irq;
+> };
+> struct spi_board_info {
+>         char            modalias[SPI_NAME_SIZE];
+>         const void      *platform_data;
+>         void            *controller_data;
+>         int             irq;
+>         u32             max_speed_hz;
+>         u16             bus_num;
+>         u16             chip_select;
+>         u8              mode;
+> };
+> 
+> 2. match drivers to this against (i2c) type (spi) modalias.
+> 
+> 3. drivers contain essentially the same ID structure:
+> #define I2C_NAME_SIZE   20
+> #define I2C_MODULE_PREFIX "i2c:"
+> struct i2c_device_id {
+>         char name[I2C_NAME_SIZE];
+>         kernel_ulong_t driver_data      /* Data private to the driver */
+>                         __attribute__((aligned(sizeof(kernel_ulong_t))));
+> };
+> #define SPI_NAME_SIZE   32
+> #define SPI_MODULE_PREFIX "spi:"
+> struct spi_device_id {
+>         char name[SPI_NAME_SIZE];
+>         kernel_ulong_t driver_data      /* Data private to the driver */
+>                         __attribute__((aligned(sizeof(kernel_ulong_t))));
+> };
+> +#define SLIMBUS_NAME_SIZE      32
+> +#define SLIMBUS_MODULE_PREFIX "slim:"
+> +struct slim_device_id {
+> +       char name[SLIMBUS_NAME_SIZE];
+> +       kernel_ulong_t driver_data      /* Data private to the driver */
+> +                       __attribute__((aligned(sizeof(kernel_ulong_t))));
+> +};
 
-Argh, yeah this and the rest of patches that try to fixup 'ka' are
-wrong, because like you say, we're operating on a copy on the stack, so
-there's no race. I missed that :-(
+The similarities are certainly due to the fact that spi and i2c were
+designed by the same person (David Brownell), and slimbus most probably
+was originally cloned from either. I'm glad we don't reinvent the wheel
+each time.
 
-I did notice that race in force_sigsegv() too, is it a real problem? It
-certainly looked to me like it could be a real problem.
+> I heard of another bus type at the recent Linaro conference which sounds
+> like it's going to do yet again a similar thing.  So it sounds like we're
+> heading for about four of these things.
+> 
+> Is there any way to consolidate this before we end up with four ways of
+> solving the same problem?
 
-> Hmm. Looking more, I think that this patch is not the cleanup, but the
-> bugfix. The current code is simply wrong, it plays with ka, and it points
-> to the _copy_ of sighand->action[], so this code is simply pointless.
+Each bus type has its own specificity, so I doubt we can make them all
+fit in a single model. Of course they have common points, but USB and
+PCI also do to some extent, still we don't have a common framework for
+these.
 
-Yeah, I will make that more explicit in the changelog.
-
-> Unless I missed something, could you fix the changelog and resend?
-
-Nope you haven't missed anything, you're spot on. I will resend.
+At this point I am unsure, what problem you are trying to solve
+exactly. The amount of code you refer to above is low, so I see very
+little room for improvement. But if you have a concrete proposal, I am
+ready to evaluate it.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Jean Delvare
