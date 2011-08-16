@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab1HPGWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 02:22:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40043 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721Ab1HPGWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 02:22:47 -0400
-Date: Tue, 16 Aug 2011 06:22:34 GMT
-From: tip-bot for Cesar Eduardo Barros <cesarb@cesarb.net>
-Message-ID: <tip-6cd2f4a4248891cb09954b7675c1c846c3c90dc0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, cesarb@cesarb.net, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com,
-        luto@MIT.EDU
-Reply-To: mingo@redhat.com, hpa@zytor.com, cesarb@cesarb.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        luto@MIT.EDU
-In-Reply-To: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
-References: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64, doc: Remove int 0xcc from entry_64.S documentation
-Git-Commit-ID: 6cd2f4a4248891cb09954b7675c1c846c3c90dc0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752739Ab1HPGer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:34:47 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:42290 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751166Ab1HPGeo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 02:34:44 -0400
+Date: Tue, 16 Aug 2011 09:34:40 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Felipe Balbi <balbi@ti.com>,
+        Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2] i2c: tegra: Check for overflow errors with BUG_ON.
+Message-ID: <20110816063439.GB2223@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+ <1313458336-31456-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Aug 2011 06:22:37 +0000 (UTC)
+In-Reply-To: <1313458336-31456-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6cd2f4a4248891cb09954b7675c1c846c3c90dc0
-Gitweb:     http://git.kernel.org/tip/6cd2f4a4248891cb09954b7675c1c846c3c90dc0
-Author:     Cesar Eduardo Barros <cesarb@cesarb.net>
-AuthorDate: Mon, 15 Aug 2011 19:26:50 -0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 15 Aug 2011 22:53:28 -0700
 
-x86-64, doc: Remove int 0xcc from entry_64.S documentation
+--K8nIJk4ghYZn606h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Commit 3ae36655b97a03fa1decf72f04078ef945647c1a (x86-64: Rework vsyscall
-emulation and add vsyscall= parameter) removed the special use of the
-0xcc IDT vector.
+On Mon, Aug 15, 2011 at 06:32:16PM -0700, Doug Anderson wrote:
+> This change doesn't fix any known problems but turns
+> on the overflow detection feature of the i2c controller
+> in the hopes of flushing out any current (or future)
+> bugs in the i2c driver.
+>=20
+> Inspired by a change on nvidia's git server:
+>   http://nv-tegra.nvidia.com/gitweb/?p=3Dlinux-2.6.git;a=3Dcommit;h=3D266=
+d1b7397284505e55d06254b497cb32be07b69
+>=20
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Remove it from Documentation/x86/entry_64.txt also.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Acked-by: Andy Lutomirski <luto@MIT.EDU>
-Link: http://lkml.kernel.org/r/1313447210-9149-1-git-send-email-cesarb@cesarb.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- Documentation/x86/entry_64.txt |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+> ---
+> This takes Felipe Balbi's suggestion of making the overflow
+> error non-fatal.
 
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index 7869f14..bc7226e 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -27,9 +27,6 @@ Some of these entries are:
-    magically-generated functions that make their way to do_IRQ with
-    the interrupt number as a parameter.
- 
-- - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
--   vsyscall emulation.
--
-  - APIC interrupts: Various special-purpose interrupts for things
-    like TLB shootdown.
- 
+the WARN() was very nice idea, I was thinking of just returning an error
+to the client, but the adition of WARN() will make it really bold ;-)
+
+--=20
+balbi
+
+--K8nIJk4ghYZn606h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSg9/AAoJEAv8Txj19kN12jkIAIdVeYQmxKoZcQTedYVoImCV
+YdDBXPLi6q7Sw4/+0czLcOcWCo4GNXdO41uEayjfsgd0rZEzHKODLOos2tXjJDvp
+tLHG958miHMPQYL6YKTdrwmw1yafP/QncYC/BMTVw286TJO3dyJfdsThTSfVvjan
+VbiTkPkxUgj7RGXiFBbQzdjWFOPHovswzAMtOWCb6J0sMsq6bPbhuTTNdcd4fE4f
+0g8CDbnHTHd1vAHivrZQvLCCoJcVOmppPY5ob9CF1UMpG7mtmc+1glW7hyQDXex7
+p8IM+4huaRkh38wtDJBmkBDyzlg+S4rowgLwnMs5TqSAkflrMJ7j3kiTMNnRYuI=
+=3mdt
+-----END PGP SIGNATURE-----
+
+--K8nIJk4ghYZn606h--
