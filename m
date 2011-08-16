@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab1HPJGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 05:06:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41951 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1HPJGh (ORCPT
+	id S1751844Ab1HPJL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 05:11:29 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:36644 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab1HPJL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 05:06:37 -0400
-Date: Tue, 16 Aug 2011 13:05:40 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        kernel-hardening@lists.openwall.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low
- addresses
-Message-ID: <20110816090540.GA7857@albatros>
-References: <20110812102954.GA3496@albatros>
- <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com>
+	Tue, 16 Aug 2011 05:11:26 -0400
+Date: Tue, 16 Aug 2011 11:11:43 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <gregkh@suse.de>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.0.2
+In-Reply-To: <20110816015501.GB28885@kroah.com>
+Message-ID: <alpine.LNX.2.00.1108161110350.23471@swampdragon.chaosbits.net>
+References: <20110816015447.GA28885@kroah.com> <20110816015501.GB28885@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 12, 2011 at 18:19 -0500, H. Peter Anvin wrote:
-> Vasiliy Kulikov <segoon@openwall.com> wrote:
-> 
-> >This patch changes mmap base address allocator logic to incline to
-> >allocate addresses from the first 16 Mbs of address space.  These
-> >addresses start from zero byte (0x00AABBCC).
-...
 
-To make it clear:
+> diff --git a/Makefile b/Makefile
+> index f124b18..794fa28 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1,6 +1,6 @@
+>  VERSION = 3
+>  PATCHLEVEL = 0
+> -SUBLEVEL = 1
+> +SUBLEVEL = 2
+>  EXTRAVERSION =
 
-The VM space is not significantly reduced - an additional gap, which
-is used for ASCII-protected region, is calculated the same way as the
-common mmap gap is calculated.  The maximum size of the gap is 1MB for
-the upstream kernel default ASLR entropy - a trifle IMO.
-
-If the new allocator fails to find appropriate vma in the protected
-zone, the old one tries to do the job.  So, no visible changes for
-userspace.
-
-
-As to the benefit:
-
-1) For small PIE programs, which don't use much libraries, all
-executable regions are moved to the protected zone.
-
-2) For non-PIE programs if image starts from 0x00AABBCC address and fits
-into the zone the same rule of small libs applies.
-
-3) For non-PIE programs with images above 0x01000000 and/or programs
-with much libraries some code sections are outsize of the protected region.
-
-The protection works for (1) and (2) programs.  It doesn't work for (3).
-
-
-(1) is not too seldom.  Programs, which need such protection (network
-daemons, programs parsing untrusted input, etc.), are usually small
-enough.  In our distro, Openwall GNU/*/Linux, almost all daemon programs
-fit into the region.
-
-As the changes are not intrusive, we'd want to see this feature in the
-upstream kernel.  If you know why the patch cannot be a part of the
-upstream kernel - please tell me, I'll try to address the issues.
-
-Thanks,
+Isn't it time we remove that EXTRAVERSION from the stable kernels now that 
+they are using SUBLEVEL ?
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
