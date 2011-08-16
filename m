@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab1HPFMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:12:07 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23520 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1HPFMD (ORCPT
+	id S1751930Ab1HPFPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:15:55 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57865 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab1HPFPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:12:03 -0400
-Date: Tue, 16 Aug 2011 01:11:22 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3.1-rc2] xen: self-balloon needs module.h
-Message-ID: <20110816051122.GC27908@dumpdata.com>
-References: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com>
- <20110815214143.ed2fa458.rdunlap@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815214143.ed2fa458.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4E49FC01.0012:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Tue, 16 Aug 2011 01:15:53 -0400
+Subject: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
+ linux/types.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 13:15:44 +0800
+Message-ID: <1313471744.5824.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 09:41:43PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix build errors (found when CONFIG_SYSFS is not enabled):
-> 
-> drivers/xen/xen-selfballoon.c:446: warning: data definition has no type or storage class
-> drivers/xen/xen-selfballoon.c:446: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-> drivers/xen/xen-selfballoon.c:446: warning: parameter names (without types) in function declaration
-> drivers/xen/xen-selfballoon.c:485: error: expected declaration specifiers or '...' before string constant
-> drivers/xen/xen-selfballoon.c:485: warning: data definition has no type or storage class
-> drivers/xen/xen-selfballoon.c:485: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-> drivers/xen/xen-selfballoon.c:485: warning: function declaration isn't a prototype
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Include linux/erron.h to fix below build error.
 
-I think .. yeah I do have it queued it up in my stable/bug.fixes tree, .. ah
-but did not push it (albeit it was in #linux-next which was pushed).
+  CC      arch/arm/mach-tegra/board-harmony-pinmux.o
+In file included from /home/axel/repos/git/linux-2.6/arch/arm/include/asm/gpio.h:5,
+                 from include/linux/gpio.h:18,
+                 from arch/arm/mach-tegra/board-harmony-pinmux.c:18:
+arch/arm/mach-tegra/include/mach/gpio.h: In function 'gpio_to_irq':
+arch/arm/mach-tegra/include/mach/gpio.h:35: error: 'EINVAL' undeclared (first use in this function)
+arch/arm/mach-tegra/include/mach/gpio.h:35: error: (Each undeclared identifier is reported only once
+arch/arm/mach-tegra/include/mach/gpio.h:35: error: for each function it appears in.)
+arch/arm/mach-tegra/include/mach/gpio.h: In function 'irq_to_gpio':
+arch/arm/mach-tegra/include/mach/gpio.h:43: error: 'EINVAL' undeclared (first use in this function)
+make[1]: *** [arch/arm/mach-tegra/board-harmony-pinmux.o] Error 1
+make: *** [arch/arm/mach-tegra] Error 2
 
-Linus, if you want to take it, it has my
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Include linux/types.h to fix below build error.
 
-or if you just want to do a git pull, I will shortly send an email asking
-to pull the above mentioned tree.
+  CC      arch/arm/mach-tegra/board-trimslice-pinmux.o
+In file included from /home/axel/repos/git/linux-2.6/arch/arm/include/asm/gpio.h:5,
+                 from include/linux/gpio.h:18,
+                 from arch/arm/mach-tegra/board-trimslice-pinmux.c:16:
+arch/arm/mach-tegra/include/mach/gpio.h:49: error: expected specifier-qualifier-list before 'bool'
+arch/arm/mach-tegra/board-trimslice-pinmux.c:145: error: unknown field 'enable' specified in initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:145: warning: excess elements in struct initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:145: warning: (near initialization for 'gpio_table[0]')
+arch/arm/mach-tegra/board-trimslice-pinmux.c:146: error: unknown field 'enable' specified in initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:146: warning: excess elements in struct initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:146: warning: (near initialization for 'gpio_table[1]')
+arch/arm/mach-tegra/board-trimslice-pinmux.c:148: error: unknown field 'enable' specified in initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:148: warning: excess elements in struct initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:148: warning: (near initialization for 'gpio_table[2]')
+arch/arm/mach-tegra/board-trimslice-pinmux.c:149: error: unknown field 'enable' specified in initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:149: warning: excess elements in struct initializer
+arch/arm/mach-tegra/board-trimslice-pinmux.c:149: warning: (near initialization for 'gpio_table[3]')
+make[1]: *** [arch/arm/mach-tegra/board-trimslice-pinmux.o] Error 1
+make: *** [arch/arm/mach-tegra] Error 2
 
-> ---
->  drivers/xen/xen-selfballoon.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> and will need <linux/export.h> when module.h is split up.
-> 
-> --- lnx-31-rc2.orig/drivers/xen/xen-selfballoon.c
-> +++ lnx-31-rc2/drivers/xen/xen-selfballoon.c
-> @@ -70,6 +70,7 @@
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
->  #include <linux/mman.h>
-> +#include <linux/module.h>
->  #include <linux/workqueue.h>
->  #include <xen/balloon.h>
->  #include <xen/tmem.h>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next (next-20110815), it fixes the build error with "make tegra_defconfig".
+Axel
+ arch/arm/mach-tegra/include/mach/gpio.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-tegra/include/mach/gpio.h b/arch/arm/mach-tegra/include/mach/gpio.h
+index e353805..42f3f08 100644
+--- a/arch/arm/mach-tegra/include/mach/gpio.h
++++ b/arch/arm/mach-tegra/include/mach/gpio.h
+@@ -21,6 +21,8 @@
+ #define __MACH_TEGRA_GPIO_H
+ 
+ #include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/types.h>
+ #include <mach/irqs.h>
+ 
+ #define TEGRA_NR_GPIOS		INT_GPIO_NR
+-- 
+1.7.4.1
+
+
+
