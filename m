@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab1HPSKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 14:10:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36589 "EHLO mx1.redhat.com"
+	id S1752752Ab1HPSKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 14:10:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38532 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab1HPSKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 14:10:09 -0400
-Date: Tue, 16 Aug 2011 20:06:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 41/41] exit: Use __set_task_blocked()
-Message-ID: <20110816180644.GJ29190@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-42-git-send-email-matt@console-pimps.org>
+	id S1751782Ab1HPSKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 14:10:52 -0400
+Message-ID: <4E4AB287.50600@redhat.com>
+Date: Tue, 16 Aug 2011 11:10:15 -0700
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313071035-12047-42-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm-devel <kvm@vger.kernel.org>
+Subject: [GIT PULL] KVM updates for 3.1-rc2
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11, Matt Fleming wrote:
->
-> As described in e6fa16ab ("signal: sigprocmask() should do
-> retarget_shared_pending()") the modification of current->blocked is
-> incorrect as we need to check whether the signal we're about to block
-> is pending in the shared queue.
+Linus,
 
-Yes. but in this case the code is correct. First of all, unblocking
-is always fine. Also, this should be used by kthreads only, and they
-are single-threaded.
+Please pull from
 
-But there are other reasons why I don't like this change, even if we
-ignore the fact the patched exit.c can't be compiled (__set_task_blocked
-is not exported ;).
+   ssh://master.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.1
 
->  int allow_signal(int sig)
->  {
-> +	sigset_t blocked;
-> +
->  	if (!valid_signal(sig) || sig < 1)
->  		return -EINVAL;
->
->  	spin_lock_irq(&current->sighand->siglock);
->  	/* This is only needed for daemonize()'ed kthreads */
+to receive fixes for Kconfig problems introduced by the KVM steal time 
+implementation.
 
-Exactly. And nowadays the daemonize()'ed kthreads should not play
-with allow_signal().
+Randy Dunlap (2):
+       KVM: fix TASK_DELAY_ACCT kconfig warning
+       KVM: uses TASKSTATS, depends on NET
 
-And more, I think it is the time to kill daemonize(). Contrary to
-what /bin/grep thinks, it has only one user.
+  arch/x86/kvm/Kconfig |    3 +++
+  1 files changed, 3 insertions(+), 0 deletions(-)
 
-In short: this code in allow_signal() should die. I'll try to send
-the patches soon...
-
-Oleg.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
