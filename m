@@ -1,76 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab1HPHK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 03:10:56 -0400
-Received: from h1778886.stratoserver.net ([85.214.133.74]:36276 "EHLO
-	h1778886.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab1HPHKz (ORCPT
+	id S1751548Ab1HPHRS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 03:17:18 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:59160 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1HPHRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 03:10:55 -0400
-X-Greylist: delayed 1342 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 03:10:55 EDT
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: S3C2443: Remove redundant s3c_register_clocks call for init_clocks
-Date: Tue, 16 Aug 2011 08:48:22 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-References: <1313463881.16359.2.camel@phoenix>
-In-Reply-To: <1313463881.16359.2.camel@phoenix>
+	Tue, 16 Aug 2011 03:17:15 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 99D76B41B4
+Date: Tue, 16 Aug 2011 09:17:09 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
+Message-ID: <20110816071709.GA1302@thinkpad>
+References: <20110816022006.348714319@intel.com>
+ <20110816022329.063575688@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108160848.25088.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816022329.063575688@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 16. August 2011, 05:04:41 schrieb Axel Lin:
-> Since commit af337f3e633a198034a99450416257ddf2307497
-> "ARM: S3C2443: Move parts of the clock code to common clock file",
-> the init_clocks array is moved to arch/arm/plat-s3c24xx/s3c2443-clock.c.
-> Now we call s3c_register_clocks for init_clocks in
-> s3c2443_common_init_clocks.
+On Tue, Aug 16, 2011 at 10:20:10AM +0800, Wu Fengguang wrote:
+> Add two fields to task_struct.
 > 
-> Thus we can remove the empty init_clocks array here and remove the
-> redundant s3c_register_clocks call for init_clocks in s3c2443_init_clocks.
-I'm not 100% sure, but you might want to include Kukjin Kim 
-<kgene.kim@samsung.com> who seems to be handling the Samsung-stuff most of the 
-time.
-
-Heiko
-
+> 1) account dirtied pages in the individual tasks, for accuracy
+> 2) per-task balance_dirty_pages() call intervals, for flexibility
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
+> scale near-sqrt to the safety gap between dirty pages and threshold.
+> 
+> The main problem of per-task nr_dirtied is, if 1k+ tasks start dirtying
+> pages at exactly the same time, each task will be assigned a large
+> initial nr_dirtied_pause, so that the dirty threshold will be exceeded
+> long before each task reached its nr_dirtied_pause and hence call
+> balance_dirty_pages().
+> 
+> The solution is to watch for the number of pages dirtied on each CPU in
+> between the calls into balance_dirty_pages(). If it exceeds ratelimit_pages
+> (3% dirty threshold), force call balance_dirty_pages() for a chance to
+> set bdi->dirty_exceeded. In normal situations, this safeguarding
+> condition is not expected to trigger at all.
+> 
+> peter: keep the per-CPU ratelimit for safeguarding the 1k+ tasks case
+> 
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Reviewed-by: Andrea Righi <andrea@betterlinux.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 > ---
->  arch/arm/mach-s3c2443/clock.c |    7 -------
->  1 files changed, 0 insertions(+), 7 deletions(-)
+>  include/linux/sched.h |    7 +++
+>  kernel/fork.c         |    3 +
+>  mm/page-writeback.c   |   90 ++++++++++++++++++++++------------------
+>  3 files changed, 61 insertions(+), 39 deletions(-)
 > 
-> diff --git a/arch/arm/mach-s3c2443/clock.c b/arch/arm/mach-s3c2443/clock.c
-> index a1a7176..4018dbe 100644
-> --- a/arch/arm/mach-s3c2443/clock.c
-> +++ b/arch/arm/mach-s3c2443/clock.c
-> @@ -305,9 +305,6 @@ static struct clk init_clocks_off[] = {
+> --- linux-next.orig/include/linux/sched.h	2011-08-14 18:03:44.000000000 +0800
+> +++ linux-next/include/linux/sched.h	2011-08-15 10:26:05.000000000 +0800
+> @@ -1525,6 +1525,13 @@ struct task_struct {
+>  	int make_it_fail;
+>  #endif
+>  	struct prop_local_single dirties;
+> +	/*
+> +	 * when (nr_dirtied >= nr_dirtied_pause), it's time to call
+> +	 * balance_dirty_pages() for some dirty throttling pause
+> +	 */
+> +	int nr_dirtied;
+> +	int nr_dirtied_pause;
+> +
+>  #ifdef CONFIG_LATENCYTOP
+>  	int latency_record_count;
+>  	struct latency_record latency_record[LT_SAVECOUNT];
+> --- linux-next.orig/mm/page-writeback.c	2011-08-15 10:26:04.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-08-15 13:51:16.000000000 +0800
+> @@ -54,20 +54,6 @@
+>   */
+>  static long ratelimit_pages = 32;
+>  
+> -/*
+> - * When balance_dirty_pages decides that the caller needs to perform some
+> - * non-background writeback, this is how many pages it will attempt to write.
+> - * It should be somewhat larger than dirtied pages to ensure that reasonably
+> - * large amounts of I/O are submitted.
+> - */
+> -static inline long sync_writeback_pages(unsigned long dirtied)
+> -{
+> -	if (dirtied < ratelimit_pages)
+> -		dirtied = ratelimit_pages;
+> -
+> -	return dirtied + dirtied / 2;
+> -}
+> -
+>  /* The following parameters are exported via /proc/sys/vm */
+>  
+>  /*
+> @@ -169,6 +155,8 @@ static void update_completion_period(voi
+>  	int shift = calc_period_shift();
+>  	prop_change_shift(&vm_completions, shift);
+>  	prop_change_shift(&vm_dirties, shift);
+> +
+> +	writeback_set_ratelimit();
+>  }
+>  
+>  int dirty_background_ratio_handler(struct ctl_table *table, int write,
+> @@ -930,6 +918,23 @@ static void bdi_update_bandwidth(struct 
+>  }
+>  
+>  /*
+> + * After a task dirtied this many pages, balance_dirty_pages_ratelimited_nr()
+> + * will look to see if it needs to start dirty throttling.
+> + *
+> + * If dirty_poll_interval is too low, big NUMA machines will call the expensive
+> + * global_page_state() too often. So scale it near-sqrt to the safety margin
+> + * (the number of pages we may dirty without exceeding the dirty limits).
+> + */
+> +static unsigned long dirty_poll_interval(unsigned long dirty,
+> +					 unsigned long thresh)
+> +{
+> +	if (thresh > dirty)
+> +		return 1UL << (ilog2(thresh - dirty) >> 1);
+> +
+> +	return 1;
+> +}
+> +
+> +/*
+>   * balance_dirty_pages() must be called by processes which are generating dirty
+>   * data.  It looks at the number of dirty pages in the machine and will force
+>   * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+> @@ -1072,6 +1077,9 @@ static void balance_dirty_pages(struct a
+>  	if (clear_dirty_exceeded && bdi->dirty_exceeded)
+>  		bdi->dirty_exceeded = 0;
+>  
+> +	current->nr_dirtied = 0;
+> +	current->nr_dirtied_pause = dirty_poll_interval(nr_dirty, dirty_thresh);
+> +
+>  	if (writeback_in_progress(bdi))
+>  		return;
+>  
+> @@ -1098,7 +1106,7 @@ void set_page_dirty_balance(struct page 
 >  	}
->  };
-> 
-> -static struct clk init_clocks[] = {
-> -};
-> -
->  /* clocks to add straight away */
-> 
->  static struct clksrc_clk *clksrcs[] __initdata = {
-> @@ -345,10 +342,6 @@ void __init s3c2443_init_clocks(int xtal)
->  	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++)
->  		s3c_register_clksrc(clksrcs[ptr], 1);
-> 
-> -	/* register clocks from clock array */
-> -
-> -	s3c_register_clocks(init_clocks, ARRAY_SIZE(init_clocks));
-> -
->  	/* We must be careful disabling the clocks we are not intending to
->  	 * be using at boot time, as subsystems such as the LCD which do
->  	 * their own DMA requests to the bus can cause the system to lockup
+>  }
+>  
+> -static DEFINE_PER_CPU(unsigned long, bdp_ratelimits) = 0;
+> +static DEFINE_PER_CPU(int, bdp_ratelimits);
+>  
+>  /**
+>   * balance_dirty_pages_ratelimited_nr - balance dirty memory state
+> @@ -1118,31 +1126,40 @@ void balance_dirty_pages_ratelimited_nr(
+>  					unsigned long nr_pages_dirtied)
+>  {
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+> -	unsigned long ratelimit;
+> -	unsigned long *p;
+> +	int ratelimit;
+> +	int *p;
+>  
+>  	if (!bdi_cap_account_dirty(bdi))
+>  		return;
+>  
+> -	ratelimit = ratelimit_pages;
+> -	if (mapping->backing_dev_info->dirty_exceeded)
+> -		ratelimit = 8;
+> +	if (!bdi->dirty_exceeded)
+> +		ratelimit = current->nr_dirtied_pause;
+> +	else
+> +		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
 
+Usage of ratelimit before init?
+
+Maybe:
+
+	ratelimit = current->nr_dirtied_pause;
+	if (bdi->dirty_exceeded)
+		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+
+Thanks,
+-Andrea
+
+> +
+> +	current->nr_dirtied += nr_pages_dirtied;
+>  
+> +	preempt_disable();
+>  	/*
+> -	 * Check the rate limiting. Also, we do not want to throttle real-time
+> -	 * tasks in balance_dirty_pages(). Period.
+> +	 * This prevents one CPU to accumulate too many dirtied pages without
+> +	 * calling into balance_dirty_pages(), which can happen when there are
+> +	 * 1000+ tasks, all of them start dirtying pages at exactly the same
+> +	 * time, hence all honoured too large initial task->nr_dirtied_pause.
+>  	 */
+> -	preempt_disable();
+>  	p =  &__get_cpu_var(bdp_ratelimits);
+> -	*p += nr_pages_dirtied;
+> -	if (unlikely(*p >= ratelimit)) {
+> -		ratelimit = sync_writeback_pages(*p);
+> +	if (unlikely(current->nr_dirtied >= ratelimit))
+>  		*p = 0;
+> -		preempt_enable();
+> -		balance_dirty_pages(mapping, ratelimit);
+> -		return;
+> +	else {
+> +		*p += nr_pages_dirtied;
+> +		if (unlikely(*p >= ratelimit_pages)) {
+> +			*p = 0;
+> +			ratelimit = 0;
+> +		}
+>  	}
+>  	preempt_enable();
+> +
+> +	if (unlikely(current->nr_dirtied >= ratelimit))
+> +		balance_dirty_pages(mapping, current->nr_dirtied);
+>  }
+>  EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+>  
+> @@ -1237,22 +1254,17 @@ void laptop_sync_completion(void)
+>   *
+>   * Here we set ratelimit_pages to a level which ensures that when all CPUs are
+>   * dirtying in parallel, we cannot go more than 3% (1/32) over the dirty memory
+> - * thresholds before writeback cuts in.
+> - *
+> - * But the limit should not be set too high.  Because it also controls the
+> - * amount of memory which the balance_dirty_pages() caller has to write back.
+> - * If this is too large then the caller will block on the IO queue all the
+> - * time.  So limit it to four megabytes - the balance_dirty_pages() caller
+> - * will write six megabyte chunks, max.
+> + * thresholds.
+>   */
+>  
+>  void writeback_set_ratelimit(void)
+>  {
+> -	ratelimit_pages = vm_total_pages / (num_online_cpus() * 32);
+> +	unsigned long background_thresh;
+> +	unsigned long dirty_thresh;
+> +	global_dirty_limits(&background_thresh, &dirty_thresh);
+> +	ratelimit_pages = dirty_thresh / (num_online_cpus() * 32);
+>  	if (ratelimit_pages < 16)
+>  		ratelimit_pages = 16;
+> -	if (ratelimit_pages * PAGE_CACHE_SIZE > 4096 * 1024)
+> -		ratelimit_pages = (4096 * 1024) / PAGE_CACHE_SIZE;
+>  }
+>  
+>  static int __cpuinit
+> --- linux-next.orig/kernel/fork.c	2011-08-14 18:03:44.000000000 +0800
+> +++ linux-next/kernel/fork.c	2011-08-15 10:26:05.000000000 +0800
+> @@ -1301,6 +1301,9 @@ static struct task_struct *copy_process(
+>  	p->pdeath_signal = 0;
+>  	p->exit_state = 0;
+>  
+> +	p->nr_dirtied = 0;
+> +	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
+> +
+>  	/*
+>  	 * Ok, make it visible to the rest of the system.
+>  	 * We dont wake it up yet.
+> 
