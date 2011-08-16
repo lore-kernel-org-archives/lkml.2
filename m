@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab1HPADt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 20:03:49 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53244 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab1HPADs convert rfc822-to-8bit (ORCPT
+	id S1753083Ab1HPAJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 20:09:23 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:60782 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752390Ab1HPAJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 20:03:48 -0400
+	Mon, 15 Aug 2011 20:09:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: An8AAO2xSU55LbABgWdsb2JhbABBmEiPTRUBARYmJYFAAQEFOhwjEAgDDgouFCUDIRPCXQ6GOQSbTohK
+Date: Tue, 16 Aug 2011 10:09:16 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
+Message-ID: <20110816000916.GH26978@dastard>
+References: <201108112329.23043.rjw@sisk.pl>
+ <201108112331.13241.rjw@sisk.pl>
+ <20110815122218.GB6971@quack.suse.cz>
+ <201108152009.13776.rjw@sisk.pl>
+ <20110815205807.GC16369@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAKxaRT+hCXu-921RoNw0aiiffZzNGQNgQX0FGfsfdSOP95DzBQ@mail.gmail.com>
-References: <CAKxaRTKtCOR7WHcpaTaVj8wqGoLpO04Vt3_aJ-Qfk=4X6CW0NQ@mail.gmail.com>
-	<CACqU3MXNjTTqHs22GNLWS1mrTi5=EQcMYbbStHsuOk9Msd838A@mail.gmail.com>
-	<CAKxaRT+hCXu-921RoNw0aiiffZzNGQNgQX0FGfsfdSOP95DzBQ@mail.gmail.com>
-Date: Mon, 15 Aug 2011 20:03:47 -0400
-Message-ID: <CACqU3MUSji7z507EhpeWgHkqGfJVVXWWbY4Hi15H8LDz3phjZw@mail.gmail.com>
-Subject: Re: Linux 3.0.1 compile problem on different locales..
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: =?ISO-8859-1?B?U2VyZGFyIEvWWUzc?= <s.koylux@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110815205807.GC16369@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 15, 2011 at 10:58:07PM +0200, Jan Kara wrote:
+>   Hello,
+> 
+> On Mon 15-08-11 20:09:13, Rafael J. Wysocki wrote:
+> > On Monday, August 15, 2011, Jan Kara wrote:
+> > >   BTW,  filesystem freezing never really worked for mmaped writes under
+> > > ext3 - ext3 would have to implement page_mkwrite() callback for that - so
+> > > if you want to rely on it for suspending, this will be non-trivial.
+> > 
+> > At this point the purpose of freezing filesystems is basically to
+> > prevent XFS from deadlocking with hibernation's memory preallocation.
+> > For other filesystems it may or may not make a difference depending on
+> > their implementation of freeze/unfreeze_super().
+>   What's exactly the problem? Memory preallocation enters direct reclaim
+> and that deadlocks in the filesystem?
 
-[Please do not reply only to me, it's considered rude for people on
-the public mailing list.]
+Well, that's one possible manifestation. The problem is that the
+current hibernate code still assumes that sys_sync() results in an
+idle filesystem that will not change after the call if nothing is
+dirty.
 
-2011/8/15 Serdar KÖYLÜ <s.koylux@gmail.com>:
-> Dist: MDV 2010.1, but very tweaked manually..
->
-> bash-3.2$ set |grep LC
-> LC_ADDRESS=tr_TR.UTF-8
-> LC_COLLATE=tr_TR.UTF-8
-> LC_CTYPE=tr_TR.UTF-8
-> LC_IDENTIFICATION=tr_TR.UTF-8
-> LC_MEASUREMENT=tr_TR.UTF-8
-> LC_MESSAGES=tr_TR.UTF-8
-> LC_MONETARY=tr_TR.UTF-8
-> LC_NAME=tr_TR.UTF-8
-> LC_NUMERIC=tr_TR.UTF-8
-> LC_PAPER=tr_TR.UTF-8
-> LC_SOURCED=1
-> LC_TELEPHONE=tr_TR.UTF-8
-> LC_TIME=tr_TR.UTF-8
-> MAILCHECK=60
->
->
-he... obvious:
+The result is that when the large memory allocation occurs for the
+hibernate image (after the sys_sync() call) then the shrink_slab()
+tends to be called. The XFS shrinkers are capable of dirtying inodes
+and the backing buffers of inodes that are in the reclaimable state.
+But those buffers cannot be flushed to disk because hibernate has
+already frozen the xfsbufd threads, so the shrinker doing inode
+reclaim hangs up on locks waiting for the buffers to be written.
+This either leads to deadlock or hibernate image allocation failure.
 
-SYNOPSIS
-       #include <ctype.h>
+Far worse, IMO, is the case where is -doesn't- deadlock, because the
+filesystem state can still changing after the allocation has
+finished due to async metadata IO completions. That has the
+potential to cause filesystem corruption as after resume the on-disk
+state may not match what is written from memory to the hibernate
+image.
 
-       int toupper(int c);
-       int tolower(int c);
+The problem really isn't XFS specific, nor is it new - the fact is
+that any filesystem that has registered a shrinker or can do async
+work in the background post-sync is vulnerable to this problem. It's
+just that XFS is the filesystem that usually exposes such issues, so
+it gets blamed for causing the problem....
 
-BUGS
-       The details of what constitutes an uppercase or lowercase
-letter depend on the current locale.  For example, the default "C"
-locale does not know about umlauts, so no conversion is done for them.
+Cheers,
 
-       In some non-English locales, there are lowercase letters with
-no corresponding uppercase equivalent; the German sharp s is one
-example.
-
-
-Is Turkish such a corner case where the capital I has no lowercase equivalent ?
-
-I guess we should reset the locale to C when generating
-include/config/ files, it'd be better than re-inventing our special
-case wheel.
-
-Thanks,
- - Arnaud
-
-> 2011/8/16 Arnaud Lacombe <lacombar@gmail.com>:
->> Hi,
->>
->> [Added linux-kbuild@ to the CC list.]
->>
->> 2011/8/15 Serdar KÖYLÜ <s.koylux@gmail.com>:
->>> FYI.
->>>
->>> I download latest stable version and try compile it. But process
->>> terminated with an error message, such as:
->>>
->>> error config/modversions.h, file or directory not found (Message is my
->>> original language, in Turkish).
->>>
->>> I check manually this file, found it as:
->>>
->>> foo/linux-3.0.1/include/config/modversIons.h
->>>
->>> And all other "i" chars, translated into "I" chars. I run a grep, find this:
->>>
->>> [root@localhost kconfig]# grep -in tolower *.c
->>> confdata.c:730:                 c = tolower(c);
->>>
->>> I set env. vars such as "LC_CTYPE=C" manually, retry compile kernel,
->>> yes, it's compiled now.
->>>
->>> I don't know best solutions for this problem. A solutions can be write
->>> some warnings in related documents. An other solution, make a patch,
->>> such as:
->>>
->>> - confdata.c:730:                 c = tolower(c);
->>> +#define TOLOWER(x) ((x) | 0x20)
->>> +confdata.c:730:                 c = TOLOWER(c);
->>>
->>> or makefiles set locale to "C". I don't sure best solution. But this
->>> problem occured in turkish and can be occurred other langs.
->>>
->> What is the Turkish locale you were using originally ?
->>
->> Thanks,
->>  - Arnaud
->>
->>> Thanks, best regards..
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
