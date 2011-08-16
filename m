@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab1HPVkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:40:36 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43354 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1HPVkf (ORCPT
+	id S1753020Ab1HPVo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:44:59 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35325 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab1HPVo6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:40:35 -0400
+	Tue, 16 Aug 2011 17:44:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+XFjiq01Ea4hivhMK=H3pgFeaoCgUWDUirD=-PzALzvOpdvvA@mail.gmail.com>
-References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
- <1313454275-5604-4-git-send-email-me@akshayjoshi.com> <CA+XFjir3W3kqin1mL5W_OEduUTyUDADwH6pL=kaS=wHpP=KMeQ@mail.gmail.com>
- <CAOJsxLGqc6khjGQMA=b1BwTv_4pv4ZgkdjJrgtMbRwuNDrN_iA@mail.gmail.com> <CA+XFjiq01Ea4hivhMK=H3pgFeaoCgUWDUirD=-PzALzvOpdvvA@mail.gmail.com>
-From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Date: Tue, 16 Aug 2011 23:40:15 +0200
-Message-ID: <CA+XFjiqa84J97CxRWPNr98O2cyocwNSq5ULaKfentJXrkpPf9w@mail.gmail.com>
-Subject: Re: [PATCH 4/9] Staging: Winbond: Convert C99 style comments in Winbond.
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Akshay Joshi <me@akshayjoshi.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1629809.vjtjo6obCs@wuerfel>
+References: <1313529267-4428-1-git-send-email-wad@chromium.org>
+	<1629809.vjtjo6obCs@wuerfel>
+Date: Tue, 16 Aug 2011 16:44:56 -0500
+Message-ID: <CABqD9hYavCxA38GbBhbCmBT+PEQQsvhbF4U7xY8P8ygbFy+=Ag@mail.gmail.com>
+Subject: Re: [RFC,PATCH] arch/arm: compute and export NR_syscalls
+From: Will Drewry <wad@chromium.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GLemnv031344
 
-2011/8/16 Gábor Stefanik <netrolller.3d@gmail.com>:
-> 2011/8/16 Pekka Enberg <penberg@kernel.org>:
->> 2011/8/16 Gábor Stefanik <netrolller.3d@gmail.com>:
->>>> -
->>>> -//====================================
->>>> -// Internal variable for module
->>>> -//====================================
->>>> +/*============================================================================
->>>> +/* wb35rx.h --
->>>> +/*============================================================================
->>>
->>> I'm pretty sure this is not an accepted kernel comment style.
+On Tue, Aug 16, 2011 at 4:21 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 16 August 2011 16:14:26 Will Drewry wrote:
 >>
->> What's the problem? I think it's OK for this particular patch.
+>> asm-exports.c is added instead of reusing asm-offsets.c to avoid a
+>> variety of collisions (VM_EXEC, DMA_*, etc).  It is possible to use the
+>> same calls.S mechanism but add NR_syscalls to asm-offsets.c.  However,
+>> at inclusion time for generated/asm-offsets.h, conflicting defines will
+>> need to be #undef'd if !__ASSEMBLY__ since it appears that the purpose
+>> of asm-offsets.h is to safely bind C language definitions to assembly
+>> and not the reverse.
 >>
+>> - Is this approach palatable?
+>> - Should I resend only when paired with the other ftrace-needed patches?
 >
-> The comments are not even valid C. The only reason why they do not
-> break is that they are immediately followed by another,
-> correctly-formatted (but separate) comment.
+> This seems overly complex, compared to a one-line change adding the symbol
+> to asm/unistd.h. The only other architecture that uses an approach
+> like the one you have posted is x86-64, and it's simpler there
+> because it can easily be done in asm-offsets.c there without the need
+> to create another helper.
 
-BTW, my suggested style here is the following:
+Agreed!
 
-/*============================================================================
- * wb35rx.h --
- *============================================================================*/
+I proposed this approach based solely on prior threads I've seen. E.g.,
+- https://lkml.org/lkml/2007/6/1/427
+  (don't just #define)
+- https://lkml.org/lkml/2009/8/27/280
+  (todo: x86-32 to move to x86-64)
 
->
-> --
-> Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
->
+If a single line #define is good enough, then it certainly works for me.
 
-
-
--- 
-Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+thanks!
+will
