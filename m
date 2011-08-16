@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab1HPFPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:15:55 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57865 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab1HPFPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:15:53 -0400
-Subject: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
+	id S1752004Ab1HPFUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:20:21 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:40611 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751456Ab1HPFUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 01:20:20 -0400
+Date: Tue, 16 Aug 2011 08:19:18 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Erik Gilling <konkers@android.com>, linux-tegra@vger.kernel.org,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
  linux/types.h
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Aug 2011 13:15:44 +0800
-Message-ID: <1313471744.5824.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Message-ID: <20110816051918.GA19435@sapphire.tkos.co.il>
+References: <1313471744.5824.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313471744.5824.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Include linux/erron.h to fix below build error.
+Hi Axel,
 
-  CC      arch/arm/mach-tegra/board-harmony-pinmux.o
-In file included from /home/axel/repos/git/linux-2.6/arch/arm/include/asm/gpio.h:5,
-                 from include/linux/gpio.h:18,
-                 from arch/arm/mach-tegra/board-harmony-pinmux.c:18:
-arch/arm/mach-tegra/include/mach/gpio.h: In function 'gpio_to_irq':
-arch/arm/mach-tegra/include/mach/gpio.h:35: error: 'EINVAL' undeclared (first use in this function)
-arch/arm/mach-tegra/include/mach/gpio.h:35: error: (Each undeclared identifier is reported only once
-arch/arm/mach-tegra/include/mach/gpio.h:35: error: for each function it appears in.)
-arch/arm/mach-tegra/include/mach/gpio.h: In function 'irq_to_gpio':
-arch/arm/mach-tegra/include/mach/gpio.h:43: error: 'EINVAL' undeclared (first use in this function)
-make[1]: *** [arch/arm/mach-tegra/board-harmony-pinmux.o] Error 1
-make: *** [arch/arm/mach-tegra] Error 2
+On Tue, Aug 16, 2011 at 01:15:44PM +0800, Axel Lin wrote:
+> Include linux/erron.h to fix below build error.
 
-Include linux/types.h to fix below build error.
+s/erron/errno/ here, and in the subject.
 
-  CC      arch/arm/mach-tegra/board-trimslice-pinmux.o
-In file included from /home/axel/repos/git/linux-2.6/arch/arm/include/asm/gpio.h:5,
-                 from include/linux/gpio.h:18,
-                 from arch/arm/mach-tegra/board-trimslice-pinmux.c:16:
-arch/arm/mach-tegra/include/mach/gpio.h:49: error: expected specifier-qualifier-list before 'bool'
-arch/arm/mach-tegra/board-trimslice-pinmux.c:145: error: unknown field 'enable' specified in initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:145: warning: excess elements in struct initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:145: warning: (near initialization for 'gpio_table[0]')
-arch/arm/mach-tegra/board-trimslice-pinmux.c:146: error: unknown field 'enable' specified in initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:146: warning: excess elements in struct initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:146: warning: (near initialization for 'gpio_table[1]')
-arch/arm/mach-tegra/board-trimslice-pinmux.c:148: error: unknown field 'enable' specified in initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:148: warning: excess elements in struct initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:148: warning: (near initialization for 'gpio_table[2]')
-arch/arm/mach-tegra/board-trimslice-pinmux.c:149: error: unknown field 'enable' specified in initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:149: warning: excess elements in struct initializer
-arch/arm/mach-tegra/board-trimslice-pinmux.c:149: warning: (near initialization for 'gpio_table[3]')
-make[1]: *** [arch/arm/mach-tegra/board-trimslice-pinmux.o] Error 1
-make: *** [arch/arm/mach-tegra] Error 2
+baruch
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This patch is against linux-next (next-20110815), it fixes the build error with "make tegra_defconfig".
-Axel
- arch/arm/mach-tegra/include/mach/gpio.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/include/mach/gpio.h b/arch/arm/mach-tegra/include/mach/gpio.h
-index e353805..42f3f08 100644
---- a/arch/arm/mach-tegra/include/mach/gpio.h
-+++ b/arch/arm/mach-tegra/include/mach/gpio.h
-@@ -21,6 +21,8 @@
- #define __MACH_TEGRA_GPIO_H
- 
- #include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/types.h>
- #include <mach/irqs.h>
- 
- #define TEGRA_NR_GPIOS		INT_GPIO_NR
 -- 
-1.7.4.1
-
-
-
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
