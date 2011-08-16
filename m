@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1HPQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 12:27:42 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11465 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab1HPQ1k (ORCPT
+	id S1751878Ab1HPQdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 12:33:50 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:52126 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab1HPQdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 12:27:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 16 Aug 2011 09:27:22 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>,
-        "Russell King - ARM Linux (linux@arm.linux.org.uk)" 
-	<linux@arm.linux.org.uk>
-CC: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Aug 2011 09:27:05 -0700
-Subject: RE: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
- linux/types.h
-Thread-Topic: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
- linux/types.h
-Thread-Index: Acxb05PwtFrP63SJTw+MNge5e4p+7AAXVPhg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA25328@HQMAIL01.nvidia.com>
-References: <1313471744.5824.2.camel@phoenix>
-In-Reply-To: <1313471744.5824.2.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 16 Aug 2011 12:33:49 -0400
+Message-ID: <4E4A9BD8.1040302@atmel.com>
+Date: Tue, 16 Aug 2011 18:33:28 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>, vinod.koul@intel.com
+CC: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: at_hdmac: add device tree probe
+References: <1312549120-22266-1-git-send-email-nicolas.ferre@atmel.com> <20110807040932.GF7667@ponder.secretlab.ca>
+In-Reply-To: <20110807040932.GF7667@ponder.secretlab.ca>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GGRxZk030012
 
-Axel Lin wrote at Monday, August 15, 2011 11:16 PM:
-> Include linux/erron.h to fix below build error.
-...
-> Include linux/types.h to fix below build error.
-...
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> This patch is against linux-next (next-20110815), it fixes the build error with "make
-> tegra_defconfig".
+Le 07/08/2011 06:09, Grant Likely :
+> On Fri, Aug 05, 2011 at 01:58:40PM +0100, Nicolas Ferre wrote:
+>> Add device tree probe support for atmel at_hdmac DMA driver.
+>> Bindings are added to specify the number of channels that the implementation of
+>> the controller actually has. They also allow to tell if the peripherals/DMA
+>> transfer is supported by the IP.
+>>
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>>  .../devicetree/bindings/dma/atmel-hdmac.txt        |   23 +++++++++
+>>  drivers/dma/at_hdmac.c                             |   51 ++++++++++++++++----
+>>  2 files changed, 65 insertions(+), 9 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/dma/atmel-hdmac.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/dma/atmel-hdmac.txt b/Documentation/devicetree/bindings/dma/atmel-hdmac.txt
+>> new file mode 100644
+>> index 0000000..0e48553
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/dma/atmel-hdmac.txt
+>> @@ -0,0 +1,23 @@
+>> +* Atmel Direct Memory Access Controller
+>> +
+>> +Required properties:
+>> +- compatible: Should be "atmel,<chip>-hdmac"
+>> +- reg: Should contain DMA registers location and length
+>> +- interrupts: Should contain DMA interrupt
+>> +- atmel,hdmac-nr-channels: Should contain number of channels
+>> +  available in the controller
+>> +
+>> +Optional properties:
+>> +- atmel,hdmac-cap-memcpy: Chip can do memory to memory transfers
+>> +- atmel,hdmac-cap-slave: Chip can do peripherals/memory transfers
+> 
+> Heh, ignore my comments on the other patch about missing documentation
+> for the dma engine.  :-)
+> 
+> Otherwise the patch looks pretty good.
 
-Axel,
+[..]
 
-I posted this same thing a little while back. Russell asked me to perform
-some rework on gpio.h that removed the need for errno.h instead. I did
-that in:
+Grant, Vinod,
 
-http://www.spinics.net/lists/linux-tegra/msg01996.html
+Don't you think it would make sense to generalize nr-channels and maybe
+also the capabilities properties for other dmaengine drivers?
+I have seen other dmaengine drivers taking the number of channels from
+platform data so that would make sense.
+It would be new dmaengine device tree properties, but on the other hand,
+I do not know if code can also be centralized for handling of those
+properties... maybe it is better to let drivers deal with them if
+required...
 
-I'm just waiting for an Ack from Grant Likely on the GPIO driver changes,
-and then will place the series into the ARM patch system as Russell
-requested.
+Your thoughts?
 
-Thanks for caring about Tegra compile issues:-)
-
+Best regards,
 -- 
-nvpublic
+Nicolas Ferre
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
