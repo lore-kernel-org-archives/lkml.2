@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab1HPRlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:41:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43640 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab1HPRle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:41:34 -0400
-Message-ID: <4E4AABC8.4090107@canonical.com>
-Date: Tue, 16 Aug 2011 10:41:28 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1751985Ab1HPRnm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:43:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751373Ab1HPRnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 13:43:41 -0400
+Date: Tue, 16 Aug 2011 19:40:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH 33/41] xtensa: Don't reimplement force_sigsegv()
+Message-ID: <20110816174051.GG29190@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-34-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: dmitry.torokhov@gmail.com, rydberg@euromail.se,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 0/8 v3] Synaptics image sensor support
-References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313071035-12047-34-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2011 10:16 AM, Daniel Kurtz wrote:
-> Hello,
+On 08/11, Matt Fleming wrote:
+>
+> Instead of open coding the sequence from force_sigsegv() just call
+> it. This also fixes a race because sa_handler was being modified
+> without holding ->sighand->siglock.
+
+The same problem with the changelog in this and the next patch.
+
+The patch itself looks nice.
+
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Chris Zankel <chris@zankel.net>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/xtensa/kernel/signal.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
 > 
-> ----
-> For v3:
->   Merged Patch 5 & 6:
->      BTN_TOOL_*TAP always reports correct number of fingers.
->      During certain ambiguous number-of-finger-transitions, there may be less
->      than 2 valid MT-B slots, even if the BTN_TOOL_*TAP value indicates two or
->      more fingers are present on the pad.
+> diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
+> index f2220b5..4f53770 100644
+> --- a/arch/xtensa/kernel/signal.c
+> +++ b/arch/xtensa/kernel/signal.c
+> @@ -425,9 +425,7 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+>  	return;
+>  
+>  give_sigsegv:
+> -	if (sig == SIGSEGV)
+> -		ka->sa.sa_handler = SIG_DFL;
+> -	force_sig(SIGSEGV, current);
+> +	force_sigsegv(sig, current);
+>  }
+>  
+>  /*
+> -- 
+> 1.7.4.4
+> 
 
-I am happy with the patch series. I'm not sure if anyone will actually
-use the MT slots because of all the caveats :), but this driver appears
-to do the best thing I can think of with the data from the device. It
-looks like it was a lot of work to figure it out, so cheers to Daniel!
-
-At this time I see Henrik has provided two replies and Daniel has
-followed up. The first reply set will cause a small amount of axis
-handling changes, and the second reply about the amount of code changes
-and implementation details of the tracking ids has been rebuffed. If
-this is the end result, you can add my Acked-by to all the patches:
-
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
-
-Thanks again Daniel!
-
--- Chase
