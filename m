@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab1HPRHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:07:52 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48208 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab1HPRHu (ORCPT
+	id S1751561Ab1HPRMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:12:08 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:29963
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751043Ab1HPRMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:07:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=WWF/ffuw8aM5xTMqfNN/bB1z0ngUMnnU2waW8r4BEXovyzPPKLB/e7tGxldls6clV
-	SREWOSqW/tNVRlEZUNsxg==
+	Tue, 16 Aug 2011 13:12:07 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <gregkh@suse.de>, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] devtmpfs: Annotate devtmpfsd as __init
+Date: Tue, 16 Aug 2011 14:22:35 -0300
+Message-ID: <1313515355-28920-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-In-Reply-To: <20110816093303.GA4484@csn.ul.ie>
-References: <1313441856-1419-1-git-send-email-wad@chromium.org>
-	<20110816093303.GA4484@csn.ul.ie>
-Date: Tue, 16 Aug 2011 10:07:46 -0700
-Message-ID: <CAB=4xhqu1FsJnNbHNeokyROvEFpRJYKhcHRLLw5QTVKOkbkWfQ@mail.gmail.com>
-Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
-From: Roland McGrath <mcgrathr@google.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 2:33 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> Is using shm_open()+mmap instead of open()+mmap() to open a file on
-> /dev/shm really that difficult?
->
-> int shm_open(const char *name, int oflag, mode_t mode);
-> int open(const char *pathname, int flags, mode_t mode);
+This fixes the following:
 
-I cannot figure out the rationale behind this question at all.
-Both of these library functions result in the same system call.
+WARNING: vmlinux.o(.text+0x1ed41c): Section mismatch in reference from the function devtmpfsd() to the (unknown reference) .init.data:(unknown)
+The function devtmpfsd() references
+the (unknown reference) __initdata (unknown).
+This is often because devtmpfsd lacks a __initdata 
+annotation or the annotation of (unknown) is wrong.
 
-> An ordinary user is not going to know that a segfault from an
-> application can be fixed with this sysctl. This looks like something
-> that should be fixed in the library so that it can work on kernels
-> that do not have the sysctl.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/base/devtmpfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I think the expectation is that the administrator or system builder
-who decides to set the (non-default) noexec mount option will also
-set the sysctl at the same time.
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 33e1bed..7bd4860 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -386,7 +386,7 @@ static int handle(const char *name, mode_t mode, struct device *dev)
+ 		return handle_remove(name, dev);
+ }
+ 
+-static int devtmpfsd(void *p)
++static __init int devtmpfsd(void *p)
+ {
+ 	char options[] = "mode=0755";
+ 	int *err = p;
+-- 
+1.6.0.4
 
 
-Thanks,
-Roland
