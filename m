@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1HPLin (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 07:38:43 -0400
-Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:58882 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1HPLij (ORCPT
+	id S1751964Ab1HPLpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 07:45:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:39050 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751208Ab1HPLpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 07:38:39 -0400
-Message-ID: <4E4A53F0.9040104@ce.jp.nec.com>
-Date: Tue, 16 Aug 2011 20:26:40 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Tue, 16 Aug 2011 07:45:50 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1/CAq0lhj/CRsvKcb07bL5gSvEmnJVpp9DGNrGnQD
+	leVB97arPnl5zn
+From: Sven Joachim <svenjoac@gmx.de>
+To: =?iso-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.0.2
+References: <20110816015447.GA28885@kroah.com> <4E4A5087.3040102@gmail.com>
+Date: Tue, 16 Aug 2011 13:45:48 +0200
+In-Reply-To: <4E4A5087.3040102@gmail.com> (=?iso-8859-1?Q?=22T=F6r=F6k?=
+ Edwin"'s message of "Tue, 16
+	Aug 2011 14:12:07 +0300")
+Message-ID: <87pqk5h95f.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Tejun Heo <tj@kernel.org>
-CC: jaxboe@fusionio.com, roland@purestorage.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Subject: Re: [BUG] Oops when SCSI device under multipath is removed
-References: <Pine.LNX.4.44L0.1108111112280.1958-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1108111112280.1958-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2011-08-16 13:12 +0200, Török Edwin wrote:
 
-On 08/12/11 00:16, Alan Stern wrote:
-> On Thu, 11 Aug 2011, James Bottomley wrote:
->> However, much as I'd like to accept this rosy view, the original oops
->> that started all of this in 2.6.38 was someone caught something with a
->> reference to a SCSI queue after the device release function had been
->> called.
-> 
-> Not according to your commit log.  You wrote that the reference was
-> taken after scsi_remove_device() had been called -- but the device
-> release function is scsi_device_dev_release_usercontext().
+> On 08/16/2011 04:54 AM, Greg KH wrote:
+>> I'm announcing the release of the 3.0.2 kernel.
+>> 
+>> All users of the 3.0 kernel series must upgrade.
+>> 
+>> The updated 3.0.y git tree can be found at:
+>>         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-3.0.y.git
+>> and can be browsed at the normal kernel.org git web browser:
+>>         http://git.kernel.org/?p=linux/kernel/git/stable/linux-3.0.y.git;a=summary
+>> 
+>
 
-The commit log of 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b
-("[SCSI] put stricter guards on queue dead checks") does not
-explain about the move of scsi_free_queue().
+> Kernel.org still shows 3.0.1, although the gitweb link points to the
+> correct place repository and I can see 3.0.2 there.
 
-But according to the discussion below, it seems
-the move was motivated to solve the following self-deadlock:
-https://lkml.org/lkml/2011/4/12/9
+There are already a gzip compressed tarball and patches in
+kernel.org/pub/linux/kernel/v3.0/, but no bzip2 compressed versions.
 
-  [in the context of kblockd_workqueue]
-  blk_delay_work
-    __blk_run_queue
-      scsi_request_fn
-        put_device
-          (puts final sdev refcount)
-             scsi_device_dev_release
-               execute_in_process_context(scsi_device_dev_release_usercontext)
-                 [execute immediately because it's in process context]
-                    scsi_device_dev_release_usercontext
-                      scsi_free_queue
-                        blk_cleanup_queue
-                          blk_sync_queue
-                            (wait for blk_delay_work to complete...)
+> Is this some side-effect of switching to the linux-3.0.y.git
+> repository? (the -2.6 stable repo is at 3.0.1).
 
-James, is my understanding correct?
+I doubt that, since 3.0.1 had no such problems.  And updated
+tarballs/patches for 2.6.3[23]-longterm haven't appeared at all yet,
+although those are in git as well. :-(
 
-If so, isn't it possible to move the scsi_free_queue back to
-the original place and solve the deadlock instead by
-avoiding the wait in the same context?
-
-@@ -338,8 +339,8 @@ static void scsi_device_dev_release_user
- static void scsi_device_dev_release(struct device *dev)
- {
- 	struct scsi_device *sdp = to_scsi_device(dev);
--	execute_in_process_context(scsi_device_dev_release_usercontext,
--				   &sdp->ew);
-+	INIT_WORK(&sdp->ew.work, scsi_device_dev_release_usercontext);
-+	schedule_work(&sdp->ew.work);
- }
- 
- static struct class sdev_class = {
-
-Thanks,
--- 
-Jun'ichi Nomura, NEC Corporation
+Cheers,
+       Sven
