@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1HPN3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 09:29:36 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60083 "EHLO
+	id S1752650Ab1HPNik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 09:38:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63968 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab1HPN3b (ORCPT
+	with ESMTP id S1752343Ab1HPNii convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 09:29:31 -0400
+	Tue, 16 Aug 2011 09:38:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
-Date: Tue, 16 Aug 2011 15:28:48 +0200
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+Date: Tue, 16 Aug 2011 15:37:28 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com> <201108121453.05898.arnd@arndb.de> <20110814075205.GA4986@n2100.arm.linux.org.uk>
-In-Reply-To: <20110814075205.GA4986@n2100.arm.linux.org.uk>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
+        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
+        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
+        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
+        zajec5@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org> <201108111455.56319.arnd@arndb.de> <20110812164608.GC28150@sirena.org.uk>
+In-Reply-To: <20110812164608.GC28150@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108161528.48954.arnd@arndb.de>
-X-Provags-ID: V02:K0:1/SgKmQbPrQ5DLWinBy1yBbzVBPKFeWRy8//T+Tr4N6
- eFDQ3xuY0677b51XCq3eVKcJz9u23MAY/OAZQch6CFha6hgtL0
- cc42gr9LpwT1OnxnCMGa2fxOy7ZBwOZSOFSNHNBmNwjWakA2Op
- NoKLEzr72k0uLkNkXR+sSSq9tTrXadB1y46G8T1uvGEnTy3ZDS
- SyUhY0dAGXQXbaEu3WOCA==
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201108161537.28612.arnd@arndb.de>
+X-Provags-ID: V02:K0:Z1ewSDEFV34FxCBm+HS2VZHAvQmvlE8e0NkiW5V7V5g
+ Of2V9oesx7+hNqkQTFIQEMxEPe38ZrMvSCeUx8dyROqIWQPh0I
+ kFcPU0eViV38EFrnrk4WeL9eLA9FFT5Y0UamIfzi/URHAbYzeh
+ d38X1b0MnxPmWLZQfHQJ7us9pCg0lJjpVGHDxWVEU5TPhBG+QK
+ yfQay8885sKwV4pnQ0xDA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 14 August 2011, Russell King - ARM Linux wrote:
-> On Fri, Aug 12, 2011 at 02:53:05PM +0200, Arnd Bergmann wrote:
-> > 
-> > I thought that our discussion ended with the plan to use this only
-> > for ARMv6+ (which has a problem with double mapping) but not on ARMv5
-> > and below (which don't have this problem but might need dmabounce).
+On Friday 12 August 2011, Mark Brown wrote:
+> On Thu, Aug 11, 2011 at 02:55:55PM +0200, Arnd Bergmann wrote:
+> > On Thursday 11 August 2011, Kenneth Heitke wrote:
 > 
-> I thought we'd decided to have a pool of available CMA memory on ARMv6K
-> to satisfy atomic allocations, which can grow and shrink in size, rather
-> than setting aside a fixed amount of contiguous system memory.
-
-Hmm, I don't remember the point about dynamically sizing the pool for
-ARMv6K, but that can well be an oversight on my part.  I do remember the
-part about taking that memory pool from the CMA region as you say.
-
-> ARMv6 and ARMv7+ could use CMA directly, and <= ARMv5 can use the existing
-> allocation method.
+> > > +EXPORT_SYMBOL_GPL(slim_add_device);
 > 
-> Has something changed?
+> > I don't think this should be exported: AFAICT, the set of slim_devices
+> > is a property of the platform, so I don't see how any other device driver
+> > would add another device.
+> 
+> The platform may be comprised of multiple hardwaare modules with
+> functionality on daughtercards which can be probed at runtime.  You may
+> also find someone constructing a PCI card or something with a slimbus
+> controller on it at some point.
 
-Nothing has changed regarding <=ARMv5. There was a small side discussion
-about ARMv6 and ARMv7+ based on the idea that they can either use CMA
-directly (doing TLB flushes for every allocation) or they could use the
-same method as ARMv6K by setting aside a pool of pages for atomic
-allocation. The first approach would consume less memory because it
-requires no special pool, the second approach would be simpler because
-it unifies the ARMv6K and ARMv6/ARMv7+ cases and also would be slightly
-more efficient for atomic allocations because it avoids the expensive
-TLB flush.
+This is theoretically true, but IIRC David mentioned that the bus is
+only present on few SoCs and has since been abandoned in favor of standard
+busses for new devices.
 
-I didn't have a strong opinion either way, so IIRC Marek said he'd try
-out both approaches and then send out the one that looked better, leaning
-towards the second for simplicity of having fewer compile-time options.
+> > > +EXPORT_SYMBOL_GPL(slim_register_board_info);
+> 
+> > We are trying to gradually convert platforms that have hardcoded device
+> > lists and cannot probe devices by looking at the hardware over to using
+> > device tree files that list all the devices.
+> 
+> > I think that this would work well for slimbus and should be done
+> > right from the start. This means however that you should not
+> > register a "board_info" but instead change the slim_register_controller
+> > function so that it adds all devices listed as children of the
+> > controller in the device tree.
+> 
+> It seems a bit extreme to prevent anyone implementing a subsystem for
+> their platform until they've converted it into device tree.  Though with
+> slimbus it should be at least somewhat probeable IIRC?
+
+>From what I've heard (and seen in the code), there is no support for
+probing, just like in I2C.
+The platform is in the process of getting converted to device tree
+already, the first patches were posted on Saturday. I don't know what
+the timeline is for this, or how many board with slimbus are supported
+in mainline or still waiting to get merged, but my guess is that the
+bulk is still out of tree. If that's true, it's definitely cleaner to
+convert it over to device tree before merging, instead of having to
+change all the board files again when doing the conversion.
 
 	Arnd
