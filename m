@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab1HPFUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:20:21 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:40611 "EHLO tango.tkos.co.il"
+	id S1752233Ab1HPFWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:22:55 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50142 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab1HPFUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:20:20 -0400
-Date: Tue, 16 Aug 2011 08:19:18 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Erik Gilling <konkers@android.com>, linux-tegra@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
- linux/types.h
-Message-ID: <20110816051918.GA19435@sapphire.tkos.co.il>
-References: <1313471744.5824.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313471744.5824.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751456Ab1HPFWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 01:22:52 -0400
+Date: Tue, 16 Aug 2011 15:22:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: linux-next: build warning after merge of the final tree
+Message-Id: <20110816152234.26afbea89bfe896d95177ad7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__16_Aug_2011_15_22_34_+1000_p/D=GZqC64AuWWwc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+--Signature=_Tue__16_Aug_2011_15_22_34_+1000_p/D=GZqC64AuWWwc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 16, 2011 at 01:15:44PM +0800, Axel Lin wrote:
-> Include linux/erron.h to fix below build error.
+Hi all,
 
-s/erron/errno/ here, and in the subject.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) produced this warning:
 
-baruch
+In file included from security/integrity/ima/../integrity.h:16:0,
+                 from security/integrity/ima/ima.h:27,
+                 from security/integrity/ima/ima_policy.c:20:
+include/crypto/sha.h:86:10: warning: 'struct shash_desc' declared inside pa=
+rameter list
+include/crypto/sha.h:86:10: warning: its scope is only this definition or d=
+eclaration, which is probably not what you want
 
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Introduced by commit 7c390170b493 ("crypto: sha1 - export sha1_update for
+reuse").  I guess you need to include crypto/hash.h in crypto/sha.h.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__16_Aug_2011_15_22_34_+1000_p/D=GZqC64AuWWwc
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSf6aAAoJEDMEi1NhKgbsVJoH/0CeGHixP3jZ8vG8X67Qhx8I
+nxpO9wcEqKVbd8SvWnjM0zWM3dCdwxY468p2/Y0rSm7wJh4xRpCTp2UIgNYqQwF8
+gGnOBXTo0/1wmwiq8PFahThB45DQAYNmx5msoox35FBnRmu06G05BRaGyu4XImDB
+nmeKVGAkTb5PEcDPGh2mebqmazTi3AAgPGm/I2CAh64nYMT4ll3bcaR5BP++LP9/
+mc4dOwoMj8HF56SM6EypKqsxng+1rKKbYn4EV8Wpbl9eFdIQyBO+7jrjHq1RtK3i
+gFqQUhhcUm6En+wgXH9aGGeJpNqmEPYOGNiWi00fSOFkBPb3kZlNxU8IB1PtnYE=
+=VVPn
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Aug_2011_15_22_34_+1000_p/D=GZqC64AuWWwc--
