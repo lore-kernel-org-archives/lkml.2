@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1HPNzp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 09:55:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49619 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab1HPNzn (ORCPT
+	id S1752836Ab1HPN4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 09:56:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45389 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab1HPN4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 09:55:43 -0400
-Date: Tue, 16 Aug 2011 14:55:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-Subject: Re: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
-Message-ID: <20110816135516.GC17310@n2100.arm.linux.org.uk>
-References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com> <201108121453.05898.arnd@arndb.de> <20110814075205.GA4986@n2100.arm.linux.org.uk> <201108161528.48954.arnd@arndb.de>
+	Tue, 16 Aug 2011 09:56:15 -0400
+Date: Tue, 16 Aug 2011 17:55:16 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-hardening@lists.openwall.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Arnd Bergmann <arnd@arndb.de>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] proc: introduce pid_allowed mount option
+Message-ID: <20110816135515.GA17658@albatros>
+References: <20110810161302.GA2548@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201108161528.48954.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110810161302.GA2548@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 03:28:48PM +0200, Arnd Bergmann wrote:
-> On Sunday 14 August 2011, Russell King - ARM Linux wrote:
-> > On Fri, Aug 12, 2011 at 02:53:05PM +0200, Arnd Bergmann wrote:
-> > > 
-> > > I thought that our discussion ended with the plan to use this only
-> > > for ARMv6+ (which has a problem with double mapping) but not on ARMv5
-> > > and below (which don't have this problem but might need dmabounce).
-> > 
-> > I thought we'd decided to have a pool of available CMA memory on ARMv6K
-> > to satisfy atomic allocations, which can grow and shrink in size, rather
-> > than setting aside a fixed amount of contiguous system memory.
+Hi,
+
+On Wed, Aug 10, 2011 at 20:13 +0400, Vasiliy Kulikov wrote:
+> This patch adds support of pid_allowed=XX and attr_allowed=YY mount
+> options for procfs.  When set, all /proc/PID/ files are restricted to
+> the owner, except filenames passed via pid_allowed= argument.  E.g. with
+> pid_allowed=sched sched file would be world readable and other files
+> would be restricted to the task owner.  The same for /proc/PID/attr/
+> files and attr_allowed=YY.
+[...]
+> Is the whole idea of high granularity, but static permissions worth it?
+> The previous patch with relaxed/fully-restricted modes was criticized
+> for being highly specific to one particular set of requirements:
 > 
-> Hmm, I don't remember the point about dynamically sizing the pool for
-> ARMv6K, but that can well be an oversight on my part.  I do remember the
-> part about taking that memory pool from the CMA region as you say.
+> http://www.openwall.com/lists/kernel-hardening/2011/06/21/3
+> 
+> On/off mechanism was used in server environments in times of Linux
+> 2.0-2.4 as part of -ow patch and currently as part of -grsecurity patch.
+> There were no complains about too limited application.  It serves a well
+> defined needs (limiting processes' information to the owner, root, and a
+> privileged "monitoring" group).
 
-If you're setting aside a pool of pages, then you have to dynamically
-size it.  I did mention during our discussion about this.
+Any comments about the approach in general?
 
-The problem is that a pool of fixed size is two fold: you need it to be
-sufficiently large that it can satisfy all allocations which come along
-in atomic context.  Yet, we don't want the pool to be too large because
-then it prevents the memory being used for other purposes.
+Different procfs patches were maintained out of tree for ~10 years,
+all of them had/has the same goal - restrict processes/networking
+information from unprivileged users.  All of them were not high
+granularity, just on/off.
 
-Basically, the total number of pages in the pool can be a fixed size,
-but as they are depleted through allocation, they need to be
-re-populated from CMA to re-build the reserve for future atomic
-allocations.  If the pool becomes larger via frees, then obviously
-we need to give pages back.
+As to chmod/chown'able approach with inheritable permission across
+fork() - I cannot imagine any case where it has any advantages over
+static approach (which is implemented in this patch), but I see
+disadvantages:
+
+ * What to do on exec'ing setuid binary?  We have to re'chmod files to
+   some sane defaults - first umask set.
+ * For usermode helpers? - second umask set.
+ * On privilege dropping (setuid(2))?  We can have umask
+   set for all users, but it might not be convenient.  We can have umask
+   set for each user.  Or we can use userspace for re-chmod'ing files
+   like PAM, but what to do for apps that don't use PAM?..
+ * Privilege restore? - a umask set again.
+
+
+What is the goal of procfs high granularity permission model?  What
+needs does it serve?  Every high granularity security model quickly
+becomes hard to maintain/configure properly.  Given there were no out of
+tree attempts to extend procfs in this direction (well, at least no
+widespread attempts), I'm afraid such complication worth it.
+
+I think on/off approach addresses the issue, which I've tried to
+explain earlier, and it is "generic enough" for the existing needs.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
