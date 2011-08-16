@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab1HPOlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 10:41:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33687 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab1HPOlr (ORCPT
+	id S1753235Ab1HPOmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 10:42:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34132 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab1HPOlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 10:41:47 -0400
+	Tue, 16 Aug 2011 10:41:44 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <daahern@cisco.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/6] perf annotate: Add --symfs option
-Date: Tue, 16 Aug 2011 11:41:34 -0300
-Message-Id: <1313505695-20724-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/6] perf evlist: Fix missing event name init for default event (v2)
+Date: Tue, 16 Aug 2011 11:41:31 -0300
+Message-Id: <1313505695-20724-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1313505695-20724-1-git-send-email-acme@infradead.org>
 References: <1313505695-20724-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephane Eranian <eranian@google.com>
 
-If you have --symfs in perf report, then you also need it for perf
-annotate.  This allows off-box assembly level analysis of perf.data
-samples.
+When no event is given to perf record, perf top, a default event is
+initialized (cycles). However, perf_evlist__add_default() was not
+setting the symbolic name for the event. Perf top worked simply because
+it was reconstructing the name from the event code. But it should not
+have to do this. This patch initializes the evsel->name field properly.
 
-This patch complements:
+This second version improves the code flow on the non error path.
 
-commit ec5761eab318e50e69fcf8e63e9edaef5949c067
-Author: David Ahern <daahern@cisco.com>
-Date:   Thu Dec 9 13:27:07 2010 -0700
-
-    perf symbols: Add symfs option for off-box analysis using specified tree
-
-Acked-by: David Ahern <daahern@cisco.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <daahern@cisco.com>
-Link: http://lkml.kernel.org/r/20110729232040.GA21838@quad
+Link: http://lkml.kernel.org/r/20110607161936.GA8163@quad
 Signed-off-by: Stephane Eranian <eranian@google.com>
+[committer note: Use perf_evsel__delete() instead of plain free()]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-annotate.txt |    3 +++
- tools/perf/builtin-annotate.c              |    2 ++
- 2 files changed, 5 insertions(+), 0 deletions(-)
+ tools/perf/util/evlist.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index 5bc0600..98a31e3 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -80,6 +80,9 @@ OPTIONS
- 	Interleave source code with assembly code. Enabled by default,
- 	disable with --no-source.
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index e03e7bc..c12bd47 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
  
-+--symfs=<directory>::
-+        Look for files with symbols relative to this directory.
+ 	if (evsel == NULL)
+-		return -ENOMEM;
++		goto error;
 +
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 5015e04..c5be288 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -267,6 +267,8 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('P', "full-paths", &full_paths,
- 		    "Don't shorten the displayed pathnames"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-+		   "Look for files with symbols relative to this directory"),
- 	OPT_BOOLEAN('0', "source", &symbol_conf.annotate_src,
- 		    "Interleave source code with assembly code (default)"),
- 	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
++	/* use strdup() because free(evsel) assumes name is allocated */
++	evsel->name = strdup("cycles");
++	if (!evsel->name)
++		goto error_free;
+ 
+ 	perf_evlist__add(evlist, evsel);
+ 	return 0;
++error_free:
++	perf_evsel__delete(evsel);
++error:
++	return -ENOMEM;
+ }
+ 
+ void perf_evlist__disable(struct perf_evlist *evlist)
 -- 
 1.6.2.5
 
