@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1HPP3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:29:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44499 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab1HPP3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:29:20 -0400
-Date: Tue, 16 Aug 2011 15:29:06 GMT
-From: tip-bot for Cesar Eduardo Barros <cesarb@cesarb.net>
-Message-ID: <tip-664ef2123f4abc05857bf9b2dcccb800fa6fce26@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, cesarb@cesarb.net, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com,
-        luto@MIT.EDU
-Reply-To: mingo@redhat.com, hpa@zytor.com, cesarb@cesarb.net,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        luto@MIT.EDU
-In-Reply-To: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
-References: <1313447210-9149-1-git-send-email-cesarb@cesarb.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64, doc: Remove int 0xcc from entry_64.S documentation
-Git-Commit-ID: 664ef2123f4abc05857bf9b2dcccb800fa6fce26
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752016Ab1HPPbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:31:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57285 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab1HPPbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 11:31:53 -0400
+Date: Tue, 16 Aug 2011 17:31:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jaccon Bastiaansen <jaccon.bastiaansen@gmail.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Threaded interrupt handling question in RT kernel
+In-Reply-To: <CAGzjT4eGV-KLFNuE2F8ehYCEdi7DT8wo_tYbkUQHPxjuArHc2Q@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1108161729130.2807@ionos>
+References: <CAGzjT4eGV-KLFNuE2F8ehYCEdi7DT8wo_tYbkUQHPxjuArHc2Q@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Aug 2011 15:29:09 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  664ef2123f4abc05857bf9b2dcccb800fa6fce26
-Gitweb:     http://git.kernel.org/tip/664ef2123f4abc05857bf9b2dcccb800fa6fce26
-Author:     Cesar Eduardo Barros <cesarb@cesarb.net>
-AuthorDate: Mon, 15 Aug 2011 19:26:50 -0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 16 Aug 2011 08:04:08 -0700
+On Tue, 16 Aug 2011, Jaccon Bastiaansen wrote:
 
-x86-64, doc: Remove int 0xcc from entry_64.S documentation
+> Hello Thomas, Peter
+> 
+> We have a question about threaded interrupt handling:
+> 
+> By default, when using threaded interrupt handlers, the IRQ is
+> disabled in hard IRQ context and enabled again after all threaded
+> interrupt handlers connected to that IRQ have run. In this way, high
+> priority interrupt handlers can be delayed until the lowest priority
+> interrupt handler thread has run. Therefore it seems that it's not
+> useful to have a separate thread for each interrupt handler (what's
+> the use of being able to set interrupt handler thread priorities when
+> you still have to wait for the one with the lowest priority).
 
-Commit 3ae36655b97a03fa1decf72f04078ef945647c1a (x86-64: Rework vsyscall
-emulation and add vsyscall= parameter) removed the special use of the
-0xcc IDT vector.
-
-Remove it from Documentation/x86/entry_64.txt also.
-
-Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-Acked-by: Andy Lutomirski <luto@MIT.EDU>
-Link: http://lkml.kernel.org/r/1313447210-9149-1-git-send-email-cesarb@cesarb.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- Documentation/x86/entry_64.txt |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/x86/entry_64.txt b/Documentation/x86/entry_64.txt
-index 7869f14..bc7226e 100644
---- a/Documentation/x86/entry_64.txt
-+++ b/Documentation/x86/entry_64.txt
-@@ -27,9 +27,6 @@ Some of these entries are:
-    magically-generated functions that make their way to do_IRQ with
-    the interrupt number as a parameter.
+That's correct, but RT just makes use of the general facility which is
+designed to have a separate thread for each device.
  
-- - emulate_vsyscall: int 0xcc, a special non-ABI entry used by
--   vsyscall emulation.
--
-  - APIC interrupts: Various special-purpose interrupts for things
-    like TLB shootdown.
- 
+> So we think that we should use the request_threaded_irq() function.
+
+You can do that for a specific driver, but we cannot do that in RT for
+every driver in the kernel.
+
+> The task of the handler that is executed in hard IRQ context is to
+> check whether the device that it controls is generating an interrupt
+> and if it does, deactivate the IRQ output of the device and wakeup the
+> interrupt handler thread by returning IRQ_WAKE_THREAD. By deactivating
+> the IRQ output, another device connected to the same IRQ can activate
+> the IRQ again before the interrupt handler thread of the first device
+> has run. This guarantees that a high priority threaded interrupt
+> handler of a device on a shared IRQ can run before a low priority
+> threaded interrupt handler of a device on the same IRQ has run. So
+> when using threaded interrupt handlers for devices on a shared IRQ,
+> make sure that all drivers have used request_threaded_irq().
+> Otherwise, high priority threaded interrupt handlers can be delayed by
+> low priority threaded interrupt handlers.
+> 
+> Is all this correct or do we miss something?
+
+That's how it's designed to work.
+
+Thanks,
+
+	tglx
