@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab1HPTfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:35:09 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39529 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab1HPTfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:35:06 -0400
-Subject: Re: [PATCH] powerpc/eeh: remove eeh_event_handler()->daemonize()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	id S1752627Ab1HPTft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:35:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47703 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264Ab1HPTfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:35:48 -0400
+Date: Tue, 16 Aug 2011 21:35:43 +0200
+From: Tejun Heo <tj@kernel.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linas Vepstas <linasvepstas@gmail.com>,
-        Matt Fleming <matt@console-pimps.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110816190858.GA4890@redhat.com>
-References: <20110816190858.GA4890@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Aug 2011 14:17:15 -0500
-Message-ID: <1313522235.3664.70.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8712: remove r8712_cmd_thread()->daemonize()
+Message-ID: <20110816193543.GD2803@mtj.dyndns.org>
+References: <20110816185057.GA4036@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816185057.GA4036@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 21:08 +0200, Oleg Nesterov wrote:
+On Tue, Aug 16, 2011 at 08:50:57PM +0200, Oleg Nesterov wrote:
 > daemonize() is only needed when a user-space task does kernel_thread().
 > 
-> eeh_event_handler() thread is created by the worker kthread, and thus
-> it doesn't need the soon-to-be-deprecated daemonize().
+> r8712_cmd_thread() is kthread_create()'ed and thus it doesn't need
+> the soon-to-be-deprecated daemonize(). It is the only caller of
+> thread_enter() which actually does the call.
 > 
-> Note: looks like eeh_event_wq can be static and it can do all work
-> itself without kernel_thread().
+> Note:
+> 	- we are going to remove the sigdelset(blocked) code from
+> 	  allow_signal(), this means that without this patch
+> 	  thread_enter() can't work after that. Not to mention
+> 	  daemonize() should be deprecated.
+> 
+> 	- as a side effect, this patch changes ->comm. Hopefully
+> 	  this is fine, and padapter->pnetdev->name probably makes
+> 	  more sense anyway.
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
 
-Right, but don't bother cleaning that code too much tho :-) I'm quite
-close to reworking/refactoring most of it anyways.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Cheers,
-Ben.
-
->  arch/powerpc/platforms/pseries/eeh_event.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- 3.1/arch/powerpc/platforms/pseries/eeh_event.c~3_daemonize_eeh	2011-04-06 21:33:42.000000000 +0200
-> +++ 3.1/arch/powerpc/platforms/pseries/eeh_event.c	2011-08-16 21:03:56.000000000 +0200
-> @@ -60,7 +60,7 @@ static int eeh_event_handler(void * dumm
->  	struct eeh_event	*event;
->  	struct pci_dn *pdn;
->  
-> -	daemonize ("eehd");
-> +	set_task_comm(current, "eehd");
->  	set_current_state(TASK_INTERRUPTIBLE);
->  
->  	spin_lock_irqsave(&eeh_eventlist_lock, flags);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+-- 
+tejun
