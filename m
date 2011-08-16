@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab1HPOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 10:00:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab1HPOAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 10:00:05 -0400
-Date: Tue, 16 Aug 2011 09:59:55 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: gregkh@suse.de, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/11 re-post take #2] dynamic_debug: consolidate
- repetitive struct _ddebug descriptor definitions
-Message-ID: <20110816135955.GA2575@redhat.com>
-References: <cover.1313085588.git.jbaron@redhat.com>
- <88ee1dfb582d4b2dbdcfa93eeaa61a2ad531bd1e.1313085588.git.jbaron@redhat.com>
- <1313089327.13877.11.camel@Joe-Laptop>
- <20110811205253.GC6670@redhat.com>
- <1313131164.27549.18.camel@Joe-Laptop>
- <20110815204438.GA7157@redhat.com>
- <1313449947.22221.13.camel@Joe-Laptop>
+	id S1752626Ab1HPOBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 10:01:35 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:61115 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab1HPOBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 10:01:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313449947.22221.13.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <201108161509.17157.arnd@arndb.de>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+	<201108161509.17157.arnd@arndb.de>
+Date: Tue, 16 Aug 2011 16:01:31 +0200
+Message-ID: <CACRpkdaVx=6AJ5DFjVN1ZYQ++hu9pT6WxD9n+pqmYVaCf1xawg@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 04:12:27PM -0700, Joe Perches wrote:
-> On Mon, 2011-08-15 at 16:44 -0400, Jason Baron wrote:
-> > Replace the repetitive  struct _ddebug descriptor definitions with
-> > a new DECLARE_DYNAMIC_DEBUG_META_DATA(name, fmt) macro.
-> []
-> > diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> []
-> > +#define DECLARE_DYNAMIC_DEBUG_METADATA(name, fmt)		\
-> > +	static struct _ddebug __used __aligned(8)		\
-> > +	__attribute__((section("__verbose"))) name = {		\
-> []
-> 
-> Jason, just one more thing...
-> 
-> Because the original struct _ddebug definition
-> above this uses __attribute__((aligned(8))),
-> 
-> struct _ddebug {
-> 	[...]
-> } __attribute__((aligned(8)));
-> 
-> ( and I suppose that should be __aligned(8) instead )
-> 
-> the __aligned(8) use in DECLARE_DYNAMIC_DEBUG_METADATA
-> is not necessary.
-> 
-> cheers, Joe
-> 
+On Tue, Aug 16, 2011 at 3:09 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Hi Joe,
+> I do think that you should keep Linus Walleij on Cc in these emails, since
+> he first started pushing for a common pinmux layer, and we need to make
+> sure that the binding works for all SoCs, not just for tegra.
 
-hmmm....what we probably need here, is an extra array of pointers into
-the dynamic debug structures. The reason being is that 'aligned' only
-specifies the minimum alignment, so the dynamic debug structures could
-be aligned to higher multiples, thus leaving extra padding. Since the
-dynamic debug code relies on a contiguous array this could lead to NULl
-pointer exceptions. This has been implemented for tracepoints, see: 
-https://lkml.org/lkml/2011/1/26/463. I haven't seen this issue in
-practice though...
+Sorry for slipping off the pinmux stuff, I will make it my goal to recap
+discussion and try to post a new patchset this week.
 
-So I'm going to leave the extra alignment specifications for now (they
-can't hurt), and at some point we probably need to look at the approach
-mentioned above.
+Concepts have grown, I see Stephen have created the new concept
+of e.g. bias groups which is a real good idea
 
-Thanks,
+One problem is that I wanted to start out small with the pinctrl
+subsystem, and now it looks like it has to do a *lot* of stuff from
+day 1 to be of any use ...
 
--Jason
+One specific thing worries me: Grant asked me to make sure
+to NOT create a global pin number space for the pinmuxes (and thus
+pinctrl). This means that in order to proceed, mappings of pinmux
+groups or pincontrol (such as bias) groups, each device using such
+an entity need to reference the intended pincontroller/mux instance.
+
+Say mmc instance 0 need pingroup foo on pincontroller bar
+means that there must be a specific reference from mmc.0:s
+struct device * to pinctrl bar:s struct device *. Maybe this is
+peanuts in DT, sorry not enough insight.
+
+I wonder if this has bearing on how the device tree need to be
+structured to be future proof? (Hopefully not.)
+
+Yours,
+Linus Walleij
