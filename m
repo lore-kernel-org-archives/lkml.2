@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1HPCvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:51:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35805 "EHLO mx2.suse.de"
+	id S1754096Ab1HPCwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:52:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35836 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964Ab1HPCvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:51:46 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:55 2011
-Message-Id: <20110816024455.856250121@pistachio.kroah.org>
+	id S1753972Ab1HPCwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:52:02 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:52 2011
+Message-Id: <20110816024452.646040388@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:43:08 -0700
+Date: Mon, 15 Aug 2011 19:42:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [25/26] drm/radeon/kms: dont try to be smart in the hpd handler
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [03/26] xhci: Dont submit commands or URBs to halted hosts.
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,92 +25,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit d5811e8731213f80c80d89e980505052f16aca1c upstream.
+commit 7bd89b4017f46a9b92853940fd9771319acb578a upstream.
 
-Attempting to try and turn off disconnected display hw in the
-hotput handler lead to more problems than it helped.  For
-now just register an event and only attempt the do something
-interesting with DP.  Other connectors are just too problematic:
-- Some systems have an HPD pin assigned to LVDS, but it's rarely
-if ever connected properly and we don't really care about hpd
-events on LVDS anyway since it's always connected.
-- The HPD pin is wired up correctly for eDP, but we don't really
-have to do anything since the events since it's always connected.
-- Some HPD pins fire more than once when you connect/disconnect
-- etc.
+Commit fccf4e86200b8f5edd9a65da26f150e32ba79808
+"USB: Free bandwidth when usb_disable_device is called" caused a bit of an
+issue when the xHCI host controller driver is unloaded.  It changed the
+USB core to remove all endpoints when a USB device is disabled.  When the
+driver is unloaded, it will remove the SuperSpeed split root hub, which
+will disable all devices under that roothub and then halt the host
+controller.  When the second High Speed split roothub is removed, the USB
+core will attempt to disable the endpoints, which will submit a Configure
+Endpoint command to a halted host controller.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=39882
+The command will eventually time out, but it makes the xHCI driver unload
+take *minutes* if there are a couple of USB 1.1/2.0 devices attached.  We
+must halt the host controller when the SuperSpeed roothub is removed,
+because we can't allow any interrupts from things like port status
+changes.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Make several different functions not submit commands or URBs to the host
+controller when the host is halted, by adding a check in
+xhci_check_args().  xhci_check_args() is used by these functions:
+
+xhci.c-int xhci_urb_enqueue()
+xhci.c-int xhci_drop_endpoint()
+xhci.c-int xhci_add_endpoint()
+xhci.c-int xhci_check_bandwidth()
+xhci.c-void xhci_reset_bandwidth()
+xhci.c-static int xhci_check_streams_endpoint()
+xhci.c-int xhci_discover_or_reset_device()
+
+It's also used by xhci_free_dev().  However, we have to take special
+care in that case, because we want the device memory to be freed if the
+host controller is halted.
+
+This patch should be backported to the 2.6.39 and 3.0 kernel.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c       |   12 ++++++++++++
- drivers/gpu/drm/radeon/radeon_connectors.c |   14 ++++++--------
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
- 3 files changed, 19 insertions(+), 8 deletions(-)
+ drivers/usb/host/xhci.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -613,6 +613,18 @@ static bool radeon_dp_get_link_status(st
- 	return true;
- }
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -345,7 +345,8 @@ static void xhci_event_ring_work(unsigne
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	temp = xhci_readl(xhci, &xhci->op_regs->status);
+ 	xhci_dbg(xhci, "op reg status = 0x%x\n", temp);
+-	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
++	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
++			(xhci->xhc_state & XHCI_STATE_HALTED)) {
+ 		xhci_dbg(xhci, "HW died, polling stopped.\n");
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		return;
+@@ -939,8 +940,11 @@ static int xhci_check_args(struct usb_hc
+ 		return 0;
+ 	}
  
-+bool radeon_dp_needs_link_train(struct radeon_connector *radeon_connector)
-+{
-+	u8 link_status[DP_LINK_STATUS_SIZE];
-+	struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++	xhci = hcd_to_xhci(hcd);
++	if (xhci->xhc_state & XHCI_STATE_HALTED)
++		return -ENODEV;
 +
-+	if (!radeon_dp_get_link_status(radeon_connector, link_status))
-+		return false;
-+	if (dp_channel_eq_ok(link_status, dig->dp_lane_count))
-+		return false;
-+	return true;
-+}
-+
- struct radeon_dp_link_train_info {
- 	struct radeon_device *rdev;
- 	struct drm_encoder *encoder;
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -64,18 +64,16 @@ void radeon_connector_hotplug(struct drm
- 	if (connector->dpms != DRM_MODE_DPMS_ON)
+ 	if (check_virt_dev) {
+-		xhci = hcd_to_xhci(hcd);
+ 		if (!udev->slot_id || !xhci->devs
+ 			|| !xhci->devs[udev->slot_id]) {
+ 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
+@@ -1242,7 +1246,8 @@ int xhci_urb_dequeue(struct usb_hcd *hcd
+ 		xhci_urb_free_priv(xhci, urb_priv);
+ 		return ret;
+ 	}
+-	if (xhci->xhc_state & XHCI_STATE_DYING) {
++	if ((xhci->xhc_state & XHCI_STATE_DYING) ||
++			(xhci->xhc_state & XHCI_STATE_HALTED)) {
+ 		xhci_dbg(xhci, "Ep 0x%x: URB %p to be canceled on "
+ 				"non-responsive xHCI host.\n",
+ 				urb->ep->desc.bEndpointAddress, urb);
+@@ -2667,7 +2672,10 @@ void xhci_free_dev(struct usb_hcd *hcd,
+ 	int i, ret;
+ 
+ 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
+-	if (ret <= 0)
++	/* If the host is halted due to driver unload, we still need to free the
++	 * device.
++	 */
++	if (ret <= 0 && ret != -ENODEV)
  		return;
  
--	/* powering up/down the eDP panel generates hpd events which
--	 * can interfere with modesetting.
--	 */
--	if (connector->connector_type == DRM_MODE_CONNECTOR_eDP)
--		return;
-+	/* just deal with DP (not eDP) here. */
-+	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
-+		int saved_dpms = connector->dpms;
- 
--	/* pre-r600 did not always have the hpd pins mapped accurately to connectors */
--	if (rdev->family >= CHIP_R600) {
--		if (radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
-+		if (radeon_hpd_sense(rdev, radeon_connector->hpd.hpd) &&
-+		    radeon_dp_needs_link_train(radeon_connector))
- 			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
- 		else
- 			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-+		connector->dpms = saved_dpms;
- 	}
- }
- 
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -479,6 +479,7 @@ extern void radeon_dp_set_link_config(st
- 				      struct drm_display_mode *mode);
- extern void radeon_dp_link_train(struct drm_encoder *encoder,
- 				 struct drm_connector *connector);
-+extern bool radeon_dp_needs_link_train(struct radeon_connector *radeon_connector);
- extern u8 radeon_dp_getsinktype(struct radeon_connector *radeon_connector);
- extern bool radeon_dp_getdpcd(struct radeon_connector *radeon_connector);
- extern void atombios_dig_encoder_setup(struct drm_encoder *encoder, int action, int panel_mode);
+ 	virt_dev = xhci->devs[udev->slot_id];
+@@ -2681,7 +2689,8 @@ void xhci_free_dev(struct usb_hcd *hcd,
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	/* Don't disable the slot if the host controller is dead. */
+ 	state = xhci_readl(xhci, &xhci->op_regs->status);
+-	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
++	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
++			(xhci->xhc_state & XHCI_STATE_HALTED)) {
+ 		xhci_free_virt_device(xhci, udev->slot_id);
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		return;
 
 
