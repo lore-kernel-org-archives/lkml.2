@@ -1,436 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab1HPDcA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 23:32:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48402 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab1HPDaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 23:30:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,378,1309762800"; 
-   d="scan'208";a="41792171"
-Message-Id: <20110816022329.190706384@intel.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 16 Aug 2011 10:20:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-to: <linux-fsdevel@vger.kernel.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>
-CC: Christoph Hellwig <hch@lst.de>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Greg Thelen <gthelen@google.com>
-CC: Minchan Kim <minchan.kim@gmail.com>
-CC: Vivek Goyal <vgoyal@redhat.com>
-CC: Andrea Righi <arighi@develer.com>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] writeback: IO-less balance_dirty_pages() 
-References: <20110816022006.348714319@intel.com>
-Content-Disposition: inline; filename=writeback-ioless-balance_dirty_pages.patch
+	id S1753418Ab1HPDhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 23:37:51 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:19182
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253Ab1HPDhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 23:37:50 -0400
+X-SpamScore: -12
+X-BigFish: VS-12(zz146fK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 16 Aug 2011 11:45:09 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [RFC PATCH v2 11/13] arm/tegra: Add device tree support to
+ pinmux driver
+Message-ID: <20110816034509.GG8044@S2100-06.ap.freescale.net>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+ <1313440100-17131-12-git-send-email-swarren@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1313440100-17131-12-git-send-email-swarren@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As proposed by Chris, Dave and Jan, don't start foreground writeback IO
-inside balance_dirty_pages(). Instead, simply let it idle sleep for some
-time to throttle the dirtying task. In the mean while, kick off the
-per-bdi flusher thread to do background writeback IO.
+On Mon, Aug 15, 2011 at 02:28:18PM -0600, Stephen Warren wrote:
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/mach-tegra/pinmux.c |  249 ++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 249 insertions(+), 0 deletions(-)
+> 
+Same question here, since we are moving over to device tree anyway,
+is it necessarily to keep these "#ifdef CONFIG_OF" all over the files?
+Can we manage to get rid of them, since we have a suite of empty OF API
+created for this?
 
-RATIONALS
-=========
+Regards,
+Shawn
 
-- disk seeks on concurrent writeback of multiple inodes (Dave Chinner)
-
-  If every thread doing writes and being throttled start foreground
-  writeback, it leads to N IO submitters from at least N different
-  inodes at the same time, end up with N different sets of IO being
-  issued with potentially zero locality to each other, resulting in
-  much lower elevator sort/merge efficiency and hence we seek the disk
-  all over the place to service the different sets of IO.
-  OTOH, if there is only one submission thread, it doesn't jump between
-  inodes in the same way when congestion clears - it keeps writing to
-  the same inode, resulting in large related chunks of sequential IOs
-  being issued to the disk. This is more efficient than the above
-  foreground writeback because the elevator works better and the disk
-  seeks less.
-
-- lock contention and cache bouncing on concurrent IO submitters (Dave Chinner)
-
-  With this patchset, the fs_mark benchmark on a 12-drive software RAID0 goes
-  from CPU bound to IO bound, freeing "3-4 CPUs worth of spinlock contention".
-
-  * "CPU usage has dropped by ~55%", "it certainly appears that most of
-    the CPU time saving comes from the removal of contention on the
-    inode_wb_list_lock" (IMHO at least 10% comes from the reduction of
-    cacheline bouncing, because the new code is able to call much less
-    frequently into balance_dirty_pages() and hence access the global
-    page states)
-
-  * the user space "App overhead" is reduced by 20%, by avoiding the
-    cacheline pollution by the complex writeback code path
-
-  * "for a ~5% throughput reduction", "the number of write IOs have
-    dropped by ~25%", and the elapsed time reduced from 41:42.17 to
-    40:53.23.
-
-  * On a simple test of 100 dd, it reduces the CPU %system time from 30% to 3%,
-    and improves IO throughput from 38MB/s to 42MB/s.
-
-- IO size too small for fast arrays and too large for slow USB sticks
-
-  The write_chunk used by current balance_dirty_pages() cannot be
-  directly set to some large value (eg. 128MB) for better IO efficiency.
-  Because it could lead to more than 1 second user perceivable stalls.
-  Even the current 4MB write size may be too large for slow USB sticks.
-  The fact that balance_dirty_pages() starts IO on itself couples the
-  IO size to wait time, which makes it hard to do suitable IO size while
-  keeping the wait time under control.
-
-  Now it's possible to increase writeback chunk size proportional to the
-  disk bandwidth. In a simple test of 50 dd's on XFS, 1-HDD, 3GB ram,
-  the larger writeback size dramatically reduces the seek count to 1/10
-  (far beyond my expectation) and improves the write throughput by 24%.
-
-- long block time in balance_dirty_pages() hurts desktop responsiveness
-
-  Many of us may have the experience: it often takes a couple of seconds
-  or even long time to stop a heavy writing dd/cp/tar command with
-  Ctrl-C or "kill -9".
-
-- IO pipeline broken by bumpy write() progress
-
-  There are a broad class of "loop {read(buf); write(buf);}" applications
-  whose read() pipeline will be under-utilized or even come to a stop if
-  the write()s have long latencies _or_ don't progress in a constant rate.
-  The current threshold based throttling inherently transfers the large
-  low level IO completion fluctuations to bumpy application write()s,
-  and further deteriorates with increasing number of dirtiers and/or bdi's.
-
-  For example, when doing 50 dd's + 1 remote rsync to an XFS partition,
-  the rsync progresses very bumpy in legacy kernel, and throughput is
-  improved by 67% by this patchset. (plus the larger write chunk size,
-  it will be 93% speedup).
-
-  The new rate based throttling can support 1000+ dd's with excellent
-  smoothness, low latency and low overheads.
-
-For the above reasons, it's much better to do IO-less and low latency
-pauses in balance_dirty_pages().
-
-Jan Kara, Dave Chinner and me explored the scheme to let
-balance_dirty_pages() wait for enough writeback IO completions to
-safeguard the dirty limit. However it's found to have two problems:
-
-- in large NUMA systems, the per-cpu counters may have big accounting
-  errors, leading to big throttle wait time and jitters.
-
-- NFS may kill large amount of unstable pages with one single COMMIT.
-  Because NFS server serves COMMIT with expensive fsync() IOs, it is
-  desirable to delay and reduce the number of COMMITs. So it's not
-  likely to optimize away such kind of bursty IO completions, and the
-  resulted large (and tiny) stall times in IO completion based throttling.
-
-So here is a pause time oriented approach, which tries to control the
-pause time in each balance_dirty_pages() invocations, by controlling
-the number of pages dirtied before calling balance_dirty_pages(), for
-smooth and efficient dirty throttling:
-
-- avoid useless (eg. zero pause time) balance_dirty_pages() calls
-- avoid too small pause time (less than   4ms, which burns CPU power)
-- avoid too large pause time (more than 200ms, which hurts responsiveness)
-- avoid big fluctuations of pause times
-
-It can control pause times at will. The default policy (in a followup
-patch) will be to do ~10ms pauses in 1-dd case, and increase to ~100ms
-in 1000-dd case.
-
-BEHAVIOR CHANGE
-===============
-
-(1) dirty threshold
-
-Users will notice that the applications will get throttled once crossing
-the global (background + dirty)/2=15% threshold, and then balanced around
-17.5%. Before patch, the behavior is to just throttle it at 20% dirtyable
-memory in 1-dd case.
-
-Since the task will be soft throttled earlier than before, it may be
-perceived by end users as performance "slow down" if his application
-happens to dirty more than 15% dirtyable memory.
-
-(2) smoothness/responsiveness
-
-Users will notice a more responsive system during heavy writeback.
-"killall dd" will take effect instantly.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/trace/events/writeback.h |   24 ----
- mm/page-writeback.c              |  147 ++++++++---------------------
- 2 files changed, 41 insertions(+), 130 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2011-08-15 14:09:01.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-16 08:50:46.000000000 +0800
-@@ -250,50 +250,6 @@ static void bdi_writeout_fraction(struct
- 				numerator, denominator);
- }
- 
--static inline void task_dirties_fraction(struct task_struct *tsk,
--		long *numerator, long *denominator)
--{
--	prop_fraction_single(&vm_dirties, &tsk->dirties,
--				numerator, denominator);
--}
--
--/*
-- * task_dirty_limit - scale down dirty throttling threshold for one task
-- *
-- * task specific dirty limit:
-- *
-- *   dirty -= (dirty/8) * p_{t}
-- *
-- * To protect light/slow dirtying tasks from heavier/fast ones, we start
-- * throttling individual tasks before reaching the bdi dirty limit.
-- * Relatively low thresholds will be allocated to heavy dirtiers. So when
-- * dirty pages grow large, heavy dirtiers will be throttled first, which will
-- * effectively curb the growth of dirty pages. Light dirtiers with high enough
-- * dirty threshold may never get throttled.
-- */
--#define TASK_LIMIT_FRACTION 8
--static unsigned long task_dirty_limit(struct task_struct *tsk,
--				       unsigned long bdi_dirty)
--{
--	long numerator, denominator;
--	unsigned long dirty = bdi_dirty;
--	u64 inv = dirty / TASK_LIMIT_FRACTION;
--
--	task_dirties_fraction(tsk, &numerator, &denominator);
--	inv *= numerator;
--	do_div(inv, denominator);
--
--	dirty -= inv;
--
--	return max(dirty, bdi_dirty/2);
--}
--
--/* Minimum limit for any task */
--static unsigned long task_min_dirty_limit(unsigned long bdi_dirty)
--{
--	return bdi_dirty - bdi_dirty / TASK_LIMIT_FRACTION;
--}
--
- /*
-  *
-  */
-@@ -939,29 +895,34 @@ static unsigned long dirty_poll_interval
- /*
-  * balance_dirty_pages() must be called by processes which are generating dirty
-  * data.  It looks at the number of dirty pages in the machine and will force
-- * the caller to perform writeback if the system is over `vm_dirty_ratio'.
-+ * the caller to wait once crossing the (background_thresh + dirty_thresh) / 2.
-  * If we're over `background_thresh' then the writeback threads are woken to
-  * perform some writeout.
-  */
- static void balance_dirty_pages(struct address_space *mapping,
--				unsigned long write_chunk)
-+				unsigned long pages_dirtied)
- {
--	unsigned long nr_reclaimable, bdi_nr_reclaimable;
-+	unsigned long nr_reclaimable;
- 	unsigned long nr_dirty;  /* = file_dirty + writeback + unstable_nfs */
- 	unsigned long bdi_dirty;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
--	unsigned long task_bdi_thresh;
--	unsigned long min_task_bdi_thresh;
--	unsigned long pages_written = 0;
--	unsigned long pause = 1;
-+	long pause = 0;
- 	bool dirty_exceeded = false;
--	bool clear_dirty_exceeded = true;
-+	unsigned long task_ratelimit;
-+	unsigned long base_rate;
-+	unsigned long pos_ratio;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 	unsigned long start_time = jiffies;
- 
- 	for (;;) {
-+		/*
-+		 * Unstable writes are a feature of certain networked
-+		 * filesystems (i.e. NFS) in which data may have been
-+		 * written to the server's write cache, but has not yet
-+		 * been flushed to permanent storage.
-+		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
- 		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
-@@ -978,8 +939,6 @@ static void balance_dirty_pages(struct a
- 			break;
- 
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
--		min_task_bdi_thresh = task_min_dirty_limit(bdi_thresh);
--		task_bdi_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
- 		 * In order to avoid the stacked BDI deadlock we need
-@@ -991,57 +950,41 @@ static void balance_dirty_pages(struct a
- 		 * actually dirty; with m+n sitting in the percpu
- 		 * deltas.
- 		 */
--		if (task_bdi_thresh < 2 * bdi_stat_error(bdi)) {
--			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_dirty = bdi_nr_reclaimable +
-+		if (bdi_thresh < 2 * bdi_stat_error(bdi))
-+			bdi_dirty = bdi_stat_sum(bdi, BDI_RECLAIMABLE) +
- 				    bdi_stat_sum(bdi, BDI_WRITEBACK);
--		} else {
--			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_dirty = bdi_nr_reclaimable +
-+		else
-+			bdi_dirty = bdi_stat(bdi, BDI_RECLAIMABLE) +
- 				    bdi_stat(bdi, BDI_WRITEBACK);
--		}
- 
--		/*
--		 * The bdi thresh is somehow "soft" limit derived from the
--		 * global "hard" limit. The former helps to prevent heavy IO
--		 * bdi or process from holding back light ones; The latter is
--		 * the last resort safeguard.
--		 */
--		dirty_exceeded = (bdi_dirty > task_bdi_thresh) ||
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
- 				  (nr_dirty > dirty_thresh);
--		clear_dirty_exceeded = (bdi_dirty <= min_task_bdi_thresh) &&
--					(nr_dirty <= dirty_thresh);
--
--		if (!dirty_exceeded)
--			break;
--
--		if (!bdi->dirty_exceeded)
-+		if (dirty_exceeded && !bdi->dirty_exceeded)
- 			bdi->dirty_exceeded = 1;
- 
- 		bdi_update_bandwidth(bdi, dirty_thresh, background_thresh,
- 				     nr_dirty, bdi_thresh, bdi_dirty,
- 				     start_time);
- 
--		/* Note: nr_reclaimable denotes nr_dirty + nr_unstable.
--		 * Unstable writes are a feature of certain networked
--		 * filesystems (i.e. NFS) in which data may have been
--		 * written to the server's write cache, but has not yet
--		 * been flushed to permanent storage.
--		 * Only move pages to writeback if this bdi is over its
--		 * threshold otherwise wait until the disk writes catch
--		 * up.
--		 */
--		trace_balance_dirty_start(bdi);
--		if (bdi_nr_reclaimable > task_bdi_thresh) {
--			pages_written += writeback_inodes_wb(&bdi->wb,
--							     write_chunk);
--			trace_balance_dirty_written(bdi, pages_written);
--			if (pages_written >= write_chunk)
--				break;		/* We've done our duty */
-+		if (unlikely(!writeback_in_progress(bdi)))
-+			bdi_start_background_writeback(bdi);
-+
-+		base_rate = bdi->dirty_ratelimit;
-+		pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
-+					       background_thresh, nr_dirty,
-+					       bdi_thresh, bdi_dirty);
-+		if (unlikely(pos_ratio == 0)) {
-+			pause = MAX_PAUSE;
-+			goto pause;
- 		}
-+		task_ratelimit = (u64)base_rate *
-+					pos_ratio >> RATELIMIT_CALC_SHIFT;
-+		pause = (HZ * pages_dirtied) / (task_ratelimit | 1);
-+		pause = min(pause, MAX_PAUSE);
-+
-+pause:
- 		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		io_schedule_timeout(pause);
--		trace_balance_dirty_wait(bdi);
- 
- 		dirty_thresh = hard_dirty_limit(dirty_thresh);
- 		/*
-@@ -1051,8 +994,7 @@ static void balance_dirty_pages(struct a
- 		 * (b) the pause time limit makes the dirtiers more responsive.
- 		 */
- 		if (nr_dirty < dirty_thresh +
--			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
--		    time_after(jiffies, start_time + MAX_PAUSE))
-+			       dirty_thresh / DIRTY_MAXPAUSE_AREA)
- 			break;
- 		/*
- 		 * pass-good area. When some bdi gets blocked (eg. NFS server
-@@ -1065,18 +1007,9 @@ static void balance_dirty_pages(struct a
- 			       dirty_thresh / DIRTY_PASSGOOD_AREA &&
- 		    bdi_dirty < bdi_thresh)
- 			break;
--
--		/*
--		 * Increase the delay for each loop, up to our previous
--		 * default of taking a 100ms nap.
--		 */
--		pause <<= 1;
--		if (pause > HZ / 10)
--			pause = HZ / 10;
- 	}
- 
--	/* Clear dirty_exceeded flag only when no task can exceed the limit */
--	if (clear_dirty_exceeded && bdi->dirty_exceeded)
-+	if (!dirty_exceeded && bdi->dirty_exceeded)
- 		bdi->dirty_exceeded = 0;
- 
- 	current->nr_dirtied = 0;
-@@ -1093,8 +1026,10 @@ static void balance_dirty_pages(struct a
- 	 * In normal mode, we start background writeout at the lower
- 	 * background_thresh, to keep the amount of dirty memory low.
- 	 */
--	if ((laptop_mode && pages_written) ||
--	    (!laptop_mode && (nr_reclaimable > background_thresh)))
-+	if (laptop_mode)
-+		return;
-+
-+	if (nr_reclaimable > background_thresh)
- 		bdi_start_background_writeback(bdi);
- }
- 
---- linux-next.orig/include/trace/events/writeback.h	2011-08-15 13:59:09.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2011-08-16 08:50:46.000000000 +0800
-@@ -104,30 +104,6 @@ DEFINE_WRITEBACK_EVENT(writeback_bdi_reg
- DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
- DEFINE_WRITEBACK_EVENT(writeback_thread_start);
- DEFINE_WRITEBACK_EVENT(writeback_thread_stop);
--DEFINE_WRITEBACK_EVENT(balance_dirty_start);
--DEFINE_WRITEBACK_EVENT(balance_dirty_wait);
--
--TRACE_EVENT(balance_dirty_written,
--
--	TP_PROTO(struct backing_dev_info *bdi, int written),
--
--	TP_ARGS(bdi, written),
--
--	TP_STRUCT__entry(
--		__array(char,	name, 32)
--		__field(int,	written)
--	),
--
--	TP_fast_assign(
--		strncpy(__entry->name, dev_name(bdi->dev), 32);
--		__entry->written = written;
--	),
--
--	TP_printk("bdi %s written %d",
--		  __entry->name,
--		  __entry->written
--	)
--);
- 
- DECLARE_EVENT_CLASS(wbc_class,
- 	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi),
-
+> diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
+> index ed316f9..5dfe6c1 100644
+> --- a/arch/arm/mach-tegra/pinmux.c
+> +++ b/arch/arm/mach-tegra/pinmux.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/errno.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+>  #include <linux/platform_device.h>
+>  
+>  #include <mach/iomap.h>
+> @@ -124,6 +125,21 @@ static const char *pingroup_name(enum tegra_pingroup pg)
+>  	return pingroups[pg].name;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static int pingroup_enum(const char *name, enum tegra_pingroup *pg_out)
+> +{
+> +	int pg;
+> +
+> +	for (pg = 0; pg < TEGRA_MAX_PINGROUP; pg++)
+> +		if (!strcasecmp(name, tegra_soc_pingroups[pg].name)) {
+> +			*pg_out = pg;
+> +			return 0;
+> +		}
+> +
+> +	return -EINVAL;
+> +}
+> +#endif
+> +
+>  static const char *func_name(enum tegra_mux_func func)
+>  {
+>  	if (func == TEGRA_MUX_RSVD1)
+> @@ -147,6 +163,41 @@ static const char *func_name(enum tegra_mux_func func)
+>  	return tegra_mux_names[func];
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static int func_enum(const char *name, enum tegra_mux_func *func_out)
+> +{
+> +	int func;
+> +
+> +	if (!strcasecmp(name, "RSVD1")) {
+> +		*func_out = TEGRA_MUX_RSVD1;
+> +		return 0;
+> +	}
+> +	if (!strcasecmp(name, "RSVD2")) {
+> +		*func_out = TEGRA_MUX_RSVD2;
+> +		return 0;
+> +	}
+> +	if (!strcasecmp(name, "RSVD3")) {
+> +		*func_out = TEGRA_MUX_RSVD3;
+> +		return 0;
+> +	}
+> +	if (!strcasecmp(name, "RSVD4")) {
+> +		*func_out = TEGRA_MUX_RSVD4;
+> +		return 0;
+> +	}
+> +	if (!strcasecmp(name, "NONE")) {
+> +		*func_out = TEGRA_MUX_NONE;
+> +		return 0;
+> +	}
+> +
+> +	for (func = 0; func < TEGRA_MAX_MUX; func++)
+> +		if (!strcasecmp(name, tegra_mux_names[func])) {
+> +			*func_out = func;
+> +			return 0;
+> +		}
+> +
+> +	return -EINVAL;
+> +}
+> +#endif
+>  
+>  static const char *tri_name(unsigned long val)
+>  {
+> @@ -329,6 +380,22 @@ static const char *drive_pinmux_name(enum tegra_drive_pingroup pg)
+>  	return drive_pingroups[pg].name;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static int drive_pinmux_enum(const char *name,
+> +			     enum tegra_drive_pingroup *pg_out)
+> +{
+> +	int pg;
+> +
+> +	for (pg = 0; pg < TEGRA_MAX_DRIVE_PINGROUP; pg++)
+> +		if (!strcasecmp(name, drive_pingroups[pg].name)) {
+> +			*pg_out = pg;
+> +			return 0;
+> +		}
+> +
+> +	return -EINVAL;
+> +}
+> +#endif
+> +
+>  static const char *enable_name(unsigned long val)
+>  {
+>  	return val ? "ENABLE" : "DISABLE";
+> @@ -666,15 +733,197 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static void __init tegra_pinmux_parse_mux_groups(
+> +			struct platform_device *pdev,
+> +			struct device_node *mux_node)
+> +{
+> +	struct device_node *node;
+> +
+> +	for_each_child_of_node(mux_node, node) {
+> +		struct tegra_pingroup_config config;
+> +		int ret;
+> +		const char *func;
+> +
+> +		ret = pingroup_enum(node->name, &config.pingroup);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(mux) %s: Invalid pingroup name\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		ret = of_property_read_string(node, "nvidia,function",
+> +					      &func);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(mux) %s: Missing property nvidia,function\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +		ret = func_enum(func, &config.func);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(mux) %s: Invalid nvidia,function value %s\n",
+> +				node->name, func);
+> +			continue;
+> +		}
+> +
+> +		if (of_find_property(node, "nvidia,pull-up", NULL))
+> +			config.pupd = TEGRA_PUPD_PULL_UP;
+> +		else if (of_find_property(node, "nvidia,pull-down", NULL))
+> +			config.pupd = TEGRA_PUPD_PULL_DOWN;
+> +		else
+> +			config.pupd = TEGRA_PUPD_NORMAL;
+> +
+> +		if (of_find_property(node, "nvidia,tristate", NULL))
+> +			config.tristate = TEGRA_TRI_TRISTATE;
+> +		else
+> +			config.tristate = TEGRA_TRI_NORMAL;
+> +
+> +		dev_dbg(&pdev->dev, "(mux) %s: func %d (%s) pull %d tri %d\n",
+> +			node->name, config.func, func, config.pupd,
+> +			config.tristate);
+> +
+> +		tegra_pinmux_config_pingroup(&config);
+> +	}
+> +}
+> +
+> +static void __init tegra_pinmux_parse_drive_groups(
+> +			struct platform_device *pdev,
+> +			struct device_node *drive_node)
+> +{
+> +	struct device_node *node;
+> +
+> +	for_each_child_of_node(drive_node, node) {
+> +		enum tegra_drive_pingroup pg;
+> +		enum tegra_hsm hsm;
+> +		enum tegra_schmitt schmitt;
+> +		enum tegra_drive drive;
+> +		enum tegra_pull_strength pull_down;
+> +		enum tegra_pull_strength pull_up;
+> +		enum tegra_slew slew_rising;
+> +		enum tegra_slew slew_falling;
+> +		int ret;
+> +
+> +		ret = drive_pinmux_enum(node->name, &pg);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Invalid pingroup name\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		if (of_find_property(node, "nvidia,high-speed-mode", NULL))
+> +			hsm = TEGRA_HSM_ENABLE;
+> +		else
+> +			hsm = TEGRA_HSM_DISABLE;
+> +
+> +		if (of_find_property(node, "nvidia,schmitt", NULL))
+> +			schmitt = TEGRA_SCHMITT_ENABLE;
+> +		else
+> +			schmitt = TEGRA_SCHMITT_DISABLE;
+> +
+> +		ret = of_property_read_u32(node, "nvidia,drive-power", &drive);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Missing property "
+> +				"nvidia,drive-power\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		ret = of_property_read_u32(node, "nvidia,pull-down-strength",
+> +					   &pull_down);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Missing property "
+> +				"nvidia,pull-down-strength\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		ret = of_property_read_u32(node, "nvidia,pull-up-strength",
+> +					   &pull_up);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Missing property "
+> +				"nvidia,pull-up-strength\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		ret = of_property_read_u32(node, "nvidia,slew-rate-rising",
+> +					   &slew_rising);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Missing property "
+> +				"nvidia,slew_rate-rising\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		ret = of_property_read_u32(node, "nvidia,slew-rate-falling",
+> +					   &slew_rising);
+> +		if (ret < 0) {
+> +			dev_err(&pdev->dev,
+> +				"(drive) %s: Missing property "
+> +				"nvidia,slew_rate-falling\n",
+> +				node->name);
+> +			continue;
+> +		}
+> +
+> +		dev_dbg(&pdev->dev,
+> +			"(drive) %s: hsm %d schmitt %d drive %d "
+> +			"pull_down %d pull_up %d slew_r %d slew_f %d\n",
+> +			node->name,
+> +			hsm, schmitt, drive,
+> +			pull_down, pull_up,
+> +			slew_rising, slew_falling);
+> +
+> +		tegra_drive_pinmux_config_pingroup(pg, hsm, schmitt, drive,
+> +						   pull_down, pull_up,
+> +						   slew_rising, slew_falling);
+> +	}
+> +}
+> +
+> +static void __init tegra_pinmux_probe_dt(struct platform_device *pdev)
+> +{
+> +	struct device_node *node;
+> +
+> +	for_each_child_of_node(pdev->dev.of_node, node) {
+> +		if (!strcmp(node->name, "nvidia,mux-groups"))
+> +			tegra_pinmux_parse_mux_groups(pdev, node);
+> +		else if (!strcmp(node->name, "nvidia,drive-groups"))
+> +			tegra_pinmux_parse_drive_groups(pdev, node);
+> +		else
+> +			dev_err(&pdev->dev, "%s: Unknown child node\n",
+> +				node->name);
+> +	}
+> +}
+> +#else
+> +static inline void __init tegra_pinmux_probe_dt(struct platform_device *pdev)
+> +{
+> +}
+> +#endif
+> +
+>  static int __init tegra_pinmux_probe(struct platform_device *pdev)
+>  {
+> +	tegra_pinmux_probe_dt(pdev);
+> +
+>  	return 0;
+>  }
+>  
+> +static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
+> +	{ .compatible = "nvidia,tegra20-pinmux", },
+> +	{ },
+> +};
+> +
+>  static struct platform_driver tegra_pinmux_driver = {
+>  	.driver		= {
+>  		.name	= "tegra-pinmux",
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table = tegra_pinmux_of_match,
+>  	},
+>  	.probe		= tegra_pinmux_probe,
+>  };
+> -- 
+> 1.7.0.4
+> 
+> 
 
