@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233Ab1HPEFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 00:05:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37957 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1HPEFr (ORCPT
+	id S1751451Ab1HPEMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 00:12:24 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42592 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab1HPEMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 00:05:47 -0400
-Date: Mon, 15 Aug 2011 21:03:41 -0700 (PDT)
-Message-Id: <20110815.210341.1795824204788569439.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110816132659.7719837bd136aa520c5814ac@canb.auug.org.au>
-References: <20110816132659.7719837bd136aa520c5814ac@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 15 Aug 2011 21:03:43 -0700 (PDT)
+	Tue, 16 Aug 2011 00:12:23 -0400
+From: jeffbrown@android.com
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz, rydberg@euromail.se,
+        benjamin.tissoires@enac.fr, chatty@enac.fr,
+        Jeff Brown <jeffbrown@android.com>
+Subject: [PATCH] hid-multitouch: Add LG Display Multitouch device.
+Date: Mon, 15 Aug 2011 21:12:09 -0700
+Message-Id: <1313467929-28250-1-git-send-email-jeffbrown@android.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 16 Aug 2011 13:26:59 +1000
+From: Jeff Brown <jeffbrown@android.com>
 
-> I applied this patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 16 Aug 2011 13:22:24 +1000
-> Subject: [PATCH] sungem: sungem_phy.h moved
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+This panel is also known as the Dell ST2220Tc.
 
-Sigh, applied, sorry about this.
+Signed-off-by: jeffbrown@android.com
+
+---
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-core.c       |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 4 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 306b15f..3cbe8cc 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -328,6 +328,7 @@ config HID_MULTITOUCH
+ 	  - Hanvon dual touch panels
+ 	  - Ilitek dual touch panels
+ 	  - IrTouch Infrared USB panels
++	  - LG Display panels (Dell ST2220Tc)
+ 	  - Lumio CrystalTouch panels
+ 	  - MosArt dual-touch panels
+ 	  - PenMount dual touch panels
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 1a5cf0c..11b3b39 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1396,6 +1396,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index db63ccf..637e6e9 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -419,6 +419,9 @@
+ #define USB_DEVICE_ID_LD_HYBRID		0x2090
+ #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
+ 
++#define USB_VENDOR_ID_LG		0x1fd2
++#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
++
+ #define USB_VENDOR_ID_LOGITECH		0x046d
+ #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
+ #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 58d0e7a..9fc15e1 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -672,6 +672,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
+ 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
+ 
++	/* LG Display panels */
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_LG,
++			USB_DEVICE_ID_LG_MULTITOUCH) },
++
+ 	/* Lumio panels */
+ 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
+-- 
+1.7.0.4
+
