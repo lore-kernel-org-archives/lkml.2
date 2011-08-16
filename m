@@ -1,88 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1HPMve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 08:51:34 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37404 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab1HPMvc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 08:51:32 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Dan Merillat <dan.merillat@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        BTRFS Mailing list <linux-btrfs@vger.kernel.org>
-Subject: Re: processes stuck in llseek
-In-reply-to: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>
-References: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>
-Date: Tue, 16 Aug 2011 08:51:18 -0400
-Message-Id: <1313499055-sup-2296@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4E4A67D2.00DC,ss=1,re=0.000,fgs=0
+	id S1752508Ab1HPM5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 08:57:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46302 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543Ab1HPM5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 08:57:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,380,1309762800"; 
+   d="scan'208";a="7724861"
+Subject: Re: [PATCH] DMAEngine: Define generic transfer request api
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>, sundaram@ti.com
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, nsekhar@ti.com
+In-Reply-To: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 18:26:39 +0530
+Message-ID: <1313499399.1603.92.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Dan Merillat's message of 2011-08-15 23:59:50 -0400:
-> I noticed a series of hung_task notifications in dmesg, so I went
-> poking at it.   Process is 'dropbox', and it's stuck trying to llseek
-> it's library.zip file.
+On Fri, 2011-08-12 at 16:44 +0530, Jassi Brar wrote:
+> Define a new api that could be used for doing fancy data transfers
+> like interleaved to contiguous copy and vice-versa.
+> Traditional SG_list based transfers tend to be very inefficient in
+> such cases as where the interleave and chunk are only a few bytes,
+> which call for a very condensed api to convey pattern of the transfer.
 > 
-> strace of dropbox:
-> ...
-> stat("/home/x/.dropbox-dist/library.zip", {st_mode=S_IFREG|0755,
-> st_size=11575179, ...}) = 0
-> open("/home/x/.dropbox-dist/library.zip", O_RDONLY) = 3
-> fstat(3, {st_mode=S_IFREG|0755, st_size=11575179, ...}) = 0
-> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
-> 0) = 0x7fa766ea8000
-> fstat(3, {st_mode=S_IFREG|0755, st_size=11575179, ...}) = 0
-> lseek(3, 11571200, SEEK_SET
+> This api supports all 4 variants of scatter-gather and contiguous transfer.
+> Besides, it could also represent common operations like
+>         device_prep_dma_{cyclic, memset, memcpy}
+> and maybe some more that I am not sure of.
 > 
-> SEEK_SET is less than st_size
+> Of course, neither can this api help transfers that don't lend to DMA by
+> nature, i.e, scattered tiny read/writes with no periodic pattern.
 > 
-> strace of dd if=library.zip of=/dev/null bs=1 seek=11571200:
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+> ---
+>  include/linux/dmaengine.h |   73 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 73 insertions(+), 0 deletions(-)
 > 
-> open("library.zip", O_RDONLY)           = 3
-> dup2(3, 0)                              = 0
-> close(3)                                = 0
-> lseek(0, 0, SEEK_CUR
-> 
-> [72960.716080] INFO: task dropbox:1348 blocked for more than 120 seconds.
-> [72960.716084] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-> disables this message.
-> [72960.716087] dropbox         D ffff8800762d8a78     0  1348      1 0x00000004
-> [72960.716092]  ffff880069cede18 0000000000000086 0000000000096000
-> 0000000000000000
-> [72960.716097]  ffff880069cec000 00000000000119c0 ffff8800762d8700
-> 00000000000119c0
-> [72960.716101]  ffff880069cedfd8 0000000000004000 ffff880069cedfd8
-> 00000000000119c0
-> [72960.716106] Call Trace:
-> [72960.716113]  [<ffffffff81331f9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-> [72960.716119]  [<ffffffff8155710a>] ? retint_restore_args+0xe/0xe
-> [72960.716124]  [<ffffffff810e8ef1>] ? noop_llseek+0xa/0xa
-> [72960.716129]  [<ffffffff810340ff>] ? mutex_spin_on_owner+0x1c/0x45
-> [72960.716133]  [<ffffffff81555be0>] __mutex_lock_slowpath+0xd2/0x116
-> [72960.716137]  [<ffffffff81559edd>] ? do_page_fault+0x374/0x3e6
-> [72960.716140]  [<ffffffff81555a87>] mutex_lock+0x16/0x27
-> [72960.716146]  [<ffffffff812c8ad7>] btrfs_file_llseek+0x38/0x297
-> [72960.716150]  [<ffffffff81331fda>] ? trace_hardirqs_off_thunk+0x3a/0x6c
-> [72960.716153]  [<ffffffff810e8f2c>] vfs_llseek+0x2e/0x30
-> [72960.716155]  [<ffffffff810e9311>] sys_lseek+0x3e/0x5d
-> [72960.716159]  [<ffffffff8155d4fb>] system_call_fastpath+0x16/0x1b
-> 
-> Oddly enough, it's just llseek.  I can copy/read the file sequentially
-> just fine, but llseek fails on a copy as well.   Once I get physically
-> to the system I'll recompile to an unmodified kernel and try again.
-> Other files of the same approximate age llseek correctly.
-> 
-> Kernel is 3.1-rc1  with the fglrx module from AMD and the following
-> patch:  (I was playing with cross-subvolume reflinking, but not on
-> this file)
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 8fbf40e..74f3ae0 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -76,6 +76,76 @@ enum dma_transaction_type {
+>  /* last transaction type for creation of the capabilities mask */
+>  #define DMA_TX_TYPE_END (DMA_CYCLIC + 1)
+>  
+> +/**
+> + * Generic Transfer Request
+> + * ------------------------
+> + * A chunk is collection of contiguous bytes to be transfered.
+> + * The gap(in bytes) between two chunks is called inter-chunk-gap(ICG).
+> + * ICGs may or maynot change between chunks.
+> + * A FRAME is the smallest series of contiguous {chunk,icg} pairs,
+> + *  that when repeated an integral number of times, specifies the transfer.
+> + * A transfer template is specification of a Frame, the number of times
+> + *  it is to be repeated and other per-transfer attributes.
+> + *
+> + * Practically, a client driver would have ready a template for each
+> + *  type of transfer it is going to need during its lifetime and
+> + *  set only 'src_start' and 'dst_start' before submitting the requests.
+> + *
+> + *
+> + *  |      Frame-1        |       Frame-2       | ~ |       Frame-'numf'  |
+> + *  |====....==.===...=...|====....==.===...=...| ~ |====....==.===...=...|
+> + *
+> + *    ==  Chunk size
+> + *    ... ICG
+> + */
+> +
+> +/**
+> + * struct data_chunk - Element of scatter-gather list that makes a frame.
+> + * @size: Number of bytes to read from source.
+> + *	  size_dst := fn(op, size_src), so doesn't mean much for destination.
+> + * @icg: Number of bytes to jump after last src/dst address of this
+> + *	 chunk and before first src/dst address for next chunk.
+> + *	 Ignored for dst(assumed 0), if dst_inc is true and dst_sgl is false.
+> + *	 Ignored for src(assumed 0), if src_inc is true and src_sgl is false.
+> + */
+> +struct data_chunk {
+> +	size_t size;
+> +	size_t icg;
+> +};
+> +
+> +/**
+> + * struct xfer_template - Template to convey DMAC the transfer pattern
+> + *	 and attributes.
+> + * @op: The operation to perform on source data before writing it on
+> + *	 to destination address.
+> + * @src_start: Bus address of source for the first chunk.
+> + * @dst_start: Bus address of destination for the first chunk.
+> + * @src_inc: If the source address increments after reading from it.
+> + * @dst_inc: If the destination address increments after writing to it.
+> + * @src_sgl: If the 'icg' of sgl[] applies to Source (scattered read).
+> + *		Otherwise, source is read contiguously (icg ignored).
+> + *		Ignored if src_inc is false.
+> + * @dst_sgl: If the 'icg' of sgl[] applies to Destination (scattered write).
+> + *		Otherwise, destination is filled contiguously (icg ignored).
+> + *		Ignored if dst_inc is false.
+> + * @frm_irq: If the client expects DMAC driver to do callback after each frame.
+> + * @numf: Number of frames in this template.
+> + * @frame_size: Number of chunks in a frame i.e, size of sgl[].
+> + * @sgl: Array of {chunk,icg} pairs that make up a frame.
+> + */
+> +struct xfer_template {
+> +	enum dma_transaction_type op;
+> +	dma_addr_t src_start;
+> +	dma_addr_t dst_start;
+> +	bool src_inc;
+> +	bool dst_inc;
+> +	bool src_sgl;
+> +	bool dst_sgl;
+> +	bool frm_irq;
+> +	size_t numf;
+> +	size_t frame_size;
+> +	struct data_chunk sgl[0];
+> +};
+>  
+>  /**
+>   * enum dma_ctrl_flags - DMA flags to augment operation preparation,
+> @@ -432,6 +502,7 @@ struct dma_tx_state {
+>   * @device_prep_dma_cyclic: prepare a cyclic dma operation suitable for audio.
+>   *	The function takes a buffer of size buf_len. The callback function will
+>   *	be called after period_len bytes have been transferred.
+> + * @device_prep_dma_genxfer: Transfer expression in a generic way.
+>   * @device_control: manipulate all pending operations on a channel, returns
+>   *	zero or error code
+>   * @device_tx_status: poll for transaction completion, the optional
+> @@ -496,6 +567,8 @@ struct dma_device {
+>  	struct dma_async_tx_descriptor *(*device_prep_dma_cyclic)(
+>  		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+>  		size_t period_len, enum dma_data_direction direction);
+> +	struct dma_async_tx_descriptor *(*device_prep_dma_genxfer)(
+> +		struct dma_chan *chan, struct xfer_template *xt);
+>  	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  		unsigned long arg);
+>  
+Do you have a driver which is using the API, would help to evaluate this
+API when we see the usage :)
 
-Dan Carpenter sent a patch for this, I'll get it queued up for rc3.
+Currently we have two approaches to solve this problem first being the
+DMA_STRIDE_CONFIG proposed by Linus W, I feel this one is better
+approach as this can give client ability to configure each transfer
+rather than set for the channel. Linus W, do you agree?
 
--chris
+Sundaram, Does this fit to the usage you folks wanted?
+
+
+-- 
+~Vinod
+
