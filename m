@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab1HPQTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 12:19:03 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:29193 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab1HPQTB (ORCPT
+	id S1752339Ab1HPQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 12:27:42 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11465 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1HPQ1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 12:19:01 -0400
-Date: Tue, 16 Aug 2011 18:18:48 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: guenter.roeck@ericsson.com
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, lm-sensors@lm-sensors.org,
-        Ian Dobson <i.dobson@planet-ian.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] hwmon: add caseopen detection to w83627ehf driver
-Message-ID: <20110816181848.2ee10241@endymion.delvare>
-In-Reply-To: <1313422796.2214.133.camel@groeck-laptop>
-References: <1313181671-5164-1-git-send-email-mad_soft@inbox.ru>
-	<1313422796.2214.133.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Aug 2011 12:27:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 16 Aug 2011 09:27:22 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>,
+        "Russell King - ARM Linux (linux@arm.linux.org.uk)" 
+	<linux@arm.linux.org.uk>
+CC: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Aug 2011 09:27:05 -0700
+Subject: RE: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
+ linux/types.h
+Thread-Topic: [PATCH] ARM: tegra: Add missing include of linux/erron.h and
+ linux/types.h
+Thread-Index: Acxb05PwtFrP63SJTw+MNge5e4p+7AAXVPhg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA25328@HQMAIL01.nvidia.com>
+References: <1313471744.5824.2.camel@phoenix>
+In-Reply-To: <1313471744.5824.2.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GGRxZk030012
 
-On Mon, 15 Aug 2011 08:39:56 -0700, Guenter Roeck wrote:
-> On Fri, 2011-08-12 at 16:41 -0400, Dmitry Artamonow wrote:
-> > Export caseopen alarm status into userspace for Winbond W83627*
-> > and Nuvoton NCT677[56] chips and implement alarm clear knob.
-> > Second caseopen alarm on NCT6776 is also supported.
-> > 
-> > Thanks to Guenter Roeck for information about Nuvoton chips
-> > and suggestion to use SENSOR_ATTR_2.
-> > 
-> > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> 
-> Applied to -next.
+Axel Lin wrote at Monday, August 15, 2011 11:16 PM:
+> Include linux/erron.h to fix below build error.
+...
+> Include linux/types.h to fix below build error.
+...
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> This patch is against linux-next (next-20110815), it fixes the build error with "make
+> tegra_defconfig".
 
-Looks very good, thanks to both of you. It's nice to see more drivers
-implement this feature after it got standardized.
+Axel,
+
+I posted this same thing a little while back. Russell asked me to perform
+some rework on gpio.h that removed the need for errno.h instead. I did
+that in:
+
+http://www.spinics.net/lists/linux-tegra/msg01996.html
+
+I'm just waiting for an Ack from Grant Likely on the GPIO driver changes,
+and then will place the series into the ARM patch system as Russell
+requested.
+
+Thanks for caring about Tegra compile issues:-)
 
 -- 
-Jean Delvare
+nvpublic
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
