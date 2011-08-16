@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1HPWr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 18:47:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:62297 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab1HPWr2 (ORCPT
+	id S1752028Ab1HPXCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 19:02:01 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:65455 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab1HPXB6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 18:47:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=o11NJMggqGhfMLWLYsVZSEEaF/tXEbjpa12qw/BYWqHiITx4bnXGqjJfY4Xi8tYgu
-	qHAmwONu74XwXsJCTvwMw==
+	Tue, 16 Aug 2011 19:01:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ3x-nTVuoqO4xX5+kzuxZv21A7aAHpu7N4Xj4tCjsMkOA@mail.gmail.com>
-References: <1311926200-24806-1-git-send-email-sjg@chromium.org>
-	<4E41B19C.3040209@codeaurora.org>
-	<CAPnjgZ3x-nTVuoqO4xX5+kzuxZv21A7aAHpu7N4Xj4tCjsMkOA@mail.gmail.com>
-Date: Tue, 16 Aug 2011 15:47:24 -0700
-X-Google-Sender-Auth: 5dTSTZIY9UZp0VwgfYLiBHviqYQ
-Message-ID: <CAPnjgZ1RRuEMNXRdFp=DxDjM6pCL_5R+eVhGnfxt5pybr20fgw@mail.gmail.com>
-Subject: Re: [PATCH v5] ARM: Use generic BUG() handler
-From: Simon Glass <sjg@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dave Martin <dave.martin@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>
+In-Reply-To: <20110815041524.GA7578@kroah.com>
+References: <20110815041524.GA7578@kroah.com>
+Date: Tue, 16 Aug 2011 16:01:57 -0700
+Message-ID: <CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
+Subject: Re: Future of the -longterm kernel releases (i.e. how we pick them).
+From: Tim Bird <tbird20d@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        stable-review@kernel.org, stable@kernel.org, tim.bird@am.sony.com
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Aug 9, 2011 at 3:15 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 07/29/2011 12:56 AM, Simon Glass wrote:
->>> From: Simon Glass <sjg@google.com>
->>>
->>> ARM uses its own BUG() handler which makes its output slightly different
->>> from other archtectures.
->>>
->>> One of the problems is that the ARM implementation doesn't report the function
->>> with the BUG() in it, but always reports the PC being in __bug(). The generic
->>> implementation doesn't have this problem.
->>>
->>> Currently we get something like:
->>>
->>> kernel BUG at fs/proc/breakme.c:35!
->>> Unable to handle kernel NULL pointer dereference at virtual address 00000000
->>> ...
->>> PC is at __bug+0x20/0x2c
->>>
->>> With this patch it displays:
->>>
->>> kernel BUG at fs/proc/breakme.c:35!
->>> Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
->>> ...
->>> PC is at write_breakme+0xd0/0x1b4
->>>
->>> This implementation uses an undefined instruction to implement BUG, and sets up
->>> a bug table containing the relevant information. Many versions of gcc do not
->>> support %c properly for ARM (inserting a # when they shouldn't) so we work
->>> around this using distasteful macro magic.
->>>
->>> v1: Initial version to replace existing ARM BUG() implementation with something
->>> more similar to other architectures.
->>>
->>> v2: Add Thumb support, remove backtrace whitespace output changes. Change to
->>> use macros instead of requiring the asm %d flag to work (thanks to
->>> Dave Martin <dave.martin@linaro.org>)
->>>
->>> v3: Remove old BUG() implementation in favor of this one.
->>> Remove the Backtrace: message (will submit this separately).
->>> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
->>> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
->>> define GENERIC_BUG this might be academic.)
->>> Rebase to linux-2.6.git master.
->>>
->>> v4: Allow BUGS in modules (these were not reported correctly in v3)
->>> (thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
->>> Remove __bug() as this is no longer needed.
->>>
->>> v5: Add %progbits as the section flags.
->>
->> Tested-by: Stephen Boyd <sboyd@codeaurora.org>
->>
->>> Signed-off-by: Simon Glass <sjg@chromium.org>
->>> ---
->>>
->>
->> Can you update the patch in the patch tracker? It would be great to see
->> this in the next merge window.
+>Greg KH wrote:
+> To keep this all out in the open, let's figure out what to do here.
+> Consumer devices have a 1-2 year lifespan, and want and need the
+> experience of the kernel community maintaining their "base" kernel for
+> them.  There is no real "enterprise" embedded distro out there from what
+> I can see.  montaVista and WindRiver have some offerings in this area, but
+> they are not that widely used and are usually more "deep embedded".
+> There's also talk that the CELF group and Linaro are wanting to do
+> something on a "longterm" basis, and are fishing around for how to
+> properly handle this with the community to share the workload.  Android
+> also is another huge player here, upgrading their kernel every major
+> release, and they could use the support of a longterm kernel as well.
 
-Hi,
+Well I certainly hope that there's more participation on sharing the
+workload by embedded companies than there has historically been.
+I'm not at LinuxCon this week, but I want to follow up with you
+(maybe at KS?) on good ways that CE companies can help with
+this effort.
 
-I have done this against 3.1-rc2 and it is here:
-
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7017/1
-
-Please let me know if there are any problems.
-
-Regards,
-Simon
-
->>
->> --
->> Sent by an employee of the Qualcomm Innovation Center, Inc.
->> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->>
->>
+> Proposal:
 >
+> Here's a first cut at a proposal, let me know if you like it, hate it,
+> would work for you and your company, or not at all:
+>
+> - a new -longterm kernel is picked every year.
+> - a -longterm kernel is maintained for 2 years and then dropped.
+> - -stable kernels keep the same schedule that they have been (dropping
+>  the last one after a new release happens.)  These releases are best
+>  for products that require new hardware updates (desktop distros,
+>  community distros, fast-moving embedded distros (like Yocto)).
+> - the normal -stable rules apply to these -longterm kernels as described
+>  in Documentation/stable_kernel_rules.txt
+>
+> This means that there are 2 -longterm kernels being maintained at the
+> same time, and one -stable kernel.  I'm volunteering to do this work, as
+> it's pretty much what I'm doing today anyway, and I have all of the
+> scripts and workflow down.
+
+This all sounds great to me. As you know CEWG (formerly CELF) is very
+interested in supporting LTS work.  What you describe
+would be a good base for what we envision.
+
+That said, I echo the concerns about version selection.  It would be
+good to have a "settle" period longer than 1 stable release for selecting
+a kernel (but then again, we don't want to wait too long to pick each
+longterm release).
+
+Rolling, overlapping, longterm versions seems like a nice idea.
+I like the idea of looking for a volunteer to continue maintenance after
+2 years, and if none is found dropping the release.  That way, someone
+can step up if there is continued interest in a particular longterm version.
+
+Also, the more people using a particular LTS kernel, the better. In the past
+the embedded guys didn't coordinate well enough with other parties.  If
+we could get enterprise, desktop and embedded on a single LT release, that
+would be really nice.  I'm not sure how you're keeping track of interested
+parties, but if there's a mailing list (besides 'stable') let me know so I can
+sign up.
+
+With regard to version selection, I know different companies will have
+different versions they'd like to see selected.  Having consensus on
+a version is more important than the particular version chosen.
+
+Having said that, here are some (non-BSP) things we look at for selecting
+kernel versions at Sony:
+
+One specific issue I have is support for PREEMPT_RT, so that's a big
+factor in selecting Sony kernel versions.  Thus, coordinating with the
+RT patchset kernel versions is important to me.  Currently
+that would mean 3.0 is a good candidate.
+
+The other major out-of-tree patches we usually integrate are
+1) Android
+2) LTTng, but I've heard that this might soon be buildable as
+a loadable module (eliminating the need for any patch integration).
+
+Thanks,
+  -- Tim
