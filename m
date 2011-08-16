@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab1HPCvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:51:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35735 "EHLO mx2.suse.de"
+	id S1753652Ab1HPCu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:50:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35701 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753476Ab1HPCvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:51:14 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:55 2011
-Message-Id: <20110816024455.118844840@pistachio.kroah.org>
+	id S1753618Ab1HPCu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:50:56 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:54 2011
+Message-Id: <20110816024454.552912878@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:43:03 -0700
+Date: Mon, 15 Aug 2011 19:42:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Copeland <me@bobcopeland.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [20/26] ath5k: fix error handling in ath5k_beacon_send
+        Daniel Mack <zonque@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [16/26] ALSA: snd-usb-caiaq: Correct offset fields of outbound iso_frame_desc
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit bdc71bc59231f5542af13b5061b9ab124d093050 upstream.
+commit 15439bde3af7ff88459ea2b5520b77312e958df2 upstream.
 
-This cleans up error handling for the beacon in case of dma mapping
-failure.  We need to free the skb when dma mapping fails instead of
-nulling and leaking the pointer, and we should bail out to avoid
-giving the hardware the bad descriptor.
+This fixes faulty outbount packets in case the inbound packets
+received from the hardware are fragmented and contain bogus input
+iso frames. The bug has been there for ages, but for some strange
+reasons, it was only triggered by newer machines in 64bit mode.
 
-Finally, we need to perform the null check after trying to update
-the beacon, or else beacons will never be sent after a single
-mapping failure.
-
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-and-tested-by: William Light <wrl@illest.net>
+Reported-by: Pedro Ribeiro <pedrib@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+ sound/usb/caiaq/audio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1748,6 +1748,8 @@ ath5k_beacon_setup(struct ath5k_softc *s
+--- a/sound/usb/caiaq/audio.c
++++ b/sound/usb/caiaq/audio.c
+@@ -614,6 +614,7 @@ static void read_completed(struct urb *u
+ 	struct snd_usb_caiaqdev *dev;
+ 	struct urb *out;
+ 	int frame, len, send_it = 0, outframe = 0;
++	size_t offset = 0;
  
- 	if (dma_mapping_error(sc->dev, bf->skbaddr)) {
- 		ATH5K_ERR(sc, "beacon DMA mapping failed\n");
-+		dev_kfree_skb_any(skb);
-+		bf->skb = NULL;
- 		return -EIO;
+ 	if (urb->status || !info)
+ 		return;
+@@ -634,7 +635,8 @@ static void read_completed(struct urb *u
+ 		len = urb->iso_frame_desc[outframe].actual_length;
+ 		out->iso_frame_desc[outframe].length = len;
+ 		out->iso_frame_desc[outframe].actual_length = 0;
+-		out->iso_frame_desc[outframe].offset = BYTES_PER_FRAME * frame;
++		out->iso_frame_desc[outframe].offset = offset;
++		offset += len;
+ 
+ 		if (len > 0) {
+ 			spin_lock(&dev->spinlock);
+@@ -650,7 +652,7 @@ static void read_completed(struct urb *u
  	}
  
-@@ -1832,8 +1834,6 @@ ath5k_beacon_update(struct ieee80211_hw
- 	ath5k_txbuf_free_skb(sc, avf->bbuf);
- 	avf->bbuf->skb = skb;
- 	ret = ath5k_beacon_setup(sc, avf->bbuf);
--	if (ret)
--		avf->bbuf->skb = NULL;
- out:
- 	return ret;
- }
-@@ -1854,6 +1854,7 @@ ath5k_beacon_send(struct ath5k_softc *sc
- 	struct ath5k_vif *avf;
- 	struct ath5k_buf *bf;
- 	struct sk_buff *skb;
-+	int err;
- 
- 	ATH5K_DBG_UNLIMIT(sc, ATH5K_DEBUG_BEACON, "in beacon_send\n");
- 
-@@ -1902,11 +1903,6 @@ ath5k_beacon_send(struct ath5k_softc *sc
- 
- 	avf = (void *)vif->drv_priv;
- 	bf = avf->bbuf;
--	if (unlikely(bf->skb == NULL || sc->opmode == NL80211_IFTYPE_STATION ||
--			sc->opmode == NL80211_IFTYPE_MONITOR)) {
--		ATH5K_WARN(sc, "bf=%p bf_skb=%p\n", bf, bf ? bf->skb : NULL);
--		return;
--	}
- 
- 	/*
- 	 * Stop any current dma and put the new frame on the queue.
-@@ -1920,8 +1916,17 @@ ath5k_beacon_send(struct ath5k_softc *sc
- 
- 	/* refresh the beacon for AP or MESH mode */
- 	if (sc->opmode == NL80211_IFTYPE_AP ||
--			sc->opmode == NL80211_IFTYPE_MESH_POINT)
--		ath5k_beacon_update(sc->hw, vif);
-+			sc->opmode == NL80211_IFTYPE_MESH_POINT) {
-+		err = ath5k_beacon_update(sc->hw, vif);
-+		if (err)
-+			return;
-+	}
-+
-+	if (unlikely(bf->skb == NULL || sc->opmode == NL80211_IFTYPE_STATION ||
-+			sc->opmode == NL80211_IFTYPE_MONITOR)) {
-+		ATH5K_WARN(sc, "bf=%p bf_skb=%p\n", bf, bf->skb);
-+		return;
-+	}
- 
- 	trace_ath5k_tx(sc, bf->skb, &sc->txqs[sc->bhalq]);
- 
+ 	if (send_it) {
+-		out->number_of_packets = FRAMES_PER_URB;
++		out->number_of_packets = outframe;
+ 		out->transfer_flags = URB_ISO_ASAP;
+ 		usb_submit_urb(out, GFP_ATOMIC);
+ 	}
 
 
