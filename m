@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab1HPVWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:22:10 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52177 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab1HPVWI (ORCPT
+	id S1752590Ab1HPVYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:24:08 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54375 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab1HPVYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:22:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH] arch/arm: compute and export NR_syscalls
-Date: Tue, 16 Aug 2011 23:21:21 +0200
-Message-ID: <1629809.vjtjo6obCs@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <1313529267-4428-1-git-send-email-wad@chromium.org>
-References: <1313529267-4428-1-git-send-email-wad@chromium.org>
+	Tue, 16 Aug 2011 17:24:07 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:WMDrzQx9v02XrMj5do7wXAooDmPtpvkj2KCfHxqo9E0
- pwuQFt6HjgbTE04Y3sRC3ctBCBgpuUXfQB209HLwXRP5afsho8
- hdgBJIvtomlj+HK2lkjOt3bcxg3w65QspM/goYoZxUihDwh8RM
- 2BnhhlKvkf+K8mOw0Cr2XkxjMJFmgfe5i39dwAuAXerbFA8Klr
- S7lPV1sVxNHl2KDwe2K7w==
+In-Reply-To: <CA+XFjir3W3kqin1mL5W_OEduUTyUDADwH6pL=kaS=wHpP=KMeQ@mail.gmail.com>
+References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
+	<1313454275-5604-4-git-send-email-me@akshayjoshi.com>
+	<CA+XFjir3W3kqin1mL5W_OEduUTyUDADwH6pL=kaS=wHpP=KMeQ@mail.gmail.com>
+Date: Wed, 17 Aug 2011 00:24:06 +0300
+X-Google-Sender-Auth: 7aB5Y_i3rQTqhdI8pHLiJuPdl0k
+Message-ID: <CAOJsxLGqc6khjGQMA=b1BwTv_4pv4ZgkdjJrgtMbRwuNDrN_iA@mail.gmail.com>
+Subject: Re: [PATCH 4/9] Staging: Winbond: Convert C99 style comments in Winbond.
+From: Pekka Enberg <penberg@kernel.org>
+To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
+Cc: Akshay Joshi <me@akshayjoshi.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GLOKo2031273
 
-On Tuesday 16 August 2011 16:14:26 Will Drewry wrote:
-> 
-> asm-exports.c is added instead of reusing asm-offsets.c to avoid a
-> variety of collisions (VM_EXEC, DMA_*, etc).  It is possible to use the
-> same calls.S mechanism but add NR_syscalls to asm-offsets.c.  However,
-> at inclusion time for generated/asm-offsets.h, conflicting defines will
-> need to be #undef'd if !__ASSEMBLY__ since it appears that the purpose
-> of asm-offsets.h is to safely bind C language definitions to assembly
-> and not the reverse.
-> 
-> - Is this approach palatable?
-> - Should I resend only when paired with the other ftrace-needed patches?
+2011/8/16 Gábor Stefanik <netrolller.3d@gmail.com>:
+>> -
+>> -//====================================
+>> -// Internal variable for module
+>> -//====================================
+>> +/*============================================================================
+>> +/* wb35rx.h --
+>> +/*============================================================================
+>
+> I'm pretty sure this is not an accepted kernel comment style.
 
-This seems overly complex, compared to a one-line change adding the symbol
-to asm/unistd.h. The only other architecture that uses an approach
-like the one you have posted is x86-64, and it's simpler there
-because it can easily be done in asm-offsets.c there without the need
-to create another helper.
-
-	Arnd
+What's the problem? I think it's OK for this particular patch.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
