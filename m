@@ -1,35 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab1HPOQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 10:16:04 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:53618 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab1HPOP6 (ORCPT
+	id S1752879Ab1HPOUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 10:20:36 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48962 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab1HPOUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 10:15:58 -0400
-Message-Id: <20110816141441.898339466@de.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 16 Aug 2011 16:14:41 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [patch 0/1] [patch 0/1] include storage keys in hibernation image
+	Tue, 16 Aug 2011 10:20:35 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk warning issue in cb_das16_cs.c
+Date: Tue, 16 Aug 2011 10:20:01 -0400
+Message-Id: <1313504401-9040-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi: fix printk warning issue in cb_das16_cs.c>
+References: <[PATCH]Staging: comedi: fix printk warning issue in cb_das16_cs.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Version 2 of the storage key patch for hibernation on s390.
-I've added the following changes as you requested:
-1) moved the s390 specific code to arch/s390/kernel/suspend.c
-2) introduced CONFIG_ARCH_SAVE_PAGE_KEYS and added a select to
-   the main s390 Kconfig file
-3) added the empty default functions to include/linux/suspend.h
+This is a patch to the cb_das16_cs.c file that fixes up a printk warning found by the checkpatch.pl tool
 
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 7c8d7a1..285110b 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 			return das16cs_boards + i;
+ 	}
+ 
+-	printk("unknown board!\n");
++	printk(KERN_WARNING "unknown board!\n");
+ 
+ 	return NULL;
+ }
+@@ -163,20 +163,20 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	int ret;
+ 	int i;
+ 
+-	printk("comedi%d: cb_das16_cs: ", dev->minor);
++	printk(KERN_INFO "comedi%d: cb_das16_cs: ", dev->minor);
+ 
+ 	link = cur_dev;		/* XXX hack */
+ 	if (!link)
+ 		return -EIO;
+ 
+ 	dev->iobase = link->resource[0]->start;
+-	printk("I/O base=0x%04lx ", dev->iobase);
++	printk(KERN_CONT "I/O base=0x%04lx ", dev->iobase);
+ 
+-	printk("fingerprint:\n");
++	printk(KERN_CONT "fingerprint:\n");
+ 	for (i = 0; i < 48; i += 2)
+-		printk("%04x ", inw(dev->iobase + i));
++		printk(KERN_CONT "%04x ", inw(dev->iobase + i));
+ 
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 
+ 	ret = request_irq(link->irq, das16cs_interrupt,
+ 			  IRQF_SHARED, "cb_das16_cs", dev);
+@@ -185,7 +185,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = link->irq;
+ 
+-	printk("irq=%u ", dev->irq);
++	printk(KERN_CONT "irq=%u ", dev->irq);
+ 
+ 	dev->board_ptr = das16cs_probe(dev, link);
+ 	if (!dev->board_ptr)
+@@ -252,14 +252,14 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("attached\n");
++	printk(KERN_CONT "attached\n");
+ 
+ 	return 1;
+ }
+ 
+ static int das16cs_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das16cs: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: das16cs: remove\n", dev->minor);
+ 
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
 -- 
-blue skies,
-   Martin.
+1.7.6
 
-"Reality continues to ruin my life." - Calvin.
