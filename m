@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1HPTlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:41:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35106 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab1HPTlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:41:18 -0400
-Date: Tue, 16 Aug 2011 21:41:12 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110816194112.GA25517@quack.suse.cz>
-References: <20110816022006.348714319@intel.com>
- <20110816022328.811348370@intel.com>
+	id S1752391Ab1HPTmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:42:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48216 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab1HPTmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:42:09 -0400
+Date: Tue, 16 Aug 2011 21:42:04 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH v2 0/3] make vfork killable
+Message-ID: <20110816194204.GF2803@mtj.dyndns.org>
+References: <20110727163159.GA23785@redhat.com>
+ <20110729192358.GB31717@mtj.dyndns.org>
+ <20110812175550.GA7484@redhat.com>
+ <20110813161814.GE4254@htj.dyndns.org>
+ <20110815194209.GA19239@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110816022328.811348370@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110815194209.GA19239@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Fengguang,
+Hello, Oleg.
 
-  this patch is much easier to read than in older versions! Good work!
+On Mon, Aug 15, 2011 at 09:42:09PM +0200, Oleg Nesterov wrote:
+> > * Regular job control and ptrace.
+> > * vfork wait.
+> > * cgroup freeze.
+> 
+> I still can't understand what exactly you have in mind.
+>
+> And to me vfork() is closer to nanoslep() than to cgroup_freezer.
+> (As for cgroup_freezer, I agree it would be nice to reimplent it
+>  in any case).
 
-> +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
-> +					unsigned long thresh,
-> +					unsigned long bg_thresh,
-> +					unsigned long dirty,
-> +					unsigned long bdi_thresh,
-> +					unsigned long bdi_dirty)
-> +{
-> +	unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
-> +	unsigned long limit = hard_dirty_limit(thresh);
-> +	unsigned long x_intercept;
-> +	unsigned long setpoint;		/* the target balance point */
-> +	unsigned long span;
-> +	long long pos_ratio;		/* for scaling up/down the rate limit */
-> +	long x;
-> +
-> +	if (unlikely(dirty >= limit))
-> +		return 0;
-> +
-> +	/*
-> +	 * global setpoint
-> +	 *
-> +	 *                         setpoint - dirty 3
-> +	 *        f(dirty) := 1 + (----------------)
-> +	 *                         limit - setpoint
-> +	 *
-> +	 * it's a 3rd order polynomial that subjects to
-> +	 *
-> +	 * (1) f(freerun)  = 2.0 => rampup base_rate reasonably fast
-> +	 * (2) f(setpoint) = 1.0 => the balance point
-> +	 * (3) f(limit)    = 0   => the hard limit
-> +	 * (4) df/dx       < 0	 => negative feedback control
-> +	 * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
-> +	 *     => fast response on large errors; small oscillation near setpoint
-> +	 */
-> +	setpoint = (freerun + limit) / 2;
-> +	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
-> +		    limit - setpoint + 1);
-> +	pos_ratio = x;
-> +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> +	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
-> +
-> +	/*
-> +	 * bdi setpoint
-> +	 *
-> +	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
-> +	 *
-> +	 * The main bdi control line is a linear function that subjects to
-> +	 *
-> +	 * (1) f(setpoint) = 1.0
-> +	 * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
-> +	 *     or equally: x_intercept = setpoint + 8 * write_bw
-> +	 *
-> +	 * For single bdi case, the dirty pages are observed to fluctuate
-> +	 * regularly within range
-> +	 *        [setpoint - write_bw/2, setpoint + write_bw/2]
-> +	 * for various filesystems, where (2) can yield in a reasonable 12.5%
-> +	 * fluctuation range for pos_ratio.
-> +	 *
-> +	 * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
-> +	 * own size, so move the slope over accordingly.
-> +	 */
-> +	if (unlikely(bdi_thresh > thresh))
-> +		bdi_thresh = thresh;
-> +	/*
-> +	 * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
-> +	 */
-> +	x = div_u64((u64)bdi_thresh << 16, thresh | 1);
-> +	setpoint = setpoint * (u64)x >> 16;
-> +	/*
-> +	 * Use span=(4*write_bw) in single bdi case as indicated by
-> +	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
-> +	 */
-> +	span = div_u64((u64)bdi_thresh * (thresh - bdi_thresh) +
-> +		       (u64)(4 * bdi->avg_write_bandwidth) * bdi_thresh,
-> +		       thresh + 1);
-  I think you can slightly simplify this to:
-(thresh - bdi_thresh + 4 * bdi->avg_write_bandwidth) * (u64)x >> 16;
+Maybe, it would be better to handle vfork() that way.  I'm not sure,
+but if we can handle all three waits in the same manner, that would be
+a plus too.  I'll think more about it.
 
+> > The downside is that that wouldn't work with cgroup freeze at
+> > all - there's no syscall to restart.
+> 
+> Sure. Still I don't understand why restart is not suitable for vfork
+> and why it would be better to unify freezer/vfork.
 
-> +	x_intercept = setpoint + 2 * span;
-  What if x_intercept >  bdi_thresh? Since 8*bdi->avg_write_bandwidth is
-easily 500 MB, that happens quite often I imagine?
+It's still in the works but the user visible behavior is more
+consistent both with and without ptrace.  I'm still trying to wrap my
+head around consolidating freezer into it.  Let's see how it fans out.
 
-> +
-> +	if (unlikely(bdi_dirty > setpoint + span)) {
-> +		if (unlikely(bdi_dirty > limit))
-> +			return 0;
-  Shouldn't this be bdi_thresh instead of limit? I understand this is a
-hard limit but with more bdis this condition is rather weak and almost
-never true.
+> OK. Let's discuss this later, I hope you will cc me ;)
 
-> +		if (x_intercept < limit) {
-> +			x_intercept = limit;	/* auxiliary control line */
-> +			setpoint += span;
-> +			pos_ratio >>= 1;
-> +		}
-  And here you stretch the control area upto the global dirty limit. I
-understand you maybe don't want to be really strict and cut control area at
-bdi_thresh but your choice looks like too benevolent - when you have
-several active bdi's with different speeds this will effectively erase
-difference between them, won't it? E.g. with 10 bdi's (x_intercept -
-bdi_dirty) / (x_intercept - setpoint) is going to be close to 1 unless
-bdi_dirty really heavily exceeds bdi_thresh. So wouldn't it be better to
-just make sure control area is reasonably large (e.g. at least 16 MB) to
-allow BDI to ramp up it's bdi_thresh but don't extend it upto global dirty
-limit?
+Oh, no need to worry about that. :)
 
-> +	}
-> +	pos_ratio *= x_intercept - bdi_dirty;
-> +	do_div(pos_ratio, x_intercept - setpoint + 1);
-> +
-> +	return pos_ratio;
-> +}
-> +
+> But what do you think about this series? It is simple, it doesn't
+> play with restarts. In some sense it even simplifies the code because
+> it removes one user of ->vfork_done. I don't think these patches can
+> complicate the further changes you are going to do.
+> 
+> No?
 
-								Honza
+Was too lost in the freezer land.  Will review first thing tomorrow.
+
+Thank you.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+tejun
