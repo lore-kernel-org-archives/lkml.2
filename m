@@ -1,71 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1HPVIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:08:14 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:46638 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752823Ab1HPVIN (ORCPT
+	id S1752944Ab1HPVM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:12:27 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42704 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1HPVM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:08:13 -0400
-Date: Tue, 16 Aug 2011 23:08:11 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+	Tue, 16 Aug 2011 17:12:26 -0400
+From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
-Subject: boot fails if x2apic is enabled unless efishell is used
-Message-ID: <20110816210811.GA3331@breakpoint.cc>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Will Drewry <wad@chromium.org>, Russell King <linux@arm.linux.org.uk>,
+        Mikael Pettersson <mikpe@it.uu.se>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [RFC,PATCH] arch/arm: compute and export NR_syscalls
+Date: Tue, 16 Aug 2011 16:14:26 -0500
+Message-Id: <1313529267-4428-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is Intel i7 Sandy bridge on Asrock Z68 Pro3-M.
+At present, there is no way to determine, at compile-time, the number of
+system calls for arm.  This change provides NR_syscalls via unistd.h
+much like other arches.
 
-EFI -> GRUB -> Kernel -> crash
-EFI -> efishell -> GRUB -> Kernel -> works
+Historically, there hasn't been a need to pull NR_syscalls into unistd.h
+for ARM.  Prior lkml threads indicate as much.  However, NR_syscalls is
+a prerequisite for enabling CONFIG_FTRACE_SYSCALLS on the platform
+(along with asm/syscall.h population and arch_syscall_addr).
 
-The interresting part of the diff between those two boot attempts is:
+This patch is similar to x86-64 in that the system call
+count is established using the Kbuild assembly generation trick
+to extract constant values. It adds three files:
+- arch/arm/kernel/asm-exports.c
+- arch/arm/kernel/Makefile.exports
 
-| CPU0: Thermal monitoring enabled (TM1)
-| using mwait in idle threads.
-| ACPI: Core revision 20110413
-|-Kernel panic - not syncing: x2apic: enabled by BIOS but kernel init failed.
-|-Pid: 1, comm: swapper Not tainted 3.0.1+ #13
-|-Call Trace:
-|- [<ffffffff813397ef>] panic+0x8c/0x197
-|- [<ffffffff816adee0>] enable_IR_x2apic+0x162/0x1b1
-|- [<ffffffff816afa9a>] default_setup_apic_routing+0x12/0x78
-|- [<ffffffff816abfff>] native_smp_prepare_cpus+0x2e0/0x301
-|- [<ffffffff816a0bf9>] kernel_init+0x6d/0x13b
-|- [<ffffffff81346224>] kernel_thread_helper+0x4/0x10
-|- [<ffffffff816a0b8c>] ? start_kernel+0x3cb/0x3cb
-|- [<ffffffff81346220>] ? gs_change+0x13/0x13
-|+DMAR: Host address width 36
-|+DMAR: DRHD base: 0x000000fed90000 flags: 0x0
-|+IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c0000020e60262 ecap f0101a
-|+DMAR: DRHD base: 0x000000fed91000 flags: 0x1
-|+IOMMU 1: reg_base_addr fed91000 ver 1:0 cap c9008020660262 ecap f0105a
-|+DMAR: RMRR base: 0x000000aedef000 end: 0x000000aee01fff
-|+DMAR: RMRR base: 0x000000af800000 end: 0x000000bf9fffff
-|+DMAR: No ATSR found
-|+IOAPIC id 0 under DRHD base  0xfed91000 IOMMU 1
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+HPET id 0 under DRHD base 0xfed91000
-|+Enabled Interrupt-remapping
+The C file provides the location to export assembly resident values,
+like the number of syscalls.  The makefile mimics Kbuild for extracting
+the values from the partially compiled file.
 
-parse_dmar_table() returns with -ENODEV. Could it be that EFI forgets to add
-the DMAR tables unless the efishell is used?
+Also included are simple fixups to make calls.S safe to #include in
+asm-exports.c and exporting of asm-exports.h in unistd.h.
 
-The complete bootlog is avaible crash [0] works [1].
+In particular, this change yields an NR_syscalls value that matches the
+number of allocated calls via calls.S and not the aligned, padded syscall
+table size needed for optimal assembly.
 
-[0] http://download.breakpoint.cc/x2apic-crash/boot_efishell_.txt
-[1] http://download.breakpoint.cc/x2apic-crash/crash_direct_.txt
+asm-exports.c is added instead of reusing asm-offsets.c to avoid a
+variety of collisions (VM_EXEC, DMA_*, etc).  It is possible to use the
+same calls.S mechanism but add NR_syscalls to asm-offsets.c.  However,
+at inclusion time for generated/asm-offsets.h, conflicting defines will
+need to be #undef'd if !__ASSEMBLY__ since it appears that the purpose
+of asm-offsets.h is to safely bind C language definitions to assembly
+and not the reverse.
 
-Sebastian
+- Is this approach palatable?
+- Should I resend only when paired with the other ftrace-needed patches?
+
+Thanks!
+
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ arch/arm/Makefile                |    3 +-
+ arch/arm/include/asm/unistd.h    |    5 ++++
+ arch/arm/kernel/Makefile.exports |   42 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/asm-exports.c    |   36 ++++++++++++++++++++++++++++++++
+ arch/arm/kernel/calls.S          |    2 +
+ 5 files changed, 87 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/kernel/Makefile.exports
+ create mode 100644 arch/arm/kernel/asm-exports.c
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 70c424e..62abc9a 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -270,8 +270,9 @@ all:	$(KBUILD_IMAGE)
+ 
+ boot := arch/arm/boot
+ 
+-archprepare:
++archprepare: Kbuild
+ 	$(Q)$(MAKE) $(build)=arch/arm/tools include/generated/mach-types.h
++	$(Q)$(MAKE) $(build)=arch/arm/kernel -f $(src)/arch/arm/kernel/Makefile.exports include/generated/asm-exports.h
+ 
+ # Convert bzImage to zImage
+ bzImage: zImage
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 2c04ed5..77d4928 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -481,5 +481,10 @@
+ #define __IGNORE_fadvise64_64		1
+ #define __IGNORE_migrate_pages		1
+ 
++#if !defined(COMPILER_OFFSETS) && !defined(__ASSEMBLY__)
++#include <generated/asm-exports.h>
++#define NR_syscalls (__NR_syscall_max + 1)
++#endif
++
+ #endif /* __KERNEL__ */
+ #endif /* __ASM_ARM_UNISTD_H */
+diff --git a/arch/arm/kernel/Makefile.exports b/arch/arm/kernel/Makefile.exports
+new file mode 100644
+index 0000000..5ec6553
+--- /dev/null
++++ b/arch/arm/kernel/Makefile.exports
+@@ -0,0 +1,42 @@
++#
++# linux/arch/arm/kernel/Makefile.exports
++#
++# Copyright (C) 2011 Chromium OS Authors <chromium-os-dev@chromium.org>
++#
++# Generate asm-exports.h based on Kbuild's asm-offsets.h
++#
++
++exports-file := include/generated/asm-exports.h
++
++# Default sed regexp - multiline due to syntax constraints
++define sed-y
++	"/^->/{s:->#\(.*\):/* \1 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
++	s:->::; p;}"
++endef
++
++quiet_cmd_exports = GEN     $@
++define cmd_exports
++	(set -e; \
++	 echo "#ifndef __ASM_EXPORTS_H__"; \
++	 echo "#define __ASM_EXPORTS_H__"; \
++	 echo "/*"; \
++	 echo " * DO NOT MODIFY."; \
++	 echo " *"; \
++	 echo " * This file was generated by arch/arm/tools/Makefile"; \
++	 echo " *"; \
++	 echo " */"; \
++	 echo ""; \
++	 sed -ne $(sed-y) $<; \
++	 echo ""; \
++	 echo "#endif" ) > $@
++endef
++
++# We use internal kbuild rules to avoid the "is up to date" message from make
++$(src)/../asm-exports.s: $(src)/../kernel/asm-exports.c FORCE
++	$(Q)mkdir -p $(dir $@)
++	$(call if_changed_dep,cc_s_c)
++
++$(exports-file): $(src)/../kernel/asm-exports.s Kbuild
++	$(call cmd,exports)
+diff --git a/arch/arm/kernel/asm-exports.c b/arch/arm/kernel/asm-exports.c
+new file mode 100644
+index 0000000..a2aec12
+--- /dev/null
++++ b/arch/arm/kernel/asm-exports.c
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2011 Chromium OS Authors <chromium-os-dev@chromium.org>
++ *
++ * Generate definitions needed by C language modules from data resident
++ * in assembly language modules. Nothing exported here should be supplied
++ * by any C language headers in common use.
++ *
++ * This code generates raw asm output which is post-processed to extract
++ * and format the required data.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#define COMPILE_OFFSETS
++#include <linux/kbuild.h>
++
++/*
++ * Make sure that the compiler and target are compatible.
++ */
++#if defined(__APCS_26__)
++#error Sorry, your compiler targets APCS-26 but this kernel requires APCS-32
++#endif
++
++#define CALL(x) 1 +
++#define syscalls_counted
++#define NO_PAD_SYSCALLS 1
++static const long syscall_count =
++	#include "calls.S"
++	0;
++
++int main(void)
++{
++	DEFINE(__NR_syscall_max, syscall_count - 1);
++	return 0;
++}
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index 80f7896..02cdece 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -385,6 +385,7 @@
+ 		CALL(sys_syncfs)
+ 		CALL(sys_sendmmsg)
+ /* 375 */	CALL(sys_setns)
++#ifndef NO_PAD_SYSCALLS
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+@@ -392,3 +393,4 @@
+ .rept syscalls_padding
+ 		CALL(sys_ni_syscall)
+ .endr
++#endif
+-- 
+1.7.0.4
+
