@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1HPVvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:51:07 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43510 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753107Ab1HPVvF (ORCPT
+	id S1753141Ab1HPVzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:55:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55240 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752826Ab1HPVzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:51:05 -0400
-Subject: Re: [PATCH 41/41] exit: Use __set_task_blocked()
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110816180644.GJ29190@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
-	 <1313071035-12047-42-git-send-email-matt@console-pimps.org>
-	 <20110816180644.GJ29190@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Aug 2011 22:51:03 +0100
-Message-ID: <1313531463.3436.219.camel@mfleming-mobl1.ger.corp.intel.com>
+	Tue, 16 Aug 2011 17:55:50 -0400
+Date: Tue, 16 Aug 2011 14:54:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shaohua.li@intel.com>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
+Message-Id: <20110816145427.78f2f8c9.akpm@linux-foundation.org>
+In-Reply-To: <1313441856-1419-1-git-send-email-wad@chromium.org>
+References: <1313441856-1419-1-git-send-email-wad@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 20:06 +0200, Oleg Nesterov wrote:
-> On 08/11, Matt Fleming wrote:
-> >
-> > As described in e6fa16ab ("signal: sigprocmask() should do
-> > retarget_shared_pending()") the modification of current->blocked is
-> > incorrect as we need to check whether the signal we're about to block
-> > is pending in the shared queue.
-> 
-> Yes. but in this case the code is correct. First of all, unblocking
-> is always fine. Also, this should be used by kthreads only, and they
-> are single-threaded.
-> 
-> But there are other reasons why I don't like this change, even if we
-> ignore the fact the patched exit.c can't be compiled (__set_task_blocked
-> is not exported ;).
+On Mon, 15 Aug 2011 15:57:35 -0500
+Will Drewry <wad@chromium.org> wrote:
 
-OK, I've dropped this patch from the series.
+> This patch proposes a sysctl knob that allows a privileged user to
+> disable ~VM_MAYEXEC tainting when mapping in a vma from a MNT_NOEXEC
+> mountpoint.  It does not alter the normal behavior resulting from
+> attempting to directly mmap(PROT_EXEC) a vma (-EPERM) nor the behavior
+> of any other subsystems checking MNT_NOEXEC.
+> 
+> It is motivated by a common /dev/shm, /tmp usecase. There are few
+> facilities for creating a shared memory segment that can be remapped in
+> the same process address space with different permissions.  Often, a
+> file in /tmp provides this functionality.  However, on distributions
+> that are more restrictive/paranoid, world-writeable directories are
+> often mounted "noexec".  The only workaround to support software that
+> needs this behavior is to either not use that software or remount /tmp
+> exec.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Remounting /tmp would appear to have the same effect as altering this
+sysctl, so why not just remount /tmp?
+
+>  (E.g., https://bugs.gentoo.org/350336?id=350336)  Given that
+> the only recourse is using SysV IPC, the application programmer loses
+> many of the useful ABI features that they get using a mmap'd file (and
+> as such are often hesitant to explore that more painful path).
+> 
+> With this patch, it would be possible to change the sysctl variable
+> such that mprotect(PROT_EXEC) would succeed.  In cases like the example
+> above, an additional userspace mmap-wrapper would be needed, but in
+> other cases, like how code.google.com/p/nativeclient mmap()s then
+> mprotect()s, the behavior would be unaffected.
+> 
+> The tradeoff is a loss of defense in depth, but it seems reasonable when
+> the alternative is to disable the defense entirely.
+> 
+> ...
+>
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -89,6 +89,9 @@
+>  /* External variables not in a header file. */
+>  extern int sysctl_overcommit_memory;
+>  extern int sysctl_overcommit_ratio;
+> +#ifdef CONFIG_MMU
+
+The ifdef isn't needed in the header and we generally omit it to avoid
+clutter.
+
+afaict this feature could be made available on NOMMU systems?
+
+> +extern int sysctl_mmap_noexec_taint;
+
+The term "taint" has a specific meaning in the kernel (see
+add_taint()).  It's regrettable that this patch attaches a second
+meaning to that term.  Can we think of a better word to use?
+
+A better word would communicate the sense of the sysctl operation.  If
+a "taint" flag is set to true, I don't know whether that means that
+noexec is enabled or disabled.  Something like
+sysctl_mmap_noexec_override or sysctl_mmap_noexec_disable, perhaps.
+
+This patch forgot to document the new feature and its sysctl. 
+Documentation/sysctl/vm.txt might be the right place.
 
