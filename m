@@ -1,37 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab1HPR2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:28:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab1HPR2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:28:30 -0400
-Date: Tue, 16 Aug 2011 19:25:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 26/41] sh: No need to reset handler if SA_ONESHOT
-Message-ID: <20110816172536.GE29190@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-27-git-send-email-matt@console-pimps.org>
+	id S1751862Ab1HPRaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:30:08 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:36140 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab1HPRaH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 13:30:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313071035-12047-27-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1313515355-28920-1-git-send-email-fabio.estevam@freescale.com>
+References: <1313515355-28920-1-git-send-email-fabio.estevam@freescale.com>
+Date: Tue, 16 Aug 2011 13:30:06 -0400
+Message-ID: <CACqU3MU2f17tb_5jjtT6TG0jw4P5JzR7=774QOoJ_T01wSmXHQ@mail.gmail.com>
+Subject: Re: [PATCH] devtmpfs: Annotate devtmpfsd as __init
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11, Matt Fleming wrote:
+Hi,
+
+On Tue, Aug 16, 2011 at 1:22 PM, Fabio Estevam
+<fabio.estevam@freescale.com> wrote:
+> This fixes the following:
 >
-> get_signal_to_deliver() already resets the signal handler if
-> SA_ONESHOT is set in ka->sa.sa_flags, there's no need to do it again
-> in handle_signal(). Furthermore, because we were modifying
-> ka->sa.sa_handler without holding ->sighand->siglock there's the
-> potential we can race with another thread if it modifies the signal
-> handlers.
+> WARNING: vmlinux.o(.text+0x1ed41c): Section mismatch in reference from the function devtmpfsd() to the (unknown reference) .init.data:(unknown)
+> The function devtmpfsd() references
+> the (unknown reference) __initdata (unknown).
+> This is often because devtmpfsd lacks a __initdata
+> annotation or the annotation of (unknown) is wrong.
+>
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>
+I already submitted a patch for that https://patchwork.kernel.org/patch/996132/
 
-Again ;) the patch is fine, the changelog is not right.
+> ---
+>  drivers/base/devtmpfs.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+> index 33e1bed..7bd4860 100644
+> --- a/drivers/base/devtmpfs.c
+> +++ b/drivers/base/devtmpfs.c
+> @@ -386,7 +386,7 @@ static int handle(const char *name, mode_t mode, struct device *dev)
+>                return handle_remove(name, dev);
+>  }
+>
+> -static int devtmpfsd(void *p)
+> +static __init int devtmpfsd(void *p)
+>  {
+I think this is wrong. `devtmpfsd' is the main loop of the
+process/thread, you certainly don't want to whip it after boot.
 
-Oleg.
+ - Arnaud
 
+>        char options[] = "mode=0755";
+>        int *err = p;
+> --
+> 1.6.0.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
