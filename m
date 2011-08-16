@@ -1,219 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1HPRqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:46:20 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:43367 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1HPRqS (ORCPT
+	id S1752241Ab1HPRqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:46:42 -0400
+Received: from exprod6og115.obsmtp.com ([64.18.1.35]:53092 "EHLO
+	exprod6og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1HPRql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:46:18 -0400
+	Tue, 16 Aug 2011 13:46:41 -0400
+Message-ID: <4E4AACBA.50408@cray.com>
+Date: Tue, 16 Aug 2011 12:45:30 -0500
+From: Andrew Barry <abarry@cray.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20110812210626.GA4725@kroah.com>
-References: <20110812210626.GA4725@kroah.com>
-Date: Tue, 16 Aug 2011 13:46:16 -0400
-Message-ID: <CACqU3MWri2+MMT8qX4UXGUL-H-bk6Hy7dg00VubU6PLsMVUg9g@mail.gmail.com>
-Subject: Re: [00/90] 3.0.2-stable review
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Jan Kiszka <jan.kiszka@web.de>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "agraf@suse.de" <agraf@suse.de>, kvm <kvm@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Andrew Hastings <abh@cray.com>,
+        Adam Litke <agl@us.ibm.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: Fix refcounting in hugetlbfs quota handling
+References: <20110811064059.GU6342@yookeroo.fritz.box> <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com> <CAEwNFnB+5DZQw0CrfkcdP_rd5FBM6fw26=_yS3P283a9TKLNiw@mail.gmail.com> <alpine.LSU.2.00.1108121126560.1290@sister.anvils> <20110813010839.GC30552@yookeroo.fritz.box> <alpine.LSU.2.00.1108151057380.1394@sister.anvils> <4E4980BF.7090801@cray.com> <20110816034748.GG18203@yookeroo.fritz.box>
+In-Reply-To: <20110816034748.GG18203@yookeroo.fritz.box>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GHkYLT030328
 
-Hi,
+It is not a unique KVM problem. We saw the race while doing large async rDMA in
+our network driver, but I can imagine it happening with a slow NFS server, or
+other DMA that could complete after umount.
 
-On Fri, Aug 12, 2011 at 5:06 PM, Greg KH <gregkh@suse.de> wrote:
-> This is the start of the stable review cycle for the 3.0.2 release.
-> There are 90 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let us know.  If anyone is a maintainer of the proper subsystem, and
-> wants to add a Signed-off-by: line to the patch, please respond with it.
->
-> Responses should be made by Monday, August 15, 2011, 20:00:00 UTC.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->        kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.2-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
-It seems that this release has not yet reached the -allstable tree,
-moreover, the tree seem to not have seen any upgrade from Linus tree
-for 4 days. Is there anything broken ?
+What I need, in order to push this upstream, is:
+1. For you to light a fire under my feet to get this going. (done)
+2. For you all to review the patch and let me know if I've missed anything.
+Patch RFC coming ASAP.
 
-Thanks,
- - Arnaud
+-Andrew Barry
 
->  Makefile                                        |    4 +-
->  arch/cris/arch-v10/drivers/sync_serial.c        |    6 +-
->  arch/cris/arch-v10/kernel/irq.c                 |    3 +
->  arch/cris/include/asm/thread_info.h             |    6 +-
->  arch/parisc/include/asm/atomic.h                |    4 +-
->  arch/parisc/include/asm/futex.h                 |   66 ++++-
->  arch/parisc/include/asm/unistd.h                |    3 +-
->  arch/parisc/kernel/syscall_table.S              |    1 +
->  arch/powerpc/kernel/prom_init.c                 |    6 +-
->  arch/powerpc/platforms/pseries/dtl.c            |    2 +-
->  arch/powerpc/platforms/pseries/kexec.c          |   11 +
->  arch/powerpc/platforms/pseries/lpar.c           |    2 +-
->  arch/powerpc/platforms/pseries/plpar_wrappers.h |    4 +-
->  arch/sparc/include/asm/bitops_64.h              |   49 +---
->  arch/sparc/include/asm/elf_64.h                 |   63 ++---
->  arch/sparc/include/asm/hypervisor.h             |   14 +
->  arch/sparc/include/asm/spitfire.h               |    1 +
->  arch/sparc/include/asm/tsb.h                    |   51 ++--
->  arch/sparc/include/asm/xor_64.h                 |    3 +-
->  arch/sparc/kernel/cpu.c                         |    8 +
->  arch/sparc/kernel/cpumap.c                      |    1 +
->  arch/sparc/kernel/ds.c                          |   31 ++-
->  arch/sparc/kernel/entry.h                       |   14 +
->  arch/sparc/kernel/head_64.S                     |   33 +++-
->  arch/sparc/kernel/hvapi.c                       |    7 +
->  arch/sparc/kernel/hvcalls.S                     |    7 +
->  arch/sparc/kernel/kernel.h                      |   15 +
->  arch/sparc/kernel/ktlb.S                        |   24 +-
->  arch/sparc/kernel/mdesc.c                       |   30 ++-
->  arch/sparc/kernel/pcr.c                         |   11 +-
->  arch/sparc/kernel/perf_event.c                  |    3 +-
->  arch/sparc/kernel/setup_64.c                    |  186 +++++++++++++
->  arch/sparc/kernel/sparc_ksyms_64.c              |   11 +
->  arch/sparc/kernel/sstate.c                      |    9 +-
->  arch/sparc/kernel/unaligned_64.c                |   15 +-
->  arch/sparc/kernel/vmlinux.lds.S                 |   21 ++-
->  arch/sparc/lib/Makefile                         |    4 +-
->  arch/sparc/lib/NG2page.S                        |   61 ----
->  arch/sparc/lib/NGpage.S                         |  114 +++++---
->  arch/sparc/lib/ffs.S                            |   84 ++++++
->  arch/sparc/lib/hweight.S                        |   51 ++++
->  arch/sparc/mm/init_64.c                         |   42 +++-
->  arch/x86/xen/Makefile                           |    2 +-
->  arch/x86/xen/enlighten.c                        |    8 +
->  arch/x86/xen/vga.c                              |   67 +++++
->  arch/x86/xen/xen-ops.h                          |   11 +
->  crypto/md5.c                                    |   92 +------
->  drivers/char/random.c                           |  334 +----------------------
->  drivers/gpu/drm/drm_edid.c                      |   24 ++-
->  drivers/gpu/drm/i915/i915_dma.c                 |    6 +-
->  drivers/gpu/drm/i915/i915_irq.c                 |    3 +
->  drivers/gpu/drm/i915/intel_display.c            |    8 +-
->  drivers/gpu/drm/i915/intel_panel.c              |    4 +
->  drivers/gpu/drm/i915/intel_ringbuffer.c         |    3 +
->  drivers/gpu/drm/radeon/radeon_connectors.c      |   54 ++++-
->  drivers/gpu/drm/radeon/radeon_device.c          |    5 +-
->  drivers/gpu/drm/radeon/radeon_display.c         |    9 +
->  drivers/gpu/drm/radeon/radeon_i2c.c             |   32 ++-
->  drivers/gpu/drm/radeon/radeon_mode.h            |    6 +-
->  drivers/isdn/i4l/isdn_net.c                     |    3 +
->  drivers/net/Makefile                            |    1 +
->  drivers/net/bonding/bond_main.c                 |    6 +-
->  drivers/net/bonding/bond_sysfs.c                |  133 +++++-----
->  drivers/net/e1000e/lib.c                        |    3 +-
->  drivers/net/gianfar_ptp.c                       |    9 +-
->  drivers/net/ifb.c                               |    2 +-
->  drivers/net/macvlan.c                           |    2 +-
->  drivers/net/niu.c                               |    4 +-
->  drivers/net/phy/dp83640.c                       |    5 +-
->  drivers/net/r8169.c                             |    1 +
->  drivers/net/sis190.c                            |   12 +-
->  drivers/net/tun.c                               |    1 +
->  drivers/net/veth.c                              |    2 +
->  drivers/net/wan/hdlc_fr.c                       |    5 +-
->  drivers/net/wireless/airo.c                     |    1 +
->  drivers/net/wireless/ath/ath9k/ar9002_hw.c      |    6 +-
->  drivers/net/wireless/ath/ath9k/ar9003_eeprom.c  |    6 +-
->  drivers/net/wireless/ath/ath9k/ar9003_hw.c      |    6 +-
->  drivers/net/wireless/ath/ath9k/ar9003_phy.h     |    2 +-
->  drivers/net/wireless/ath/ath9k/hw.c             |   11 +-
->  drivers/net/wireless/ath/ath9k/hw.h             |    3 +-
->  drivers/net/wireless/ath/ath9k/init.c           |    2 +
->  drivers/net/wireless/ath/ath9k/pci.c            |   27 ++
->  drivers/net/wireless/hostap/hostap_main.c       |    1 +
->  drivers/net/wireless/iwlegacy/iwl-3945.c        |    6 +-
->  drivers/net/wireless/iwlegacy/iwl-4965.c        |    8 +-
->  drivers/net/wireless/iwlwifi/iwl-5000.c         |    1 +
->  drivers/net/wireless/iwlwifi/iwl-core.h         |    2 +
->  drivers/net/wireless/iwlwifi/iwl-power.c        |    3 +-
->  drivers/net/wireless/rt2x00/rt2800lib.c         |    3 +-
->  drivers/net/wireless/rt2x00/rt2x00mac.c         |    5 +-
->  drivers/net/wireless/rtlwifi/pci.c              |   20 +-
->  drivers/platform/x86/asus-wmi.c                 |   17 +-
->  drivers/scsi/mpt2sas/mpt2sas_base.c             |   65 ++---
->  drivers/scsi/mpt2sas/mpt2sas_base.h             |   53 ++++-
->  drivers/scsi/mpt2sas/mpt2sas_ctl.c              |   10 +-
->  drivers/scsi/mpt2sas/mpt2sas_debug.h            |    2 +-
->  drivers/scsi/mpt2sas/mpt2sas_scsih.c            |   12 +-
->  drivers/scsi/mpt2sas/mpt2sas_transport.c        |   24 +-
->  drivers/staging/ath6kl/os/linux/ar6000_drv.c    |    1 +
->  fs/cifs/cifsfs.c                                |    4 +
->  fs/cifs/inode.c                                 |   14 +-
->  fs/cifs/transport.c                             |    2 +
->  fs/ecryptfs/main.c                              |   23 ++-
->  fs/ecryptfs/read_write.c                        |   18 +-
->  fs/ext3/namei.c                                 |    6 +-
->  fs/ext4/namei.c                                 |    6 +-
->  include/drm/drm_crtc.h                          |    1 +
->  include/drm/i915_drm.h                          |    2 +-
->  include/linux/cryptohash.h                      |    5 +
->  include/linux/if.h                              |    2 +
->  include/linux/mm.h                              |   12 +-
->  include/linux/random.h                          |   11 -
->  include/net/ipv6.h                              |   12 +-
->  include/net/secure_seq.h                        |   20 ++
->  include/net/transp_v6.h                         |    2 +
->  include/xen/interface/xen.h                     |   39 +++
->  kernel/futex.c                                  |   54 +++-
->  lib/Makefile                                    |    2 +-
->  lib/md5.c                                       |   95 +++++++
->  net/8021q/vlan_dev.c                            |    2 +-
->  net/bluetooth/bnep/netdev.c                     |    1 +
->  net/core/Makefile                               |    2 +-
->  net/core/link_watch.c                           |    2 +-
->  net/core/pktgen.c                               |    8 +-
->  net/core/secure_seq.c                           |  184 +++++++++++++
->  net/dccp/ipv4.c                                 |    1 +
->  net/dccp/ipv6.c                                 |    9 +-
->  net/ethernet/eth.c                              |    1 +
->  net/ipv4/devinet.c                              |   16 +-
->  net/ipv4/gre.c                                  |   21 +-
->  net/ipv4/icmp.c                                 |   14 +-
->  net/ipv4/igmp.c                                 |    2 +-
->  net/ipv4/inet_hashtables.c                      |    1 +
->  net/ipv4/inetpeer.c                             |    1 +
->  net/ipv4/ip_output.c                            |    6 +-
->  net/ipv4/ipmr.c                                 |    2 +-
->  net/ipv4/netfilter/nf_nat_proto_common.c        |    1 +
->  net/ipv4/route.c                                |    6 +-
->  net/ipv4/tcp_ipv4.c                             |    1 +
->  net/ipv6/af_inet6.c                             |    2 +
->  net/ipv6/inet6_hashtables.c                     |    1 +
->  net/ipv6/ip6_output.c                           |   40 +++-
->  net/ipv6/tcp_ipv6.c                             |    1 +
->  net/ipv6/udp.c                                  |    2 +-
->  net/l2tp/l2tp_eth.c                             |    2 +-
->  net/mac80211/iface.c                            |    1 +
->  net/netfilter/ipvs/ip_vs_ctl.c                  |    1 +
->  net/sched/sch_sfq.c                             |    7 +-
->  net/socket.c                                    |   73 +++---
->  net/xfrm/xfrm_algo.c                            |    4 +-
->  sound/core/timer.c                              |    2 +
->  sound/soc/codecs/sgtl5000.c                     |  128 +++-------
->  sound/usb/caiaq/input.c                         |    2 +-
->  sound/usb/endpoint.c                            |    2 +-
->  sound/usb/mixer.c                               |   25 +-
->  sound/usb/mixer.h                               |    1 +
->  157 files changed, 1967 insertions(+), 1173 deletions(-)
+
+On 08/15/2011 10:47 PM, David Gibson wrote:
+> On Mon, Aug 15, 2011 at 03:25:35PM -0500, Andrew Barry wrote:
+>> I've been doing something similar to this last proposal. I put a
+>> hugetlbfs_sb_info pointer into page_private, and dropped a reference counter and
+>> an active/inactive bit into the hugetlbfs_sb_info struct. At Umount time, the
+>> sbinfo is freed, only if the reference count is zero. Otherwise, the last
+>> put_quota frees the sbinfo structure. This fixed the race we were seeing between
+>> umount and a put_quota from an rdma transaction. I just gave it a cursory test
+>> on a 3.0 kernel; it has seen quite a lot more testing on a 2.6.32-derived
+>> kernel, with no more hits of the umount race.
+>>
+>> Does this address the problems you were thinking about?
+> 
+> Ah, this looks much better than my patch.  And the fact that you've
+> seen your race demonstrates clearly that this isn't just a kvm
+> problem.  I hope we can push this upstream very soon - what can I do
+> to help?
+> 
+>> -Andrew Barry
+>>
+
+>>
+>> On 08/15/2011 01:00 PM, Hugh Dickins wrote:
+>>> On Sat, 13 Aug 2011, David Gibson wrote:
+>>>> On Fri, Aug 12, 2011 at 12:15:21PM -0700, Hugh Dickins wrote:
+>>>>>
+>>>>> Setting that aside, I think this thing of grabbing a reference to inode
+>>>>> for each page just does not work as you wish: when we unlink an inode,
+>>>>> all its pages should be freed; but because they are themselves holding
+>>>>> references to the inode, it and its pages stick around forever.
+>>>>
+>>>> Ugh, yes.  You're absolutely right.  That circular reference will mess
+>>>> everything up.  Thinking it through and testing fail.
+>>>>
+>>>>> A quick experiment with your patch versus without confirmed that:
+>>>>> meminfo HugePages_Free stayed down with your patch, but went back to
+>>>>> HugePages_Total without it.  Please check, perhaps I'm just mistaken.
+>>>>>
+>>>>> Sorry, I've not looked into what a constructive alternative might be;
+>>>>> and it's not the first time we've had this difficulty - it came up last
+>>>>> year when the ->freepage function was added, that the inode may be gone
+>>>>> by the time ->freepage(page) is called.
+>>>>
+>>>> Ok, so.  In fact the quota functions we call at free time only need
+>>>> the super block, not the inode per se.  If we put a superblock pointer
+>>>> instead of an inode pointer in page private, and refcounted that, I
+>>>> think that should remove the circular ref.  The only reason I didn't
+>>>> do it before is that the superblock refcounting functions didn't seem
+>>>> to be globally visible in an obvious way.
+>>>>
+>>>> Does that sound like a reasonable approach?
+>>>
+>>> That does sound closer to a reaonable approach, but my guess is that it
+>>> will suck you into a world of superblock mutexes and semaphores, which
+>>> you cannot take at free_huge_page() time.
+>>>
+>>> It might be necessary to hang your own tiny structure off the superblock,
+>>> with one refcount for the superblock, and one for each hugepage attached,
+>>> you freeing that structure when the count goes down to zero from either
+>>> direction.
+>>>
+>>> Whatever you do needs testing with lockdep and atomic sleep checks.
+>>>
+>>> I do dislike tying these separate levels together in such an unusual way,
+>>> but it is a difficult problem and I don't know of an easy answer.  Maybe
+>>> we'll need to find a better answer for other reasons, it does come up
+>>> from time to time e.g. recent race between evicting inode and nrpages
+>>> going down to 0.
+>>>
+>>> You might care to take a look at how tmpfs (mm/shmem.c) deals with
+>>> the equivalent issue there (sbinfo->used_blocks).  But I expect you to
+>>> conclude that hugetlbfs cannot afford the kind of approximations that
+>>> tmpfs can afford.
+>>>
+>>> Although I think tmpfs is more correct, to be associating the count
+>>> with pagecache (so the count goes down as soon as a page is truncated
+>>> or evicted from pagecache), your fewer and huger pages, and reservation
+>>> conventions, may well demand that the count stays up until the page is
+>>> actually freed back to hugepool.  And let's not pretend that what tmpfs
+>>> does is wonderful: the strange shmem_recalc_inode() tries its best to
+>>> notice when memory pressure has freed clean pages, but it never looks
+>>> beyond the inode being accessed at the times it's called.  Not at all
+>>> satisfactory, but not actually an issue in practice, since we stopped
+>>> allocating pages for simple reads from sparse file.  I did want to
+>>> convert tmpfs to use ->freepage(), but couldn't manage it without
+>>> stable mapping - same problem as you have.
+>>>
+>>> Hugh
+>>
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> David Gibson                    | I'll have my music baroque, and my code
+> david AT gibson.dropbear.id.au  | minimalist, thank you.  NOT _the_ _other_
+>                                 | _way_ _around_!
+> http://www.ozlabs.org/~dgibson
+
