@@ -1,66 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab1HPUKt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 16:10:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59029 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751844Ab1HPUKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 16:10:47 -0400
-Date: Tue, 16 Aug 2011 13:10:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>
-Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple
- process supervision
-Message-Id: <20110816131010.7a6e9a99.akpm@linux-foundation.org>
-In-Reply-To: <1311897706.16657.2.camel@mop>
-References: <1311897706.16657.2.camel@mop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752110Ab1HPUNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:13:50 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:37159 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab1HPUNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 16:13:48 -0400
+Date: Tue, 16 Aug 2011 13:13:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 14/32] nohz/cpuset: Don't turn off the tick if rcu
+ needs it
+Message-ID: <20110816201342.GG2404@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011 02:01:44 +0200
-Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Mon, Aug 15, 2011 at 05:52:11PM +0200, Frederic Weisbecker wrote:
+> If RCU is waiting for the current CPU to complete a grace
+> period, don't turn off the tick. Unlike dynctik-idle, we
 
-> From: Lennart Poettering <lennart@poettering.net>
-> Subject: prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple process supervision
-> 
-> Userspace service managers/supervisors need to track their started
-> services. Many services daemonize by double-forking and get implicitely
-> re-parented to PID 1. The process manager will no longer be able to
-> receive the SIGCHLD signals for them.
-> 
-> With this prctl, a service manager can mark itself as a sort of
-> 'sub-init' process, able to stay as the parent process for all processes
-> created by the started services. All SIGCHLD signals will be delivered
-> to the service manager.
-> 
-> As a side effect, the relevant parent PID information does not get lost
-> by a double-fork, which results in a more elaborate process tree and 'ps'
-> output.
-> 
-> This is orthogonal to PID namespaces. PID namespaces are isolated
-> from each other, while a service management process usually requires
-> the serices to live in the same namespace, to be able to talk to each
-> other.
-> 
-> Users of this will be the systemd per-user instance, which provides
-> init-like functionality for the user's login session and D-Bus, which
-> activates bus services on on-demand. Both will need init-like capabilities
-> to be able to properly keep track of the services they start.
-> 
+s/dynctik/dyntick/  ;-)
 
-Interesting patch.  I can't immediately see any nasty effects from it..
+> are not necessarily going to enter into rcu extended quiescent
+> state, so we may need to keep the tick to note current CPU's
+> quiescent states.
 
-Did you consider using the existing taskstats capability for this?
+One question below...
 
-The comment block over find_new_reaper() is now incomplete.  Please
-update it?
+							Thanx, Paul
 
-prctl(2) has a manpage.  What's the plan for updating it?
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Anton Blanchard <anton@au1.ibm.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Paul E . McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Menage <menage@google.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stephen Hemminger <shemminger@vyatta.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+> ---
+>  include/linux/rcupdate.h |    1 +
+>  kernel/rcutree.c         |    3 +--
+>  kernel/sched.c           |   14 ++++++++++++++
+>  3 files changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 99f9aa7..55a482a 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -133,6 +133,7 @@ static inline int rcu_preempt_depth(void)
+>  extern void rcu_sched_qs(int cpu);
+>  extern void rcu_bh_qs(int cpu);
+>  extern void rcu_check_callbacks(int cpu, int user);
+> +extern int rcu_pending(int cpu);
+>  struct notifier_block;
+> 
+>  #ifdef CONFIG_NO_HZ
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index ba06207..0009bfc 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -205,7 +205,6 @@ int rcu_cpu_stall_suppress __read_mostly;
+>  module_param(rcu_cpu_stall_suppress, int, 0644);
+> 
+>  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
+> -static int rcu_pending(int cpu);
+> 
+>  /*
+>   * Return the number of RCU-sched batches processed thus far for debug & stats.
+> @@ -1729,7 +1728,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+>   * by the current CPU, returning 1 if so.  This function is part of the
+>   * RCU implementation; it is -not- an exported member of the RCU API.
+>   */
+> -static int rcu_pending(int cpu)
+> +int rcu_pending(int cpu)
+>  {
+>  	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
+>  	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 0e1aa4e..353a66f 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -2439,6 +2439,7 @@ DEFINE_PER_CPU(int, task_nohz_mode);
+>  bool cpuset_nohz_can_stop_tick(void)
+>  {
+>  	struct rq *rq;
+> +	int cpu;
+> 
+>  	rq = this_rq();
+> 
+> @@ -2446,6 +2447,19 @@ bool cpuset_nohz_can_stop_tick(void)
+>  	if (rq->nr_running > 1)
+>  		return false;
+> 
+> +	cpu = smp_processor_id();
+> +
+> +	/*
+> +	 * FIXME: will probably be removed soon as it's
+> +	 * already checked from tick_nohz_stop_sched_tick()
+> +	 */
+> +	if (rcu_needs_cpu(cpu))
+> +		return false;
+> +
+> +	/* Is there a grace period to complete ? */
+> +	if (rcu_pending(cpu))
 
+This is from a quiescent state for both RCU and RCU-bh, right?
+Or can their be RCU or RCU-bh read-side critical sections held
+across here?  (It would be mildly bad if so.)
+
+But force_quiescent_state() will catch cases where RCU needs
+quiescent states from CPUs, so is this check really needed?
+
+> +		return false;
+> +
+>  	return true;
+>  }
+> 
+> -- 
+> 1.7.5.4
+> 
