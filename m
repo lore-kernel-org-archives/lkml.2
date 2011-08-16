@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1HPNu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 09:50:57 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:57525 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391Ab1HPNuz (ORCPT
+	id S1752828Ab1HPNvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 09:51:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64811 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1HPNvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 09:50:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6439"; a="110658949"
-Date: Tue, 16 Aug 2011 06:50:51 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kenneth Heitke <kheitke@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20110816135051.GA22227@huya.qualcomm.com>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
- <201108111455.56319.arnd@arndb.de>
- <20110812164608.GC28150@sirena.org.uk>
- <201108161537.28612.arnd@arndb.de>
+	Tue, 16 Aug 2011 09:51:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Warren <swarren@nvidia.com>
+Subject: Re: [RFC PATCH v2 06/13] docs/dt: Document nvidia,tegra20-pinmux binding
+Date: Tue, 16 Aug 2011 15:51:31 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com> <1313440100-17131-7-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1313440100-17131-7-git-send-email-swarren@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108161537.28612.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108161551.31389.arnd@arndb.de>
+X-Provags-ID: V02:K0:pE8kmspZ0NWXM+Eub6naMyG/AvxYFmyhR49benmbrGc
+ hyTXK2uZYO4A4YlL84EP2CtC1uOpHyb1VktxaQrW9nKEaZWN0t
+ 7N/15WUdJ3zC0K7qjNw4I0RRxuXqnSasJgbTfGUKTltUmUO/1l
+ fPQ5/jCVTowitkdi+5z+R5jXqCdmmSJr5iohijblG3SEsl+1u4
+ B46wyqozIhATHo51NIzjA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 03:37:28PM +0200, Arnd Bergmann wrote:
-> On Friday 12 August 2011, Mark Brown wrote:
-> > On Thu, Aug 11, 2011 at 02:55:55PM +0200, Arnd Bergmann wrote:
-> > > On Thursday 11 August 2011, Kenneth Heitke wrote:
-> > 
-> > > > +EXPORT_SYMBOL_GPL(slim_add_device);
-> > 
-> > > I don't think this should be exported: AFAICT, the set of slim_devices
-> > > is a property of the platform, so I don't see how any other device driver
-> > > would add another device.
-> > 
-> > The platform may be comprised of multiple hardwaare modules with
-> > functionality on daughtercards which can be probed at runtime.  You may
-> > also find someone constructing a PCI card or something with a slimbus
-> > controller on it at some point.
+On Monday 15 August 2011, Stephen Warren wrote:
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |  294 ++++++++++++++++++++
+>  1 files changed, 294 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
 > 
-> This is theoretically true, but IIRC David mentioned that the bus is
-> only present on few SoCs and has since been abandoned in favor of standard
-> busses for new devices.
+> diff --git a/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+> new file mode 100644
+> index 0000000..744e1b7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+> @@ -0,0 +1,294 @@
+> +NVIDIA Tegra 2 pinmux controller
+> +
+> +Required properties:
+> +- compatible : "nvidia,tegra20-pinmux"
 
-Actually, this is a different one than the one I was mentioning at the
-Linaro Connect.  I believe SLIMbus is more active
-http://en.wikipedia.org/wiki/SLIMbus
+Hmm, I think it would be much better in general if we could define
+pinmux bindings in a way that is less specific to just one soc.
+The contents of this file seem to be specific to even just one
+version of the tegra chip, and might be completely different for
+tegra30 and later, right?
 
-The other bus I was mentioning is called SSBI, which as far as I know
-is only used to communicate between MSMs and certain Qualcomm
-peripheral chips.
+Maybe Linus W can comment on this and say whether he thinks it can
+be generalized enough to apply to other pinmux drivers.
 
-Kenneth would better be able to clarify how dynamic the SLIMbus is.
+> +Optional sub-nodes:
+> +- nvidia,mux-groups : Mux group settings; see below.
+> +- nvidia,drive-groups : Drive group settings; see below.
+> +
+> +nvidia,mux-groups sub-node:
 
-David
+These concepts seem general enough to me that they can apply to
+other chips, and I would consequently drop the nvidia, prefix.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> +Each mux pin group is represented as a sub-node of the nvidia,mux-groups node.
+> +The name of the sub-node should be the name of the mux pingroup. The following
+> +names are valid:
+> +
+> +	ata
+> +	atb
+> +	atc
+> +	atd
+> +	ate
+> +	cdev1
+> +	cdev2
+> ...
+
+I noticed that each board you define has a complete list of these. Would
+it be possible to move a generic list into a tegra20-pinmux.dtsi file and
+just override the pins in the per-board .dts file that require some special
+setup?
+
+
+> +
+> +optional subnode-properties:
+> +- nvidia,pull-up : Boolean, apply Tegra's internal pull-up to the pin.
+> +- nvidia,pull-down : Boolean, apply Tegra's internal pull-down to the pin.
+> +- nvidia,tristate : Boolean, tristate the pin. Otherwise, drive it.
+> +
+> +If both nvidia,pull-up and nvidia,pull-down are specified, nvidia,pull-up
+> +takes precedence.
+
+These again seem generic enough to go into a general pinmux binding, without
+the nvidia, prefix.
+
+	Arnd
