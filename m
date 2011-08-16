@@ -1,28 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab1HPSoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 14:44:17 -0400
-Received: from mail.najdschools.edu.sa ([212.119.79.83]:36822 "EHLO
-	mail.najdschools.edu.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab1HPSoQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 14:44:16 -0400
-X-Greylist: delayed 3238 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 14:44:15 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1752390Ab1HPSy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 14:54:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab1HPSyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 14:54:25 -0400
+Date: Tue, 16 Aug 2011 20:50:57 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Matt Fleming <matt@console-pimps.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8712: remove r8712_cmd_thread()->daemonize()
+Message-ID: <20110816185057.GA4036@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Transfer Offer
-To: Recipients <info@mail.com>
-From: Song Li <info@mail.com>
-Date: Wed, 17 Aug 2011 01:19:18 -0700
-Reply-To: songli1@w.cn
-Message-Id: <20110816170708.9B931139E998@mail.najdschools.edu.sa>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
-together in transferring $19,500,000.USD from my bank to you account.
-Finally if you are interested I shall provide you with more details.
-Email: songli1@w.cn
+daemonize() is only needed when a user-space task does kernel_thread().
+
+r8712_cmd_thread() is kthread_create()'ed and thus it doesn't need
+the soon-to-be-deprecated daemonize(). It is the only caller of
+thread_enter() which actually does the call.
+
+Note:
+	- we are going to remove the sigdelset(blocked) code from
+	  allow_signal(), this means that without this patch
+	  thread_enter() can't work after that. Not to mention
+	  daemonize() should be deprecated.
+
+	- as a side effect, this patch changes ->comm. Hopefully
+	  this is fine, and padapter->pnetdev->name probably makes
+	  more sense anyway.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ drivers/staging/rtl8712/osdep_service.h |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- 3.1/drivers/staging/rtl8712/osdep_service.h~2_daemonize_rtl8712	2011-07-28 14:06:57.000000000 +0200
++++ 3.1/drivers/staging/rtl8712/osdep_service.h	2011-08-16 20:36:39.000000000 +0200
+@@ -203,7 +203,6 @@ static inline unsigned char _cancel_time
+ 
+ static inline void thread_enter(void *context)
+ {
+-	daemonize("%s", "RTKTHREAD");
+ 	allow_signal(SIGTERM);
+ }
+ 
+
