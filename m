@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab1HPCwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:52:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35896 "EHLO mx2.suse.de"
+	id S1754248Ab1HPCw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:52:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35877 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab1HPCwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:52:35 -0400
+	id S1754222Ab1HPCwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:52:25 -0400
 X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:53 2011
-Message-Id: <20110816024453.679917763@pistachio.kroah.org>
+Message-Id: <20110816024453.390079876@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:42:53 -0700
+Date: Mon, 15 Aug 2011 19:42:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrew Bird <ajb@spheresystems.co.uk>
-Subject: [10/26] USB: option driver: add PID for Vodafone-Huawei K3770
+        Nick Bowler <nbowler@elliptictech.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [08/26] USB: usb-storage: unusual_devs entry for ARM V2M
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ motherboard.
 
-From: Andrew Bird <ajb@spheresystems.co.uk>
+From: Nick Bowler <nbowler@elliptictech.com>
 
-commit 07b21fd83606263fe6f327b98774d51e13e502fd upstream.
+commit a871e4f5519d8c52430052e1d340dd5710eb5ad6 upstream.
 
-This patch adds the product ID of Huawei's Vodafone K3770 mobile broadband
-modem to option.c. This is necessary so that the driver gets loaded on demand
-without the intervention of usb_modeswitch. This has the benefit of it becoming
-available faster and also ensures that the option driver is not bound to a
-network interface that should be claimed by cdc_ether.
+Connecting the V2M to a Linux host results in a constant stream of
+errors spammed to the console, all of the form
 
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+  sd 1:0:0:0: ioctl_internal_command return code = 8070000
+     : Sense Key : 0x4 [current]
+     : ASC=0x0 ASCQ=0x0
+
+The errors appear to be otherwise harmless.  Add an unusual_devs entry
+which eliminates all of the error messages.
+
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/storage/unusual_devs.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -148,6 +148,7 @@ static void option_instat_callback(struc
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
-+#define HUAWEI_PRODUCT_K3770			0x14C9
- #define HUAWEI_PRODUCT_ETS1220			0x1803
- #define HUAWEI_PRODUCT_E353			0x1506
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1988,6 +1988,16 @@ UNUSUAL_DEV(  0x4146, 0xba01, 0x0100, 0x
+ 		"Micro Mini 1GB",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
  
-@@ -547,6 +548,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
++/*
++ * Nick Bowler <nbowler@elliptictech.com>
++ * SCSI stack spams (otherwise harmless) error messages.
++ */
++UNUSUAL_DEV(  0xc251, 0x4003, 0x0100, 0x0100,
++		"Keil Software, Inc.",
++		"V2M MotherBoard",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NOT_LOCKABLE),
++
+ /* Reported by Andrew Simmons <andrew.simmons@gmail.com> */
+ UNUSUAL_DEV(  0xed06, 0x4500, 0x0001, 0x0001,
+ 		"DataStor",
 
 
