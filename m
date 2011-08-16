@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab1HPPHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:07:48 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38162 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab1HPPHq convert rfc822-to-8bit (ORCPT
+	id S1751841Ab1HPPKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:10:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41881 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751456Ab1HPPKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:07:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAC9WiBitmuvZOS74UY1E-=y+6hpm6_OgaR9E6wrHhdvARt2uJA@mail.gmail.com>
-References: <CAC9WiBgbhLomH_CtLGKyxm2xD9=h1nJAy=-b24GOaUV+hg7bNg@mail.gmail.com>
-	<20110731110641.GG2209@sun>
-	<CAC9WiBgg+To8ggUvTqxOCy2hgb=XQCRH6D_0HFy4sEEoF8R0rw@mail.gmail.com>
-	<20110731153225.GJ2209@sun>
-	<1312196702.2617.445.camel@laptop>
-	<CAC9WiBitmuvZOS74UY1E-=y+6hpm6_OgaR9E6wrHhdvARt2uJA@mail.gmail.com>
-Date: Tue, 16 Aug 2011 17:07:45 +0200
-Message-ID: <CAC9WiBgpMFQjCMxp7TFHXEm6RKDbUwfMiOpx2SGp=vR_QZzKng@mail.gmail.com>
-Subject: Re: v3.0: Weird kernel log message when resuming avout NMI received
-From: Francis Moreau <francis.moro@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Aug 2011 11:10:32 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+0CidKkwa0VuYiIwMGmvtfm4NWOtO8zQeGU3HNtj
+	Bt/YIpfH4aSVkR
+Subject: Re: [ANNOUNCE] 3.0.1-rt11
+From: Mike Galbraith <efault@gmx.de>
+To: Nivedita Singhvi <niv@us.ibm.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <4E4A7BE3.5090902@us.ibm.com>
+References: <1313232790.25267.7.camel@twins>
+	 <1313236135.4486.10.camel@marge.simson.net>
+	 <1313236713.25267.10.camel@twins>
+	 <1313243965.4486.36.camel@marge.simson.net>
+	 <20110813162735.GA2650@linux.vnet.ibm.com>
+	 <1313295821.6334.5.camel@marge.simson.net>  <4E4A7BE3.5090902@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 17:10:08 +0200
+Message-ID: <1313507408.6321.4.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Tue, 2011-08-16 at 07:17 -0700, Nivedita Singhvi wrote:
 
-On Mon, Aug 15, 2011 at 10:37 AM, Francis Moreau <francis.moro@gmail.com> wrote:
-> Hello Peter,
->
-> Sorry for the loooonnng delay but summer rest :)
->
-> On Mon, Aug 1, 2011 at 1:05 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Sun, 2011-07-31 at 19:32 +0400, Cyrill Gorcunov wrote:
->>
->>> > >> I'm seeing those kernel message when resuming:
->>> > >>
->>> > >> [  524.973283] Uhhuh. NMI received for unknown reason 3d on CPU 0.
->>> > >> [  524.973288] Do you have a strange power saving mode enabled?
->>> > >> [  524.973289] Dazed and confused, but trying to continue
->>> > >>
->>> > >> I don't know if it's important or not because the system seems to work
->>> > >> after but maybe it worths to report
->>
->> So I guess the problem is the NMI watchdog and suspend stuff not
->> shutting things down properly..
->>
->> Argh, the PM notifier muck runs before the hotplug notifiers and it
->> doesn't avoid hotplug races on its own.. what crap.
->>
->> something like the below perhaps, compile tested only.. does it work?
->
-> Thanks for the fix, I'm going to give it a test and report in 2 days.
->
+> Mike,
+> 
+> Which test were you running? Because I'm not seeing it
+> on our x3550 M3..
 
-I'm trying to test the fix but have to stick with the 3.0 kernel and
-your patch seems to be based on 3.1.
+-rt11 did not trip up just idling along like a couple earlier releases
+did, but did stall when I tried to run ltp realtime testcases.
 
-So I had to backport a couple of patches otherwise I'm getting the
-following error:
+	-Mike
 
-  CC      kernel/events/core.o
-kernel/events/core.c: In function ‘perf_pm_resume_cpu’:
-kernel/events/core.c:7342: error: implicit declaration of function
-‘perf_ctx_lock’
-kernel/events/core.c:7350: error: implicit declaration of function
-‘perf_ctx_unlock’
-kernel/events/core.c: In function ‘perf_pm_suspend_cpu’:
-kernel/events/core.c:7370: error: implicit declaration of function
-‘perf_event_sched_in’
-
-Here are the patches that I backported on top of 3.0:
-
- perf: Collect the schedule-in rules in one function
- perf: Change and simplify ctx::is_active semantics
- perf: Simplify and fix __perf_install_in_context()
- perf: Remove task_ctx_sched_in()
- perf: Optimize event scheduling locking
- perf: Clean up 'ctx' reference counting
- perf: Optimize ctx_sched_out()
-
-After the second suspend/resume sequence I still have the same warning
-except that the reason has changed to '2d':
-
- kernel:[  404.091393] Uhhuh. NMI received for unknown reason 2d on CPU 0.
- kernel:[  404.091394] Do you have a strange power saving mode enabled?
- kernel:[  404.091396] Dazed and confused, but trying to continue
-
-Thanks
--- 
-Francis
