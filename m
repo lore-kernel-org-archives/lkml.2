@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab1HPHT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 03:19:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33313 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab1HPHT1 (ORCPT
+	id S1751624Ab1HPHTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 03:19:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58059 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1HPHTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 03:19:27 -0400
-Date: Tue, 16 Aug 2011 00:17:11 -0700 (PDT)
-Message-Id: <20110816.001711.169179303753669881.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110816165744.5c069b0c9f2e329e48ecd7d0@canb.auug.org.au>
-References: <20110816152815.911f15937efa2ebf58a2795d@canb.auug.org.au>
-	<20110815.231116.1728582609642497613.davem@davemloft.net>
-	<20110816165744.5c069b0c9f2e329e48ecd7d0@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 16 Aug 2011 00:17:14 -0700 (PDT)
+	Tue, 16 Aug 2011 03:19:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+References: <a5a38901541cbe2805361c1887f2f395.squirrel@www.skyhub.de>
+Date: Tue, 16 Aug 2011 12:49:28 +0530
+Message-ID: <CAHSGOuuova1kB77_X6bQ3R7E5N2PLhGsmxqb6kd48EDZ9yEPug@mail.gmail.com>
+Subject: Re: x86 memcpy performance
+From: melwyn lobo <linux.melwyn@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, borislav.petkov@amd.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 16 Aug 2011 16:57:44 +1000
+> Yes, on 32-bit you're using the compiler-supplied version
+> __builtin_memcpy when CONFIG_KMEMCHECK=n and your gcc is of version 4
+> and above. Reportedly, using __builtin_memcpy generates better code.
+>
+> Btw, my version of SSE memcpy is 64-bit only.
+>
+> --
+> Regards/Gruss,
+> Boris.
+>
+>
 
-> Hi Dave,
-> 
-> On Mon, 15 Aug 2011 23:11:16 -0700 (PDT) David Miller <davem@davemloft.net> wrote:
->>
->> Please test this patch:
->> 
->> --------------------
->> net: Fix sungem_phy sharing.
-> 
-> This fixes my allyesconfig build (and doesn't break any of the others :-)).
-> 
-> Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
+We would rather use the 32 bit patch. Have you already got a 32 bit
+patch. How can I use sse3 for 32 bit.
+I don't think you have submitted 64 bit patch in the mainline.
+Is there still work ongoing on this.
 
-Thanks a lot for testing.
+Regards,
+Melwyn
