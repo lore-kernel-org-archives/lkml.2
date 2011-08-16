@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1HPD1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 23:27:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45611 "EHLO smtps.tip.net.au"
+	id S1753680Ab1HPDaa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 23:30:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51679 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab1HPD1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 23:27:05 -0400
-Date: Tue, 16 Aug 2011 13:26:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20110816132659.7719837bd136aa520c5814ac@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753182Ab1HPDaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 23:30:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,378,1309762800"; 
+   d="scan'208";a="7606068"
+Message-Id: <20110816022006.348714319@intel.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 16 Aug 2011 10:20:06 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+to: <linux-fsdevel@vger.kernel.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: Andrew Morton <akpm@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Greg Thelen <gthelen@google.com>
+CC: Minchan Kim <minchan.kim@gmail.com>
+CC: Vivek Goyal <vgoyal@redhat.com>
+CC: Andrea Righi <arighi@develer.com>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 0/5] IO-less dirty throttling v9 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi,
 
-After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+The core bits of the IO-less balance_dirty_pages().
 
-drivers/net/ethernet/sun/sungem_phy.c:36:24: fatal error: sungem_phy.h: No such file or directory
+        git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v9
 
-Caused by commit 2bb698412d8a ("net: Move sungem_phy.h under
-include/linux").
+Changes since v8:
 
-I applied this patch for today:
+- a lot of renames and comment/changelog rework
+- use 3rd order polynomial as the global control line (Peter)
+- stabilize dirty_ratelimit by decreasing update step size on small errors
+- limit per-CPU dirtied pages to avoid dirty pages run away on 1k+ tasks (Peter)
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 16 Aug 2011 13:22:24 +1000
-Subject: [PATCH] sungem: sungem_phy.h moved
+Thanks a lot to Peter and Andrea, Vivek for the careful reviews!
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ethernet/sun/sungem_phy.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+shortlog:
+        
+        Wu Fengguang (5):
+              writeback: account per-bdi accumulated dirtied pages
+              writeback: dirty position control
+              writeback: dirty rate control
+              writeback: per task dirty rate limit
+              writeback: IO-less balance_dirty_pages()
 
-diff --git a/drivers/net/ethernet/sun/sungem_phy.c b/drivers/net/ethernet/sun/sungem_phy.c
-index d16880d..db99c22 100644
---- a/drivers/net/ethernet/sun/sungem_phy.c
-+++ b/drivers/net/ethernet/sun/sungem_phy.c
-@@ -33,7 +33,7 @@
- #include <asm/prom.h>
- #endif
- 
--#include "sungem_phy.h"
-+#include <linux/sungem_phy.h>
- 
- /* Link modes of the BCM5400 PHY */
- static const int phy_BCM5400_link_table[8][3] = {
--- 
-1.7.5.4
+        The last 4 patches are one single logical change, but splitted here to
+        make it easier to review the different parts of the algorithm.
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diffstat:
+
+	 fs/fs-writeback.c                |    2 
+	 include/linux/backing-dev.h      |    8 
+	 include/linux/sched.h            |    7 
+	 include/linux/writeback.h        |    1 
+	 include/trace/events/writeback.h |   24 -
+	 kernel/fork.c                    |    3 
+	 mm/backing-dev.c                 |    3 
+	 mm/page-writeback.c              |  544 ++++++++++++++++++++---------
+	 8 files changed, 414 insertions(+), 178 deletions(-)
+
+Thanks,
+Fengguang
+
+
