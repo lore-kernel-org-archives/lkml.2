@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1HPF0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:26:21 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:37632 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1HPF0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:26:19 -0400
-X-SENDER-IP: [85.230.168.63]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjNtAAv/SU5V5qg/PGdsb2JhbABBiQ+fBwsBAQEBNzKBQAEBBScTHBMBDxAIAw4KLhQlChoTh3K6NQ6FWl8EmCyDIog6
-X-IronPort-AV: E=Sophos;i="4.67,378,1309730400"; 
-   d="scan'208";a="213260231"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 16 Aug 2011 07:27:38 +0200
-To: Yufeng Shen <miletus@chromium.org>
-Cc: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, linux-kernel@vger.kernel.org,
-        Michael Gong <Michael.Gong@atmel.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>
-Subject: Re: [PATCH v3] Input: atmel_mxt_ts - Report pressure information
- from the driver
-Message-ID: <20110816052738.GA25878@polaris.bitmath.org>
-References: <1313420550-5885-1-git-send-email-miletus@chromium.org>
+	id S1752317Ab1HPF1S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:27:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44144 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab1HPF1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 01:27:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="38115864"
+Message-ID: <4E49FFB4.8070601@linux.intel.com>
+Date: Mon, 15 Aug 2011 22:27:16 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313420550-5885-1-git-send-email-miletus@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Randy Dunlap <rdunlap@xenotime.net>, Andy Lutomirski <luto@mit.edu>,
+        x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3.1-rc2] x86: fix mm/fault.c build
+References: <CA+55aFycTvbuNzdgbHjoiNkTeDpzgu6Yf=vx9DU+PDOtC_17zA@mail.gmail.com> <20110815101846.58809a89.rdunlap@xenotime.net> <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+In-Reply-To: <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 11:02:30AM -0400, Yufeng Shen wrote:
-> Atmel mxt1386 touch controller has the touch pressure information but
-> the current driver atmel_mxt_ts does not expose it to the user space.
-> This patch makes the driver report the touch pressure information to
-> user space.
+On 08/15/2011 07:09 PM, Linus Torvalds wrote:
+> On Mon, Aug 15, 2011 at 10:18 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> From: Randy Dunlap <rdunlap@xenotime.net>
+>>
+>> arch/x86/mm/fault.c needs to include asm/vsyscall.h to fix a
+>> build error:
+>>
+>> arch/x86/mm/fault.c: In function '__bad_area_nosemaphore':
+>> arch/x86/mm/fault.c:728: error: 'VSYSCALL_START' undeclared (first use in this function)
 > 
-> ChangeLog:
-> v2: fixed indentation as commented by Wanlong Gao
-> v3: added signed-off-by
+> Grr. This seems to be one of those "under certain configurations
+> only". I can trigger it with "allnoconfig", but not with my common
+> configuration or "allmodconfig"
 > 
-> Change-Id: Ie0e4683a3cd5ec79222f7682b0ddc24f909af543
-> Signed-off-by: Yufeng Shen <miletus@chromium.org>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index ae00604..9bdf4e0 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -244,6 +244,7 @@ struct mxt_finger {
->  	int x;
->  	int y;
->  	int area;
-> +	int pressure;
->  };
->  
->  /* Each client has this additional data */
-> @@ -536,6 +537,8 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
->  					finger[id].x);
->  			input_report_abs(input_dev, ABS_MT_POSITION_Y,
->  					finger[id].y);
-> +			input_report_abs(input_dev, ABS_MT_PRESSURE,
-> +					finger[id].pressure);
->  		} else {
->  			finger[id].status = 0;
->  		}
-> @@ -560,6 +563,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
->  	int x;
->  	int y;
->  	int area;
-> +	int pressure;
->  
->  	/* Check the touch is present on the screen */
->  	if (!(status & MXT_DETECT)) {
-> @@ -584,6 +588,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
->  		y = y >> 2;
->  
->  	area = message->message[4];
-> +	pressure = message->message[5];
->  
->  	dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
->  		status & MXT_MOVE ? "moved" : "pressed",
-> @@ -594,6 +599,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
->  	finger[id].x = x;
->  	finger[id].y = y;
->  	finger[id].area = area;
-> +	finger[id].pressure = pressure;
->  
->  	mxt_input_report(data, id);
->  }
-> @@ -1125,6 +1131,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
->  			     0, data->max_x, 0, 0);
->  	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
->  			     0, data->max_y, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
-> +			     0, 255, 0, 0);
->  
->  	input_set_drvdata(input_dev, data);
->  	i2c_set_clientdata(client, data);
-> -- 
-> 1.7.3.1
+> I just don't see *why* it ends up being config-related. Can anybody
+> fill me in? It looks like some header file does a conditional include
+> of fixmap.h or something. Urgh. I *hate* those kinds of "some configs
+> work" cases.
 > 
 
-    Acked-by: Henrik Rydberg <rydberg@euromail.se>
+It's due to the following in <asm/smp.h>:
 
-Thanks,
-Henrik
+#ifdef CONFIG_X86_LOCAL_APIC
+# include <asm/mpspec.h>
+# include <asm/apic.h>
+# ifdef CONFIG_X86_IO_APIC
+#  include <asm/io_apic.h>
+# endif
+#endif
+
+<asm/apic.h> pulls in <asm/fixmap.h> which pulls in <asm/vsyscall.h>,
+bypassing the fact that arch/x86/mm/fault.c is missing <asm/vsyscall.h>.
+
+I'll have a patch for it shortly.
+
+	-hpa
