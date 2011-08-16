@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab1HPHWd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 03:22:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:52741 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751135Ab1HPHWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 03:22:30 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/p5ohOIznpdptdgBx+BBh5WaVm7emw0V25Th9Mdc
-	hreKQo9cSPCf1B
-Message-ID: <4E4A1AB1.6040001@gmx.de>
-Date: Tue, 16 Aug 2011 07:22:25 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
-MIME-Version: 1.0
-To: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+	id S1751760Ab1HPHW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 03:22:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31412 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751198Ab1HPHWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 03:22:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,379,1309762800"; 
+   d="scan'208";a="41842123"
+Date: Tue, 16 Aug 2011 15:22:51 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-mm <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>
-CC: Paul Mundt <lethal@linux-sh.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ANNOUNCE] fbdev maintainer change
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
+Message-ID: <20110816072251.GA12264@localhost>
+References: <20110816022006.348714319@intel.com>
+ <20110816022329.063575688@intel.com>
+ <20110816071709.GA1302@thinkpad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816071709.GA1302@thinkpad>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+> > +	if (!bdi->dirty_exceeded)
+> > +		ratelimit = current->nr_dirtied_pause;
+> > +	else
+> > +		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+> 
+> Usage of ratelimit before init?
+> 
+> Maybe:
+> 
+> 	ratelimit = current->nr_dirtied_pause;
+> 	if (bdi->dirty_exceeded)
+> 		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
 
-as Paul hasn't been able to catch up with the patches lately and as already 
-about half of the development cycle passed I decided to take over maintaining 
-the fbdev subsystem, at least for now. So please send all patches you want to go 
-mainline via fbdev also directly to me in addition to sending them to linux-fbdev.
-Please help me to avoid picking up outdated, buggy versions of your patches by 
-resending your final, bug-free ;) version if they are not already included in 
-3.1-rc2. I'll be on vacation for a week now, so do not expect immediate 
-response, I just wanted to give you some time to polish your patches. When I'm 
-back I'll start setting up a fbdev-next branch, probably based on 3.1-rc3, and 
-adding your patches to it. So feel free to drown me in patches.
-I want to say thanks to Paul for his work, as well as all those people who made 
-the fbdev subsystem such a great thing during the past decades and to those who 
-are still working to make it even better.
+Good catch, thanks! That's indeed the original form. I changed it to
+make the code more aligned...
 
-
-Thanks and happy coding,
-
-Florian Tobias Schandinat
+Thanks,
+Fengguang
