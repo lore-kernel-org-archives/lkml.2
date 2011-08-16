@@ -1,82 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab1HPT61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:58:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58418 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab1HPT6Z (ORCPT
+	id S1751830Ab1HPUA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:00:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40759 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1HPUA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:58:25 -0400
-Date: Tue, 16 Aug 2011 13:58:21 -0600
-From: Alex Chiang <achiang@canonical.com>
-To: gregkh@suse.de
-Cc: ajb@spheresystems.co.uk, linux-usb@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] USB option driver add PID of Huawei Vodafone K4605
-Message-ID: <20110816195820.GC31609@canonical.com>
-Mail-Followup-To: Alex Chiang <achiang@canonical.com>, gregkh@suse.de,
-	ajb@spheresystems.co.uk, linux-usb@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>
+	Tue, 16 Aug 2011 16:00:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 16 Aug 2011 22:00:07 +0200
+X-Google-Sender-Auth: XZznW9q2rIun4hZL0A9Iwv6JDa4
+Message-ID: <CAO+b5-prWOxkXcKLM+KctdMjV9YhT8zyyBxjaR6ofnP944hGKw@mail.gmail.com>
+Subject: [PATCH] docs/driver-model: Document device.groups
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        rpearson@systemfabricworks.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Bird <ajb@spheresystems.co.uk>
+Many drivers use device_create_file() where device.groups should be
+used instead. This patch documents that and also removes the comments
+about device classes since these should not be used in new code.
 
-This patch adds the product ID of Huawei's Vodafone K4605 mobile broadband
-modem to option.c. This is necessary so that the driver gets loaded on
-demand without the intervention of usb_modeswitch. This has the benefit of
-it becoming available faster and also ensures that the option driver is not
-bound to a network interface that should be claimed by suitable network
-driver.
-
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
-Signed-off-by: Alex Chiang <achiang@canonical.com>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
 ---
- This patch might be good for -stable, but it doesn't really
- matter to me if it hits that tree or not.
+ Documentation/driver-model/device.txt |   78 +++++++++++++++------------------
+ 1 files changed, 35 insertions(+), 43 deletions(-)
 
- drivers/usb/serial/option.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+diff --git a/Documentation/driver-model/device.txt
+b/Documentation/driver-model/device.txt
+index bdefe72..e064ca5 100644
+--- a/Documentation/driver-model/device.txt
++++ b/Documentation/driver-model/device.txt
+@@ -45,63 +45,55 @@ struct device_attribute {
+ 			 const char *buf, size_t count);
+ };
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 6e04222..ab86e0d 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -149,6 +149,7 @@ static void option_instat_callback(struct urb *urb);
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_K3806			0x14AE
-+#define HUAWEI_PRODUCT_K4605			0x14C6
- #define HUAWEI_PRODUCT_K3770			0x14C9
- #define HUAWEI_PRODUCT_K3771			0x14CA
- #define HUAWEI_PRODUCT_K4510			0x14CB
-@@ -553,6 +554,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
-@@ -1136,10 +1138,11 @@ static int option_probe(struct usb_serial *serial,
- 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
- 		return -ENODEV;
- 
--	/* Don't bind network interfaces on Huawei K3765 & K4505 */
-+	/* Don't bind network interfaces on Huawei K3765, K4505 & K4605 */
- 	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
- 		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
--			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505) &&
-+			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505 ||
-+			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4605) &&
- 		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
- 		return -ENODEV;
- 
+-Attributes of devices can be exported via drivers using a simple
+-procfs-like interface.
++Attributes of devices can be exported by a device driver through sysfs.
+
+ Please see Documentation/filesystems/sysfs.txt for more information
+ on how sysfs works.
+
++As explained in Documentation/kobject.txt, it is crucial that device
++attributes are created before the KOBJ_ADD uevent is generated. The only way
++to realize that is by defining an attribute group.
++
+ Attributes are declared using a macro called DEVICE_ATTR:
+
+ #define DEVICE_ATTR(name,mode,show,store)
+
+ Example:
+
+-DEVICE_ATTR(power,0644,show_power,store_power);
++static DEVICE_ATTR(type, 0444, show_type, NULL);
++static DEVICE_ATTR(power, 0644, show_power, store_power);
+
+-This declares a structure of type struct device_attribute named
+-'dev_attr_power'. This can then be added and removed to the device's
+-directory using:
++This declares two structures of type struct device_attribute with respective
++names 'dev_attr_type' and 'dev_attr_power'. These two attributes can be
++organized as follows into a group:
+
+-int device_create_file(struct device *device, struct device_attribute * entry);
+-void device_remove_file(struct device * dev, struct device_attribute * attr);
++static struct attribute *dev_attrs[] = {
++	&dev_attr_type.attr,
++	&dev_attr_power.attr,
++	NULL,
++};
+
+-Example:
++static struct attribute_group dev_attr_group = {
++	.attrs = dev_attrs,
++};
+
+-device_create_file(dev,&dev_attr_power);
+-device_remove_file(dev,&dev_attr_power);
+-
+-The file name will be 'power' with a mode of 0644 (-rw-r--r--).
+-
+-Word of warning:  While the kernel allows device_create_file() and
+-device_remove_file() to be called on a device at any time, userspace has
+-strict expectations on when attributes get created.  When a new device is
+-registered in the kernel, a uevent is generated to notify userspace (like
+-udev) that a new device is available.  If attributes are added after the
+-device is registered, then userspace won't get notified and userspace will
+-not know about the new attributes.
+-
+-This is important for device driver that need to publish additional
+-attributes for a device at driver probe time.  If the device driver simply
+-calls device_create_file() on the device structure passed to it, then
+-userspace will never be notified of the new attributes.  Instead, it should
+-probably use class_create() and class->dev_attrs to set up a list of
+-desired attributes in the modules_init function, and then in the .probe()
+-hook, and then use device_create() to create a new device as a child
+-of the probed device.  The new device will generate a new uevent and
+-properly advertise the new attributes to userspace.
+-
+-For example, if a driver wanted to add the following attributes:
+-struct device_attribute mydriver_attribs[] = {
+-	__ATTR(port_count, 0444, port_count_show),
+-	__ATTR(serial_number, 0444, serial_number_show),
+-	NULL
++static const struct attribute_group *dev_attr_groups[] = {
++	&dev_attr_group,
++	NULL,
+ };
+
+-Then in the module init function is would do:
+-	mydriver_class = class_create(THIS_MODULE, "my_attrs");
+-	mydriver_class.dev_attr = mydriver_attribs;
++This array of groups can then be associated with a device by setting the
++group pointer in struct device before device_register() is invoked:
++
++      dev->groups = dev_attr_groups;
++      device_register(dev);
++
++The device_register() function will use the 'groups' pointer to create the
++device attributes and the device_unregister() function will use this pointer
++to remove the device attributes.
+
+-And assuming 'dev' is the struct device passed into the probe hook, the driver
+-probe function would do something like:
+-	device_create(&mydriver_class, dev, chrdev, &private_data, "my_name");
++Note: several documents about writing Linux device drivers recommend to use
++the functions device_create_file() and device_remove_file() to manipulate
++device attributes. That advice is incorrect unfortunately. It is important to
++realize that if attributes are added after a device is registered userspace
++won't get notified and userspace will not know about the new attributes.
 -- 
-1.7.4.1
-
+1.7.3.4
