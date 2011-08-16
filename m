@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1HPMiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 08:38:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55121 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab1HPMiK (ORCPT
+	id S1752408Ab1HPMve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 08:51:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:37404 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab1HPMvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 08:38:10 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110816160754.7c4124fc60a99bb32051a92b@canb.auug.org.au>
-References: <20110816160754.7c4124fc60a99bb32051a92b@canb.auug.org.au>
-Date: Tue, 16 Aug 2011 14:38:09 +0200
-Message-ID: <CA+icZUXKCvqfwoHma-4dLymWS3yVHuFWrL0=qr4bVCJjTKsWkw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 16
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+	Tue, 16 Aug 2011 08:51:32 -0400
 Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Dan Merillat <dan.merillat@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        BTRFS Mailing list <linux-btrfs@vger.kernel.org>
+Subject: Re: processes stuck in llseek
+In-reply-to: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>
+References: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>
+Date: Tue, 16 Aug 2011 08:51:18 -0400
+Message-Id: <1313499055-sup-2296@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090204.4E4A67D2.00DC,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 8:07 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> [The kernel.org mirroring is being very slow today]
->
+Excerpts from Dan Merillat's message of 2011-08-15 23:59:50 -0400:
+> I noticed a series of hung_task notifications in dmesg, so I went
+> poking at it.   Process is 'dropbox', and it's stuck trying to llseek
+> it's library.zip file.
+> 
+> strace of dropbox:
+> ...
+> stat("/home/x/.dropbox-dist/library.zip", {st_mode=S_IFREG|0755,
+> st_size=11575179, ...}) = 0
+> open("/home/x/.dropbox-dist/library.zip", O_RDONLY) = 3
+> fstat(3, {st_mode=S_IFREG|0755, st_size=11575179, ...}) = 0
+> mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+> 0) = 0x7fa766ea8000
+> fstat(3, {st_mode=S_IFREG|0755, st_size=11575179, ...}) = 0
+> lseek(3, 11571200, SEEK_SET
+> 
+> SEEK_SET is less than st_size
+> 
+> strace of dd if=library.zip of=/dev/null bs=1 seek=11571200:
+> 
+> open("library.zip", O_RDONLY)           = 3
+> dup2(3, 0)                              = 0
+> close(3)                                = 0
+> lseek(0, 0, SEEK_CUR
+> 
+> [72960.716080] INFO: task dropbox:1348 blocked for more than 120 seconds.
+> [72960.716084] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [72960.716087] dropbox         D ffff8800762d8a78     0  1348      1 0x00000004
+> [72960.716092]  ffff880069cede18 0000000000000086 0000000000096000
+> 0000000000000000
+> [72960.716097]  ffff880069cec000 00000000000119c0 ffff8800762d8700
+> 00000000000119c0
+> [72960.716101]  ffff880069cedfd8 0000000000004000 ffff880069cedfd8
+> 00000000000119c0
+> [72960.716106] Call Trace:
+> [72960.716113]  [<ffffffff81331f9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+> [72960.716119]  [<ffffffff8155710a>] ? retint_restore_args+0xe/0xe
+> [72960.716124]  [<ffffffff810e8ef1>] ? noop_llseek+0xa/0xa
+> [72960.716129]  [<ffffffff810340ff>] ? mutex_spin_on_owner+0x1c/0x45
+> [72960.716133]  [<ffffffff81555be0>] __mutex_lock_slowpath+0xd2/0x116
+> [72960.716137]  [<ffffffff81559edd>] ? do_page_fault+0x374/0x3e6
+> [72960.716140]  [<ffffffff81555a87>] mutex_lock+0x16/0x27
+> [72960.716146]  [<ffffffff812c8ad7>] btrfs_file_llseek+0x38/0x297
+> [72960.716150]  [<ffffffff81331fda>] ? trace_hardirqs_off_thunk+0x3a/0x6c
+> [72960.716153]  [<ffffffff810e8f2c>] vfs_llseek+0x2e/0x30
+> [72960.716155]  [<ffffffff810e9311>] sys_lseek+0x3e/0x5d
+> [72960.716159]  [<ffffffff8155d4fb>] system_call_fastpath+0x16/0x1b
+> 
+> Oddly enough, it's just llseek.  I can copy/read the file sequentially
+> just fine, but llseek fails on a copy as well.   Once I get physically
+> to the system I'll recompile to an unmodified kernel and try again.
+> Other files of the same approximate age llseek correctly.
+> 
+> Kernel is 3.1-rc1  with the fglrx module from AMD and the following
+> patch:  (I was playing with cross-subvolume reflinking, but not on
+> this file)
 
-Of what time-deltas are we talking? >1d?
-I took the linux-next patch from yesterday (next-20110815).
-For actively working on linux-next, this is again a real pain.
-What about mirroring your data from master.k.o to [1] or [2] (like
-some Linux-kernel sub-tree maintainers already use)?
+Dan Carpenter sent a patch for this, I'll get it queued up for rc3.
 
-- Sedat -
-
-[1] http://git.infradead.org/
-[2] http://repo.or.cz/
+-chris
