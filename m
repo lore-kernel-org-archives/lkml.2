@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1HPVo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:44:59 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35325 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab1HPVo6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:44:58 -0400
+	id S1753134Ab1HPVpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:45:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53097 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753070Ab1HPVpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 17:45:13 -0400
+References: <20110812210626.GA4725@kroah.com> <CACqU3MWri2+MMT8qX4UXGUL-H-bk6Hy7dg00VubU6PLsMVUg9g@mail.gmail.com> <20110816175901.GB25099@suse.de> <CA+55aFx5aJYa-Wq73XHi6sOn0ibgmSOszokpVpceEyuBe0XLFQ@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFx5aJYa-Wq73XHi6sOn0ibgmSOszokpVpceEyuBe0XLFQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1629809.vjtjo6obCs@wuerfel>
-References: <1313529267-4428-1-git-send-email-wad@chromium.org>
-	<1629809.vjtjo6obCs@wuerfel>
-Date: Tue, 16 Aug 2011 16:44:56 -0500
-Message-ID: <CABqD9hYavCxA38GbBhbCmBT+PEQQsvhbF4U7xY8P8ygbFy+=Ag@mail.gmail.com>
-Subject: Re: [RFC,PATCH] arch/arm: compute and export NR_syscalls
-From: Will Drewry <wad@chromium.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [00/90] 3.0.2-stable review
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 16 Aug 2011 14:11:26 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        warthog9@kernel.org
+CC: Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Message-ID: <198b2a34-7bf7-4d01-b41e-b68420da599f@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 4:21 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 16 August 2011 16:14:26 Will Drewry wrote:
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+>On Tue, Aug 16, 2011 at 10:59 AM, Greg KH <gregkh@suse.de> wrote:
 >>
->> asm-exports.c is added instead of reusing asm-offsets.c to avoid a
->> variety of collisions (VM_EXEC, DMA_*, etc).  It is possible to use the
->> same calls.S mechanism but add NR_syscalls to asm-offsets.c.  However,
->> at inclusion time for generated/asm-offsets.h, conflicting defines will
->> need to be #undef'd if !__ASSEMBLY__ since it appears that the purpose
->> of asm-offsets.h is to safely bind C language definitions to assembly
->> and not the reverse.
->>
->> - Is this approach palatable?
->> - Should I resend only when paired with the other ftrace-needed patches?
+>> kernel.org is having mirroring problems at the moment, sorry.
 >
-> This seems overly complex, compared to a one-line change adding the symbol
-> to asm/unistd.h. The only other architecture that uses an approach
-> like the one you have posted is x86-64, and it's simpler there
-> because it can easily be done in asm-offsets.c there without the need
-> to create another helper.
+>Yeah, not just mirroring problems, there's been other problems there
+>too. And for the last week or so, load average has hovered in the
+>fifty range due to checksumming.
+>
+>There's also been vacations, and people are traveling this week due to
+>LinuxCon Vancouver too. So it's not getting fixed quite as quickly as
+>it might have been otherwise.
+>
+>                  Linus
 
-Agreed!
-
-I proposed this approach based solely on prior threads I've seen. E.g.,
-- https://lkml.org/lkml/2007/6/1/427
-  (don't just #define)
-- https://lkml.org/lkml/2009/8/27/280
-  (todo: x86-32 to move to x86-64)
-
-If a single line #define is good enough, then it certainly works for me.
-
-thanks!
-will
+I talked to John about this; he says hera needs a reboot for a kernel replacement.
+-- 
+Sent from my mobile phone. Please excuse my brevity and lack of formatting.
