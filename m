@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1HPUUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 16:20:16 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:59638 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887Ab1HPUUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 16:20:14 -0400
-Date: Tue, 16 Aug 2011 13:20:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Paul Menage <menage@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 22/32] rcu: Restart tick if we enqueue a callback in a
- nohz/cpuset CPU
-Message-ID: <20110816202005.GH2404@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-23-git-send-email-fweisbec@gmail.com>
+	id S1752495Ab1HPUY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:24:27 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2963 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab1HPUY0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 16:24:26 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 16 Aug 2011 13:24:03 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Date: Tue, 16 Aug 2011 13:24:00 -0700
+Subject: RE: [RFC PATCH v2 03/13] arm/tegra: board-dt: Add AUXDATA for
+ tegra-gpio and tegra-pinmux
+Thread-Topic: [RFC PATCH v2 03/13] arm/tegra: board-dt: Add AUXDATA for
+ tegra-gpio and tegra-pinmux
+Thread-Index: Acxbw89aB9vlqAMVTQ68l+CBq3wBVgAjknxw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA25430@HQMAIL01.nvidia.com>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+ <1313440100-17131-4-git-send-email-swarren@nvidia.com>
+ <20110816033056.GE8044@S2100-06.ap.freescale.net>
+In-Reply-To: <20110816033056.GE8044@S2100-06.ap.freescale.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313423549-27093-23-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 05:52:19PM +0200, Frederic Weisbecker wrote:
-> If we enqueue an rcu callback, we need the CPU tick to stay
-> alive until we take care of those by completing the appropriate
-> grace period.
-> 
-> Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
-> so that we restore a periodic tick behaviour that can take care of
-> everything.
+Shawn Guo wrote at Monday, August 15, 2011 9:31 PM:
+> On Mon, Aug 15, 2011 at 02:28:10PM -0600, Stephen Warren wrote:
+> > Add AUXDATA so that Tegra GPIO and pinmux devices that are instantiated
+> > from device-tree are named consistently with the static platform devices
+> > in mach-tegra/devices.c. Note that the device-tree file tegra20.dtsi
+> > already includes a node for the Tegra GPIO controller, whereas the node
+> > for the Tegra pinmux controller will be added in a subsequent commit.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > ---
+> >  arch/arm/mach-tegra/board-dt.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+> > index 9f47e04..1995b79 100644
+> > --- a/arch/arm/mach-tegra/board-dt.c
+> > +++ b/arch/arm/mach-tegra/board-dt.c
+> > @@ -50,6 +50,8 @@ void seaboard_pinmux_init(void);
+> >
+> >
+> >  struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+> > +	OF_DEV_AUXDATA("nvidia,tegra20-gpio", TEGRA_GPIO_BASE, "tegra-gpio", NULL),
+> > +	OF_DEV_AUXDATA("nvidia,tegra20-pinmux", TEGRA_APB_MISC_BASE, "tegra-pinmux", NULL),
+> >  	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
+> >  	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC2_BASE, "sdhci-tegra.1", NULL),
+> >  	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC3_BASE, "sdhci-tegra.2", NULL),
+> >
+> The whole auxdata table was primarily added to keep clk API working
+> with the device name looking up.  Your gpio and pinmux can still work
+> without this patch, right?  If that's case, I do not think we need to
+> have this patch just for consistent device name between dt and non-dt.
+> They are not and they do not have to be.
 
-One question below.
+Indeed, everything does work fine without the AUXDATA; there's no
+dependence on any clock lookups or similar in the new drivers.
 
-							Thanx, Paul
+Initially, I thought consistency in device naming would be important,
+since Tegra works with and without device-tree, but I guess we'll be able
+to turn off the hard-coded board files soon, so device name consistency
+probably isn't too relevant.
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Anton Blanchard <anton@au1.ibm.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Paul E . McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index d496c70..b5643ce2 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -51,6 +51,7 @@
->  #include <linux/kthread.h>
->  #include <linux/prefetch.h>
->  #include <linux/cpuset.h>
-> +#include <linux/tick.h>
-> 
->  #include "rcutree.h"
-> 
-> @@ -1546,6 +1547,13 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
->  	rdp->nxttail[RCU_NEXT_TAIL] = &head->next;
->  	rdp->qlen++;
-> 
-> +	/* Restart the timer if needed to handle the callbacks */
-> +	if (tick_nohz_adaptive_mode()) {
-> +		/* Make updates on nxtlist visible to self IPI */
-> +		barrier();
-> +		smp_cpuset_update_nohz(smp_processor_id());
-> +	}
-> +
+I'll drop this patch.
 
-But this must be happening in a system call or interrupt handler, right?
-If so, won't we get a chance to check things on exit from the system call
-or interrupt?  Or are you hooking only into syscall entry?
+-- 
+nvpublic
 
->  	/* If interrupts were disabled, don't dive into RCU core. */
->  	if (irqs_disabled_flags(flags)) {
->  		local_irq_restore(flags);
-> -- 
-> 1.7.5.4
-> 
