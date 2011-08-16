@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab1HPCv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:51:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35821 "EHLO mx2.suse.de"
+	id S1754187Ab1HPCwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:52:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35864 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab1HPCvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:51:54 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:56 2011
-Message-Id: <20110816024455.991165630@pistachio.kroah.org>
+	id S1753972Ab1HPCwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:52:14 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:53 2011
+Message-Id: <20110816024453.109265838@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:43:09 -0700
+Date: Mon, 15 Aug 2011 19:42:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        632923@bugs.debian.org, Ben Hutchings <ben@decadent.org.uk>,
-        Christian Ohm <chr.ohm@gmx.net>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [26/26] perf tools: do not look at ./config for configuration
+        "Maxim A. Nikulin" <M.A.Nikulin@gmail.com>
+Subject: [06/26] USB: assign instead of equal in usbtmc.c
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,60 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+From: Maxim Nikulin <m.a.nikulin@gmail.com>
 
-commit aba8d056078e47350d85b06a9cabd5afcc4b72ea upstream.
+commit 4f1a7a3e78037721496283ea3e87cfefc64d99c7 upstream.
 
-In addition to /etc/perfconfig and $HOME/.perfconfig, perf looks for
-configuration in the file ./config, imitating git which looks at
-$GIT_DIR/config.  If ./config is not a perf configuration file, it
-fails, or worse, treats it as a configuration file and changes behavior
-in some unexpected way.
+Assign operator instead of equality test in the usbtmc_ioctl_abort_bulk_in() function.
 
-"config" is not an unusual name for a file to be lying around and perf
-does not have a private directory dedicated for its own use, so let's
-just stop looking for configuration in the cwd.  Callers needing
-context-sensitive configuration can use the PERF_CONFIG environment
-variable.
-
-Requested-by: Christian Ohm <chr.ohm@gmx.net>
-Cc: 632923@bugs.debian.org
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Christian Ohm <chr.ohm@gmx.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110805165838.GA7237@elie.gateway.2wire.net
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Maxim A. Nikulin <M.A.Nikulin@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- tools/perf/util/config.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/usb/class/usbtmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -399,7 +399,6 @@ static int perf_config_global(void)
- int perf_config(config_fn_t fn, void *data)
- {
- 	int ret = 0, found = 0;
--	char *repo_config = NULL;
- 	const char *home = NULL;
+--- a/drivers/usb/class/usbtmc.c
++++ b/drivers/usb/class/usbtmc.c
+@@ -268,7 +268,7 @@ usbtmc_abort_bulk_in_status:
+ 				dev_err(dev, "usb_bulk_msg returned %d\n", rv);
+ 				goto exit;
+ 			}
+-		} while ((actual = max_size) &&
++		} while ((actual == max_size) &&
+ 			 (n < USBTMC_MAX_READS_TO_CLEAR_BULK_IN));
  
- 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
-@@ -421,12 +420,6 @@ int perf_config(config_fn_t fn, void *da
- 		free(user_config);
- 	}
- 
--	repo_config = perf_pathdup("config");
--	if (!access(repo_config, R_OK)) {
--		ret += perf_config_from_file(fn, repo_config, data);
--		found += 1;
--	}
--	free(repo_config);
- 	if (found == 0)
- 		return -1;
- 	return ret;
+ 	if (actual == max_size) {
 
 
