@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1HPTqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:46:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57281 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab1HPTqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:46:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=hNhqjJ+3BdRTBjWvFmfRUMk+dyyQgXFhzBXp57bAX9sT0Mxxy2LstF81Cap2cA8Dc
-	GkF2WvdHwm8mNDurW8Qjg==
+	id S1752636Ab1HPTrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:47:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925Ab1HPTrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:47:39 -0400
+Date: Tue, 16 Aug 2011 21:44:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 0/1] kthreads: allow_signal: don't play with ->blocked
+Message-ID: <20110816194427.GA6602@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-42-git-send-email-matt@console-pimps.org> <20110816180644.GJ29190@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110816194050.GB4484@csn.ul.ie>
-References: <1313441856-1419-1-git-send-email-wad@chromium.org>
- <20110816093303.GA4484@csn.ul.ie> <CAB=4xhqu1FsJnNbHNeokyROvEFpRJYKhcHRLLw5QTVKOkbkWfQ@mail.gmail.com>
- <20110816194050.GB4484@csn.ul.ie>
-From: Roland McGrath <mcgrathr@google.com>
-Date: Tue, 16 Aug 2011 12:46:17 -0700
-Message-ID: <CAB=4xhrStO=ec92KD2W6V3QzjgaET5jvF1PXdAdu_LdFg7G82Q@mail.gmail.com>
-Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816180644.GJ29190@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 12:40 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> They might result in the same system call but one of them creates
-> the file under /dev/shm which should not have the same permissions
-> problem. The library really appears to want to create a shared
-> executable object, using shm_open does not appear that unreasonable
-> to me.
+On 08/16, Oleg Nesterov wrote:
+>
+> >  int allow_signal(int sig)
+> >  {
+> > +	sigset_t blocked;
+> > +
+> >  	if (!valid_signal(sig) || sig < 1)
+> >  		return -EINVAL;
+> >
+> >  	spin_lock_irq(&current->sighand->siglock);
+> >  	/* This is only needed for daemonize()'ed kthreads */
+>
+> Exactly. And nowadays the daemonize()'ed kthreads should not play
+> with allow_signal().
+>
+> And more, I think it is the time to kill daemonize(). Contrary to
+> what /bin/grep thinks, it has only one user.
 
-People do use shm_open.  Some systems mount /dev/shm with noexec.
-That's why we're here in the first place.
+No, daemonize() has no users which actually need it.
 
-> Which then needs to be copied in each distro wanting to do the same
-> thing and is not backwards compatible where as using shm_open is.
+Imho we should deprecate it, it has no users after the patches I sent.
 
-Each distro wanting to set noexec on its /dev/shm mounts has to set the
-sysctl (or its default in their kernel builds), yes.  Otherwise they are
-not compatible with the expectation of using PROT_EXEC on files opened with
-shm_open.
+> In short: this code in allow_signal() should die.
 
+Yes.
 
-Thanks,
-Roland
+To clarify: this change breaks drivers/staging/rtl8712/, but I belive
+it is wrong and should be fixed. I have already sent the patch.
+
+Oleg.
+
