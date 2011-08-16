@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab1HPTOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:14:44 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:37193 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab1HPTOm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:14:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110816195033.014f302b@endymion.delvare>
-References: <1312802446-19154-1-git-send-email-geert@linux-m68k.org>
-	<20110816195033.014f302b@endymion.delvare>
-Date: Tue, 16 Aug 2011 21:14:42 +0200
-X-Google-Sender-Auth: gtPODl7dPybId8-fEYenru_B3SU
-Message-ID: <CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
-Subject: Re: [PATCH] i2c: I2C_ELEKTOR should depend on HAS_IOPORT
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Hans Berglund <hb@spacetec.no>, Jonas Bonn <jonas@southpole.se>,
-        Arnd Bergmann <arnd@arndb.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751896Ab1HPTRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:17:10 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44470 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab1HPTRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:17:08 -0400
+Subject: Re: [PATCH] pci/of: Don't crash when bridge parent is NULL.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Daney <david.daney@cavium.com>
+Cc: linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <1313519077-18457-1-git-send-email-david.daney@cavium.com>
+References: <1313519077-18457-1-git-send-email-david.daney@cavium.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 14:16:18 -0500
+Message-ID: <1313522178.3664.69.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+On Tue, 2011-08-16 at 11:24 -0700, David Daney wrote:
+> In pcibios_get_phb_of_node(), we will crash while booting if
+> bus->bridge->parent is NULL.
+> 
+> Check for this case and avoid dereferencing the NULL pointer.
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
 
-On Tue, Aug 16, 2011 at 19:50, Jean Delvare <khali@linux-fr.org> wrote:
-> On Mon,  8 Aug 2011 13:20:46 +0200, Geert Uytterhoeven wrote:
->> drivers/i2c/busses/i2c-elektor.c: In function ‘pcf_isa_init’:
->> drivers/i2c/busses/i2c-elektor.c:153: error: implicit declaration of function ‘ioport_map’
->> drivers/i2c/busses/i2c-elektor.c:153: warning: assignment makes pointer from integer without a cast
->> drivers/i2c/busses/i2c-elektor.c: In function ‘elektor_probe’:
->> drivers/i2c/busses/i2c-elektor.c:287: error: implicit declaration of function ‘ioport_unmap’
->>
->> Since commit 82ed223c264def2b15ee4bec2e8c3048092ceb5f ("iomap: make IOPORT/PCI
->> mapping functions conditional"), ioport_map() is only available on platforms
->> that set HAS_IOPORT.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>  drivers/i2c/busses/Kconfig |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
->> index 646068e..d1fc5cf 100644
->> --- a/drivers/i2c/busses/Kconfig
->> +++ b/drivers/i2c/busses/Kconfig
->> @@ -789,7 +789,7 @@ config I2C_ACORN
->>
->>  config I2C_ELEKTOR
->>       tristate "Elektor ISA card"
->> -     depends on ISA && BROKEN_ON_SMP
->> +     depends on ISA && HAS_IOPORT && BROKEN_ON_SMP
->>       select I2C_ALGOPCF
->>       help
->>         This supports the PCF8584 ISA bus I2C adapter.  Say Y if you own
->
-> How can ISA be set if HAS_IOPORT is not? This shouldn't be allowed.
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-It's always been like that. With CONFIG_ISA, we have inb() and friends. But not
-ioport_map(), which was introduced more recently.
+Jesse or Grant, I'm travelling, can any of you send that to Linus asap ?
 
-Gr{oetje,eeting}s,
+Cheers,
+Ben.
 
-                        Geert
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: linux-pci@vger.kernel.org
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  drivers/pci/of.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pci/of.c b/drivers/pci/of.c
+> index c94d37e..f092993 100644
+> --- a/drivers/pci/of.c
+> +++ b/drivers/pci/of.c
+> @@ -55,7 +55,7 @@ struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
+>  	 */
+>  	if (bus->bridge->of_node)
+>  		return of_node_get(bus->bridge->of_node);
+> -	if (bus->bridge->parent->of_node)
+> +	if (bus->bridge->parent && bus->bridge->parent->of_node)
+>  		return of_node_get(bus->bridge->parent->of_node);
+>  	return NULL;
+>  }
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
