@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417Ab1HPWUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 18:20:10 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59202 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab1HPWUI convert rfc822-to-8bit (ORCPT
+	id S1752749Ab1HPWUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 18:20:52 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34005 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab1HPWUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 18:20:08 -0400
+	Tue, 16 Aug 2011 18:20:50 -0400
+Message-ID: <4E4AED3C.7080902@gmail.com>
+Date: Tue, 16 Aug 2011 15:20:44 -0700
+From: Chase Douglas <chasedouglas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20110816164809.GE2227@zod.bos.redhat.com>
-References: <20110816164809.GE2227@zod.bos.redhat.com>
-Date: Tue, 16 Aug 2011 18:20:05 -0400
-X-Google-Sender-Auth: B4lZ5TI6K0LsqpQqjd_cbmcb-6U
-Message-ID: <CAEKwDSC+dKrNWnCZ+VSszuHZL3g=Upr8wSO32r5a8o9Ty0mtTg@mail.gmail.com>
-Subject: Re: Oops in minixfs_statfs
-From: Bob Copeland <me@bobcopeland.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Subject: Re: [PATCH 0/8 v3] Synaptics image sensor support
+References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org> <4E4AABC8.4090107@canonical.com>
+In-Reply-To: <4E4AABC8.4090107@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 12:48 PM, Josh Boyer <jwboyer@redhat.com> wrote:
-> it seems we're getting a negative number in this particular calculation
-> in fs/minix/bitmap.c, count_free:
->
->        i = ((numbits - (numblocks-1) * bh->b_size * 8) / 16) * 2;
-[...]
-> I'm not familiar enough with minixfs to know what the above is trying to
-> actually accomplish.  I instrumented that function a bit and here is
-> some data from the 3 filesytems in question:
+On 08/16/2011 10:41 AM, Chase Douglas wrote:
+> On 08/12/2011 10:16 AM, Daniel Kurtz wrote:
+>> Hello,
+>>
+>> ----
+>> For v3:
+>>   Merged Patch 5 & 6:
+>>      BTN_TOOL_*TAP always reports correct number of fingers.
+>>      During certain ambiguous number-of-finger-transitions, there may be less
+>>      than 2 valid MT-B slots, even if the BTN_TOOL_*TAP value indicates two or
+>>      more fingers are present on the pad.
+> 
+> I am happy with the patch series. I'm not sure if anyone will actually
+> use the MT slots because of all the caveats :), but this driver appears
+> to do the best thing I can think of with the data from the device. It
+> looks like it was a lot of work to figure it out, so cheers to Daniel!
+> 
+> At this time I see Henrik has provided two replies and Daniel has
+> followed up. The first reply set will cause a small amount of axis
+> handling changes, and the second reply about the amount of code changes
+> and implementation details of the tracking ids has been rebuffed. If
+> this is the end result, you can add my Acked-by to all the patches:
+> 
+> Acked-by: Chase Douglas <chase.douglas@canonical.com>
 
-I don't know minix either but I'll take a shot.  This is trying to
-count the number of bits in the free map for inodes or data blocks
-that don't fit in a full file system block.
+I forgot about the change in protocol aspect of this. We still need
+documentation stating that when BTN_TOOL_*TAP > max mt slots, the
+BTN_TOOL_*TAP events should be used to get the current number of active
+touches instead of the number of open MT slots. Would you be able to
+send a separate patch for that?
 
-count_free takes 3 params:
-  map - an array of buffer heads that represent the free map for a 'thingy'
-        (thingy being the technical term for inode, or data block)
-  numblocks - the number of blocks to scan
-  numbits - the maximum-valued thingy
+(I'm trying to coerce you into updating the docs partly because you're
+touching this area and partly because I'm a bit weary of writing input
+protocol docs myself :).
 
-So, for example, there might be 4800 inodes in the filesystem.  That
-means there are 4800/8 = 600 bits to represent their in-use state,
-and supposing a buffer head represents a 512-byte buffer (bh->b_size=512),
-you would need two blocks to store that.  numblocks in this hypothetical
-example is 2 and numbits is 4801.
+Thanks!
 
-Here's some annotated code with uninteresting parts removed:
-
-Loop over all but the last block:
-
-	for (i=0; i<numblocks-1; i++) {
-			sum += nibblemap[bh->b_data[j] & 0xf]
-				+ nibblemap[(bh->b_data[j]>>4) & 0xf];
-	}
-
-Since we're counting zero bits this is just computing hweight(~x)...
-
-	if (numblocks==0 || !(bh=map[numblocks-1]))
-		return(0);
-
-Lookout, bh is assigned in the conditional!
-
-Ok so bh is the last block which might not be full of thingys, so
-we only want to look at the part that has thingys and not the rest.
-
-numblocks - 1 * bh->b_size * 8 is the number of bits we've already
-looked at.  We'll call it nthingys.  numbits - nthingys is the number
-of bits we want to continue to look at.  "(x / 16) * 2 is a fancy way
-of saying "x / 8" except the result is on 2-byte boundaries.  So that's
-the number of bytes left to look at, except for up to 15 possible
-extra bits.
-
-	i = ((numbits - (numblocks-1) * bh->b_size * 8) / 16) * 2;
-	for (j=0; j<i; j++) {
-		sum += nibblemap[bh->b_data[j] & 0xf]
-			+ nibblemap[(bh->b_data[j]>>4) & 0xf];
-	}
-
-And then count the remaining 15 bits by masking off whatever portion
-is less than numbits and doing some fancy u16 casting.
-
-	i = numbits%16;
-	if (i!=0) {
-		i = *(__u16 *)(&bh->b_data[j]) | ~((1<<i) - 1);
-		sum += nibblemap[i & 0xf] + nibblemap[(i>>4) & 0xf];
-		sum += nibblemap[(i>>8) & 0xf] + nibblemap[(i>>12) & 0xf];
-	}
-
-	return(sum);
-}
-
-Does that help?
-
--- 
-Bob Copeland %% www.bobcopeland.com
+-- Chase
