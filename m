@@ -1,156 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab1HPIQs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 04:16:48 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:38231 "EHLO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab1HPIQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 04:16:44 -0400
-Message-ID: <4E4A2768.7090503@ge.com>
-Date: Tue, 16 Aug 2011 09:16:40 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1751588Ab1HPIfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 04:35:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59784 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab1HPIfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 04:35:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="38827635"
+Date: Tue, 16 Aug 2011 16:35:11 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110816083511.GA19970@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.733282037@intel.com>
+ <1312811193.10488.33.camel@twins>
+ <20110808141128.GA22080@localhost>
+ <1312814501.10488.41.camel@twins>
+ <20110808230535.GC7176@localhost>
+ <1312910427.1083.68.camel@twins>
+ <20110810223427.GA18227@quack.suse.cz>
+ <20110811022952.GA11404@localhost>
+ <20110811111423.GD4755@quack.suse.cz>
 MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] staging: vme: keep track of registered buses
-References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch> <1313145051-13397-3-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1313145051-13397-3-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Aug 2011 08:13:14.0930 (UTC) FILETIME=[58EDF120:01CC5BEC]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110811111423.GD4755@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/11 11:30, Manohar Vanga wrote:
-> This patch adds a list which keeps track of all registered VME
-> buses. This is required for adding refcounting later to bridge
-> modules, something that is not currently implemented.
+On Thu, Aug 11, 2011 at 07:14:23PM +0800, Jan Kara wrote:
+> On Thu 11-08-11 10:29:52, Wu Fengguang wrote:
+> > On Thu, Aug 11, 2011 at 06:34:27AM +0800, Jan Kara wrote:
+> > > On Tue 09-08-11 19:20:27, Peter Zijlstra wrote:
+> > > > On Tue, 2011-08-09 at 12:32 +0200, Peter Zijlstra wrote:
+> > > > > >                     origin - dirty
+> > > > > >         pos_ratio = --------------
+> > > > > >                     origin - goal 
+> > > > > 
+> > > > > > which comes from the below [*] control line, so that when (dirty == goal),
+> > > > > > pos_ratio == 1.0:
+> > > > > 
+> > > > > OK, so basically you want a linear function for which:
+> > > > > 
+> > > > > f(goal) = 1 and has a root somewhere > goal.
+> > > > > 
+> > > > > (that one line is much more informative than all your graphs put
+> > > > > together, one can start from there and derive your function)
+> > > > > 
+> > > > > That does indeed get you the above function, now what does it mean? 
+> > > > 
+> > > > So going by:
+> > > > 
+> > > >                                          write_bw
+> > > >   ref_bw = dirty_ratelimit * pos_ratio * --------
+> > > >                                          dirty_bw
+> > > 
+> > >   Actually, thinking about these formulas, why do we even bother with
+> > > computing all these factors like write_bw, dirty_bw, pos_ratio, ...
+> > > Couldn't we just have a feedback loop (probably similar to the one
+> > > computing pos_ratio) which will maintain single value - ratelimit? When we
+> > > are getting close to dirty limit, we will scale ratelimit down, when we
+> > > will be getting significantly below dirty limit, we will scale the
+> > > ratelimit up.  Because looking at the formulas it seems to me that the net
+> > > effect is the same - pos_ratio basically overrules everything... 
+> > 
+> > Good question. That is actually one of the early approaches I tried.
+> > It somehow worked, however the resulted ratelimit is not only slow
+> > responding, but also oscillating all the time.
+>   Yes, I think I vaguely remember that.
 > 
-> This is based on the changes introduced by Emilio G. Cota in the
-> patch:
+> > This is due to the imperfections
+> > 
+> > 1) pos_ratio at best only provides a "direction" for adjusting the
+> >    ratelimit. There is only vague clues that if pos_ratio is small,
+> >    the errors in ratelimit should be small.
+> > 
+> > 2) Due to time-lag, the assumptions in (1) about "direction" and
+> >    "error size" can be wrong. The ratelimit may already be
+> >    over-adjusted when the dirty pages take time to approach the
+> >    setpoint. The larger memory, the more time lag, the easier to
+> >    overshoot and oscillate.
+> > 
+> > 3) dirty pages are constantly fluctuating around the setpoint,
+> >    so is pos_ratio.
+> > 
+> > With (1) and (2), it's a control system very susceptible to disturbs.
+> > With (3) we get constant disturbs. Well I had very hard time and
+> > played dirty tricks (which you may never want to know ;-) trying to
+> > tradeoff between response time and stableness..
+>   Yes, I can see especially 2) is a problem. But I don't understand why
+> your current formula would be that much different. As Peter decoded from
+> your code, your current formula is:
+>                                         write_bw
+>  ref_bw = dirty_ratelimit * pos_ratio * --------
+>                                         dirty_bw
 > 
->     https://lkml.org/lkml/2010/10/25/486
-> 
-> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+> while previously it was essentially:
+>  ref_bw = dirty_ratelimit * pos_ratio
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+Sorry what's the code you are referring to? Does the changelog in the
+newly posted patchset make the ref_bw calculation and dirty_ratelimit
+updating more clear?
 
-> ---
->  drivers/staging/vme/vme.c        |   38 +++++++++++++++++++++++---------------
->  drivers/staging/vme/vme_bridge.h |    1 +
->  2 files changed, 24 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> index d243a4a..feb2d00 100644
-> --- a/drivers/staging/vme/vme.c
-> +++ b/drivers/staging/vme/vme.c
-> @@ -34,9 +34,10 @@
->  #include "vme.h"
->  #include "vme_bridge.h"
->  
-> -/* Bitmask and mutex to keep track of bridge numbers */
-> +/* Bitmask and list of registered buses both protected by common mutex */
->  static unsigned int vme_bus_numbers;
-> -static DEFINE_MUTEX(vme_bus_num_mtx);
-> +static LIST_HEAD(vme_bus_list);
-> +static DEFINE_MUTEX(vme_buses_lock);
->  
->  static void __exit vme_exit(void);
->  static int __init vme_init(void);
-> @@ -1309,27 +1310,32 @@ EXPORT_SYMBOL(vme_slot_get);
->  
->  /* - Bridge Registration --------------------------------------------------- */
->  
-> -static int vme_alloc_bus_num(void)
-> +static int vme_add_bus(struct vme_bridge *bridge)
->  {
->  	int i;
-> +	int ret = -1;
->  
-> -	mutex_lock(&vme_bus_num_mtx);
-> +	mutex_lock(&vme_buses_lock);
->  	for (i = 0; i < sizeof(vme_bus_numbers) * 8; i++) {
-> -		if (((vme_bus_numbers >> i) & 0x1) == 0) {
-> -			vme_bus_numbers |= (0x1 << i);
-> +		if ((vme_bus_numbers & (1 << i)) == 0) {
-> +			vme_bus_numbers |= (1 << i);
-> +			bridge->num = i;
-> +			list_add_tail(&bridge->bus_list, &vme_bus_list);
-> +			ret = 0;
->  			break;
->  		}
->  	}
-> -	mutex_unlock(&vme_bus_num_mtx);
-> +	mutex_unlock(&vme_buses_lock);
->  
-> -	return i;
-> +	return ret;
->  }
->  
-> -static void vme_free_bus_num(int bus)
-> +static void vme_remove_bus(struct vme_bridge *bridge)
->  {
-> -	mutex_lock(&vme_bus_num_mtx);
-> -	vme_bus_numbers &= ~(0x1 << bus);
-> -	mutex_unlock(&vme_bus_num_mtx);
-> +	mutex_lock(&vme_buses_lock);
-> +	vme_bus_numbers &= ~(1 << bridge->num);
-> +	list_del(&bridge->bus_list);
-> +	mutex_unlock(&vme_buses_lock);
->  }
->  
->  int vme_register_bridge(struct vme_bridge *bridge)
-> @@ -1338,7 +1344,9 @@ int vme_register_bridge(struct vme_bridge *bridge)
->  	int retval;
->  	int i;
->  
-> -	bridge->num = vme_alloc_bus_num();
-> +	retval = vme_add_bus(bridge);
-> +	if (retval)
-> +		return retval;
->  
->  	/* This creates 32 vme "slot" devices. This equates to a slot for each
->  	 * ID available in a system conforming to the ANSI/VITA 1-1994
-> @@ -1370,7 +1378,7 @@ err_reg:
->  		dev = &bridge->dev[i];
->  		device_unregister(dev);
->  	}
-> -	vme_free_bus_num(bridge->num);
-> +	vme_remove_bus(bridge);
->  	return retval;
->  }
->  EXPORT_SYMBOL(vme_register_bridge);
-> @@ -1385,7 +1393,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
->  		dev = &bridge->dev[i];
->  		device_unregister(dev);
->  	}
-> -	vme_free_bus_num(bridge->num);
-> +	vme_remove_bus(bridge);
->  }
->  EXPORT_SYMBOL(vme_unregister_bridge);
->  
-> diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-> index a9084f0..8959670 100644
-> --- a/drivers/staging/vme/vme_bridge.h
-> +++ b/drivers/staging/vme/vme_bridge.h
-> @@ -112,6 +112,7 @@ struct vme_bridge {
->  	/* Bridge Info - XXX Move to private structure? */
->  	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
->  	void *driver_priv;	/* Private pointer for the bridge driver */
-> +	struct list_head bus_list; /* list of VME buses */
->  
->  	struct device dev[VME_SLOTS_MAX];	/* Device registered with
->  						 * device model on VME bus
+> So what is so magical about computing write_bw and dirty_bw separately? Is
+> it because previously you did not use derivation of distance from the goal
+> for updating pos_ratio? Because in your current formula write_bw/dirty_bw
+> is a derivation of position...
 
+dirty_bw is the main feedback. If we are throttling too much, the
+resulting dirty_bw will be lowered than write_bw. Thus 
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+                                      write_bw
+   ref_bw = ratelimit_in_past_200ms * --------
+                                      dirty_bw
+
+will give us a higher ref_bw than ratelimit_in_past_200ms. For pure
+dd workload, the computed ref_bw by the above formula is exactly the
+balanced rate (if not considering trivial errors).
+
+Thanks,
+Fengguang
