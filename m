@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1HPVzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:55:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55240 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752826Ab1HPVzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:55:50 -0400
-Date: Tue, 16 Aug 2011 14:54:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shaohua.li@intel.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
-Message-Id: <20110816145427.78f2f8c9.akpm@linux-foundation.org>
-In-Reply-To: <1313441856-1419-1-git-send-email-wad@chromium.org>
-References: <1313441856-1419-1-git-send-email-wad@chromium.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752155Ab1HPWLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 18:11:20 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:29904
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792Ab1HPWLS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 18:11:18 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzc89bh146fK1432N98dKzz1202hzz8275bh8275dhz32i668h839h93fh64h)
+X-Spam-TCS-SCL: 3:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LQ1KAL-01-2MA-02
+X-M-MSG: 
+Date: Wed, 17 Aug 2011 00:11:08 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] oprofile, x86: Fix overflow and warning (commit 1d12d35)
+Message-ID: <20110816221108.GB11702@erda.amd.com>
+References: <4E35A14E.90702@gmail.com>
+ <20110801070742.GA11795@erda.amd.com>
+ <4E36C18B.7050502@gmail.com>
+ <20110801213142.GE11795@erda.amd.com>
+ <20110801214130.GF27083@one.firstfloor.org>
+ <20110801221625.GF11795@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20110801221625.GF11795@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Aug 2011 15:57:35 -0500
-Will Drewry <wad@chromium.org> wrote:
-
-> This patch proposes a sysctl knob that allows a privileged user to
-> disable ~VM_MAYEXEC tainting when mapping in a vma from a MNT_NOEXEC
-> mountpoint.  It does not alter the normal behavior resulting from
-> attempting to directly mmap(PROT_EXEC) a vma (-EPERM) nor the behavior
-> of any other subsystems checking MNT_NOEXEC.
+On 02.08.11 00:16:25, Robert Richter wrote:
+> On 01.08.11 17:41:30, Andi Kleen wrote:
+> > And what happens when the CPU reports more than 32 counters?
+> > You have a silent buffer overflow then.
 > 
-> It is motivated by a common /dev/shm, /tmp usecase. There are few
-> facilities for creating a shared memory segment that can be remapped in
-> the same process address space with different permissions.  Often, a
-> file in /tmp provides this functionality.  However, on distributions
-> that are more restrictive/paranoid, world-writeable directories are
-> often mounted "noexec".  The only workaround to support software that
-> needs this behavior is to either not use that software or remount /tmp
-> exec.
+> From the layout of IA32_PERF_GLOBAL_CTRL MSR it seems to be limited to
+> 32. Anyway, if there might be cpus out soon with more than 32 counters
+> we can either extend the array to 256 or limit the counters used to 32.
 
-Remounting /tmp would appear to have the same effect as altering this
-sysctl, so why not just remount /tmp?
+See my patch below.
 
->  (E.g., https://bugs.gentoo.org/350336?id=350336)  Given that
-> the only recourse is using SysV IPC, the application programmer loses
-> many of the useful ABI features that they get using a mmap'd file (and
-> as such are often hesitant to explore that more painful path).
-> 
-> With this patch, it would be possible to change the sysctl variable
-> such that mprotect(PROT_EXEC) would succeed.  In cases like the example
-> above, an additional userspace mmap-wrapper would be needed, but in
-> other cases, like how code.google.com/p/nativeclient mmap()s then
-> mprotect()s, the behavior would be unaffected.
-> 
-> The tradeoff is a loss of defense in depth, but it seems reasonable when
-> the alternative is to disable the defense entirely.
-> 
-> ...
->
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -89,6 +89,9 @@
->  /* External variables not in a header file. */
->  extern int sysctl_overcommit_memory;
->  extern int sysctl_overcommit_ratio;
-> +#ifdef CONFIG_MMU
+-Robert
 
-The ifdef isn't needed in the header and we generally omit it to avoid
-clutter.
 
-afaict this feature could be made available on NOMMU systems?
+>From 298557db42eb2d6efca81669dc369425b46c5be6 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Tue, 16 Aug 2011 23:39:53 +0200
+Subject: [PATCH] oprofile, x86: Fix overflow and warning (commit 1d12d35)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-> +extern int sysctl_mmap_noexec_taint;
+Following fixes for:
 
-The term "taint" has a specific meaning in the kernel (see
-add_taint()).  It's regrettable that this patch attaches a second
-meaning to that term.  Can we think of a better word to use?
+ 1d12d35 oprofile, x86: Convert memory allocation to static array
 
-A better word would communicate the sense of the sysctl operation.  If
-a "taint" flag is set to true, I don't know whether that means that
-noexec is enabled or disabled.  Something like
-sysctl_mmap_noexec_override or sysctl_mmap_noexec_disable, perhaps.
+Fix potential buffer overflow.
 
-This patch forgot to document the new feature and its sysctl. 
-Documentation/sysctl/vm.txt might be the right place.
+Fix the following warning:
+
+ arch/x86/oprofile/op_model_ppro.c: In function ‘ppro_check_ctrs’:
+ arch/x86/oprofile/op_model_ppro.c:143: warning: label ‘out’ defined but not used
+
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/oprofile/op_model_ppro.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
+index 608874b..d90528e 100644
+--- a/arch/x86/oprofile/op_model_ppro.c
++++ b/arch/x86/oprofile/op_model_ppro.c
+@@ -140,7 +140,6 @@ static int ppro_check_ctrs(struct pt_regs * const regs,
+ 		wrmsrl(msrs->counters[i].addr, -reset_value[i]);
+ 	}
+ 
+-out:
+ 	/* Only P6 based Pentium M need to re-unmask the apic vector but it
+ 	 * doesn't hurt other P6 variant */
+ 	apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
+@@ -220,7 +219,7 @@ static void arch_perfmon_setup_counters(void)
+ 		eax.split.bit_width = 40;
+ 	}
+ 
+-	num_counters = eax.split.num_counters;
++	num_counters = min((int)eax.split.num_counters, OP_MAX_COUNTER);
+ 
+ 	op_arch_perfmon_spec.num_counters = num_counters;
+ 	op_arch_perfmon_spec.num_controls = num_counters;
+-- 
+1.7.5.3
+
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
