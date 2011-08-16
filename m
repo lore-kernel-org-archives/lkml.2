@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab1HPCwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:52:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35836 "EHLO mx2.suse.de"
+	id S1753871Ab1HPCv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:51:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35821 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab1HPCwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:52:02 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:52 2011
-Message-Id: <20110816024452.646040388@pistachio.kroah.org>
+	id S1753897Ab1HPCvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:51:54 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:56 2011
+Message-Id: <20110816024455.991165630@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:42:46 -0700
+Date: Mon, 15 Aug 2011 19:43:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [03/26] xhci: Dont submit commands or URBs to halted hosts.
+        632923@bugs.debian.org, Ben Hutchings <ben@decadent.org.uk>,
+        Christian Ohm <chr.ohm@gmx.net>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [26/26] perf tools: do not look at ./config for configuration
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Jonathan Nieder <jrnieder@gmail.com>
 
-commit 7bd89b4017f46a9b92853940fd9771319acb578a upstream.
+commit aba8d056078e47350d85b06a9cabd5afcc4b72ea upstream.
 
-Commit fccf4e86200b8f5edd9a65da26f150e32ba79808
-"USB: Free bandwidth when usb_disable_device is called" caused a bit of an
-issue when the xHCI host controller driver is unloaded.  It changed the
-USB core to remove all endpoints when a USB device is disabled.  When the
-driver is unloaded, it will remove the SuperSpeed split root hub, which
-will disable all devices under that roothub and then halt the host
-controller.  When the second High Speed split roothub is removed, the USB
-core will attempt to disable the endpoints, which will submit a Configure
-Endpoint command to a halted host controller.
+In addition to /etc/perfconfig and $HOME/.perfconfig, perf looks for
+configuration in the file ./config, imitating git which looks at
+$GIT_DIR/config.  If ./config is not a perf configuration file, it
+fails, or worse, treats it as a configuration file and changes behavior
+in some unexpected way.
 
-The command will eventually time out, but it makes the xHCI driver unload
-take *minutes* if there are a couple of USB 1.1/2.0 devices attached.  We
-must halt the host controller when the SuperSpeed roothub is removed,
-because we can't allow any interrupts from things like port status
-changes.
+"config" is not an unusual name for a file to be lying around and perf
+does not have a private directory dedicated for its own use, so let's
+just stop looking for configuration in the cwd.  Callers needing
+context-sensitive configuration can use the PERF_CONFIG environment
+variable.
 
-Make several different functions not submit commands or URBs to the host
-controller when the host is halted, by adding a check in
-xhci_check_args().  xhci_check_args() is used by these functions:
-
-xhci.c-int xhci_urb_enqueue()
-xhci.c-int xhci_drop_endpoint()
-xhci.c-int xhci_add_endpoint()
-xhci.c-int xhci_check_bandwidth()
-xhci.c-void xhci_reset_bandwidth()
-xhci.c-static int xhci_check_streams_endpoint()
-xhci.c-int xhci_discover_or_reset_device()
-
-It's also used by xhci_free_dev().  However, we have to take special
-care in that case, because we want the device memory to be freed if the
-host controller is halted.
-
-This patch should be backported to the 2.6.39 and 3.0 kernel.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Requested-by: Christian Ohm <chr.ohm@gmx.net>
+Cc: 632923@bugs.debian.org
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Christian Ohm <chr.ohm@gmx.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20110805165838.GA7237@elie.gateway.2wire.net
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ tools/perf/util/config.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -345,7 +345,8 @@ static void xhci_event_ring_work(unsigne
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	temp = xhci_readl(xhci, &xhci->op_regs->status);
- 	xhci_dbg(xhci, "op reg status = 0x%x\n", temp);
--	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
-+	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_dbg(xhci, "HW died, polling stopped.\n");
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
-@@ -939,8 +940,11 @@ static int xhci_check_args(struct usb_hc
- 		return 0;
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -399,7 +399,6 @@ static int perf_config_global(void)
+ int perf_config(config_fn_t fn, void *data)
+ {
+ 	int ret = 0, found = 0;
+-	char *repo_config = NULL;
+ 	const char *home = NULL;
+ 
+ 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
+@@ -421,12 +420,6 @@ int perf_config(config_fn_t fn, void *da
+ 		free(user_config);
  	}
  
-+	xhci = hcd_to_xhci(hcd);
-+	if (xhci->xhc_state & XHCI_STATE_HALTED)
-+		return -ENODEV;
-+
- 	if (check_virt_dev) {
--		xhci = hcd_to_xhci(hcd);
- 		if (!udev->slot_id || !xhci->devs
- 			|| !xhci->devs[udev->slot_id]) {
- 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
-@@ -1242,7 +1246,8 @@ int xhci_urb_dequeue(struct usb_hcd *hcd
- 		xhci_urb_free_priv(xhci, urb_priv);
- 		return ret;
- 	}
--	if (xhci->xhc_state & XHCI_STATE_DYING) {
-+	if ((xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_dbg(xhci, "Ep 0x%x: URB %p to be canceled on "
- 				"non-responsive xHCI host.\n",
- 				urb->ep->desc.bEndpointAddress, urb);
-@@ -2667,7 +2672,10 @@ void xhci_free_dev(struct usb_hcd *hcd,
- 	int i, ret;
- 
- 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
--	if (ret <= 0)
-+	/* If the host is halted due to driver unload, we still need to free the
-+	 * device.
-+	 */
-+	if (ret <= 0 && ret != -ENODEV)
- 		return;
- 
- 	virt_dev = xhci->devs[udev->slot_id];
-@@ -2681,7 +2689,8 @@ void xhci_free_dev(struct usb_hcd *hcd,
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	/* Don't disable the slot if the host controller is dead. */
- 	state = xhci_readl(xhci, &xhci->op_regs->status);
--	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
-+	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_free_virt_device(xhci, udev->slot_id);
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
+-	repo_config = perf_pathdup("config");
+-	if (!access(repo_config, R_OK)) {
+-		ret += perf_config_from_file(fn, repo_config, data);
+-		found += 1;
+-	}
+-	free(repo_config);
+ 	if (found == 0)
+ 		return -1;
+ 	return ret;
 
 
