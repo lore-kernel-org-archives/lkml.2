@@ -1,125 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab1HPK05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 06:26:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40047 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1HPK04 (ORCPT
+	id S1752064Ab1HPKac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 06:30:32 -0400
+Received: from science.horizon.com ([71.41.210.146]:38266 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751587Ab1HPKaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 06:26:56 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        root <root@localhost.localdomain>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 2/2] Staging: comedi: fix printk issue in cb_pcidda.c
-Date: Tue, 16 Aug 2011 06:26:37 -0400
-Message-Id: <1313490397-7445-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <[PATCH]Staging: comedi: fix printk warning issue in cb_pcidda.c>
-References: <[PATCH]Staging: comedi: fix printk warning issue in cb_pcidda.c>
+	Tue, 16 Aug 2011 06:30:30 -0400
+Date: 16 Aug 2011 06:30:28 -0400
+Message-ID: <20110816103028.1360.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: davem@davemloft.net, linux@horizon.com, mpm@selenic.com
+Subject: Re: get_random_int() should use hash[1]
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <20110816.021031.1778295949152117484.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: root <root@localhost.localdomain>
+>From davem@davemloft.net Tue Aug 16 09:10:35 2011
+Date: Tue, 16 Aug 2011 02:10:31 -0700 (PDT)
+To: linux@horizon.com
+Cc: netdev@vger.kernel.org
+Subject: Re: get_random_int() should use hash[1]
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110816.020935.717525957035990843.davem@davemloft.net>
+References: <20110816090723.18492.qmail@science.horizon.com>
+	<20110816.020935.717525957035990843.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 16 Aug 2011 02:10:33 -0700 (PDT)
 
-This is a patch to the cb_pcidda.c file that fixes up a printk warning found by the checkpatch.pl tool
+From: David Miller <davem@davemloft.net>
+Date: Tue, 16 Aug 2011 02:09:35 -0700 (PDT)
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/cb_pcidda.c |   29 +++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+> From: "George Spelvin" <linux@horizon.com>
+> Date: 16 Aug 2011 05:07:23 -0400
+> 
+>> Re: commit e997d47bff5a467262ef224b4cf8cbba2d3eceea
+>> 
+>> As long as you're using MD5, you should know that each round only
+>> modifies one word of the state.  The order is [0], [3], [2], [1],
+>> repeating 64 times.  Thus, on output, word [1] is the "most hashed"
+>> word.  If you really wanted word [0], you could just skip the last
+>> 3 rounds.
+>> 
+>> It's not really critical, but as long as you're performing the
+>> rounds, you might as well use them...
+> 
+> Please provide a proper signoff with your change and properly
+> "-p1" base your patch.
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 49102b3..9716f19 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -282,7 +282,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- 	struct pci_dev *pcidev = NULL;
- 	int index;
- 
--	printk("comedi%d: cb_pcidda: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: cb_pcidda: ", dev->minor);
- 
- /*
-  * Allocate the private structure area.
-@@ -293,7 +293,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- /*
-  * Probe the device to determine what device in the series it is.
-  */
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	for_each_pci_dev(pcidev) {
- 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
-@@ -312,22 +312,21 @@ static int cb_pcidda_attach(struct comedi_device *dev,
- 		}
- 	}
- 	if (!pcidev) {
--		printk
--		    ("Not a ComputerBoards/MeasurementComputing card on requested position\n");
-+		printk(KERN_WARNING "Not a ComputerBoards/MeasurementComputing"
-+				" card on requested position\n");
- 		return -EIO;
- 	}
- found:
- 	devpriv->pci_dev = pcidev;
- 	dev->board_ptr = cb_pcidda_boards + index;
- 	/*  "thisboard" macro can be used from here. */
--	printk("Found %s at requested position\n", thisboard->name);
-+	printk(KERN_CONT "Found %s at requested position\n", thisboard->name);
- 
- 	/*
- 	 * Enable PCI device and request regions.
- 	 */
- 	if (comedi_pci_enable(pcidev, thisboard->name)) {
--		printk
--		    ("cb_pcidda: failed to enable PCI device and request regions\n");
-+		printk(KERN_WARNING "cb_pcidda: failed to enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 
-@@ -342,10 +341,9 @@ found:
-  * Warn about the status of the driver.
-  */
- 	if (thisboard->status == 2)
--		printk
--		    ("WARNING: DRIVER FOR THIS BOARD NOT CHECKED WITH MANUAL. "
--		     "WORKS ASSUMING FULL COMPATIBILITY WITH PCI-DDA08/12. "
--		     "PLEASE REPORT USAGE TO <ivanmr@altavista.com>.\n");
-+		printk(KERN_WARNING "WARNING: DRIVER FOR THIS BOARD NOT CHECKED WITH MANUAL. "
-+				"WORKS ASSUMING FULL COMPATIBILITY WITH PCI-DDA08/12. "
-+				"PLEASE REPORT USAGE TO <ivanmr@altavista.com>.\n");
- 
- /*
-  * Initialize dev->board_name.
-@@ -377,12 +375,12 @@ found:
- 	s = dev->subdevices + 2;
- 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
- 
--	printk(" eeprom:");
-+	printk(KERN_CONT " eeprom:");
- 	for (index = 0; index < EEPROM_SIZE; index++) {
- 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
--		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
-+		printk(KERN_CONT " %i:0x%x ", index,
-+				devpriv->eeprom_data[index]);
- 	}
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	/*  set calibrations dacs */
- 	for (index = 0; index < thisboard->ao_chans; index++)
-@@ -417,7 +415,7 @@ static int cb_pcidda_detach(struct comedi_device *dev)
- 		subdev_8255_cleanup(dev, dev->subdevices + 2);
- 	}
- 
--	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: cb_pcidda: remove\n", dev->minor);
- 
- 	return 0;
- }
--- 
-1.7.6
+Not a problem.  This came up in the middle of a rebase operation so I
+didn't have a tree immediately at hand to work with.
 
+I'll also get the various uses in net/core/secure_seq.c.
+
+One thing about that commit I'm becoming more concerneed by: I notice that
+it eliminates the periodic reseeding of the secret.
+
+While the reduction in the number of random bits was a tradeoff (and it
+can be increased to 28 or so), it had two great advantages:
+- The usefulness of an attack drops off sharply after 5 minutes (you
+  can still attack connections established during the attack window,
+  but then you have to guess how much data has been sent across them).
+- An initial shortage of seed entropy does not become a persistent
+  problem.  Note that late_initcall() is still before any device
+  activity, much less entropy pool re-seeding from init scripts.
+
+Put together, an attacker has the system uptime to try to guess
+the low-entropy boot seed.  That's not clearly a security improvement.
+
+What I *really* wonder is whether such a change is really -stable
+material.  Cc: to Matt Mackall for comment.
+
+It seems at least worth figuring out a way to defer seeding until
+after /dev/random reseeding.  (E.g. until first non-loopback
+connection is made.)
+
+(There are also both better and faster algorithms than MD5 for
+the job, but that's a separate issue.)
+
+
+Just for example, as long as you're actually willing to spend more CPU
+time, you could do *both*.  Compute both a fixed-secret 32-bit value and a
+changing-secret 24-bit value and add them together.  Best of both worlds.
