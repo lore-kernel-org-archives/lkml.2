@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1HPPfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:35:16 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:19066 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab1HPPfN convert rfc822-to-8bit (ORCPT
+	id S1752392Ab1HPPgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:36:49 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:24386 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab1HPPgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:35:13 -0400
-Message-ID: <20110816113512.3bhhxdbcsgsow484-cebfxv@webmail.spamcop.net>
-Date: Tue, 16 Aug 2011 11:35:12 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: Suppressing a plus from setlocalversion
-References: <20110815173706.12ccfdd4@mj>
-	<alpine.DEB.2.00.1108151600400.22798@chino.kir.corp.google.com>
-	<20110815222141.jgw2q59rko0wssoc-cebfxv@webmail.spamcop.net>
-	<20110816152458.71b0bd74@stein>
-In-Reply-To: <20110816152458.71b0bd74@stein>
+	Tue, 16 Aug 2011 11:36:48 -0400
+Message-ID: <4E4A8E73.7050705@atmel.com>
+Date: Tue, 16 Aug 2011 17:36:19 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+To: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] mmc: atmel rework for next
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stefan Richter <stefanr@s5r6.in-berlin.de>:
+Hi Chris,
 
-> On Aug 15 Pavel Roskin wrote:
->> Quoting David Rientjes <rientjes@google.com>:
->>
->> > On Mon, 15 Aug 2011, Pavel Roskin wrote:
->> >
->> >> Hello!
->> >>
->> >> There is one annoyance in the build system that I cannot work around.
->> >
->> > That's surprising since you actually state the workaround, i.e. using
->> > LOCALVERSION= with make, yourself.
->>
->> OK, I don't consider that an acceptable solution, as it could
->> interfere with other build systems.
->>
->> However, as soon as I posted this message, I found a better solution,
->> namely setting LOCALVERSION= in the environment (both for the normal
->> user and for root).  This is less likely to have unexpected effects,
->> since the environment variables don't override the variables
->> explicitly set in makefiles.
->
-> Having this globally as an environment variable seems to be a more
-> intrusive alternative; there are no namespaces.
+Please pull from:
 
-I know, it's not an ideal solution.
+git://github.com/at91linux/linux-2.6-at91.git nfe/mmc_atmel
 
-> You can wrap the make command lines that you often use into shell
-> aliases.  I often use command lines like 'nice make -j8' or
-> 'nice make -j8 C=1 CF="-D__CHECK_ENDIAN__"' by alias.
+This is a series that reworks the atmel-mci driver for a future merge of both at91_mci and atmel-mci drivers. Those patches have been discussed on the mailing-list.
+I added a tiny at91_mci patch also sent last week.
 
-__CHECK_ENDIAN__ is addressed by a separate patch :)
+Those changes are made on top of current linus' git tree (v3.1-rc2-64-g688d1b3).
 
-I guess I need to write a wrapper that would be suitable for my needs.  
-  Still, I'd prefer the build system do what I want, at least in some  
-aspects.
+Thanks.
 
->> > Yes, because the kernel you've produced is no longer 3.1.0-rc2, it is
->> > modified.  If you want to do something else locally, then you can always
->> > use LOCALVERSION=.
->> >
->> > The + was added to stop falsely identifying kernels as a specific version
->> > when they are modified by default.  Sorry if you forget to override it
->> > sometimes.
->
-> I for one am glad that I don't have to remember to force a localversion
-> all the time.  All of the kernels that I runtime-test have their source
-> managed by quilt, not git.  Thankfully, scripts/setlocalversion
-> acknowledges that quilt users know what they are doing. :-)
+Ludovic Desroches (8):
+      mmc: atmel-mci: change namespace
+      mmc: atmel-mci: change atmci_readl and atmci_writel macros
+      mmc: atmel-mci: indentation
+      mmc: atmel-mci: add pdc support and runtime capabilities detection
+      mmc: atmel-mci: change atmci_start_command to atmci_send_command
+      mmc: atmel-mci: use ATMEL_PDC_SCND_BUF_OFF instead of a literal value
+      mmc: atmel-mci: correct sg buffer size evaluation
+      mmc: atmel-mci: fix a potential issue about pending PDC interrupts
 
-Actually, it's simply unaware of what you are doing.
+Nicolas Ferre (1):
+      mmc: at91_mci: remove the use of irq_to_gpio
 
-Also, setlocalversion is unaware that the wireless-testing tree is  
-tagged every day.  It doesn't add the plus for the tagged revisions,  
-even though they are very different from the version in the source  
-Makefile.
+ arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
+ drivers/mmc/host/at91_mci.c              |    6 +-
+ drivers/mmc/host/atmel-mci-regs.h        |  220 +++++----
+ drivers/mmc/host/atmel-mci.c             |  823 ++++++++++++++++++++----------
+ include/linux/atmel-mci.h                |    4 +-
+ include/linux/atmel_pdc.h                |    2 +
+ 6 files changed, 685 insertions(+), 372 deletions(-)
 
-But I'd rather not be on the mercy of a script not knowing something.
+
 
 -- 
-Regards,
-Pavel Roskin
+Nicolas Ferre
+
