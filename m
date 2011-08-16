@@ -1,150 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab1HPAZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 20:25:22 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43957 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab1HPAZV (ORCPT
+	id S1753104Ab1HPAZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 20:25:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33289 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1HPAZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 20:25:21 -0400
+	Mon, 15 Aug 2011 20:25:29 -0400
 From: Akshay Joshi <me@akshayjoshi.com>
 To: Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
         Pekka Enberg <penberg@kernel.org>, Akshay Joshi <me@akshayjoshi.com>,
-        Ilia Mirkin <imirkin@alum.mit.edu>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/9] Staging: Winbond: Fix case statements in wb35reg.c.
-Date: Mon, 15 Aug 2011 20:24:27 -0400
-Message-Id: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
+        Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/9] Staging: Winbond: Fix pointer style in wb35tx.c.
+Date: Mon, 15 Aug 2011 20:24:28 -0400
+Message-Id: <1313454275-5604-2-git-send-email-me@akshayjoshi.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
+References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the case statement and the code that is executed if the condition
-is met so that it passes checkpatch.pl and conforms to the kernel code
-style.
+Pointers should be prefixed with a single space according to the kernel
+coding style.
 
 Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
 ---
- drivers/staging/winbond/wb35reg.c |  105 ++++++++++++++++++++++++------------
- 1 files changed, 70 insertions(+), 35 deletions(-)
+ drivers/staging/winbond/wb35tx.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/winbond/wb35reg.c b/drivers/staging/winbond/wb35reg.c
-index da595f1..742636c 100644
---- a/drivers/staging/winbond/wb35reg.c
-+++ b/drivers/staging/winbond/wb35reg.c
-@@ -76,41 +76,76 @@ void Wb35Reg_Update(struct hw_data *pHwData,  u16 RegisterNo,  u32 RegisterValue
+diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
+index 5df39d4..21edbc9 100644
+--- a/drivers/staging/winbond/wb35tx.c
++++ b/drivers/staging/winbond/wb35tx.c
+@@ -15,7 +15,7 @@
+ #include "mds_f.h"
+ 
+ unsigned char
+-Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
++Wb35Tx_get_tx_buffer(struct hw_data *pHwData, u8 **pBuffer)
  {
- 	struct wb35_reg *reg = &pHwData->reg;
- 	switch (RegisterNo) {
--	case 0x3b0: reg->U1B0 = RegisterValue; break;
--	case 0x3bc: reg->U1BC_LEDConfigure = RegisterValue; break;
--	case 0x400: reg->D00_DmaControl = RegisterValue; break;
--	case 0x800: reg->M00_MacControl = RegisterValue; break;
--	case 0x804: reg->M04_MulticastAddress1 = RegisterValue; break;
--	case 0x808: reg->M08_MulticastAddress2 = RegisterValue; break;
--	case 0x824: reg->M24_MacControl = RegisterValue; break;
--	case 0x828: reg->M28_MacControl = RegisterValue; break;
--	case 0x82c: reg->M2C_MacControl = RegisterValue; break;
--	case 0x838: reg->M38_MacControl = RegisterValue; break;
--	case 0x840: reg->M40_MacControl = RegisterValue; break;
--	case 0x844: reg->M44_MacControl = RegisterValue; break;
--	case 0x848: reg->M48_MacControl = RegisterValue; break;
--	case 0x84c: reg->M4C_MacStatus = RegisterValue; break;
--	case 0x860: reg->M60_MacControl = RegisterValue; break;
--	case 0x868: reg->M68_MacControl = RegisterValue; break;
--	case 0x870: reg->M70_MacControl = RegisterValue; break;
--	case 0x874: reg->M74_MacControl = RegisterValue; break;
--	case 0x878: reg->M78_ERPInformation = RegisterValue; break;
--	case 0x87C: reg->M7C_MacControl = RegisterValue; break;
--	case 0x880: reg->M80_MacControl = RegisterValue; break;
--	case 0x884: reg->M84_MacControl = RegisterValue; break;
--	case 0x888: reg->M88_MacControl = RegisterValue; break;
--	case 0x898: reg->M98_MacControl = RegisterValue; break;
--	case 0x100c: reg->BB0C = RegisterValue; break;
--	case 0x102c: reg->BB2C = RegisterValue; break;
--	case 0x1030: reg->BB30 = RegisterValue; break;
--	case 0x103c: reg->BB3C = RegisterValue; break;
--	case 0x1048: reg->BB48 = RegisterValue; break;
--	case 0x104c: reg->BB4C = RegisterValue; break;
--	case 0x1050: reg->BB50 = RegisterValue; break;
--	case 0x1054: reg->BB54 = RegisterValue; break;
--	case 0x1058: reg->BB58 = RegisterValue; break;
--	case 0x105c: reg->BB5C = RegisterValue; break;
--	case 0x1060: reg->BB60 = RegisterValue; break;
-+	case 0x3b0:
-+		reg->U1B0 = RegisterValue; break;
-+	case 0x3bc:
-+		reg->U1BC_LEDConfigure = RegisterValue; break;
-+	case 0x400:
-+		reg->D00_DmaControl = RegisterValue; break;
-+	case 0x800:
-+		reg->M00_MacControl = RegisterValue; break;
-+	case 0x804:
-+		reg->M04_MulticastAddress1 = RegisterValue; break;
-+	case 0x808:
-+		reg->M08_MulticastAddress2 = RegisterValue; break;
-+	case 0x824:
-+		reg->M24_MacControl = RegisterValue; break;
-+	case 0x828:
-+		reg->M28_MacControl = RegisterValue; break;
-+	case 0x82c:
-+		reg->M2C_MacControl = RegisterValue; break;
-+	case 0x838:
-+		reg->M38_MacControl = RegisterValue; break;
-+	case 0x840:
-+		reg->M40_MacControl = RegisterValue; break;
-+	case 0x844:
-+		reg->M44_MacControl = RegisterValue; break;
-+	case 0x848:
-+		reg->M48_MacControl = RegisterValue; break;
-+	case 0x84c:
-+		reg->M4C_MacStatus = RegisterValue; break;
-+	case 0x860:
-+		reg->M60_MacControl = RegisterValue; break;
-+	case 0x868:
-+		reg->M68_MacControl = RegisterValue; break;
-+	case 0x870:
-+		reg->M70_MacControl = RegisterValue; break;
-+	case 0x874:
-+		reg->M74_MacControl = RegisterValue; break;
-+	case 0x878:
-+		reg->M78_ERPInformation = RegisterValue; break;
-+	case 0x87C:
-+		reg->M7C_MacControl = RegisterValue; break;
-+	case 0x880:
-+		reg->M80_MacControl = RegisterValue; break;
-+	case 0x884:
-+		reg->M84_MacControl = RegisterValue; break;
-+	case 0x888:
-+		reg->M88_MacControl = RegisterValue; break;
-+	case 0x898:
-+		reg->M98_MacControl = RegisterValue; break;
-+	case 0x100c:
-+		reg->BB0C = RegisterValue; break;
-+	case 0x102c:
-+		reg->BB2C = RegisterValue; break;
-+	case 0x1030:
-+		reg->BB30 = RegisterValue; break;
-+	case 0x103c:
-+		reg->BB3C = RegisterValue; break;
-+	case 0x1048:
-+		reg->BB48 = RegisterValue; break;
-+	case 0x104c:
-+		reg->BB4C = RegisterValue; break;
-+	case 0x1050:
-+		reg->BB50 = RegisterValue; break;
-+	case 0x1054:
-+		reg->BB54 = RegisterValue; break;
-+	case 0x1058:
-+		reg->BB58 = RegisterValue; break;
-+	case 0x105c:
-+		reg->BB5C = RegisterValue; break;
-+	case 0x1060:
-+		reg->BB60 = RegisterValue; break;
- 	}
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+@@ -25,10 +25,10 @@ Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
+ 
+ static void Wb35Tx(struct wbsoft_priv *adapter);
+ 
+-static void Wb35Tx_complete(struct urb * pUrb)
++static void Wb35Tx_complete(struct urb *pUrb)
+ {
+ 	struct wbsoft_priv *adapter = pUrb->context;
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 	struct wb35_mds *pMds = &adapter->Mds;
+ 
+@@ -64,7 +64,7 @@ error:
+ 
+ static void Wb35Tx(struct wbsoft_priv *adapter)
+ {
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 	u8		*pTxBufferAddress;
+ 	struct wb35_mds *pMds = &adapter->Mds;
+@@ -115,7 +115,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
+ 
+ void Wb35Tx_start(struct wbsoft_priv *adapter)
+ {
+-	struct hw_data * pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+ 	// Allow only one thread to run into function
+@@ -126,7 +126,7 @@ void Wb35Tx_start(struct wbsoft_priv *adapter)
+ 		atomic_dec(&pWb35Tx->TxFireCounter);
  }
  
+-unsigned char Wb35Tx_initial(struct hw_data * pHwData)
++unsigned char Wb35Tx_initial(struct hw_data *pHwData)
+ {
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+@@ -145,7 +145,7 @@ unsigned char Wb35Tx_initial(struct hw_data * pHwData)
+ }
+ 
+ //======================================================
+-void Wb35Tx_stop(struct hw_data * pHwData)
++void Wb35Tx_stop(struct hw_data *pHwData)
+ {
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+@@ -161,7 +161,7 @@ void Wb35Tx_stop(struct hw_data * pHwData)
+ }
+ 
+ //======================================================
+-void Wb35Tx_destroy(struct hw_data * pHwData)
++void Wb35Tx_destroy(struct hw_data *pHwData)
+ {
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+@@ -182,7 +182,7 @@ void Wb35Tx_destroy(struct hw_data * pHwData)
+ 
+ void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
+ {
+-	struct hw_data * pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 	unsigned char Trigger = false;
+ 
+@@ -199,10 +199,10 @@ void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
+ 
+ static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter);
+ 
+-static void Wb35Tx_EP2VM_complete(struct urb * pUrb)
++static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
+ {
+ 	struct wbsoft_priv *adapter = pUrb->context;
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct T02_descriptor	T02, TSTATUS;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 	u32 *		pltmp = (u32 *)pWb35Tx->EP2_buf;
+@@ -250,7 +250,7 @@ error:
+ 
+ static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter)
+ {
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 	struct urb *	pUrb = (struct urb *)pWb35Tx->Tx2Urb;
+ 	u32 *	pltmp = (u32 *)pWb35Tx->EP2_buf;
+@@ -284,7 +284,7 @@ error:
+ 
+ void Wb35Tx_EP2VM_start(struct wbsoft_priv *adapter)
+ {
+-	struct hw_data * pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+ 
+ 	// Allow only one thread to run into function
 -- 
 1.7.5.4
 
