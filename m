@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1HPN4Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 09:56:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45389 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659Ab1HPN4P (ORCPT
+	id S1752844Ab1HPN4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 09:56:49 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:20117 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab1HPN4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 09:56:15 -0400
-Date: Tue, 16 Aug 2011 17:55:16 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Arnd Bergmann <arnd@arndb.de>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] proc: introduce pid_allowed mount option
-Message-ID: <20110816135515.GA17658@albatros>
-References: <20110810161302.GA2548@albatros>
+	Tue, 16 Aug 2011 09:56:46 -0400
+Message-ID: <4E4A7713.1070902@atmel.com>
+Date: Tue, 16 Aug 2011 15:56:35 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110810161302.GA2548@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Koul, Vinod" <vinod.koul@intel.com>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] dmaengine: at_hdmac fixes for next
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Vinod,
 
-On Wed, Aug 10, 2011 at 20:13 +0400, Vasiliy Kulikov wrote:
-> This patch adds support of pid_allowed=XX and attr_allowed=YY mount
-> options for procfs.  When set, all /proc/PID/ files are restricted to
-> the owner, except filenames passed via pid_allowed= argument.  E.g. with
-> pid_allowed=sched sched file would be world readable and other files
-> would be restricted to the task owner.  The same for /proc/PID/attr/
-> files and attr_allowed=YY.
-[...]
-> Is the whole idea of high granularity, but static permissions worth it?
-> The previous patch with relaxed/fully-restricted modes was criticized
-> for being highly specific to one particular set of requirements:
-> 
-> http://www.openwall.com/lists/kernel-hardening/2011/06/21/3
-> 
-> On/off mechanism was used in server environments in times of Linux
-> 2.0-2.4 as part of -ow patch and currently as part of -grsecurity patch.
-> There were no complains about too limited application.  It serves a well
-> defined needs (limiting processes' information to the owner, root, and a
-> privileged "monitoring" group).
+Please pull from:
 
-Any comments about the approach in general?
+  git://github.com/at91linux/linux-2.6-at91.git nfe/sdma_at_hdmac
 
-Different procfs patches were maintained out of tree for ~10 years,
-all of them had/has the same goal - restrict processes/networking
-information from unprivileged users.  All of them were not high
-granularity, just on/off.
-
-As to chmod/chown'able approach with inheritable permission across
-fork() - I cannot imagine any case where it has any advantages over
-static approach (which is implemented in this patch), but I see
-disadvantages:
-
- * What to do on exec'ing setuid binary?  We have to re'chmod files to
-   some sane defaults - first umask set.
- * For usermode helpers? - second umask set.
- * On privilege dropping (setuid(2))?  We can have umask
-   set for all users, but it might not be convenient.  We can have umask
-   set for each user.  Or we can use userspace for re-chmod'ing files
-   like PAM, but what to do for apps that don't use PAM?..
- * Privilege restore? - a umask set again.
-
-
-What is the goal of procfs high granularity permission model?  What
-needs does it serve?  Every high granularity security model quickly
-becomes hard to maintain/configure properly.  Given there were no out of
-tree attempts to extend procfs in this direction (well, at least no
-widespread attempts), I'm afraid such complication worth it.
-
-I think on/off approach addresses the issue, which I've tried to
-explain earlier, and it is "generic enough" for the existing needs.
-
+to receive latest updates for the Atmel at_hdmac dmaengine driver. Those changes are made on top of current linus' git tree (v3.1-rc2-59-g5bad33c).
+The patches below have been discussed on the linux-arm-kernel mailing-list.
 
 Thanks,
 
+Nicolas Ferre (4):
+      dmaengine: at_hdmac: replace spin_lock* with irqsave variants
+      dmaengine: at_hdmac: improve power management routines
+      dmaengine: at_hdmac: add wrappers for testing channel state
+      dmaengine: at_hdmac: fix way to specify cyclic capability
+
+ drivers/dma/at_hdmac.c      |  159 +++++++++++++++++++++++++++++++++---------
+ drivers/dma/at_hdmac_regs.h |   24 +++++++
+ 2 files changed, 149 insertions(+), 34 deletions(-)
+
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Nicolas Ferre
+
