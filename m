@@ -1,291 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794Ab1HPRps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:45:48 -0400
-Received: from exprod6og115.obsmtp.com ([64.18.1.35]:52424 "EHLO
-	exprod6og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab1HPRpq (ORCPT
+	id S1752191Ab1HPRqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:46:20 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:43367 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1HPRqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:45:46 -0400
-Message-ID: <4E4AACB8.3090007@cray.com>
-Date: Tue, 16 Aug 2011 12:45:28 -0500
-From: Andrew Barry <abarry@cray.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Lightning/1.0b1 Thunderbird/3.0.4
+	Tue, 16 Aug 2011 13:46:18 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Hugh Dickins <hughd@google.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Jan Kiszka <jan.kiszka@web.de>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "agraf@suse.de" <agraf@suse.de>, kvm <kvm@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Andrew Hastings <abh@cray.com>,
-        Adam Litke <agl@us.ibm.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: [RFC PATCH] mm/hugepages: Fix race between hugetlbfs umount and quota
- update.
-References: <20110811064059.GU6342@yookeroo.fritz.box> <CA+55aFzXJo78Ah_Qiy6cSHdXHv165nXJ2nTD186NNdCXBABZjA@mail.gmail.com> <CAEwNFnB+5DZQw0CrfkcdP_rd5FBM6fw26=_yS3P283a9TKLNiw@mail.gmail.com> <alpine.LSU.2.00.1108121126560.1290@sister.anvils> <20110813010839.GC30552@yookeroo.fritz.box> <alpine.LSU.2.00.1108151057380.1394@sister.anvils> <4E4980BF.7090801@cray.com> <20110816034748.GG18203@yookeroo.fritz.box>
-In-Reply-To: <20110816034748.GG18203@yookeroo.fritz.box>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110812210626.GA4725@kroah.com>
+References: <20110812210626.GA4725@kroah.com>
+Date: Tue, 16 Aug 2011 13:46:16 -0400
+Message-ID: <CACqU3MWri2+MMT8qX4UXGUL-H-bk6Hy7dg00VubU6PLsMVUg9g@mail.gmail.com>
+Subject: Re: [00/90] 3.0.2-stable review
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GHkYLT030328
 
-Discussion was titled:  Fix refcounting in hugetlbfs quota handling
+Hi,
 
-This patch fixes a race between the umount of a hugetlbfs filesystem, and quota
-updates in that filesystem, which can result in the update of the filesystem
-quota record, after the record structure has been freed.
+On Fri, Aug 12, 2011 at 5:06 PM, Greg KH <gregkh@suse.de> wrote:
+> This is the start of the stable review cycle for the 3.0.2 release.
+> There are 90 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+>
+> Responses should be made by Monday, August 15, 2011, 20:00:00 UTC.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>        kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.2-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+It seems that this release has not yet reached the -allstable tree,
+moreover, the tree seem to not have seen any upgrade from Linus tree
+for 4 days. Is there anything broken ?
 
-Rather than an address-space struct pointer, it puts a hugetlbfs_sb_info struct
-pointer into page_private of the page struct. A reference count and an active
-bit are added to the hugetlbfs_sb_info struct; the reference count is increased
-by hugetlb_get_quota and decreased by hugetlb_put_quota. When hugetlbfs is
-unmounted, it frees the hugetlbfs_sb_info struct, but only if the reference
-count is zero, otherwise it clears the active bit. The last hugetlb_put_quota
-then frees the hugetlbfs_sb_info struct.
+Thanks,
+ - Arnaud
 
-Signed-off-by: Andrew Barry <abarry@cray.com>
-
----
-
- fs/hugetlbfs/inode.c    |   40 ++++++++++++++++++++++++++--------------
- include/linux/hugetlb.h |    9 +++++++--
- mm/hugetlb.c            |   22 +++++++++++-----------
- 3 files changed, 44 insertions(+), 27 deletions(-)
-
-
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 87b6e04..2ed1cca 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -615,8 +615,12 @@ static void hugetlbfs_put_super(struct s
- 	struct hugetlbfs_sb_info *sbi = HUGETLBFS_SB(sb);
-
- 	if (sbi) {
-+		sbi->active = HPAGE_INACTIVE;
- 		sb->s_fs_info = NULL;
--		kfree(sbi);
-+
-+		/*Free only if used quota is zero. */
-+		if (sbi->used_blocks == 0)
-+			kfree(sbi);
- 	}
- }
-
-@@ -851,6 +855,8 @@ hugetlbfs_fill_super(struct super_block
- 	sbinfo->free_blocks = config.nr_blocks;
- 	sbinfo->max_inodes = config.nr_inodes;
- 	sbinfo->free_inodes = config.nr_inodes;
-+	sbinfo->used_blocks = 0;
-+	sbinfo->active = HPAGE_ACTIVE;
- 	sb->s_maxbytes = MAX_LFS_FILESIZE;
- 	sb->s_blocksize = huge_page_size(config.hstate);
- 	sb->s_blocksize_bits = huge_page_shift(config.hstate);
-
-@@ -874,30 +880,36 @@ out_free:
- 	return -ENOMEM;
- }
-
--int hugetlb_get_quota(struct address_space *mapping, long delta)
-+int hugetlb_get_quota(struct hugetlbfs_sb_info *sbinfo, long delta)
- {
- 	int ret = 0;
--	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-
--	if (sbinfo->free_blocks > -1) {
--		spin_lock(&sbinfo->stat_lock);
--		if (sbinfo->free_blocks - delta >= 0)
-+	spin_lock(&sbinfo->stat_lock);
-+	if ((sbinfo->free_blocks == -1) || (sbinfo->free_blocks - delta >= 0)) {
-+		if (sbinfo->free_blocks != -1)
- 			sbinfo->free_blocks -= delta;
--		else
--			ret = -ENOMEM;
--		spin_unlock(&sbinfo->stat_lock);
-+		sbinfo->used_blocks += delta;
-+		sbinfo->active = HPAGE_ACTIVE;
-+	} else {
-+		ret = -ENOMEM;
- 	}
-+	spin_unlock(&sbinfo->stat_lock);
-
- 	return ret;
- }
-
--void hugetlb_put_quota(struct address_space *mapping, long delta)
-+void hugetlb_put_quota(struct hugetlbfs_sb_info *sbinfo, long delta)
- {
--	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
--
--	if (sbinfo->free_blocks > -1) {
--		spin_lock(&sbinfo->stat_lock);
-+	spin_lock(&sbinfo->stat_lock);
-+	if (sbinfo->free_blocks > -1)
- 		sbinfo->free_blocks += delta;
-+	sbinfo->used_blocks -= delta;
-+	/* If hugetlbfs_put_super couldn't free sbinfo due to
-+	* an outstanding quota reference, free it now. */
-+	if ((sbinfo->used_blocks == 0) && (sbinfo->active == HPAGE_INACTIVE)) {
-+		spin_unlock(&sbinfo->stat_lock);
-+		kfree(sbinfo);
-+	} else {
- 		spin_unlock(&sbinfo->stat_lock);
- 	}
- }
-
-
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 19644e0..8780a91 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -142,11 +142,16 @@ struct hugetlbfs_config {
- 	struct hstate *hstate;
- };
-
-+#define HPAGE_INACTIVE  0
-+#define HPAGE_ACTIVE    1
-+
- struct hugetlbfs_sb_info {
- 	long	max_blocks;   /* blocks allowed */
- 	long	free_blocks;  /* blocks free */
- 	long	max_inodes;   /* inodes allowed */
- 	long	free_inodes;  /* inodes free */
-+	long	used_blocks;  /* blocks used */
-+	long	active;		  /* active bit */
- 	spinlock_t	stat_lock;
- 	struct hstate *hstate;
- };
-
-@@ -171,8 +176,8 @@ extern const struct file_operations huge
- extern const struct vm_operations_struct hugetlb_vm_ops;
- struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
- 				struct user_struct **user, int creat_flags);
--int hugetlb_get_quota(struct address_space *mapping, long delta);
--void hugetlb_put_quota(struct address_space *mapping, long delta);
-+int hugetlb_get_quota(struct hugetlbfs_sb_info *sbinfo, long delta);
-+void hugetlb_put_quota(struct hugetlbfs_sb_info *sbinfo, long delta);
-
- static inline int is_file_hugepages(struct file *file)
- {
-
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index dae27ba..cf26ae9 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -533,9 +533,9 @@ static void free_huge_page(struct page *
- 	 */
- 	struct hstate *h = page_hstate(page);
- 	int nid = page_to_nid(page);
--	struct address_space *mapping;
-+	struct hugetlbfs_sb_info *sbinfo;
-
--	mapping = (struct address_space *) page_private(page);
-+	sbinfo = ( struct hugetlbfs_sb_info *) page_private(page);
- 	set_page_private(page, 0);
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
-
-@@ -551,8 +551,8 @@ static void free_huge_page(struct page *
- 		enqueue_huge_page(h, page);
- 	}
- 	spin_unlock(&hugetlb_lock);
--	if (mapping)
--		hugetlb_put_quota(mapping, 1);
-+	if (sbinfo)
-+		hugetlb_put_quota(sbinfo, 1);
- }
-
- static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-
-@@ -1035,7 +1035,7 @@ static struct page *alloc_huge_page(stru
- 	if (chg < 0)
- 		return ERR_PTR(-VM_FAULT_OOM);
- 	if (chg)
--		if (hugetlb_get_quota(inode->i_mapping, chg))
-+		if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
-
- 	spin_lock(&hugetlb_lock);
-
-@@ -1045,12 +1045,12 @@ static struct page *alloc_huge_page(stru
- 	if (!page) {
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
--			hugetlb_put_quota(inode->i_mapping, chg);
-+			hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
- 			return ERR_PTR(-VM_FAULT_SIGBUS);
- 		}
- 	}
-
--	set_page_private(page, (unsigned long) mapping);
-+	set_page_private(page, (unsigned long)
-HUGETLBFS_SB(inode->i_mapping->host->i_sb));
-
- 	vma_commit_reservation(h, vma, addr);
-
-@@ -2086,7 +2086,7 @@ static void hugetlb_vm_op_close(struct v
-
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
--			hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-+			hugetlb_put_quota(HUGETLBFS_SB(vma->vm_file->f_mapping->host->i_sb), reserve);
- 		}
- 	}
- }
-
-@@ -2884,7 +2884,7 @@ int hugetlb_reserve_pages(struct inode *
- 		return chg;
-
- 	/* There must be enough filesystem quota for the mapping */
--	if (hugetlb_get_quota(inode->i_mapping, chg))
-+	if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
- 		return -ENOSPC;
-
- 	/*
-
-@@ -2893,7 +2893,7 @@ int hugetlb_reserve_pages(struct inode *
- 	 */
- 	ret = hugetlb_acct_memory(h, chg);
- 	if (ret < 0) {
--		hugetlb_put_quota(inode->i_mapping, chg);
-+		hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
- 		return ret;
- 	}
-
-@@ -2922,7 +2922,7 @@ void hugetlb_unreserve_pages(struct inod
- 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
- 	spin_unlock(&inode->i_lock);
-
--	hugetlb_put_quota(inode->i_mapping, (chg - freed));
-+	hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), (chg - freed));
- 	hugetlb_acct_memory(h, -(chg - freed));
- }
-
-
-On 08/15/2011 10:47 PM, David Gibson wrote:
-> On Mon, Aug 15, 2011 at 03:25:35PM -0500, Andrew Barry wrote:
->> I've been doing something similar to this last proposal. I put a
->> hugetlbfs_sb_info pointer into page_private, and dropped a reference counter and
->> an active/inactive bit into the hugetlbfs_sb_info struct. At Umount time, the
->> sbinfo is freed, only if the reference count is zero. Otherwise, the last
->> put_quota frees the sbinfo structure. This fixed the race we were seeing between
->> umount and a put_quota from an rdma transaction. I just gave it a cursory test
->> on a 3.0 kernel; it has seen quite a lot more testing on a 2.6.32-derived
->> kernel, with no more hits of the umount race.
->>
->> Does this address the problems you were thinking about?
-> 
-> Ah, this looks much better than my patch.  And the fact that you've
-> seen your race demonstrates clearly that this isn't just a kvm
-> problem.  I hope we can push this upstream very soon - what can I do
-> to help?
-> 
->> -Andrew Barry
->>
-
-
-
+>  Makefile                                        |    4 +-
+>  arch/cris/arch-v10/drivers/sync_serial.c        |    6 +-
+>  arch/cris/arch-v10/kernel/irq.c                 |    3 +
+>  arch/cris/include/asm/thread_info.h             |    6 +-
+>  arch/parisc/include/asm/atomic.h                |    4 +-
+>  arch/parisc/include/asm/futex.h                 |   66 ++++-
+>  arch/parisc/include/asm/unistd.h                |    3 +-
+>  arch/parisc/kernel/syscall_table.S              |    1 +
+>  arch/powerpc/kernel/prom_init.c                 |    6 +-
+>  arch/powerpc/platforms/pseries/dtl.c            |    2 +-
+>  arch/powerpc/platforms/pseries/kexec.c          |   11 +
+>  arch/powerpc/platforms/pseries/lpar.c           |    2 +-
+>  arch/powerpc/platforms/pseries/plpar_wrappers.h |    4 +-
+>  arch/sparc/include/asm/bitops_64.h              |   49 +---
+>  arch/sparc/include/asm/elf_64.h                 |   63 ++---
+>  arch/sparc/include/asm/hypervisor.h             |   14 +
+>  arch/sparc/include/asm/spitfire.h               |    1 +
+>  arch/sparc/include/asm/tsb.h                    |   51 ++--
+>  arch/sparc/include/asm/xor_64.h                 |    3 +-
+>  arch/sparc/kernel/cpu.c                         |    8 +
+>  arch/sparc/kernel/cpumap.c                      |    1 +
+>  arch/sparc/kernel/ds.c                          |   31 ++-
+>  arch/sparc/kernel/entry.h                       |   14 +
+>  arch/sparc/kernel/head_64.S                     |   33 +++-
+>  arch/sparc/kernel/hvapi.c                       |    7 +
+>  arch/sparc/kernel/hvcalls.S                     |    7 +
+>  arch/sparc/kernel/kernel.h                      |   15 +
+>  arch/sparc/kernel/ktlb.S                        |   24 +-
+>  arch/sparc/kernel/mdesc.c                       |   30 ++-
+>  arch/sparc/kernel/pcr.c                         |   11 +-
+>  arch/sparc/kernel/perf_event.c                  |    3 +-
+>  arch/sparc/kernel/setup_64.c                    |  186 +++++++++++++
+>  arch/sparc/kernel/sparc_ksyms_64.c              |   11 +
+>  arch/sparc/kernel/sstate.c                      |    9 +-
+>  arch/sparc/kernel/unaligned_64.c                |   15 +-
+>  arch/sparc/kernel/vmlinux.lds.S                 |   21 ++-
+>  arch/sparc/lib/Makefile                         |    4 +-
+>  arch/sparc/lib/NG2page.S                        |   61 ----
+>  arch/sparc/lib/NGpage.S                         |  114 +++++---
+>  arch/sparc/lib/ffs.S                            |   84 ++++++
+>  arch/sparc/lib/hweight.S                        |   51 ++++
+>  arch/sparc/mm/init_64.c                         |   42 +++-
+>  arch/x86/xen/Makefile                           |    2 +-
+>  arch/x86/xen/enlighten.c                        |    8 +
+>  arch/x86/xen/vga.c                              |   67 +++++
+>  arch/x86/xen/xen-ops.h                          |   11 +
+>  crypto/md5.c                                    |   92 +------
+>  drivers/char/random.c                           |  334 +----------------------
+>  drivers/gpu/drm/drm_edid.c                      |   24 ++-
+>  drivers/gpu/drm/i915/i915_dma.c                 |    6 +-
+>  drivers/gpu/drm/i915/i915_irq.c                 |    3 +
+>  drivers/gpu/drm/i915/intel_display.c            |    8 +-
+>  drivers/gpu/drm/i915/intel_panel.c              |    4 +
+>  drivers/gpu/drm/i915/intel_ringbuffer.c         |    3 +
+>  drivers/gpu/drm/radeon/radeon_connectors.c      |   54 ++++-
+>  drivers/gpu/drm/radeon/radeon_device.c          |    5 +-
+>  drivers/gpu/drm/radeon/radeon_display.c         |    9 +
+>  drivers/gpu/drm/radeon/radeon_i2c.c             |   32 ++-
+>  drivers/gpu/drm/radeon/radeon_mode.h            |    6 +-
+>  drivers/isdn/i4l/isdn_net.c                     |    3 +
+>  drivers/net/Makefile                            |    1 +
+>  drivers/net/bonding/bond_main.c                 |    6 +-
+>  drivers/net/bonding/bond_sysfs.c                |  133 +++++-----
+>  drivers/net/e1000e/lib.c                        |    3 +-
+>  drivers/net/gianfar_ptp.c                       |    9 +-
+>  drivers/net/ifb.c                               |    2 +-
+>  drivers/net/macvlan.c                           |    2 +-
+>  drivers/net/niu.c                               |    4 +-
+>  drivers/net/phy/dp83640.c                       |    5 +-
+>  drivers/net/r8169.c                             |    1 +
+>  drivers/net/sis190.c                            |   12 +-
+>  drivers/net/tun.c                               |    1 +
+>  drivers/net/veth.c                              |    2 +
+>  drivers/net/wan/hdlc_fr.c                       |    5 +-
+>  drivers/net/wireless/airo.c                     |    1 +
+>  drivers/net/wireless/ath/ath9k/ar9002_hw.c      |    6 +-
+>  drivers/net/wireless/ath/ath9k/ar9003_eeprom.c  |    6 +-
+>  drivers/net/wireless/ath/ath9k/ar9003_hw.c      |    6 +-
+>  drivers/net/wireless/ath/ath9k/ar9003_phy.h     |    2 +-
+>  drivers/net/wireless/ath/ath9k/hw.c             |   11 +-
+>  drivers/net/wireless/ath/ath9k/hw.h             |    3 +-
+>  drivers/net/wireless/ath/ath9k/init.c           |    2 +
+>  drivers/net/wireless/ath/ath9k/pci.c            |   27 ++
+>  drivers/net/wireless/hostap/hostap_main.c       |    1 +
+>  drivers/net/wireless/iwlegacy/iwl-3945.c        |    6 +-
+>  drivers/net/wireless/iwlegacy/iwl-4965.c        |    8 +-
+>  drivers/net/wireless/iwlwifi/iwl-5000.c         |    1 +
+>  drivers/net/wireless/iwlwifi/iwl-core.h         |    2 +
+>  drivers/net/wireless/iwlwifi/iwl-power.c        |    3 +-
+>  drivers/net/wireless/rt2x00/rt2800lib.c         |    3 +-
+>  drivers/net/wireless/rt2x00/rt2x00mac.c         |    5 +-
+>  drivers/net/wireless/rtlwifi/pci.c              |   20 +-
+>  drivers/platform/x86/asus-wmi.c                 |   17 +-
+>  drivers/scsi/mpt2sas/mpt2sas_base.c             |   65 ++---
+>  drivers/scsi/mpt2sas/mpt2sas_base.h             |   53 ++++-
+>  drivers/scsi/mpt2sas/mpt2sas_ctl.c              |   10 +-
+>  drivers/scsi/mpt2sas/mpt2sas_debug.h            |    2 +-
+>  drivers/scsi/mpt2sas/mpt2sas_scsih.c            |   12 +-
+>  drivers/scsi/mpt2sas/mpt2sas_transport.c        |   24 +-
+>  drivers/staging/ath6kl/os/linux/ar6000_drv.c    |    1 +
+>  fs/cifs/cifsfs.c                                |    4 +
+>  fs/cifs/inode.c                                 |   14 +-
+>  fs/cifs/transport.c                             |    2 +
+>  fs/ecryptfs/main.c                              |   23 ++-
+>  fs/ecryptfs/read_write.c                        |   18 +-
+>  fs/ext3/namei.c                                 |    6 +-
+>  fs/ext4/namei.c                                 |    6 +-
+>  include/drm/drm_crtc.h                          |    1 +
+>  include/drm/i915_drm.h                          |    2 +-
+>  include/linux/cryptohash.h                      |    5 +
+>  include/linux/if.h                              |    2 +
+>  include/linux/mm.h                              |   12 +-
+>  include/linux/random.h                          |   11 -
+>  include/net/ipv6.h                              |   12 +-
+>  include/net/secure_seq.h                        |   20 ++
+>  include/net/transp_v6.h                         |    2 +
+>  include/xen/interface/xen.h                     |   39 +++
+>  kernel/futex.c                                  |   54 +++-
+>  lib/Makefile                                    |    2 +-
+>  lib/md5.c                                       |   95 +++++++
+>  net/8021q/vlan_dev.c                            |    2 +-
+>  net/bluetooth/bnep/netdev.c                     |    1 +
+>  net/core/Makefile                               |    2 +-
+>  net/core/link_watch.c                           |    2 +-
+>  net/core/pktgen.c                               |    8 +-
+>  net/core/secure_seq.c                           |  184 +++++++++++++
+>  net/dccp/ipv4.c                                 |    1 +
+>  net/dccp/ipv6.c                                 |    9 +-
+>  net/ethernet/eth.c                              |    1 +
+>  net/ipv4/devinet.c                              |   16 +-
+>  net/ipv4/gre.c                                  |   21 +-
+>  net/ipv4/icmp.c                                 |   14 +-
+>  net/ipv4/igmp.c                                 |    2 +-
+>  net/ipv4/inet_hashtables.c                      |    1 +
+>  net/ipv4/inetpeer.c                             |    1 +
+>  net/ipv4/ip_output.c                            |    6 +-
+>  net/ipv4/ipmr.c                                 |    2 +-
+>  net/ipv4/netfilter/nf_nat_proto_common.c        |    1 +
+>  net/ipv4/route.c                                |    6 +-
+>  net/ipv4/tcp_ipv4.c                             |    1 +
+>  net/ipv6/af_inet6.c                             |    2 +
+>  net/ipv6/inet6_hashtables.c                     |    1 +
+>  net/ipv6/ip6_output.c                           |   40 +++-
+>  net/ipv6/tcp_ipv6.c                             |    1 +
+>  net/ipv6/udp.c                                  |    2 +-
+>  net/l2tp/l2tp_eth.c                             |    2 +-
+>  net/mac80211/iface.c                            |    1 +
+>  net/netfilter/ipvs/ip_vs_ctl.c                  |    1 +
+>  net/sched/sch_sfq.c                             |    7 +-
+>  net/socket.c                                    |   73 +++---
+>  net/xfrm/xfrm_algo.c                            |    4 +-
+>  sound/core/timer.c                              |    2 +
+>  sound/soc/codecs/sgtl5000.c                     |  128 +++-------
+>  sound/usb/caiaq/input.c                         |    2 +-
+>  sound/usb/endpoint.c                            |    2 +-
+>  sound/usb/mixer.c                               |   25 +-
+>  sound/usb/mixer.h                               |    1 +
+>  157 files changed, 1967 insertions(+), 1173 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
