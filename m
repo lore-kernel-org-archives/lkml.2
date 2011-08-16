@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab1HPGJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 02:09:17 -0400
-Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:54904 "HELO
-	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751456Ab1HPGJP (ORCPT
+	id S1753467Ab1HPGKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:10:18 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27057 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab1HPGKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 02:09:15 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 02:09:15 EDT
-From: Eric Seppanen <eric@purestorage.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Roland Dreier <roland@purestorage.com>,
-        Eric Seppanen <eric@purestorage.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Jiang <dave.jiang@intel.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH 1/2] block: Fix queue_flag update when rq_affinity goes from 2 to 1
-Date: Mon, 15 Aug 2011 23:02:19 -0700
-Message-Id: <1313474539-5540-1-git-send-email-eric@purestorage.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 16 Aug 2011 02:10:15 -0400
+X-AuditID: cbfee60c-b7c93ae000000826-f6-4e4a09c57c92
+Date: Tue, 16 Aug 2011 06:10:13 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] power: max17042: divide by 0 Crash because r_sns init too
+ late
+To: Philip Rakity <prakity@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20110816060835541@myungjoo.ham
+Msgkey: 20110816060835541@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20110816060835541@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <11091080.93181313475012613.JavaMail.weblogic@epml13>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7G6AOKk027677
 
-From: Eric Seppanen <eric@purestorage.com>
+Philip Rakity<prakity@marvell.com> Date : 2011-08-13 13:18 (GMT+09:00)
+> On MMP2 brownstone divide by 0 error since probe sets r_sns
+> after calling power_supply_register.
+> 
+> Move the code up a few lines.  r_sns comes from the platform
+> data.
+> 
+> PROP_CURRENT_AVG and PROP_CURRENT divide the result by r_sns.
+> 
+> Signed-off-by: Philip Rakity 
 
-Commit 5757a6d76cdf added the QUEUE_FLAG_SAME_FORCE flag, but fails to
-clear that flag when the current state is '2' (SAME_COMP + SAME_FORCE)
-and the new state is '1' (SAME_COMP).
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Reviewed-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Eric Seppanen <eric@purestorage.com>
+> ---
+> drivers/power/max17042_battery.c |    6 +++---
+> 1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+> index 9f0183c..4245806 100644
+> --- a/drivers/power/max17042_battery.c
+> +++ b/drivers/power/max17042_battery.c
+> @@ -210,6 +210,9 @@ static int __devinit max17042_probe(struct i2c_client *client,
+> if (!chip->pdata->enable_current_sense)
+> chip->battery.num_properties -= 2;
+> 
+> + if (chip->pdata->r_sns == 0)
+> + chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
+> +
+> ret = power_supply_register(&client->dev, &chip->battery);
+> if (ret) {
+> dev_err(&client->dev, "failed: power supply register\n");
+> @@ -226,9 +229,6 @@ static int __devinit max17042_probe(struct i2c_client *client,
+> max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
+> max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
+> max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
+> - } else {
+> - if (chip->pdata->r_sns == 0)
+> - chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
+> }
+> 
+> return 0;
+> -- 
+> 1.7.0.4
+> 
+> 
 
----
- block/blk-sysfs.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 0ee17b5..e681805 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -258,11 +258,13 @@ queue_rq_affinity_store(struct request_queue *q, const char *page, size_t count)
- 
- 	ret = queue_var_store(&val, page, count);
- 	spin_lock_irq(q->queue_lock);
--	if (val) {
-+	if (val == 2) {
- 		queue_flag_set(QUEUE_FLAG_SAME_COMP, q);
--		if (val == 2)
--			queue_flag_set(QUEUE_FLAG_SAME_FORCE, q);
--	} else {
-+		queue_flag_set(QUEUE_FLAG_SAME_FORCE, q);
-+	} else if (val == 1) {
-+		queue_flag_set(QUEUE_FLAG_SAME_COMP, q);
-+		queue_flag_clear(QUEUE_FLAG_SAME_FORCE, q);
-+	} else if (val == 0) {
- 		queue_flag_clear(QUEUE_FLAG_SAME_COMP, q);
- 		queue_flag_clear(QUEUE_FLAG_SAME_FORCE, q);
- 	}
--- 
-1.7.4.1
-
+ MyungJoo Ham («‘∏Ì¡÷)
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: +82-10-6714-2858 / office: +82-31-279-8033ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
