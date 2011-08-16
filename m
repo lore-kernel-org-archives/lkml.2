@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab1HPNR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 09:17:59 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:59406 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1HPNR6 (ORCPT
+	id S1752582Ab1HPNZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 09:25:11 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:58819 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1HPNZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 09:17:58 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjjUQEnt0KA==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com
-Subject: [PATCH 2/3] xen/pv-on-hvm kexec: rebind virqs to existing eventchannel ports
-Date: Tue, 16 Aug 2011 15:16:52 +0200
-Message-Id: <1313500613-21394-3-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1313500613-21394-1-git-send-email-olaf@aepfle.de>
-References: <1313500613-21394-1-git-send-email-olaf@aepfle.de>
+	Tue, 16 Aug 2011 09:25:09 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 16 Aug 2011 15:24:58 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Pavel Roskin <proski@gnu.org>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: Suppressing a plus from setlocalversion
+Message-ID: <20110816152458.71b0bd74@stein>
+In-Reply-To: <20110815222141.jgw2q59rko0wssoc-cebfxv@webmail.spamcop.net>
+References: <20110815173706.12ccfdd4@mj>
+	<alpine.DEB.2.00.1108151600400.22798@chino.kir.corp.google.com>
+	<20110815222141.jgw2q59rko0wssoc-cebfxv@webmail.spamcop.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During a kexec boot some virqs such as timer and debugirq were already
-registered by the old kernel.  The hypervisor will return -EEXISTS from
-the new EVTCHNOP_bind_virq request and the BUG in bind_virq_to_irq()
-triggers.  Catch the -EEXISTS error and loop through all possible ports to find
-what port belongs to the virq/cpu combo.
+On Aug 15 Pavel Roskin wrote:
+> Quoting David Rientjes <rientjes@google.com>:
+> 
+> > On Mon, 15 Aug 2011, Pavel Roskin wrote:
+> >
+> >> Hello!
+> >>
+> >> There is one annoyance in the build system that I cannot work around.
+> >
+> > That's surprising since you actually state the workaround, i.e. using
+> > LOCALVERSION= with make, yourself.
+> 
+> OK, I don't consider that an acceptable solution, as it could  
+> interfere with other build systems.
+> 
+> However, as soon as I posted this message, I found a better solution,  
+> namely setting LOCALVERSION= in the environment (both for the normal  
+> user and for root).  This is less likely to have unexpected effects,  
+> since the environment variables don't override the variables  
+> explicitly set in makefiles.
 
-v2:
-  - use NR_EVENT_CHANNELS instead of private MAX_EVTCHNS
+Having this globally as an environment variable seems to be a more
+intrusive alternative; there are no namespaces.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- drivers/xen/events.c |   37 ++++++++++++++++++++++++++++++++-----
- 1 files changed, 32 insertions(+), 5 deletions(-)
+You can wrap the make command lines that you often use into shell
+aliases.  I often use command lines like 'nice make -j8' or
+'nice make -j8 C=1 CF="-D__CHECK_ENDIAN__"' by alias.
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 30df85d..31493e9 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -877,11 +877,32 @@ static int bind_interdomain_evtchn_to_irq(unsigned int remote_domain,
- 	return err ? : bind_evtchn_to_irq(bind_interdomain.local_port);
- }
- 
-+static int find_virq(unsigned int virq, unsigned int cpu)
-+{
-+	struct evtchn_status status;
-+	int port, rc = -ENOENT;
-+
-+	memset(&status, 0, sizeof(status));
-+	for (port = 0; port <= NR_EVENT_CHANNELS; port++) {
-+		status.dom = DOMID_SELF;
-+		status.port = port;
-+		rc = HYPERVISOR_event_channel_op(EVTCHNOP_status, &status);
-+		if (rc < 0)
-+			continue;
-+		if (status.status != EVTCHNSTAT_virq)
-+			continue;
-+		if (status.u.virq == virq && status.vcpu == cpu) {
-+			rc = port;
-+			break;
-+		}
-+	}
-+	return rc;
-+}
- 
- int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
- {
- 	struct evtchn_bind_virq bind_virq;
--	int evtchn, irq;
-+	int evtchn, irq, ret;
- 
- 	spin_lock(&irq_mapping_update_lock);
- 
-@@ -897,10 +918,16 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
- 
- 		bind_virq.virq = virq;
- 		bind_virq.vcpu = cpu;
--		if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_virq,
--						&bind_virq) != 0)
--			BUG();
--		evtchn = bind_virq.port;
-+		ret = HYPERVISOR_event_channel_op(EVTCHNOP_bind_virq,
-+						&bind_virq);
-+		if (ret == 0)
-+			evtchn = bind_virq.port;
-+		else {
-+			if (ret == -EEXIST)
-+				ret = find_virq(virq, cpu);
-+			BUG_ON(ret < 0);
-+			evtchn = ret;
-+		}
- 
- 		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
- 
+> > Yes, because the kernel you've produced is no longer 3.1.0-rc2, it is
+> > modified.  If you want to do something else locally, then you can always
+> > use LOCALVERSION=.
+> >
+> > The + was added to stop falsely identifying kernels as a specific version
+> > when they are modified by default.  Sorry if you forget to override it
+> > sometimes.
+
+I for one am glad that I don't have to remember to force a localversion
+all the time.  All of the kernels that I runtime-test have their source
+managed by quilt, not git.  Thankfully, scripts/setlocalversion
+acknowledges that quilt users know what they are doing. :-)
 -- 
-1.7.3.4
-
+Stefan Richter
+-=====-==-== =--- =----
+http://arcgraph.de/sr/
