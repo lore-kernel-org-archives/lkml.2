@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab1HPPDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:03:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58628 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab1HPPDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:03:34 -0400
-Message-ID: <4E4A8696.3040400@zytor.com>
-Date: Tue, 16 Aug 2011 08:02:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752444Ab1HPPHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:07:08 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44014 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab1HPPHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 11:07:05 -0400
+Date: Tue, 16 Aug 2011 18:04:52 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] tty: clearify structure initializer in notify_write()
+Message-ID: <20110816150452.GL10560@shale.localdomain>
+References: <1312027319-1402-1-git-send-email-minipli@googlemail.com>
+ <CA+rthh_AW5Yz2ZiOqOTWquXKnsDEd=YcNQ9HiOWu-deSar0eWQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        rdunlap@xenotime.net, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/vdso] x86, vsyscall: Add missing <asm/fixmap.h> to arch/x86/mm/fault.c
-References: <CA+55aFxsOMc9=p02r8-QhJ=h=Mqwckk4_Pnx9LQt5+fqMp_exQ@mail.gmail.com> <tip-87cae8456a55c0a6163deca66d8aa3a6aa21f764@git.kernel.org> <CAOJsxLFH6=OtDO8VErc1A_Waf89bRO53_Axnecc06TrUGmLZ1g@mail.gmail.com>
-In-Reply-To: <CAOJsxLFH6=OtDO8VErc1A_Waf89bRO53_Axnecc06TrUGmLZ1g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+rthh_AW5Yz2ZiOqOTWquXKnsDEd=YcNQ9HiOWu-deSar0eWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2011 11:43 PM, Pekka Enberg wrote:
-> 
-> The commit subject line says <asm/fixmap.h> which is wrong, right?
-> 
->                              Pekka
-> 
+> On Sat, Jul 30, 2011 at 2:01 PM, Mathias Krause <minipli@googlemail.com> wrote:
+> > Even though this is valid C we should not mix C99 initializers with
+> > obfuscated ANSI C.
 
-Argh... no, I accidentally committed the wrong version of the patch.
+I saw this patch the first time and I couldn't figure out why the
+original code was written that way.  I'm curious, is there some trick
+here that I don't see, or is it just a typo that happens to work?
 
-	-hpa
+regards,
+dan carpenter
