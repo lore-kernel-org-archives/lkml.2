@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1HPVYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:24:08 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54375 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1HPVYH (ORCPT
+	id S1752829Ab1HPV1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:27:53 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50326 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751465Ab1HPV1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:24:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+XFjir3W3kqin1mL5W_OEduUTyUDADwH6pL=kaS=wHpP=KMeQ@mail.gmail.com>
-References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
-	<1313454275-5604-4-git-send-email-me@akshayjoshi.com>
-	<CA+XFjir3W3kqin1mL5W_OEduUTyUDADwH6pL=kaS=wHpP=KMeQ@mail.gmail.com>
-Date: Wed, 17 Aug 2011 00:24:06 +0300
-X-Google-Sender-Auth: 7aB5Y_i3rQTqhdI8pHLiJuPdl0k
-Message-ID: <CAOJsxLGqc6khjGQMA=b1BwTv_4pv4ZgkdjJrgtMbRwuNDrN_iA@mail.gmail.com>
-Subject: Re: [PATCH 4/9] Staging: Winbond: Convert C99 style comments in Winbond.
-From: Pekka Enberg <penberg@kernel.org>
-To: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Cc: Akshay Joshi <me@akshayjoshi.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Aug 2011 17:27:52 -0400
+Subject: Re: [PATCH] powerpc/eeh: remove eeh_event_handler()->daemonize()
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linas Vepstas <linasvepstas@gmail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110816190858.GA4890@redhat.com>
+References: <20110816190858.GA4890@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 22:27:49 +0100
+Message-ID: <1313530069.3436.206.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7GLOKo2031273
 
-2011/8/16 Gábor Stefanik <netrolller.3d@gmail.com>:
->> -
->> -//====================================
->> -// Internal variable for module
->> -//====================================
->> +/*============================================================================
->> +/* wb35rx.h --
->> +/*============================================================================
->
-> I'm pretty sure this is not an accepted kernel comment style.
+On Tue, 2011-08-16 at 21:08 +0200, Oleg Nesterov wrote:
+> daemonize() is only needed when a user-space task does kernel_thread().
+> 
+> eeh_event_handler() thread is created by the worker kthread, and thus
+> it doesn't need the soon-to-be-deprecated daemonize().
+> 
+> Note: looks like eeh_event_wq can be static and it can do all work
+> itself without kernel_thread().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-What's the problem? I think it's OK for this particular patch.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+
+
