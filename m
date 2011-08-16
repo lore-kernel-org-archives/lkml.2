@@ -1,122 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1HPSMO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 14:12:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45518 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab1HPSMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 14:12:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Carlos R. Mafra" <crmafra2@gmail.com>
-Subject: Re: 3.0-rc2 failed s2ram: Freezing of tasks failed after 20.00 seconds
-Date: Tue, 16 Aug 2011 20:13:55 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <20110816094245.GA2042@Pilar.site>
-In-Reply-To: <20110816094245.GA2042@Pilar.site>
+	id S1752659Ab1HPSRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 14:17:53 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:17481 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab1HPSRw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 14:17:52 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=BM2lSl+hWGThQVFY+z/nWrSZXdiEcQ7k7D6PeRelEQ0ckfZr8VIUgC2DoDkeVTFNE
+	6Ht5scKlx0+DqMAxZI4BA==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108162013.55341.rjw@sisk.pl>
+In-Reply-To: <20110816072041.GA20084@core.coreip.homeip.net>
+References: <1313420550-5885-1-git-send-email-miletus@chromium.org>
+	<20110816052738.GA25878@polaris.bitmath.org>
+	<20110816072041.GA20084@core.coreip.homeip.net>
+Date: Tue, 16 Aug 2011 14:17:49 -0400
+X-Google-Sender-Auth: AqgOVpp-cFBviME4ZXw3FS_F4-k
+Message-ID: <CAPDwgkN9uqxJMkF4hjQcNSfvvJ=n-x-fURy0bJ5rfP6UMt5wcw@mail.gmail.com>
+Subject: Re: [PATCH v3] Input: atmel_mxt_ts - Report pressure information from
+ the driver
+From: Yufeng Shen <miletus@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, linux-kernel@vger.kernel.org,
+        Michael Gong <Michael.Gong@atmel.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> I started testing 3.0-rc2 yesterday and after a few successful suspend to ram
-> it did not suspend anymore and I got this:
-> 
->  PM: Syncing filesystems ... done.
->  PM: Preparing system for mem sleep
->  Freezing user space processes ... 
->  Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
->  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00800004
->   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
->   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
->   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
->  Call Trace:
->   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
->   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
->   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
->   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
->   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
->   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
->   [<ffffffff81059afb>] flush_work+0x2b/0x40
->   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
->   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
->   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
->   [<ffffffff81106052>] check_disk_change+0x32/0x80
->   [<ffffffff812ee649>] sd_open+0xb9/0x190
->   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
->   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
->   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
->   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
->   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
->   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
->   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
->   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
->   [<ffffffff810e2ab1>] do_last+0xb1/0x800
->   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
->   [<ffffffff81229077>] ? kobject_put+0x27/0x60
->   [<ffffffff812ced62>] ? put_device+0x12/0x20
->   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
->   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
->   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
->   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
->   [<ffffffff810d522b>] sys_open+0x1b/0x20
->   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
->  
->  Restarting tasks ... done.
->  video LNXVIDEO:01: Restoring backlight state
->  acpid: 1 client rule loaded
->  EXT4-fs (sda2): re-mounted. Opts: discard,commit=600
->  INFO: task udisks-daemon:5848 blocked for more than 120 seconds.
->  "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00000004
->   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
->   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
->   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
->  Call Trace:
->   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
->   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
->   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
->   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
->   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
->   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
->   [<ffffffff81059afb>] flush_work+0x2b/0x40
->   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
->   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
->   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
->   [<ffffffff81106052>] check_disk_change+0x32/0x80
->   [<ffffffff812ee649>] sd_open+0xb9/0x190
->   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
->   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
->   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
->   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
->   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
->   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
->   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
->   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
->   [<ffffffff810e2ab1>] do_last+0xb1/0x800
->   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
->   [<ffffffff81229077>] ? kobject_put+0x27/0x60
->   [<ffffffff812ced62>] ? put_device+0x12/0x20
->   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
->   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
->   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
->   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
->   [<ffffffff810d522b>] sys_open+0x1b/0x20
->   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
->   
-> 
-> and there are some more of these traces in the logs, but they all look the 
-> same.
+Re-sent from proper email account and sorry for the spam.
 
-It looks like udisks-daemon is waiting for a completion that's
-never completed.
+-----------------------------------------------------------------------------------------------------------------------
 
-Do you use any removable storage devices?
+Tested that adding  ABS_PRESSURE to ST works properly.
+Do you want me to submit a new patch or is this good enough for you to merge ?
+Thanks.
 
-Rafael
+On Tue, Aug 16, 2011 at 3:20 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> On Tue, Aug 16, 2011 at 07:27:38AM +0200, Henrik Rydberg wrote:
+> > On Mon, Aug 15, 2011 at 11:02:30AM -0400, Yufeng Shen wrote:
+> > > Atmel mxt1386 touch controller has the touch pressure information but
+> > > the current driver atmel_mxt_ts does not expose it to the user space.
+> > > This patch makes the driver report the touch pressure information to
+> > > user space.
+> > >
+> > > ChangeLog:
+> > > v2: fixed indentation as commented by Wanlong Gao
+> > > v3: added signed-off-by
+> > >
+>
+> I think we should be reporting pressure for ST emulation as well. Does
+> the following version still work for you?
+>
+> Thanks.
+>
+> --
+> Dmitry
+>
+> Input: atmel_mxt_ts - report pressure information from the driver
+>
+> From: Yufeng Shen <miletus@chromium.org>
+>
+> Atmel mxt1386 touch controller has the touch pressure information so
+> let's report it to the user space.
+>
+> [dtor@mail.ru: added ABS_RESSURE reporting for ST emulation.]
+>
+> Signed-off-by: Yufeng Shen <miletus@chromium.org>
+> Acked-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Acked-by: Henrik Rydberg <rydberg@euromail.se>
+> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> ---
+>
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+>
+>
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index c4f6b81..5bc2065 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -245,6 +245,7 @@ struct mxt_finger {
+>        int x;
+>        int y;
+>        int area;
+> +       int pressure;
+>  };
+>
+>  /* Each client has this additional data */
+> @@ -537,6 +538,8 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
+>                                        finger[id].x);
+>                        input_report_abs(input_dev, ABS_MT_POSITION_Y,
+>                                        finger[id].y);
+> +                       input_report_abs(input_dev, ABS_MT_PRESSURE,
+> +                                       finger[id].pressure);
+>                } else {
+>                        finger[id].status = 0;
+>                }
+> @@ -547,6 +550,8 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
+>        if (status != MXT_RELEASE) {
+>                input_report_abs(input_dev, ABS_X, finger[single_id].x);
+>                input_report_abs(input_dev, ABS_Y, finger[single_id].y);
+> +               input_report_abs(input_dev,
+> +                                ABS_PRESSURE, finger[single_id].pressure);
+>        }
+>
+>        input_sync(input_dev);
+> @@ -561,6 +566,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+>        int x;
+>        int y;
+>        int area;
+> +       int pressure;
+>
+>        /* Check the touch is present on the screen */
+>        if (!(status & MXT_DETECT)) {
+> @@ -585,6 +591,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+>                y = y >> 2;
+>
+>        area = message->message[4];
+> +       pressure = message->message[5];
+>
+>        dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
+>                status & MXT_MOVE ? "moved" : "pressed",
+> @@ -595,6 +602,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
+>        finger[id].x = x;
+>        finger[id].y = y;
+>        finger[id].area = area;
+> +       finger[id].pressure = pressure;
+>
+>        mxt_input_report(data, id);
+>  }
+> @@ -1130,6 +1138,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
+>                             0, data->max_x, 0, 0);
+>        input_set_abs_params(input_dev, ABS_Y,
+>                             0, data->max_y, 0, 0);
+> +       input_set_abs_params(input_dev, ABS_PRESSURE,
+> +                            0, 255, 0, 0);
+>
+>        /* For multi touch */
+>        input_mt_init_slots(input_dev, MXT_MAX_FINGER);
+> @@ -1139,6 +1149,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
+>                             0, data->max_x, 0, 0);
+>        input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
+>                             0, data->max_y, 0, 0);
+> +       input_set_abs_params(input_dev, ABS_MT_PRESSURE,
+> +                            0, 255, 0, 0);
+>
+>        input_set_drvdata(input_dev, data);
+>        i2c_set_clientdata(client, data);
