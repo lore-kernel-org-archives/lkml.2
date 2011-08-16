@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab1HPTMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 15:12:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab1HPTM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 15:12:29 -0400
-Date: Tue, 16 Aug 2011 21:08:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linas Vepstas <linasvepstas@gmail.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc/eeh: remove eeh_event_handler()->daemonize()
-Message-ID: <20110816190858.GA4890@redhat.com>
+	id S1751840Ab1HPTOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 15:14:44 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:37193 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab1HPTOm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 15:14:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110816195033.014f302b@endymion.delvare>
+References: <1312802446-19154-1-git-send-email-geert@linux-m68k.org>
+	<20110816195033.014f302b@endymion.delvare>
+Date: Tue, 16 Aug 2011 21:14:42 +0200
+X-Google-Sender-Auth: gtPODl7dPybId8-fEYenru_B3SU
+Message-ID: <CAMuHMdUk_xTwGbhG0MHkS-8rkF76b1fg193pPcs+9MVyB-qHQw@mail.gmail.com>
+Subject: Re: [PATCH] i2c: I2C_ELEKTOR should depend on HAS_IOPORT
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Hans Berglund <hb@spacetec.no>, Jonas Bonn <jonas@southpole.se>,
+        Arnd Bergmann <arnd@arndb.de>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-daemonize() is only needed when a user-space task does kernel_thread().
+Hi Jean,
 
-eeh_event_handler() thread is created by the worker kthread, and thus
-it doesn't need the soon-to-be-deprecated daemonize().
+On Tue, Aug 16, 2011 at 19:50, Jean Delvare <khali@linux-fr.org> wrote:
+> On Mon,  8 Aug 2011 13:20:46 +0200, Geert Uytterhoeven wrote:
+>> drivers/i2c/busses/i2c-elektor.c: In function ‘pcf_isa_init’:
+>> drivers/i2c/busses/i2c-elektor.c:153: error: implicit declaration of function ‘ioport_map’
+>> drivers/i2c/busses/i2c-elektor.c:153: warning: assignment makes pointer from integer without a cast
+>> drivers/i2c/busses/i2c-elektor.c: In function ‘elektor_probe’:
+>> drivers/i2c/busses/i2c-elektor.c:287: error: implicit declaration of function ‘ioport_unmap’
+>>
+>> Since commit 82ed223c264def2b15ee4bec2e8c3048092ceb5f ("iomap: make IOPORT/PCI
+>> mapping functions conditional"), ioport_map() is only available on platforms
+>> that set HAS_IOPORT.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> ---
+>>  drivers/i2c/busses/Kconfig |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 646068e..d1fc5cf 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -789,7 +789,7 @@ config I2C_ACORN
+>>
+>>  config I2C_ELEKTOR
+>>       tristate "Elektor ISA card"
+>> -     depends on ISA && BROKEN_ON_SMP
+>> +     depends on ISA && HAS_IOPORT && BROKEN_ON_SMP
+>>       select I2C_ALGOPCF
+>>       help
+>>         This supports the PCF8584 ISA bus I2C adapter.  Say Y if you own
+>
+> How can ISA be set if HAS_IOPORT is not? This shouldn't be allowed.
 
-Note: looks like eeh_event_wq can be static and it can do all work
-itself without kernel_thread().
+It's always been like that. With CONFIG_ISA, we have inb() and friends. But not
+ioport_map(), which was introduced more recently.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+Gr{oetje,eeting}s,
 
- arch/powerpc/platforms/pseries/eeh_event.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+                        Geert
 
---- 3.1/arch/powerpc/platforms/pseries/eeh_event.c~3_daemonize_eeh	2011-04-06 21:33:42.000000000 +0200
-+++ 3.1/arch/powerpc/platforms/pseries/eeh_event.c	2011-08-16 21:03:56.000000000 +0200
-@@ -60,7 +60,7 @@ static int eeh_event_handler(void * dumm
- 	struct eeh_event	*event;
- 	struct pci_dn *pdn;
- 
--	daemonize ("eehd");
-+	set_task_comm(current, "eehd");
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
- 	spin_lock_irqsave(&eeh_eventlist_lock, flags);
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
