@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1HPBYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 21:24:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34108 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab1HPBYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 21:24:16 -0400
-Date: Mon, 15 Aug 2011 18:24:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: Dave Jones <davej@redhat.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/90] 3.0.2-stable review
-Message-ID: <20110816012403.GB22104@suse.de>
-References: <20110812210626.GA4725@kroah.com>
- <4E47A400.1030607@gmail.com>
- <20110814161842.GA7864@suse.de>
- <20110815205653.GA13895@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110815205653.GA13895@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753337Ab1HPBdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 21:33:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45854 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab1HPBdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 21:33:19 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Felipe Balbi <balbi@ti.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] i2c: tegra: Check for overflow errors with BUG_ON.
+Date: Mon, 15 Aug 2011 18:32:16 -0700
+Message-Id: <1313458336-31456-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 04:56:53PM -0400, Dave Jones wrote:
-> On Sun, Aug 14, 2011 at 09:18:42AM -0700, Greg KH wrote:
->  > On Sun, Aug 14, 2011 at 12:31:28PM +0200, Jiri Slaby wrote:
->  > > On 08/12/2011 11:06 PM, Greg KH wrote:
->  > > > This is the start of the stable review cycle for the 3.0.2 release.
->  > > > There are 90 patches in this series, all will be posted as a response
->  > > > to this one.
->  > > 
->  > > It looks like they didn't go through to LKML. Neither for 3.0.2, nor for
->  > > .32.45, nor for .33.18. Could you resend?
->  > 
->  > Sorry, none of them got sent, that was my fault.  I've now sent them
->  > all.
-> 
-> Seems to be missing aba8d056078e47350d85b06a9cabd5afcc4b72ea
-> which is CVE-2011-2905
+This change doesn't fix any known problems but turns
+on the overflow detection feature of the i2c controller
+in the hopes of flushing out any current (or future)
+bugs in the i2c driver.
 
-It would have been nice if someone had sent that patch to
-stable@kernel.org :(
+Inspired by a change on nvidia's git server:
+  http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=commit;h=266d1b7397284505e55d06254b497cb32be07b69
 
-I'll queue it up for the next release after this one, thanks.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+This takes Felipe Balbi's suggestion of making the overflow
+error non-fatal.
 
-greg k-h
+ drivers/i2c/busses/i2c-tegra.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 2440b74..34634b7 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -83,6 +83,7 @@
+ #define I2C_ERR_NO_ACK				0x01
+ #define I2C_ERR_ARBITRATION_LOST		0x02
+ #define I2C_ERR_UNKNOWN_INTERRUPT		0x04
++#define I2C_ERR_FIFO_OVERFLOW			0x08
+ 
+ #define PACKET_HEADER0_HEADER_SIZE_SHIFT	28
+ #define PACKET_HEADER0_PACKET_ID_SHIFT		16
+@@ -367,7 +368,8 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
+ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ {
+ 	u32 status;
+-	const u32 status_err = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
++	const u32 status_err = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
++		I2C_INT_TX_FIFO_OVERFLOW;
+ 	struct tegra_i2c_dev *i2c_dev = dev_id;
+ 
+ 	status = i2c_readl(i2c_dev, I2C_INT_STATUS);
+@@ -389,6 +391,14 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	if (unlikely(status & status_err)) {
++		/*
++		 * Overflow should be impossible unless we've got a
++		 * bug in the driver, but check anyway.
++		 */
++		if (status & I2C_INT_TX_FIFO_OVERFLOW) {
++			WARN_ON(1);
++			i2c_dev->msg_err |= I2C_ERR_FIFO_OVERFLOW;
++		}
+ 		if (status & I2C_INT_NO_ACK)
+ 			i2c_dev->msg_err |= I2C_ERR_NO_ACK;
+ 		if (status & I2C_INT_ARBITRATION_LOST)
+@@ -423,7 +433,7 @@ err:
+ 	/* An error occurred, mask all interrupts */
+ 	tegra_i2c_mask_irq(i2c_dev, I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
+ 		I2C_INT_PACKET_XFER_COMPLETE | I2C_INT_TX_FIFO_DATA_REQ |
+-		I2C_INT_RX_FIFO_DATA_REQ);
++		I2C_INT_RX_FIFO_DATA_REQ | I2C_INT_TX_FIFO_OVERFLOW);
+ 	i2c_writel(i2c_dev, status, I2C_INT_STATUS);
+ 	if (i2c_dev->is_dvc)
+ 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
+@@ -473,7 +483,8 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
+ 	if (!(msg->flags & I2C_M_RD))
+ 		tegra_i2c_fill_tx_fifo(i2c_dev);
+ 
+-	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
++	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST |
++		I2C_INT_TX_FIFO_OVERFLOW;
+ 	if (msg->flags & I2C_M_RD)
+ 		int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
+ 	else if (i2c_dev->msg_buf_remaining)
+-- 
+1.7.3.1
+
