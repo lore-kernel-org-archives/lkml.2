@@ -1,100 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab1HPFfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:35:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47112 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab1HPFeZ (ORCPT
+	id S1752981Ab1HPFgW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:36:22 -0400
+Received: from wdmail01.wdc.com ([129.253.55.43]:45641 "EHLO wdmail01.wdc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab1HPFgV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:34:25 -0400
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>
-Subject: [PATCH 1/4] kbuild: introduce KBUILD_CONFIG; unexpose KCONFIG_CONFIG
-Date: Tue, 16 Aug 2011 01:34:11 -0400
-Message-Id: <1313472854-14426-2-git-send-email-lacombar@gmail.com>
-X-Mailer: git-send-email 1.7.6.153.g78432
-In-Reply-To: <1313472854-14426-1-git-send-email-lacombar@gmail.com>
-References: <1313472854-14426-1-git-send-email-lacombar@gmail.com>
+	Tue, 16 Aug 2011 01:36:21 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Aug 2011 01:36:21 EDT
+X-IronPort-AV: E=Sophos;i="4.67,378,1309762800"; 
+   d="scan'208";a="184268113"
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Future of the -longterm kernel releases (i.e. how we pick them).
+Date: Mon, 15 Aug 2011 22:26:54 -0700
+Message-ID: <25B374CC0D9DFB4698BB331F82CD0CF2E3ED78@wdscexbe08.sc.wdc.com>
+In-Reply-To: <20110815142142.GC11358@kroah.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Future of the -longterm kernel releases (i.e. how we pick them).
+Thread-Index: AcxbVvn4FaBisyT5S2OUo1L0mynbOwAfCIug
+References: <20110815041524.GA7578@kroah.com> <alpine.DEB.2.02.1108150007100.24266@asgard.lang.hm> <20110815142142.GC11358@kroah.com>
+From: "Daniel Taylor" <Daniel.Taylor@wdc.com>
+To: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 16 Aug 2011 05:26:54.0453 (UTC) FILETIME=[1C1A0250:01CC5BD5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refine the Kbuild interface to expose it's own variable to architecture
-Makefile's and prepare Kconfig environment prior to any %config invocation.
+ 
 
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
----
- Makefile                                |    8 ++++++--
- arch/arm/boot/compressed/Makefile       |    2 +-
- arch/unicore32/boot/compressed/Makefile |    2 +-
- scripts/kconfig/Makefile                |    3 +++
- 4 files changed, 11 insertions(+), 4 deletions(-)
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org 
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Greg KH
+> Sent: Monday, August 15, 2011 7:22 AM
+> To: david@lang.hm
+> Cc: linux-kernel@vger.kernel.org; 
+> torvalds@linux-foundation.org; akpm@linux-foundation.org; 
+> alan@lxorguk.ukuu.org.uk; stable-review@kernel.org; stable@kernel.org
+> Subject: Re: Future of the -longterm kernel releases (i.e. 
+> how we pick them).
+> 
+> On Mon, Aug 15, 2011 at 12:21:59AM -0700, david@lang.hm wrote:
+> > rather than having a hard schedule (the first kernel released after
+> > July 1 each year for example I know this is not the exact proposal),
+> > I think that it would be better to pick the -longterm kernel a few
+> > months after it has been released (3.4 is looking very good, the
+> > normal minor driver fixes in -stable, but no fundamental regressions
+> > have been reported, it's the new -longerm kernel for example)
+> > 
+> > doing so doesn't give the predictability that some people will want
+> > in knowing that their September release will always have a fresh new
+> > -longerm kernel, but I think the result would be better -longterm
+> > kernels. However, to get the information about how good the kernels
+> > are, I think that the -stable timeframe would need to be extended to
+> > give the kernels time to settle and gather reports. I would then
+> > suggest scheduling that once a year you look at the last couple
+> > -stable kernels and pick one of them rather than designating the new
+> > -longterm kernel ahead of time.
+> 
+> Yes, that's a very good idea.  I've seen problems in the past when
+> distros have made a time-based decision to pick a kernel version and
+> then the problems that this can cause if it happens that a subsystem
+> really had issues for that release.
+> 
+> So yes, I'll take a look at the bug reports and how things are working
+> out to pick the next -longterm.  I'll also take into consideration any
+> companies/major users that are going to be using that release as well,
+> so it greatly behooves people to talk to me about their plans (hint,
+> hint...)
+> 
+> > I hope my midnight rambling makes some sort of sense :-)
+> 
+> It did, thanks for the response.
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe 
+> linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-diff --git a/Makefile b/Makefile
-index b4ca4e1..26798a4 100644
---- a/Makefile
-+++ b/Makefile
-@@ -235,8 +235,8 @@ ifeq ($(ARCH),m68knommu)
-        hdr-arch  := m68k
- endif
- 
--KCONFIG_CONFIG	?= .config
--export KCONFIG_CONFIG
-+KBUILD_CONFIG	?= .config
-+export KBUILD_CONFIG
- 
- # SHELL used by kbuild
- CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
-@@ -484,6 +484,10 @@ ifeq ($(config-targets),1)
- include $(srctree)/arch/$(SRCARCH)/Makefile
- export KBUILD_DEFCONFIG KBUILD_KCONFIG
- 
-+# Prepare Kconfig environment
-+KCONFIG_CONFIG    = $(KBUILD_CONFIG)
-+export KCONFIG_CONFIG
-+
- config: scripts_basic outputmakefile FORCE
- 	$(Q)mkdir -p include/linux include/config
- 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 0c74a6f..1891c0c 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -154,5 +154,5 @@ CFLAGS_font.o := -Dstatic=
- $(obj)/font.c: $(FONTC)
- 	$(call cmd,shipped)
- 
--$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile $(KCONFIG_CONFIG)
-+$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile $(KBUILD_CONFIG)
- 	@sed "$(SEDFLAGS)" < $< > $@
-diff --git a/arch/unicore32/boot/compressed/Makefile b/arch/unicore32/boot/compressed/Makefile
-index b0954a2..90a9841 100644
---- a/arch/unicore32/boot/compressed/Makefile
-+++ b/arch/unicore32/boot/compressed/Makefile
-@@ -63,6 +63,6 @@ ZTEXTADDR	:= 0x03000000
- ZBSSADDR	:= ALIGN(4)
- 
- SEDFLAGS_lds	= s/TEXT_START/$(ZTEXTADDR)/;s/BSS_START/$(ZBSSADDR)/
--$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/unicore32/boot/Makefile $(KCONFIG_CONFIG)
-+$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/unicore32/boot/Makefile $(KBUILD_CONFIG)
- 	@sed "$(SEDFLAGS_lds)" < $< > $@
- 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 82d2eb2..3fa5a65 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -11,6 +11,9 @@ else
- Kconfig := Kconfig
- endif
- 
-+KCONFIG_CONFIG    ?= .config
-+export KCONFIG_CONFIG
-+
- xconfig: $(obj)/qconf
- 	$< $(Kconfig)
- 
--- 
-1.7.6.153.g78432
+I also appreciate the amount of work it takes to maintain a kernel; thanks.
 
+For embedded systems, which often have multi- (not just two-) year
+warranties, it sounds like we would then be maintaining the -longterm
+ourselves.  The "easy" side of this is that embedded systems don't
+(usually) have users trying to plug in the latest and greatest widget,
+except on external busses, such as USB.  So back-porting drivers is
+not generally a big deal.  Security patches, OTOH, are a real concern.
+Other than net and drivers/net, which are exposed to non-local attacks,
+are there other subsystems we should watch for security fixes?  There
+have, for example, been a lot of security upgrades in /sys, but there's
+also been a lot of restructing for new interfaces and "arch" models,
+which would make back-porting those much more complicated.
