@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1HPCvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:51:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35743 "EHLO mx2.suse.de"
+	id S1753934Ab1HPCvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:51:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35761 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753854Ab1HPCvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:51:18 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:52 2011
-Message-Id: <20110816024452.499287323@pistachio.kroah.org>
+	id S1753912Ab1HPCve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:51:34 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:55 2011
+Message-Id: <20110816024455.414027266@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:42:45 -0700
+Date: Mon, 15 Aug 2011 19:43:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        JiSheng Zhang <jszhang3@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [02/26] USB: xhci: fix OS want to own HC
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [22/26] lguest: allow booting guest with CONFIG_RELOCATABLE=y
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: JiSheng Zhang <jszhang3@gmail.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 6768458b17f9bf48a4c3a34e49b20344091b5f7e upstream.
+commit e22a539824e8ddb82c87b4f415165ede82e6ab56 upstream.
 
-Software should set XHCI_HC_OS_OWNED bit to request ownership of xHC.
+The CONFIG_RELOCATABLE code tries to align the unpack destination to
+the value of 'kernel_alignment' in the setup_hdr.  If that's 0, it
+tries to unpack to address 0, which in fact causes the gunzip code
+to call 'error("Out of memory while allocating output buffer")'.
 
-This patch should be backported to kernels as far back as 2.6.31.
+The bootloader (ie. the lguest Launcher in this case) should be doing
+setting this field; the normal bzImage is 16M, we can use the same.
 
-Signed-off-by: JiSheng Zhang <jszhang3@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Stefanos Geraggelos <sgerag@cslab.ece.ntua.gr>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/pci-quirks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/virtual/lguest/lguest.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -803,7 +803,7 @@ static void __devinit quirk_usb_handoff_
+--- a/Documentation/virtual/lguest/lguest.c
++++ b/Documentation/virtual/lguest/lguest.c
+@@ -2008,6 +2008,9 @@ int main(int argc, char *argv[])
+ 	/* We use a simple helper to copy the arguments separated by spaces. */
+ 	concat((char *)(boot + 1), argv+optind+2);
  
- 	/* If the BIOS owns the HC, signal that the OS wants it, and wait */
- 	if (val & XHCI_HC_BIOS_OWNED) {
--		writel(val & XHCI_HC_OS_OWNED, base + ext_cap_offset);
-+		writel(val | XHCI_HC_OS_OWNED, base + ext_cap_offset);
++	/* Set kernel alignment to 16M (CONFIG_PHYSICAL_ALIGN) */
++	boot->hdr.kernel_alignment = 0x1000000;
++
+ 	/* Boot protocol version: 2.07 supports the fields for lguest. */
+ 	boot->hdr.version = 0x207;
  
- 		/* Wait for 5 seconds with 10 microsecond polling interval */
- 		timeout = handshake(base + ext_cap_offset, XHCI_HC_BIOS_OWNED,
 
 
