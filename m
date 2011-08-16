@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1HPPmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:42:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353Ab1HPPmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:42:36 -0400
-Date: Tue, 16 Aug 2011 17:39:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: =?iso-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: avr32: handle_signal() bug?
-Message-ID: <20110816153938.GA20428@redhat.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com> <CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com> <1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com> <CAF8ieYV_3skMFo4Mc59hX1g1tFEjg8Fjnag36ZQwU9w=CPkLLQ@mail.gmail.com> <1313488648.3436.126.camel@mfleming-mobl1.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1313488648.3436.126.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752549Ab1HPPoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:44:18 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54496 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751426Ab1HPPoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 11:44:17 -0400
+Date: Tue, 16 Aug 2011 16:47:45 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] tty: clearify structure initializer in notify_write()
+Message-ID: <20110816164745.5b38b408@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110816150452.GL10560@shale.localdomain>
+References: <1312027319-1402-1-git-send-email-minipli@googlemail.com>
+	<CA+rthh_AW5Yz2ZiOqOTWquXKnsDEd=YcNQ9HiOWu-deSar0eWQ@mail.gmail.com>
+	<20110816150452.GL10560@shale.localdomain>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Matt Fleming wrote:
->
-> On Mon, 2011-08-15 at 22:55 -0700, Håvard Skinnemoen wrote:
-> >
-> > Thanks for the test. Unfortunately, the result is the same regardless
-> > of whether I apply the patches or not. In both cases:
-> >
-> > /root # ./nodefer
-> > SIGUSR2: not blocked
-> > SIGTERM: not blocked
->
-> Hmm.. that's interesting. I had a quick look through the rest of the
-> code in the signal path and couldn't find anything obviously wrong.
+On Tue, 16 Aug 2011 18:04:52 +0300
+Dan Carpenter <error27@gmail.com> wrote:
 
-Agreed, I am puzzled too.
+> > On Sat, Jul 30, 2011 at 2:01 PM, Mathias Krause <minipli@googlemail.com> wrote:
+> > > Even though this is valid C we should not mix C99 initializers with
+> > > obfuscated ANSI C.
+> 
+> I saw this patch the first time and I couldn't figure out why the
+> original code was written that way.  I'm curious, is there some trick
+> here that I don't see, or is it just a typo that happens to work?
 
-> The
-> only thing that looked suspicious is that you don't clear
-> TIF_RESTORE_SIGMASK if you successsfully deliver a signal.
-
-Indeed this is wrong. TIF_RESTORE_SIGMASK should be always cleared,
-unless setup_rt_frame/valid_user_regs fails.
-
-> Maybe try
-> adding a clear_thread_flag(TIF_RESTORE_SIGMASK); to the success path in
-> handle_signal() and see if you get better results?
-
-I will be surprised if this helps with this particular test-case,
-but I agree this should be fixed anyway.
-
-> > Your patch doesn't appear to do any harm though, and it looks correct
-> > to me. Perhaps there's another bug lurking somewhere as well. Some
-> > preliminary debugging makes me suspicious about libc, but I can't tell
-> > for sure yet.
->
-> Which libc is this by the way?
-
-may be you can run the test-case under strace? On my machine
-strace -f -e rt_sigprocmask ./test shows
-
-	[pid 25610] --- SIGUSR1 (User defined signal 1) @ 0 (0) ---
-	[pid 25610] rt_sigprocmask(SIG_BLOCK, NULL, [USR2 TERM], 8) = 0
-
-Oleg.
-
+Typo looking at the original commit
