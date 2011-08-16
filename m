@@ -1,61 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab1HPJOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 05:14:36 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45999 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158Ab1HPJOd (ORCPT
+	id S1751860Ab1HPJaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 05:30:16 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61447 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab1HPJaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 05:14:33 -0400
-Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-From: Matt Fleming <matt@console-pimps.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        hpa@linux.intel.com, Avi Kivity <avi@redhat.com>, mjg@redhat.com,
-        MarceloTosatti <mtosatti@redhat.com>, johnstultz <johnstul@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4E4A28AE0200007800051605@nat28.tlf.novell.com>
-References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
-	 <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <4E4009A50200007800050258@nat28.tlf.novell.com>
-	 <20110810090330.GF26762@elte.hu>
-	 <4E426D4702000078000508B5@nat28.tlf.novell.com>
-	 <20110810095140.GB21059@elte.hu>
-	 <4E429FE30200007800050910@nat28.tlf.novell.com>
-	 <1313432283.3436.110.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <4E4A28AE0200007800051605@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Aug 2011 10:14:28 +0100
-Message-ID: <1313486068.3436.116.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Aug 2011 05:30:12 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Tue, 16 Aug 2011 11:29:37 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 8/9] ARM: integrate CMA with DMA-mapping subsystem
+In-reply-to: <201108121700.30967.arnd@arndb.de>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Message-id: <002b01cc5bf7$0460e350$0d22a9f0$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AcxZAK1YYeOK/I6mS0OpGhyEFKf7uAC9MHIg
+References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com>
+ <1313146711-1767-9-git-send-email-m.szyprowski@samsung.com>
+ <201108121700.30967.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 07:22 +0100, Jan Beulich wrote:
-> >>> On 15.08.11 at 20:18, Matt Fleming <matt@console-pimps.org> wrote:
-> > On Wed, 2011-08-10 at 14:12 +0100, Jan Beulich wrote:
-> >> Bottom line - the fix here is needed for 32-bit booting only (and
-> >> hence isn't - afaic - as critical as I first thought). But the adjustment
-> >> I'm holding is a necessary one (and I don't even understand why,
-> >> when 32- and 64-bit EFI code got merged, this was left 32-bit only),
-> >> and the NX consolidation change needs to be fixed too (basically as
-> >> a prerequisite).
-> > 
-> > But the rtc-lock patch is independent and can be merged on its own,
-> > right? Sure the other issues need fixing but there's no sense in holding
-> > up the rtc-lock patch, since with it applied my machine actually boots.
+Hello,
+
+On Friday, August 12, 2011 5:01 PM Arnd Bergmann wrote:
+
+> On Friday 12 August 2011, Marek Szyprowski wrote:
+> > @@ -82,16 +103,16 @@ static struct page *__dma_alloc_buffer(struct device
+*dev,
+> size_t size, gfp_t gf
+> >  	if (mask < 0xffffffffULL)
+> >  		gfp |= GFP_DMA;
+> >
+> > -	page = alloc_pages(gfp, order);
+> > -	if (!page)
+> > -		return NULL;
+> > -
+> >  	/*
+> > -	 * Now split the huge page and free the excess pages
+> > +	 * Allocate contiguous memory
+> >  	 */
+> > -	split_page(page, order);
+> > -	for (p = page + (size >> PAGE_SHIFT), e = page + (1 << order); p < e;
+p++)
+> > -		__free_page(p);
+> > +	if (cma_available())
+> > +		page = dma_alloc_from_contiguous(dev, count, order);
+> > +	else
+> > +		page = __dma_alloc_system_pages(count, gfp, order);
+> > +
+> > +	if (!page)
+> > +		return NULL;
 > 
-> Oh, yes, absolutely - I'm actually waiting for this one to get applied so
-> that the enabling of the use of the EFI RTC routines on x86-64 won't
-> cause the same problem there.
+> Why do you need the fallback here? I would assume that CMA now has to be
+available
+> on ARMv6 and up to work at all. When you allocate from
+__dma_alloc_system_pages(),
+> wouldn't that necessarily fail in the dma_remap_area() stage?
 
-OK cool, thanks Jan. I suspect Ingo will pick this up, or Thomas once
-he's worked through his email backlog ;-)
+It is not a fallback - I've just merged 2 cases together (CMA case and
+coheren/nommu
+arch). I agree that such mixed code might be confusing.
 
+> >
+> > -	if (arch_is_coherent() || nommu()) {
+> > +	if (arch_is_coherent() || nommu() ||
+> > +	   (cma_available() && !(gfp & GFP_ATOMIC))) {
+> > +		/*
+> > +		 * Allocate from system or CMA pages
+> > +		 */
+> >  		struct page *page = __dma_alloc_buffer(dev, size, gfp);
+> >  		if (!page)
+> >  			return NULL;
+> > +		dma_remap_area(page, size, area->prot);
+> >  		pfn = page_to_pfn(page);
+> >  		ret = page_address(page);
+> 
+> Similarly with coherent and nommu. It seems to me that lumping too
+> many cases together creates extra complexity here.
+> 
+> How about something like
+> 
+> 	if (arch_is_coherent() || nommu())
+> 		ret = alloc_simple_buffer();
+> 	else if (arch_is_v4_v5())
+> 		ret = alloc_remap();
+> 	else if (gfp & GFP_ATOMIC)
+> 		ret = alloc_from_pool();
+> 	else
+> 		ret = alloc_from_contiguous();
+> 
+> This also allows a natural conversion to dma_map_ops when we get there.
+
+Ok. Is it ok to enable CMA permanently for ARMv6+? If CMA is left conditional
+the dma pool code will be much more complicated, because it will need to support
+both CMA and non-CMA cases.
+
+> >  	/* reserve any platform specific memblock areas */
+> >  	if (mdesc->reserve)
+> >  		mdesc->reserve();
+> >
+> > +	dma_coherent_reserve();
+> > +	dma_contiguous_reserve();
+> > +
+> >  	memblock_analyze();
+> >  	memblock_dump_all();
+> >  }
+> 
+> Since we can handle most allocations using CMA on ARMv6+, I would think
+> that we can have a much smaller reserved area. Have you tried changing
+> dma_coherent_reserve() to allocate out of the contiguous area instead of
+> wasting a full 2MB section of memory?
+
+I will move the reserved pool directly into CMA area, so it can be shrunk below
+2MiB.
+
+Best regards
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
