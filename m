@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab1HPBSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 21:18:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:40123 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1HPBSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 21:18:15 -0400
-Date: Tue, 16 Aug 2011 03:18:07 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Solar Designer <solar@openwall.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Will Drewry <wad@chromium.org>
-Subject: Re: [RFC] x86: restrict pid namespaces to 32 or 64 bit syscalls
-Message-ID: <20110816011807.GA5782@one.firstfloor.org>
-References: <20110813062246.GC3851@albatros> <36fcaf94-2e99-47cb-a835-aefb79856429@email.android.com> <m2ei0olnua.fsf@firstfloor.org> <632d03b0-6725-431e-b100-13f5046b03e9@email.android.com> <20110814092028.GB14293@openwall.com> <01ba0cce-d28e-473e-be3a-7d3c8f185681@email.android.com> <20110815185114.GA20115@openwall.com> <4E496CAC.3030103@zytor.com> <20110815201419.GA20296@openwall.com> <CACLa4puLxL+azpYjQsD6eDKU=LPJ1mrF1LUrc5Gy-89a8fvjpQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1753294Ab1HPBYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 21:24:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34108 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752498Ab1HPBYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 21:24:16 -0400
+Date: Mon, 15 Aug 2011 18:24:03 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Jones <davej@redhat.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/90] 3.0.2-stable review
+Message-ID: <20110816012403.GB22104@suse.de>
+References: <20110812210626.GA4725@kroah.com>
+ <4E47A400.1030607@gmail.com>
+ <20110814161842.GA7864@suse.de>
+ <20110815205653.GA13895@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACLa4puLxL+azpYjQsD6eDKU=LPJ1mrF1LUrc5Gy-89a8fvjpQ@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20110815205653.GA13895@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 06:13:51PM -0400, Eric Paris wrote:
-> On Mon, Aug 15, 2011 at 4:14 PM, Solar Designer <solar@openwall.com> wrote:
+On Mon, Aug 15, 2011 at 04:56:53PM -0400, Dave Jones wrote:
+> On Sun, Aug 14, 2011 at 09:18:42AM -0700, Greg KH wrote:
+>  > On Sun, Aug 14, 2011 at 12:31:28PM +0200, Jiri Slaby wrote:
+>  > > On 08/12/2011 11:06 PM, Greg KH wrote:
+>  > > > This is the start of the stable review cycle for the 3.0.2 release.
+>  > > > There are 90 patches in this series, all will be posted as a response
+>  > > > to this one.
+>  > > 
+>  > > It looks like they didn't go through to LKML. Neither for 3.0.2, nor for
+>  > > .32.45, nor for .33.18. Could you resend?
+>  > 
+>  > Sorry, none of them got sent, that was my fault.  I've now sent them
+>  > all.
 > 
-> > So how do we proceed from here?  Start by getting Will's patch applied?
-> 
-> How to move forward with Will's patch is supposed to be discussed at
-> the invite only kernel summit October 23 - 25, 2011.  As one of the
+> Seems to be missing aba8d056078e47350d85b06a9cabd5afcc4b72ea
+> which is CVE-2011-2905
 
-linux-kernel is really the primary forum. If you want to discuss
-something just discuss it here (ideally with patches)
+It would have been nice if someone had sent that patch to
+stable@kernel.org :(
 
-May the best patch win.
+I'll queue it up for the next release after this one, thanks.
 
--Andi
+greg k-h
