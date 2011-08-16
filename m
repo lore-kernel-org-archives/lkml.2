@@ -1,126 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab1HPCNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:13:09 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:24279 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751481Ab1HPCNI (ORCPT
+	id S1752684Ab1HPCTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:19:34 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:53797 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751967Ab1HPCTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:13:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhYDAJfRSU55LbABgWdsb2JhbABBqBQVAQEWJiWBQAEBBTocIwULCAMOCi4UJQMhExvBFw6GOQSbTohK
-Date: Tue, 16 Aug 2011 12:11:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <jbottomley@parallels.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 3/4] limit nr_dentries per superblock
-Message-ID: <20110816021154.GI26978@dastard>
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
- <1313334832-1150-4-git-send-email-glommer@parallels.com>
- <CAOJsxLFYD9DkEU5R+9fZr-uaznteP8-BUC_Ti+FnNFqtbOCHSw@mail.gmail.com>
- <20110815104656.GG26978@dastard>
- <CAOJsxLGFJmqO-W=itQbO4Mh4DxSD4wrHOC8gQ5bWL5aE1YYeQw@mail.gmail.com>
- <4E48FD8A.90401@parallels.com>
- <CAOJsxLFjZffC9i5kQsBWjGy3eWdj3VMB5awz=yPcwgeKb5BG0Q@mail.gmail.com>
+	Mon, 15 Aug 2011 22:19:33 -0400
+X-Sasl-enc: eGCER7wax7qkBaq2TCgXhdEBfjybYybFUsgCOcSWKEjR 1313461173
+Date: Mon, 15 Aug 2011 19:19:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.45
+Message-ID: <20110816021910.GA1486@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLFjZffC9i5kQsBWjGy3eWdj3VMB5awz=yPcwgeKb5BG0Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 02:14:39PM +0300, Pekka Enberg wrote:
-> Hi Pavel,
-> 
-> On Mon, Aug 15, 2011 at 2:05 PM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> > This will make sense, since the kernel memory management per-cgroup is one of the
-> > things we'd live to have, but this particular idea will definitely not work in case
-> > we keep the containers' files on one partition keeping each container in its own
-> > chroot environment.
-> 
-> And you want a per-container dcache limit? Will the containers share
-> the same superblock?
+I'm announcing the release of the 2.6.32.45 kernel.
 
-Yes, and that's one of the problems with the "arbitrary container"
-approach to controlling the dentry cache size. Arbitrary containers
-don't map easily to predictable and scalable LRU and reclaim
-implementations. Hence right now the container scope is limited to
-per-superblock.
+All users of the 2.6.32 series must upgrade.
 
-> Couldn't you simply do per-container "struct
-> kmem_accounted_cache" in struct superblock?
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=summary
 
-Probably could do it that way, but it's still not really and
-integrated solution. What we'll end up with is this LRU structure:
+thanks,
 
-struct lru_node {
-	struct list_head		lru;
-	spinlock_t			lock;
-	long				nr_items;
-} ____cacheline_aligned_in_smp;
+greg k-h
 
-struct lru {
-	struct kmem_accounted_cache	*cache;
-	struct lru_node			lru_node[MAX_NUMNODES];
-	nodemask_t			active_nodes;
-	int (*isolate_item)(struct list_head *item);
-	int (*dispose)(struct list_head *list);
-}
+------------
 
-Where the only thing that the lru->cache is used for is getting the
-number of items allocated to the cache. Seems relatively pointless
-to make that statistic abstraction for just a single value that we
-can get via a simple per-cpu counter...
+ Makefile                                 |    2 
+ arch/powerpc/kernel/prom_init.c          |    6 
+ arch/powerpc/platforms/pseries/lpar.c    |    2 
+ crypto/md5.c                             |   92 --------
+ drivers/char/random.c                    |  334 -------------------------------
+ include/linux/cryptohash.h               |    5 
+ include/linux/random.h                   |   11 -
+ include/net/secure_seq.h                 |   20 +
+ lib/Makefile                             |    2 
+ lib/md5.c                                |   95 ++++++++
+ net/core/Makefile                        |    2 
+ net/core/secure_seq.c                    |  184 +++++++++++++++++
+ net/dccp/ipv4.c                          |    1 
+ net/dccp/ipv6.c                          |    9 
+ net/ipv4/inet_hashtables.c               |    1 
+ net/ipv4/inetpeer.c                      |    1 
+ net/ipv4/netfilter/nf_nat_proto_common.c |    1 
+ net/ipv4/route.c                         |    1 
+ net/ipv4/tcp_ipv4.c                      |    1 
+ net/ipv6/inet6_hashtables.c              |    1 
+ net/ipv6/tcp_ipv6.c                      |    1 
+ sound/core/timer.c                       |    2 
+ sound/usb/caiaq/input.c                  |    2 
+ 23 files changed, 333 insertions(+), 443 deletions(-)
 
-Then, when you consider SLUB has this structure for every individual
-slab cache:
+Anton Blanchard (2):
+      powerpc: Fix device tree claim code
+      powerpc: pseries: Fix kexec on machines with more than 4TB of RAM
 
-struct kmem_cache_node {
-        spinlock_t list_lock;   /* Protect partial list and nr_partial */
-        unsigned long nr_partial;
-        struct list_head partial;
-#ifdef CONFIG_SLUB_DEBUG
-        atomic_long_t nr_slabs;
-        atomic_long_t total_objects;
-        struct list_head full;
-#endif
-};
+Daniel Mack (1):
+      ALSA: snd-usb-caiaq: Fix keymap for RigKontrol3
 
-you can see why tight integration of the per-node LRU infrastructure
-is appealing - there's no unnecessary duplication and the accounting
-is done in the right spot. It also means there is only one shrinker
-implmentation for all slabs, with a couple of simple per-slab
-callbacks for isolating objects for disposal and then to dispose of
-them. This would mean that most slab caches that use shrinkers would
-no longer need to implement their own LRU, get LRU scalability and
-node-aware reclaim for free, have built in size limits, etc.
+David S. Miller (2):
+      crypto: Move md5_transform to lib/md5.c
+      net: Compute protocol sequence numbers and fragment IDs using MD5.
 
-And FWIW, integrating the LRU shrinker mechanism into the slab cache
-also provides the mechanisms needed for capping the size of the
-cache as well as slab defragmentation.  Much smarter things can be
-done when you know both the age and the locality of objects. e.g.
-there's no point preventing allocation from a slab due to maximum
-object count limitations if there are partial pages in the slab
-cache because the allocation can be done without increasing memory
-footprint.....
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.45
 
-Cheers,
+Takashi Iwai (1):
+      ALSA: timer - Fix Oops at closing slave timer
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
