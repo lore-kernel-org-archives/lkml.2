@@ -1,216 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1HPGoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 02:44:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51775 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab1HPGox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 02:44:53 -0400
-Message-ID: <4E4A1257.5080204@cn.fujitsu.com>
-Date: Tue, 16 Aug 2011 14:46:47 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1751306Ab1HPG5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:57:10 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50295 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869Ab1HPG5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 02:57:08 -0400
+Message-ID: <4E4A149E.5080608@oracle.com>
+Date: Tue, 16 Aug 2011 14:56:30 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 11/11] KVM: MMU: improve write flooding detected
-References: <4E4A10E8.5090705@cn.fujitsu.com>
-In-Reply-To: <4E4A10E8.5090705@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-16 14:43:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-16 14:43:38,
-	Serialize complete at 2011-08-16 14:43:38
+To: Christoph Hellwig <hch@infradead.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] xen-blkback: sync I/O after backend disconnected
+References: <4E48A6A6.4040706@oracle.com> <20110815144610.GA3707@infradead.org>
+In-Reply-To: <20110815144610.GA3707@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E4A14B8.0064:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Detecting write-flooding does not work well, when we handle page written, if
-the last speculative spte is not accessed, we treat the page is
-write-flooding, however, we can speculative spte on many path, such as pte
-prefetch, page synced, that means the last speculative spte may be not point
-to the written page and the written page can be accessed via other sptes, so
-depends on the Accessed bit of the last speculative spte is not enough
+On 08/15/11 22:46, Christoph Hellwig wrote:
+> On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
+>> When backend disconnect, sync IO requests to the disk.
+> 
+> Care to explain why?
 
-Instead of detected page accessed, we can detect whether the spte is accessed
-or not, if the spte is not accessed but it is written frequently, we treat is
-not a page table or it not used for a long time
+When backend disconnect, I think we'd better flush all dirty data 
+to the disk ASAP.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/include/asm/kvm_host.h |    6 +---
- arch/x86/kvm/mmu.c              |   48 +++++++++------------------------------
- arch/x86/kvm/paging_tmpl.h      |    9 +-----
- 3 files changed, 15 insertions(+), 48 deletions(-)
+> 
+> Also you'll just need a sync_blockdev, fsync_bdev does far to many
+> things that don't make any sense when you don't have a file system
+> mounted on a device.
+> 
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 927ba73..9d17238 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -239,6 +239,8 @@ struct kvm_mmu_page {
- 	int clear_spte_count;
- #endif
- 
-+	int write_flooding_count;
-+
- 	struct rcu_head rcu;
- };
- 
-@@ -353,10 +355,6 @@ struct kvm_vcpu_arch {
- 	struct kvm_mmu_memory_cache mmu_page_cache;
- 	struct kvm_mmu_memory_cache mmu_page_header_cache;
- 
--	gfn_t last_pt_write_gfn;
--	int   last_pt_write_count;
--	u64  *last_pte_updated;
--
- 	struct fpu guest_fpu;
- 	u64 xcr0;
- 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index adaa160..3230f84 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1695,6 +1695,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 		} else if (sp->unsync)
- 			kvm_mmu_mark_parents_unsync(sp);
- 
-+		sp->write_flooding_count = 0;
- 		trace_kvm_mmu_get_page(sp, false);
- 		return sp;
- 	}
-@@ -1847,15 +1848,6 @@ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
- 	mmu_page_remove_parent_pte(sp, parent_pte);
- }
- 
--static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
--{
--	int i;
--	struct kvm_vcpu *vcpu;
--
--	kvm_for_each_vcpu(i, vcpu, kvm)
--		vcpu->arch.last_pte_updated = NULL;
--}
--
- static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
- {
- 	u64 *parent_pte;
-@@ -1915,7 +1907,6 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
- 	}
- 
- 	sp->role.invalid = 1;
--	kvm_mmu_reset_last_pte_updated(kvm);
- 	return ret;
- }
- 
-@@ -2360,8 +2351,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		}
- 	}
- 	kvm_release_pfn_clean(pfn);
--	if (speculative)
--		vcpu->arch.last_pte_updated = sptep;
- }
- 
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -3522,13 +3511,6 @@ static void mmu_pte_write_flush_tlb(struct kvm_vcpu *vcpu, bool zap_page,
- 		kvm_mmu_flush_tlb(vcpu);
- }
- 
--static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
--{
--	u64 *spte = vcpu->arch.last_pte_updated;
--
--	return !!(spte && (*spte & shadow_accessed_mask));
--}
--
- static u64 mmu_pte_write_fetch_gpte(struct kvm_vcpu *vcpu, gpa_t *gpa,
- 				    const u8 *new, int *bytes)
- {
-@@ -3569,22 +3551,14 @@ static u64 mmu_pte_write_fetch_gpte(struct kvm_vcpu *vcpu, gpa_t *gpa,
-  * If we're seeing too many writes to a page, it may no longer be a page table,
-  * or we may be forking, in which case it is better to unmap the page.
-  */
--static bool detect_write_flooding(struct kvm_vcpu *vcpu, gfn_t gfn)
-+static bool detect_write_flooding(struct kvm_mmu_page *sp, u64 *spte)
- {
--	bool flooded = false;
--
--	if (gfn == vcpu->arch.last_pt_write_gfn
--	    && !last_updated_pte_accessed(vcpu)) {
--		++vcpu->arch.last_pt_write_count;
--		if (vcpu->arch.last_pt_write_count >= 3)
--			flooded = true;
--	} else {
--		vcpu->arch.last_pt_write_gfn = gfn;
--		vcpu->arch.last_pt_write_count = 1;
--		vcpu->arch.last_pte_updated = NULL;
--	}
-+	if (spte && !(*spte & shadow_accessed_mask))
-+		sp->write_flooding_count++;
-+	else
-+		sp->write_flooding_count = 0;
- 
--	return flooded;
-+	return sp->write_flooding_count >= 3;
- }
- 
- /*
-@@ -3656,7 +3630,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 	LIST_HEAD(invalid_list);
- 	u64 entry, gentry, *spte;
- 	int npte;
--	bool remote_flush, local_flush, zap_page, flooded, misaligned;
-+	bool remote_flush, local_flush, zap_page;
- 
- 	/*
- 	 * If we don't have indirect shadow pages, it means no page is
-@@ -3675,12 +3649,12 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 	++vcpu->kvm->stat.mmu_pte_write;
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
- 
--	flooded = detect_write_flooding(vcpu, gfn);
- 	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
- 	for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node) {
--		misaligned = detect_write_misaligned(sp, gpa, bytes);
-+		spte = get_written_sptes(sp, gpa, &npte);
- 
--		if (misaligned || flooded) {
-+		if (detect_write_misaligned(sp, gpa, bytes) ||
-+		      detect_write_flooding(sp, spte)) {
- 			zap_page |= !!kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
- 						     &invalid_list);
- 			++vcpu->kvm->stat.mmu_flooded;
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index bdc2241..ec5c1b4 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -599,11 +599,9 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	 */
- 	if (!r) {
- 		pgprintk("%s: guest page fault\n", __func__);
--		if (!prefault) {
-+		if (!prefault)
- 			inject_page_fault(vcpu, &walker.fault);
--			/* reset fork detector */
--			vcpu->arch.last_pt_write_count = 0;
--		}
-+
- 		return 0;
- 	}
- 
-@@ -641,9 +639,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
- 		 sptep, *sptep, emulate);
- 
--	if (!emulate)
--		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
--
- 	++vcpu->stat.pf_fixed;
- 	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
- 	spin_unlock(&vcpu->kvm->mmu_lock);
--- 
-1.7.5.4
+xen-blkback support physical device and loopback file, so I think
+here should be fsync_bdev()? 
 
+Thanks,
+Joe
