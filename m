@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab1HPRnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 13:43:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751373Ab1HPRnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 13:43:41 -0400
-Date: Tue, 16 Aug 2011 19:40:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Chris Zankel <chris@zankel.net>
-Subject: Re: [PATCH 33/41] xtensa: Don't reimplement force_sigsegv()
-Message-ID: <20110816174051.GG29190@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-34-git-send-email-matt@console-pimps.org>
+	id S1752084Ab1HPRoh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 13:44:37 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45869 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1HPRof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 13:44:35 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110725569"
+Message-ID: <0446c62c2d4a2c60442c582b4f61f5d3.squirrel@www.codeaurora.org>
+In-Reply-To: <4E4AA52E.1070706@codeaurora.org>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+    <201108161537.28612.arnd@arndb.de>
+    <20110816135051.GA22227@huya.qualcomm.com>
+    <201108161632.22255.arnd@arndb.de> <4E4AA52E.1070706@codeaurora.org>
+Date: Tue, 16 Aug 2011 10:44:35 -0700 (PDT)
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+From: sdharia@codeaurora.org
+To: "Kenneth Heitke" <kheitke@codeaurora.org>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "David Brown" <davidb@codeaurora.org>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        "Sagar Dharia" <sdharia@codeaurora.org>, rdunlap@xenotime.net,
+        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
+        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
+        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
+        zajec5@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313071035-12047-34-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11, Matt Fleming wrote:
+>>
+>>> Kenneth would better be able to clarify how dynamic the SLIMbus is.
+>>
+>> That would definitely be helpful. Also, I'd be very interested to hear
+>> what kind of device probing is available on slimbus. If Mark was
+>> right about devices being discoverable, we need don't need any board
+>> description (dts or hardcoded) but instead a way to match the devices
+>> to drivers based on their HW ID.
+>>
+>> 	Arnd
+>>
 >
-> Instead of open coding the sequence from force_sigsegv() just call
-> it. This also fixes a race because sa_handler was being modified
-> without holding ->sighand->siglock.
+> SLIMbus is a MIPI standard bus primarily used for digital audio devices.
+>   The devices on the bus SLIMbus enumerate themselves by sending an
+> IDENTITY message.  I'll let Sagar clarify further.
 
-The same problem with the changelog in this and the next patch.
+Thanks everyone for taking your time to review the RFC.
+Regarding device discovery:
+Every device sends a "PRESENT" message when it comes up. Every device has
+48-bit address like Ethernet and spec lets upto 256 devices (each getting
+8-bit logical address) on one bus.
+The device can report anytime (when it's plugged in, when a dynamic module
+powers it on etc.)
+Typical use case will be to have it board-specific but as Mark
+mentioned,we may have plug-in cards with slimbus devices so we want
+dynamic support as well.
 
-The patch itself looks nice.
+Thanks-
+-Sagar
 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Chris Zankel <chris@zankel.net>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/xtensa/kernel/signal.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/xtensa/kernel/signal.c b/arch/xtensa/kernel/signal.c
-> index f2220b5..4f53770 100644
-> --- a/arch/xtensa/kernel/signal.c
-> +++ b/arch/xtensa/kernel/signal.c
-> @@ -425,9 +425,7 @@ static void setup_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
->  	return;
->  
->  give_sigsegv:
-> -	if (sig == SIGSEGV)
-> -		ka->sa.sa_handler = SIG_DFL;
-> -	force_sig(SIGSEGV, current);
-> +	force_sigsegv(sig, current);
->  }
->  
->  /*
-> -- 
-> 1.7.4.4
-> 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
 
