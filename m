@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1HPXaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 19:30:01 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45110 "EHLO
+	id S1752932Ab1HPXgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 19:36:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42607 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab1HPXaA (ORCPT
+	with ESMTP id S1752001Ab1HPXgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 19:30:00 -0400
-Message-ID: <4E4AFCFC.9020008@kernel.org>
-Date: Tue, 16 Aug 2011 16:27:56 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: [KORG] Taking hera down to deal with the load issues
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Aug 2011 19:36:54 -0400
+Date: Tue, 16 Aug 2011 16:30:36 -0700 (PDT)
+Message-Id: <20110816.163036.838746426835627017.davem@davemloft.net>
+To: lionel@mamane.lu
+Cc: pekkas@netcore.fi, yoshfuji@linux-ipv6.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sit tunnels: propagate IPv6 transport class to IPv4
+ Type of Service
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110814000438.GA30127@capsaicin.mamane.lu>
+References: <20110814000438.GA30127@capsaicin.mamane.lu>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 16 Aug 2011 16:27:57 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 16 Aug 2011 16:30:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Lionel Elie Mamane <lionel@mamane.lu>
+Date: Sun, 14 Aug 2011 02:04:38 +0200
 
-Hey Everyone,
+> sit tunnels (IPv6 tunnel over IPv4) do not implement the "tos inherit"
+> case to copy the IPv6 transport class byte from the inner packet to
+> the IPv4 type of service byte in the outer packet. By contrast, ipip
+> tunnels and GRE tunnels do.
+> 
+> This patch, adapted from the similar code in net/ipv4/ipip.c and
+> net/ipv4/ip_gre.c, implements that.
+> 
+> This patch applies to 3.0.1, and has been tested on that version.
+> 
+> 
+> Signed-off-by: Lionel Elie Mamane <lionel@mamane.lu>
 
-Ok so since I'm back from vacation, and things don't seem to be getting
-better, I'm going to take hera/master offline in about 30 minutes or so
-(5pm PDT or Tue Aug 17 0:0:0 UTC 2011).  This is going to involve a base
-OS upgrade, and a full on new kernel.
-
-This should get the loads back into what we are expecting, and give me a
-chance to more thoroughly investigate the panics from last week.  If
-you've got questions or comments, please give me a shout as soon as
-possible.
-
-- - John 'Warthog9' Hawley
-Chief Kernel.org Administrator
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk5K/PkACgkQ/E3kyWU9dieV8wCcCUmHmIYqeqK0eBUt7f3ne07J
-994An3MrErlAjOLx/zkpB6T1dNsHVLtC
-=CSPj
------END PGP SIGNATURE-----
+Applied, thanks.
