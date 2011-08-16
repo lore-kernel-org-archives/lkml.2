@@ -1,27 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1HPMg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 08:36:28 -0400
-Received: from mail.najdschools.edu.sa ([212.119.79.83]:50058 "EHLO
-	mail.najdschools.edu.sa" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab1HPMg0 convert rfc822-to-8bit (ORCPT
+	id S1752197Ab1HPMiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 08:38:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55121 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1HPMiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 08:36:26 -0400
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 16 Aug 2011 08:38:10 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Transfer Offer
-To: Recipients <info@mail.com>
-From: Song Li <info@mail.com>
-Date: Tue, 16 Aug 2011 20:32:17 -0700
-Reply-To: songli1@w.cn
-Message-Id: <20110816121959.54C2459F1D2@mail.najdschools.edu.sa>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20110816160754.7c4124fc60a99bb32051a92b@canb.auug.org.au>
+References: <20110816160754.7c4124fc60a99bb32051a92b@canb.auug.org.au>
+Date: Tue, 16 Aug 2011 14:38:09 +0200
+Message-ID: <CA+icZUXKCvqfwoHma-4dLymWS3yVHuFWrL0=qr4bVCJjTKsWkw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 16
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-l am a Staff of Hang Seng Bank HongKong, I do not know if we can work
-together in transferring $19,500,000.USD from my bank to you account.
-Finally if you are interested I shall provide you with more details.
-Email: songli1@w.cn
+On Tue, Aug 16, 2011 at 8:07 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> [The kernel.org mirroring is being very slow today]
+>
+
+Of what time-deltas are we talking? >1d?
+I took the linux-next patch from yesterday (next-20110815).
+For actively working on linux-next, this is again a real pain.
+What about mirroring your data from master.k.o to [1] or [2] (like
+some Linux-kernel sub-tree maintainers already use)?
+
+- Sedat -
+
+[1] http://git.infradead.org/
+[2] http://repo.or.cz/
