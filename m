@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab1HPWep (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 18:34:45 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34032 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751858Ab1HPWen (ORCPT
+	id S1752794Ab1HPWfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 18:35:50 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63584 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab1HPWft convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 18:34:43 -0400
-X-Sasl-enc: WsoOrz/YzJJU7u0rgNnQ+1Ha+HMf1cG2GqA8604ESGvd 1313534082
-Date: Tue, 16 Aug 2011 15:33:27 -0700
-From: Greg KH <greg@kroah.com>
-To: "Jeremiah C. Foster" <jeremiah@jeremiahfoster.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [stable] [Stable-review] Future of the -longterm kernel releases
- (i.e. how we pick them).
-Message-ID: <20110816223327.GA1534@kroah.com>
-References: <20110815041524.GA7578@kroah.com>
- <1313460542.2981.76.camel@deadeye>
- <17669FB8-C6FF-4B1F-9765-F1FD991D14CB@jeremiahfoster.com>
+	Tue, 16 Aug 2011 18:35:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17669FB8-C6FF-4B1F-9765-F1FD991D14CB@jeremiahfoster.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110816145427.78f2f8c9.akpm@linux-foundation.org>
+References: <1313441856-1419-1-git-send-email-wad@chromium.org>
+	<20110816145427.78f2f8c9.akpm@linux-foundation.org>
+Date: Tue, 16 Aug 2011 17:35:48 -0500
+Message-ID: <CABqD9hZ7jEr+H1gg5ukfoUXkTRDs-oy8uK1PuWwHv6Jc2vgnZg@mail.gmail.com>
+Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shaohua.li@intel.com>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 09:26:24PM +0200, Jeremiah C. Foster wrote:
-> I'd like to echo Ben's sentiment, particularly in the area of automotive. 
-> A car has to be supported with parts for at least ten years, often longer, 
-> and this includes the build system for the infotainment software.
-> The GENIVI Alliance is now building infotainment systems for their member 
-> companies (BMW, GM, PSA, Hyundai, etc.) which will have to preserve a 
-> working kernel for a long time, like lark's tongues in aspic. So there is an 
-> interest in a "longterm, stable" kernel in the automotive industry. Furthermore,
-> know-how around choosing a long term kernel relevant to a car is in short 
-> supply, so there is a lot of reliance on the distros and commercial OSVs in 
-> this regard.
+On Tue, Aug 16, 2011 at 4:54 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 15 Aug 2011 15:57:35 -0500
+> Will Drewry <wad@chromium.org> wrote:
+>
+>> This patch proposes a sysctl knob that allows a privileged user to
+>> disable ~VM_MAYEXEC tainting when mapping in a vma from a MNT_NOEXEC
+>> mountpoint.  It does not alter the normal behavior resulting from
+>> attempting to directly mmap(PROT_EXEC) a vma (-EPERM) nor the behavior
+>> of any other subsystems checking MNT_NOEXEC.
+>>
+>> It is motivated by a common /dev/shm, /tmp usecase. There are few
+>> facilities for creating a shared memory segment that can be remapped in
+>> the same process address space with different permissions.  Often, a
+>> file in /tmp provides this functionality.  However, on distributions
+>> that are more restrictive/paranoid, world-writeable directories are
+>> often mounted "noexec".  The only workaround to support software that
+>> needs this behavior is to either not use that software or remount /tmp
+>> exec.
+>
+> Remounting /tmp would appear to have the same effect as altering this
+> sysctl, so why not just remount /tmp?
 
-Isn't that the job of the distros and commercial OSVs today?  Are they
-somehow not doing this job well?  Do they need help from the community
-instead to help define, implement, and maintain this for them?
+The main difference is that you still achieve the primary goals of
+noexec without the secondary:
+1. exec still fails
+2. mmap(PROT_EXEC) still fails
 
-I'm genuinely curious about this, I haven't heard this directly from
-users before, only from companies who are in this line of work, wanting
-help in doing this for them, for a variety of odd reasons.
+This means that with a common gnu-ish userspace, it's not possible to
+execute an arbitrary binary in /tmp or use it as a preload or dlopen()
+source.  It's like half-noexec.
 
-If so, doesn't this imply that maybe those users should be choosing a
-different company for this support, or that they have given up on this
-and want to work directly with the community instead?  If the latter,
-I'd be very happy to work with them, contacts are greatly appreciated.
+>>  (E.g., https://bugs.gentoo.org/350336?id=350336)  Given that
+>> the only recourse is using SysV IPC, the application programmer loses
+>> many of the useful ABI features that they get using a mmap'd file (and
+>> as such are often hesitant to explore that more painful path).
+>>
+>> With this patch, it would be possible to change the sysctl variable
+>> such that mprotect(PROT_EXEC) would succeed.  In cases like the example
+>> above, an additional userspace mmap-wrapper would be needed, but in
+>> other cases, like how code.google.com/p/nativeclient mmap()s then
+>> mprotect()s, the behavior would be unaffected.
+>>
+>> The tradeoff is a loss of defense in depth, but it seems reasonable when
+>> the alternative is to disable the defense entirely.
+>>
+>> ...
+>>
+>> --- a/kernel/sysctl.c
+>> +++ b/kernel/sysctl.c
+>> @@ -89,6 +89,9 @@
+>>  /* External variables not in a header file. */
+>>  extern int sysctl_overcommit_memory;
+>>  extern int sysctl_overcommit_ratio;
+>> +#ifdef CONFIG_MMU
+>
+> The ifdef isn't needed in the header and we generally omit it to avoid
+> clutter.
 
-greg k-h
+Thanks - I'll remove it!
+
+> afaict this feature could be made available on NOMMU systems?
+
+When I poked around I didn't see VM_MAYEXEC being used in NOMMU
+systems, but I may have just been misreading!  I'll relook.
+
+>> +extern int sysctl_mmap_noexec_taint;
+>
+> The term "taint" has a specific meaning in the kernel (see
+> add_taint()).  It's regrettable that this patch attaches a second
+> meaning to that term.  Can we think of a better word to use?
+>
+> A better word would communicate the sense of the sysctl operation.  If
+> a "taint" flag is set to true, I don't know whether that means that
+> noexec is enabled or disabled.  Something like
+> sysctl_mmap_noexec_override or sysctl_mmap_noexec_disable, perhaps.
+
+Thanks for the good points and suggestions.  Maybe something like
+  sysctl_mprotect_ignores_noexec
+would reflect this more closely, though still not quite as accurately
+as your examples.
+(hrm, maybe sysctl_mmap_noexec_propagates)
+
+> This patch forgot to document the new feature and its sysctl.
+> Documentation/sysctl/vm.txt might be the right place.
+
+I will add that along with the changes from your other comments.
+
+Thanks!
+will
