@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab1HPCwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:52:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35853 "EHLO mx2.suse.de"
+	id S1754125Ab1HPCwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:52:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35846 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972Ab1HPCwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:52:11 -0400
-X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:53 2011
-Message-Id: <20110816024452.965925825@pistachio.kroah.org>
+	id S1753972Ab1HPCwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Aug 2011 22:52:07 -0400
+X-Mailbox-Line: From gregkh@pistachio.kroah.org Mon Aug 15 19:44:52 2011
+Message-Id: <20110816024452.815380699@pistachio.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 15 Aug 2011 19:42:48 -0700
+Date: Mon, 15 Aug 2011 19:42:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Stultz <john.stultz@linaro.org>, Felipe Balbi <balbi@ti.com>
-Subject: [05/26] usb: musb: fix oops on musb_gadget_pullup
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matt Evans <matt@ozlabs.org>
+Subject: [04/26] usb/config: use proper endian access for wMaxPacketSize
 In-Reply-To: <20110816024553.GA5631@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 72c487dfb94d02025fb7437dfe2314d836d5a9ab upstream.
+commit 7de7c7d2cb49900e0b967be871bf695c7d6135c9 upstream.
 
-an 'unhandled fault' is causes when a gadget driver calls
-usb_gadget_connect() while the USB cable isn't plugged into
-the OTG port.
+wMaxPacketSize is __le16 and should be accessed as such. Also fix the
+wBytesPerInterval assignment while here.
 
-the fault is caused by an access to MUSB's memory space
-while its clock is turned off due to pm_runtime kicking
-in.
+v2: also fix the wBytesPerInterval assigment, noticed by Matt Evans
 
-in order to fix the fault, we enclose musb_gadget_pullup()
-with pm_runtime_get_sync() ... pm_runtime_put() calls to
-be sure we will always reach that path with clock turned on.
+This patch should be backported to the 3.0 kernel.
 
-[ balbi@ti.com : simplified commit log; removed few things
-	which didn't belong there ]
-
-Reported-by: Zach Pfeffer <zach.pfeffer@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Acked-by: Matt Evans <matt@ozlabs.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/musb_gadget.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/core/config.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1698,6 +1698,8 @@ static int musb_gadget_pullup(struct usb
- 
- 	is_on = !!is_on;
- 
-+	pm_runtime_get_sync(musb->controller);
-+
- 	/* NOTE: this assumes we are sensing vbus; we'd rather
- 	 * not pullup unless the B-session is active.
- 	 */
-@@ -1707,6 +1709,9 @@ static int musb_gadget_pullup(struct usb
- 		musb_pullup(musb, is_on);
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -123,10 +123,11 @@ static void usb_parse_ss_endpoint_compan
  	}
- 	spin_unlock_irqrestore(&musb->lock, flags);
-+
-+	pm_runtime_put(musb->controller);
-+
- 	return 0;
+ 
+ 	if (usb_endpoint_xfer_isoc(&ep->desc))
+-		max_tx = ep->desc.wMaxPacketSize * (desc->bMaxBurst + 1) *
+-			(desc->bmAttributes + 1);
++		max_tx = (desc->bMaxBurst + 1) * (desc->bmAttributes + 1) *
++			le16_to_cpu(ep->desc.wMaxPacketSize);
+ 	else if (usb_endpoint_xfer_int(&ep->desc))
+-		max_tx = ep->desc.wMaxPacketSize * (desc->bMaxBurst + 1);
++		max_tx = le16_to_cpu(ep->desc.wMaxPacketSize) *
++			(desc->bMaxBurst + 1);
+ 	else
+ 		max_tx = 999999;
+ 	if (le16_to_cpu(desc->wBytesPerInterval) > max_tx) {
+@@ -134,10 +135,10 @@ static void usb_parse_ss_endpoint_compan
+ 				"config %d interface %d altsetting %d ep %d: "
+ 				"setting to %d\n",
+ 				usb_endpoint_xfer_isoc(&ep->desc) ? "Isoc" : "Int",
+-				desc->wBytesPerInterval,
++				le16_to_cpu(desc->wBytesPerInterval),
+ 				cfgno, inum, asnum, ep->desc.bEndpointAddress,
+ 				max_tx);
+-		ep->ss_ep_comp.wBytesPerInterval = max_tx;
++		ep->ss_ep_comp.wBytesPerInterval = cpu_to_le16(max_tx);
+ 	}
  }
  
 
