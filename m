@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab1HPOUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 10:20:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48962 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab1HPOUf (ORCPT
+	id S1752919Ab1HPO1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 10:27:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63841 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab1HPO1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 10:20:35 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk warning issue in cb_das16_cs.c
-Date: Tue, 16 Aug 2011 10:20:01 -0400
-Message-Id: <1313504401-9040-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <[PATCH]Staging: comedi: fix printk warning issue in cb_das16_cs.c>
-References: <[PATCH]Staging: comedi: fix printk warning issue in cb_das16_cs.c>
+	Tue, 16 Aug 2011 10:27:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
+Date: Tue, 16 Aug 2011 16:26:25 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com> <201108161528.48954.arnd@arndb.de> <20110816135516.GC17310@n2100.arm.linux.org.uk>
+In-Reply-To: <20110816135516.GC17310@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108161626.26130.arnd@arndb.de>
+X-Provags-ID: V02:K0:LtC2HmozeAPQ43+tqnM1FqZQvNxoyFj09rH7r3c69Wv
+ n+FuWiGvlpJsIueKbu+y+yfKzZQxSLGPO0t0Hrp2vc/4vnqloW
+ syBK6tSpxD1x1e9hrL955OHLkFUIWx2dgz3PUbaeF49WJmRKva
+ jIEDPzyTuCe4E0D14TmchNvTyRc6C8Bo3XNx8TvMcIqThZtuZZ
+ 1qJ1xUT6C9LM26AFe4dkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tuesday 16 August 2011, Russell King - ARM Linux wrote:
+> On Tue, Aug 16, 2011 at 03:28:48PM +0200, Arnd Bergmann wrote:
+> > Hmm, I don't remember the point about dynamically sizing the pool for
+> > ARMv6K, but that can well be an oversight on my part.  I do remember the
+> > part about taking that memory pool from the CMA region as you say.
+> 
+> If you're setting aside a pool of pages, then you have to dynamically
+> size it.  I did mention during our discussion about this.
+> 
+> The problem is that a pool of fixed size is two fold: you need it to be
+> sufficiently large that it can satisfy all allocations which come along
+> in atomic context.  Yet, we don't want the pool to be too large because
+> then it prevents the memory being used for other purposes.
+> 
+> Basically, the total number of pages in the pool can be a fixed size,
+> but as they are depleted through allocation, they need to be
+> re-populated from CMA to re-build the reserve for future atomic
+> allocations.  If the pool becomes larger via frees, then obviously
+> we need to give pages back.
 
-This is a patch to the cb_das16_cs.c file that fixes up a printk warning found by the checkpatch.pl tool
+Ok, thanks for the reminder. I must have completely missed this part
+of the discussion.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/cb_das16_cs.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+When I briefly considered this problem, my own conclusion was that
+the number of atomic DMA allocations would always be very low
+because they tend to be short-lived (e.g. incoming network packets),
+so we could ignore this problem and just use a smaller reservation
+size. While this seems to be true in general (see "git grep -w -A3 
+dma_alloc_coherent | grep ATOMIC"), there is one very significant
+case that we cannot ignore, which is pci_alloc_consistent.
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index 7c8d7a1..285110b 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
- 			return das16cs_boards + i;
- 	}
- 
--	printk("unknown board!\n");
-+	printk(KERN_WARNING "unknown board!\n");
- 
- 	return NULL;
- }
-@@ -163,20 +163,20 @@ static int das16cs_attach(struct comedi_device *dev,
- 	int ret;
- 	int i;
- 
--	printk("comedi%d: cb_das16_cs: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: cb_das16_cs: ", dev->minor);
- 
- 	link = cur_dev;		/* XXX hack */
- 	if (!link)
- 		return -EIO;
- 
- 	dev->iobase = link->resource[0]->start;
--	printk("I/O base=0x%04lx ", dev->iobase);
-+	printk(KERN_CONT "I/O base=0x%04lx ", dev->iobase);
- 
--	printk("fingerprint:\n");
-+	printk(KERN_CONT "fingerprint:\n");
- 	for (i = 0; i < 48; i += 2)
--		printk("%04x ", inw(dev->iobase + i));
-+		printk(KERN_CONT "%04x ", inw(dev->iobase + i));
- 
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	ret = request_irq(link->irq, das16cs_interrupt,
- 			  IRQF_SHARED, "cb_das16_cs", dev);
-@@ -185,7 +185,7 @@ static int das16cs_attach(struct comedi_device *dev,
- 
- 	dev->irq = link->irq;
- 
--	printk("irq=%u ", dev->irq);
-+	printk(KERN_CONT "irq=%u ", dev->irq);
- 
- 	dev->board_ptr = das16cs_probe(dev, link);
- 	if (!dev->board_ptr)
-@@ -252,14 +252,14 @@ static int das16cs_attach(struct comedi_device *dev,
- 		s->type = COMEDI_SUBD_UNUSED;
- 	}
- 
--	printk("attached\n");
-+	printk(KERN_CONT "attached\n");
- 
- 	return 1;
- }
- 
- static int das16cs_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: das16cs: remove\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: das16cs: remove\n", dev->minor);
- 
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
--- 
-1.7.6
+This function is still called by hundreds of PCI drivers and always
+does dma_alloc_coherent(..., GFP_ATOMIC), even for long-lived
+allocations and those that are too large to be ignored.
 
+So at least for the case where we have PCI devices, I agree that
+we need to have the dynamic pool.
+
+	Arnd
