@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1HPPgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:36:49 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:24386 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab1HPPgs (ORCPT
+	id S1752461Ab1HPPkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 11:40:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34271 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751426Ab1HPPka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:36:48 -0400
-Message-ID: <4E4A8E73.7050705@atmel.com>
-Date: Tue, 16 Aug 2011 17:36:19 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Tue, 16 Aug 2011 11:40:30 -0400
+Date: Wed, 17 Aug 2011 00:40:22 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: David Brown <davidb@codeaurora.org>,
+        Kenneth Heitke <kheitke@codeaurora.org>, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
+        john.stultz@linaro.org, akpm@linux-foundation.org, ohad@wizery.com,
+        gregkh@suse.de, stefanr@s5r6.in-berlin.de, lethal@linux-sh.org,
+        linville@tuxdriver.com, zajec5@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20110816154021.GC15484@opensource.wolfsonmicro.com>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+ <201108161537.28612.arnd@arndb.de>
+ <20110816135051.GA22227@huya.qualcomm.com>
+ <201108161632.22255.arnd@arndb.de>
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] mmc: atmel rework for next
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108161632.22255.arnd@arndb.de>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Tue, Aug 16, 2011 at 04:32:21PM +0200, Arnd Bergmann wrote:
 
-Please pull from:
+> That would definitely be helpful. Also, I'd be very interested to hear
+> what kind of device probing is available on slimbus. If Mark was
+> right about devices being discoverable, we need don't need any board
+> description (dts or hardcoded) but instead a way to match the devices
+> to drivers based on their HW ID.
 
-git://github.com/at91linux/linux-2.6-at91.git nfe/mmc_atmel
-
-This is a series that reworks the atmel-mci driver for a future merge of both at91_mci and atmel-mci drivers. Those patches have been discussed on the mailing-list.
-I added a tiny at91_mci patch also sent last week.
-
-Those changes are made on top of current linus' git tree (v3.1-rc2-64-g688d1b3).
-
-Thanks.
-
-Ludovic Desroches (8):
-      mmc: atmel-mci: change namespace
-      mmc: atmel-mci: change atmci_readl and atmci_writel macros
-      mmc: atmel-mci: indentation
-      mmc: atmel-mci: add pdc support and runtime capabilities detection
-      mmc: atmel-mci: change atmci_start_command to atmci_send_command
-      mmc: atmel-mci: use ATMEL_PDC_SCND_BUF_OFF instead of a literal value
-      mmc: atmel-mci: correct sg buffer size evaluation
-      mmc: atmel-mci: fix a potential issue about pending PDC interrupts
-
-Nicolas Ferre (1):
-      mmc: at91_mci: remove the use of irq_to_gpio
-
- arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
- drivers/mmc/host/at91_mci.c              |    6 +-
- drivers/mmc/host/atmel-mci-regs.h        |  220 +++++----
- drivers/mmc/host/atmel-mci.c             |  823 ++++++++++++++++++++----------
- include/linux/atmel-mci.h                |    4 +-
- include/linux/atmel_pdc.h                |    2 +
- 6 files changed, 685 insertions(+), 372 deletions(-)
-
-
-
--- 
-Nicolas Ferre
-
+I wouldn't go that far - apart from anything else this is designed for
+deployment into cellphones and simlar high end systems where you've got
+external components to bolt on somehow, and as we're only just starting
+to see silicon coming onto the market we'll have to see exactly what
+things look like.  This stuff is intended for markets where people bolt
+their systems together in very custom ways so automatic discovery is not
+a high priority.
