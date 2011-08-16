@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1HPVFP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 17:05:15 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:6195
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752826Ab1HPVFN (ORCPT
+	id S1752921Ab1HPVIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 17:08:14 -0400
+Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:46638 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752823Ab1HPVIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 17:05:13 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz1432N98dK4015Lzz1202hzzz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQ1H8F-02-7R0-02
-X-M-MSG: 
-Date: Tue, 16 Aug 2011 23:05:03 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] perf, x86: Implement AMD IBS
-Message-ID: <20110816210503.GZ11702@erda.amd.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
- <1311959236.5890.420.camel@twins>
- <20110801052128.GW4590@erda.amd.com>
- <1312284595.1147.96.camel@twins>
- <20110812194344.GJ11702@erda.amd.com>
+	Tue, 16 Aug 2011 17:08:13 -0400
+Date: Tue, 16 Aug 2011 23:08:11 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: linux-kernel@vger.kernel.org
+Subject: boot fails if x2apic is enabled unless efishell is used
+Message-ID: <20110816210811.GA3331@breakpoint.cc>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110812194344.GJ11702@erda.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.08.11 21:43:44, Robert Richter wrote:
-> On 02.08.11 07:29:55, Peter Zijlstra wrote:
-> > Right, so comparing Fam10 to Fam12,
-> > 
-> > + IbsOpCtl.19:58
-> > + IbsOpData.38
-> > - IbsOpData2.4:5
-> 
-> Yeah, good catch. This is due to the different northbridge
-> implementations. I will ask the hw guys how to handle this.
+This is Intel i7 Sandy bridge on Asrock Z68 Pro3-M.
 
-Both bits are meant to be architectural and defined the same on all
-cpus. On families 12h and 14h they always return 0. The documentation
-will be updated accordingly.
+EFI -> GRUB -> Kernel -> crash
+EFI -> efishell -> GRUB -> Kernel -> works
 
-Thanks,
+The interresting part of the diff between those two boot attempts is:
 
--Robert
+| CPU0: Thermal monitoring enabled (TM1)
+| using mwait in idle threads.
+| ACPI: Core revision 20110413
+|-Kernel panic - not syncing: x2apic: enabled by BIOS but kernel init failed.
+|-Pid: 1, comm: swapper Not tainted 3.0.1+ #13
+|-Call Trace:
+|- [<ffffffff813397ef>] panic+0x8c/0x197
+|- [<ffffffff816adee0>] enable_IR_x2apic+0x162/0x1b1
+|- [<ffffffff816afa9a>] default_setup_apic_routing+0x12/0x78
+|- [<ffffffff816abfff>] native_smp_prepare_cpus+0x2e0/0x301
+|- [<ffffffff816a0bf9>] kernel_init+0x6d/0x13b
+|- [<ffffffff81346224>] kernel_thread_helper+0x4/0x10
+|- [<ffffffff816a0b8c>] ? start_kernel+0x3cb/0x3cb
+|- [<ffffffff81346220>] ? gs_change+0x13/0x13
+|+DMAR: Host address width 36
+|+DMAR: DRHD base: 0x000000fed90000 flags: 0x0
+|+IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c0000020e60262 ecap f0101a
+|+DMAR: DRHD base: 0x000000fed91000 flags: 0x1
+|+IOMMU 1: reg_base_addr fed91000 ver 1:0 cap c9008020660262 ecap f0105a
+|+DMAR: RMRR base: 0x000000aedef000 end: 0x000000aee01fff
+|+DMAR: RMRR base: 0x000000af800000 end: 0x000000bf9fffff
+|+DMAR: No ATSR found
+|+IOAPIC id 0 under DRHD base  0xfed91000 IOMMU 1
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+HPET id 0 under DRHD base 0xfed91000
+|+Enabled Interrupt-remapping
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+parse_dmar_table() returns with -ENODEV. Could it be that EFI forgets to add
+the DMAR tables unless the efishell is used?
 
+The complete bootlog is avaible crash [0] works [1].
+
+[0] http://download.breakpoint.cc/x2apic-crash/boot_efishell_.txt
+[1] http://download.breakpoint.cc/x2apic-crash/crash_direct_.txt
+
+Sebastian
