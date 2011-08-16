@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab1HPMAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 08:00:18 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:52913 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab1HPMAQ (ORCPT
+	id S1751888Ab1HPMOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 08:14:33 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63456 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab1HPMOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 08:00:16 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-Organization: LINBIT
-To: Fubo Chen <fubo.chen@gmail.com>
-Subject: Re: request for review - DRBD multi volume support for 3.2
-Date: Tue, 16 Aug 2011 14:00:04 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-References: <201108081557.48504.philipp.reisner@linbit.com> <CAJAFBLC+MpBRk29dX286G1mkobi_FnXAiQuF++eACZ8VUct2XQ@mail.gmail.com>
-In-Reply-To: <CAJAFBLC+MpBRk29dX286G1mkobi_FnXAiQuF++eACZ8VUct2XQ@mail.gmail.com>
-X-OTRS-FollowUp-SenderType: agent
+	Tue, 16 Aug 2011 08:14:32 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108161400.04686.philipp.reisner@linbit.com>
+Date: Tue, 16 Aug 2011 20:14:31 +0800
+Message-ID: <CABC36P7ZBQ9JPVUWw-Ec_f7sMPj9tQ0xF_naMqewF1XpA3nopQ@mail.gmail.com>
+Subject: arm bootmem_init() - > find_limits() if CONFIG_HIGHMEM max_low will
+ be 0
+From: Rong Wang <wangrong8602@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 11. August 2011, 20:34:57 schrieb Fubo Chen:
-> On Mon, Aug 8, 2011 at 3:57 PM, Philipp Reisner
-> 
-> <philipp.reisner@linbit.com> wrote:
-> > This is a request for review of drbd-8.4. I intend to send a pull request
-> > to Jens early next week, for his for-3.2/drivers branch.
-> > 
-> > I want to point out the idr_for_each_entry() macro, added to
-> > include/linux/idr.h.  Though we use this macro extensively in the new
-> > DRBD code, it is not DRBD specific. I intend to leave it in this patch
-> > series, as the following patches depend on it.
-> > 
-> > The most noticeable change is the support for multiple replicated volumes
-> > in a single DRBD connection.  Write-ordering is obeyed among all writes
-> > in all volumes in a single connection.  This feature is really important
-> > for users who DRBD for mirroring over longer distances. (Protocol A).
-> 
-> Does not build here. Is EXPORT_SYMBOL(lc_is_used) missing ?
-> 
-> drivers/block/drbd/drbd_main.c: In function 'drbd_buildtag':
-> drivers/block/drbd/drbd_main.c:3561:19: warning: the comparison will
-> always evaluate as 'true' for the address of '__this_module' will
-> never be NULL [-Waddress]
-> drivers/block/drbd/drbd_nl.c:2463:12: warning: 'drbd_bmio_set_susp_al'
-> defined but not used [-Wunused-function]
-> ERROR: "lc_is_used" [drivers/block/drbd/drbd.ko] undefined!
-> ERROR: "lc_try_lock" [drivers/block/drbd/drbd.ko] undefined!
-> ERROR: "drbd_nla_parse_nested" [drivers/block/drbd/drbd.ko] undefined!
-> ERROR: "drbd_nla_find_nested" [drivers/block/drbd/drbd.ko] undefined!
-> 
-> Fubo.
+Hi,all
 
-Hi Fubo,
+I'm recently study the linux memory management, and I'm confused by
+this function: find_limits() in bootmem_init()
 
-I fixed the missing EXPORT_SYMBOLS, the missing drbd_nla_* and the 
-unused drbd_bmio_set_susp_al() issues. I amended the changes into
-the commits where the fixes should be.
+kernel: 2.6.38
 
-At you convenience, please retry:
-  git://git.drbd.org/linux-2.6-drbd.git for-jens
+void __init bootmem_init(void)          /* arm/mm/init.c */
+{
+	unsigned long min, max_low, max_high;
 
-Best,
- Phil
--- 
-: Dipl-Ing Philipp Reisner
-: LINBIT | Your Way to High Availability
-: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
-: http://www.linbit.com
+	max_low = max_high = 0;
 
-DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
+	find_limits(&min, &max_low, &max_high);
+
+------------------------------------------------------------------------------
+
+static void __init find_limits(unsigned long *min, unsigned long
+*max_low,                         /* arm/mm/init.c */
+	unsigned long *max_high)
+{
+	struct meminfo *mi = &meminfo;
+	int i;
+
+	*min = -1UL;
+	*max_low = *max_high = 0;
+
+	for_each_bank (i, mi) {
+		struct membank *bank = &mi->bank[i];
+		unsigned long start, end;
+
+		start = bank_pfn_start(bank);
+		end = bank_pfn_end(bank);
+
+		if (*min > start)
+			*min = start;
+		if (*max_high < end)
+			*max_high = end;
+		if (bank->highmem)
+			continue;                                            /* Here, if we
+CONFIG_HIGHMEM, and the highmem is set to be 1.
+
+           * so max_low will be 0.
+
+           */
+		if (*max_low < end)
+			*max_low = end;
+	}
+}
+
+-------------------------------------------------------------------------------------
+
+arm_bootmem_init(min, max_low);                            /* arm/mm/init.c */
+
+-------------------------------------------------------------------------------------
+
+static void __init arm_bootmem_init(unsigned long start_pfn,
+	unsigned long end_pfn)
+{
+	struct memblock_region *reg;
+	unsigned int boot_pages;
+	phys_addr_t bitmap;
+	pg_data_t *pgdat;
+
+	/*
+	 * Allocate the bootmem bitmap page.  This must be in a region
+	 * of memory which has already been mapped.
+	 */
+	boot_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
+     /* Here, because max_low is 0, and min is the minimum pfn the
+board has(normally is not zero)
+
+                                             * so the (end_pfn -
+start_pfn) < 0
+
+                                             */
+
+My question is : I do not clearly see how the codes support HIGHMEM ?
+and even more, how can the parameter passed to bootmem_bootmap_pages
+is a negtive number?
+
+This is my first question to the mail-list, thanks for your help.
