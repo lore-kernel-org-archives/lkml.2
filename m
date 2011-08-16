@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060Ab1HPCVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 22:21:43 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:25814 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab1HPCVm convert rfc822-to-8bit (ORCPT
+	id S1753386Ab1HPC1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 22:27:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6146 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab1HPC1G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 22:21:42 -0400
-Message-ID: <20110815222141.jgw2q59rko0wssoc-cebfxv@webmail.spamcop.net>
-Date: Mon, 15 Aug 2011 22:21:41 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Suppressing a plus from setlocalversion
-References: <20110815173706.12ccfdd4@mj>
-	<alpine.DEB.2.00.1108151600400.22798@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1108151600400.22798@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	Mon, 15 Aug 2011 22:27:06 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 15 Aug 2011 19:26:33 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Doug Anderson <dianders@chromium.org>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Felipe Balbi <balbi@ti.com>
+CC: Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 15 Aug 2011 19:26:30 -0700
+Subject: RE: [PATCH v2] i2c: tegra: Check for overflow errors with BUG_ON.
+Thread-Topic: [PATCH v2] i2c: tegra: Check for overflow errors with BUG_ON.
+Thread-Index: AcxbtHeNkQNf9+gGTaiCgS7DGOhURgAB01yg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AEA252A8@HQMAIL01.nvidia.com>
+References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
+ <1313458336-31456-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1313458336-31456-1-git-send-email-dianders@chromium.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting David Rientjes <rientjes@google.com>:
+Doug Anderson wrote at Monday, August 15, 2011 7:32 PM:
+> This change doesn't fix any known problems but turns
+> on the overflow detection feature of the i2c controller
+> in the hopes of flushing out any current (or future)
+> bugs in the i2c driver.
+> 
+> Inspired by a change on nvidia's git server:
+>   http://nv-tegra.nvidia.com/gitweb/?p=linux-2.6.git;a=commit;h=266d1b7397284505e55d06254b497cb32be07b69
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> This takes Felipe Balbi's suggestion of making the overflow
+> error non-fatal.
 
-> On Mon, 15 Aug 2011, Pavel Roskin wrote:
->
->> Hello!
->>
->> There is one annoyance in the build system that I cannot work around.
->
-> That's surprising since you actually state the workaround, i.e. using
-> LOCALVERSION= with make, yourself.
-
-OK, I don't consider that an acceptable solution, as it could  
-interfere with other build systems.
-
-However, as soon as I posted this message, I found a better solution,  
-namely setting LOCALVERSION= in the environment (both for the normal  
-user and for root).  This is less likely to have unexpected effects,  
-since the environment variables don't override the variables  
-explicitly set in makefiles.
-
-> Yes, because the kernel you've produced is no longer 3.1.0-rc2, it is
-> modified.  If you want to do something else locally, then you can always
-> use LOCALVERSION=.
->
-> The + was added to stop falsely identifying kernels as a specific version
-> when they are modified by default.  Sorry if you forget to override it
-> sometimes.
-
-OK, I have an acceptable solution for my needs now, and if others need  
-it, hopefully they would find this post.
+This seems like a reasonable debug aid/validation check to me;
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
 -- 
-Regards,
-Pavel Roskin
+nvpublic
+
