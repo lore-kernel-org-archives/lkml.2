@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab1HPFpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 01:45:34 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:64474 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1HPFpc (ORCPT
+	id S1753252Ab1HPFqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 01:46:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43337 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab1HPFqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 01:45:32 -0400
+	Tue, 16 Aug 2011 01:46:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313454275-5604-7-git-send-email-me@akshayjoshi.com>
+In-Reply-To: <1313454275-5604-8-git-send-email-me@akshayjoshi.com>
 References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
-	<1313454275-5604-7-git-send-email-me@akshayjoshi.com>
-Date: Tue, 16 Aug 2011 08:45:31 +0300
-X-Google-Sender-Auth: NH4F4XUqZ_evUvQVwujqQI4Gf_0
-Message-ID: <CAOJsxLEUt2rOCe-Q-01WkDu0sKRFwogR8p-mxQTb56b=FJQTeg@mail.gmail.com>
-Subject: Re: [PATCH 7/9] Staging: Winbond: Fix parentheses in returns.
+	<1313454275-5604-8-git-send-email-me@akshayjoshi.com>
+Date: Tue, 16 Aug 2011 08:46:01 +0300
+X-Google-Sender-Auth: ulxonxOe9zoOEyPPq0MWzMaOV0k
+Message-ID: <CAOJsxLFD4Bg56m=Cju8QbfvT76rGjRkoxrw4yGEkjd-g9oCMFg@mail.gmail.com>
+Subject: Re: [PATCH 8/9] Staging: Winbond: Use tabs instead of spaces for indents.
 From: Pekka Enberg <penberg@kernel.org>
 To: Akshay Joshi <me@akshayjoshi.com>
 Cc: Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
@@ -26,7 +26,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Aug 16, 2011 at 3:24 AM, Akshay Joshi <me@akshayjoshi.com> wrote:
-> Removes parentheses when calling return, since return is not a function.
+> Replace some space indented lines with tab indented lines to follow the
+> kernel code style.
 >
 > Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
 
