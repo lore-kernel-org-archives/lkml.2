@@ -1,193 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1HPUwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 16:52:12 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:47596 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752542Ab1HPUwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 16:52:11 -0400
-Date: Tue, 16 Aug 2011 13:44:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Paul Menage <menage@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tim Pepper <lnxninja@linux.vnet.ibm.com>
-Subject: Re: [PATCH 31/32] rcu: Switch to extended quiescent state in
- userspace from nohz cpuset
-Message-ID: <20110816204415.GJ2404@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
- <1313423549-27093-32-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313423549-27093-32-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752844Ab1HPU4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 16:56:14 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58096 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752710Ab1HPU4N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 16:56:13 -0400
+Subject: Re: [PATCH 40/41] ncpfs: Use set_current_blocked()
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Petr Vandrovec <petr@vandrovec.name>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20110816175643.GI29190@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
+	 <1313071035-12047-41-git-send-email-matt@console-pimps.org>
+	 <20110816175643.GI29190@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Aug 2011 21:56:10 +0100
+Message-ID: <1313528170.3436.200.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 05:52:28PM +0200, Frederic Weisbecker wrote:
-> When we switch to adaptive nohz mode and we run in userspace,
-> we can still receive IPIs from the RCU core if a grace period
-> has been started by another CPU because we need to take part
-> of its completion.
+On Tue, 2011-08-16 at 19:56 +0200, Oleg Nesterov wrote:
+> On 08/11, Matt Fleming wrote:
+> >
+> > As described in e6fa16ab ("signal: sigprocmask() should do
+> > retarget_shared_pending()") the modification of current->blocked is
+> > incorrect as we need to check whether the signal we're about to block
+> > is pending in the shared queue.
 > 
-> However running in userspace is similar to that of running in
-> idle because we don't make use of RCU there, thus we can be
-> considered as running in RCU extended quiescent state. The
-> benefit when running into that mode is that we are not
-> anymore disturbed by needless IPIs coming from the RCU core.
-> 
-> To perform this, we just to use the RCU extended quiescent state
-> APIs on the following points:
-> 
-> - kernel exit or tick stop in userspace: here we switch to extended
-> quiescent state because we run in userspace without the tick.
-> 
-> - kernel entry or tick restart: here we exit the extended quiescent
-> state because either we enter the kernel and we may make use of RCU
-> read side critical section anytime, or we need the timer tick for some
-> reason and that takes care of RCU grace period in a traditional way.
-> 
-> TODO: hook into do_notify_resume() because we may have called
-> rcu_enter_nohz() from syscall exit hook, but we might call
-> do_notify_resume() right after, which may use RCU.
+> I'd wish I could understand this code but this seems impossible ;)
 
-I don't see exactly how the exception path works, but this does reassure
-me a bit on the syscall path.
+Yeah, I gave up after staring at it for about twenty minutes. I couldn't
+fathom the logic behind it.
 
-							Thanx, Paul
+> IOW, "This doesn't seem right at all." looks reasonable, and the
+> PF_EXITING adds even more confusion.
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Anton Blanchard <anton@au1.ibm.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Paul E . McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-> ---
->  include/linux/tick.h     |    2 ++
->  kernel/sched.c           |    1 +
->  kernel/time/tick-sched.c |   21 +++++++++++++++++++++
->  3 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index 9d0270e..4e7555f 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -138,12 +138,14 @@ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-> 
->  #ifdef CONFIG_CPUSETS_NO_HZ
->  DECLARE_PER_CPU(int, task_nohz_mode);
-> +DECLARE_PER_CPU(int, nohz_task_ext_qs);
-> 
->  extern void tick_nohz_enter_kernel(void);
->  extern void tick_nohz_exit_kernel(void);
->  extern void tick_nohz_enter_exception(struct pt_regs *regs);
->  extern void tick_nohz_exit_exception(struct pt_regs *regs);
->  extern int tick_nohz_adaptive_mode(void);
-> +extern void tick_nohz_cpu_exit_qs(void);
->  extern bool tick_nohz_account_tick(void);
->  extern void tick_nohz_flush_current_times(bool restart_tick);
->  #else /* !CPUSETS_NO_HZ */
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 2bcd456..576d0bf 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2504,6 +2504,7 @@ static void cpuset_nohz_restart_tick(void)
->  	__get_cpu_var(task_nohz_mode) = 0;
->  	tick_nohz_restart_sched_tick();
->  	clear_thread_flag(TIF_NOHZ);
-> +	tick_nohz_cpu_exit_qs();
->  }
-> 
->  void cpuset_update_nohz(void)
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 9a2ba5b..b611b77 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -757,6 +757,7 @@ void tick_check_idle(int cpu)
->  }
-> 
->  #ifdef CONFIG_CPUSETS_NO_HZ
-> +DEFINE_PER_CPU(int, nohz_task_ext_qs);
-> 
->  void tick_nohz_exit_kernel(void)
->  {
-> @@ -783,6 +784,9 @@ void tick_nohz_exit_kernel(void)
->  	ts->saved_jiffies = jiffies;
->  	ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
-> 
-> +	__get_cpu_var(nohz_task_ext_qs) = 1;
-> +	rcu_enter_nohz();
+Definitely. If I was more confident in this area of the kernel I would
+have just deleted it ;-)
 
-OK, I was wondering how this was going to work if RCU didn't
-know about kernel entry/exit.  Whew!!!  ;-)
+In fact, the more I stare at it, the more I think it needs removing.
+Because the thread doesn't hold ->siglock over do_ncp_rpc_call() another
+thread could change the signal handler for SIGINT or SIGQUIT mid-call.
+Which makes the code under "if (server->m.flags & NCP_MOUNT_INTR)"
+pointless.
 
-> +
->  	local_irq_restore(flags);
->  }
-> 
-> @@ -799,6 +803,11 @@ void tick_nohz_enter_kernel(void)
->  		return;
->  	}
-> 
-> +	if (__get_cpu_var(nohz_task_ext_qs) == 1) {
-> +		__get_cpu_var(nohz_task_ext_qs) = 0;
-> +		rcu_exit_nohz();
-> +	}
-> +
->  	ts = &__get_cpu_var(tick_cpu_sched);
-> 
->  	WARN_ON_ONCE(ts->saved_jiffies_whence == JIFFIES_SAVED_SYS);
-> @@ -814,6 +823,16 @@ void tick_nohz_enter_kernel(void)
->  	local_irq_restore(flags);
->  }
-> 
-> +void tick_nohz_cpu_exit_qs(void)
-> +{
-> +	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> +
-> +	if (__get_cpu_var(nohz_task_ext_qs)) {
-> +		rcu_exit_nohz();
-> +		__get_cpu_var(nohz_task_ext_qs) = 0;
-> +	}
-> +}
-> +
->  void tick_nohz_enter_exception(struct pt_regs *regs)
->  {
->  	if (user_mode(regs))
-> @@ -858,6 +877,8 @@ static void tick_nohz_cpuset_stop_tick(int user)
->  		if (user) {
->  			ts->saved_jiffies_whence = JIFFIES_SAVED_USER;
->  			ts->saved_jiffies = jiffies;
-> +			__get_cpu_var(nohz_task_ext_qs) = 1;
-> +			rcu_enter_nohz();
+Petr, Al, Arnd? Could one of you hit me with a clue bat?
 
-When entering an exception, shouldn't we call rcu_exit_nohz() rather
-than rcu_exit_nohz()?  Or is this a "didn't really mean an exception"
-code path?
-
->  		} else if (!current->mm) {
->  			ts->saved_jiffies_whence = JIFFIES_SAVED_SYS;
->  			ts->saved_jiffies = jiffies;
-> -- 
-> 1.7.5.4
+> As for this patch, it looks (almost) fine anyway. But,
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > @@ -749,7 +749,7 @@ static int ncp_do_request(struct ncp_server *server, int size,
+> >  		return -EIO;
+> >  	}
+> >  	{
+> > -		sigset_t old_set;
+> > +		sigset_t old_set, blocked;
+> >  		unsigned long mask, flags;
+> >  
+> >  		spin_lock_irqsave(&current->sighand->siglock, flags);
+> > @@ -769,16 +769,14 @@ static int ncp_do_request(struct ncp_server *server, int size,
+> >  			if (current->sighand->action[SIGQUIT - 1].sa.sa_handler == SIG_DFL)
+> >  				mask |= sigmask(SIGQUIT);
+> >  		}
+> > -		siginitsetinv(&current->blocked, mask);
+> > -		recalc_sigpending();
+> > +
+> > +		siginitsetinv(&blocked, mask);
+> > +		__set_task_blocked(current, &blocked);
+> >  		spin_unlock_irqrestore(&current->sighand->siglock, flags);
+> 
+> Why do we take ->siglock in the first place?
+> 
+> I think it is not needed. We can calculate mask/blocked lockless and
+> use set_task_blocked(). This also makes sense because __set_task_blocked
+> is not exported ;)
+
+Eek! Sorry, I didn't realise this didn't compile.
+
+> the sighand->action[] checks are racy anyway in the mt case, siglock
+> can't help.
+
+Hmm.. really? I thought that ->siglock serialised modifications to
+sighand->action[] even in the mt case, no? This was the only reason that
+I left the sighand locking around in this function.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
+
