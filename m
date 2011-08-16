@@ -1,39 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab1HPP4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 11:56:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60401 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751236Ab1HPP4N (ORCPT
+	id S1752341Ab1HPQCK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 12:02:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54142 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab1HPQCI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 11:56:13 -0400
-Date: Wed, 17 Aug 2011 00:56:07 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH 4/4] Blackfin: bf537: Stamp: Register ASoC EVAL-ADAU1373
- board driver
-Message-ID: <20110816155606.GG15484@opensource.wolfsonmicro.com>
-References: <1313432124-22591-1-git-send-email-lars@metafoo.de>
- <1313432124-22591-4-git-send-email-lars@metafoo.de>
+	Tue, 16 Aug 2011 12:02:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313432124-22591-4-git-send-email-lars@metafoo.de>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+ <20110801161900.1fe24b76.akpm@linux-foundation.org> <CAAAKZwupGmw_+EaApZFAqVcXWBF885Gsjx6tUWUdMuebXrt_Mg@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 16 Aug 2011 18:01:48 +0200
+Message-ID: <CAPXgP11aUfdkq-SdaHc8=tfjA4W7DYXjSXG-asoZMi6hK4iOPQ@mail.gmail.com>
+Subject: Re: [PATCH 0/8 v3] cgroups: Task counter subsystem (was: New max
+ number of tasks subsystem)
+To: Tim Hockin <thockin@hockin.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 08:15:24PM +0200, Lars-Peter Clausen wrote:
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Mike Frysinger <vapier@gentoo.org>
+On Fri, Aug 12, 2011 at 23:11, Tim Hockin <thockin@hockin.org> wrote:
+> On Mon, Aug 1, 2011 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> On Fri, 29 Jul 2011 18:13:22 +0200
+>> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>>> Reminder:
+>>>
+>>> This patchset is aimed at reducing the impact of a forkbomb to a
+>>> cgroup boundaries, thus minimizing the consequences of such an attack
+>>> against the rest of the system.
+>>>
+>>> This can be useful when cgroups are used to stage some processes or run
+>>> untrustees.
+>>
+>> Really?  How useful?  Why is it useful enough to justify adding code
+>> such as this to the kernel?
+>>
+>> Is forkbomb-prevention the only use?  Others have proposed different
+>> ways of preventing forkbombs which were independent of cgroups - is
+>> this way better and if so, why?
+>
+> I certainly want this for exactly the proposed use - putting a bounds
+> on threads/tasks per container.  It's rlimits but more useful.
+>
+> IMHO, most every limit that can be set at a system level should be
+> settable at a cgroup level.  This is just one more isolation leak.
 
-I'm OK with this but may as well go via the blackfin tree as there's no
-code dependency on any of the ASoC stuff and it reduces the risk of any
-collisions with other blackfin work.  If you guys would prefer that it
-goes via ASoC then I can apply it there though.
+Such functionality in general sounds useful. System management tools
+want to be able to race-free stop a service. A 'service' in the sense
+of 'a group of processes and all the future processes it creates'.
+
+A common problem here are user sessions that a logins creates. For
+some systems it is required, that after logout of the user, all
+processes the user has started are properly cleaned up. Common example
+for such enforcements are servers at schools universities that do not
+want to allow users to leave things like file sharing programs running
+in the background after they log out.
+
+We currently do that in systemd by tracking these session in a cgroup
+and kill all pids in that group. This currently requires some
+cooperation of the services to be successful. If they would fork
+faster than we kill them, we would never be able to finish the task.
+
+Such user sessions are generally untrusted code and processes, and the
+system management that cleans up after the end of the session runs
+privileged. It would be nice, to be allow trusted code to race-free
+kill all remaining processes of such an untrusted session. This is not
+so much about fork-bombs, things might not even have bad things in
+mind, this would be more like a rlimit for a 'group of pids', that
+allows race-free resource management of the services.
+
+For the actual implementation, I think it would be nicer to use to
+have such functionality at the core of cgroups, and not require a
+specific controller to be set up. We already track every single
+service in its own cgroup in a custom hierarchy. These groups just act
+as the container for all the pids belonging to the service, so we can
+track the service properly.
+
+Naively looking at it as a user of it, we would like to be able to
+apply these limits for every cgroup right away, not needing to create
+another controller/subsystem/hierarchy.
+
+Thanks,
+Kay
