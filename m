@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1HPAZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Aug 2011 20:25:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33289 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab1HPAZ3 (ORCPT
+	id S1753223Ab1HPAZi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Aug 2011 20:25:38 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34115 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab1HPAZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Aug 2011 20:25:29 -0400
+	Mon, 15 Aug 2011 20:25:36 -0400
 From: Akshay Joshi <me@akshayjoshi.com>
 To: Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
         Pekka Enberg <penberg@kernel.org>, Akshay Joshi <me@akshayjoshi.com>,
         Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] Staging: Winbond: Fix pointer style in wb35tx.c.
-Date: Mon, 15 Aug 2011 20:24:28 -0400
-Message-Id: <1313454275-5604-2-git-send-email-me@akshayjoshi.com>
+Subject: [PATCH 3/9] Staging: Winbond: Fix space issues in wb35tx.c.
+Date: Mon, 15 Aug 2011 20:24:29 -0400
+Message-Id: <1313454275-5604-3-git-send-email-me@akshayjoshi.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
 References: <1313454275-5604-1-git-send-email-me@akshayjoshi.com>
@@ -22,8 +22,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pointers should be prefixed with a single space according to the kernel
-coding style.
+Issues with spaces (such as not having spaces inside of square brackets,
+etc.) were fixed in the wb35tx.c file.
 
 Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
 ---
@@ -31,116 +31,104 @@ Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
  1 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
-index 5df39d4..21edbc9 100644
+index 21edbc9..49a43c1 100644
 --- a/drivers/staging/winbond/wb35tx.c
 +++ b/drivers/staging/winbond/wb35tx.c
-@@ -15,7 +15,7 @@
- #include "mds_f.h"
+@@ -36,7 +36,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
+ 	// Variable setting
+ 	pWb35Tx->EP4vm_state = VM_COMPLETED;
+ 	pWb35Tx->EP4VM_status = pUrb->status; //Store the last result of Irp
+-	pMds->TxOwner[ pWb35Tx->TxSendIndex ] = 0;// Set the owner. Free the owner bit always.
++	pMds->TxOwner[pWb35Tx->TxSendIndex] = 0;// Set the owner. Free the owner bit always.
+ 	pWb35Tx->TxSendIndex++;
+ 	pWb35Tx->TxSendIndex %= MAX_USB_TX_BUFFER_NUMBER;
  
- unsigned char
--Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
-+Wb35Tx_get_tx_buffer(struct hw_data *pHwData, u8 **pBuffer)
- {
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+@@ -90,12 +90,12 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
+ 	//
+ 	usb_fill_bulk_urb(pUrb, pHwData->udev,
+ 			  usb_sndbulkpipe(pHwData->udev, 4),
+-			  pTxBufferAddress, pMds->TxBufferSize[ SendIndex ],
++			  pTxBufferAddress, pMds->TxBufferSize[SendIndex],
+ 			  Wb35Tx_complete, adapter);
  
-@@ -25,10 +25,10 @@ Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
+ 	pWb35Tx->EP4vm_state = VM_RUNNING;
+ 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
+-	if (retv<0) {
++	if (retv < 0) {
+ 		printk("EP4 Tx Irp sending error\n");
+ 		goto cleanup;
+ 	}
+@@ -137,7 +137,7 @@ unsigned char Wb35Tx_initial(struct hw_data *pHwData)
+ 	pWb35Tx->Tx2Urb = usb_alloc_urb(0, GFP_ATOMIC);
+ 	if (!pWb35Tx->Tx2Urb)
+ 	{
+-		usb_free_urb( pWb35Tx->Tx4Urb );
++		usb_free_urb(pWb35Tx->Tx4Urb);
+ 		return false;
+ 	}
  
- static void Wb35Tx(struct wbsoft_priv *adapter);
+@@ -151,12 +151,12 @@ void Wb35Tx_stop(struct hw_data *pHwData)
  
--static void Wb35Tx_complete(struct urb * pUrb)
-+static void Wb35Tx_complete(struct urb *pUrb)
- {
- 	struct wbsoft_priv *adapter = pUrb->context;
--	struct hw_data *	pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	struct wb35_mds *pMds = &adapter->Mds;
+ 	// Trying to canceling the Trp of EP2
+ 	if (pWb35Tx->EP2vm_state == VM_RUNNING)
+-		usb_unlink_urb( pWb35Tx->Tx2Urb ); // Only use unlink, let Wb35Tx_destrot to free them
++		usb_unlink_urb(pWb35Tx->Tx2Urb); // Only use unlink, let Wb35Tx_destrot to free them
+ 	pr_debug("EP2 Tx stop\n");
  
-@@ -64,7 +64,7 @@ error:
- 
- static void Wb35Tx(struct wbsoft_priv *adapter)
- {
--	struct hw_data *	pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	u8		*pTxBufferAddress;
- 	struct wb35_mds *pMds = &adapter->Mds;
-@@ -115,7 +115,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
- 
- void Wb35Tx_start(struct wbsoft_priv *adapter)
- {
--	struct hw_data * pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 
- 	// Allow only one thread to run into function
-@@ -126,7 +126,7 @@ void Wb35Tx_start(struct wbsoft_priv *adapter)
- 		atomic_dec(&pWb35Tx->TxFireCounter);
+ 	// Trying to canceling the Irp of EP4
+ 	if (pWb35Tx->EP4vm_state == VM_RUNNING)
+-		usb_unlink_urb( pWb35Tx->Tx4Urb ); // Only use unlink, let Wb35Tx_destrot to free them
++		usb_unlink_urb(pWb35Tx->Tx4Urb); // Only use unlink, let Wb35Tx_destrot to free them
+ 	pr_debug("EP4 Tx stop\n");
  }
  
--unsigned char Wb35Tx_initial(struct hw_data * pHwData)
-+unsigned char Wb35Tx_initial(struct hw_data *pHwData)
- {
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+@@ -168,14 +168,14 @@ void Wb35Tx_destroy(struct hw_data *pHwData)
+ 	// Wait for VM stop
+ 	do {
+ 		msleep(10);  // Delay for waiting function enter 940623.1.a
+-	} while( (pWb35Tx->EP2vm_state != VM_STOP) && (pWb35Tx->EP4vm_state != VM_STOP) );
++	} while ((pWb35Tx->EP2vm_state != VM_STOP) && (pWb35Tx->EP4vm_state != VM_STOP));
+ 	msleep(10);  // Delay for waiting function enter 940623.1.b
  
-@@ -145,7 +145,7 @@ unsigned char Wb35Tx_initial(struct hw_data * pHwData)
+ 	if (pWb35Tx->Tx4Urb)
+-		usb_free_urb( pWb35Tx->Tx4Urb );
++		usb_free_urb(pWb35Tx->Tx4Urb);
+ 
+ 	if (pWb35Tx->Tx2Urb)
+-		usb_free_urb( pWb35Tx->Tx2Urb );
++		usb_free_urb(pWb35Tx->Tx2Urb);
+ 
+ 	pr_debug("Wb35Tx_destroy OK\n");
  }
+@@ -224,7 +224,7 @@ static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
+ 	//The Urb is completed, check the result
+ 	if (pWb35Tx->EP2VM_status != 0) {
+ 		printk("EP2 IoCompleteRoutine return error\n");
+-		pWb35Tx->EP2vm_state= VM_STOP;
++		pWb35Tx->EP2vm_state = VM_STOP;
+ 		goto error;
+ 	}
  
- //======================================================
--void Wb35Tx_stop(struct hw_data * pHwData)
-+void Wb35Tx_stop(struct hw_data *pHwData)
- {
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+@@ -238,7 +238,7 @@ static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
+ 		T02.value |= ((cpu_to_le32(pltmp[i]) & 0xff) << 24);
  
-@@ -161,7 +161,7 @@ void Wb35Tx_stop(struct hw_data * pHwData)
- }
+ 		TSTATUS.value = T02.value;  //20061009 anson's endian
+-		Mds_SendComplete( adapter, &TSTATUS );
++		Mds_SendComplete(adapter, &TSTATUS);
+ 		T02.value = cpu_to_le32(pltmp[i]) >> 8;
+ 	}
  
- //======================================================
--void Wb35Tx_destroy(struct hw_data * pHwData)
-+void Wb35Tx_destroy(struct hw_data *pHwData)
- {
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
+@@ -265,8 +265,8 @@ static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter)
+ 	//
+ 	// Issuing URB
+ 	//
+-	usb_fill_int_urb( pUrb, pHwData->udev, usb_rcvintpipe(pHwData->udev,2),
+-			  pltmp, MAX_INTERRUPT_LENGTH, Wb35Tx_EP2VM_complete, adapter, 32);
++	usb_fill_int_urb(pUrb, pHwData->udev, usb_rcvintpipe(pHwData->udev, 2),
++			pltmp, MAX_INTERRUPT_LENGTH, Wb35Tx_EP2VM_complete, adapter, 32);
  
-@@ -182,7 +182,7 @@ void Wb35Tx_destroy(struct hw_data * pHwData)
- 
- void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
- {
--	struct hw_data * pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	unsigned char Trigger = false;
- 
-@@ -199,10 +199,10 @@ void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
- 
- static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter);
- 
--static void Wb35Tx_EP2VM_complete(struct urb * pUrb)
-+static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
- {
- 	struct wbsoft_priv *adapter = pUrb->context;
--	struct hw_data *	pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct T02_descriptor	T02, TSTATUS;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	u32 *		pltmp = (u32 *)pWb35Tx->EP2_buf;
-@@ -250,7 +250,7 @@ error:
- 
- static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter)
- {
--	struct hw_data *	pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	struct urb *	pUrb = (struct urb *)pWb35Tx->Tx2Urb;
- 	u32 *	pltmp = (u32 *)pWb35Tx->EP2_buf;
-@@ -284,7 +284,7 @@ error:
- 
- void Wb35Tx_EP2VM_start(struct wbsoft_priv *adapter)
- {
--	struct hw_data * pHwData = &adapter->sHwData;
-+	struct hw_data *pHwData = &adapter->sHwData;
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 
- 	// Allow only one thread to run into function
+ 	pWb35Tx->EP2vm_state = VM_RUNNING;
+ 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
 -- 
 1.7.5.4
 
