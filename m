@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab1HPGlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 02:41:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60936 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143Ab1HPGlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 02:41:19 -0400
-Message-ID: <4E4A1182.1050908@cn.fujitsu.com>
-Date: Tue, 16 Aug 2011 14:43:14 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 05/11] KVM: MMU: do not mark access bit on pte write path
-References: <4E4A10E8.5090705@cn.fujitsu.com>
-In-Reply-To: <4E4A10E8.5090705@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-16 14:40:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-16 14:40:05,
-	Serialize complete at 2011-08-16 14:40:05
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1753034Ab1HPGlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:41:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44686 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab1HPGls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 02:41:48 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        root <root@localhost.localdomain>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk warning issue cb_das16_cs.c
+Date: Tue, 16 Aug 2011 02:41:22 -0400
+Message-Id: <1313476882-6350-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging: comedi:fix printk issue in cb_das16_cs.c>
+References: <[PATCH]Staging: comedi:fix printk issue in cb_das16_cs.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current code, the accessed bit is always set when page fault occurred,
-do not need to set it on pte write path
+From: root <root@localhost.localdomain>
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+This is a patch to the cb_das16_cs.c file that fixes up a printk() warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 -
- arch/x86/kvm/mmu.c              |   22 +---------------------
- 2 files changed, 1 insertions(+), 22 deletions(-)
+ drivers/staging/comedi/drivers/cb_das16_cs.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 27a25df..58ea3a7 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -356,7 +356,6 @@ struct kvm_vcpu_arch {
- 	gfn_t last_pt_write_gfn;
- 	int   last_pt_write_count;
- 	u64  *last_pte_updated;
--	gfn_t last_pte_gfn;
+diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
+index 8a1b8a7..0b1ef93 100644
+--- a/drivers/staging/comedi/drivers/cb_das16_cs.c
++++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
+@@ -99,7 +99,7 @@ static struct comedi_driver driver_das16cs = {
+ 	.detach = das16cs_detach,
+ };
  
- 	struct fpu guest_fpu;
- 	u64 xcr0;
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 26aae11..7ec2a6a 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2206,11 +2206,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
- 		return 0;
+-static struct pcmcia_device *cur_dev = NULL;
++static struct pcmcia_device *cur_dev;
  
--	/*
--	 * We don't set the accessed bit, since we sometimes want to see
--	 * whether the guest actually used the pte (in order to detect
--	 * demand paging).
--	 */
- 	spte = PT_PRESENT_MASK;
- 	if (!speculative)
- 		spte |= shadow_accessed_mask;
-@@ -2361,10 +2356,8 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		}
+ static const struct comedi_lrange das16cs_ai_range = { 4, {
+ 							   RANGE(-10, 10),
+@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
+ 			return das16cs_boards + i;
  	}
- 	kvm_release_pfn_clean(pfn);
--	if (speculative) {
-+	if (speculative)
- 		vcpu->arch.last_pte_updated = sptep;
--		vcpu->arch.last_pte_gfn = gfn;
--	}
+ 
+-	printk("unknown board!\n");
++	printk(KERN_WARNING "unknown board!\n");
+ 
+ 	return NULL;
+ }
+@@ -163,20 +163,20 @@ static int das16cs_attach(struct comedi_device *dev,
+ 	int ret;
+ 	int i;
+ 
+-	printk("comedi%d: cb_das16_cs: ", dev->minor);
++	printk(KERN_INFO "comedi%d: cb_das16_cs: ", dev->minor);
+ 
+ 	link = cur_dev;		/* XXX hack */
+ 	if (!link)
+ 		return -EIO;
+ 
+ 	dev->iobase = link->resource[0]->start;
+-	printk("I/O base=0x%04lx ", dev->iobase);
++	printk(KERN_CONT "I/O base=0x%04lx ", dev->iobase);
+ 
+-	printk("fingerprint:\n");
++	printk(KERN_CONT "fingerprint:\n");
+ 	for (i = 0; i < 48; i += 2)
+-		printk("%04x ", inw(dev->iobase + i));
++		printk(KERN_CONT "%04x ", inw(dev->iobase + i));
+ 
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 
+ 	ret = request_irq(link->irq, das16cs_interrupt,
+ 			  IRQF_SHARED, "cb_das16_cs", dev);
+@@ -185,7 +185,7 @@ static int das16cs_attach(struct comedi_device *dev,
+ 
+ 	dev->irq = link->irq;
+ 
+-	printk("irq=%u ", dev->irq);
++	printk(KERN_CONT "irq=%u ", dev->irq);
+ 
+ 	dev->board_ptr = das16cs_probe(dev, link);
+ 	if (!dev->board_ptr)
+@@ -252,14 +252,14 @@ static int das16cs_attach(struct comedi_device *dev,
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("attached\n");
++	printk(KERN_CONT "attached\n");
+ 
+ 	return 1;
  }
  
- static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
-@@ -3532,18 +3525,6 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
- 	return !!(spte && (*spte & shadow_accessed_mask));
- }
+ static int das16cs_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: das16cs: remove\n", dev->minor);
++	printk(KERN_INFO "comedi%d: das16cs: remove\n", dev->minor);
  
--static void kvm_mmu_access_page(struct kvm_vcpu *vcpu, gfn_t gfn)
--{
--	u64 *spte = vcpu->arch.last_pte_updated;
--
--	if (spte
--	    && vcpu->arch.last_pte_gfn == gfn
--	    && shadow_accessed_mask
--	    && !(*spte & shadow_accessed_mask)
--	    && is_shadow_present_pte(*spte))
--		set_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
--}
--
- void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 		       const u8 *new, int bytes,
- 		       bool guest_initiated)
-@@ -3614,7 +3595,6 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 	++vcpu->kvm->stat.mmu_pte_write;
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
- 	if (guest_initiated) {
--		kvm_mmu_access_page(vcpu, gfn);
- 		if (gfn == vcpu->arch.last_pt_write_gfn
- 		    && !last_updated_pte_accessed(vcpu)) {
- 			++vcpu->arch.last_pt_write_count;
+ 	if (dev->irq)
+ 		free_irq(dev->irq, dev);
 -- 
-1.7.5.4
+1.7.6
 
