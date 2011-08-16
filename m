@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1HPGer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 02:34:47 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:42290 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751166Ab1HPGeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 02:34:44 -0400
-Date: Tue, 16 Aug 2011 09:34:40 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Ben Dooks <ben-linux@fluff.org>, Stephen Warren <swarren@nvidia.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>, Felipe Balbi <balbi@ti.com>,
-        Jean Delvare <khali@linux-fr.org>, Rakesh Iyer <riyer@nvidia.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] i2c: tegra: Check for overflow errors with BUG_ON.
-Message-ID: <20110816063439.GB2223@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1313434172-18319-1-git-send-email-dianders@chromium.org>
- <1313458336-31456-1-git-send-email-dianders@chromium.org>
+	id S1751559Ab1HPGin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 02:38:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54298 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143Ab1HPGil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 02:38:41 -0400
+Message-ID: <4E4A10E8.5090705@cn.fujitsu.com>
+Date: Tue, 16 Aug 2011 14:40:40 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K8nIJk4ghYZn606h"
-Content-Disposition: inline
-In-Reply-To: <1313458336-31456-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 01/11] KVM: MMU: avoid pte_list_desc running out in kvm_mmu_pte_write
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-16 14:37:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-16 14:37:31,
+	Serialize complete at 2011-08-16 14:37:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+kvm_mmu_pte_write is unsafe since we need to alloc pte_list_desc in the
+function when spte is prefetched, unfortunately, we can not know how many
+spte need to be prefetched on this path, that means we can use out of the
+free  pte_list_desc object in the cache, and BUG_ON() is triggered, also some
+path does not fill the cache, such as INS instruction emulated that does not
+trigger page fault
 
---K8nIJk4ghYZn606h
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
 
-On Mon, Aug 15, 2011 at 06:32:16PM -0700, Doug Anderson wrote:
-> This change doesn't fix any known problems but turns
-> on the overflow detection feature of the i2c controller
-> in the hopes of flushing out any current (or future)
-> bugs in the i2c driver.
->=20
-> Inspired by a change on nvidia's git server:
->   http://nv-tegra.nvidia.com/gitweb/?p=3Dlinux-2.6.git;a=3Dcommit;h=3D266=
-d1b7397284505e55d06254b497cb32be07b69
->=20
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
-> ---
-> This takes Felipe Balbi's suggestion of making the overflow
-> error non-fatal.
-
-the WARN() was very nice idea, I was thinking of just returning an error
-to the client, but the adition of WARN() will make it really bold ;-)
-
---=20
-balbi
-
---K8nIJk4ghYZn606h
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOSg9/AAoJEAv8Txj19kN12jkIAIdVeYQmxKoZcQTedYVoImCV
-YdDBXPLi6q7Sw4/+0czLcOcWCo4GNXdO41uEayjfsgd0rZEzHKODLOos2tXjJDvp
-tLHG958miHMPQYL6YKTdrwmw1yafP/QncYC/BMTVw286TJO3dyJfdsThTSfVvjan
-VbiTkPkxUgj7RGXiFBbQzdjWFOPHovswzAMtOWCb6J0sMsq6bPbhuTTNdcd4fE4f
-0g8CDbnHTHd1vAHivrZQvLCCoJcVOmppPY5ob9CF1UMpG7mtmc+1glW7hyQDXex7
-p8IM+4huaRkh38wtDJBmkBDyzlg+S4rowgLwnMs5TqSAkflrMJ7j3kiTMNnRYuI=
-=3mdt
------END PGP SIGNATURE-----
-
---K8nIJk4ghYZn606h--
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 5d7fbf0..b01afee 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -592,6 +592,11 @@ static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+ 	return 0;
+ }
+ 
++static int mmu_memory_cache_free_objects(struct kvm_mmu_memory_cache *cache)
++{
++	return cache->nobjs;
++}
++
+ static void mmu_free_memory_cache(struct kvm_mmu_memory_cache *mc,
+ 				  struct kmem_cache *cache)
+ {
+@@ -969,6 +974,14 @@ static unsigned long *gfn_to_rmap(struct kvm *kvm, gfn_t gfn, int level)
+ 	return &linfo->rmap_pde;
+ }
+ 
++static bool rmap_can_add(struct kvm_vcpu *vcpu)
++{
++	struct kvm_mmu_memory_cache *cache;
++
++	cache = &vcpu->arch.mmu_pte_list_desc_cache;
++	return mmu_memory_cache_free_objects(cache);
++}
++
+ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+ {
+ 	struct kvm_mmu_page *sp;
+@@ -3585,6 +3598,12 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		break;
+ 	}
+ 
++	/*
++	 * No need to care whether allocation memory is successful
++	 * or not since pte prefetch is skiped if it does not have
++	 * enough objects in the cache.
++	 */
++	mmu_topup_memory_caches(vcpu);
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+ 		gentry = 0;
+@@ -3655,7 +3674,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 			mmu_page_zap_pte(vcpu->kvm, sp, spte);
+ 			if (gentry &&
+ 			      !((sp->role.word ^ vcpu->arch.mmu.base_role.word)
+-			      & mask.word))
++			      & mask.word) && rmap_can_add(vcpu))
+ 				mmu_pte_write_new_pte(vcpu, sp, spte, &gentry);
+ 			if (!remote_flush && need_remote_flush(entry, *spte))
+ 				remote_flush = true;
+@@ -3716,10 +3735,6 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
+ 		goto out;
+ 	}
+ 
+-	r = mmu_topup_memory_caches(vcpu);
+-	if (r)
+-		goto out;
+-
+ 	er = x86_emulate_instruction(vcpu, cr2, 0, insn, insn_len);
+ 
+ 	switch (er) {
+-- 
+1.7.5.4
