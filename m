@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1HPQwN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 12:52:13 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:34086 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab1HPQwL (ORCPT
+	id S1752629Ab1HPQyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 12:54:55 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:8192 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1HPQyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 12:52:11 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] fs/9p: Always ask new inode in lookup for cache mode disabled
-Date: Tue, 16 Aug 2011 22:21:04 +0530
-Message-Id: <1313513464-8591-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 16 Aug 2011 12:54:54 -0400
+Message-ID: <4E4AA0AD.7090109@micron.com>
+Date: Tue, 16 Aug 2011 10:54:05 -0600
+From: Asai Thambi S P <asamymuthupa@micron.com>
+Reply-To: <asamymuthupa@micron.com>
+Organization: Micron
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH v3 3/3] drivers/block/mtip32xx: Adding Makefile and Kconfig
+References: <22A973199D2C2F46933448F6E7990A3002C80029@ntxboimbx31.micron.com> <20110811224725.GB10182@infradead.org>
+In-Reply-To: <20110811224725.GB10182@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.30.125]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
+X-TM-AS-Result: No--8.367800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This make sure we don't end up reusing the unlinked inode object.
-The ideal way is to use inode i_generation. But i_generation is
-not available in userspace always.
+On 8/11/2011 4:47 PM, Christoph Hellwig wrote:
+> I think the driver at least needs to depend on PCI.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/9p/vfs_inode.c |   29 ++++++++++++++++++++++-------
- 1 files changed, 22 insertions(+), 7 deletions(-)
+Actually we should depend on pciehp module. I ran into some issue (in
+kernel 2.6.39) when introducing the dependency, and removed the
+dependency temporarily. I will check again with the current kernel.
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 9e3ea6c..b2a41e5 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -40,6 +40,7 @@
- #include <net/9p/9p.h>
- #include <net/9p/client.h>
- 
-+
- #include "v9fs.h"
- #include "v9fs_vfs.h"
- #include "fid.h"
-@@ -825,6 +826,7 @@ static int v9fs_vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
- 				      struct nameidata *nameidata)
- {
-+	struct dentry *res;
- 	struct super_block *sb;
- 	struct v9fs_session_info *v9ses;
- 	struct p9_fid *dfid, *fid;
-@@ -856,22 +858,35 @@ struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
- 
- 		return ERR_PTR(result);
- 	}
--
--	inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+	/*
-+	 * Make sure we don't use a wrong inode due to parallel
-+	 * unlink. For cached mode create calls request for new
-+	 * inode. But with cache disabled, lookup should do this.
-+	 */
-+	if (v9ses->cache)
-+		inode = v9fs_get_inode_from_fid(v9ses, fid, dir->i_sb);
-+	else
-+		inode = v9fs_get_new_inode_from_fid(v9ses, fid, dir->i_sb);
- 	if (IS_ERR(inode)) {
- 		result = PTR_ERR(inode);
- 		inode = NULL;
- 		goto error;
- 	}
--
- 	result = v9fs_fid_add(dentry, fid);
- 	if (result < 0)
- 		goto error_iput;
--
- inst_out:
--	d_add(dentry, inode);
--	return NULL;
--
-+	/*
-+	 * If we had a rename on the server and a parallel lookup
-+	 * for the new name, then make sure we instantiate with
-+	 * the new name. ie look up for a/b, while server somebody
-+	 * moved b under k and client parallely did a lookup for
-+	 * k/b.
-+	 */
-+	res = d_materialise_unique(dentry, inode);
-+	if (!IS_ERR(res))
-+		return res;
-+	result = PTR_ERR(res);
- error_iput:
- 	iput(inode);
- error:
 -- 
-1.7.4.1
-
+Regards,
+Asai Thambi
