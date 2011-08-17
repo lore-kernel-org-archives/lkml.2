@@ -1,67 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab1HQQTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:19:38 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:34753 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab1HQQTd (ORCPT
+	id S1754530Ab1HQRNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:13:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26011 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924Ab1HQRFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:19:33 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E4BEBFD.3040004@cam.ac.uk>
-Date: Wed, 17 Aug 2011 17:27:41 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [RFC PATCH 0/2] Sysfs group create for empty groups.
-References: <1313576222-27743-1-git-send-email-jic23@cam.ac.uk>
-In-Reply-To: <1313576222-27743-1-git-send-email-jic23@cam.ac.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Aug 2011 13:05:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004074"
+Message-Id: <20110817163520.243028227@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:01 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch 04/36] Hexagon: Add atomic ops support
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=atomic.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/11 11:17, Jonathan Cameron wrote:
-> The following is a quick stab at avoiding a hideous work around
-> we are currently using in IIO.  In some cases we have entire
-> attribute groups that are created from descriptions an array
-> of struct iio_chan_spec.  To keep the reference counts sane
-> and cause subdirectories to be created we are currently using
-> dummy groups and dummy attribute arrays (provided once in the
-> core).  This series is an initial probably stupid approach
-> to avoiding this.
-> 
-> Greg has expressed some doubts about whether subdirectories are
-> ever a good idea, but the problem occurs for the top level
-> directory as well (handled by patch 1).
-> 
-> Note, all attributes are created at probe time.  Ultimately we
-> are just respinning the create_group code to allow us to create
-> the attributes from a device description rather than statically
-> allocating them in each driver (results in a massive reduction
-> in repeated code).
-> 
-> All opinions welcomed.
-> 
-> (this is definitely an rfc, the code isn't even tested yet)
-Now tested and looks fine, so I've pushed it to our iio dev tree
-(which is re based a few times a day currently so I can always
-drop it again ;)
-> 
-> Jonathan
-> 
-> p.s. Greg, sorry for pestering about this!
-> 
-> Jonathan Cameron (2):
->   sysfs: Allow for null group pointer in create_group
->   sysfs: Allow for groups with no attributes - grp->attrs = NULL.
-> 
->  fs/sysfs/group.c |   28 +++++++++++++++++-----------
->  1 files changed, 17 insertions(+), 11 deletions(-)
-> 
+Our architecture uses load locked/store conditional type semantics for atomic
+ops.
+
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+
+---
+ arch/hexagon/include/asm/atomic.h |  157 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 157 insertions(+)
+
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/atomic.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/atomic.h	2011-08-15 13:16:43.721748657 -0500
+@@ -0,0 +1,157 @@
++/*
++ * Atomic operations for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_ATOMIC_H
++#define _ASM_ATOMIC_H
++
++#include <linux/types.h>
++
++#define ATOMIC_INIT(i)		{ (i) }
++#define atomic_set(v, i)	((v)->counter = (i))
++
++/**
++ * atomic_read - reads a word, atomically
++ * @v: pointer to atomic value
++ *
++ * Assumes all word reads on our architecture are atomic.
++ */
++#define atomic_read(v)		((v)->counter)
++
++/**
++ * atomic_xchg - atomic
++ * @v: pointer to memory to change
++ * @new: new value (technically passed in a register -- see xchg)
++ */
++#define atomic_xchg(v, new)	(xchg(&((v)->counter), (new)))
++
++
++/**
++ * atomic_cmpxchg - atomic compare-and-exchange values
++ * @v: pointer to value to change
++ * @old:  desired old value to match
++ * @new:  new value to put in
++ *
++ * Parameters are then pointer, value-in-register, value-in-register,
++ * and the output is the old value.
++ *
++ * Apparently this is complicated for archs that don't support
++ * the memw_locked like we do (or it's broken or whatever).
++ *
++ * Kind of the lynchpin of the rest of the generically defined routines.
++ * Remember V2 had that bug with dotnew predicate set by memw_locked.
++ *
++ * "old" is "expected" old val, __oldval is actual old value
++ */
++static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
++{
++	int __oldval;
++
++	asm volatile(
++		"1:	%0 = memw_locked(%1);\n"
++		"	{ P0 = cmp.eq(%0,%2);\n"
++		"	  if (!P0.new) jump:nt 2f; }\n"
++		"	memw_locked(%1,P0) = %3;\n"
++		"	if (!P0) jump 1b;\n"
++		"2:\n"
++		: "=&r" (__oldval)
++		: "r" (&v->counter), "r" (old), "r" (new)
++		: "memory", "p0"
++	);
++
++	return __oldval;
++}
++
++static inline int atomic_add_return(int i, atomic_t *v)
++{
++	int output;
++
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = add(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0;\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
++
++}
++
++#define atomic_add(i, v) atomic_add_return(i, (v))
++
++static inline int atomic_sub_return(int i, atomic_t *v)
++{
++	int output;
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = sub(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
++}
++
++#define atomic_sub(i, v) atomic_sub_return(i, (v))
++
++/**
++ * atomic_add_unless - add unless the number is a given value
++ * @v: pointer to value
++ * @a: amount to add
++ * @u: unless value is equal to u
++ *
++ * This is actually in the asm-generic version; should revisit this
++ * entire file...
++ */
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
++{
++	int c, old;
++
++	c = atomic_read(v);
++	for (;;) {
++		if (unlikely(c == u))
++			break;
++		old = atomic_cmpxchg((v), c, c + a);
++		if (likely(old == c))
++			break;
++		c = old;
++	}
++	return c != u;
++}
++
++#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
++
++#define atomic_inc(v) atomic_add(1, (v))
++#define atomic_dec(v) atomic_sub(1, (v))
++
++#define atomic_inc_and_test(v) (atomic_add_return(1, (v)) == 0)
++#define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
++#define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
++#define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
++
++
++#define atomic_inc_return(v) (atomic_add_return(1, v))
++#define atomic_dec_return(v) (atomic_sub_return(1, v))
++
++#endif
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
