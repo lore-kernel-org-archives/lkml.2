@@ -1,155 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab1HQNrm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:47:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57016 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab1HQNrk (ORCPT
+	id S1753898Ab1HQPpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 11:45:25 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36540 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1HQPpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:47:40 -0400
-Date: Wed, 17 Aug 2011 15:47:05 +0200
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: 3.0-rc2 failed s2ram: Freezing of tasks failed after 20.00
- seconds
-Message-ID: <20110817134705.GA3160@Pilar.site>
-References: <20110816094245.GA2042@Pilar.site>
- <201108162320.28297.rjw@sisk.pl>
- <20110816224500.GA3152@Pilar.site>
- <201108171114.45096.rjw@sisk.pl>
+	Wed, 17 Aug 2011 11:45:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108171114.45096.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110817134516.GA14136@redhat.com>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
+ <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
+ <20110817134516.GA14136@redhat.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 17 Aug 2011 17:45:03 +0200
+Message-ID: <CAPXgP101N_GESzpqu=P_H8cLoekMzb2_W2eWyAqATSjm4Gj9CA@mail.gmail.com>
+Subject: Re: + prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+ .patch added to -mm tree
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, linux-man@vger.kernel.org,
+        roland@hack.frob.com, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 at 11:14:44 +0200, Rafael J. Wysocki wrote:
-> On Wednesday, August 17, 2011, Carlos R. Mafra wrote:
-> > On Tue, 16 Aug 2011 at 23:20:28 +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > > > On Tue, 16 Aug 2011 at 20:13:55 +0200, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > > > > > I started testing 3.0-rc2 yesterday and after a few successful suspend to ram
-> > > > > > it did not suspend anymore and I got this:
-> > > > > > 
-> > > > > >  PM: Syncing filesystems ... done.
-> > > > > >  PM: Preparing system for mem sleep
-> > > > > >  Freezing user space processes ... 
-> > > > > >  Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
-> > > > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00800004
-> > > > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > > > >  Call Trace:
-> > > > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > > > >  
-> > > > > >  Restarting tasks ... done.
-> > > > > >  video LNXVIDEO:01: Restoring backlight state
-> > > > > >  acpid: 1 client rule loaded
-> > > > > >  EXT4-fs (sda2): re-mounted. Opts: discard,commit=600
-> > > > > >  INFO: task udisks-daemon:5848 blocked for more than 120 seconds.
-> > > > > >  "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00000004
-> > > > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > > > >  Call Trace:
-> > > > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > > > >   
-> > > > > > 
-> > > > > > and there are some more of these traces in the logs, but they all look the 
-> > > > > > same.
-> > > > > 
-> > > > > It looks like udisks-daemon is waiting for a completion that's
-> > > > > never completed.
-> > > > > 
-> > > > > Do you use any removable storage devices?
-> > > > 
-> > > > Yes, external harddisks connected via USB. But none were mounted
-> > > > when I closed the lid to suspend.
-> > > 
-> > > Were they connected to the USB ports?
-> > 
-> > No.
-> > 
-> > > > PS: I made a mistake in the Subject:, the kernel is 3.1-rc2 and
-> > > > not 3.0-rc2.
-> > > 
-> > > Did 3.0 work correctly?
-> > 
-> > I didn't test 3.0, but 2.6.39 always worked.
-> 
-> Can you try 3.0.y too, please?  It would give us the time frame the
-> error started to happen.
+On Wed, Aug 17, 2011 at 15:45, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/17, Kay Sievers wrote:
+>> On Wed, Aug 17, 2011 at 13:55, Oleg Nesterov <oleg@redhat.com> wrote:
+>> >
+>> > I try to never argue with the new features. But to be honest, this
+>> > doesn't look very good to me.
+>> >
+>> > OK, a service manager M does prctl(PR_SET_CHILD_REAPER), then it forks
+>> > a service X which forks another child C and exits. Then C exits and
+>> > notifies M.
+>> >
+>> > But. How can M know that the service X should be restarted? It only
+>> > knows the pid.
+>>
+>> Legacy services write pid files and we read them, so we know the pid
+>> to watch for. Proper services never double-fork and reparent in a
+>> modern init environment.
+>
+> OK. So, this patch can only help to handle the legacy services?
 
-I tested 3.0.2 this morning and it survived (suspended it about 5-6 times
-with some mount/unmount of external harddisks in between).
+It helps them with services that need it. It is not recommended to
+double-fork ever with a modern init system, but it's historic default
+and common practice, and we are not going to change that any time
+soon.
 
-Now I'm back to testing 3.1-rc2 and it survived the first two suspends.
-So this is not something which I can bisect with 100% certainty. I was 
-hoping the above traces could somehow indicate where the problem might be.
+> And
+> the service should participate (write pid files for example). And,
 
-I will keep testing though.
+This is not meant as a security feature, if that's what your asking.
+It will not prevent services from doing nasty things and escape the
+process that started them. But it's still a feature that today only
+PID 1 and which we need for more processes.
+
+>> > What if wait(WEXITED) succeeds because C in turn does
+>> > fork + exit?
+>>
+>> Nothing is really doing this.
+>
+> OK. But this means you propose this patch to solve the very specific
+> problems.
+
+No, it's for a very common problem. But again, it's not a security feature.
+
+> IOW, imho this doesn't look very useful "in general" to me.
+
+It is very useful if you have an init-like daemon.
+
+> May be we need something else instead... And iiuc you don't really
+> need to change the reparenting, you only want the notification if
+> the process exits.
+
+No, we want to be the parent of the process, and we want to be the one
+who reaps all the child process, not only receive some out-of-band
+notifications. The sub-init is the babysitter of all the things it has
+started, and that should be reflected in the parent child relation.
+
+>> >> @@ -1296,6 +1296,8 @@ struct task_struct {
+>> >>                                * execve */
+>> >>       unsigned in_iowait:1;
+>> >>
+>> >> +     /* Reparent child processes to this process instead of pid 1. */
+>> >> +     unsigned child_reaper:1;
+>> >
+>> > First of all - this is already very wrong imho. This should be
+>> > per-process, not per-thread.
+>>
+>> What do you mean? That would go where instead?
+>
+> You should mark the whole process as sub-reaper, not a single thread
+> which does prctl(). The parent/child relationship is process-wide.
+
+Ok.
+
+> If nothing else. Suppose that application does pthread_create(), the
+> new thread does prctl(REAPER) and exits.
+
+I get the (weird) idea. :)
+
+>> >> +     /* find the first ancestor which is marked as child_reaper */
+>> >> +     for (reaper = father->parent;
+>> >> +          reaper != &init_task && reaper != pid_ns->child_reaper;
+>> >> +          reaper = reaper->parent)
+>> >
+>> > This loop can never reach init_task/child_reaper and crash the kernel.
+>>
+>> You mean: *if* this loop can never ...?
+>
+> Yes.
+>
+>> > For example, father->parent can point to init_task's sub-thread.
+>> >
+>> > OTOH you shouldn't use init_task at all.
+>>
+>> What would we use instead?
+>
+> You should check ->child_reaper only. But see above, it can be multithreaded.
+
+The main PID 1 from the system has no ->child_reaper set as far as I
+see, hence we check for init_task.
+
+>> > Also. You shouldn't do this if the sub-namespace init exits, this is
+>> > wrong.
+>>
+>> It we find a sub-init, before the namespace PID1, why wouldn't we return it?
+>
+> Ah, I meant pid_ns->child_reaper, not task->child_reaper.
+>
+> If pid_ns->child_reaper exits we should never try to "reparent" its
+> children, see zap_pid_ns_processes() in particular. IOW, this should
+> go into the "else" branch of "if (pid_ns->child_reaper == father)"
+
+I don't understand this. If we find a marked task->child_reaper
+_before_ we find a pid_ns->child_reaper in the chain of parents, why
+wouldn't we return it?
+
+Kay
