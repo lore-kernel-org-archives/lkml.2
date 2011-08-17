@@ -1,90 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab1HQL6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 07:58:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752079Ab1HQL6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 07:58:40 -0400
-Date: Wed, 17 Aug 2011 13:55:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, kay.sievers@vrfy.org,
-        linux-man@vger.kernel.org, roland@hack.frob.com,
-        torvalds@linux-foundation.org
-Subject: Re: +
-	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
-	.patch added to -mm tree
-Message-ID: <20110817115543.GA8745@redhat.com>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754430Ab1HQQTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:19:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41597 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab1HQQTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 12:19:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=FF/jYm36f7rjEX9XdJZ88RloZigKiAKRThA+ESKnvUW8zR2UqQkwOng5qjN8iWaLm
+	F6gZtG6iCIsqM3OP25zIA==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 13/13] memcg: check memcg dirty limits in page writeback
+Date: Wed, 17 Aug 2011 09:15:05 -0700
+Message-Id: <1313597705-6093-14-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Andrew Morton wrote:
->
-> From: Lennart Poettering <lennart@poettering.net>
->
-> Userspace service managers/supervisors need to track their started
-> services.  Many services daemonize by double-forking and get implicitely
-> re-parented to PID 1.  The process manager will no longer be able to
-> receive the SIGCHLD signals for them.
->
-> With this prctl, a service manager can mark itself as a sort of 'sub-init'
-> process, able to stay as the parent process for all processes created by
-> the started services.  All SIGCHLD signals will be delivered to the
-> service manager.
+If the current process is in a non-root memcg, then
+balance_dirty_pages() will consider the memcg dirty limits as well as
+the system-wide limits.  This allows different cgroups to have distinct
+dirty limits which trigger direct and background writeback at different
+levels.
 
-I try to never argue with the new features. But to be honest, this
-doesn't look very good to me.
+If called with a mem_cgroup, then throttle_vm_writeout() queries the
+given cgroup for its dirty memory usage limits.
 
-OK, a service manager M does prctl(PR_SET_CHILD_REAPER), then it forks
-a service X which forks another child C and exits. Then C exits and
-notifies M.
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+Changelog since v8:
 
-But. How can M know that the service X should be restarted? It only
-knows the pid. What if wait(WEXITED) succeeds because C in turn does
-fork + exit? What M has 2 or more services?
+- Use 'memcg' rather than 'mem' for local variables and parameters.
+  This is consistent with other memory controller code.
 
+ include/linux/writeback.h |    2 +-
+ mm/page-writeback.c       |   35 +++++++++++++++++++++++++++++------
+ mm/vmscan.c               |    2 +-
+ 3 files changed, 31 insertions(+), 8 deletions(-)
 
-
-
-Anyway, the implementation is certainly buggy.
-
-> @@ -1296,6 +1296,8 @@ struct task_struct {
->  				 * execve */
->  	unsigned in_iowait:1;
->
-> +	/* Reparent child processes to this process instead of pid 1. */
-> +	unsigned child_reaper:1;
-
-First of all - this is already very wrong imho. This should be
-per-process, not per-thread.
-
-> +	/* find the first ancestor which is marked as child_reaper */
-> +	for (reaper = father->parent;
-> +	     reaper != &init_task && reaper != pid_ns->child_reaper;
-> +	     reaper = reaper->parent)
-
-This loop can never reach init_task/child_reaper and crash the kernel.
-For example, father->parent can point to init_task's sub-thread.
-
-OTOH you shouldn't use init_task at all.
-
-Also. You shouldn't do this if the sub-namespace init exits, this is
-wrong.
-
-> +		if (reaper->child_reaper)
-> +			return reaper;
-
-No, we can't blindly return this task, it can be dead/exiting. More
-precisely, we must not do this if it has already passed
-forget_original_parent(). That is why the code above checks PF_EXITING.
-
-Oleg.
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index e6790e8..0f809e3 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -116,7 +116,7 @@ void laptop_mode_timer_fn(unsigned long data);
+ #else
+ static inline void laptop_sync_completion(void) { }
+ #endif
+-void throttle_vm_writeout(gfp_t gfp_mask);
++void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *memcg);
+ 
+ extern unsigned long global_dirty_limit;
+ 
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 64de98c..9ce199d 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -645,7 +645,8 @@ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
+  * data.  It looks at the number of dirty pages in the machine and will force
+  * the caller to perform writeback if the system is over `vm_dirty_ratio'.
+  * If we're over `background_thresh' then the writeback threads are woken to
+- * perform some writeout.
++ * perform some writeout.  The current task may belong to a cgroup with
++ * dirty limits, which are also checked.
+  */
+ static void balance_dirty_pages(struct address_space *mapping,
+ 				unsigned long write_chunk)
+@@ -665,6 +666,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 	unsigned long start_time = jiffies;
+ 
++	mem_cgroup_balance_dirty_pages(mapping, write_chunk);
++
+ 	for (;;) {
+ 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+ 					global_page_state(NR_UNSTABLE_NFS);
+@@ -856,23 +859,43 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+ }
+ EXPORT_SYMBOL(balance_dirty_pages_ratelimited_nr);
+ 
+-void throttle_vm_writeout(gfp_t gfp_mask)
++/*
++ * Throttle the current task if it is near dirty memory usage limits.  Both
++ * global dirty memory limits and (if @memcg is given) per-cgroup dirty memory
++ * limits are checked.
++ *
++ * If near limits, then wait for usage to drop.  Dirty usage should drop because
++ * dirty producers should have used balance_dirty_pages(), which would have
++ * scheduled writeback.
++ */
++void throttle_vm_writeout(gfp_t gfp_mask, struct mem_cgroup *memcg)
+ {
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
++	struct dirty_info memcg_info;
++	bool do_memcg;
+ 
+         for ( ; ; ) {
+ 		global_dirty_limits(&background_thresh, &dirty_thresh);
++		do_memcg = memcg &&
++			mem_cgroup_hierarchical_dirty_info(
++				determine_dirtyable_memory(), memcg,
++				&memcg_info);
+ 
+                 /*
+                  * Boost the allowable dirty threshold a bit for page
+                  * allocators so they don't get DoS'ed by heavy writers
+                  */
+                 dirty_thresh += dirty_thresh / 10;      /* wheeee... */
+-
+-                if (global_page_state(NR_UNSTABLE_NFS) +
+-			global_page_state(NR_WRITEBACK) <= dirty_thresh)
+-                        	break;
++		if (do_memcg)
++			memcg_info.dirty_thresh += memcg_info.dirty_thresh / 10;
++
++		if ((global_page_state(NR_UNSTABLE_NFS) +
++		     global_page_state(NR_WRITEBACK) <= dirty_thresh) &&
++		    (!do_memcg ||
++		     (memcg_info.nr_unstable_nfs +
++		      memcg_info.nr_writeback <= memcg_info.dirty_thresh)))
++			break;
+                 congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+ 		/*
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fb0ae99..3c57788 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2068,7 +2068,7 @@ restart:
+ 					sc->nr_scanned - nr_scanned, sc))
+ 		goto restart;
+ 
+-	throttle_vm_writeout(sc->gfp_mask);
++	throttle_vm_writeout(sc->gfp_mask, sc->mem_cgroup);
+ }
+ 
+ /*
+-- 
+1.7.3.1
 
