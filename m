@@ -1,71 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1HQV54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 17:57:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65212 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab1HQV5y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 17:57:54 -0400
-Message-ID: <4E4C395E.20000@gmail.com>
-Date: Wed, 17 Aug 2011 23:57:50 +0200
-From: Nebojsa Trpkovic <trx.lists@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110729 Thunderbird/5.0
-MIME-Version: 1.0
+	id S1754689Ab1HQV6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 17:58:48 -0400
+Received: from mail.microway.com ([206.173.81.22]:39329 "EHLO microway.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751956Ab1HQV6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 17:58:46 -0400
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 17:58:46 EDT
+From: Rick Warner <rick@microway.com>
+Organization: Microway, Inc
 To: linux-kernel@vger.kernel.org
-Subject: cleancache can lead to serious performance degradation
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Subject: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call trace included
+Date: Wed, 17 Aug 2011 17:51:51 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo-r3-herp; KDE/4.6.3; x86_64; ; )
+Cc: Richard Houghton <rhoughton@microway.com>
+Message-Id: <201108171751.51648.rick@microway.com>
+X-Sanitizer: Advosys mail filter
+MIME-Version: 1.0
+Content-Type: Text/Plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi all,
 
-I've tried using cleancache on my file server and came to conclusion 
-that my Core2 Duo 4MB L2 cache 2.33GHz CPU cannot cope with the amount 
-of data it needs to compress during heavy sequential IO when 
-cleancache/zcache are enabled.
+I am getting a kernel oops/panic on a dual xeon system that is the master of a 
+60 node HPC cluster.  This is happening while stress testing the system 
+including significant network traffic.  The OS is openSuse 11.4. 
 
-For an example, with cleancache enabled I get 60-70MB/s from my RAID 
-arrays and both CPU cores are saturated with system (kernel) time. 
-Without cleancache, each RAID gives me more then 300MB/s of useful read 
-throughput.
+We are running a custom compiled 2.6.39.3 kernel on the systems due to a bug 
+in the stock kernel 11.4 provided (igb driver related).  After 1-3 days of 
+heavy testing, the master node locks up with the caps lock and scroll lock 
+keys on the keyboard blinking with the following output captured via a serial 
+console:
 
-In the scenario of sequential reading, this drop of throughput seems 
-completely normal:
-- a lot of data gets pulled in from disks
-- data is processed in some non CPU-intensive way
-- page cache fills up quickly and cleancache starts compressing pages (a 
-lot of "puts" in /sys/kernel/mm/cleancache/)
-- these compressed cleancache pages newer get read because there are a 
-whole lot of new pages coming in every second replacing old ones 
-(practically no "succ_gets" in /sys/kernel/mm/cleancache/)
-- CPU saturates doing useless compression, and even worse:
-- new disk read operations are waiting for CPU to finish compression and 
-make some space in memory
+[381920.681113] BUG: unable to handle kernel NULL pointer dereference at           
+(null)
+[381920.689067] IP: [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
+[381920.695187] PGD 30c27a067 PUD 16efe6067 PMD 0 
+[381920.699782] Oops: 0000 [#1] PREEMPT SMP 
+[381920.703866] last sysfs file: 
+/sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
+[381920.711868] CPU 6 
+[381920.713800] Modules linked in: md5 ipmi_devintf ipmi_si ipmi_msghandler 
+nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_MASQUERADE iptable_mangle 
+iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter 
+ip_tables x_tables af_packet edd cpufreq_conservative cpufreq_userspace 
+cpufreq_powersave acpi_cpufreq mperf xfs dm_mod ioatdma i7core_edac edac_core 
+sr_mod cdrom joydev igb i2c_i801 sg button ghes hed iTCO_wdt 
+iTCO_vendor_support dca pcspkr ext4 jbd2 crc16 raid456 async_raid6_recov 
+async_pq raid6_pq async_xor xor async_memcpy async_tx raid10 raid1 raid0 fan 
+processor thermal thermal_sys ata_generic pata_atiixp arcmsr
+[381920.771623] 
+[381920.773210] Pid: 12701, comm: cluster Not tainted 2.6.39.3-microwaycustom 
+#1 Supermicro X8DTH-i/6/iF/6F/X8DTH
+[381920.783292] RIP: 0010:[<ffffffff812a7510>]  [<ffffffff812a7510>] 
+acpi_atomic_read+0xe3/0x120
+[381920.791853] RSP: 0000:ffff88063fc47d98  EFLAGS: 00010046
+[381920.797260] RAX: 0000000000000000 RBX: 00000000bf7b5ff0 RCX: ffffffff81a3cdd0
+[381920.804486] RDX: 00000000bf7b6010 RSI: 00000000bf7b6000 RDI: 
+ffff88062d4b95c0
+[381920.811712] RBP: ffff88063fc47dc8 R08: ffff88063fc47d98 R09: 0000000000000002
+[381920.818940] R10: 0000000000000083 R11: 0000000000000010 R12: 
+ffffc90003044c20
+[381920.826168] R13: ffff88063fc47de0 R14: 0000000000000000 R15: 
+0000000000000000
+[381920.833392] FS:  0000000000000000(0000) GS:ffff88063fc40000(0000) 
+knlGS:0000000000000000
+[381920.841571] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+[381920.847409] CR2: 0000000000000000 CR3: 00000001d2d0f000 CR4: 
+00000000000006e0
+[381920.854635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[381920.861861] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[381920.869088] Process cluster (pid: 12701, threadinfo ffff880028284000, task 
+ffff880550184380)
+[381920.877608] Stack:
+[381920.879717]  ffffffff81a3cdd0 00000000bf7b5ff0 ffff88062b2cc140 ffffc90003044ca8
+[381920.887288]  ffff88062b2cc140 0000000000000001 ffff88063fc47e08 ffffffffa002b21f
+[381920.894862]  0000000000000000 0000000000000000 ffff88062b2cc140 
+0000000000000000
+[381920.902435] Call Trace:
+[381920.904969]  <NMI> 
+[381920.907201]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
+[381920.913726]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
+[381920.920076]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
+[381920.926080]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
+[381920.932864]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
+[381920.939473]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
+[381920.944691]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
+[381920.949649]  [<ffffffff81517550>] nmi+0x20/0x30
+[381920.954269]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
+[381920.960536]  <<EOE>> 
+[381920.962725]  <IRQ> 
+[381920.965132]  [<ffffffff8101131e>] intel_pmu_disable_all+0x3e/0x120
+[381920.971399]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
+[381920.977066]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
+[381920.982817]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
+[381920.989082]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
+[381920.994740]  [<ffffffff81067097>] update_process_times+0x67/0x80
+[381921.000832]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
+[381921.006578]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
+[381921.012758]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
+[381921.018414]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
+[381921.024343]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
+[381921.030793]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
+[381921.036891]  <EOI> 
+[381921.038913] Code: fc 10 74 1f 77 08 41 80 fc 08 75 48 eb 0e 41 80 fc 20 74 
+17 41 80 fc 40 75 3a eb 15 8a 00 0f b6 c0 eb 11 66 8b 00 0f b7 c0 eb 09 <8b> 
+00 89 c0 eb 03 48 8b 00 49 89 45 00 e8 8e 2b e2 ff eb 1b 0f 
+[381921.059462] RIP  [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
+[381921.065669]  RSP <ffff88063fc47d98>
+[381921.069242] CR2: 0000000000000000
+[381921.072645] ---[ end trace 52697bfc73a34a90 ]---
+[381921.077343] Kernel panic - not syncing: Fatal exception in interrupt
+[381921.083784] Pid: 12701, comm: cluster Tainted: G      D     2.6.39.3-
+microwaycustom #1
+[381921.091788] Call Trace:
+[381921.094333]  <NMI>  [<ffffffff81513300>] panic+0x9f/0x1da
+[381921.099881]  [<ffffffff81517f8c>] oops_end+0xdc/0xf0
+[381921.104952]  [<ffffffff81032b91>] no_context+0xf1/0x260
+[381921.110277]  [<ffffffff81032e55>] __bad_area_nosemaphore+0x155/0x200
+[381921.116739]  [<ffffffff81032f0e>] bad_area_nosemaphore+0xe/0x10
+[381921.122766]  [<ffffffff81519f46>] do_page_fault+0x366/0x530
+[381921.128440]  [<ffffffff810ee929>] ? __perf_event_overflow+0xa9/0x220
+[381921.134896]  [<ffffffff810ef99b>] ? perf_event_update_userpage+0x9b/0xe0
+[381921.141698]  [<ffffffff81012249>] ? intel_pmu_enable_all+0xc9/0x1a0
+[381921.148061]  [<ffffffff810123ff>] ? x86_perf_event_set_period+0xdf/0x170
+[381921.154852]  [<ffffffff81517295>] page_fault+0x25/0x30
+[381921.160081]  [<ffffffff812a7510>] ? acpi_atomic_read+0xe3/0x120
+[381921.166094]  [<ffffffff812a7486>] ? acpi_atomic_read+0x59/0x120
+[381921.172107]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
+[381921.178639]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
+[381921.185004]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
+[381921.191003]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
+[381921.197789]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
+[381921.204399]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
+[381921.209624]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
+[381921.214584]  [<ffffffff81517550>] nmi+0x20/0x30
+[381921.219208]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
+[381921.225470]  <<EOE>>  <IRQ>  [<ffffffff8101131e>] 
+intel_pmu_disable_all+0x3e/0x120
+[381921.233174]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
+[381921.238836]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
+[381921.244582]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
+[381921.250855]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
+[381921.256520]  [<ffffffff81067097>] update_process_times+0x67/0x80
+[381921.262618]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
+[381921.268363]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
+[381921.274540]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
+[381921.280198]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
+[381921.286125]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
+[381921.292578]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
+[381921.298673]  <EOI>
 
 
-So, using cleancache in scenarios with a lot of non-random data 
-throughput can lead to very bad performance degradation.
+I recompiled the kernel again, disabling the tickless feature as I saw "nohz" 
+early in the call trace.  After that, it reproduced again but the call trace 
+only changed slightly having tick_init_highres in there instead of 
+tick_nohz_handler.  I have that call trace if it is desired as well.  It is 
+nearly identical though.
 
+I am currently trying a custom 2.6.36.4 on the system, but will need up to 3 
+days before I know if the problem exists there as well.
 
-I guess that possible workaround could be to implement some kind of 
-compression throttling valve for cleancache/zcache:
+Any ideas on this?
 
-- if there's available CPU time (idle cycles or so), then compress 
-(maybe even with low CPU scheduler priority);
-
-- if there's no available CPU time, just store (or throw away) to avoid 
-IO waits;
-
-
-At least, there should be a warning in kernel help about this kind of
-situations.
-
-
-Regards,
-Nebojsa Trpkovic
-
-
-
+Thanks,
+Rick
+-- 
+Richard Warner
+Lead Systems Integrator
+Microway, Inc
+(508)732-5517
