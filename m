@@ -1,162 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1HQSVG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 14:21:06 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:18261 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab1HQSU5 (ORCPT
+	id S1752894Ab1HQMNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 08:13:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54711 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab1HQMM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 14:20:57 -0400
-Subject: [PATCH] scsi: Document generic scsi device attributes
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Wed, 17 Aug 2011 13:20:55 -0500
-Message-ID: <20110817182055.8848.75862.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	Wed, 17 Aug 2011 08:12:59 -0400
+X-AuditID: b753bd60-a3c7dba0000050a4-5e-4e4bb048e6fc
+X-AuditID: b753bd60-a3c7dba0000050a4-5e-4e4bb048e6fc
+Message-ID: <4E4BB041.1050004@hitachi.com>
+Date: Wed, 17 Aug 2011 21:12:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on ftrace
+ nops
+References: <20110810162222.017387055@goodmis.org>  <4E43209D.7090104@hitachi.com>  <1313022842.18583.282.camel@gandalf.stny.rr.com>  <4E43769C.9000901@hitachi.com>  <1313067691.18583.290.camel@gandalf.stny.rr.com>  <4E44967C.1090101@hitachi.com>  <1313154537.18583.319.camel@gandalf.stny.rr.com>  <4E464D6C.9020807@hitachi.com>  <1313290684.18583.362.camel@gandalf.stny.rr.com>  <4E47A33E.5020202@hitachi.com> <1313413562.15704.5.camel@gandalf.stny.rr.com>
+In-Reply-To: <1313413562.15704.5.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+(2011/08/15 22:06), Steven Rostedt wrote:
+> On Sun, 2011-08-14 at 19:28 +0900, Masami Hiramatsu wrote:
+>
+>>> The point I was making is, if I need to get ftrace function tracing
+>>> being good enough for function graph tracer, then it should work with
+>>> kprobes without any issues.
+>>
+>> No, I don't think so, because kprobes user may trace a flags register or
+>> segment registers. However, function graph tracer only needs stack
+>> register etc. Thus, if ftrace function tracing is good enough for
+>> kprobes handlers, it is enough for function graph tracer too.
+>
+> The added code needed for ftrace is not much more. We just need to save
+> all of pt_regs and that should work (I already save most of it). The
+> flags can be saved, but things like compare flags will be useless, as
+> those are used. But compare flags are undefined when calling a function
+> anyway.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- Documentation/ABI/testing/sysfs-class-scsi_devices |  123 ++++++++++++++++++++
- 1 files changed, 123 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-scsi_devices
+Agreed. I think users may just want to see other status flags.
 
-diff --git a/Documentation/ABI/testing/sysfs-class-scsi_devices b/Documentation/ABI/testing/sysfs-class-scsi_devices
-new file mode 100644
-index 0000000..ad2d36b
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-class-scsi_devices
-@@ -0,0 +1,123 @@
-+What:           /sys/class/scsi_device/..../device/device_blocked
-+Date:           December, 2002
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only integer attribute indicates whether the
-+		device is blocked.  A non-zero value indicates the device
-+		is blocked, zero indicates the device is not blocked.
-+
-+What:           /sys/class/scsi_device/..../device/type
-+Date:           December, 2002
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only decimal integer value indicates the
-+		SCSI device type.
-+
-+What:           /sys/class/scsi_device/..../device/scsi_level
-+Date:           January, 2003
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only decimal integer value indicates the
-+		SCSI revision level the device claims to support.
-+
-+What:           /sys/class/scsi_device/..../device/vendor
-+Date:           December, 2002
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only string attribute contains the vendor of the SCSI
-+		device.
-+
-+What:           /sys/class/scsi_device/..../device/model
-+Date:           December 2002
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only string attribute contains the model of the SCSI
-+		device.
-+
-+What:           /sys/class/scsi_device/..../device/rev
-+Date:           December, 2002
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only string attribute contains the product revision
-+		of the SCSI device.
-+
-+What:           /sys/class/scsi_device/..../device/rescan
-+Date:           March, 2003
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+
-+What:           /sys/class/scsi_device/..../device/delete
-+Date:           August, 2003
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		Writing to this write only attribute causes the SCSI device to
-+		be removed from the SCSI midlayer.
-+
-+What:           /sys/class/scsi_device/..../device/state
-+Date:           April, 2004
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read/write string attribute allows setting or retrieving
-+		the current state of the SCSI device.  Possible values are
-+		"created", "running", "cancel", "deleted", "quiesce", "offline",
-+		"blocked" and "created-blocked"
-+
-+What:           /sys/class/scsi_device/..../device/timeout
-+Date:           May, 2004
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read/write decimal integer attribute contains the number
-+		of seconds which may elapse after sending a command to the
-+		device before that command is considered to have timed out.
-+
-+What:           /sys/class/scsi_device/..../device/iocounterbits
-+Date:           March, 2005
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only integer value shows the number of bits
-+		used to represent the various I/O counters.
-+
-+What:           /sys/class/scsi_device/..../device/iorequest_cnt
-+Date:           March, 2005
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only integer value indicates how many I/O requests
-+		have been submitted to the SCSI device.
-+
-+What:           /sys/class/scsi_device/..../device/iodone_cnt
-+Date:           March, 2005
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only integer value indicates how many I/O requests
-+		have been completed by the SCSI device.
-+
-+What:           /sys/class/scsi_device/..../device/ioerr_cnt
-+Date:           March, 2005
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only integer value indicates how many I/O requests
-+		have been completed with errors by the SCSI device.
-+
-+What:           /sys/class/scsi_device/..../device/modalias
-+Date:           April, 2007
-+KernelVersion:  Unknown
-+Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-+Description:
-+		This read only string value contains a string of the form
-+		"scsi:t-0xXX" where "XX" are two hex digits representing the
-+		SCSI device type.  See also the "type" attribute.
-+
+>>> If I need to do the work anyway (for
+>>> function graph tracing) then why not use it directly with kprobes
+>>> instead of doing more hooks just in the kprobe_trace?
+>>
+>> >From the kprobe-tracer point of view, I don't mind. I just care
+>> about complexity, and compatibility of kprobe handlers.
+>
+> Right, so far there's not much changes to the kprobe side. I'll see if I
+> can make ftrace do all the hard work to get the proper registers. I want
+> to make as much as possible stay in the generic kprobe code, and not
+> touch the arch code. But I may still need to do something like
+> 'increment rip' or whatever.
 
+kprobes arch side code is not so complex, it has less states.
+Generic kprobes code has much more states to support module
+probes, module init, aggregated probes, and so on. So it is OK for me
+to touch the arch code :).
+
+> Note, we will need to touch kprobes one way or another. Either we have
+> kprobes hook to ftrace, or we need to do the nop skip trick, which will
+> probably be as intrusive in the kprobe code.
+
+I see. OK, I'm now looking forward to your work ;)
+
+Thank you!
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
