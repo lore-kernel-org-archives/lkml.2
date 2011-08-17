@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab1HQRHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:07:09 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62409 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab1HQRHC (ORCPT
+	id S1752635Ab1HQLoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 07:44:44 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:35750 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab1HQLom convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:07:02 -0400
-MIME-Version: 1.0
-Date: Wed, 17 Aug 2011 19:07:01 +0200
-Message-ID: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-Subject: [PATCH] Increase usbfs bulk buffer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd5692054930504aab68637
+	Wed, 17 Aug 2011 07:44:42 -0400
+Subject: Re: Boot kernel panic after upgrade 3.0.1 -> 3.0.2
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Torquil Macdonald =?ISO-8859-1?Q?S=F8rensen?= <torquil@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4E4B9903.4000203@gmail.com>
+References: <4E4B9903.4000203@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Aug 2011 13:44:38 +0200
+Message-ID: <1313581478.24749.25.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd5692054930504aab68637
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, 2011-08-17 at 12:33 +0200, Torquil Macdonald Sørensen wrote:
+> At boot time, I get the following message on screen (copied by hand, but I'm 
+> hoping there are not too many mistakes...):
+> 
+> Kernel panic, not syncing: VFS Unable to mount root fs on unknown block(0,0)
+> Pid: 1. comm: swapper  Not tainted 3.0.2 #1
+> Call Trace:
+>   [<fffffff8127e4a9>] ? panic 0xa4 0x19b
+>   [<fffffff813f1e56>] ? mount_block_root+0x236/0x254
+>   [<fffffff81002930>] ? do_bounds+0x57/0x65
+>   [<fffffff813f1ff6>] ? prepare_namespace+0x133/0x169
+>   [<fffffff813f1b7c>] ? kernel_init+0x105/0x10a
+>   [<fffffff81284a94>] ? kernel_thread_helper+0x4/0x10
+>   [<fffffff813f1a77>] ? start_kernel+0x341/341
+>   [<fffffff81284a90>] ? gs_change+0xb/0xb
 
-Hi,
+I tend to see messages like that when I've messed up some basic setting
+needed to boot a kernel. 
 
-this patch increases the maximum buffersize for bulk transfers, our
-devices support at least up to 46k bytes for bulk transfers.
-This patch allows us to lower the iterations between kernel and
-userspace and lower the system pressure.
-
-Signed-off-by: Markus Rechberger <mrechberger@gmail.com>
-
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 37518df..ad193d0 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -107,7 +107,7 @@ enum snoop_when {
-
- #define USB_DEVICE_DEV         MKDEV(USB_DEVICE_MAJOR, 0)
-
--#define        MAX_USBFS_BUFFER_SIZE   16384
-+#define        MAX_USBFS_BUFFER_SIZE   46080
+My first suggestion would be to check your kernel command line. Does it
+have a "root=" parameter? Another thing I'd check is the initramfs. Does
+the bootloader pass the kernel an initramfs? Is the initramfs a valid
+initramfs? Does the (valid) initramfs have the stuff the kernel needs
+(block modules, fs modules). Stuff like that ...
 
 
- static int connected(struct dev_state *ps)
+Paul Bolle
 
---000e0cd5692054930504aab68637
-Content-Type: text/x-patch; charset=US-ASCII; name="bulk_patch.diff"
-Content-Disposition: attachment; filename="bulk_patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_grgjsx000
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL2NvcmUvZGV2aW8uYyBiL2RyaXZlcnMvdXNiL2NvcmUv
-ZGV2aW8uYwppbmRleCAzNzUxOGRmLi5hZDE5M2QwIDEwMDY0NAotLS0gYS9kcml2ZXJzL3VzYi9j
-b3JlL2RldmlvLmMKKysrIGIvZHJpdmVycy91c2IvY29yZS9kZXZpby5jCkBAIC0xMDcsNyArMTA3
-LDcgQEAgZW51bSBzbm9vcF93aGVuIHsKIAogI2RlZmluZSBVU0JfREVWSUNFX0RFVgkJTUtERVYo
-VVNCX0RFVklDRV9NQUpPUiwgMCkKIAotI2RlZmluZQlNQVhfVVNCRlNfQlVGRkVSX1NJWkUJMTYz
-ODQKKyNkZWZpbmUJTUFYX1VTQkZTX0JVRkZFUl9TSVpFCTQ2MDgwCiAKIAogc3RhdGljIGludCBj
-b25uZWN0ZWQoc3RydWN0IGRldl9zdGF0ZSAqcHMpCg==
---000e0cd5692054930504aab68637--
