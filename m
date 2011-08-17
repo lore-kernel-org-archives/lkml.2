@@ -1,150 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab1HQJEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 05:04:20 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:37811 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751419Ab1HQJES (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 05:04:18 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v3] usb: musb: ux500: optimize DMA callback routine
-Date: Wed, 17 Aug 2011 11:03:40 +0200
-Message-ID: <1313571820-5777-1-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752049Ab1HQJKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 05:10:49 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45445 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab1HQJKs convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Wed, 17 Aug 2011 05:10:48 -0400
+Message-Id: <4E4BA1EE0200007800051A74@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 17 Aug 2011 10:11:42 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: don't apply destructive erratum workaround on
+	 unaffected CPUs
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+Erratum 93 applies to AMD K8 CPUs only, and its workaround (forcing
+the upper 32 bits of %rip to all get set under certain conditions) is
+actually getting in the way of analyzing page faults occurring during
+EFI physical mode runtime calls (in particular the page table walk
+shown is completely unrelated to the actual fault). This is because
+typically EFI runtime code lives in the space between 2G and 4G, which
+- modulo the above manipulation - is likely to overlap with the kernel
+or modules area.
 
-Skip the use of work queue and call musb_dma_completion() directly from
-DMA callback context.
+While even for the other errata workarounds their taking effect could
+be limited to just the affected CPUs, none of them appears to be
+destructive, and they're generally getting called only outside of
+performance critical paths, so they're being left untouched.
 
-Here follows measurements on a Snowball board with ondemand governor active.
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Performance using work queue:
-(105 MB) copied, 6.23758 s, 16.8 MB/s
-(105 MB) copied, 5.7151 s, 18.3 MB/s
-(105 MB) copied, 5.83583 s, 18.0 MB/s
-(105 MB) copied, 5.93611 s, 17.7 MB/s
-
-Performance without work queue
-(105 MB) copied, 5.62173 s, 18.7 MB/s
-(105 MB) copied, 5.61811 s, 18.7 MB/s
-(105 MB) copied, 5.57817 s, 18.8 MB/s
-(105 MB) copied, 5.58549 s, 18.8 MB/s
-
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
 ---
-Change log.
-v2: remove cast for void pointer
-v3: rebase patch on top of a pure 3.1-rc1
+ arch/x86/mm/fault.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
- drivers/usb/musb/ux500_dma.c |   38 +++-----------------------------------
- 1 files changed, 3 insertions(+), 35 deletions(-)
-
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index cecace4..6f10bba 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -37,7 +37,6 @@ struct ux500_dma_channel {
- 	struct dma_channel channel;
- 	struct ux500_dma_controller *controller;
- 	struct musb_hw_ep *hw_ep;
--	struct work_struct channel_work;
- 	struct dma_chan *dma_chan;
- 	unsigned int cur_len;
- 	dma_cookie_t cookie;
-@@ -56,30 +55,11 @@ struct ux500_dma_controller {
- 	dma_addr_t phy_base;
- };
- 
--/* Work function invoked from DMA callback to handle tx transfers. */
--static void ux500_tx_work(struct work_struct *data)
--{
--	struct ux500_dma_channel *ux500_channel = container_of(data,
--		struct ux500_dma_channel, channel_work);
--	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
--	struct musb *musb = hw_ep->musb;
--	unsigned long flags;
--
--	DBG(4, "DMA tx transfer done on hw_ep=%d\n", hw_ep->epnum);
--
--	spin_lock_irqsave(&musb->lock, flags);
--	ux500_channel->channel.actual_len = ux500_channel->cur_len;
--	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
--	musb_dma_completion(musb, hw_ep->epnum,
--				ux500_channel->is_tx);
--	spin_unlock_irqrestore(&musb->lock, flags);
--}
--
- /* Work function invoked from DMA callback to handle rx transfers. */
--static void ux500_rx_work(struct work_struct *data)
-+void ux500_dma_callback(void *private_data)
- {
--	struct ux500_dma_channel *ux500_channel = container_of(data,
--		struct ux500_dma_channel, channel_work);
-+	struct dma_channel *channel = private_data;
-+	struct ux500_dma_channel *ux500_channel = channel->private_data;
- 	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
- 	struct musb *musb = hw_ep->musb;
- 	unsigned long flags;
-@@ -92,14 +72,7 @@ static void ux500_rx_work(struct work_struct *data)
- 	musb_dma_completion(musb, hw_ep->epnum,
- 		ux500_channel->is_tx);
- 	spin_unlock_irqrestore(&musb->lock, flags);
--}
--
--void ux500_dma_callback(void *private_data)
--{
--	struct dma_channel *channel = (struct dma_channel *)private_data;
--	struct ux500_dma_channel *ux500_channel = channel->private_data;
- 
--	schedule_work(&ux500_channel->channel_work);
+--- 3.1-rc2/arch/x86/mm/fault.c
++++ 3.1-rc2-x86_64-amd-erratum93/arch/x86/mm/fault.c
+@@ -419,12 +419,14 @@ static noinline __kprobes int vmalloc_fa
+ 	return 0;
  }
  
- static bool ux500_configure_channel(struct dma_channel *channel,
-@@ -326,7 +299,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	void **param_array;
- 	struct ux500_dma_channel *channel_array;
- 	u32 ch_count;
--	void (*musb_channel_work)(struct work_struct *);
- 	dma_cap_mask_t mask;
++#ifdef CONFIG_CPU_SUP_AMD
+ static const char errata93_warning[] =
+ KERN_ERR 
+ "******* Your BIOS seems to not contain a fix for K8 errata #93\n"
+ "******* Working around it, but it may cause SEGVs or burn power.\n"
+ "******* Please consider a BIOS update.\n"
+ "******* Disabling USB legacy in the BIOS may also help.\n";
++#endif
  
- 	if ((data->num_rx_channels > UX500_MUSB_DMA_NUM_RX_CHANNELS) ||
-@@ -343,7 +315,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	channel_array = controller->rx_channel;
- 	ch_count = data->num_rx_channels;
- 	param_array = data->dma_rx_param_array;
--	musb_channel_work = ux500_rx_work;
+ /*
+  * No vm86 mode in 64-bit mode:
+@@ -504,7 +506,11 @@ bad:
+  */
+ static int is_errata93(struct pt_regs *regs, unsigned long address)
+ {
+-#ifdef CONFIG_X86_64
++#if defined(CONFIG_X86_64) && defined(CONFIG_CPU_SUP_AMD)
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD
++	    || boot_cpu_data.x86 != 0xf)
++		return 0;
++
+ 	if (address != regs->ip)
+ 		return 0;
  
- 	for (dir = 0; dir < 2; dir++) {
- 		for (ch_num = 0; ch_num < ch_count; ch_num++) {
-@@ -370,15 +341,12 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 				return -EBUSY;
- 			}
- 
--			INIT_WORK(&ux500_channel->channel_work,
--				musb_channel_work);
- 		}
- 
- 		/* Prepare the loop for TX channels */
- 		channel_array = controller->tx_channel;
- 		ch_count = data->num_tx_channels;
- 		param_array = data->dma_tx_param_array;
--		musb_channel_work = ux500_tx_work;
- 		is_tx = 1;
- 	}
- 
--- 
-1.7.4.1
+
+
 
