@@ -1,90 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab1HQFnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 01:43:52 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:56713 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751145Ab1HQFnr (ORCPT
+	id S1752049Ab1HQFqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 01:46:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59023 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1HQFqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 01:43:47 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak0DAHtRS055LbABgWdsb2JhbABBqFAVAQEWJiWBQAEBBScTHCMQCAMOCi4UJQMhExvBXQ6GOgSkGQ
-Date: Wed, 17 Aug 2011 15:43:43 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH v3 0/4] Per-container dcache limitation
-Message-ID: <20110817054343.GM26978@dastard>
-References: <1313334832-1150-1-git-send-email-glommer@parallels.com>
+	Wed, 17 Aug 2011 01:46:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313334832-1150-1-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 17 Aug 2011 13:45:27 +0800
+Message-ID: <CANFwon2DrFordKntgdXF_JiAo4r=WqUsnbS0pBt7Jj9qeyC13A@mail.gmail.com>
+Subject: A script that used by GDB to load the symbols from Linux kernel modules
+To: linux-kernel@vger.kernel.org, gdb@sourceware.org
+Content-Type: multipart/mixed; boundary=00151747b3623b5f3e04aaad0384
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 14, 2011 at 07:13:48PM +0400, Glauber Costa wrote:
-> Hello,
-> 
-> This series is just like v2, except it addresses
-> Eric's comments regarding percpu variables.
-> 
-> Let me know if there are further comments, and
-> I'll promply address them as well. Otherwise,
-> I feel this is ready for inclusion
+--00151747b3623b5f3e04aaad0384
+Content-Type: text/plain; charset=ISO-8859-1
 
-Just out of couriousity, one thing I've noticed about dentries is
-that in general at any given point in time most dentries are unused.
-Under the workloads I'm testing, even when I have a million cached
-dentries, I only have roughly 7,000 accounted as used.  That is, most
-of the dentries in the system are on a LRU and accounted in
-sb->s_nr_dentry_unused of their owner superblock.
+Hi,
 
-So rather than introduce a bunch of new infrastructure to track the
-number of dentries allocated, why not simply limit the number of
-dentries allowed on the LRU? We already track that, and the shrinker
-already operates on the LRU, so we don't really need any new
-infrastructure.
+When use GDB to debug or trace your kernel with KGDB, QEMU debug
+interface or KGTP.  You must get some trouble with LKM symbols.  For
+example:
+(gdb) target remote localhost:12345
+Remote debugging using localhost:12345
+native_safe_halt () at
+/home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
+50	}
+(gdb) b e100_poll
+Function "e100_poll" not defined.
+Make breakpoint pending on future shared library load? (y or [n])
+This is because GDB didn't get the LKM symbols.  You can do it with
+your hand.  But if you have a lot of LKMs, it will need some time.
 
-The limiting can be lazily - we don't need to limit the growth of
-dentries until we start to run out of memory. If the superblock
-shrinker is aware of the limits, then when it gets called by memory
-reclaim it can do all the work of reducing the number of items on
-the LRU down to the threshold at that time.
+Now, GDB support python script.  The attachment is a script to load
+all symbols from Linux kernel modules to GDB.
+For example:
+(gdb) target remote localhost:12345
+Remote debugging using localhost:12345
+native_safe_halt () at
+/home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
+50	}
+(gdb) so ~/kernel/svn/branches/teawater/getmod.py
+(gdb) b e100_poll
+Breakpoint 1 at 0xc889db40: file
+/home/teawater/big/kernel/linux-2.6/drivers/net/e100.c, line 2165.
 
-IOWs, the limit has no impact on performance until memory is scarce,
-at which time memory reclaim enforces the limits on LRU size and
-clean up happens automatically.
+This script will include in KGTP(https://code.google.com/p/kgtp/) source.
 
-This also avoids all the problems of setting a limit lower than the
-number of active dentries required for the workload (i.e. avoids
-spurious ENOMEM errors trying to allocate dentries), allows
-overcommitment when memory is plentiful (which will benefit
-performance) but it brings the caches back to defined limits when
-memory is not plentiful (which solves the problem you are having).
+Thanks,
+Hui
 
-That seems like a much better solution to me, because it doesn't
-impact the normal working of workloads in the containers and avoids
-having to work out what the correct minimum size of the cache for
-each workload is. It's much easier to work out how many extra cached
-dentries you want the container to be able to have when memory is
-scarce...
+--00151747b3623b5f3e04aaad0384
+Content-Type: text/x-python; charset=US-ASCII; name="getmod.py"
+Content-Disposition: attachment; filename="getmod.py"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_grfv29w80
 
-What do you think?
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
+IyEvdXNyL2Jpbi9weXRob24KCiMgVGhpcyBzY3JpcHQgaXMgdXNlZCBieSBHREIgdG8gbG9hZCB0
+aGUgc3ltYm9scyBmcm9tIExpbnV4IGtlcm5lbCBtb2R1bGVzCiMgR1BMCiMgQ29weXJpZ2h0KEMp
+IEh1aSBaaHUgKHRlYXdhdGVyQGdtYWlsLmNvbSksIDIwMTEKCiNTZXQgc3BlY2lhbCBtb2Rfc2Vh
+cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0iZGlyIgojQ2xlYXIgc3BlY2lhbCBtb2Rfc2Vh
+cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0odm9pZCkxCgppbXBvcnQgZ2RiOwppbXBvcnQg
+b3M7CgpkZWYgZm9ybWF0X2ZpbGUobmFtZSk6Cgl0bXAgPSAiIjsKCWZvciBjIGluIG5hbWU6CgkJ
+aWYgYyA9PSAiXyI6CgkJCWMgPSAiLSI7CgkJdG1wICs9IGM7CglyZXR1cm4gdG1wOwoKI0dldCB0
+aGUgbW9kX3NlYXJjaF9kaXIKbW9kX3NlYXJjaF9kaXIgPSBnZGIucGFyc2VfYW5kX2V2YWwoIiRt
+b2Rfc2VhcmNoX2RpciIpOwppZiBtb2Rfc2VhcmNoX2Rpci50eXBlLmNvZGUgPT0gZ2RiLlRZUEVf
+Q09ERV9BUlJBWToKCW1vZF9zZWFyY2hfZGlyID0gc3RyKG1vZF9zZWFyY2hfZGlyKTsKCW1vZF9z
+ZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMTpsZW4obW9kX3NlYXJjaF9kaXIpXTsKCW1vZF9z
+ZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMDptb2RfbmFtZS5pbmRleCgiXCIiKV07CmVsc2U6
+Cgltb2Rfc2VhcmNoX2RpciA9IHN0cihnZGIuZXhlY3V0ZSgiaW5mbyBmaWxlcyIsIEZhbHNlLCBU
+cnVlKSk7Cgltb2Rfc2VhcmNoX2RpciA9IG1vZF9zZWFyY2hfZGlyW21vZF9zZWFyY2hfZGlyLmlu
+ZGV4KCJTeW1ib2xzIGZyb20gXCIiKStsZW4oIlN5bWJvbHMgZnJvbSBcIiIpOmxlbihtb2Rfc2Vh
+cmNoX2RpcildOwoJbW9kX3NlYXJjaF9kaXIgPSBtb2Rfc2VhcmNoX2RpclswOm1vZF9zZWFyY2hf
+ZGlyLmluZGV4KCJcIiIpXTsKCW1vZF9zZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMDptb2Rf
+c2VhcmNoX2Rpci5yaW5kZXgoIi8iKV07CnByaW50ICJTZWFyY2ggbW9kdWxlcyBmcm9tICIrbW9k
+X3NlYXJjaF9kaXIrIlxuIjsKCm1vZF9saXN0X29mZnNldCA9IGxvbmcoZ2RiLnBhcnNlX2FuZF9l
+dmFsKCIoKHNpemVfdCkgJigoKHN0cnVjdCBtb2R1bGUgKikwKS0+bGlzdCkpIikpOwptb2RfbGlz
+dCA9IGxvbmcoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoJm1vZHVsZXMpIikpOwptb2RfbGlzdF9jdXJy
+ZW50ID0gbW9kX2xpc3Q7Cgp3aGlsZSAxOgoJbW9kX2xpc3RfY3VycmVudCA9IGxvbmcoZ2RiLnBh
+cnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBsaXN0X2hlYWQgKikgIitzdHIobW9kX2xpc3RfY3VycmVu
+dCkrIiktPm5leHQiKSk7CgoJI2NoZWNrIGlmIG5lZWQgYnJlYWsgdGhlIGxvb3AKCWlmIG1vZF9s
+aXN0ID09IG1vZF9saXN0X2N1cnJlbnQ6CgkJYnJlYWs7CgoJbW9kID0gbW9kX2xpc3RfY3VycmVu
+dCAtIG1vZF9saXN0X29mZnNldDsKCgkjZ2V0IG1vZF9uYW1lCgltb2RfbmFtZSA9IHN0cihnZGIu
+cGFyc2VfYW5kX2V2YWwoIigoc3RydWN0IG1vZHVsZSAqKSIrc3RyKG1vZCkrIiktPm5hbWUiKSk7
+Cgltb2RfbmFtZSA9IG1vZF9uYW1lW21vZF9uYW1lLmluZGV4KCJcIiIpKzE6bGVuKG1vZF9uYW1l
+KV07Cgltb2RfbmFtZSA9IG1vZF9uYW1lWzA6bW9kX25hbWUuaW5kZXgoIlwiIildOwoJbW9kX25h
+bWUgKz0gIi5rbyIKCW1vZF9uYW1lID0gZm9ybWF0X2ZpbGUobW9kX25hbWUpOwoKCSNnZXQgbW9k
+X2Rpcl9uYW1lCgltb2RfZGlyX25hbWUgPSAiIjsKCWZvciByb290LCBkaXJzLCBmaWxlcyBpbiBv
+cy53YWxrKG1vZF9zZWFyY2hfZGlyKToKCQlmb3IgYWZpbGUgaW4gZmlsZXM6CgkJCXRtcF9maWxl
+ID0gZm9ybWF0X2ZpbGUoYWZpbGUpOwoJCQlpZiB0bXBfZmlsZSA9PSBtb2RfbmFtZToKCQkJCW1v
+ZF9kaXJfbmFtZSA9IG9zLnBhdGguam9pbihyb290LGFmaWxlKTsKCQkJCWJyZWFrOwoJCWlmIG1v
+ZF9kaXJfbmFtZSAhPSAiIjoKCQkJYnJlYWs7CgoJY29tbWFuZCA9ICIgIjsKCgkjQWRkIG1vZHVs
+ZV9jb3JlIHRvIGNvbW1hbmQKCWNvbW1hbmQgKz0gc3RyKGdkYi5wYXJzZV9hbmRfZXZhbCgiKChz
+dHJ1Y3QgbW9kdWxlICopIitzdHIobW9kKSsiKS0+bW9kdWxlX2NvcmUiKSk7CgoJI0FkZCBlYWNo
+IHNlY3RfYXR0cnMtPmF0dHJzIHRvIGNvbW1hbmQKCSNnZXQgbnNlY3Rpb25zCgluc2VjdGlvbnMg
+PSBpbnQoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBtb2R1bGUgKikiK3N0cihtb2QpKyIp
+LT5zZWN0X2F0dHJzLT5uc2VjdGlvbnMiKSk7CglzZWN0X2F0dHJzID0gbG9uZyhnZGIucGFyc2Vf
+YW5kX2V2YWwoIih1NjQpKChzdHJ1Y3QgbW9kdWxlICopIitzdHIobW9kKSsiKS0+c2VjdF9hdHRy
+cyIpKTsKCWZvciBpIGluIHJhbmdlKDAsIG5zZWN0aW9ucyk6CgkJY29tbWFuZCArPSAiIC1zIjsK
+CQl0bXAgPSBzdHIoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBtb2R1bGVfc2VjdF9hdHRy
+cyAqKSIrc3RyKHNlY3RfYXR0cnMpKyIpLT5hdHRyc1siK3N0cihpKSsiXS5uYW1lIikpOwoJCXRt
+cCA9IHRtcFt0bXAuaW5kZXgoIlwiIikrMTpsZW4odG1wKV07CgkJdG1wID0gdG1wWzA6dG1wLmlu
+ZGV4KCJcIiIpXTsKCQljb21tYW5kICs9ICIgIit0bXA7CgkJdG1wID0gc3RyKGdkYi5wYXJzZV9h
+bmRfZXZhbCgiKChzdHJ1Y3QgbW9kdWxlX3NlY3RfYXR0cnMgKikiK3N0cihzZWN0X2F0dHJzKSsi
+KS0+YXR0cnNbIitzdHIoaSkrIl0uYWRkcmVzcyIpKTsKCQljb21tYW5kICs9ICIgIit0bXA7CgoJ
+aWYgbW9kX2Rpcl9uYW1lID09ICIiOgoJCXByaW50ICJDYW4gZmluZCBvdXQiLG1vZF9uYW1lLCJm
+cm9tIGRpcmVjdG9yeS4iOwoJCXByaW50ICJQbGVhc2UgdXNlIGZvbGxvd2luZyBjb21tYW5kIGxv
+YWQgdGhlIHN5bWJvbHMgZnJvbSBpdDoiCgkJcHJpbnQgImFkZC1zeW1ib2wtZmlsZSBzb21lX2Rp
+ci8iK21vZF9uYW1lK2NvbW1hbmQ7CgllbHNlOgoJCSNwcmludCAiYWRkLXN5bWJvbC1maWxlICIr
+bW9kX2Rpcl9uYW1lK2NvbW1hbmQ7CgkJZ2RiLmV4ZWN1dGUoImFkZC1zeW1ib2wtZmlsZSAiK21v
+ZF9kaXJfbmFtZStjb21tYW5kLCBGYWxzZSwgRmFsc2UpOwo=
+--00151747b3623b5f3e04aaad0384--
