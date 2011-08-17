@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab1HQD24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 23:28:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34463 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab1HQD2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 23:28:53 -0400
+	id S1753352Ab1HQDfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 23:35:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54004 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab1HQDfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 23:35:46 -0400
+Date: Tue, 16 Aug 2011 20:35:44 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ext4_rename should dirty dir_bh with the correct directory
+Message-ID: <20110817033544.GO20655@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Tue, 16 Aug 2011 23:28:22 -0400
-Message-ID: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
-Subject: [PATCH] ath9k: make driver usable standalone
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>
-Cc: linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ath9k is the only wireless driver included in the build
-WIRELESS_EXT configuration option becomes undefined. Because of that
-driver becomes essentially unusable as you can't actually connect to
-any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
-that build with ath9k and without other drivers (having WIRELESS_EXT
-selected in their Kconfig) is actually usable.
+When ext4_rename performs a directory rename (move), dir_bh is a buffer that is
+modified to update the '..' link in the directory being moved (old_inode).
+However, ext4_handle_dirty_metadata is called with the old parent directory
+inode (old_dir) and dir_bh, which is incorrect because dir_bh does not belong
+to the parent inode.  Fix this error.
 
-Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
 
-diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
-b/drivers/net/wireless/ath/ath9k/Kconfig
-index d9c08c6..2573f77 100644
---- a/drivers/net/wireless/ath/ath9k/Kconfig
-+++ b/drivers/net/wireless/ath/ath9k/Kconfig
-@@ -11,6 +11,7 @@ config ATH9K
- 	select LEDS_CLASS
- 	select NEW_LEDS
- 	select ATH9K_COMMON
-+	select WIRELESS_EXT
- 	---help---
- 	  This module adds support for wireless adapters based on
- 	  Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
+ fs/ext4/namei.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 79ddc43..2b5c34b 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2538,7 +2538,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		PARENT_INO(dir_bh->b_data, new_dir->i_sb->s_blocksize) =
+ 						cpu_to_le32(new_dir->i_ino);
+ 		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
+-		retval = ext4_handle_dirty_metadata(handle, old_dir, dir_bh);
++		retval = ext4_handle_dirty_metadata(handle, old_inode, dir_bh);
+ 		if (retval) {
+ 			ext4_std_error(old_dir->i_sb, retval);
+ 			goto end_rename;
