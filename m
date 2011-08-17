@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab1HQNSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:18:00 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42611 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab1HQNR6 (ORCPT
+	id S1754053Ab1HQOrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:47:40 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51687 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753975Ab1HQOri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:17:58 -0400
+	Wed, 17 Aug 2011 10:47:38 -0400
+Date: Wed, 17 Aug 2011 10:47:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+In-Reply-To: <op.v0c3sdm63l0zgt@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108171045200.2100-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1313586241.19990.94.camel@finisterre.wolfsonmicro.main>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
-	<1772239.ndMLD9ec3r@wuerfel>
-	<20110817080327.GD13460@opensource.wolfsonmicro.com>
-	<201108171242.24918.arnd@arndb.de>
-	<1313586241.19990.94.camel@finisterre.wolfsonmicro.main>
-Date: Wed, 17 Aug 2011 15:17:57 +0200
-Message-ID: <CACRpkdbSVF1FxpuocoXkDFH3vDQc4OoTwjU+9iqj0=vVs3R3dQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kenneth Heitke <kheitke@codeaurora.org>,
-        sdharia@codeaurora.org, David Brown <davidb@codeaurora.org>,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
-        john.stultz@linaro.org, akpm@linux-foundation.org, ohad@wizery.com,
-        gregkh@suse.de, stefanr@s5r6.in-berlin.de, lethal@linux-sh.org,
-        linville@tuxdriver.com, zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 3:04 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+On Wed, 17 Aug 2011, Michal Nazarewicz wrote:
 
-> The device driver will know what power supplies and other signals the
-> device has, and it will know how and when to use them. (...)
+> > On Wed, 17 Aug 2011, Michal Nazarewicz wrote:
+> >> @@ -1609,8 +1603,7 @@ int usb_composite_probe(struct  
+> >> usb_composite_driver *driver,
+> >>  		driver->iProduct = driver->name;
+> >>  	composite_driver.function =  (char *) driver->name;
+> >>  	composite_driver.driver.name = driver->name;
+> >> -	composite_driver.speed = min((u8)composite_driver.speed,
+> >> -				     (u8)driver->max_speed);
+> >> +	composite_driver.speed = min(USB_SPEED_SUPER, driver->max_speed);
+> 
+> On Wed, 17 Aug 2011 16:20:15 +0200, Alan Stern <stern@rowland.harvard.edu>  
+> wrote:
+> > I wonder if the min is needed here at all.  It doesn't seem to be doing
+> > any good.
+> 
+> Do you mean just doing “composite_driver.speed = driver->max_speed”?
 
-And I guess there is nothing in the spec claiming that all devices
-be powered-on when you boot?
+Yes.  After all, there aren't any usb_device_speed values larger than 
+USB_SPEED_SUPER.
 
-In that case the devices living on that bus will not respond to
-discovery messages until they are powered on, will they?
 
-Or is there some ingenious self-powered shift register
-logic doing these responses?
+> >> --- a/drivers/usb/gadget/file_storage.c
+> >> +++ b/drivers/usb/gadget/file_storage.c
+> >> @@ -3562,11 +3562,7 @@ static void fsg_resume(struct usb_gadget *gadget)
+> >>  /*-------------------------------------------------------------------------*/
+> >>
+> >>  static struct usb_gadget_driver		fsg_driver = {
+> >> -#ifdef CONFIG_USB_GADGET_DUALSPEED
+> >>  	.speed		= USB_SPEED_HIGH,
+> >> -#else
+> >> -	.speed		= USB_SPEED_FULL,
+> >> -#endif
+> >>  	.function	= (char *) fsg_string_product,
+> >>  	.unbind		= fsg_unbind,
+> >>  	.disconnect	= fsg_disconnect,
+> 
+> > You mustn't remove the .speed field entirely.  Set it to USB_SPEED_HIGH.
+> > The same goes for the other drivers below.
+> 
+> Please note that the field is not in fact removed.
 
-Yours,
-Linus Walleij
+No, but you removed its initializer and as a result, it will be set to 
+0 whereas it should be set to USB_SPEED_HIGH.
+
+Alan Stern
+
