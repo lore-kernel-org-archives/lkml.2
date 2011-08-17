@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab1HQUjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 16:39:32 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62548 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1HQUjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 16:39:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        Linas Vepstas <linas@codeaurora.org>
-Subject: Re: [patch 34/36] Hexagon: Add configuration and makefiles for the Hexagon architecture.
-Date: Wed, 17 Aug 2011 22:27:20 +0200
-Message-ID: <1439336.IEGvqVMOO9@wuerfel>
-User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110817163523.041764598@codeaurora.org>
-References: <20110817163457.878854582@codeaurora.org> <20110817163523.041764598@codeaurora.org>
+	id S1754385Ab1HQUne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 16:43:34 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52400 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930Ab1HQUnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 16:43:33 -0400
+Date: Wed, 17 Aug 2011 13:43:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Subject: RCU treating guest mode just like it does user-mode execution
+Message-ID: <20110817204327.GA10633@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:k/WO0I6Y6D6WBBSK546UZtLmUy7v9K3TJezyikjZl+H
- xijjHh0KzmKJC7r7MRWhFYUbi1KkxVBvf0KpfnHvXPnPyl7WVb
- MQH4oZgXECWD8LTNz7TmWAxDt6KcQhcFSY6O7ktw3dDiQOoXJk
- mDuZctYVum3OS9kUv04oR44Jiul5a0ZcOWfGyW5A9s6+erjGvI
- wPw2uyiOMWwV03yLncM3A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 August 2011 11:35:31 Richard Kuo wrote:
+Hello, Gleb,
 
-> +config HIGHMEM
-> +	bool "High Memory Support"
-> +	default n
+I was looking at KVM's call to rcu_virt_note_context_switch()
+in kvm_guest_enter(), and noting the comment talking about treating
+guest mode like user-mode execution is.  One difference between RCU's
+treatment of KVM guest execution and user-mode execution is that RCU
+notes a context switch only at the beginning of KVM guest execution,
+but notes user-mode execution at every scheduling-clock interrupt.
 
-Do you really want to burden yourselves with this?
+Does it make sense to also note KVM guest execution on each
+scheduling-clock interrupt?  One reason it might not make sense is
+if interrupts from KVM guest execution appear to rcu_check_callbacks()
+as interrupts from user-mode execution.  (Do they?  Given that people
+are reporting RCU CPU stall warnings in virtualized environments, I
+am beginning to suspect that the answer is "no".)
 
-Support for HIGHMEM is gradually going to get worse as we optimize the
-common 64-bit case in the kernel, so it may just not be worth it.
+If KVM guest execution does not appear as user-mode execution to
+rcu_check_callback(), I would consider doing the following:
 
-	Arnd
+1.	Rename rcu_virt_note_context_switch() to something like
+	rcu_guest_execution_start().
+
+2.	Place a call to a new rcu_guest_execution_end() in
+	kvm_guest_exit().
+
+3.	Make rcu_guest_execution_start() and rcu_guest_execution_end()
+	set and clear a new per-CPU variable.
+
+4.	Make rcu_check_callbacks() check this per-CPU variable in
+	much the same way that it currently checks its "user"
+	argument, aside from needing to check that the CPU is
+	not in an interrupt handler or some such.
+
+Of course, some thought is required to make sure that the checks for
+executing in an interrupt handler actually cover all of the needed
+situations, but so it goes!
+
+Thoughts?
+
+							Thanx, Paul
