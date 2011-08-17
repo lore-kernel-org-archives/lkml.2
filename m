@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919Ab1HQSh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 14:37:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38965 "EHLO mx2.suse.de"
+	id S1753726Ab1HQNmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:42:47 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2936 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752346Ab1HQShY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 14:37:24 -0400
-Date: Wed, 17 Aug 2011 20:37:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: "J.H." <warthog9@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: Re: [kernel.org users] [KORG] Taking hera down to deal with the
- load issues
-Message-ID: <20110817183722.GH9959@quack.suse.cz>
-References: <4E4AFCFC.9020008@kernel.org>
- <4E4B7664.9070301@kernel.org>
+	id S1753692Ab1HQNmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 09:42:43 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Subject: Re: [PATCH V2 net-next 3/3] bnx2x: Use pr_fmt and message
+ logging cleanups
+From: "Eilon Greenstein" <eilong@broadcom.com>
+Reply-to: eilong@broadcom.com
+To: "Joe Perches" <joe@perches.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <2d33739418a06602c817d002b30fedd57cbe5f11.1313360101.git.joe@perches.com>
+References: <cover.1313360100.git.joe@perches.com>
+ <2d33739418a06602c817d002b30fedd57cbe5f11.1313360101.git.joe@perches.com>
+Organization: Broadcom
+Date: Wed, 17 Aug 2011 16:42:28 +0300
+Message-ID: <1313588549.7266.9.camel@lb-tlvb-eilong.il.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4B7664.9070301@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.28.3
+X-WSS-ID: 625519093KO6809951-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Sun, 2011-08-14 at 15:16 -0700, Joe Perches wrote:
+> Add pr_fmt(fmt) KBUILD_MODNAME ": " to prefix messages with "bnx2x: ".
+> Remove #define DP_LEVEL and use pr_notice.
+> Repeating KERN_<LEVEL> isn't necessary in multi-line printks.
+> printk macro neatening, use fmt and ##__VA_ARGS__.
+> Coalesce long formats.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Eilon Greenstein <eilong@broadcom.com>
 
-On Wed 17-08-11 01:05:56, J.H. wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> This second kernel is at least, so far, acting a lot closer to what I'd
-> expect from hera, but the disk cache is still filling.  I'm going to
-> keep an eye on it for a bit longer tonight.  As a note, the only
-> difference between the first 3.1-rc1 kernel and the second, that is
-> currently running, was the explicit disabling of IMA and recompiling the
-> kernel.
-  What do you exactly mean by "disk cache is still filling"? 3.1-rc1 has
-quite some changes in writeback code so it's possible something went
-wrong...
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
