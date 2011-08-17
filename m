@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1HQTr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 15:47:29 -0400
-Received: from lucidpixels.com ([72.73.18.11]:37390 "EHLO lucidpixels.com"
+	id S1753745Ab1HQTuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 15:50:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59796 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab1HQTrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 15:47:24 -0400
-Date: Wed, 17 Aug 2011 15:47:23 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jeff Layton <jlayton@samba.org>
-cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-In-Reply-To: <alpine.DEB.2.02.1108171545190.5877@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1108171547110.5877@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
- <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <alpine.DEB.2.02.1108171545190.5877@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751200Ab1HQTub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 15:50:31 -0400
+Date: Wed, 17 Aug 2011 21:49:27 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [patch] memcg: pin execution to current cpu while draining stock
+Message-ID: <20110817194927.GA10982@redhat.com>
+References: <cover.1311338634.git.mhocko@suse.cz>
+ <2f17df54db6661c39a05669d08a9e6257435b898.1311338634.git.mhocko@suse.cz>
+ <20110725101657.21f85bf0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725101657.21f85bf0.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit d1a05b6 'memcg: do not try to drain per-cpu caches without
+pages' added a drain_local_stock() call to a preemptible section.
 
+The draining task looks up the cpu-local stock twice to set the
+draining-flag, then to drain the stock and clear the flag again.  If
+the task is migrated to a different CPU in between, noone will clear
+the flag on the first stock and it will be forever undrainable.  Its
+charge can not be recovered and the cgroup can not be deleted anymore.
 
-On Wed, 17 Aug 2011, Justin Piszcz wrote:
+Properly pin the task to the executing CPU while draining stocks.
 
->
->
-> On Wed, 17 Aug 2011, Justin Piszcz wrote:
->
->> 
->> 
->> On Mon, 15 Aug 2011, Justin Piszcz wrote:
->
->
-> Better output of crash: (again)
->
-> [  214.557063] CIFS VFS: cifs_mount failed w/return code = -22
-> [  216.607556] CIFS VFS: cifs_mount failed w/return code = -22
-> [  222.637424] CIFS VFS: cifs_mount failed w/return code = -22
-> [  228.988734] ------------[ cut here ]------------
-> [  228.988752] kernel BUG at mm/slab.c:3111!
-> [  228.988759] invalid opcode: 0000 [#1] SMP [  228.988769] CPU 1 [ 
-> 228.988774] Modules linked in: netconsole rfcomm bnep bluetooth speedstep_lib 
-> cryptd aes_x86_64 aes_generic configfs ath9k mac80211 uvcvideo ath9k_common 
-> ath9k_hw ath ohci_hcd ssb videodev mmc_core edac_core v4l2_compat_ioctl32 
-> i2c_piix4 edac_mce_amd k10temp battery ac cfg80211 pcmcia shpchp video rfkill 
-> pci_hotplug wmi pcmcia_core
-> [  228.988873] [  228.988880] Pid: 2869, comm: mount Not tainted 3.1.0-rc2 #2 
-> Acer            Aspire 7551                    /Aspire 7551 [  228.988901] 
-> RIP: 0010:[<ffffffff81646526>]  [<ffffffff81646526>] 
-> cache_alloc_refill+0x111/0x4a6
-> [  228.988922] RSP: 0018:ffff8801322e3cf8  EFLAGS: 00010046
-> [  228.988929] RAX: ffff8801399b9000 RBX: ffff88013f000080 RCX: 
-> 0000000000000007
-> [  228.988936] RDX: 0000000000000070 RSI: dead000000200200 RDI: 
-> 0000000000000035
-> [  228.988944] RBP: ffff8801322e3d58 R08: 0000000000000033 R09: 
-> ffff88013f004450
-> [  228.988950] R10: ffff88013f004460 R11: ffff8801322e3d60 R12: 
-> 00000000000000d0
-> [  228.988956] R13: ffff88013f0c1400 R14: 00000000000000d0 R15: 
-> ffff88013f004440
-> [  228.988964] FS:  00007f421e4957e0(0000) GS:ffff88013fc80000(0000) 
-> knlGS:0000000000000000
-> [  228.988972] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  228.988979] CR2: 000000000130d000 CR3: 0000000132205000 CR4: 
-> 00000000000006e0
-> [  228.988986] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-> 0000000000000000
-> [  228.988993] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
-> 0000000000000400
-> [  228.989001] Process mount (pid: 2869, threadinfo ffff8801322e2000, task 
-> ffff88013f278620)
-> [  228.989005] Stack:
-> [  228.989005]  ffff8801322e3d28 000000000000003c 000000000000001c 
-> 0000000000000000
-> [  228.989005]  000000d00000001c 0000001000000000 ffff8801322e3dc8 
-> 0000000000000010
-> [  228.989005]  0000000000000202 ffff88013f000080 00000000000000d0 
-> ffff880139a94940
-> [  228.989005] Call Trace:
-> [  228.989005]  [<ffffffff810ae053>] __kmalloc+0xb3/0xe0
-> [  228.989005]  [<ffffffff810911e5>] kstrdup+0x35/0x60
-> [  228.989005]  [<ffffffff810d1e51>] alloc_vfsmnt+0xa1/0x190
-> [  228.989005]  [<ffffffff810d21dd>] vfs_kern_mount+0x2d/0xa0
-> [  228.989005]  [<ffffffff810d260f>] do_kern_mount+0x4f/0x100
-> [  228.989005]  [<ffffffff810d4002>] do_mount+0x532/0x830
-> [  228.989005]  [<ffffffff810d3955>] ? copy_mount_options+0x35/0x170
-> [  228.989005]  [<ffffffff810d46c3>] sys_mount+0x93/0xe0
-> [  228.989005]  [<ffffffff8164df3b>] system_call_fastpath+0x16/0x1b
-> [  228.989005] Code: 00 e9 d2 00 00 00 49 8b 07 49 39 c7 75 15 49 8b 47 20 41 
-> c7 47 60 01 00 00 00 4c 39 d0 0f 84 ad 00 00 00 8b 53 18 39 50 20 72 2f <0f> 
-> 0b 44 8b 40 24 8b 53 0c ff c6 41 8b 7d 00 89 70 20 41 0f af [  228.989005] 
-> RIP  [<ffffffff81646526>] cache_alloc_refill+0x111/0x4a6
-> [  228.989005]  RSP <ffff8801322e3cf8>
-> [  228.989005] ---[ end trace 8859f1f50ceed0f6 ]---
->
-> Justin.
->
->
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com
+Cc: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 697a1d5..e9b1206 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2085,13 +2085,7 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+ 
+ 	/* Notify other cpus that system-wide "drain" is running */
+ 	get_online_cpus();
+-	/*
+-	 * Get a hint for avoiding draining charges on the current cpu,
+-	 * which must be exhausted by our charging.  It is not required that
+-	 * this be a precise check, so we use raw_smp_processor_id() instead of
+-	 * getcpu()/putcpu().
+-	 */
+-	curcpu = raw_smp_processor_id();
++	curcpu = get_cpu();
+ 	for_each_online_cpu(cpu) {
+ 		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
+ 		struct mem_cgroup *mem;
+@@ -2108,6 +2102,7 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
+ 				schedule_work_on(cpu, &stock->work);
+ 		}
+ 	}
++	put_cpu();
+ 
+ 	if (!sync)
+ 		goto out;
+-- 
+1.7.6
