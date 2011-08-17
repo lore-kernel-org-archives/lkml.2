@@ -1,241 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab1HQORx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 10:17:53 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:34635 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893Ab1HQORu (ORCPT
+	id S1754177Ab1HQQSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:18:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:39186 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab1HQQSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 10:17:50 -0400
-From: David Wagner <david.wagner@free-electrons.com>
-To: linux-mtd <linux-mtd@lists.infradead.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        linux-embedded <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Wagner <david.wagner@free-electrons.com>
-Subject: [PATCH] Tools for controling ubiblk
-Date: Wed, 17 Aug 2011 16:20:47 +0200
-Message-Id: <1313590847-3839-1-git-send-email-david.wagner@free-electrons.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1313587042-30846-1-git-send-email-david.wagner@free-electrons.com>
-References: <1313587042-30846-1-git-send-email-david.wagner@free-electrons.com>
+	Wed, 17 Aug 2011 12:18:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=RpIUdoJbUq7Eqrqztn+LR/CX+8+ywF3rrii7onnb6g0km2U7B6Vi1j8JUQfHQ8LL0
+	Zg+oq7w8r7jRktD6r9G+Q==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 06/13] memcg: add dirty limits to mem_cgroup
+Date: Wed, 17 Aug 2011 09:14:58 -0700
+Message-Id: <1313597705-6093-7-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ubiblk_ctrl sends an appropriate ioctl to ubiblk control node.
+Extend mem_cgroup to contain dirty page limits.
 
-ubiblkadd and ubiblkdel are wrappers around ubiblk_ctrl.
-The syntax is:
-	ubiblk{add,del} x y
-where x is the UBI device number and y the volume ID.
-
-Signed-off-by: David Wagner <david.wagner@free-electrons.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
+Changelog since v8:
+- Use 'memcg' rather than 'mem' for local variables and parameters.
+  This is consistent with other memory controller code.
 
-This is a preliminary version: it has the control device node hardcoded which is
-probably not nice.
+ mm/memcontrol.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 49 insertions(+), 1 deletions(-)
 
- Makefile                  |    6 ++-
- include/mtd/ubiblk-user.h |   43 ++++++++++++++++++++
- ubi-utils/ubiblk_ctrl.c   |   95 +++++++++++++++++++++++++++++++++++++++++++++
- ubi-utils/ubiblkadd       |    2 +
- ubi-utils/ubiblkdel       |    2 +
- 5 files changed, 147 insertions(+), 1 deletions(-)
- create mode 100644 include/mtd/ubiblk-user.h
- create mode 100644 ubi-utils/ubiblk_ctrl.c
- create mode 100755 ubi-utils/ubiblkadd
- create mode 100755 ubi-utils/ubiblkdel
-
-diff --git a/Makefile b/Makefile
-index 67e42ce..2859a8c 100644
---- a/Makefile
-+++ b/Makefile
-@@ -27,12 +27,16 @@ MTD_BINS = \
- 	sumtool #jffs2reader
- UBI_BINS = \
- 	ubiupdatevol ubimkvol ubirmvol ubicrc32 ubinfo ubiattach \
--	ubidetach ubinize ubiformat ubirename mtdinfo ubirsvol
-+	ubidetach ubinize ubiformat ubirename mtdinfo ubirsvol \
-+	ubiblk_ctrl
-+UBI_SCRIPTS = \
-+	ubiblkadd ubiblkdel
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index eda0d9a..070c4ab 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -254,6 +254,13 @@ const char *scanstat_string[NR_SCANSTATS] = {
+ #define SCANSTAT_WORD_SYSTEM	"_by_system"
+ #define SCANSTAT_WORD_HIERARCHY	"_under_hierarchy"
  
- BINS = $(MTD_BINS)
- BINS += mkfs.ubifs/mkfs.ubifs
- BINS += $(addprefix ubi-utils/,$(UBI_BINS))
- SCRIPTS = flash_eraseall
-+SCRIPTS += $(addprefix ubi-utils/,$(UBI_SCRIPTS))
- 
- TARGETS = $(BINS)
- TARGETS += lib/libmtd.a
-diff --git a/include/mtd/ubiblk-user.h b/include/mtd/ubiblk-user.h
-new file mode 100644
-index 0000000..fa0d007
---- /dev/null
-+++ b/include/mtd/ubiblk-user.h
-@@ -0,0 +1,43 @@
-+/*
-+ * Copyright © Free Electrons, 2011
-+ * Copyright © International Business Machines Corp., 2006
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
-+ * the GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ * Author: David Wagner
-+ * Some code taken from ubi-user.h
-+ */
-+
-+#ifndef __UBIBLK_USER_H__
-+#define __UBIBLK_USER_H__
-+
-+#include <linux/types.h>
-+
-+/* Structure to be passed to UBIBLK_IOCADD or IOCDEL ioctl */
-+struct ubiblk_ctrl_req {
-+	__s32 ubi_num;
-+	__s32 vol_id;
++/* Dirty memory parameters */
++struct vm_dirty_param {
++	int dirty_ratio;
++	int dirty_background_ratio;
++	unsigned long dirty_bytes;
++	unsigned long dirty_background_bytes;
 +};
+ 
+ /*
+  * The memory controller data structure. The memory controller controls both
+@@ -303,6 +310,10 @@ struct mem_cgroup {
+ 	atomic_t	refcnt;
+ 
+ 	int	swappiness;
 +
-+/* ioctl commands of the UBI control character device */
++	/* control memory cgroup dirty pages */
++	struct vm_dirty_param dirty_param;
 +
-+#define UBIBLK_CTRL_IOC_MAGIC 'O'
-+
-+/* Create a ubiblk device from a UBI volume */
-+#define UBIBLK_IOCADD _IOW(UBIBLK_CTRL_IOC_MAGIC, 0x10, struct ubiblk_ctrl_req)
-+/* Delete a ubiblk device */
-+#define UBIBLK_IOCDEL _IOW(UBIBLK_CTRL_IOC_MAGIC, 0x11, struct ubiblk_ctrl_req)
-+
-+#endif
-diff --git a/ubi-utils/ubiblk_ctrl.c b/ubi-utils/ubiblk_ctrl.c
-new file mode 100644
-index 0000000..1132f35
---- /dev/null
-+++ b/ubi-utils/ubiblk_ctrl.c
-@@ -0,0 +1,95 @@
+ 	/* OOM-Killer disable */
+ 	int		oom_kill_disable;
+ 
+@@ -1348,6 +1359,36 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+ 	return memcg->swappiness;
+ }
+ 
 +/*
-+ * Copyright (c) Free Electrons, 2011
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
-+ * the GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Author: David Wagner
++ * Return true if the current memory cgroup has local dirty memory settings.
++ * There is an allowed race between the current task migrating in-to/out-of the
++ * root cgroup while this routine runs.  So the return value may be incorrect if
++ * the current task is being simultaneously migrated.
 + */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <string.h>
-+#include <errno.h>
-+#include <fcntl.h>
-+#include <unistd.h>
-+#include <libgen.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <sys/ioctl.h>
-+#include <mtd/ubiblk-user.h>
-+
-+#define CONTROL_NODE "/dev/ubiblk_ctrl"
-+
-+void usage(char *exec_path)
++static bool mem_cgroup_has_dirty_limit(struct mem_cgroup *memcg)
 +{
-+	fprintf(stderr, "%s <-a|-d> <-u UBI_DEVICE_NUMBER> <-v VOLUME_ID>\n",
-+			basename(exec_path));
++	return memcg && !mem_cgroup_is_root(memcg);
 +}
 +
-+int main(int argc, char *argv[])
++/*
++ * Returns a snapshot of the current dirty limits which is not synchronized with
++ * the routines that change the dirty limits.  If this routine races with an
++ * update to the dirty bytes/ratio value, then the caller must handle the case
++ * where neither dirty_[background_]_ratio nor _bytes are set.
++ */
++static void mem_cgroup_dirty_param(struct vm_dirty_param *param,
++				   struct mem_cgroup *memcg)
 +{
-+	int ubi_num = -2, vol_id = -1;
-+	int fd;
-+	struct ubiblk_ctrl_req req;
-+	int ret;
-+	int command;
-+
-+	int option;
-+
-+	while ((option = getopt(argc, argv, "adu:v:")) != -1) {
-+		switch (option) {
-+		case 'a':
-+			command = UBIBLK_IOCADD;
-+			break;
-+		case 'd':
-+			command = UBIBLK_IOCDEL;
-+			break;
-+		case 'u':
-+			ubi_num = atoi(optarg);
-+			break;
-+		case 'v':
-+			vol_id = atoi(optarg);
-+			break;
-+		}
++	if (mem_cgroup_has_dirty_limit(memcg)) {
++		*param = memcg->dirty_param;
++	} else {
++		param->dirty_ratio = vm_dirty_ratio;
++		param->dirty_bytes = vm_dirty_bytes;
++		param->dirty_background_ratio = dirty_background_ratio;
++		param->dirty_background_bytes = dirty_background_bytes;
 +	}
-+	
-+	if (command != UBIBLK_IOCDEL && command != UBIBLK_IOCADD) {
-+		usage(argv[0]);
-+		return EXIT_FAILURE;
-+	}
-+	if (vol_id == -1 || vol_id == -1) {
-+		usage(argv[0]);
-+		return EXIT_FAILURE;
-+	}
-+	
-+	req.ubi_num = ubi_num;
-+	req.vol_id = vol_id;
-+
-+	fd = open(CONTROL_NODE, O_RDONLY);
-+	if (fd == -1) {
-+		fprintf(stderr, "Error while opening the control node: %s\n",
-+				strerror(errno));
-+		return EXIT_FAILURE;
-+	}	
-+
-+	ret = ioctl(fd, command, &req);
-+	if (ret == -1) {
-+		fprintf(stderr, "Error while ioctl: %s\n", strerror(errno));
-+		close(fd);
-+		return EXIT_FAILURE;
-+	}
-+	close(fd);
-+	return EXIT_SUCCESS;
 +}
-diff --git a/ubi-utils/ubiblkadd b/ubi-utils/ubiblkadd
-new file mode 100755
-index 0000000..fd8fbdd
---- /dev/null
-+++ b/ubi-utils/ubiblkadd
-@@ -0,0 +1,2 @@
-+#! /bin/sh
-+ubiblk_ctrl -a -u $0 -v $1
-diff --git a/ubi-utils/ubiblkdel b/ubi-utils/ubiblkdel
-new file mode 100755
-index 0000000..40a1fd1
---- /dev/null
-+++ b/ubi-utils/ubiblkdel
-@@ -0,0 +1,2 @@
-+#! /bin/sh
-+ubiblk_ctrl -d -u $0 -v $1
++
+ static void mem_cgroup_start_move(struct mem_cgroup *mem)
+ {
+ 	int cpu;
+@@ -5220,8 +5261,15 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	mem->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&mem->oom_notify);
+ 
+-	if (parent)
++	if (parent) {
+ 		mem->swappiness = mem_cgroup_swappiness(parent);
++		mem_cgroup_dirty_param(&mem->dirty_param, parent);
++	} else {
++		/*
++		 * The root cgroup dirty_param field is not used, instead,
++		 * system-wide dirty limits are used.
++		 */
++	}
+ 	atomic_set(&mem->refcnt, 1);
+ 	mem->move_charge_at_immigrate = 0;
+ 	mutex_init(&mem->thresholds_lock);
 -- 
-1.7.0.4
+1.7.3.1
 
