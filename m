@@ -1,492 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab1HQRNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:13:53 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26011 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab1HQRFd (ORCPT
+	id S1754217Ab1HQQSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:18:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41245 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab1HQQSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:05:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004070"
-Message-Id: <20110817163520.145693358@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:00 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 03/36] Hexagon: Add bitops support
-References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=bitops.diff
+	Wed, 17 Aug 2011 12:18:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=RldL7BHkWN6QUr5hs61ZNRLfhcHDeEgnz5ApuXq3lFefV7+6ULex8XmAESZk3BQe/
+	JF2GZ3sH0OaO5kOGfkuNg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 03/13] memcg: add dirty page accounting infrastructure
+Date: Wed, 17 Aug 2011 09:14:55 -0700
+Message-Id: <1313597705-6093-4-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Add memcg routines to count dirty, writeback, and unstable_NFS pages.
+These routines are not yet used by the kernel to count such pages.  A
+later change adds kernel calls to these new routines.
 
+As inode pages are marked dirty, if the dirtied page's cgroup differs
+from the inode's cgroup, then mark the inode shared across several
+cgroup.
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 ---
- arch/hexagon/include/asm/bitops.h       |  219 ++++++++++++++++++++++++++++++++
- arch/hexagon/include/asm/bitops/__ffs.h |   42 ++++++
- arch/hexagon/include/asm/bitops/__fls.h |   41 +++++
- arch/hexagon/include/asm/bitops/ffs.h   |   43 ++++++
- arch/hexagon/include/asm/bitops/ffz.h   |   38 +++++
- arch/hexagon/include/asm/bitops/fls.h   |   42 ++++++
- 6 files changed, 425 insertions(+)
+Changelog since v8:
+- In v8 this patch was applied after 'memcg: add mem_cgroup_mark_inode_dirty()'.
+  In this version (v9), this patch comes first.  The result is that this patch
+  does not contain code to mark inode with I_MEMCG_SHARED.  That logic is
+  deferred until the later 'memcg: add mem_cgroup_mark_inode_dirty()' patch.
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,219 @@
-+/*
-+ * Bit operations for the Hexagon architecture
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS_H
-+#define _ASM_BITOPS_H
-+
-+#include <linux/compiler.h>
-+#include <asm/byteorder.h>
-+#include <asm/system.h>
-+#include <asm/atomic.h>
-+
-+#ifdef __KERNEL__
-+
-+#define smp_mb__before_clear_bit()	barrier()
-+#define smp_mb__after_clear_bit()	barrier()
-+
-+/*
-+ * The offset calculations for these are based on BITS_PER_LONG == 32
-+ * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
-+ * mask by 0x0000001F)
-+ *
-+ * Typically, R10 is clobbered for address, R11 bit nr, and R12 is temp
-+ */
-+
-+/**
-+ * test_and_clear_bit - clear a bit and return its old value
-+ * @nr:  bit number to clear
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_clear_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = clrbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
-+}
-+
-+/**
-+ * test_and_set_bit - set a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_set_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = setbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+
-+	return oldval;
-+
-+}
-+
-+/**
-+ * test_and_change_bit - toggle a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_change_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = togglebit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
-+
-+}
-+
-+/*
-+ * Atomic, but doesn't care about the return value.
-+ * Rewrite later to save a cycle or two.
-+ */
-+
-+static inline void clear_bit(int nr, volatile void *addr)
-+{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void set_bit(int nr, volatile void *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void change_bit(int nr, volatile void *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+
-+/*
-+ * These are allowed to be non-atomic.  In fact the generic flavors are
-+ * in non-atomic.h.  Would it be better to use intrinsics for this?
-+ *
-+ * OK, writes in our architecture do not invalidate LL/SC, so this has to
-+ * be atomic, particularly for things like slab_lock and slab_unlock.
-+ *
-+ */
-+static inline void __clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void __set_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void __change_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+/*  Apparently, at least some of these are allowed to be non-atomic  */
-+static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_clear_bit(nr, addr);
-+}
-+
-+static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_set_bit(nr, addr);
-+}
-+
-+static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_change_bit(nr, addr);
-+}
-+
-+static inline int __test_bit(int nr, const volatile unsigned long *addr)
-+{
-+	int retval;
-+
-+	asm volatile(
-+	"{P0 = tstbit(%1,%2); if (P0.new) %0 = #1; if (!P0.new) %0 = #0;}\n"
-+	: "=&r" (retval)
-+	: "r" (addr[BIT_WORD(nr)]), "r" (nr % BITS_PER_LONG)
-+	: "p0"
-+	);
-+
-+	return retval;
-+}
-+
-+#define test_bit(nr, addr) __test_bit(nr, addr)
-+
-+#ifdef CONFIG_HEXAGON_BITOPS
-+#include <asm/bitops/ffz.h>
-+#include <asm/bitops/fls.h>
-+#include <asm/bitops/ffs.h>
-+#include <asm/bitops/__ffs.h>
-+#include <asm/bitops/__fls.h>
-+#else
-+#include <asm-generic/bitops/ffz.h>
-+#include <asm-generic/bitops/fls.h>
-+#include <asm-generic/bitops/ffs.h>
-+#include <asm-generic/bitops/__ffs.h>
-+#define __fls(x) (fls(x) - 1)
-+#endif
-+
-+#include <asm-generic/bitops/lock.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __KERNEL__ */
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__ffs.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__ffs.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS___FFS_H_
-+#define _ASM_BITOPS___FFS_H_
-+
-+/*
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ *
-+ * bits_per_long assumed to be 32
-+ * numbering starts at 0 I think (instead of 1 like ffs)
-+ */
-+static inline unsigned long __ffs(unsigned long word)
-+{
-+	int num;
-+
-+	asm volatile("%0 = ct0(%1);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__fls.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__fls.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS___FLS_H_
-+#define _ASM_BITOPS___FLS_H_
-+
-+/*
-+ * __fls - find last (most-significant) set bit in a long word
-+ * @word: the word to search
-+ *
-+ * Undefined if no set bit exists, so code should check against 0 first.
-+ * bits_per_long assumed to be 32
-+ */
-+static inline unsigned long __fls(unsigned long word)
-+{
-+	int num;
-+
-+	asm volatile("%0 = cl0(%1);\n"
-+		"%0 = sub(#31,%0);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffs.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffs.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,43 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS_FFS_H_
-+#define _ASM_BITOPS_FFS_H_
-+
-+/*
-+ * ffs - find first bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as
-+ * the libc and compiler builtin ffs routines, therefore
-+ * differs in spirit from the above ffz (man ffs).
-+ */
-+static inline int ffs(int x)
-+{
-+	int r;
-+
-+	asm volatile("{ P0 = cmp.eq(%1,#0); %0 = ct0(%1);}\n"
-+		"{ if P0 %0 = #0; if !P0 %0 = add(%0,#1);}\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
-+
-+	return r;
-+}
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffz.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffz.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,38 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS_FFZ_H_
-+#define _ASM_BITOPS_FFZ_H_
-+
-+/*
-+ * ffz - find first zero in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no zero exists, so code should check against ~0UL first.
-+ */
-+static inline int ffz(int x)
-+{
-+	int r;
-+
-+	asm volatile("%0 = ct1(%1);\n"
-+		: "=&r" (r)
-+		: "r" (x));
-+	return r;
-+}
-+
-+#endif
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/fls.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/fls.h	2011-07-20 15:19:35.455153985 -0500
-@@ -0,0 +1,42 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_BITOPS_FLS_H_
-+#define _ASM_BITOPS_FLS_H_
-+
-+/*
-+ * fls - find last (most-significant) bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as ffs.
-+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
-+ */
-+static inline int fls(int x)
-+{
-+	int r;
-+
-+	asm volatile("{ %0 = cl0(%1);}\n"
-+		"%0 = sub(#32,%0);\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
-+
-+	return r;
-+}
-+
-+#endif
+ include/linux/memcontrol.h |    8 ++++-
+ mm/memcontrol.c            |   87 ++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 86 insertions(+), 9 deletions(-)
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 5633f51..e6af3a9 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -27,9 +27,15 @@ struct page_cgroup;
+ struct page;
+ struct mm_struct;
+ 
+-/* Stats that can be updated by kernel. */
++/*
++ * Per mem_cgroup page counts tracked by kernel.  As pages enter and leave these
++ * states, the kernel notifies memcg using mem_cgroup_{inc,dec}_page_stat().
++ */
+ enum mem_cgroup_page_stat_item {
+ 	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
++	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
++	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
++	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+ };
+ 
+ extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c6faa32..723b8bf 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -84,8 +84,11 @@ enum mem_cgroup_stat_index {
+ 	 */
+ 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+ 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+-	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+ 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
++	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
++	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
++	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
++	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
+ 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+ 	MEM_CGROUP_ON_MOVE,	/* someone is moving account between groups */
+ 	MEM_CGROUP_STAT_NSTATS,
+@@ -2066,6 +2069,44 @@ void mem_cgroup_update_page_stat(struct page *page,
+ 			ClearPageCgroupFileMapped(pc);
+ 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+ 		break;
++
++	case MEMCG_NR_FILE_DIRTY:
++		/* Use Test{Set,Clear} to only un/charge the memcg once. */
++		if (val > 0) {
++			if (TestSetPageCgroupFileDirty(pc))
++				val = 0;
++		} else {
++			if (!TestClearPageCgroupFileDirty(pc))
++				val = 0;
++		}
++		idx = MEM_CGROUP_STAT_FILE_DIRTY;
++		break;
++
++	case MEMCG_NR_FILE_WRITEBACK:
++		/*
++		 * This counter is adjusted while holding the mapping's
++		 * tree_lock.  Therefore there is no race between settings and
++		 * clearing of this flag.
++		 */
++		if (val > 0)
++			SetPageCgroupFileWriteback(pc);
++		else
++			ClearPageCgroupFileWriteback(pc);
++		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
++		break;
++
++	case MEMCG_NR_FILE_UNSTABLE_NFS:
++		/* Use Test{Set,Clear} to only un/charge the memcg once. */
++		if (val > 0) {
++			if (TestSetPageCgroupFileUnstableNFS(pc))
++				val = 0;
++		} else {
++			if (!TestClearPageCgroupFileUnstableNFS(pc))
++				val = 0;
++		}
++		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
++		break;
++
+ 	default:
+ 		BUG();
+ 	}
+@@ -2663,6 +2704,17 @@ void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail)
+ }
+ #endif
+ 
++static inline
++void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
++				       struct mem_cgroup *to,
++				       enum mem_cgroup_stat_index idx)
++{
++	preempt_disable();
++	__this_cpu_dec(from->stat->count[idx]);
++	__this_cpu_inc(to->stat->count[idx]);
++	preempt_enable();
++}
++
+ /**
+  * mem_cgroup_move_account - move account of the page
+  * @page: the page
+@@ -2711,13 +2763,18 @@ static int mem_cgroup_move_account(struct page *page,
+ 
+ 	move_lock_page_cgroup(pc, &flags);
+ 
+-	if (PageCgroupFileMapped(pc)) {
+-		/* Update mapped_file data for mem_cgroup */
+-		preempt_disable();
+-		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		preempt_enable();
+-	}
++	if (PageCgroupFileMapped(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_MAPPED);
++	if (PageCgroupFileDirty(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++						  MEM_CGROUP_STAT_FILE_DIRTY);
++	if (PageCgroupFileWriteback(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_WRITEBACK);
++	if (PageCgroupFileUnstableNFS(pc))
++		mem_cgroup_move_account_page_stat(from, to,
++					MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
+ 	mem_cgroup_charge_statistics(from, PageCgroupCache(pc), -nr_pages);
+ 	if (uncharge)
+ 		/* This is not "cancel", but cancel_charge does all we need. */
+@@ -4147,6 +4204,9 @@ enum {
+ 	MCS_SWAP,
+ 	MCS_PGFAULT,
+ 	MCS_PGMAJFAULT,
++	MCS_FILE_DIRTY,
++	MCS_WRITEBACK,
++	MCS_UNSTABLE_NFS,
+ 	MCS_INACTIVE_ANON,
+ 	MCS_ACTIVE_ANON,
+ 	MCS_INACTIVE_FILE,
+@@ -4171,6 +4231,9 @@ struct {
+ 	{"swap", "total_swap"},
+ 	{"pgfault", "total_pgfault"},
+ 	{"pgmajfault", "total_pgmajfault"},
++	{"dirty", "total_dirty"},
++	{"writeback", "total_writeback"},
++	{"nfs_unstable", "total_nfs_unstable"},
+ 	{"inactive_anon", "total_inactive_anon"},
+ 	{"active_anon", "total_active_anon"},
+ 	{"inactive_file", "total_inactive_file"},
+@@ -4204,6 +4267,14 @@ mem_cgroup_get_local_stat(struct mem_cgroup *mem, struct mcs_total_stat *s)
+ 	val = mem_cgroup_read_events(mem, MEM_CGROUP_EVENTS_PGMAJFAULT);
+ 	s->stat[MCS_PGMAJFAULT] += val;
+ 
++	/* dirty stat */
++	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
++	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
++	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_WRITEBACK);
++	s->stat[MCS_WRITEBACK] += val * PAGE_SIZE;
++	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
++	s->stat[MCS_UNSTABLE_NFS] += val * PAGE_SIZE;
++
+ 	/* per zone stat */
+ 	val = mem_cgroup_nr_lru_pages(mem, BIT(LRU_INACTIVE_ANON));
+ 	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
+-- 
+1.7.3.1
 
