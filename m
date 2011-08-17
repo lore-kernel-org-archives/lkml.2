@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab1HQJsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 05:48:10 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:55528 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751618Ab1HQJsH (ORCPT
+	id S1753448Ab1HQNVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:21:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53001 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab1HQNVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 05:48:07 -0400
-Subject: Re: avr32: handle_signal() bug?
-From: Matt Fleming <matt@console-pimps.org>
-To: =?ISO-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAF8ieYW+VC8kp10zuo8EpXXVB3vyLwGODSYFiK1xw25Z=pJMPw@mail.gmail.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
-	 <1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CAF8ieYV_3skMFo4Mc59hX1g1tFEjg8Fjnag36ZQwU9w=CPkLLQ@mail.gmail.com>
-	 <1313488648.3436.126.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110816153938.GA20428@redhat.com>
-	 <CAF8ieYW+VC8kp10zuo8EpXXVB3vyLwGODSYFiK1xw25Z=pJMPw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Aug 2011 10:48:02 +0100
-Message-ID: <1313574482.3436.227.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	Wed, 17 Aug 2011 09:21:19 -0400
+Date: Wed, 17 Aug 2011 14:21:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <greg@kroah.com>
+Cc: Tim Bird <tbird20d@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, stable-review@kernel.org,
+        Brian Swetland <swetland@google.com>, stable@kernel.org,
+        tim.bird@am.sony.com,
+        Arve =?unknown-8bit?B?SGrDuG5uZXbDpQ==?= <arve@android.com>
+Subject: Re: Future of the -longterm kernel releases (i.e. how we pick
+ them).
+Message-ID: <20110817132114.GB10209@sirena.org.uk>
+References: <20110815041524.GA7578@kroah.com>
+ <CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
+ <20110817045856.GB4936@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=unknown-8bit
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110817045856.GB4936@kroah.com>
+X-Cookie: Being ugly isn't illegal.  Yet.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 22:14 -0700, Håvard Skinnemoen wrote:
-> 
-> For now, please feel free to add
-> 
-> Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
-> 
-> to the two patches Matt sent earlier. I think they move things in the
-> right direction even though there are other issues that need to be
-> fixed as well.
+On Tue, Aug 16, 2011 at 09:58:56PM -0700, Greg KH wrote:
+> On Tue, Aug 16, 2011 at 04:01:57PM -0700, Tim Bird wrote:
 
-Thanks Håvard! I've added your Acked-by's.
+> > The other major out-of-tree patches we usually integrate are
+> > 1) Android
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> I would love to get some feedback/contacts with the Android teams to
+> talk about this with them.  If anyone knows anyone I should talk to
+> here, please let me know.
 
+Brian Swetland and Arve Hjønnevåshould be able to point you at the
+right people if they aren't themselves the right people.
+
+[Sorry if my software has mangled your name Arve]
