@@ -1,63 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1HQOUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 10:20:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16536 "EHLO mx1.redhat.com"
+	id S1753965Ab1HQOeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:34:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56986 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865Ab1HQOUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 10:20:07 -0400
-Date: Wed, 17 Aug 2011 16:16:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, linux-man@vger.kernel.org,
-        roland@hack.frob.com, torvalds@linux-foundation.org
-Subject: Re: +
-	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
-	.patch added to -mm tree
-Message-ID: <20110817141641.GA15503@redhat.com>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com> <20110817130531.GA12204@redhat.com> <CAPXgP10A4rcQLht--h1d3PJE=oOrm=MSjGXTUSKVF+ssnkt_gw@mail.gmail.com>
+	id S1753865Ab1HQOeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 10:34:23 -0400
+Date: Wed, 17 Aug 2011 16:34:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 4/6]  memg: calculate numa weight for vmscan
+Message-ID: <20110817143418.GC7482@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809191100.6c4c3285.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPXgP10A4rcQLht--h1d3PJE=oOrm=MSjGXTUSKVF+ssnkt_gw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110809191100.6c4c3285.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17, Kay Sievers wrote:
->
-> On Wed, Aug 17, 2011 at 15:05, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > But, I seem to remember, that patch cleared ->child_reaper on exec,
->
-> I don't think he original patch did.
->
-> > I think this makes sense.
->
-> Why would it? Systemd can serialize its state and properly re-exec
-> itself as many times as needed during its lifetime. Why would the
-> kernel take something away from a process, which it explicitly asked
-> for?
->
-> > And I am not sure about security. No, I do not see any problems, just
-> > I don't know. Say, should we check the creds during reparenting? I
-> > dunno.
->
-> Hmm, I don't see why that would be necessary. It's just one of our
-> parents that aks for our signals.
+Sorry it took so long but I was quite busy recently.
 
-Oh, I do not know. I do not pretend I understand the security ;)
+On Tue 09-08-11 19:11:00, KAMEZAWA Hiroyuki wrote:
+> caclculate node scan weight.
+> 
+> Now, memory cgroup selects a scan target node in round-robin.
+> It's not very good...there is not scheduling based on page usages.
+> 
+> This patch is for calculating each node's weight for scanning.
+> If weight of a node is high, the node is worth to be scanned.
+> 
+> The weight is now calucauted on following concept.
+> 
+>    - make use of swappiness.
+>    - If inactive-file is enough, ignore active-file
+>    - If file is enough (w.r.t swappiness), ignore anon
+>    - make use of recent_scan/rotated reclaim stats.
 
-For example. I simply can't understand why do we have security_task_wait().
-Why waitpid(my_natural_child) can fail for security reasons? But we have
-selinux_task_wait().
+The concept looks good (see the specific comments bellow). I would
+appreciate if the description was more descriptive (especially in the
+reclaim statistics part with the reasoning why it is better).
+ 
+> Then, a node contains many inactive file pages will be a 1st victim.
+> Node selection logic based on this weight will be in the next patch.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |  110 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 105 insertions(+), 5 deletions(-)
+> 
+> Index: mmotm-Aug3/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-Aug3.orig/mm/memcontrol.c
+> +++ mmotm-Aug3/mm/memcontrol.c
+[...]
+> @@ -1568,18 +1570,108 @@ static bool test_mem_cgroup_node_reclaim
+>  }
+>  #if MAX_NUMNODES > 1
+>  
+> +static unsigned long
+> +__mem_cgroup_calc_numascan_weight(struct mem_cgroup * memcg,
+> +				int nid,
+> +				unsigned long anon_prio,
+> +				unsigned long file_prio,
+> +				int lru_mask)
+> +{
+> +	u64 file, anon;
+> +	unsigned long weight, mask;
 
+mask is not used anywhere.
 
+> +	unsigned long rotated[2], scanned[2];
+> +	int zid;
+> +
+> +	scanned[0] = 0;
+> +	scanned[1] = 0;
+> +	rotated[0] = 0;
+> +	rotated[1] = 0;
+> +
+> +	for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+> +		struct mem_cgroup_per_zone *mz;
+> +
+> +		mz = mem_cgroup_zoneinfo(memcg, nid, zid);
+> +		scanned[0] += mz->reclaim_stat.recent_scanned[0];
+> +		scanned[1] += mz->reclaim_stat.recent_scanned[1];
+> +		rotated[0] += mz->reclaim_stat.recent_rotated[0];
+> +		rotated[1] += mz->reclaim_stat.recent_rotated[1];
+> +	}
+> +	file = mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask & LRU_ALL_FILE);
+> +
+> +	if (total_swap_pages)
 
-So, once again. I am not arguing. I am only asking the questions.
-I didn't mean I see any problem here.
+What about ((lru_mask & LRU_ALL_ANON) && total_swap_pages)? Why should
+we go down the mem_cgroup_node_nr_lru_pages if are not getting anything?
 
-Oleg.
+> +		anon = mem_cgroup_node_nr_lru_pages(memcg,
+> +					nid, mask & LRU_ALL_ANON);
 
+btw. s/mask/lru_mask/
+
+> +	else
+> +		anon = 0;
+
+Can be initialized during declaration (makes patch smaller).
+
+> +	if (!(file + anon))
+> +		node_clear(nid, memcg->scan_nodes);
+
+In that case we can return with 0 right away.
+
+> +
+> +	/* 'scanned - rotated/scanned' means ratio of finding not active. */
+> +	anon = anon * (scanned[0] - rotated[0]) / (scanned[0] + 1);
+> +	file = file * (scanned[1] - rotated[1]) / (scanned[1] + 1);
+
+OK, makes sense. We should not reclaim from nodes that are known to be
+hard to reclaim from. We, however, have to be careful to not exclude the
+node from reclaiming completely.
+
+> +
+> +	weight = (anon * anon_prio + file * file_prio) / 200;
+
+Shouldn't we rather normalize the weight to the node size? This way we
+are punishing bigger nodes, aren't we.
+
+> +	return weight;
+> +}
+> +
+> +/*
+> + * Calculate each NUMA node's scan weight. scan weight is determined by
+> + * amount of pages and recent scan ratio, swappiness.
+> + */
+> +static unsigned long
+> +mem_cgroup_calc_numascan_weight(struct mem_cgroup *memcg)
+> +{
+> +	unsigned long weight, total_weight;
+> +	u64 anon_prio, file_prio, nr_anon, nr_file;
+> +	int lru_mask;
+> +	int nid;
+> +
+> +	anon_prio = mem_cgroup_swappiness(memcg) + 1;
+> +	file_prio = 200 - anon_prio + 1;
+
+What is +1 good for. I do not see that anon_prio would be used as a
+denominator.
+
+> +
+> +	lru_mask = BIT(LRU_INACTIVE_FILE);
+> +	if (mem_cgroup_inactive_file_is_low(memcg))
+> +		lru_mask |= BIT(LRU_ACTIVE_FILE);
+> +	/*
+> +	 * In vmscan.c, we'll scan anonymous pages with regard to memcg/zone's
+> +	 * amounts of file/anon pages and swappiness and reclaim_stat. Here,
+> +	 * we try to find good node to be scanned. If the memcg contains enough
+> +	 * file caches, we'll ignore anon's weight.
+> +	 * (Note) scanning anon-only node tends to be waste of time.
+> +	 */
+> +
+> +	nr_file = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
+> +	nr_anon = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
+> +
+> +	/* If file cache is small w.r.t swappiness, check anon page's weight */
+> +	if (nr_file * file_prio >= nr_anon * anon_prio)
+> +		lru_mask |= BIT(LRU_INACTIVE_ANON);
+
+Why we do not care about active anon (e.g. if inactive anon is low)?
+
+> +
+> +	total_weight = 0;
+
+Can be initialized during declaration.
+
+[...]
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
