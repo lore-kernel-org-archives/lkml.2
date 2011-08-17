@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab1HQGkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 02:40:22 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38516 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab1HQGkU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 02:40:20 -0400
+	id S1751528Ab1HQGsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 02:48:11 -0400
+Received: from zfrontend1.aha.ru ([195.2.83.147]:36614 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751277Ab1HQGsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 02:48:07 -0400
+X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 02:48:06 EDT
+From: "werner" <w.landgraf@ru.ru>
+Subject: 3.1-rc2 boot crashs
+To: linux-kernel@vger.kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Wed, 17 Aug 2011 01:47:58 -0400
+Message-ID: <web-589640183@zbackend1.aha.ru>
 MIME-Version: 1.0
-In-Reply-To: <CAFdhcLRKvfqBnXCXLwq-Qe1eNAGC-8XJ3BtHpQKzaa3RhHyp6A@mail.gmail.com>
-References: <CAFdhcLRKvfqBnXCXLwq-Qe1eNAGC-8XJ3BtHpQKzaa3RhHyp6A@mail.gmail.com>
-Date: Wed, 17 Aug 2011 02:40:19 -0400
-Message-ID: <CAFdhcLTFv4Wk0kBb2NSL7oh+78BJ=6qPT4XfcOssOkwEERyj=w@mail.gmail.com>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: David Horner <ds2horner@gmail.com>
-To: linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Cc: jack@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"; format="flowed"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- I noticed a significant typo below (another of those thousand eyes,
-thanks to Jan Kara's post that started ne looking) :
-
- > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
- > + unsigned long thresh,
-...
- > + * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
- > + * own size, so move the slope over accordingly.
- > + */
- > + if (unlikely(bdi_thresh > thresh))
- > + bdi_thresh = thresh;
- > + /*
- > + * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
- > + */
- > + x = div_u64((u64)bdi_thresh << 16, thresh | 1);
-
-                  ^
- I believe should be
-
-    x = div_u64((u64)bdi_thresh << 16, thresh + 1);
-
-    David Horner
+3.1-rc1 and 2 crash during boot, within 1 sec after 
+starting (screen stays black, harddisk lamp stops to 
+blink, no error messg obtainable). That's with the allyes 
+config, which with 3.0.1 , 3.0.2 don't have any problems 
+(3.0.2 i compiled today too and it runs normally).  To 
+avoid that this problem continues long time until 
+corrected, I advice, although I cannot help with an error 
+message.  Who want can give me suggestions what to 
+disable.
+wl
+---
+Professional hosting for everyone - http://www.host.ru
