@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1HQXsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:48:14 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:58538 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab1HQXsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:48:13 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Thomas Backlund <tmb@mageia.org>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: INFO: task jbd2/dm-0-8:3993 blocked for more than 120 seconds
-In-Reply-To: Your message of "Thu, 18 Aug 2011 00:08:53 +0300."
-             <4E4C2DE5.5020100@mageia.org>
-From: Valdis.Kletnieks@vt.edu
-References: <4E4BC296.1040004@mageia.org> <96850198-2253-40F7-B99C-62A6097278FA@dilger.ca>
-            <4E4C2DE5.5020100@mageia.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1313624887_2796P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 17 Aug 2011 19:48:07 -0400
-Message-ID: <27048.1313624887@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020B.4E4C5338.0026,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1754444Ab1HQXzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 19:55:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753640Ab1HQXzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 19:55:37 -0400
+Date: Thu, 18 Aug 2011 02:55:29 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: RCU treating guest mode just like it does user-mode execution
+Message-ID: <20110817235529.GA8163@redhat.com>
+References: <20110817204327.GA10633@linux.vnet.ibm.com>
+ <20110817215015.GA6423@redhat.com>
+ <20110817220520.GN2419@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817220520.GN2419@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1313624887_2796P
-Content-Type: text/plain; charset=us-ascii
-
-On Thu, 18 Aug 2011 00:08:53 +0300, Thomas Backlund said:
-> Andreas Dilger skrev 17.8.2011 17:35:
-
-> > This is a problem with your disk hardware.
-
-> Are you sure?
-> I get nothing from smart, even after I had executed the long test...
-
-SMART is nice, but it isn't guaranteed.  In particular, you need to
-double-check that what you think it's testing in a "long" test is what
-it actually did...
-
-> # smartctl -a /dev/sda
-> smartctl 5.39.1 2010-01-28 r3054 [x86_64-mandriva-linux-gnu] (local build)
-> Copyright (C) 2002-10 by Bruce Allen, http://smartmontools.sourceforge.net
+On Wed, Aug 17, 2011 at 03:05:20PM -0700, Paul E. McKenney wrote:
+> On Thu, Aug 18, 2011 at 12:50:15AM +0300, Gleb Natapov wrote:
+> > On Wed, Aug 17, 2011 at 01:43:27PM -0700, Paul E. McKenney wrote:
+> > > Hello, Gleb,
+> > > 
+> > > I was looking at KVM's call to rcu_virt_note_context_switch()
+> > > in kvm_guest_enter(), and noting the comment talking about treating
+> > > guest mode like user-mode execution is.  One difference between RCU's
+> > > treatment of KVM guest execution and user-mode execution is that RCU
+> > > notes a context switch only at the beginning of KVM guest execution,
+> > > but notes user-mode execution at every scheduling-clock interrupt.
+> > > 
+> > > Does it make sense to also note KVM guest execution on each
+> > > scheduling-clock interrupt?  One reason it might not make sense is
+> > > if interrupts from KVM guest execution appear to rcu_check_callbacks()
+> > > as interrupts from user-mode execution.  (Do they?  Given that people
+> > > are reporting RCU CPU stall warnings in virtualized environments, I
+> > > am beginning to suspect that the answer is "no".)
+> > > 
+> > The answer is "no" because any interrupt kicks cpu out of a guest mode, so
+> > it appears to be in the kernel for RCU. Do people still reporting RCU
+> > stalls even with the my patch?
+> > 
+> > > If KVM guest execution does not appear as user-mode execution to
+> > > rcu_check_callback(), I would consider doing the following:
+> > > 
+> > > 1.	Rename rcu_virt_note_context_switch() to something like
+> > > 	rcu_guest_execution_start().
+> > > 
+> > > 2.	Place a call to a new rcu_guest_execution_end() in
+> > > 	kvm_guest_exit().
+> > > 
+> > > 3.	Make rcu_guest_execution_start() and rcu_guest_execution_end()
+> > > 	set and clear a new per-CPU variable.
+> > There is such variable already: current->flags & PF_VCPU.
 > 
-> === START OF INFORMATION SECTION ===
-> Device Model:     WDC WD1002FAEX-00Z3A0
-> Serial Number:    WD-WCATR3168879
-> Firmware Version: 05.01D05
-> User Capacity:    1,000,204,886,016 bytes
+> Good to know, thank you!
+> 
+> > > 4.	Make rcu_check_callbacks() check this per-CPU variable in
+> > > 	much the same way that it currently checks its "user"
+> > > 	argument, aside from needing to check that the CPU is
+> > > 	not in an interrupt handler or some such.
+> > > 
+> > > Of course, some thought is required to make sure that the checks for
+> > > executing in an interrupt handler actually cover all of the needed
+> > > situations, but so it goes!
+> > > 
+> > > Thoughts?
+> > 
+> > I wonder why it will be better than current situation. After cpu leaves
+> > a guest mode there are only three options. It will either go to
+> > userspace, execute schedule or go back to guest mode. At all those cases
+> > RCU should note quiescent state.
+> 
+> Might be that the current state is optimal.  That would be a good thing.
+> 
+> But if a CPU stays in guest mode for (say) 30 seconds, it will have
+> called schedule() every jiffy in the meantime?  In other words, if
+> a CPU stays in guest mode for a long time, how does RCU know that
+> this CPU is in an extended quiescent state?
+> 
+Wouldn't scheduling-clock interrupt kick vcpu out of a guest mode much
+earlier then 30 seconds?
 
-So we're looking at a terabyte of disk...
-
-> Selective self-test flags (0x0):
->    After scanning selected spans, do NOT read-scan remainder of disk.
-
-And it's *NOT* doing a read-scan of the entire terabyte.
-
-
---==_Exmh_1313624887_2796P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOTFM3cC3lWbTT17ARAkMFAJ9dv9vHc/L2OtWOzT+f2ODVgjs3hwCeJlVq
-iCIinxQmh0I0JVWt31cy0OA=
-=KHlq
------END PGP SIGNATURE-----
-
---==_Exmh_1313624887_2796P--
-
+--
+			Gleb.
