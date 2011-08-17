@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1HQIGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 04:06:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53797 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab1HQIF6 (ORCPT
+	id S1751976Ab1HQILq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 04:11:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43508 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751884Ab1HQILn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 04:05:58 -0400
-Message-ID: <4E4B7664.9070301@kernel.org>
-Date: Wed, 17 Aug 2011 01:05:56 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	Wed, 17 Aug 2011 04:11:43 -0400
+Date: Wed, 17 Aug 2011 17:03:27 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kenneth Heitke <kheitke@codeaurora.org>, sdharia@codeaurora.org,
+        David Brown <davidb@codeaurora.org>, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, rdunlap@xenotime.net,
+        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
+        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
+        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
+        zajec5@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20110817080327.GD13460@opensource.wolfsonmicro.com>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+ <4380004.YTvKt3Mlxd@wuerfel>
+ <4E4AFCC9.7020109@codeaurora.org>
+ <1772239.ndMLD9ec3r@wuerfel>
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: Re: [kernel.org users] [KORG] Taking hera down to deal with the load
- issues
-References: <4E4AFCFC.9020008@kernel.org>
-In-Reply-To: <4E4AFCFC.9020008@kernel.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 17 Aug 2011 01:05:57 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1772239.ndMLD9ec3r@wuerfel>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Wed, Aug 17, 2011 at 09:09:44AM +0200, Arnd Bergmann wrote:
 
-Sorry about the delay, the upgrade took longer than expected and the
-initial kernel didn't actually solve the load issue completely.  I've
-since installed a very slightly modified build of the initial kernel and
-had to reboot hera twice more (both to the same kernel, but I again ran
-`lsof -p <pid>` and had Linux panic on me.  A feature that has very
-consistently bitten me on a number of kernels and a number of systems
-lately).
+> * Move the logic for enabling and disabling devices into a host specific
+>   driver that takes care of powering the devices up initially, identifying
+>   them and putting them into run-time PM disabled state when no driver was
+>   found or the device is unused.
 
-This second kernel is at least, so far, acting a lot closer to what I'd
-expect from hera, but the disk cache is still filling.  I'm going to
-keep an eye on it for a bit longer tonight.  As a note, the only
-difference between the first 3.1-rc1 kernel and the second, that is
-currently running, was the explicit disabling of IMA and recompiling the
-kernel.
+> This will make it possible to reuse the same driver for multiple machines
+> that have the same endpoint devices, while moving all the board specific
+> clock and reset logic into a separate driver, which can be very small in
+> many cases.
 
-I'm going to give the all clear at this point, I won't be doing any more
-reboots without an additional e-mail and notice.  If you see any
-problems or issue, or you catch that the loads are spiking up into the
-stratosphere, please let me know.
+There should be no more need for this with slimbus than there is with
+any of our other buses - this sort of dynamic enable and disable is
+already standard practice for devices in embedded systems.  There's some
+stuff it'd be good to do here but it shouldn't be driver specific, it
+should be a generic device model thing.  The main problem cases right
+now are things like USB which currently assume there's no magic going on
+outside of the bus.
 
-- - John 'Warthog9' Hawley
+One thing I've wanted to do for a while but never quite got the time to
+look at yet is to add support for automatically enabling and disabling
+regulators along with the probe, remove, suspend and runtime suspend
+paths.  If there's sufficient hooks for that they should also be usable
+for anything that is suitably board specific.
 
-On 08/16/2011 04:27 PM, J.H. wrote:
-> Hey Everyone,
-> 
-> Ok so since I'm back from vacation, and things don't seem to be getting
-> better, I'm going to take hera/master offline in about 30 minutes or so
-> (5pm PDT or Tue Aug 17 0:0:0 UTC 2011).  This is going to involve a base
-> OS upgrade, and a full on new kernel.
-> 
-> This should get the loads back into what we are expecting, and give me a
-> chance to more thoroughly investigate the panics from last week.  If
-> you've got questions or comments, please give me a shout as soon as
-> possible.
-> 
-> - John 'Warthog9' Hawley
-> Chief Kernel.org Administrator
+> I would guess that in many cases, the logic for enabling the devices
+> fits into the slimbus host driver. If that is not the case, e.g. when
+> a lot of machines have the same host controller but each of them uses
+> a different way to get the devices out of reset, you can turn the host
 
-_______________________________________________
-Users mailing list
-Users@linux.kernel.org
-http://linux.kernel.org/mailman/listinfo/users
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk5LdmQACgkQ/E3kyWU9dic7rgCcDuBBmmfmNeyqs/zC1t9cByzy
-5J0AnRcfO4701ix0HAr+KVmNKVedl38O
-=FQPl
------END PGP SIGNATURE-----
+I'd expect that bringing the device out of reset is going to be largely
+unrelated to the host controller, it's going to be GPIOs, clocks and
+regulators.  The individual drivers are going to want to manage this
+stuff dynamically at runtime too.
