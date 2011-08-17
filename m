@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab1HQU63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 16:58:29 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:49233 "EHLO radon.swed.at"
+	id S1754240Ab1HQVG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 17:06:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12064 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab1HQU61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 16:58:27 -0400
-Message-ID: <4E4C2B6F.7000800@nod.at>
-Date: Wed, 17 Aug 2011 22:58:23 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1754017Ab1HQVG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 17:06:27 -0400
+Date: Wed, 17 Aug 2011 17:05:55 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [patch v3 3/8] kdump: Add size to elfcorehdr kernel parameter
+Message-ID: <20110817210554.GD14813@redhat.com>
+References: <20110812134849.748973593@linux.vnet.ibm.com>
+ <20110812134907.325789470@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: user-mode-linux-devel@lists.sourceforge.net, gunnarlindroth@hotmail.com
-Subject: Floating point problems on UML - help needed
-Content-Type: multipart/mixed;
- boundary="------------010707040909000705010105"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110812134907.325789470@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010707040909000705010105
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Aug 12, 2011 at 03:48:52PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> Currently only the address of the pre-allocated ELF header is passed with
+> the elfcorehdr= kernel parameter. In order to reserve memory for the header
+> in the 2nd kernel also the size is required. Current kdump architecture
+> backends use different methods to do that, e.g. x86 uses the memmap= kernel
+> parameter. On s390 there is no easy way to transfer this information.
+> Therefore the elfcorehdr kernel parameter is extended to also pass the size.
+> This now can also be used as standard mechanism by all future kdump
+> architecture backends.
 
-Hi,
+Michael,
 
-Gunnar reported that some Java program does not work proper within 
-UserModeLinux.
-After looking closer at the problem I was able to reduce it to a small C 
-program. (Program is attached.)
+This version looks much better. A quick question. Who parses this
+elfcorehdr= parameter in s390 and how do we make sure these headers are not
+overwritten.
 
-It looks like FPU registers get sometimes lost after switching between 
-two or more threads.
-It also happens not always, that's why my test program contains a 
-infinite loop. After a few million iterations the program abort()s.
-
-I can reproduce the issue on both x86 and x86_64, the host's or UML's 
-kernel version does not matter.
-I've tested 2.6.18 to 3.1-rc2.
-
-Interestingly the problem occurs not on my old Pentium 4 machines.
-One P4 has HT the other not.
-Only "newer" CPUs are affected.
-
-First I thought it's a race in _switch_to(), but adding 
-unblock/block_signals() did not help.
-Currently I'm running out of ideas.
-I'm not an expert in this area of UML. :-(
-
-Any idea what goes wrong here?
-
-Thanks,
-//richard
-
---------------010707040909000705010105
-Content-Type: text/x-csrc;
- name="fpu-test.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="fpu-test.c"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-
-static int xxx(float f)
-{
-	if(f <= 0.0){
-		printf("wrong f!: %f\n", f);
-		return -1;
-	}
-
-	return 0;
-}
-
-static void *fun(void *arg)
-{
-	float f = 5.0;
-
-	for(;;){
-		if(xxx(f) < 0)
-			abort();
-	}
-
-	return NULL;
-}
-
-int main()
-{
-	pthread_t t1, t2;
-
-	pthread_create(&t1, NULL, fun, NULL);
-	pthread_create(&t2, NULL, fun, NULL);
-
-	pthread_join(t1, NULL);
-	pthread_join(t2, NULL);
-
-	return 0;
-}
-
---------------010707040909000705010105--
+Thanks
+Vivek
