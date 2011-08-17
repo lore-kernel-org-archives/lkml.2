@@ -1,43 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab1HQRGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:06:00 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26038 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab1HQRFu (ORCPT
+	id S1754702Ab1HQRJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:09:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57225 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab1HQRGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:05:50 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004106"
-Message-Id: <20110817163521.072192837@codeaurora.org>
+	Wed, 17 Aug 2011 13:06:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807092"
+Message-Id: <20110817163521.914040212@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:10 -0500
+Date: Wed, 17 Aug 2011 11:35:19 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch 13/36] Hexagon: Support dynamic module loading.
+Subject: [patch 22/36] Hexagon: Add locking types and functions
 References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=module.diff
+Content-Disposition: inline; filename=rwsem-spin.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modules should be compiled as ordinary .o's; shared objects are not
-supported.
+We pretty much just reused the PPC version of rwsem.h.  Spinlocks use ll/sc.
 
-
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
 ---
- arch/hexagon/kernel/module.c |  218 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 218 insertions(+)
+ arch/hexagon/include/asm/rwsem.h          |  132 +++++++++++++++++++++
+ arch/hexagon/include/asm/spinlock.h       |  186 ++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/spinlock_types.h |   42 ++++++
+ 3 files changed, 360 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/rwsem.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/module.c	2011-07-20 15:19:39.645152623 -0500
-@@ -0,0 +1,218 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/rwsem.h	2011-07-20 15:19:42.105151939 -0500
+@@ -0,0 +1,132 @@
++#ifndef _ASM_POWERPC_RWSEM_H
++#define _ASM_POWERPC_RWSEM_H
++
++#ifndef _LINUX_RWSEM_H
++#error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
++#endif
++
++#ifdef __KERNEL__
++
 +/*
-+ * Kernel module loader for Hexagon
++ * R/W semaphores for PPC using the stuff in lib/rwsem.c.
++ * Adapted largely from include/asm-i386/rwsem.h
++ * by Paul Mackerras <paulus@samba.org>.
++ */
++
++/*
++ * the semaphore definition
++ */
++#ifdef CONFIG_PPC64
++# define RWSEM_ACTIVE_MASK		0xffffffffL
++#else
++# define RWSEM_ACTIVE_MASK		0x0000ffffL
++#endif
++
++#define RWSEM_UNLOCKED_VALUE		0x00000000L
++#define RWSEM_ACTIVE_BIAS		0x00000001L
++#define RWSEM_WAITING_BIAS		(-RWSEM_ACTIVE_MASK-1)
++#define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
++#define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
++
++/*
++ * lock for reading
++ */
++static inline void __down_read(struct rw_semaphore *sem)
++{
++	if (unlikely(atomic_long_inc_return((atomic_long_t *)&sem->count) <= 0))
++		rwsem_down_read_failed(sem);
++}
++
++static inline int __down_read_trylock(struct rw_semaphore *sem)
++{
++	long tmp;
++
++	while ((tmp = sem->count) >= 0) {
++		if (tmp == cmpxchg(&sem->count, tmp,
++				   tmp + RWSEM_ACTIVE_READ_BIAS)) {
++			return 1;
++		}
++	}
++	return 0;
++}
++
++/*
++ * lock for writing
++ */
++static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
++{
++	long tmp;
++
++	tmp = atomic_long_add_return(RWSEM_ACTIVE_WRITE_BIAS,
++				     (atomic_long_t *)&sem->count);
++	if (unlikely(tmp != RWSEM_ACTIVE_WRITE_BIAS))
++		rwsem_down_write_failed(sem);
++}
++
++static inline void __down_write(struct rw_semaphore *sem)
++{
++	__down_write_nested(sem, 0);
++}
++
++static inline int __down_write_trylock(struct rw_semaphore *sem)
++{
++	long tmp;
++
++	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
++		      RWSEM_ACTIVE_WRITE_BIAS);
++	return tmp == RWSEM_UNLOCKED_VALUE;
++}
++
++/*
++ * unlock after reading
++ */
++static inline void __up_read(struct rw_semaphore *sem)
++{
++	long tmp;
++
++	tmp = atomic_long_dec_return((atomic_long_t *)&sem->count);
++	if (unlikely(tmp < -1 && (tmp & RWSEM_ACTIVE_MASK) == 0))
++		rwsem_wake(sem);
++}
++
++/*
++ * unlock after writing
++ */
++static inline void __up_write(struct rw_semaphore *sem)
++{
++	if (unlikely(atomic_long_sub_return(RWSEM_ACTIVE_WRITE_BIAS,
++				 (atomic_long_t *)&sem->count) < 0))
++		rwsem_wake(sem);
++}
++
++/*
++ * implement atomic add functionality
++ */
++static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
++{
++	atomic_long_add(delta, (atomic_long_t *)&sem->count);
++}
++
++/*
++ * downgrade write lock to read lock
++ */
++static inline void __downgrade_write(struct rw_semaphore *sem)
++{
++	long tmp;
++
++	tmp = atomic_long_add_return(-RWSEM_WAITING_BIAS,
++				     (atomic_long_t *)&sem->count);
++	if (tmp < 0)
++		rwsem_downgrade_wake(sem);
++}
++
++/*
++ * implement exchange and add functionality
++ */
++static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
++{
++	return atomic_long_add_return(delta, (atomic_long_t *)&sem->count);
++}
++
++#endif	/* __KERNEL__ */
++#endif	/* _ASM_POWERPC_RWSEM_H */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock.h	2011-07-20 15:19:42.105151939 -0500
+@@ -0,0 +1,186 @@
++/*
++ * Spinlock support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_SPINLOCK_H
++#define _ASM_SPINLOCK_H
++
++#include <asm/irqflags.h>
++
++/*
++ * This file is pulled in for SMP builds.
++ * Really need to check all the barrier stuff for "true" SMP
++ */
++
++/*
++ * Read locks:
++ * - load the lock value
++ * - increment it
++ * - if the lock value is still negative, go back and try again.
++ * - unsuccessful store is unsuccessful.  Go back and try again.  Loser.
++ * - successful store new lock value if positive -> lock acquired
++ */
++static inline void arch_read_lock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	{ P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
++		"	{ if !P3 jump 1b; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++static inline void arch_read_unlock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	R6 = add(R6,#-1);\n"
++		"	memw_locked(%0,P3) = R6\n"
++		"	if !P3 jump 1b;\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++/*  I think this returns 0 on fail, 1 on success.  */
++static inline int arch_read_trylock(arch_rwlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1);\n"
++		"	{ %0 = #0; P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
++		"	{ if !P3 jump 1f; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	{ %0 = P3 }\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++}
++
++static inline int arch_read_can_lock(arch_rwlock_t *rwlock)
++{
++	return rwlock->lock == 0;
++}
++
++static inline int arch_write_can_lock(arch_rwlock_t *rwlock)
++{
++	return rwlock->lock == 0;
++}
++
++/*  Stuffs a -1 in the lock value?  */
++static inline void arch_write_lock(arch_rwlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0)\n"
++		"	{ P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
++		"	{ if !P3 jump 1b; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++}
++
++
++static inline int arch_write_trylock(arch_rwlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1)\n"
++		"	{ %0 = #0; P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
++		"	{ if !P3 jump 1f; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	%0 = P3;\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++
++}
++
++static inline void arch_write_unlock(arch_rwlock_t *lock)
++{
++	smp_mb();
++	lock->lock = 0;
++}
++
++static inline void arch_spin_lock(arch_spinlock_t *lock)
++{
++	__asm__ __volatile__(
++		"1:	R6 = memw_locked(%0);\n"
++		"	P3 = cmp.eq(R6,#0);\n"
++		"	{ if !P3 jump 1b; R6 = #1; }\n"
++		"	memw_locked(%0,P3) = R6;\n"
++		"	{ if !P3 jump 1b; }\n"
++		:
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++
++}
++
++static inline void arch_spin_unlock(arch_spinlock_t *lock)
++{
++	smp_mb();
++	lock->lock = 0;
++}
++
++static inline unsigned int arch_spin_trylock(arch_spinlock_t *lock)
++{
++	int temp;
++	__asm__ __volatile__(
++		"	R6 = memw_locked(%1);\n"
++		"	P3 = cmp.eq(R6,#0);\n"
++		"	{ if !P3 jump 1f; R6 = #1; %0 = #0; }\n"
++		"	memw_locked(%1,P3) = R6;\n"
++		"	%0 = P3;\n"
++		"1:\n"
++		: "=&r" (temp)
++		: "r" (&lock->lock)
++		: "memory", "r6", "p3"
++	);
++	return temp;
++}
++
++/*
++ * SMP spinlocks are intended to allow only a single CPU at the lock
++ */
++#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
++#define arch_spin_unlock_wait(lock) \
++	do {while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
++#define arch_spin_is_locked(x) ((x)->lock != 0)
++
++#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
++#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/spinlock_types.h	2011-07-20 15:19:42.105151939 -0500
+@@ -0,0 +1,42 @@
++/*
++ * Spinlock support for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -56,204 +383,28 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/module.c
 + * 02110-1301, USA.
 + */
 +
-+#include <asm/module.h>
-+#include <linux/elf.h>
-+#include <linux/module.h>
-+#include <linux/moduleloader.h>
-+#include <linux/vmalloc.h>
++#ifndef _ASM_SPINLOCK_TYPES_H
++#define _ASM_SPINLOCK_TYPES_H
 +
-+#if 0
-+#define DEBUGP printk
-+#else
-+#define DEBUGP(fmt , ...)
++#include <linux/version.h>
++
++#ifndef __LINUX_SPINLOCK_TYPES_H
++# error "please don't include this file directly"
 +#endif
 +
-+/*
-+ * module_alloc - wrapper around vmalloc
-+ * @size - memory size to vmalloc
-+ */
-+void *module_alloc(unsigned long size)
-+{
-+	if (size == 0)
-+		return NULL;
-+	return vmalloc_exec(size);
-+}
++typedef struct {
++	volatile unsigned int lock;
++} arch_spinlock_t;
 +
-+/*
-+ * module_free - free memory returned from module_alloc
-+ * @mod - pointer to module?
-+ * @module_region - pointer to module region?
-+ */
-+void module_free(struct module *mod, void *module_region)
-+{
-+	vfree(module_region);
-+}
++#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
 +
-+/*
-+ * module_finalize - perform platform-dependent fixups.
-+ */
-+int module_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
-+			struct module *me)
-+{
-+	return 0;
-+}
++typedef struct {
++	volatile unsigned int lock;
++} arch_rwlock_t;
 +
-+/*
-+ * module_arch_cleanup - Any cleanup needed with module
-+ * @mod - pointer to module
-+ * @module_region - pointer to module region
-+ */
-+void module_arch_cleanup(struct module *mod)
-+{
-+}
++#define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
 +
-+/*
-+ * module_frob_arch_sections - tweak got/plt sections.
-+ * @hdr - pointer to elf header
-+ * @sechdrs - pointer to elf load section headers
-+ * @secstrings - symbol names
-+ * @mod - pointer to module
-+ */
-+int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
-+				char *secstrings,
-+				struct module *mod)
-+{
-+	unsigned int i;
-+	int found = 0;
-+
-+	/* Look for .plt and/or .got.plt and/or .init.plt sections */
-+	for (i = 0; i < hdr->e_shnum; i++) {
-+		DEBUGP("Section %d is %s\n", i,
-+		       secstrings + sechdrs[i].sh_name);
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".got.plt") == 0)
-+			found = i+1;
-+		if (strcmp(secstrings + sechdrs[i].sh_name, ".rela.plt") == 0)
-+			found = i+1;
-+	}
-+
-+	/* At this time, we don't support modules comiled with -shared */
-+	if (found) {
-+		printk(KERN_WARNING
-+			"Module '%s' contains unexpected .plt/.got sections.\n",
-+			mod->name);
-+		/* return -ENOEXEC; */
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * apply_relocate - do the actual work of relocating sections
-+ * @sechdrs - pointer to section headers
-+ * @strtab - some sort of start address
-+ * @symindex - symbol index offset or something
-+ * @relsec - address to relocate to
-+ * @me - pointer to module
-+ */
-+int apply_relocate(Elf_Shdr *sechdrs, const char *strtab,
-+			unsigned int symindex, unsigned int relsec,
-+			struct module *module)
-+{
-+	printk(KERN_ERR "%s: Non-rela reolcation unsupported\n",
-+	       module->name);
-+	return -ENOEXEC;
-+}
-+
-+/*
-+ * apply_relocate_add - perform rela relocations.
-+ * @sechdrs - pointer to section headers
-+ * @strtab - some sort of start address?
-+ * @symindex - symbol index offset or something?
-+ * @relsec - address to relocate to?
-+ * @module - pointer to module
-+ *
-+ * Perform rela relocations.
-+ */
-+int apply_relocate_add(Elf_Shdr *sechdrs, const char *strtab,
-+			unsigned int symindex, unsigned int relsec,
-+			struct module *module)
-+{
-+	unsigned int i;
-+	Elf32_Sym *sym;
-+	uint32_t *location;
-+	uint32_t value;
-+	unsigned int nrelocs = sechdrs[relsec].sh_size / sizeof(Elf32_Rela);
-+	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
-+	Elf32_Word sym_info = sechdrs[relsec].sh_info;
-+	Elf32_Sym *sym_base = (Elf32_Sym *) sechdrs[symindex].sh_addr;
-+	void *loc_base = (void *) sechdrs[sym_info].sh_addr;
-+
-+	DEBUGP("Applying relocations in section %u to section %u base=%p\n",
-+	       relsec, sym_info, loc_base);
-+
-+	for (i = 0; i < nrelocs; i++) {
-+
-+		/* Symbol to relocate */
-+		sym = sym_base + ELF32_R_SYM(rela[i].r_info);
-+
-+		/* Where to make the change */
-+		location = loc_base + rela[i].r_offset;
-+
-+		/* `Everything is relative'. */
-+		value = sym->st_value + rela[i].r_addend;
-+
-+		DEBUGP("%d: value=%08x loc=%p reloc=%d symbol=%s\n",
-+		       i, value, location, ELF32_R_TYPE(rela[i].r_info),
-+		       sym->st_name ?
-+		       &strtab[sym->st_name] : "(anonymous)");
-+
-+		switch (ELF32_R_TYPE(rela[i].r_info)) {
-+		case R_HEXAGON_B22_PCREL: {
-+			int dist = (int)(value - (uint32_t)location);
-+			if ((dist < -0x00800000) ||
-+			    (dist >= 0x00800000)) {
-+				printk(KERN_ERR
-+				       "%s: %s: %08x=%08x-%08x %s\n",
-+				       module->name,
-+				       "R_HEXAGON_B22_PCREL reloc out of range",
-+				       dist, value, (uint32_t)location,
-+				       sym->st_name ?
-+				       &strtab[sym->st_name] : "(anonymous)");
-+				return -ENOEXEC;
-+			}
-+			DEBUGP("B22_PCREL contents: %08X.\n", *location);
-+			*location &= ~0x01ff3fff;
-+			*location |= 0x00003fff & dist;
-+			*location |= 0x01ff0000 & (dist<<2);
-+			DEBUGP("Contents after reloc: %08x\n", *location);
-+			break;
-+		}
-+		case R_HEXAGON_HI16:
-+			value = (value>>16) & 0xffff;
-+			/* fallthrough */
-+		case R_HEXAGON_LO16:
-+			*location &= ~0x00c03fff;
-+			*location |= value & 0x3fff;
-+			*location |= (value & 0xc000) << 8;
-+			break;
-+		case R_HEXAGON_32:
-+			*location = value;
-+			break;
-+		case R_HEXAGON_32_PCREL:
-+			*location = value - (uint32_t)location;
-+			break;
-+		case R_HEXAGON_PLT_B22_PCREL:
-+		case R_HEXAGON_GOTOFF_LO16:
-+		case R_HEXAGON_GOTOFF_HI16:
-+			printk(KERN_ERR "%s: GOT/PLT relocations unsupported\n",
-+			       module->name);
-+			return -ENOEXEC;
-+		default:
-+			printk(KERN_ERR "%s: unknown relocation: %u\n",
-+			       module->name,
-+			       ELF32_R_TYPE(rela[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+	return 0;
-+}
++#endif
 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
