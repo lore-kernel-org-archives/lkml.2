@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab1HQMfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 08:35:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29116 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab1HQMfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 08:35:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,239,1312182000"; 
-   d="scan'208";a="39394017"
-Date: Wed, 17 Aug 2011 20:35:06 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: David Horner <ds2horner@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110817123506.GA15403@localhost>
-References: <CAFdhcLRKvfqBnXCXLwq-Qe1eNAGC-8XJ3BtHpQKzaa3RhHyp6A@mail.gmail.com>
- <CAFdhcLTFv4Wk0kBb2NSL7oh+78BJ=6qPT4XfcOssOkwEERyj=w@mail.gmail.com>
- <20110817120356.GG9959@quack.suse.cz>
+	id S1753244Ab1HQMwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 08:52:25 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:24458 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1HQMwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 08:52:24 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFPjzEQErKX0w==
+X-RZG-CLASS-ID: mo00
+Date: Wed, 17 Aug 2011 14:51:27 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>, Keir Fraser <keir.xen@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Konrad <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] xen/pv-on-hvm kexec: prevent crash in
+ xenwatch_thread() when stale watch events arrive
+Message-ID: <20110817125127.GA3163@aepfle.de>
+References: <1313500613-21394-1-git-send-email-olaf@aepfle.de>
+ <1313500613-21394-2-git-send-email-olaf@aepfle.de>
+ <1313504072.5010.120.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110817120356.GG9959@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1313504072.5010.120.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21.rev5535 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 08:03:56PM +0800, Jan Kara wrote:
-> On Wed 17-08-11 02:40:19, David Horner wrote:
-> >  I noticed a significant typo below (another of those thousand eyes,
-> > thanks to Jan Kara's post that started ne looking) :
-> > 
-> >  > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
-> >  > + unsigned long thresh,
-> > ...
-> >  > + * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
-> >  > + * own size, so move the slope over accordingly.
-> >  > + */
-> >  > + if (unlikely(bdi_thresh > thresh))
-> >  > + bdi_thresh = thresh;
-> >  > + /*
-> >  > + * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
-> >  > + */
-> >  > + x = div_u64((u64)bdi_thresh << 16, thresh | 1);
-> > 
-> >                   ^
-> >  I believe should be
-> > 
-> >     x = div_u64((u64)bdi_thresh << 16, thresh + 1);
->   I've noticed this as well but it's mostly a consistency issue. 'thresh'
-> is going to be large in practice so there's not much difference between
-> thresh + 1 and thresh | 1.
+On Tue, Aug 16, Ian Campbell wrote:
 
-Right :) Anyway I'll change it to thresh + 1.
+> On Tue, 2011-08-16 at 14:16 +0100, Olaf Hering wrote:
+> > During repeated kexec boots xenwatch_thread() can crash because
+> > xenbus_watch->callback is cleared by xenbus_watch_path() if a node/token
+> > combo for a new watch happens to match an already registered watch from
+> > an old kernel.  In this case xs_watch returns -EEXISTS, then
+> > register_xenbus_watch() does not remove the to-be-registered watch from
+> > the list of active watches but returns the -EEXISTS to the caller
+> > anyway.
+> 
+> Isn't this behaviour the root cause of the issue (which should be fixed)
+> rather than papering over it during watch processing. IOW should't
+> register_xenbus_watch cleanup after itself if xs_watch fails.
 
-Thanks,
-Fengguang
+Keir, the EEXISTS case in register_xenbus_watch() was added by you 6
+years ago. Do you happen to know what it tried to solve, and do these
+conditions still apply today?  Perhaps the EEXISTS can be removed now.
+
+http://xenbits.xen.org/hg/xen-unstable.hg/diff/8016551fde98/linux-2.6-xen-sparse/drivers/xen/xenbus/xenbus_xs.c
+
+Olaf
