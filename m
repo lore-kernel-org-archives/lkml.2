@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1HQPr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 11:47:56 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:29012 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab1HQPrx convert rfc822-to-8bit (ORCPT
+	id S1753826Ab1HQPam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 11:30:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38962 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab1HQPaj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 11:47:53 -0400
-X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 11:47:53 EDT
-From: "Cisneros, Jorge (George)" <jorge.cisneros@hp.com>
-To: "syslinux@zytor.com" <syslinux@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [patch 1/1] syslinux: add suport for com32 entries in the menu
-Thread-Topic: [patch 1/1] syslinux: add suport for com32 entries in the menu
-Thread-Index: Acxc85sUEgDKrJtJQgOYruVm3pB89Q==
-Date: Wed, 17 Aug 2011 15:37:46 +0000
-Message-ID: <E78CE97B1F363A40BABB9C077B911FB001B50F@G9W0339.americas.hpqcorp.net>
+	Wed, 17 Aug 2011 11:30:39 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
+        "mchehab@infradead.org" <mchehab@infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 17 Aug 2011 21:00:28 +0530
+Subject: RE: [PATCH] Media controller: Define media_entity_init() and
+ media_entity_cleanup() conditionally
+Thread-Topic: [PATCH] Media controller: Define media_entity_init() and
+ media_entity_cleanup() conditionally
+Thread-Index: AcxcyUPAC48FLn/IS2S8ZDduZeEHKgAACUJg
+Message-ID: <19F8576C6E063C45BE387C64729E739404E3CDE6D9@dbde02.ent.ti.com>
+References: <1313577276-18182-1-git-send-email-deepthy.ravi@ti.com>
+In-Reply-To: <1313577276-18182-1-git-send-email-deepthy.ravi@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.10]
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -28,56 +34,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jorge D Cisneros <jorge.cisneros@hp.com>
 
-Problem: The actual code only check for entries with kernel or linux, so this example will not work, this patch is to add support to gfxboot to detect the entry COM32 and use  any module, in this case the module is chain.c32
-Version: Syslinux 4.04
+> -----Original Message-----
+> From: Ravi, Deepthy
+> Sent: Wednesday, August 17, 2011 4:05 PM
+> To: mchehab@infradead.org; linux-media@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Cc: linux-omap@vger.kernel.org; Hiremath, Vaibhav; Ravi, Deepthy
+> Subject: [PATCH] Media controller: Define media_entity_init() and
+> media_entity_cleanup() conditionally
+> 
+> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> 
+> Defines the two functions only when CONFIG_MEDIA_CONTROLLER
+> is enabled.
+[Hiremath, Vaibhav] Deepthy,
 
-Example:
-UI gfxboot.c32
+You may want to mention about build failure without MEDIA_CONTROLLER option being enabled, especially if any sensor driver is being used between MC and non-MC framework compatible devices.
+For example, OMAP3 and AM3517, where TVP5146 is being used but OMAP3 is based on MC framework and AM3517 is based on simple sub-dev based interface.
 
-LABEL boot_hd0
-MENU LABEL Boot from first hard drive
-COM32 chain.c32
-APPEND hd0
-
-Signed-off-by: Jorge D Cisneros <jorge.cisneros@hp.com>
-
---
-
---- com32/gfxboot/gfxboot.c.orig        2011-08-17 10:04:44.000000000 -0500
-+++ com32/gfxboot/gfxboot.c     2011-08-17 10:07:34.000000000 -0500
-@@ -125,6 +125,7 @@ typedef struct menu_s {
-   char *alt_kernel;    // alternative name in case user has replaced it
-   char *linux;         // de facto an alias for 'kernel'
-   char *localboot;     // boot from local disk
-+  char *com32;         // boot other com32 modules
-   char *initrd;                // initrd as separate line (instead of as part of 'append')
-   char *append;                // kernel args
-   char *ipappend;      // append special pxelinux args (see doc)
-@@ -374,6 +375,11 @@ int read_config_file(const char *filenam
-       continue;
-     }
-
-+    if(!strcasecmp(s, "com32") && menu_ptr) {
-+      menu_ptr->com32 = strdup(t);
-+      continue;
-+    }
-+
-     if(!strcasecmp(s, "initrd") && menu_ptr) {
-       menu_ptr->initrd = strdup(t);
-       continue;
-@@ -866,7 +872,13 @@ void boot_entry(menu_t *menu_ptr, char *
-   if(menu_ptr->localboot) {
-     gfx_done();
-     syslinux_local_boot(strtol(menu_ptr->localboot, NULL, 0));
-+    return;
-+  }
-
-+  if(menu_ptr->com32) {
-+    gfx_done();
-+    asprintf(&cmd_buf, "%s %s", menu_ptr->com32, arg);
-+    syslinux_run_command(cmd_buf);
-     return;
-   }
+Thanks,
+Vaibhav
+> 
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
+> ---
+>  include/media/media-entity.h |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+> index cd8bca6..c90916e 100644
+> --- a/include/media/media-entity.h
+> +++ b/include/media/media-entity.h
+> @@ -121,9 +121,18 @@ struct media_entity_graph {
+>  	int top;
+>  };
+> 
+> +#ifdef CONFIG_MEDIA_CONTROLLER
+>  int media_entity_init(struct media_entity *entity, u16 num_pads,
+>  		struct media_pad *pads, u16 extra_links);
+>  void media_entity_cleanup(struct media_entity *entity);
+> +#else
+> +static inline int media_entity_init(struct media_entity *entity, u16
+> num_pads,
+> +		struct media_pad *pads, u16 extra_links)
+> +{
+> +	return 0;
+> +}
+> +static inline void media_entity_cleanup(struct media_entity *entity) {}
+> +#endif
+> 
+>  int media_entity_create_link(struct media_entity *source, u16 source_pad,
+>  		struct media_entity *sink, u16 sink_pad, u32 flags);
+> --
+> 1.7.0.4
 
