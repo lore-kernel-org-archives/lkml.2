@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1HQNI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:08:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43276 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab1HQNIz (ORCPT
+	id S1753829Ab1HQOGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:06:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48927 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696Ab1HQOGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:08:55 -0400
-Message-ID: <4E4BBD60.10306@gmail.com>
-Date: Wed, 17 Aug 2011 15:08:48 +0200
-From: =?UTF-8?B?VG9ycXVpbCBNYWNkb25hbGQgU8O4cmVuc2Vu?= 
-	<torquil@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
+	Wed, 17 Aug 2011 10:06:00 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Boot kernel panic after upgrade 3.0.1 -> 3.0.2
-References: <4E4B9903.4000203@gmail.com> <1313581478.24749.25.camel@x61.thuisdomein>
-In-Reply-To: <1313581478.24749.25.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Date: Wed, 17 Aug 2011 10:05:59 -0400
+Message-ID: <CAOGqxeWf8TFO4SHcwLRod7R0mD9YudZNX0PFybe+aeNzrjOOww@mail.gmail.com>
+Subject: [PATCH/resend] 8250: Fix race condition in serial8250_backup_timeout()
+From: Alan Cooper <alcooperx@gmail.com>
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/08/11 13:44, Paul Bolle wrote:
-> On Wed, 2011-08-17 at 12:33 +0200, Torquil Macdonald Sørensen wrote:
->> At boot time, I get the following message on screen (copied by hand, but I'm
->> hoping there are not too many mistakes...):
->>
->> Kernel panic, not syncing: VFS Unable to mount root fs on unknown block(0,0)
->> Pid: 1. comm: swapper  Not tainted 3.0.2 #1
->> Call Trace:
->>    [<fffffff8127e4a9>] ? panic 0xa4 0x19b
->>    [<fffffff813f1e56>] ? mount_block_root+0x236/0x254
->>    [<fffffff81002930>] ? do_bounds+0x57/0x65
->>    [<fffffff813f1ff6>] ? prepare_namespace+0x133/0x169
->>    [<fffffff813f1b7c>] ? kernel_init+0x105/0x10a
->>    [<fffffff81284a94>] ? kernel_thread_helper+0x4/0x10
->>    [<fffffff813f1a77>] ? start_kernel+0x341/341
->>    [<fffffff81284a90>] ? gs_change+0xb/0xb
->
-> I tend to see messages like that when I've messed up some basic setting
-> needed to boot a kernel.
->
-> My first suggestion would be to check your kernel command line. Does it
-> have a "root=" parameter? Another thing I'd check is the initramfs. Does
-> the bootloader pass the kernel an initramfs? Is the initramfs a valid
-> initramfs? Does the (valid) initramfs have the stuff the kernel needs
-> (block modules, fs modules). Stuff like that ...
+This is to fix an issue where output will suddenly become very slow.
+The problem occurs on 8250 UARTS with the hardware bug UART_BUG_THRE.
 
-Thanks Paul! It seems that the Debian kernel building/installation system has 
-not generated an initrd for me... That must be the problem.
+BACKGROUND
+For normal UARTs (without UART_BUG_THRE): When the serial core layer
+gets new transmit data and the transmitter is idle, it buffers the
+data and calls the 8250s' serial8250_start_tx() routine which will
+simply enable the TX interrupt in the IER register and return. This
+should immediately fire a THRE interrupt and begin transmitting the
+data.
+For buggy UARTs (with UART_BUG_THRE): merely enabling the TX interrupt
+in IER does not necessarily generate a new THRE interrupt.
+Therefore, a background timer periodically checks to see if there is
+pending data, and starts transmission if that is the case.
 
-I'll get that straightened out, and report back with success or failure. So this 
-is most likely not a kernel issue.
+The bug happens on SMP systems when the system has nothing to transmit,
+the transmit interrupt is disabled and the following sequence occurs:
+- CPU0: The background timer routine serial8250_backup_timeout()
+ starts and saves the state of the interrupt enable register (IER)
+ and then disables all interrupts in IER. NOTE: The transmit interrupt
+ (TI) bit is saved as disabled.
+- CPU1: The serial core gets data to transmit, grabs the port lock and
+ calls serial8250_start_tx() which enables the TI in IER.
+- CPU0: serial8250_backup_timeout() waits for the port lock.
+- CPU1: finishes (with TI enabled) and releases the port lock.
+- CPU0: serial8250_backup_timeout() calls the interrupt routine which
+ will transmit the next fifo's worth of data and then restores the
+ IER from the previously saved value (TI disabled).
+At this point, as long as the serial core has more transmit data
+buffered, it will not call serial8250_start_tx() again and the
+background timer routine will slowly transmit the data.
 
-Best regards
-Torquil Sørensen
+The fix is to have serial8250_start_tx() get the port lock before
+it saves the IER state and release it after restoring IER. This
+also means that we have to call  transmit_chars() instead of
+serial8250_handle_port() because serial8250_handle_port also grabs
+the lock. This will prevent serial8250_start_tx() from running in parallel.
+
+Signed-off-by: Al Cooper <alcooperx@gmail.com>
+---
+ drivers/tty/serial/8250.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+index b4129f5..8fb7e8f 100644
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -1819,6 +1819,8 @@ static void serial8250_backup_timeout(unsigned long data)
+       unsigned int iir, ier = 0, lsr;
+       unsigned long flags;
+
++       spin_lock_irqsave(&up->port.lock, flags);
++
+       /*
+        * Must disable interrupts or else we risk racing with the interrupt
+        * based handler.
+@@ -1836,10 +1838,8 @@ static void serial8250_backup_timeout(unsigned long data)
+        * the "Diva" UART used on the management processor on many HP
+        * ia64 and parisc boxes.
+        */
+-       spin_lock_irqsave(&up->port.lock, flags);
+       lsr = serial_in(up, UART_LSR);
+       up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+-       spin_unlock_irqrestore(&up->port.lock, flags);
+       if ((iir & UART_IIR_NO_INT) && (up->ier & UART_IER_THRI) &&
+           (!uart_circ_empty(&up->port.state->xmit) || up->port.x_char) &&
+           (lsr & UART_LSR_THRE)) {
+@@ -1848,11 +1848,13 @@ static void serial8250_backup_timeout(unsigned
+long data)
+       }
+
+       if (!(iir & UART_IIR_NO_INT))
+-               serial8250_handle_port(up);
++               transmit_chars(up);
+
+       if (is_real_interrupt(up->port.irq))
+               serial_out(up, UART_IER, ier);
+
++       spin_unlock_irqrestore(&up->port.lock, flags);
++
+       /* Standard timer interval plus 0.2s to keep the port running */
+       mod_timer(&up->timer,
+               jiffies + uart_poll_timeout(&up->port) + HZ / 5);
+--
+1.7.3.2
