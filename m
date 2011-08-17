@@ -1,811 +1,393 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab1HQLMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 07:12:10 -0400
-Received: from maillog.nuvoton.com ([202.39.227.15]:47973 "EHLO
-	maillog.nuvoton.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab1HQLMG (ORCPT
+	id S1754365Ab1HQQTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:19:07 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:39515 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab1HQQTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 07:12:06 -0400
-From: <Dan.Morav@nuvoton.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <debora@linux.vnet.ibm.com>, <srajiv@linux.vnet.ibm.com>,
-        <m.selhorst@sirrix.com>
-Date: Wed, 17 Aug 2011 14:11:28 +0300
-Subject: [PATCH] TPM Nuvoton I2C driver, kernel 3.0
-Thread-Topic: [PATCH] TPM Nuvoton I2C driver, kernel 3.0
-Thread-Index: AcsjL1RqPrwKgd0VSSCyWVc0xyLCKwUZVV8ARKiINbAEojOzgA==
-Message-ID: <8F2A7B0931C16B4C99DDA3B283A436305988915E@ntilml01.nuvoton.com>
-References: <8F2A7B0931C16B4C99DDA3B283A436301401CFB6@ntilml01.nuvoton.com>
- <8F2A7B0931C16B4C99DDA3B283A43630215E501F@ntilml01.nuvoton.com>
- <8F2A7B0931C16B4C99DDA3B283A4363059782006@ntilml01.nuvoton.com>
-In-Reply-To: <8F2A7B0931C16B4C99DDA3B283A4363059782006@ntilml01.nuvoton.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 17 Aug 2011 12:19:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=ez0Iuobp+TqIRptrt14O8s8yROvjmGO47C3GUb5EJg5tnARVOZnqPMF2+9tLMpBla
+	2apIlnroB+mdIkD9EZ8Cg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 12/13] memcg: create support routines for page writeback
+Date: Wed, 17 Aug 2011 09:15:04 -0700
+Message-Id: <1313597705-6093-13-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7HJH0K9001359
 
-Hi,
+Introduce memcg routines to assist in per-memcg dirty page management:
 
-Below are the additions for WPCT301/NPCT501 Nuvoton Technology TPM with I2C interface device driver.
-This driver uses Linux I2C bus driver to interface with the I2C bus and Linux TPM driver (tpm.ko), to export the standard Linux TPM interface.
-This driver requires an I2C bus driver and TPM driver (tpm.ko) to be loaded prior to its loading.
-This driver tested on Linux kernel version 3.0-rc7 on an x86 based platform.
+- mem_cgroup_balance_dirty_pages() walks a memcg hierarchy comparing
+  dirty memory usage against memcg foreground and background thresholds.
+  If an over-background-threshold memcg is found, then per-memcg
+  background writeback is queued.  Per-memcg writeback differs from
+  classic, non-memcg, per bdi writeback by setting the new
+  writeback_control.for_cgroup bit.
 
-Regards,
-Dan.
+  If an over-foreground-threshold memcg is found, then foreground
+  writeout occurs.  When performing foreground writeout, first consider
+  inodes exclusive to the memcg.  If unable to make enough progress,
+  then consider inodes shared between memcg.  Such cross-memcg inode
+  sharing likely to be rare in situations that use per-cgroup memory
+  isolation.  So the approach tries to handle the common case well
+  without falling over in cases where such sharing exists.  This routine
+  is used by balance_dirty_pages() in a later change.
 
-Signed-off-by: Dan Morav <dmorav@nuvoton.com>
+- mem_cgroup_hierarchical_dirty_info() returns the dirty memory usage
+  and limits of the memcg closest to (or over) its dirty limit.  This
+  will be used by throttle_vm_writeout() in a latter change.
 
---- linux-3.0-rc7/drivers/char/tpm/Kconfig      2011-07-12 02:51:52.000000000 +0300
-+++ linux-3.0/drivers/char/tpm/Kconfig  2011-08-17 13:15:28.062485000 +0300
-@@ -60,4 +60,13 @@ config TCG_INFINEON
-          Further information on this driver and the supported hardware
-          can be found at http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+Changelog since v8:
 
-+config TCG_NUVOTON_I2C
-+       tristate "Nuvoton Technology Corp. TPM 1.2 I2C Interface"
-+       depends on I2C
-+       ---help---
-+         If you have a TPM security chip with I2C interface from
-+         Nuvoton Technology Corp. say Yes and it will be accessible
-+         from within Linux.  To compile this driver as a module, choose
-+         M here; the module will be called tpm_nuvoton_i2c.
+- Use 'memcg' rather than 'mem' for local variables and parameters.
+  This is consistent with other memory controller code.
+
+- No more field additions to struct writeback_control.
+
+- Added more comments to mem_cgroup_balance_dirty_pages().
+
+- Adapted to changes in writeback_inodes_wb().
+
+- Improved mem_cgroup_hierarchical_dirty_info() comment.
+
+ include/linux/memcontrol.h        |   18 ++++
+ include/trace/events/memcontrol.h |   88 ++++++++++++++++++++
+ mm/memcontrol.c                   |  165 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 271 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 103d297..f49bd2d 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -186,6 +186,11 @@ bool should_writeback_mem_cgroup_inode(struct inode *inode,
+ 				       bool shared_inodes);
+ bool mem_cgroups_over_bground_dirty_thresh(void);
+ void mem_cgroup_writeback_done(void);
++bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
++					struct mem_cgroup *memcg,
++					struct dirty_info *info);
++void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
++				    unsigned long write_chunk);
+ 
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask,
+@@ -402,6 +407,19 @@ static inline void mem_cgroup_writeback_done(void)
+ {
+ }
+ 
++static inline void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
++						  unsigned long write_chunk)
++{
++}
 +
- endif # TCG_TPM
---- linux-3.0-rc7/drivers/char/tpm/Makefile     2011-07-12 02:51:52.000000000 +0300
-+++ linux-3.0/drivers/char/tpm/Makefile 2011-05-02 10:15:28.000000000 +0300
-@@ -9,3 +9,4 @@ obj-$(CONFIG_TCG_TIS) += tpm_tis.o
- obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
- obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
- obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
-+obj-$(CONFIG_TCG_NUVOTON_I2C) += tpm_nuvoton_i2c.o
---- linux-3.0-rc7/drivers/char/tpm/tpm_nuvoton_i2c.c    1970-01-01 02:00:00.000000000 +0200
-+++ linux-3.0/drivers/char/tpm/tpm_nuvoton_i2c.c        2011-08-17 12:12:05.351045000 +0300
-@@ -0,0 +1,733 @@
-+/******************************************************************************
-+ * Nuvoton TPM I2C Device Driver Interface for WPCT301/NPCT501,
-+ * based on the TCG TPM Interface Spec version 1.2.
-+ * Specifications at www.trustedcomputinggroup.org
-+ *
-+ * Copyright (C) 2011, Nuvoton Technology Corporation.
-+ * dan.morav@nuvoton.com
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see http://www.gnu.org/licenses/>.
-+ *
-+ * Nuvoton contact information: APC.Support@nuvoton.com
-+ *****************************************************************************/
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/slab.h>
-+#include <linux/interrupt.h>
-+#include <linux/wait.h>
-+#include <linux/i2c.h>
-+#include "tpm.h"
++static inline bool
++mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
++				   struct mem_cgroup *memcg,
++				   struct dirty_info *info)
++{
++	return false;
++}
 +
-+/* I2C interface offsets */
-+#define TPM_STS                0x00
-+#define TPM_BURST_COUNT        0x01
-+#define TPM_DATA_FIFO_W        0x20
-+#define TPM_DATA_FIFO_R        0x40
-+#define TPM_VID_DID_RID        0x60
-+ /* TPM command header size */
-+#define TPM_HEADER_SIZE        10
-+#define TPM_RETRY      5
+ static inline
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 					    gfp_t gfp_mask,
+diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
+index 966aac0..20bbb85 100644
+--- a/include/trace/events/memcontrol.h
++++ b/include/trace/events/memcontrol.h
+@@ -113,6 +113,94 @@ TRACE_EVENT(mem_cgroups_over_bground_dirty_thresh,
+ 		  __entry->first_id)
+ )
+ 
++DECLARE_EVENT_CLASS(mem_cgroup_consider_writeback,
++	TP_PROTO(unsigned short css_id,
++		 struct backing_dev_info *bdi,
++		 unsigned long nr_reclaimable,
++		 unsigned long thresh,
++		 bool over_limit),
++
++	TP_ARGS(css_id, bdi, nr_reclaimable, thresh, over_limit),
++
++	TP_STRUCT__entry(
++		__field(unsigned short, css_id)
++		__field(struct backing_dev_info *, bdi)
++		__field(unsigned long, nr_reclaimable)
++		__field(unsigned long, thresh)
++		__field(bool, over_limit)
++	),
++
++	TP_fast_assign(
++		__entry->css_id = css_id;
++		__entry->bdi = bdi;
++		__entry->nr_reclaimable = nr_reclaimable;
++		__entry->thresh = thresh;
++		__entry->over_limit = over_limit;
++	),
++
++	TP_printk("css_id=%d bdi=%p nr_reclaimable=%ld thresh=%ld "
++		  "over_limit=%d", __entry->css_id, __entry->bdi,
++		  __entry->nr_reclaimable, __entry->thresh, __entry->over_limit)
++)
++
++#define DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(name) \
++DEFINE_EVENT(mem_cgroup_consider_writeback, name, \
++	TP_PROTO(unsigned short id, \
++		 struct backing_dev_info *bdi, \
++		 unsigned long nr_reclaimable, \
++		 unsigned long thresh, \
++		 bool over_limit), \
++	TP_ARGS(id, bdi, nr_reclaimable, thresh, over_limit) \
++)
++
++DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_bg_writeback);
++DEFINE_MEM_CGROUP_CONSIDER_WRITEBACK_EVENT(mem_cgroup_consider_fg_writeback);
++
++TRACE_EVENT(mem_cgroup_fg_writeback,
++	TP_PROTO(unsigned long write_chunk,
++		 long nr_written,
++		 unsigned short css_id,
++		 bool shared_inodes),
++
++	TP_ARGS(write_chunk, nr_written, css_id, shared_inodes),
++
++	TP_STRUCT__entry(
++		__field(unsigned long, write_chunk)
++		__field(long, nr_written)
++		__field(unsigned short, css_id)
++		__field(bool, shared_inodes)
++	),
++
++	TP_fast_assign(
++		__entry->write_chunk = write_chunk;
++		__entry->nr_written = nr_written;
++		__entry->css_id = css_id;
++		__entry->shared_inodes = shared_inodes;
++	),
++
++	TP_printk("css_id=%d write_chunk=%ld nr_written=%ld shared_inodes=%d",
++		  __entry->css_id,
++		  __entry->write_chunk,
++		  __entry->nr_written,
++		  __entry->shared_inodes)
++)
++
++TRACE_EVENT(mem_cgroup_enable_shared_writeback,
++	TP_PROTO(unsigned short css_id),
++
++	TP_ARGS(css_id),
++
++	TP_STRUCT__entry(
++		__field(unsigned short, css_id)
++		),
++
++	TP_fast_assign(
++		__entry->css_id = css_id;
++		),
++
++	TP_printk("enabling shared writeback for memcg %d", __entry->css_id)
++)
++
+ #endif /* _TRACE_MEMCONTROL_H */
+ 
+ /* This part must be outside protection */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 5092a68..9d0b559 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1696,6 +1696,171 @@ void mem_cgroup_writeback_done(void)
+ 	}
+ }
+ 
 +/*
-+ * I2C bus device maximum buffer size w/o counting I2C address or command
-+ * i.e. max size required for I2C write is 34 = addr, command, 32 bytes data
++ * This routine must be called periodically by processes which generate dirty
++ * pages.  It considers the dirty pages usage and thresholds of the current
++ * cgroup and (depending if hierarchical accounting is enabled) ancestral memcg.
++ * If any of the considered memcg are over their background dirty limit, then
++ * background writeback is queued.  If any are over the foreground dirty limit
++ * then the dirtying task is throttled while writing dirty data.  The per-memcg
++ * dirty limits checked by this routine are distinct from either the per-system,
++ * per-bdi, or per-task limits considered by balance_dirty_pages().
++ *
++ *   Example hierarchy:
++ *                 root
++ *            A            B
++ *        A1      A2         B1
++ *     A11 A12  A21 A22
++ *
++ * Assume that mem_cgroup_balance_dirty_pages() is called on A11.  This routine
++ * starts at A11 walking upwards towards the root.  If A11 is over dirty limit,
++ * then writeback A11 inodes until under limit.  Next check A1, if over limit
++ * then write A1,A11,A12.  Then check A.  If A is over A limit, then invoke
++ * writeback on A* until A is under A limit.
 + */
-+#define TPM_I2C_MAX_BUF_SIZE           32
-+#define TPM_I2C_RETRY_COUNT            32
-+#define TPM_I2C_BUS_DELAY              1   /* msec */
-+#define TPM_I2C_RETRY_DELAY_SHORT      2   /* msec */
-+#define TPM_I2C_RETRY_DELAY_LONG       10  /* msec */
-+
-+#ifdef DEBUG
-+#define TPM_I2C_PRINT_BUF(string, buf, size) \
-+       print_hex_dump(KERN_DEBUG, (string), DUMP_PREFIX_NONE, 16, 1, (buf), \
-+                       (size), false);
-+#else
-+#define TPM_I2C_PRINT_BUF(string, buf, size)
-+#endif
-+
-+static s32 tpm_i2c_read_buf(struct i2c_client *client, u8 offset, u8 size,
-+                               u8 *data)
++void mem_cgroup_balance_dirty_pages(struct address_space *mapping,
++				    unsigned long write_chunk)
 +{
-+       s32 status;
++	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct mem_cgroup *memcg;
++	struct mem_cgroup *ref_memcg;
++	struct dirty_info info;
++	unsigned long nr_reclaimable;
++	unsigned long nr_written;
++	unsigned long sys_available_mem;
++	unsigned long pause = 1;
++	unsigned short id;
++	bool over;
++	bool shared_inodes;
 +
-+       status = i2c_smbus_read_i2c_block_data(client, offset, size, data);
++	if (mem_cgroup_disabled())
++		return;
 +
-+       if (status > 0) {
-+               dev_dbg(&(client->dev),
-+                       "tpm_i2c_read_buf(%0x)-> sts=%d:", offset, status);
-+               TPM_I2C_PRINT_BUF("data: ", data, size);
-+       }
++	sys_available_mem = determine_dirtyable_memory();
 +
-+       return status;
-+}
++	/* reference the memcg so it is not deleted during this routine */
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
++	if (memcg && mem_cgroup_is_root(memcg))
++		memcg = NULL;
++	if (memcg)
++		css_get(&memcg->css);
++	rcu_read_unlock();
++	ref_memcg = memcg;
 +
-+static s32 tpm_i2c_write_buf(struct i2c_client *client, u8 offset, u8 size,
-+                               u8 *data)
-+{
-+       s32 status;
++	/* balance entire ancestry of current's memcg. */
++	for (; mem_cgroup_has_dirty_limit(memcg);
++	     memcg = parent_mem_cgroup(memcg)) {
++		id = css_id(&memcg->css);
 +
-+       status = i2c_smbus_write_i2c_block_data(client, offset, size, data);
++		/*
++		 * Keep throttling and writing inode data so long as memcg is
++		 * over its dirty limit.  Inode being written by multiple memcg
++		 * (aka shared_inodes) cannot easily be attributed a particular
++		 * memcg.  Shared inodes are thought to be much rarer than
++		 * shared inodes.  First try to satisfy this memcg's dirty
++		 * limits using non-shared inodes.
++		 */
++		for (shared_inodes = false; ; ) {
++			/*
++			 * if memcg is under dirty limit, then break from
++			 * throttling loop.
++			 */
++			mem_cgroup_dirty_info(sys_available_mem, memcg, &info);
++			nr_reclaimable = dirty_info_reclaimable(&info);
++			over = nr_reclaimable > info.dirty_thresh;
++			trace_mem_cgroup_consider_fg_writeback(
++				id, bdi, nr_reclaimable, info.dirty_thresh,
++				over);
++			if (!over)
++				break;
 +
-+       if (status >= 0) {
-+               dev_dbg(&(client->dev),
-+                       "tpm_i2c_write_buf(offset=%0x, size=%0x)-> sts=%d:",
-+                       offset, size, status);
-+               TPM_I2C_PRINT_BUF("data: ", data, size);
-+       }
++			nr_written = writeback_inodes_wb(&bdi->wb, write_chunk,
++							 memcg, shared_inodes);
++			trace_mem_cgroup_fg_writeback(write_chunk, nr_written,
++						      id, shared_inodes);
++			/* if no progress, then consider shared inodes */
++			if ((nr_written == 0) && !shared_inodes) {
++				trace_mem_cgroup_enable_shared_writeback(id);
++				shared_inodes = true;
++			}
 +
-+       return status;
-+}
++			__set_current_state(TASK_UNINTERRUPTIBLE);
++			io_schedule_timeout(pause);
 +
-+#define TPM_STS_VALID          0x80
-+#define TPM_STS_COMMAND_READY  0x40
-+#define TPM_STS_GO             0x20
-+#define TPM_STS_DATA_AVAIL     0x10
-+#define TPM_STS_EXPECT         0x08
-+#define TPM_STS_RESPONSE_RETRY 0x02
-+#define TPM_STS_ERR_VAL                0x07    /* bit2...bit0 reads always 0 */
++			/*
++			 * Increase the delay for each loop, up to our previous
++			 * default of taking a 100ms nap.
++			 */
++			pause <<= 1;
++			if (pause > HZ / 10)
++				pause = HZ / 10;
++		}
 +
-+#define TPM_I2C_SHORT_TIMEOUT  750     /* ms */
-+#define TPM_I2C_LONG_TIMEOUT   2000    /* 2 sec */
++		/* if memcg is over background limit, then queue bg writeback */
++		over = nr_reclaimable >= info.background_thresh;
++		trace_mem_cgroup_consider_bg_writeback(
++			id, bdi, nr_reclaimable, info.background_thresh,
++			over);
++		if (over)
++			mem_cgroup_queue_bg_writeback(memcg, bdi);
++	}
 +
-+/* read TPM_STS register */
-+static u8 tpm_i2c_status(struct tpm_chip *chip)
-+{
-+       struct i2c_client *tpm_i2c_client = to_i2c_client(chip->dev);
-+       s32 status;
-+       u8 data;
-+
-+       status = tpm_i2c_read_buf(tpm_i2c_client, TPM_STS, 1, &data);
-+       if (status <= 0) {
-+               dev_err(chip->dev, "tpm_i2c_status() error return %#02x\n",
-+                       status);
-+               data = TPM_STS_ERR_VAL;
-+       }
-+
-+       return data;
-+}
-+
-+/* write byte to TPM_STS register */
-+static s32 tpm_i2c_write_status(struct i2c_client *tpm_i2c_client, u8 data)
-+{
-+       s32 status;
-+       int i;
-+
-+       /* this causes the current command to be aborted */
-+       for (i = 0, status = -1; i < TPM_I2C_RETRY_COUNT && status < 0; i++) {
-+               status = tpm_i2c_write_buf(tpm_i2c_client, TPM_STS, 1, &data);
-+               msleep(TPM_I2C_BUS_DELAY);
-+       }
-+       return status;
-+}
-+
-+/* write commandReady to TPM_STS register */
-+static void tpm_i2c_ready(struct tpm_chip *chip)
-+{
-+       struct i2c_client *tpm_i2c_client = to_i2c_client(chip->dev);
-+       s32 status;
-+
-+       /* this causes the current command to be aborted */
-+       status = tpm_i2c_write_status(tpm_i2c_client, TPM_STS_COMMAND_READY);
-+       if (status < 0)
-+               dev_err(chip->dev,
-+                       "tpm_i2c_ready() fail to write TPM_STS.commandReady\n");
-+}
-+
-+/* read burstCount field from TPM_STS register */
-+/* return -1 on fail to read */
-+static int tpm_i2c_get_burstcount(struct i2c_client *tpm_i2c_client,
-+                                       struct tpm_chip *chip)
-+{
-+       unsigned long stop = jiffies + chip->vendor.timeout_d;
-+       s32 status;
-+       int burst_count = -1;
-+       u8 data;
-+
-+       /* wait for burstcount to be non-zero */
-+       do { /* in I2C burstCount is 1 byte */
-+               status = tpm_i2c_read_buf(tpm_i2c_client, TPM_BURST_COUNT, 1,
-+                                               &data);
-+               if (status > 0 && data > 0) {
-+                       burst_count = min((u8)TPM_I2C_MAX_BUF_SIZE, data);
-+                       break;
-+               }
-+               msleep(TPM_I2C_BUS_DELAY);
-+       } while (time_before(jiffies, stop));
-+
-+       return burst_count;
-+}
-+
-+/*
-+ * WPCT301/NPCT501 SINT# supports only dataAvail
-+ * any call to this function which is not waiting for dataAvail will
-+ * set queue to NULL to avoid waiting for interrupt
-+ */
-+static bool tpm_i2c_check_status(struct tpm_chip *chip, u8 mask, u8 value)
-+{
-+       u8 status = tpm_i2c_status(chip);
-+       return status != TPM_STS_ERR_VAL && (status & mask) == (value);
-+}
-+
-+static int tpm_i2c_wait4stat(struct tpm_chip *chip, u8 mask, u8 value,
-+                               u32 timeout, wait_queue_head_t *queue)
-+{
-+       unsigned long ten_msec;
-+       unsigned long stop;
-+       bool status_valid;
-+       s32 rc;
-+
-+       /* check current status */
-+       status_valid = tpm_i2c_check_status(chip, mask, value);
-+       if (status_valid)
-+               return 0;
-+
-+       if (chip->vendor.irq && !queue) {
-+               /* use interrupt to wait for the event */
-+               rc = wait_event_interruptible_timeout(*queue,
-+                               tpm_i2c_check_status(chip, mask, value),
-+                               timeout);
-+               if (rc > 0)
-+                       return 0;
-+       } else {
-+               /* use polling to wait for the event */
-+               ten_msec = jiffies + msecs_to_jiffies(TPM_I2C_RETRY_DELAY_LONG);
-+               stop = jiffies + timeout;
-+               do {
-+                       if (time_before(jiffies, ten_msec))
-+                               msleep(TPM_I2C_RETRY_DELAY_SHORT);
-+                       else
-+                               msleep(TPM_I2C_RETRY_DELAY_LONG);
-+                       status_valid = tpm_i2c_check_status(chip, mask, value);
-+                       if (status_valid)
-+                               return 0;
-+               } while (time_before(jiffies, stop));
-+       }
-+       dev_err(chip->dev, "tpm_i2c_wait4stat(%02x, %02x) -> timeout\n", mask,
-+               value);
-+       return -ETIME;
-+}
-+
-+/* wait for dataAvail field to be set in the TPM_STS register */
-+static int tpm_i2c_wait4data_avail(struct tpm_chip *chip, u32 timeout,
-+                                       wait_queue_head_t *queue)
-+{
-+       return tpm_i2c_wait4stat(chip, TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+                               TPM_STS_DATA_AVAIL | TPM_STS_VALID, timeout,
-+                               queue);
-+}
-+
-+/* Read @count bytes into @buf from TPM_RD_FIFO register */
-+static int recv_data(struct i2c_client *tpm_i2c_client, struct tpm_chip *chip,
-+                       u8 *buf, size_t count)
-+{
-+       s32 rc;
-+       int size = 0;
-+       int burst_count;
-+       int bytes2read;
-+
-+       while ((size < count) && (tpm_i2c_wait4data_avail(chip,
-+                                       chip->vendor.timeout_c, NULL) == 0)) {
-+               burst_count = tpm_i2c_get_burstcount(tpm_i2c_client, chip);
-+               if (burst_count < 0) {
-+                       dev_err(chip->dev,
-+                               "recv_data() fail to read burstCount=%d\n",
-+                               burst_count);
-+                       return -EIO;
-+               }
-+               bytes2read = min((size_t)burst_count, count - size);
-+               rc = tpm_i2c_read_buf(tpm_i2c_client, TPM_DATA_FIFO_R,
-+                                       bytes2read, &buf[size]);
-+               if (rc < 0) {
-+                       dev_err(chip->dev,
-+                               "recv_data() fail on tpm_i2c_read_buf()=%d\n",
-+                               rc);
-+                       return -EIO;
-+               }
-+               dev_dbg(chip->dev, "recv_data(%d):", bytes2read);
-+               size += bytes2read;
-+       }
-+
-+       return size;
-+}
-+
-+/* Read TPM command results */
-+static int tpm_i2c_recv(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+       struct device *dev = chip->dev;
-+       struct i2c_client *tpm_i2c_client = to_i2c_client(dev);
-+       s32 rc;
-+       int size = 0;
-+       int expected;
-+       int status;
-+       int burst_count;
-+       int retries = TPM_RETRY;
-+
-+       if (count < TPM_HEADER_SIZE) {
-+               tpm_i2c_ready(chip); /* return to idle */
-+               dev_err(dev, "tpm_i2c_recv() count < header size\n");
-+               return -EIO;
-+       }
-+
-+       do {
-+               if (retries < TPM_RETRY) {
-+                       /* if this is not the first trial, set responseRetry */
-+                       tpm_i2c_write_status(tpm_i2c_client,
-+                                               TPM_STS_RESPONSE_RETRY);
-+               }
-+               /*
-+                * read first available (> 10 bytes), including:
-+                * tag, paramsize, and result
-+                */
-+               status = tpm_i2c_wait4data_avail(chip, chip->vendor.timeout_c,
-+                                               &chip->vendor.read_queue);
-+               if (status != 0) {
-+                       dev_err(dev, "tpm_i2c_recv() timeout on dataAvail\n");
-+                       size = -ETIME;
-+                       retries--;
-+                       continue;
-+               }
-+               burst_count = tpm_i2c_get_burstcount(tpm_i2c_client, chip);
-+               if (burst_count < 0) {
-+                       dev_err(dev, "tpm_i2c_recv() fail to get burstCount\n");
-+                       size = -EIO;
-+                       retries--;
-+                       continue;
-+               }
-+               size = recv_data(tpm_i2c_client, chip, buf, burst_count);
-+               if (size < TPM_HEADER_SIZE) {
-+                       dev_err(dev, "tpm_i2c_recv() fail to read header\n");
-+                       size = -EIO;
-+                       retries--;
-+                       continue;
-+               }
-+               /*
-+                * convert number of expected bytes field from big endian 32 bit
-+                * to machine native
-+                */
-+               expected = be32_to_cpu(*(__be32 *)(buf + 2));
-+               if (expected > count) {
-+                       dev_err(dev, "tpm_i2c_recv() expected > count\n");
-+                       size = -EIO;
-+                       retries--;
-+                       continue;
-+               }
-+               rc = recv_data(tpm_i2c_client, chip, &buf[size], expected-size);
-+               size += rc;
-+               if ((rc < 0) || (size < expected)) {
-+                       dev_err(dev, "tpm_i2c_recv() fail to read remainder"
-+                               "of result\n");
-+                       size = -EIO;
-+                       retries--;
-+                       continue;
-+               }
-+               if (tpm_i2c_wait4stat(chip, TPM_STS_VALID | TPM_STS_DATA_AVAIL,
-+                                       TPM_STS_VALID, chip->vendor.timeout_c,
-+                                       NULL)) {
-+                       dev_err(dev, "tpm_i2c_recv() error left over data\n");
-+                       size = -ETIME;
-+                       retries--;
-+                       continue;
-+               }
-+               break;
-+       } while (retries > 0);
-+       tpm_i2c_ready(chip);
-+       dev_dbg(chip->dev, "tpm_i2c_recv() -> %d\n", size);
-+       return size;
++	if (ref_memcg)
++		css_put(&ref_memcg->css);
 +}
 +
 +/*
-+ * Send TPM command.
++ * Set @info to the dirty thresholds and usage of the memcg (within the
++ * ancestral chain of @memcg) closest to its dirty limit or the first memcg over
++ * its limit.
 + *
-+ * If interrupts are used (signaled by an irq set in the vendor structure)
-+ * tpm.c can skip polling for the data to be available as the interrupt is
-+ * waited for here
++ * The check is not stable because the usage and limits can change asynchronous
++ * to this routine.
++ *
++ * If @memcg has no per-cgroup dirty limits, then returns false.
++ * Otherwise @info is set and returns true.
 + */
-+static int tpm_i2c_send(struct tpm_chip *chip, u8 *buf, size_t len)
++bool mem_cgroup_hierarchical_dirty_info(unsigned long sys_available_mem,
++					struct mem_cgroup *memcg,
++					struct dirty_info *info)
 +{
-+       struct device *dev = chip->dev;
-+       struct i2c_client *tpm_i2c_client = to_i2c_client(dev);
-+       int rc = -EIO;
-+       int burst_count;
-+       int bytes2write;
-+       int retries = TPM_RETRY;
-+       size_t count = 0;
-+       u32 ordinal;
++	unsigned long usage;
++	struct dirty_info uninitialized_var(cur_info);
 +
-+       do {
-+               tpm_i2c_ready(chip);
-+               if (tpm_i2c_wait4stat(chip, TPM_STS_COMMAND_READY,
-+                                       TPM_STS_COMMAND_READY,
-+                                       chip->vendor.timeout_b, NULL)) {
-+                       dev_err(dev,
-+                               "tpm_i2c_send() timeout on commandReady\n");
-+                       retries--;
-+                       rc = -EIO;
-+                       continue;
-+               }
-+               rc = 0;
-+               while (count < len - 1) {
-+                       burst_count = tpm_i2c_get_burstcount(tpm_i2c_client,
-+                                                               chip);
-+                       if (burst_count < 0) {
-+                               dev_err(dev,
-+                                       "tpm_i2c_send() fail get burstCount\n");
-+                               rc = -EIO;
-+                               break;
-+                       }
-+                       bytes2write = min((size_t)burst_count, len - 1 - count);
-+                       rc = tpm_i2c_write_buf(tpm_i2c_client, TPM_DATA_FIFO_W,
-+                                               bytes2write, &buf[count]);
-+                       if (rc < 0) {
-+                               dev_err(dev,
-+                                       "tpm_i2c_send() fail i2cWriteBuf\n");
-+                               break;
-+                       }
-+                       dev_dbg(dev, "tpm_i2c_send(%d):", bytes2write);
-+                       count += bytes2write;
-+                       rc = tpm_i2c_wait4stat(chip,
-+                                               TPM_STS_VALID | TPM_STS_EXPECT,
-+                                               TPM_STS_VALID | TPM_STS_EXPECT,
-+                                               chip->vendor.timeout_c, NULL);
-+                       if (rc < 0) {
-+                               dev_err(dev,
-+                                       "tpm_i2c_send() timeout on Expect\n");
-+                               rc = -ETIME;
-+                               break;
-+                       }
-+               }
-+               if (rc < 0) {
-+                       retries--;
-+                       continue;
-+               }
++	if (mem_cgroup_disabled())
++		return false;
 +
-+               /* write last byte */
-+               rc = tpm_i2c_write_buf(tpm_i2c_client, TPM_DATA_FIFO_W, 1,
-+                                       &buf[count]);
-+               if (rc < 0) {
-+                       dev_err(dev, "tpm_i2c_send() fail to write last byte\n");
-+                       rc = -EIO;
-+                       retries--;
-+                       continue;
-+               }
-+               dev_dbg(dev, "tpm_i2c_send(last): %02x", buf[count]);
-+               rc = tpm_i2c_wait4stat(chip, TPM_STS_VALID | TPM_STS_EXPECT,
-+                                       TPM_STS_VALID, chip->vendor.timeout_c,
-+                                       NULL);
-+               if (rc) {
-+                       dev_err(dev,
-+                               "tpm_i2c_send() timeout on Expect to clear\n");
-+                       rc = -ETIME;
-+                       retries--;
-+                       continue;
-+               }
-+               break;
-+       } while (retries > 0);
-+       if (rc < 0) { /* retries == 0 */
-+               tpm_i2c_ready(chip);
-+               return rc;
-+       }
-+       /* go and do it */
-+       rc = tpm_i2c_write_status(tpm_i2c_client, TPM_STS_GO);
-+       if (rc < 0) {
-+               dev_err(dev, "tpm_i2c_send() fail to write Go\n");
-+               tpm_i2c_ready(chip);
-+               return rc;
-+       }
-+       /* convert ordinal field from big endian 32 bit to machine native */
-+       ordinal = be32_to_cpu(*((__be32 *)(buf + 6)));
-+       rc = tpm_i2c_wait4data_avail(chip,
-+                               tpm_calc_ordinal_duration(chip, ordinal),
-+                               &chip->vendor.read_queue);
-+       if (rc) {
-+               dev_err(dev, "tpm_i2c_send() timeout command duration\n");
-+               tpm_i2c_ready(chip);
-+               return rc;
-+       }
++	info->nr_writeback = ULONG_MAX;  /* invalid initial value */
 +
-+       dev_dbg(dev, "tpm_i2c_send() -> %d\n", len);
-+       return len;
++	/* walk up hierarchy enabled parents */
++	for (; mem_cgroup_has_dirty_limit(memcg);
++	     memcg = parent_mem_cgroup(memcg)) {
++		mem_cgroup_dirty_info(sys_available_mem, memcg, &cur_info);
++		usage = dirty_info_reclaimable(&cur_info) +
++			cur_info.nr_writeback;
++
++		/* if over limit, stop searching */
++		if (usage >= cur_info.dirty_thresh) {
++			*info = cur_info;
++			break;
++		}
++
++		/*
++		 * Save dirty usage of memcg closest to its limit if either:
++		 *     - memcg is the first memcg considered
++		 *     - memcg dirty margin is smaller than last recorded one
++		 */
++		if ((info->nr_writeback == ULONG_MAX) ||
++		    (cur_info.dirty_thresh - usage) <
++		    (info->dirty_thresh -
++		     (dirty_info_reclaimable(info) + info->nr_writeback)))
++			*info = cur_info;
++	}
++
++	return info->nr_writeback != ULONG_MAX;
 +}
 +
-+static const struct file_operations tpm_i2c_ops = {
-+       .owner          = THIS_MODULE,
-+       .llseek         = no_llseek,
-+       .open           = tpm_open,
-+       .read           = tpm_read,
-+       .write          = tpm_write,
-+       .release        = tpm_release,
-+};
-+
-+static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
-+static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
-+static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
-+static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
-+static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
-+static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
-+static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-+static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+
-+static struct attribute *tpm_i2c_attrs[] = {
-+       &dev_attr_pubek.attr,
-+       &dev_attr_pcrs.attr,
-+       &dev_attr_enabled.attr,
-+       &dev_attr_active.attr,
-+       &dev_attr_owned.attr,
-+       &dev_attr_temp_deactivated.attr,
-+       &dev_attr_caps.attr,
-+       &dev_attr_cancel.attr,
-+       NULL,
-+};
-+
-+static struct attribute_group tpm_i2c_attr_grp = {
-+       .attrs = tpm_i2c_attrs
-+};
-+
-+static struct tpm_vendor_specific tpm_i2c = {
-+       .status                 = tpm_i2c_status,
-+       .recv                   = tpm_i2c_recv,
-+       .send                   = tpm_i2c_send,
-+       .cancel                 = tpm_i2c_ready,
-+       .req_complete_mask      = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+       .req_complete_val       = TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+       .req_canceled           = TPM_STS_COMMAND_READY,
-+       .attr_group             = &tpm_i2c_attr_grp,
-+       .miscdev = {
-+               .fops           = &tpm_i2c_ops,
-+       },
-+};
-+
-+static irqreturn_t tpm_i2c_int_handler(int dummy, void *dev_id)
-+{
-+       struct tpm_chip *chip = dev_id;
-+
-+       /* in I2C interrupt is triggeted only on dataAvail */
-+       wake_up_interruptible(&chip->vendor.read_queue);
-+
-+       /*
-+        * consider disabling the interrupt in the host
-+        * in case of interrupt storm as TPM SINT# is level interrupt
-+        * which is cleared only when dataAvail is cleared
-+        */
-+       return IRQ_HANDLED;
-+}
-+
-+static const u8 vid_did_rid_value[] = { 0x50, 0x10, 0xfe, 0x00 };
-+#define VID_DID_RID_SIZE sizeof(vid_did_rid_value)
-+
-+static int tpm_i2c_detect(struct i2c_client *client,
-+                       struct i2c_board_info *info)
-+{
-+       struct i2c_adapter *adapter = client->adapter;
-+       struct device *dev = &(client->dev);
-+       u32 temp;
-+       s32 rc;
-+
-+       if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-+               return -ENODEV;
-+
-+       rc = tpm_i2c_read_buf(client, TPM_VID_DID_RID, 4, (u8 *)(&temp));
-+       if (rc < 0) {
-+               dev_err(dev, "tpm_i2c_detect() fail read VID/DID/RID => %d\n",
-+                       rc);
-+               return -ENODEV;
-+       }
-+       dev_dbg(dev, "tpm_i2c_detect() VID: %04X DID: %02X RID: %02X\n", temp,
-+               temp>>16, temp>>24);
-+
-+       /* check WPCT301 values - ignore RID */
-+       if (memcmp(&temp, vid_did_rid_value, VID_DID_RID_SIZE-1)) {
-+               /*
-+                * f/w rev 2.81 has an issue where the VID_DID_RID is not
-+                * reporting the right value. so give it another chance at
-+                * offset 0x20 (FIFO_W).
-+                */
-+               rc = tpm_i2c_read_buf(client, TPM_DATA_FIFO_W, 4,
-+                                       (u8 *)(&temp));
-+               if (rc < 0) {
-+                       dev_err(dev, "tpm_i2c_detect() fail to read"
-+                               "VID/DID/RID. status=%d\n", rc);
-+                       return -ENODEV;
-+               }
-+               dev_dbg(dev,
-+                       "tpm_i2c_detect() VID: %04X DID: %02X RID: %02X\n",
-+                       temp, temp>>16, temp>>24);
-+
-+               /* check WPCT301 values - ignore RID*/
-+               if (memcmp(&temp, vid_did_rid_value, VID_DID_RID_SIZE-1)) {
-+                       dev_err(dev,
-+                               "tpm_i2c_detect() WPCT301/NPCT501 not found\n");
-+                       return -ENODEV;
-+               }
-+       }
-+
-+       strlcpy(info->type, "tpm_i2c", I2C_NAME_SIZE);
-+       dev_info(dev, "tpm_i2c VID: %04X DID: %02X RID: %02X\n", temp, temp>>16,
-+                       temp>>24);
-+
-+       return 0;
-+}
-+
-+static int tpm_i2c_probe(struct i2c_client *client,
-+                               const struct i2c_device_id *id)
-+{
-+       int rc;
-+       struct tpm_chip *chip;
-+       struct device *dev = &(client->dev);
-+       void (*release)(struct device *dev) = dev->release;
-+
-+       chip = tpm_register_hardware(dev, &tpm_i2c);
-+       if (!chip) {
-+               dev_err(dev, "tpm_i2c_probe() error in tpm_register_hardware\n");
-+               return -ENODEV;
-+       }
-+       /*
-+        * restore dev->release function as it is modified by tpm_register_dev.
-+        * save the assigned release function in chip->release for backup.
-+        */
-+        chip->release = dev->release;
-+        dev->release = release;
-+
-+       /* Default timeouts */
-+       chip->vendor.timeout_a = msecs_to_jiffies(TPM_I2C_SHORT_TIMEOUT);
-+       chip->vendor.timeout_b = msecs_to_jiffies(TPM_I2C_LONG_TIMEOUT);
-+       chip->vendor.timeout_c = msecs_to_jiffies(TPM_I2C_SHORT_TIMEOUT);
-+       chip->vendor.timeout_d = msecs_to_jiffies(TPM_I2C_SHORT_TIMEOUT);
-+
-+       /*
-+        * I2C intfcaps (interrupt capabilitieis) are hard coded to:
-+        *   TPM_INTF_INT_LEVEL_LOW | TPM_INTF_DATA_AVAIL_INT
-+        */
-+
-+       /* INTERRUPT Setup */
-+       init_waitqueue_head(&chip->vendor.read_queue);
-+       init_waitqueue_head(&chip->vendor.int_queue);
-+
-+       /* I2C intmask is hard coded to TPM_INTF_DATA_AVAIL_INT */
-+       if (chip->vendor.irq) {
-+               dev_dbg(dev, "tpm_i2c_probe() chip-vendor.irq\n");
-+               rc = request_irq(chip->vendor.irq, tpm_i2c_int_handler,
-+                       IRQF_PROBE_SHARED, chip->vendor.miscdev.name, chip);
-+               if (rc) {
-+                       dev_err(dev, "tpm_i2c_probe() Unable to request irq:"
-+                               "%d for use\n", chip->vendor.irq);
-+                       chip->vendor.irq = 0;
-+               } else {
-+                       /* Clear any pending interrupt */
-+                       tpm_i2c_ready(chip);
-+                       /* - wait for TPM_STS==0xA0 (stsValid, commandReady) */
-+                       rc = tpm_i2c_wait4stat(chip, TPM_STS_COMMAND_READY,
-+                                               TPM_STS_COMMAND_READY,
-+                                               chip->vendor.timeout_b, NULL);
-+                       if (rc == 0) {
-+                               /*
-+                                * TIS is in ready state
-+                                * write dummy byte to enter reception state
-+                                * TPM_DATA_FIFO_W <- rc (0)
-+                                */
-+                               rc = tpm_i2c_write_buf(client, TPM_DATA_FIFO_W,
-+                                                       1, (u8 *)(&rc));
-+                               if (rc < 0)
-+                                       goto out_err;
-+                               /* TPM_STS <- 0x40 (commandReady) */
-+                               tpm_i2c_ready(chip);
-+                       } else {
-+                               /*
-+                                * timeout_b reached - command was
-+                                * aborted. TIS should now be in idle state -
-+                                * only TPM_STS_VALID should be set
-+                                */
-+                               if (tpm_i2c_status(chip) != TPM_STS_VALID) {
-+                                       rc = -EIO;
-+                                       goto out_err;
-+                               }
-+                       }
-+               }
-+       }
-+
-+       /* uncomment in case BIOS/booter does not send TPM_StartUp command */
-+       /* tpm_startup_clear(chip); */
-+       tpm_get_timeouts(chip);
-+       tpm_continue_selftest(chip);
-+
-+       return 0;
-+
-+out_err:
-+       tpm_remove_hardware(chip->dev);
-+       return rc;
-+}
-+
-+static int tpm_i2c_remove(struct i2c_client *client)
-+{
-+       struct device *dev = &(client->dev);
-+       struct tpm_chip *chip = dev_get_drvdata(dev);
-+
-+       if (chip) {
-+               tpm_dev_vendor_release(chip);
-+               if (chip->vendor.irq)
-+                       free_irq(chip->vendor.irq, chip);
-+       }
-+       tpm_remove_hardware(dev);
-+       kfree(chip);
-+       return 0;
-+}
-+
-+static int tpm_i2c_suspend(struct i2c_client *client, pm_message_t mesg)
-+{
-+       return tpm_pm_suspend(&client->dev, mesg);
-+}
-+
-+static int tpm_i2c_resume(struct i2c_client *client)
-+{
-+       return tpm_pm_resume(&client->dev);
-+}
-+
-+static const struct i2c_device_id tpm_i2c_id[] = { { "tpm_i2c", 0 }, {} };
-+
-+/* I2C Addresses to scan */
-+static const u16 normal_i2c[] = { 0x17, 0x57, I2C_CLIENT_END };
-+
-+
-+#define I2C_CLASS_ANY 0xffff
-+
-+static struct i2c_driver tpm_i2c_driver = {
-+       .driver = {
-+               .name   = "tpm_i2c",
-+       },
-+       .probe          = tpm_i2c_probe,
-+       .remove         = tpm_i2c_remove,
-+       .id_table       = tpm_i2c_id,
-+       .detect         = tpm_i2c_detect,
-+       .address_list   = normal_i2c,
-+       .suspend        = tpm_i2c_suspend,
-+       .resume         = tpm_i2c_resume,
-+       .class          = I2C_CLASS_ANY,
-+};
-+
-+static int __init tpm_i2c_init(void)
-+{
-+       return i2c_add_driver(&tpm_i2c_driver);
-+}
-+
-+static void __exit tpm_i2c_exit(void)
-+{
-+       i2c_del_driver(&tpm_i2c_driver);
-+}
-+
-+module_init(tpm_i2c_init);
-+module_exit(tpm_i2c_exit);
-+
-+MODULE_AUTHOR("Dan Morav (dan.morav@nuvoton.com)");
-+MODULE_DESCRIPTION("Nuvoton TPM I2C Driver");
-+MODULE_LICENSE("GPL");
+ static void mem_cgroup_start_move(struct mem_cgroup *mem)
+ {
+ 	int cpu;
+-- 
+1.7.3.1
 
-
-===========================================================================================
-The privileged confidential information contained in this email is intended for use only by the addressees as indicated by the original sender of this email. If you are not the addressee indicated in this email or are not responsible for delivery of the email to such a person, please kindly reply to the sender indicating this fact and delete all copies of it from your computer and network server immediately. Your cooperation is highly appreciated. It is advised that any unauthorized use of confidential information of Nuvoton is strictly prohibited; and any information in this email irrelevant to the official business of Nuvoton shall be deemed as neither given nor endorsed by Nuvoton.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
