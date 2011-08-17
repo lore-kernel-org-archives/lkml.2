@@ -1,101 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab1HQNFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:05:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38525 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752126Ab1HQNFn (ORCPT
+	id S1752686Ab1HQSVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 14:21:06 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:18261 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab1HQSU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:05:43 -0400
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, sdharia@codeaurora.org,
-        David Brown <davidb@codeaurora.org>, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201108171242.24918.arnd@arndb.de>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
-	 <1772239.ndMLD9ec3r@wuerfel>
-	 <20110817080327.GD13460@opensource.wolfsonmicro.com>
-	 <201108171242.24918.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Wolfson Microelectronics
-Date: Wed, 17 Aug 2011 22:04:01 +0900
-Message-ID: <1313586241.19990.94.camel@finisterre.wolfsonmicro.main>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Wed, 17 Aug 2011 14:20:57 -0400
+Subject: [PATCH] scsi: Document generic scsi device attributes
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Wed, 17 Aug 2011 13:20:55 -0500
+Message-ID: <20110817182055.8848.75862.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-17 at 12:42 +0200, Arnd Bergmann wrote:
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-> the bus is probed. It's a bit unfortunate that the initial slimbus
-> code was modeled after i2c and spi, when it's really more like USB
-> in the sense that devices can (and should) actually be discovered
-> using methods provided by the bus spec.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ Documentation/ABI/testing/sysfs-class-scsi_devices |  123 ++++++++++++++++++++
+ 1 files changed, 123 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-scsi_devices
 
-Yeah, though in reality it's somewhere in between.
-
-> > I'd expect that bringing the device out of reset is going to be largely
-> > unrelated to the host controller, it's going to be GPIOs, clocks and
-> > regulators.  The individual drivers are going to want to manage this
-> > stuff dynamically at runtime too.
-
-> But it's even less related to the individual driver than to the host.
-
-No, not at all - all the bus specifies is the two wire control
-interface, if a device on the bus requires power or anything else that's
-not something the CPU Slimbus (I keep wanting to typo that as
-Slumbus...) controller has any idea about. In this respect Slimbus is
-much more like I2C than USB where there's a standard provision for power
-even if embedded systems routinely ignore it.
-
-The device driver will know what power supplies and other signals the
-device has, and it will know how and when to use them. This can
-generally be done independently of the board with just some platform or
-device tree data to configure GPIOs.
-
-> Clearly, the code for starting up the device has to live somewhere, but
-> I think that should not be the device driver that is responsible
-> for talking to the slimbus device itself, because that each board
-> will do that slightly differently and the slimbus_driver should not
-> need to know about the device before it has been found on the bus.
-
-If we're going to do that we should do the same thing for at least I2C
-and SPI also. In terms of the board differences they're generally not
-hard to abstract.
-
-One thing to bear in mind here is that in these sort of systems it's not
-uncommon for devices to want to dynamically manage their power at
-runtime, both partially removing supplies and going to complete power
-down (we've got drivers in the kernel at present which are doing that)
-depending on usage. The full power off is fairly straightforward but
-partial power states will mean complication as we have to work out how
-to hand the resources from the pre-driver code to the driver and back
-again.
-
-> The way I see this working is that something outside of the driver
-> should provide a way to enable each device in order for it to get
-> probed, and the driver's ->probe callback does a pm_runtime_get()
-> call when it wants to keep the device enabled.
-
-Some pre-cooked off the shelf device wide power management is definitely
-useful for simple cases but I don't think that scales to high end
-devices - it's too binary. Like I said I really do want to have some
-transparent device model way of handling the simple cases but we need to
-leave room for devices which want to do more complicated things.
-
-It also occurs to me that if we're supporting going down to cold with
-runtime PM anyway the kernel is going to have to be able to understand
-the idea that devices it already knows about are going to hotplug in and
-out while staying registered. If we're doing that then it seems like the
-bus is going to have pretty much all the concepts required for explicit
-registration anyway.
+diff --git a/Documentation/ABI/testing/sysfs-class-scsi_devices b/Documentation/ABI/testing/sysfs-class-scsi_devices
+new file mode 100644
+index 0000000..ad2d36b
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-class-scsi_devices
+@@ -0,0 +1,123 @@
++What:           /sys/class/scsi_device/..../device/device_blocked
++Date:           December, 2002
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only integer attribute indicates whether the
++		device is blocked.  A non-zero value indicates the device
++		is blocked, zero indicates the device is not blocked.
++
++What:           /sys/class/scsi_device/..../device/type
++Date:           December, 2002
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only decimal integer value indicates the
++		SCSI device type.
++
++What:           /sys/class/scsi_device/..../device/scsi_level
++Date:           January, 2003
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only decimal integer value indicates the
++		SCSI revision level the device claims to support.
++
++What:           /sys/class/scsi_device/..../device/vendor
++Date:           December, 2002
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only string attribute contains the vendor of the SCSI
++		device.
++
++What:           /sys/class/scsi_device/..../device/model
++Date:           December 2002
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only string attribute contains the model of the SCSI
++		device.
++
++What:           /sys/class/scsi_device/..../device/rev
++Date:           December, 2002
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only string attribute contains the product revision
++		of the SCSI device.
++
++What:           /sys/class/scsi_device/..../device/rescan
++Date:           March, 2003
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++
++What:           /sys/class/scsi_device/..../device/delete
++Date:           August, 2003
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Writing to this write only attribute causes the SCSI device to
++		be removed from the SCSI midlayer.
++
++What:           /sys/class/scsi_device/..../device/state
++Date:           April, 2004
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read/write string attribute allows setting or retrieving
++		the current state of the SCSI device.  Possible values are
++		"created", "running", "cancel", "deleted", "quiesce", "offline",
++		"blocked" and "created-blocked"
++
++What:           /sys/class/scsi_device/..../device/timeout
++Date:           May, 2004
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read/write decimal integer attribute contains the number
++		of seconds which may elapse after sending a command to the
++		device before that command is considered to have timed out.
++
++What:           /sys/class/scsi_device/..../device/iocounterbits
++Date:           March, 2005
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only integer value shows the number of bits
++		used to represent the various I/O counters.
++
++What:           /sys/class/scsi_device/..../device/iorequest_cnt
++Date:           March, 2005
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only integer value indicates how many I/O requests
++		have been submitted to the SCSI device.
++
++What:           /sys/class/scsi_device/..../device/iodone_cnt
++Date:           March, 2005
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only integer value indicates how many I/O requests
++		have been completed by the SCSI device.
++
++What:           /sys/class/scsi_device/..../device/ioerr_cnt
++Date:           March, 2005
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only integer value indicates how many I/O requests
++		have been completed with errors by the SCSI device.
++
++What:           /sys/class/scsi_device/..../device/modalias
++Date:           April, 2007
++KernelVersion:  Unknown
++Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		This read only string value contains a string of the form
++		"scsi:t-0xXX" where "XX" are two hex digits representing the
++		SCSI device type.  See also the "type" attribute.
++
 
