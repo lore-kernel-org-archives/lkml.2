@@ -1,119 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1HQODi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 10:03:38 -0400
-Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:57944 "EHLO
-	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753821Ab1HQODc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 10:03:32 -0400
-X-AuditID: 12074424-b7bcaae000000a05-7b-4e4bca5fa43e
-From: Andy Lutomirski <luto@MIT.EDU>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v4 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
-Date: Wed, 17 Aug 2011 10:03:18 -0400
-Message-Id: <e6c5440954c28e9738b8d4919a9db2d10c9a1757.1313586473.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1313586473.git.luto@mit.edu>
-References: <cover.1313586473.git.luto@mit.edu>
-In-Reply-To: <cover.1313586473.git.luto@mit.edu>
-References: <cover.1313586473.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsUixG6noht/ytvPYMdiPou+K0fZLdqmOVrs
-	fPiWzWL5vn5Gi8u75rBZbLnUzGpx9eFsFosfGx6zOnB43Gr7w+yxc9Zddo/Fe14yeWxa1cnm
-	se7GV3aPz5vkAtiiuGxSUnMyy1KL9O0SuDIWfj/OWHBAvOJt52LWBsYpwl2MnBwSAiYS/3d/
-	YYKwxSQu3FvP1sXIxSEksI9R4n7zHGYIZwOjxJMpF5ggnGdMEt/eT2cGaWETUJHoWPoArF1E
-	wEBiy8oXrCBFzAJXGCUuzr8BViQsECBxZ9Z3FhCbRUBV4tXnD2BxXoEgiSubfkPtlpM4cvk5
-	mM0JNOhz3yl2EFtIQF9i2ZoL7LjEJzAKLGBkWMUom5JbpZubmJlTnJqsW5ycmJeXWqRrrpeb
-	WaKXmlK6iREcxC4qOxibDykdYhTgYFTi4Q3q9/ITYk0sK67MPcQoycGkJMobd9LbT4gvKT+l
-	MiOxOCO+qDQntfgQowQHs5IIr89BoBxvSmJlVWpRPkxKmoNFSZzXZqeDn5BAemJJanZqakFq
-	EUxWhoNDSYI3DWSoYFFqempFWmZOCUKaiYMTZDgP0PDJIDW8xQWJucWZ6RD5U4yKUuK86SAJ
-	AZBERmkeXC8sybxiFAd6RZg3HKSKB5ig4LpfAQ1mAhp8a5cHyOCSRISUVAMjmwO3S4/Hfrnz
-	L7+IXnXbti/Zhqn6z1c/JeXvXMfOeutE5j3g0pj379U0lk3P3XZ02244eiSC/96FWdwt9kbq
-	LOGpMzOTpbsXqL1cm9jW5OqYdk+L2TKRS/2AxfsHsmYPXT22/XFb+uLS5UtTluZIanOvcVuz
-	RmZFML/f7DN3Ek3nb5x/bqmGEktxRqKhFnNRcSIA0yU8BA0DAAA=
+	id S1753820Ab1HQOKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:10:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843Ab1HQOKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 10:10:16 -0400
+Date: Wed, 17 Aug 2011 10:10:10 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <mjg@redhat.com>, Keith Packard <keithp@keithp.com>
+Subject: backlight duplicate registration
+Message-ID: <20110817141010.GA21479@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Matthew Garrett <mjg@redhat.com>, Keith Packard <keithp@keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel SDM volume 3A, 8.4.2 says:
+This has started showing up on my laptop in the last day or two
+(probably since aaa6fd2a004147bf32fce05720938236de3361d9)
 
-  Software can disable fast-string operation by clearing the
-  fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
-  However, Intel recomments that system software always enable
-  fast-string operation.
+	Dave
 
-The Intel DQ67SW board (with latest BIOS) disables fast string
-operations if TXT is enabled.  A Lenovo X220 disables it regardless
-of TXT setting.  I doubt I'm the only person with a dumb BIOS like
-this.
-
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
----
- arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index ed6086e..1f7367d 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -30,6 +30,7 @@
- static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- {
- 	u64 misc_enable;
-+	bool allow_fast_string = true;
- 
- 	/* Unmask CPUID levels if masked: */
- 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
-@@ -118,10 +119,11 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- 	 * (model 2) with the same problem.
- 	 */
- 	if (c->x86 == 15) {
--		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-+		allow_fast_string = false;
- 
-+		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
- 		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
--			printk(KERN_INFO "kmemcheck: Disabling fast string operations\n");
-+			printk_once(KERN_INFO "kmemcheck: Disabling fast string operations\n");
- 
- 			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
- 			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-@@ -130,13 +132,29 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
- #endif
- 
- 	/*
--	 * If fast string is not enabled in IA32_MISC_ENABLE for any reason,
--	 * clear the fast string and enhanced fast string CPU capabilities.
-+	 * If BIOS didn't enable fast string operation, try to enable
-+	 * it ourselves.  If that fails, then clear the fast string
-+	 * and enhanced fast string CPU capabilities.
- 	 */
- 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
- 		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-+
-+		if (allow_fast_string &&
-+		    !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
-+			misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
-+			wrmsr_safe(MSR_IA32_MISC_ENABLE, (u32)misc_enable,
-+				   (u32)(misc_enable >> 32));
-+
-+			/* Re-read to make sure it stuck. */
-+			rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-+
-+			if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)
-+				printk_once(KERN_INFO FW_WARN "IA32_MISC_ENABLE.FAST_STRING_ENABLE was not set\n");
-+		}
-+
- 		if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
--			printk(KERN_INFO "Disabled fast string operations\n");
-+			if (allow_fast_string)
-+				printk_once(KERN_INFO "Failed to enable fast string operations\n");
- 			setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
- 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
- 		}
--- 
-1.7.6
+vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x97/0xab()
+Hardware name: Adamo 13   
+sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight'
+Modules linked in: i915(+) drm_kms_helper drm i2c_algo_bit i2c_core video
+Pid: 137, comm: modprobe Not tainted 3.1.0-rc2+ #137
+Call Trace:
+ [<ffffffff8105df5c>] warn_slowpath_common+0x83/0x9b
+ [<ffffffff8105e017>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff811a58a8>] sysfs_add_one+0x97/0xab
+ [<ffffffff811a5930>] create_dir+0x74/0xad
+ [<ffffffff811a5a1a>] sysfs_create_dir+0x90/0xa7
+ [<ffffffff8126ff74>] kobject_add_internal+0xcb/0x18c
+ [<ffffffff8127036e>] kobject_add+0x91/0xa2
+ [<ffffffff8133729f>] device_add+0xd5/0x576
+ [<ffffffff813419b9>] ? pm_runtime_init+0x106/0x10a
+ [<ffffffff8133775b>] device_register+0x1b/0x1f
+ [<ffffffff812b788f>] backlight_device_register+0x10f/0x17f
+ [<ffffffffa009af3b>] intel_panel_setup_backlight+0x7d/0xd2 [i915]
+ [<ffffffffa00904c5>] intel_modeset_init+0xd62/0xe73 [i915]
+ [<ffffffffa006e385>] i915_driver_load+0x8f4/0xdc0 [i915]
+ [<ffffffff8133775b>] ? device_register+0x1b/0x1f
+ [<ffffffffa0026c4a>] drm_get_pci_dev+0x170/0x26c [drm]
+ [<ffffffffa00a4ab7>] i915_pci_probe+0x1b/0x1d [i915]
+ [<ffffffff81291bc7>] local_pci_probe+0x44/0x75
+ [<ffffffff8129274a>] pci_device_probe+0xcd/0xfc
+ [<ffffffff813397aa>] driver_probe_device+0xb5/0x150
+ [<ffffffff813398a3>] __driver_attach+0x5e/0x81
+ [<ffffffff81339845>] ? driver_probe_device+0x150/0x150
+ [<ffffffff813389c2>] bus_for_each_dev+0x59/0x8f
+ [<ffffffff8133945b>] driver_attach+0x1e/0x20
+ [<ffffffff8133909c>] bus_add_driver+0xb0/0x206
+ [<ffffffff81339d4a>] driver_register+0x98/0x105
+ [<ffffffff8129301d>] __pci_register_driver+0x66/0xd1
+ [<ffffffffa0026dd0>] drm_pci_init+0x8a/0xef [drm]
+ [<ffffffffa00d0000>] ? 0xffffffffa00cffff
+ [<ffffffff8109c883>] sys_init_module+0x114/0x267
+ [<ffffffff814ef542>] system_call_fastpath+0x16/0x1b
+---[ end trace a98c7fa70c5006a7 ]---
+kobject_add_internal failed for intel_backlight with -EEXIST, don't try to register things with the same name in the same directory.
+Pid: 137, comm: modprobe Tainted: G        W   3.1.0-rc2+ #137
+Call Trace:
+ [<ffffffff81270005>] kobject_add_internal+0x15c/0x18c
+ [<ffffffff8127036e>] kobject_add+0x91/0xa2
+ [<ffffffff8133729f>] device_add+0xd5/0x576
+ [<ffffffff813419b9>] ? pm_runtime_init+0x106/0x10a
+ [<ffffffff8133775b>] device_register+0x1b/0x1f
+ [<ffffffff812b788f>] backlight_device_register+0x10f/0x17f
+ [<ffffffffa009af3b>] intel_panel_setup_backlight+0x7d/0xd2 [i915]
+ [<ffffffffa00904c5>] intel_modeset_init+0xd62/0xe73 [i915]
+ [<ffffffffa006e385>] i915_driver_load+0x8f4/0xdc0 [i915]
+ [<ffffffff8133775b>] ? device_register+0x1b/0x1f
+ [<ffffffffa0026c4a>] drm_get_pci_dev+0x170/0x26c [drm]
+ [<ffffffffa00a4ab7>] i915_pci_probe+0x1b/0x1d [i915]
+ [<ffffffff81291bc7>] local_pci_probe+0x44/0x75
+ [<ffffffff8129274a>] pci_device_probe+0xcd/0xfc
+ [<ffffffff813397aa>] driver_probe_device+0xb5/0x150
+ [<ffffffff813398a3>] __driver_attach+0x5e/0x81
+ [<ffffffff81339845>] ? driver_probe_device+0x150/0x150
+ [<ffffffff813389c2>] bus_for_each_dev+0x59/0x8f
+ [<ffffffff8133945b>] driver_attach+0x1e/0x20
+ [<ffffffff8133909c>] bus_add_driver+0xb0/0x206
+ [<ffffffff81339d4a>] driver_register+0x98/0x105
+ [<ffffffff8129301d>] __pci_register_driver+0x66/0xd1
+ [<ffffffffa0026dd0>] drm_pci_init+0x8a/0xef [drm]
+ [<ffffffffa00d0000>] ? 0xffffffffa00cffff
+ [<ffffffffa00d008b>] i915_init+0x8b/0x8d [i915]
+ [<ffffffff81002099>] do_one_initcall+0x7f/0x13a
+ [<ffffffffa00d0000>] ? 0xffffffffa00cffff
+ [<ffffffff8109c883>] sys_init_module+0x114/0x267
+ [<ffffffff814ef542>] system_call_fastpath+0x16/0x1b
+[drm:intel_panel_setup_backlight] *ERROR* Failed to register backlight: -17
 
