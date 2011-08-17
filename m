@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab1HQRHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:07:49 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:18298 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab1HQRGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:06:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004341"
-Message-Id: <20110817163523.224839138@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:33 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 36/36] Hexagon: Add self to MAINTAINERS
-References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=maintainer.diff
+	id S1754488Ab1HQRap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235Ab1HQRao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 13:30:44 -0400
+Date: Wed, 17 Aug 2011 19:27:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Linas Vepstas <linasvepstas@gmail.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc/eeh: remove eeh_event_handler()->daemonize()
+Message-ID: <20110817172713.GA24544@redhat.com>
+References: <20110816190858.GA4890@redhat.com> <20110816192629.GB2803@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816192629.GB2803@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+On 08/16, Tejun Heo wrote:
+>
+> On Tue, Aug 16, 2011 at 09:08:58PM +0200, Oleg Nesterov wrote:
+> > daemonize() is only needed when a user-space task does kernel_thread().
+> >
+> > eeh_event_handler() thread is created by the worker kthread, and thus
+> > it doesn't need the soon-to-be-deprecated daemonize().
+> >
+> > Note: looks like eeh_event_wq can be static and it can do all work
+> > itself without kernel_thread().
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Acked-by: Tejun Heo <tj@kernel.org>
 
----
- MAINTAINERS |    6 ++++++
- 1 file changed, 6 insertions(+)
+Thanks.
 
-Index: linux-hexagon-kernel/MAINTAINERS
-===================================================================
---- linux-hexagon-kernel.orig/MAINTAINERS	2011-08-15 15:21:56.663753077 -0500
-+++ linux-hexagon-kernel/MAINTAINERS	2011-08-15 15:22:32.453781219 -0500
-@@ -5279,6 +5279,12 @@
- F:	include/linux/qnx4_fs.h
- F:	include/linux/qnxtypes.h
- 
-+QUALCOMM HEXAGON ARCHITECTURE
-+M:	Richard Kuo <rkuo@codeaurora.org>
-+L:	linux-hexagon@vger.kernel.org
-+S:	Supported
-+F:	arch/hexagon/
-+
- RADOS BLOCK DEVICE (RBD)
- F:	include/linux/qnxtypes.h
- M:	Yehuda Sadeh <yehuda@hq.newdream.net>
+> How do you wanna route these?  Through -mm?
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Oh, I don't know. -mm, or probably maintainers can pick them.
+They don't depend on each other.
+
+
+
+Btw. Perhaps we should kill CLONE_KERNEL? And note that the only
+user is eeh_thread_launcher().
+
+The problem is, CLONE_KERNEL looks as "use me if you want to create
+a kernel thread". But CLONE_SIGHAND means the kernel thread should
+not play with signals, and this is not obvious.
+
+Oleg.
 
