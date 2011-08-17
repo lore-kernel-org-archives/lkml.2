@@ -1,282 +1,1034 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab1HQNX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:23:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30161 "EHLO mga03.intel.com"
+	id S1753295Ab1HQLt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 07:49:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57039 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab1HQNXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:23:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,240,1312182000"; 
-   d="scan'208";a="39408676"
-Date: Wed, 17 Aug 2011 21:23:47 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110817132347.GA6628@localhost>
-References: <20110816022006.348714319@intel.com>
- <20110816022328.811348370@intel.com>
- <20110816194112.GA25517@quack.suse.cz>
+	id S1752673Ab1HQLr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 07:47:59 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <tom.leiming@gmail.com>, <toddpoynor@google.com>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 5/5 v5] mfd: omap: usb: Runtime PM support
+Date: Wed, 17 Aug 2011 17:13:59 +0530
+Message-ID: <1313581439-4279-6-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1313581439-4279-5-git-send-email-keshava_mgowda@ti.com>
+References: <1313581439-4279-1-git-send-email-keshava_mgowda@ti.com>
+ <1313581439-4279-2-git-send-email-keshava_mgowda@ti.com>
+ <1313581439-4279-3-git-send-email-keshava_mgowda@ti.com>
+ <1313581439-4279-4-git-send-email-keshava_mgowda@ti.com>
+ <1313581439-4279-5-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="d6Gm4EdcadzBjdND"
-Content-Disposition: inline
-In-Reply-To: <20110816194112.GA25517@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The usbhs core driver does not enable/disable the interface and
+functional clocks; These clocks are handled by hwmod and runtime pm,
+hence insted of the clock enable/disable, the runtime pm APIS are
+used. however,the port clocks are handled by the usbhs core.
 
-Hi Jan,
-
-On Wed, Aug 17, 2011 at 03:41:12AM +0800, Jan Kara wrote:
->   Hello Fengguang,
-> 
->   this patch is much easier to read than in older versions! Good work!
-
-Thank you :)
-
-> > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
-> > +					unsigned long thresh,
-> > +					unsigned long bg_thresh,
-> > +					unsigned long dirty,
-> > +					unsigned long bdi_thresh,
-> > +					unsigned long bdi_dirty)
-> > +{
-> > +	unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
-> > +	unsigned long limit = hard_dirty_limit(thresh);
-> > +	unsigned long x_intercept;
-> > +	unsigned long setpoint;		/* the target balance point */
-> > +	unsigned long span;
-> > +	long long pos_ratio;		/* for scaling up/down the rate limit */
-> > +	long x;
-> > +
-> > +	if (unlikely(dirty >= limit))
-> > +		return 0;
-> > +
-> > +	/*
-> > +	 * global setpoint
-> > +	 *
-> > +	 *                         setpoint - dirty 3
-> > +	 *        f(dirty) := 1 + (----------------)
-> > +	 *                         limit - setpoint
-> > +	 *
-> > +	 * it's a 3rd order polynomial that subjects to
-> > +	 *
-> > +	 * (1) f(freerun)  = 2.0 => rampup base_rate reasonably fast
-> > +	 * (2) f(setpoint) = 1.0 => the balance point
-> > +	 * (3) f(limit)    = 0   => the hard limit
-> > +	 * (4) df/dx       < 0	 => negative feedback control
-> > +	 * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
-> > +	 *     => fast response on large errors; small oscillation near setpoint
-> > +	 */
-> > +	setpoint = (freerun + limit) / 2;
-> > +	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
-> > +		    limit - setpoint + 1);
-> > +	pos_ratio = x;
-> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> > +	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
-> > +
-> > +	/*
-> > +	 * bdi setpoint
-> > +	 *
-> > +	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
-> > +	 *
-> > +	 * The main bdi control line is a linear function that subjects to
-> > +	 *
-> > +	 * (1) f(setpoint) = 1.0
-> > +	 * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
-> > +	 *     or equally: x_intercept = setpoint + 8 * write_bw
-> > +	 *
-> > +	 * For single bdi case, the dirty pages are observed to fluctuate
-> > +	 * regularly within range
-> > +	 *        [setpoint - write_bw/2, setpoint + write_bw/2]
-> > +	 * for various filesystems, where (2) can yield in a reasonable 12.5%
-> > +	 * fluctuation range for pos_ratio.
-> > +	 *
-> > +	 * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
-> > +	 * own size, so move the slope over accordingly.
-> > +	 */
-> > +	if (unlikely(bdi_thresh > thresh))
-> > +		bdi_thresh = thresh;
-> > +	/*
-> > +	 * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
-> > +	 */
-> > +	x = div_u64((u64)bdi_thresh << 16, thresh | 1);
-> > +	setpoint = setpoint * (u64)x >> 16;
-> > +	/*
-> > +	 * Use span=(4*write_bw) in single bdi case as indicated by
-> > +	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
-> > +	 */
-> > +	span = div_u64((u64)bdi_thresh * (thresh - bdi_thresh) +
-> > +		       (u64)(4 * bdi->avg_write_bandwidth) * bdi_thresh,
-> > +		       thresh + 1);
->   I think you can slightly simplify this to:
-> (thresh - bdi_thresh + 4 * bdi->avg_write_bandwidth) * (u64)x >> 16;
-
-Good idea!
-
-> > +	x_intercept = setpoint + 2 * span;
->   What if x_intercept >  bdi_thresh? Since 8*bdi->avg_write_bandwidth is
-> easily 500 MB, that happens quite often I imagine?
-
-That's fine because I no longer target "bdi_thresh" as some limiting
-factor as the global "thresh". Due to it being unstable in small
-memory JBOD systems, which is the big and unique problem in JBOD.
-
-> > +
-> > +	if (unlikely(bdi_dirty > setpoint + span)) {
-> > +		if (unlikely(bdi_dirty > limit))
-> > +			return 0;
->   Shouldn't this be bdi_thresh instead of limit? I understand this is a
-> hard limit but with more bdis this condition is rather weak and almost
-> never true.
-
-Yeah, I mean @limit. @bdi_thresh is made weak in IO-less
-balance_dirty_pages() in order to get reasonable smooth dirty rate in
-the face of a fluctuating @bdi_thresh.
-
-The tradeoff is to let bdi dirty pages fluctuate more or less freely,
-as long as they don't drop low and risk IO queue underflow. The
-attached patch tries to prevent the underflow (which is good but not
-perfect).
-
-> > +		if (x_intercept < limit) {
-> > +			x_intercept = limit;	/* auxiliary control line */
-> > +			setpoint += span;
-> > +			pos_ratio >>= 1;
-> > +		}
->   And here you stretch the control area upto the global dirty limit. I
-> understand you maybe don't want to be really strict and cut control area at
-> bdi_thresh but your choice looks like too benevolent - when you have
-> several active bdi's with different speeds this will effectively erase
-> difference between them, won't it? E.g. with 10 bdi's (x_intercept -
-> bdi_dirty) / (x_intercept - setpoint) is going to be close to 1 unless
-> bdi_dirty really heavily exceeds bdi_thresh.
-
-Yes the auxiliary control line could be very flat (small slope).
-
-However it's not normal for the bdi dirty pages to fall into the
-range of auxiliary control line at all. And once it takes effect, 
-the pos_ratio is at most 0.5 (which is the value at the connection
-point with the main bdi control line) which is strong enough to pull
-the dirty pages off the auxiliary bdi control line and into the scope
-of main bdi control line.
-
-The auxiliary control line is intended for bringing down the bdi_dirty
-of the USB key before 250s (where the "pos bandwidth" line keeps low): 
-
-http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/1UKEY+1HDD-3G/ext4-4dd-1M-8p-2945M-20%25-2.6.38-rc5-dt6+-2011-02-22-09-46/balance_dirty_pages-pages.png
-
-After that the bdi_dirty will fluctuate around bdi_thresh and won't
-grow high and step into the scope of the auxiliary control line.
-
-> So wouldn't it be better to
-> just make sure control area is reasonably large (e.g. at least 16 MB) to
-> allow BDI to ramp up it's bdi_thresh but don't extend it upto global dirty
-> limit?
-
-In order to take bdi_thresh as some semi-strict limit, we need to make
-it very stable at first..otherwise the whole control system may fluctuate
-violently.
-
-Thanks,
-Fengguang
-
-> > +	}
-> > +	pos_ratio *= x_intercept - bdi_dirty;
-> > +	do_div(pos_ratio, x_intercept - setpoint + 1);
-> > +
-> > +	return pos_ratio;
-> > +}
-> > +
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=bdi-reserve-area
-
-Subject: writeback: dirty position control - bdi reserve area
-Date: Thu Aug 04 22:16:46 CST 2011
-
-Keep a minimal pool of dirty pages for each bdi, so that the disk IO
-queues won't underrun.
-
-It's particularly useful for JBOD and small memory system.
-
-XXX:
-When memory is small (in comparison to write bandwidth), this control
-line may result in (pos_ratio > 1) at the setpoint and push the dirty
-pages high. This is more or less intended because the bdi is in the
-danger of IO queue underflow. However the global dirty pages, when
-pushed close to limit, will eventually conteract our desire to push up
-the low bdi_dirty. In low memory JBOD tests we do see disks
-under-utilized from time to time.
-
-One scheme that may completely fix this is to add a BDI_queue_empty to
-indicate the block IO queue emptiness (but still there may be in flight
-IOs on the driver/hardware side) and to unthrottle the tasks regardless
-of the global limit on seeing BDI_queue_empty.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 ---
- mm/page-writeback.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ arch/arm/plat-omap/include/plat/usb.h |    3 -
+ drivers/mfd/omap-usb-host.c           |  731 +++++++++++++--------------------
+ drivers/usb/host/ehci-omap.c          |   17 +-
+ drivers/usb/host/ohci-omap3.c         |   18 +-
+ 4 files changed, 295 insertions(+), 474 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-08-16 09:06:46.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-16 09:06:50.000000000 +0800
-@@ -488,6 +488,16 @@ unsigned long bdi_dirty_limit(struct bac
-  *   0 +------------.------------------.----------------------*------------->
-  *           freerun^          setpoint^                 limit^   dirty pages
-  *
-+ * (o) bdi reserve area
-+ *
-+ * The bdi reserve area tries to keep a reasonable number of dirty pages for
-+ * preventing block queue underrun.
-+ *
-+ * reserve area, scale up rate as dirty pages drop low
-+ * |<----------------------------------------------->|
-+ * |-------------------------------------------------------*-------|----------
-+ * 0                                           bdi setpoint^       ^bdi_thresh
-+ *
-  * (o) bdi control lines
-  *
-  * The control lines for the global/bdi setpoints both stretch up to @limit.
-@@ -571,6 +581,19 @@ static unsigned long bdi_position_ratio(
- 	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+diff --git a/arch/arm/plat-omap/include/plat/usb.h b/arch/arm/plat-omap/include/plat/usb.h
+index 17d3c93..2b66dc2 100644
+--- a/arch/arm/plat-omap/include/plat/usb.h
++++ b/arch/arm/plat-omap/include/plat/usb.h
+@@ -100,9 +100,6 @@ extern void usb_musb_init(struct omap_musb_board_data *board_data);
  
- 	/*
-+	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
-+	 */
-+	x_intercept = min(bdi->avg_write_bandwidth + 2 * MIN_WRITEBACK_PAGES,
-+			  freerun);
-+	if (bdi_dirty < x_intercept) {
-+		if (bdi_dirty > x_intercept / 8) {
-+			pos_ratio *= x_intercept;
-+			do_div(pos_ratio, bdi_dirty);
-+		} else
-+			pos_ratio *= 8;
+ extern void usbhs_init(const struct usbhs_omap_board_data *pdata);
+ 
+-extern int omap_usbhs_enable(struct device *dev);
+-extern void omap_usbhs_disable(struct device *dev);
+-
+ extern int omap4430_phy_power(struct device *dev, int ID, int on);
+ extern int omap4430_phy_set_clk(struct device *dev, int on);
+ extern int omap4430_phy_init(struct device *dev);
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 5def51c..0801f3e 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -26,6 +26,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/gpio.h>
+ #include <plat/usb.h>
++#include <linux/pm_runtime.h>
+ 
+ #define USBHS_DRIVER_NAME	"usbhs_omap"
+ #define OMAP_EHCI_DEVICE	"ehci-omap"
+@@ -146,9 +147,6 @@
+ 
+ 
+ struct usbhs_hcd_omap {
+-	struct clk			*usbhost_ick;
+-	struct clk			*usbhost_hs_fck;
+-	struct clk			*usbhost_fs_fck;
+ 	struct clk			*xclk60mhsp1_ck;
+ 	struct clk			*xclk60mhsp2_ck;
+ 	struct clk			*utmi_p1_fck;
+@@ -158,8 +156,6 @@ struct usbhs_hcd_omap {
+ 	struct clk			*usbhost_p2_fck;
+ 	struct clk			*usbtll_p2_fck;
+ 	struct clk			*init_60m_fclk;
+-	struct clk			*usbtll_fck;
+-	struct clk			*usbtll_ick;
+ 
+ 	void __iomem			*uhh_base;
+ 	void __iomem			*tll_base;
+@@ -168,7 +164,6 @@ struct usbhs_hcd_omap {
+ 
+ 	u32				usbhs_rev;
+ 	spinlock_t			lock;
+-	int				count;
+ };
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -318,269 +313,6 @@ err_end:
+ 	return ret;
+ }
+ 
+-/**
+- * usbhs_omap_probe - initialize TI-based HCDs
+- *
+- * Allocates basic resources for this USB host controller.
+- */
+-static int __devinit usbhs_omap_probe(struct platform_device *pdev)
+-{
+-	struct device			*dev =  &pdev->dev;
+-	struct usbhs_omap_platform_data	*pdata = dev->platform_data;
+-	struct usbhs_hcd_omap		*omap;
+-	struct resource			*res;
+-	int				ret = 0;
+-	int				i;
+-
+-	if (!pdata) {
+-		dev_err(dev, "Missing platform data\n");
+-		ret = -ENOMEM;
+-		goto end_probe;
+-	}
+-
+-	omap = kzalloc(sizeof(*omap), GFP_KERNEL);
+-	if (!omap) {
+-		dev_err(dev, "Memory allocation failed\n");
+-		ret = -ENOMEM;
+-		goto end_probe;
+-	}
+-
+-	spin_lock_init(&omap->lock);
+-
+-	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
+-		omap->platdata.port_mode[i] = pdata->port_mode[i];
+-
+-	omap->platdata.ehci_data = pdata->ehci_data;
+-	omap->platdata.ohci_data = pdata->ohci_data;
+-
+-	omap->usbhost_ick = clk_get(dev, "usbhost_ick");
+-	if (IS_ERR(omap->usbhost_ick)) {
+-		ret =  PTR_ERR(omap->usbhost_ick);
+-		dev_err(dev, "usbhost_ick failed error:%d\n", ret);
+-		goto err_end;
+-	}
+-
+-	omap->usbhost_hs_fck = clk_get(dev, "hs_fck");
+-	if (IS_ERR(omap->usbhost_hs_fck)) {
+-		ret = PTR_ERR(omap->usbhost_hs_fck);
+-		dev_err(dev, "usbhost_hs_fck failed error:%d\n", ret);
+-		goto err_usbhost_ick;
+-	}
+-
+-	omap->usbhost_fs_fck = clk_get(dev, "fs_fck");
+-	if (IS_ERR(omap->usbhost_fs_fck)) {
+-		ret = PTR_ERR(omap->usbhost_fs_fck);
+-		dev_err(dev, "usbhost_fs_fck failed error:%d\n", ret);
+-		goto err_usbhost_hs_fck;
+-	}
+-
+-	omap->usbtll_fck = clk_get(dev, "usbtll_fck");
+-	if (IS_ERR(omap->usbtll_fck)) {
+-		ret = PTR_ERR(omap->usbtll_fck);
+-		dev_err(dev, "usbtll_fck failed error:%d\n", ret);
+-		goto err_usbhost_fs_fck;
+-	}
+-
+-	omap->usbtll_ick = clk_get(dev, "usbtll_ick");
+-	if (IS_ERR(omap->usbtll_ick)) {
+-		ret = PTR_ERR(omap->usbtll_ick);
+-		dev_err(dev, "usbtll_ick failed error:%d\n", ret);
+-		goto err_usbtll_fck;
+-	}
+-
+-	omap->utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
+-	if (IS_ERR(omap->utmi_p1_fck)) {
+-		ret = PTR_ERR(omap->utmi_p1_fck);
+-		dev_err(dev, "utmi_p1_gfclk failed error:%d\n",	ret);
+-		goto err_usbtll_ick;
+-	}
+-
+-	omap->xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
+-	if (IS_ERR(omap->xclk60mhsp1_ck)) {
+-		ret = PTR_ERR(omap->xclk60mhsp1_ck);
+-		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
+-		goto err_utmi_p1_fck;
+-	}
+-
+-	omap->utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
+-	if (IS_ERR(omap->utmi_p2_fck)) {
+-		ret = PTR_ERR(omap->utmi_p2_fck);
+-		dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
+-		goto err_xclk60mhsp1_ck;
+-	}
+-
+-	omap->xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
+-	if (IS_ERR(omap->xclk60mhsp2_ck)) {
+-		ret = PTR_ERR(omap->xclk60mhsp2_ck);
+-		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
+-		goto err_utmi_p2_fck;
+-	}
+-
+-	omap->usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
+-	if (IS_ERR(omap->usbhost_p1_fck)) {
+-		ret = PTR_ERR(omap->usbhost_p1_fck);
+-		dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
+-		goto err_xclk60mhsp2_ck;
+-	}
+-
+-	omap->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
+-	if (IS_ERR(omap->usbtll_p1_fck)) {
+-		ret = PTR_ERR(omap->usbtll_p1_fck);
+-		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		goto err_usbhost_p1_fck;
+-	}
+-
+-	omap->usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
+-	if (IS_ERR(omap->usbhost_p2_fck)) {
+-		ret = PTR_ERR(omap->usbhost_p2_fck);
+-		dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
+-		goto err_usbtll_p1_fck;
+-	}
+-
+-	omap->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+-	if (IS_ERR(omap->usbtll_p2_fck)) {
+-		ret = PTR_ERR(omap->usbtll_p2_fck);
+-		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_usbhost_p2_fck;
+-	}
+-
+-	omap->init_60m_fclk = clk_get(dev, "init_60m_fclk");
+-	if (IS_ERR(omap->init_60m_fclk)) {
+-		ret = PTR_ERR(omap->init_60m_fclk);
+-		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
+-		goto err_usbtll_p2_fck;
+-	}
+-
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
+-	if (!res) {
+-		dev_err(dev, "UHH EHCI get resource failed\n");
+-		ret = -ENODEV;
+-		goto err_init_60m_fclk;
+-	}
+-
+-	omap->uhh_base = ioremap(res->start, resource_size(res));
+-	if (!omap->uhh_base) {
+-		dev_err(dev, "UHH ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err_init_60m_fclk;
+-	}
+-
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tll");
+-	if (!res) {
+-		dev_err(dev, "UHH EHCI get resource failed\n");
+-		ret = -ENODEV;
+-		goto err_tll;
+-	}
+-
+-	omap->tll_base = ioremap(res->start, resource_size(res));
+-	if (!omap->tll_base) {
+-		dev_err(dev, "TLL ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err_tll;
+-	}
+-
+-	platform_set_drvdata(pdev, omap);
+-
+-	ret = omap_usbhs_alloc_children(pdev);
+-	if (ret) {
+-		dev_err(dev, "omap_usbhs_alloc_children failed\n");
+-		goto err_alloc;
+-	}
+-
+-	goto end_probe;
+-
+-err_alloc:
+-	iounmap(omap->tll_base);
+-
+-err_tll:
+-	iounmap(omap->uhh_base);
+-
+-err_init_60m_fclk:
+-	clk_put(omap->init_60m_fclk);
+-
+-err_usbtll_p2_fck:
+-	clk_put(omap->usbtll_p2_fck);
+-
+-err_usbhost_p2_fck:
+-	clk_put(omap->usbhost_p2_fck);
+-
+-err_usbtll_p1_fck:
+-	clk_put(omap->usbtll_p1_fck);
+-
+-err_usbhost_p1_fck:
+-	clk_put(omap->usbhost_p1_fck);
+-
+-err_xclk60mhsp2_ck:
+-	clk_put(omap->xclk60mhsp2_ck);
+-
+-err_utmi_p2_fck:
+-	clk_put(omap->utmi_p2_fck);
+-
+-err_xclk60mhsp1_ck:
+-	clk_put(omap->xclk60mhsp1_ck);
+-
+-err_utmi_p1_fck:
+-	clk_put(omap->utmi_p1_fck);
+-
+-err_usbtll_ick:
+-	clk_put(omap->usbtll_ick);
+-
+-err_usbtll_fck:
+-	clk_put(omap->usbtll_fck);
+-
+-err_usbhost_fs_fck:
+-	clk_put(omap->usbhost_fs_fck);
+-
+-err_usbhost_hs_fck:
+-	clk_put(omap->usbhost_hs_fck);
+-
+-err_usbhost_ick:
+-	clk_put(omap->usbhost_ick);
+-
+-err_end:
+-	kfree(omap);
+-
+-end_probe:
+-	return ret;
+-}
+-
+-/**
+- * usbhs_omap_remove - shutdown processing for UHH & TLL HCDs
+- * @pdev: USB Host Controller being removed
+- *
+- * Reverses the effect of usbhs_omap_probe().
+- */
+-static int __devexit usbhs_omap_remove(struct platform_device *pdev)
+-{
+-	struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
+-
+-	if (omap->count != 0) {
+-		dev_err(&pdev->dev,
+-			"Either EHCI or OHCI is still using usbhs core\n");
+-		return -EBUSY;
+-	}
+-
+-	iounmap(omap->tll_base);
+-	iounmap(omap->uhh_base);
+-	clk_put(omap->init_60m_fclk);
+-	clk_put(omap->usbtll_p2_fck);
+-	clk_put(omap->usbhost_p2_fck);
+-	clk_put(omap->usbtll_p1_fck);
+-	clk_put(omap->usbhost_p1_fck);
+-	clk_put(omap->xclk60mhsp2_ck);
+-	clk_put(omap->utmi_p2_fck);
+-	clk_put(omap->xclk60mhsp1_ck);
+-	clk_put(omap->utmi_p1_fck);
+-	clk_put(omap->usbtll_ick);
+-	clk_put(omap->usbtll_fck);
+-	clk_put(omap->usbhost_fs_fck);
+-	clk_put(omap->usbhost_hs_fck);
+-	clk_put(omap->usbhost_ick);
+-	kfree(omap);
+-
+-	return 0;
+-}
+-
+ static bool is_ohci_port(enum usbhs_omap_port_mode pmode)
+ {
+ 	switch (pmode) {
+@@ -689,30 +421,79 @@ static void usbhs_omap_tll_init(struct device *dev, u8 tll_channel_count)
+ 	}
+ }
+ 
+-static int usbhs_enable(struct device *dev)
++static int usbhs_runtime_resume(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
+-	unsigned long			flags = 0;
+-	int				ret = 0;
+-	unsigned long			timeout;
+-	unsigned			reg;
++	unsigned long			flags;
++
++	dev_dbg(dev, "usbhs_runtime_resume\n");
++
++	if (!pdata) {
++		dev_dbg(dev, "missing platform_data\n");
++		return  -ENODEV;
 +	}
 +
-+	/*
- 	 * bdi setpoint
- 	 *
- 	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
++	spin_lock_irqsave(&omap->lock, flags);
++
++	if (is_ehci_tll_mode(pdata->port_mode[0])) {
++		clk_enable(omap->usbhost_p1_fck);
++		clk_enable(omap->usbtll_p1_fck);
++	}
++	if (is_ehci_tll_mode(pdata->port_mode[1])) {
++		clk_enable(omap->usbhost_p2_fck);
++		clk_enable(omap->usbtll_p2_fck);
++	}
++	clk_enable(omap->utmi_p1_fck);
++	clk_enable(omap->utmi_p2_fck);
++
++	spin_unlock_irqrestore(&omap->lock, flags);
++
++	return 0;
++}
++
++static int usbhs_runtime_suspend(struct device *dev)
++{
++	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
++	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	unsigned long			flags;
++
++	dev_dbg(dev, "usbhs_runtime_suspend\n");
+ 
+-	dev_dbg(dev, "starting TI HSUSB Controller\n");
+ 	if (!pdata) {
+ 		dev_dbg(dev, "missing platform_data\n");
+ 		return  -ENODEV;
+ 	}
+ 
+ 	spin_lock_irqsave(&omap->lock, flags);
+-	if (omap->count > 0)
+-		goto end_count;
+ 
+-	clk_enable(omap->usbhost_ick);
+-	clk_enable(omap->usbhost_hs_fck);
+-	clk_enable(omap->usbhost_fs_fck);
+-	clk_enable(omap->usbtll_fck);
+-	clk_enable(omap->usbtll_ick);
++	if (is_ehci_tll_mode(pdata->port_mode[0])) {
++		clk_disable(omap->usbhost_p1_fck);
++		clk_disable(omap->usbtll_p1_fck);
++	}
++	if (is_ehci_tll_mode(pdata->port_mode[1])) {
++		clk_disable(omap->usbhost_p2_fck);
++		clk_disable(omap->usbtll_p2_fck);
++	}
++	clk_disable(omap->utmi_p2_fck);
++	clk_disable(omap->utmi_p1_fck);
++
++	spin_unlock_irqrestore(&omap->lock, flags);
++
++	return 0;
++}
++
++static void omap_usbhs_init(struct device *dev)
++{
++	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
++	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
++	unsigned long			flags;
++	unsigned			reg;
++
++	dev_dbg(dev, "starting TI HSUSB Controller\n");
++
++	pm_runtime_get_sync(dev);
++	spin_lock_irqsave(&omap->lock, flags);
+ 
+ 	if (pdata->ehci_data->phy_reset) {
+ 		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0])) {
+@@ -736,50 +517,6 @@ static int usbhs_enable(struct device *dev)
+ 	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+ 	dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
+ 
+-	/* perform TLL soft reset, and wait until reset is complete */
+-	usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+-			OMAP_USBTLL_SYSCONFIG_SOFTRESET);
+-
+-	/* Wait for TLL reset to complete */
+-	timeout = jiffies + msecs_to_jiffies(1000);
+-	while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
+-			& OMAP_USBTLL_SYSSTATUS_RESETDONE)) {
+-		cpu_relax();
+-
+-		if (time_after(jiffies, timeout)) {
+-			dev_dbg(dev, "operation timed out\n");
+-			ret = -EINVAL;
+-			goto err_tll;
+-		}
+-	}
+-
+-	dev_dbg(dev, "TLL RESET DONE\n");
+-
+-	/* (1<<3) = no idle mode only for initial debugging */
+-	usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+-			OMAP_USBTLL_SYSCONFIG_ENAWAKEUP |
+-			OMAP_USBTLL_SYSCONFIG_SIDLEMODE |
+-			OMAP_USBTLL_SYSCONFIG_AUTOIDLE);
+-
+-	/* Put UHH in NoIdle/NoStandby mode */
+-	reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
+-	if (is_omap_usbhs_rev1(omap)) {
+-		reg |= (OMAP_UHH_SYSCONFIG_ENAWAKEUP
+-				| OMAP_UHH_SYSCONFIG_SIDLEMODE
+-				| OMAP_UHH_SYSCONFIG_CACTIVITY
+-				| OMAP_UHH_SYSCONFIG_MIDLEMODE);
+-		reg &= ~OMAP_UHH_SYSCONFIG_AUTOIDLE;
+-
+-
+-	} else if (is_omap_usbhs_rev2(omap)) {
+-		reg &= ~OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR;
+-		reg |= OMAP4_UHH_SYSCONFIG_NOIDLE;
+-		reg &= ~OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR;
+-		reg |= OMAP4_UHH_SYSCONFIG_NOSTDBY;
+-	}
+-
+-	usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
+-
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+ 	/* setup ULPI bypass and burst configurations */
+ 	reg |= (OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN
+@@ -825,49 +562,6 @@ static int usbhs_enable(struct device *dev)
+ 		reg &= ~OMAP4_P1_MODE_CLEAR;
+ 		reg &= ~OMAP4_P2_MODE_CLEAR;
+ 
+-		if (is_ehci_phy_mode(pdata->port_mode[0])) {
+-			ret = clk_set_parent(omap->utmi_p1_fck,
+-						omap->xclk60mhsp1_ck);
+-			if (ret != 0) {
+-				dev_err(dev, "xclk60mhsp1_ck set parent"
+-				"failed error:%d\n", ret);
+-				goto err_tll;
+-			}
+-		} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
+-			ret = clk_set_parent(omap->utmi_p1_fck,
+-						omap->init_60m_fclk);
+-			if (ret != 0) {
+-				dev_err(dev, "init_60m_fclk set parent"
+-				"failed error:%d\n", ret);
+-				goto err_tll;
+-			}
+-			clk_enable(omap->usbhost_p1_fck);
+-			clk_enable(omap->usbtll_p1_fck);
+-		}
+-
+-		if (is_ehci_phy_mode(pdata->port_mode[1])) {
+-			ret = clk_set_parent(omap->utmi_p2_fck,
+-						omap->xclk60mhsp2_ck);
+-			if (ret != 0) {
+-				dev_err(dev, "xclk60mhsp1_ck set parent"
+-					"failed error:%d\n", ret);
+-				goto err_tll;
+-			}
+-		} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
+-			ret = clk_set_parent(omap->utmi_p2_fck,
+-						omap->init_60m_fclk);
+-			if (ret != 0) {
+-				dev_err(dev, "init_60m_fclk set parent"
+-				"failed error:%d\n", ret);
+-				goto err_tll;
+-			}
+-			clk_enable(omap->usbhost_p2_fck);
+-			clk_enable(omap->usbtll_p2_fck);
+-		}
+-
+-		clk_enable(omap->utmi_p1_fck);
+-		clk_enable(omap->utmi_p2_fck);
+-
+ 		if (is_ehci_tll_mode(pdata->port_mode[0]) ||
+ 			(is_ohci_port(pdata->port_mode[0])))
+ 			reg |= OMAP4_P1_MODE_TLL;
+@@ -913,12 +607,15 @@ static int usbhs_enable(struct device *dev)
+ 				(pdata->ehci_data->reset_gpio_port[1], 1);
+ 	}
+ 
+-end_count:
+-	omap->count++;
+ 	spin_unlock_irqrestore(&omap->lock, flags);
+-	return 0;
++	pm_runtime_put_sync(dev);
++}
++
++static void omap_usbhs_deinit(struct device *dev)
++{
++	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
++	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
+ 
+-err_tll:
+ 	if (pdata->ehci_data->phy_reset) {
+ 		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+ 			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
+@@ -926,123 +623,257 @@ err_tll:
+ 		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+ 			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
+ 	}
+-
+-	clk_disable(omap->usbtll_ick);
+-	clk_disable(omap->usbtll_fck);
+-	clk_disable(omap->usbhost_fs_fck);
+-	clk_disable(omap->usbhost_hs_fck);
+-	clk_disable(omap->usbhost_ick);
+-	spin_unlock_irqrestore(&omap->lock, flags);
+-	return ret;
+ }
+ 
+-static void usbhs_disable(struct device *dev)
++
++/**
++ * usbhs_omap_probe - initialize TI-based HCDs
++ *
++ * Allocates basic resources for this USB host controller.
++ */
++static int __devinit usbhs_omap_probe(struct platform_device *pdev)
+ {
+-	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
+-	unsigned long			flags = 0;
+-	unsigned long			timeout;
++	struct device			*dev =  &pdev->dev;
++	struct usbhs_omap_platform_data	*pdata = dev->platform_data;
++	struct usbhs_hcd_omap		*omap;
++	struct resource			*res;
++	int				ret = 0;
++	int				i;
+ 
+-	dev_dbg(dev, "stopping TI HSUSB Controller\n");
++	if (!pdata) {
++		dev_err(dev, "Missing platform data\n");
++		ret = -ENOMEM;
++		goto end_probe;
++	}
+ 
+-	spin_lock_irqsave(&omap->lock, flags);
++	omap = kzalloc(sizeof(*omap), GFP_KERNEL);
++	if (!omap) {
++		dev_err(dev, "Memory allocation failed\n");
++		ret = -ENOMEM;
++		goto end_probe;
++	}
+ 
+-	if (omap->count == 0)
+-		goto end_disble;
++	spin_lock_init(&omap->lock);
+ 
+-	omap->count--;
++	for (i = 0; i < OMAP3_HS_USB_PORTS; i++)
++		omap->platdata.port_mode[i] = pdata->port_mode[i];
+ 
+-	if (omap->count != 0)
+-		goto end_disble;
++	omap->platdata.ehci_data = pdata->ehci_data;
++	omap->platdata.ohci_data = pdata->ohci_data;
+ 
+-	/* Reset OMAP modules for insmod/rmmod to work */
+-	usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG,
+-			is_omap_usbhs_rev2(omap) ?
+-			OMAP4_UHH_SYSCONFIG_SOFTRESET :
+-			OMAP_UHH_SYSCONFIG_SOFTRESET);
++	pm_runtime_enable(dev);
+ 
+-	timeout = jiffies + msecs_to_jiffies(100);
+-	while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+-				& (1 << 0))) {
+-		cpu_relax();
++	omap->utmi_p1_fck = clk_get(dev, "utmi_p1_gfclk");
++	if (IS_ERR(omap->utmi_p1_fck)) {
++		ret = PTR_ERR(omap->utmi_p1_fck);
++		dev_err(dev, "utmi_p1_gfclk failed error:%d\n",	ret);
++		goto err_end;
++	}
+ 
+-		if (time_after(jiffies, timeout))
+-			dev_dbg(dev, "operation timed out\n");
++	omap->xclk60mhsp1_ck = clk_get(dev, "xclk60mhsp1_ck");
++	if (IS_ERR(omap->xclk60mhsp1_ck)) {
++		ret = PTR_ERR(omap->xclk60mhsp1_ck);
++		dev_err(dev, "xclk60mhsp1_ck failed error:%d\n", ret);
++		goto err_utmi_p1_fck;
++	}
++
++	omap->utmi_p2_fck = clk_get(dev, "utmi_p2_gfclk");
++	if (IS_ERR(omap->utmi_p2_fck)) {
++		ret = PTR_ERR(omap->utmi_p2_fck);
++		dev_err(dev, "utmi_p2_gfclk failed error:%d\n", ret);
++		goto err_xclk60mhsp1_ck;
++	}
++
++	omap->xclk60mhsp2_ck = clk_get(dev, "xclk60mhsp2_ck");
++	if (IS_ERR(omap->xclk60mhsp2_ck)) {
++		ret = PTR_ERR(omap->xclk60mhsp2_ck);
++		dev_err(dev, "xclk60mhsp2_ck failed error:%d\n", ret);
++		goto err_utmi_p2_fck;
+ 	}
+ 
+-	while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+-				& (1 << 1))) {
+-		cpu_relax();
++	omap->usbhost_p1_fck = clk_get(dev, "usb_host_hs_utmi_p1_clk");
++	if (IS_ERR(omap->usbhost_p1_fck)) {
++		ret = PTR_ERR(omap->usbhost_p1_fck);
++		dev_err(dev, "usbhost_p1_fck failed error:%d\n", ret);
++		goto err_xclk60mhsp2_ck;
++	}
+ 
+-		if (time_after(jiffies, timeout))
+-			dev_dbg(dev, "operation timed out\n");
++	omap->usbtll_p1_fck = clk_get(dev, "usb_tll_hs_usb_ch0_clk");
++	if (IS_ERR(omap->usbtll_p1_fck)) {
++		ret = PTR_ERR(omap->usbtll_p1_fck);
++		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
++		goto err_usbhost_p1_fck;
++	}
++
++	omap->usbhost_p2_fck = clk_get(dev, "usb_host_hs_utmi_p2_clk");
++	if (IS_ERR(omap->usbhost_p2_fck)) {
++		ret = PTR_ERR(omap->usbhost_p2_fck);
++		dev_err(dev, "usbhost_p2_fck failed error:%d\n", ret);
++		goto err_usbtll_p1_fck;
+ 	}
+ 
+-	while (!(usbhs_read(omap->uhh_base, OMAP_UHH_SYSSTATUS)
+-				& (1 << 2))) {
+-		cpu_relax();
++	omap->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
++	if (IS_ERR(omap->usbtll_p2_fck)) {
++		ret = PTR_ERR(omap->usbtll_p2_fck);
++		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
++		goto err_usbhost_p2_fck;
++	}
+ 
+-		if (time_after(jiffies, timeout))
+-			dev_dbg(dev, "operation timed out\n");
++	omap->init_60m_fclk = clk_get(dev, "init_60m_fclk");
++	if (IS_ERR(omap->init_60m_fclk)) {
++		ret = PTR_ERR(omap->init_60m_fclk);
++		dev_err(dev, "init_60m_fclk failed error:%d\n", ret);
++		goto err_usbtll_p2_fck;
+ 	}
+ 
+-	usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG, (1 << 1));
++	if (is_ehci_phy_mode(pdata->port_mode[0])) {
++		/* for OMAP3 , the clk set paretn fails */
++		ret = clk_set_parent(omap->utmi_p1_fck,
++					omap->xclk60mhsp1_ck);
++		if (ret != 0)
++			dev_err(dev, "xclk60mhsp1_ck set parent"
++				"failed error:%d\n", ret);
++	} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
++		ret = clk_set_parent(omap->utmi_p1_fck,
++					omap->init_60m_fclk);
++		if (ret != 0)
++			dev_err(dev, "init_60m_fclk set parent"
++				"failed error:%d\n", ret);
++	}
+ 
+-	while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
+-				& (1 << 0))) {
+-		cpu_relax();
++	if (is_ehci_phy_mode(pdata->port_mode[1])) {
++		ret = clk_set_parent(omap->utmi_p2_fck,
++					omap->xclk60mhsp2_ck);
++		if (ret != 0)
++			dev_err(dev, "xclk60mhsp2_ck set parent"
++					"failed error:%d\n", ret);
++	} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
++		ret = clk_set_parent(omap->utmi_p2_fck,
++						omap->init_60m_fclk);
++		if (ret != 0)
++			dev_err(dev, "init_60m_fclk set parent"
++				"failed error:%d\n", ret);
++	}
+ 
+-		if (time_after(jiffies, timeout))
+-			dev_dbg(dev, "operation timed out\n");
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
++	if (!res) {
++		dev_err(dev, "UHH EHCI get resource failed\n");
++		ret = -ENODEV;
++		goto err_init_60m_fclk;
+ 	}
+ 
+-	if (is_omap_usbhs_rev2(omap)) {
+-		if (is_ehci_tll_mode(pdata->port_mode[0]))
+-			clk_disable(omap->usbtll_p1_fck);
+-		if (is_ehci_tll_mode(pdata->port_mode[1]))
+-			clk_disable(omap->usbtll_p2_fck);
+-		clk_disable(omap->utmi_p2_fck);
+-		clk_disable(omap->utmi_p1_fck);
++	omap->uhh_base = ioremap(res->start, resource_size(res));
++	if (!omap->uhh_base) {
++		dev_err(dev, "UHH ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_init_60m_fclk;
+ 	}
+ 
+-	clk_disable(omap->usbtll_ick);
+-	clk_disable(omap->usbtll_fck);
+-	clk_disable(omap->usbhost_fs_fck);
+-	clk_disable(omap->usbhost_hs_fck);
+-	clk_disable(omap->usbhost_ick);
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "tll");
++	if (!res) {
++		dev_err(dev, "UHH EHCI get resource failed\n");
++		ret = -ENODEV;
++		goto err_tll;
++	}
+ 
+-	/* The gpio_free migh sleep; so unlock the spinlock */
+-	spin_unlock_irqrestore(&omap->lock, flags);
++	omap->tll_base = ioremap(res->start, resource_size(res));
++	if (!omap->tll_base) {
++		dev_err(dev, "TLL ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_tll;
++	}
+ 
+-	if (pdata->ehci_data->phy_reset) {
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+-			gpio_free(pdata->ehci_data->reset_gpio_port[0]);
++	platform_set_drvdata(pdev, omap);
+ 
+-		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+-			gpio_free(pdata->ehci_data->reset_gpio_port[1]);
++	ret = omap_usbhs_alloc_children(pdev);
++	if (ret) {
++		dev_err(dev, "omap_usbhs_alloc_children failed\n");
++		goto err_alloc;
+ 	}
+-	return;
+ 
+-end_disble:
+-	spin_unlock_irqrestore(&omap->lock, flags);
+-}
++	omap_usbhs_init(dev);
+ 
+-int omap_usbhs_enable(struct device *dev)
+-{
+-	return  usbhs_enable(dev->parent);
++	goto end_probe;
++
++err_alloc:
++	iounmap(omap->tll_base);
++
++err_tll:
++	iounmap(omap->uhh_base);
++
++err_init_60m_fclk:
++	clk_put(omap->init_60m_fclk);
++
++err_usbtll_p2_fck:
++	clk_put(omap->usbtll_p2_fck);
++
++err_usbhost_p2_fck:
++	clk_put(omap->usbhost_p2_fck);
++
++err_usbtll_p1_fck:
++	clk_put(omap->usbtll_p1_fck);
++
++err_usbhost_p1_fck:
++	clk_put(omap->usbhost_p1_fck);
++
++err_xclk60mhsp2_ck:
++	clk_put(omap->xclk60mhsp2_ck);
++
++err_utmi_p2_fck:
++	clk_put(omap->utmi_p2_fck);
++
++err_xclk60mhsp1_ck:
++	clk_put(omap->xclk60mhsp1_ck);
++
++err_utmi_p1_fck:
++	clk_put(omap->utmi_p1_fck);
++
++err_end:
++	pm_runtime_disable(dev);
++	kfree(omap);
++
++end_probe:
++	return ret;
+ }
+-EXPORT_SYMBOL_GPL(omap_usbhs_enable);
+ 
+-void omap_usbhs_disable(struct device *dev)
++/**
++ * usbhs_omap_remove - shutdown processing for UHH & TLL HCDs
++ * @pdev: USB Host Controller being removed
++ *
++ * Reverses the effect of usbhs_omap_probe().
++ */
++static int __devexit usbhs_omap_remove(struct platform_device *pdev)
+ {
+-	usbhs_disable(dev->parent);
++	struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
++
++	omap_usbhs_deinit(&pdev->dev);
++	iounmap(omap->tll_base);
++	iounmap(omap->uhh_base);
++	clk_put(omap->init_60m_fclk);
++	clk_put(omap->usbtll_p2_fck);
++	clk_put(omap->usbhost_p2_fck);
++	clk_put(omap->usbtll_p1_fck);
++	clk_put(omap->usbhost_p1_fck);
++	clk_put(omap->xclk60mhsp2_ck);
++	clk_put(omap->utmi_p2_fck);
++	clk_put(omap->xclk60mhsp1_ck);
++	clk_put(omap->utmi_p1_fck);
++	pm_runtime_disable(&pdev->dev);
++	kfree(omap);
++
++	return 0;
+ }
+-EXPORT_SYMBOL_GPL(omap_usbhs_disable);
++
++static const struct dev_pm_ops usbhsomap_dev_pm_ops = {
++	.runtime_suspend	= usbhs_runtime_suspend,
++	.runtime_resume		= usbhs_runtime_resume,
++};
+ 
+ static struct platform_driver usbhs_omap_driver = {
+ 	.driver = {
+ 		.name		= (char *)usbhs_driver_name,
+ 		.owner		= THIS_MODULE,
++		.pm		= &usbhsomap_dev_pm_ops,
+ 	},
+ 	.remove		= __exit_p(usbhs_omap_remove),
+ };
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 4524032..82cd3ea 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -41,6 +41,7 @@
+ #include <linux/usb/ulpi.h>
+ #include <plat/usb.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/pm_runtime.h>
+ 
+ /* EHCI Register Set */
+ #define EHCI_INSNREG04					(0xA0)
+@@ -190,11 +191,8 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	ret = omap_usbhs_enable(dev);
+-	if (ret) {
+-		dev_err(dev, "failed to start usbhs with err %d\n", ret);
+-		goto err_enable;
+-	}
++	pm_runtime_enable(dev);
++	pm_runtime_get_sync(dev);
+ 
+ 	/*
+ 	 * An undocumented "feature" in the OMAP3 EHCI controller,
+@@ -240,11 +238,8 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_add_hcd:
+-	omap_usbhs_disable(dev);
+-
+-err_enable:
+ 	disable_put_regulator(pdata);
+-	usb_put_hcd(hcd);
++	pm_runtime_put_sync(dev);
+ 
+ err_io:
+ 	iounmap(regs);
+@@ -266,10 +261,12 @@ static int ehci_hcd_omap_remove(struct platform_device *pdev)
+ 	struct usb_hcd *hcd	= dev_get_drvdata(dev);
+ 
+ 	usb_remove_hcd(hcd);
+-	omap_usbhs_disable(dev);
+ 	disable_put_regulator(dev->platform_data);
+ 	iounmap(hcd->regs);
+ 	usb_put_hcd(hcd);
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
+index 6048f2f..6cfedaf 100644
+--- a/drivers/usb/host/ohci-omap3.c
++++ b/drivers/usb/host/ohci-omap3.c
+@@ -31,6 +31,7 @@
+ 
+ #include <linux/platform_device.h>
+ #include <plat/usb.h>
++#include <linux/pm_runtime.h>
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -134,7 +135,7 @@ static int __devinit ohci_hcd_omap3_probe(struct platform_device *pdev)
+ 	int			irq;
+ 
+ 	if (usb_disabled())
+-		goto err_end;
++		return -ENODEV;
+ 
+ 	if (!dev->parent) {
+ 		dev_err(dev, "Missing parent device\n");
+@@ -172,11 +173,8 @@ static int __devinit ohci_hcd_omap3_probe(struct platform_device *pdev)
+ 	hcd->rsrc_len = resource_size(res);
+ 	hcd->regs =  regs;
+ 
+-	ret = omap_usbhs_enable(dev);
+-	if (ret) {
+-		dev_dbg(dev, "failed to start ohci\n");
+-		goto err_end;
+-	}
++	pm_runtime_enable(dev);
++	pm_runtime_get_sync(dev);
+ 
+ 	ohci_hcd_init(hcd_to_ohci(hcd));
+ 
+@@ -189,9 +187,7 @@ static int __devinit ohci_hcd_omap3_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_add_hcd:
+-	omap_usbhs_disable(dev);
+-
+-err_end:
++	pm_runtime_put_sync(dev);
+ 	usb_put_hcd(hcd);
+ 
+ err_io:
+@@ -220,9 +216,9 @@ static int __devexit ohci_hcd_omap3_remove(struct platform_device *pdev)
+ 
+ 	iounmap(hcd->regs);
+ 	usb_remove_hcd(hcd);
+-	omap_usbhs_disable(dev);
++	pm_runtime_put_sync(dev);
++	pm_runtime_disable(dev);
+ 	usb_put_hcd(hcd);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.6.0.4
 
---d6Gm4EdcadzBjdND--
