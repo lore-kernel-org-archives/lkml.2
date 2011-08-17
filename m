@@ -1,152 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab1HQWOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 18:14:01 -0400
-Received: from lucidpixels.com ([72.73.18.11]:58461 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452Ab1HQWN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 18:13:59 -0400
-Date: Wed, 17 Aug 2011 18:13:59 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-In-Reply-To: <alpine.DEB.2.02.1108171751570.11234@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1108171813460.11234@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
- <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <alpine.DEB.2.02.1108171545190.5877@p34.internal.lan> <alpine.DEB.2.02.1108171547110.5877@p34.internal.lan> <20110817161349.072e1452@tlielax.poochiereds.net>
- <alpine.DEB.2.02.1108171644050.11234@p34.internal.lan> <CACqU3MXWRRGydeb1g80X8+rdSv0i0UFYQVTm0Eq4bsYnbRwf=w@mail.gmail.com> <alpine.DEB.2.02.1108171751570.11234@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="655872-385324938-1313619239=:11234"
+	id S1754731Ab1HQWRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 18:17:32 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:37569 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754466Ab1HQWRa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 18:17:30 -0400
+Subject: Re: [PATCH 00/41] signal: Use set_current_blocked()
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110817170152.GA22499@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
+	 <20110811160358.GA7989@redhat.com>
+	 <1313523659.3436.184.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20110817170152.GA22499@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Aug 2011 23:17:26 +0100
+Message-ID: <1313619446.2311.52.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 2011-08-17 at 19:01 +0200, Oleg Nesterov wrote:
+> On 08/16, Matt Fleming wrote:
+> >
+> > Did you want me to send just the updated
+> > versions of patches or the entire series again? It would seem over the
+> > top to send the entire series.
+> 
+> This is up to you. Just in case, feel free to add my acked-by or
+> reviewed-by to any patch I didn't comment explicitly. Or may be
+> 
+> > Also, are you going to pull these patches into your tree and send them
+> > to Linus or would it be better to route them through -mm?
+> 
+> This is the question ;)
+> 
+> I simply do not know what should we do. I think this should be
+> routed via maintainers.
 
---655872-385324938-1313619239=:11234
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Yeah, that seems like the best solution.
 
+> Or I can push this into the poor ptrace branch... but I am
+> thinking with horror about the possible conflicts in arch/ code...
+> 
+> What do you think?
 
+I'll let all the maintainers take it through their trees.
 
-On Wed, 17 Aug 2011, Justin Piszcz wrote:
+> Damn. And I can't relax. This is very minor, but I still think
+> it would be nice to have a common helper which plays sa_mask /
+> SA_NODEFER to set ->blocked. But in this case, you probably need
+> to resend the whole series ;)
+> 
+> I mean something like the patch below. OK, nevermind. Probably
+> this factorization doesn't buy too much, but it will complicate
+> the merging.
 
->
->
-> On Wed, 17 Aug 2011, Arnaud Lacombe wrote:
->
->> Hi,
->>=20
->> On Wed, Aug 17, 2011 at 4:45 PM, Justin Piszcz <jpiszcz@lucidpixels.com>=
-=20
->> wrote:
->>>=20
->>>=20
->>> On Wed, 17 Aug 2011, Jeff Layton wrote:
->>>=20
->>>> The crash is happening in the bowels of the slab allocator.
->>>> Specifically, it looks like it's hitting this:
->>>>=20
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 /*
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* The slab was either on partial or fre=
-e list so
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* there must be at least one object ava=
-ilable for
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* allocation.
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0*/
->>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 BUG_ON(slabp->inuse >=3D cachep->num);
->>>>=20
->>>> ...which looks like maybe the accounting of in-use objects is off. Thi=
-s
->>>> really sounds like some sort of memory corruption. I've not been able
->>>> to reproduce this so far, but I also had someone report panic here tha=
-t
->>>> might be related:
->>>>=20
->>>> =A0 https://bugzilla.redhat.com/show_bug.cgi?id=3D731278
+This does look like a decent clean up, especially because so many
+architectures got this sequence wrong in the past. But yeah, it will
+require me to rewrite half my series ;-)
 
-Hi,
+Is it worth rewriting the series? Dunno. I'm not convinced that the
+wrapper buys us enough for that, plus it'd increase the number of
+patches.
 
-Got a better one here:
+Maybe it'd be better to do it as a separate set of patches?
 
-[   98.386992] CIFS VFS: cifs_mount failed w/return code =3D -22
-[  562.565161] CIFS VFS: cifs_mount failed w/return code =3D -22
-[  596.277441] ------------[ cut here ]------------
-[  596.277450] kernel BUG at mm/slab.c:3111!
-[  596.277456] invalid opcode: 0000 [#1] SMP DEBUG_PAGEALLOC
-[  596.277463] CPU 2=20
-[  596.277466] Modules linked in: rfcomm bnep bluetooth speedstep_lib crypt=
-d aes_x86_64 aes_generic configfs ath9k mac80211 ath9k_common ath9k_hw ohci=
-_hcd ssb ath mmc_core cfg80211 shpchp uvcvideo i2c_piix4 videodev v4l2_comp=
-at_ioctl32 pci_hotplug wmi pcmcia rfkill pcmcia_core edac_core k10temp edac=
-_mce_amd video battery ac
-[  596.277517]=20
-[  596.277523] Pid: 4157, comm: ps Not tainted 3.1.0-rc2 #3 Acer           =
- Aspire 7551                    /Aspire 7551=20
-[  596.277536] RIP: 0010:[<ffffffff816464a6>]  [<ffffffff816464a6>] cache_a=
-lloc_refill+0x111/0x4a6
-[  596.277554] RSP: 0018:ffff88012e231b88  EFLAGS: 00010046
-[  596.277559] RAX: ffff8801394d5000 RBX: ffff88013f000080 RCX: 00000000000=
-00033
-[  596.277565] RDX: 0000000000000070 RSI: dead000000200200 RDI: 00000000000=
-00009
-[  596.277570] RBP: ffff88012e231be8 R08: 000000000000005f R09: ffff88013f0=
-04450
-[  596.277576] R10: ffff88013f004460 R11: ffff88012e231d80 R12: 00000000000=
-000d0
-[  596.277581] R13: ffff88013f0d1400 R14: 00000000000000d0 R15: ffff88013f0=
-04440
-[  596.277588] FS:  00007f8bf016c700(0000) GS:ffff88013fd00000(0000) knlGS:=
-0000000000000000
-[  596.277594] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  596.277599] CR2: 00007f8befd44328 CR3: 000000012e27b000 CR4: 00000000000=
-006e0
-[  596.277605] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
-00000
-[  596.277610] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
-00400
-[  596.277616] Process ps (pid: 4157, threadinfo ffff88012e230000, task fff=
-f88013f3f78d0)
-[  596.277621] Stack:
-[  596.277624]  ffff88013f045c00 ffff88010000003c ffff88012e231bb8 ffff8801=
-2f491088
-[  596.277635]  000000d02e231bc8 0000001000000000 ffff88012f491118 ffff8801=
-32266a40
-[  596.277645]  00000000000000d0 0000000000000202 ffff88013f000080 ffff8801=
-32266a40
-[  596.277654] Call Trace:
-[  596.277666]  [<ffffffff810ae0e6>] kmem_cache_alloc+0x76/0xa0
-[  596.277675]  [<ffffffff8110bb80>] ? meminfo_proc_open+0x30/0x30
-[  596.277684]  [<ffffffff810d58e2>] single_open+0x32/0xa0
-[  596.277694]  [<ffffffff8110a095>] ? proc_lookup_de+0xa5/0x100
-[  596.277701]  [<ffffffff8110bb65>] meminfo_proc_open+0x15/0x30
-[  596.277709]  [<ffffffff811044e8>] proc_reg_open+0x88/0x150
-[  596.277717]  [<ffffffff810d4c50>] ? seq_release_private+0x50/0x50
-[  596.277726]  [<ffffffff81104460>] ? proc_alloc_inode+0xa0/0xa0
-[  596.277735]  [<ffffffff810b5339>] __dentry_open.isra.17+0xf9/0x2d0
-[  596.277744]  [<ffffffff810b625e>] nameidata_to_filp+0x4e/0x60
-[  596.277753]  [<ffffffff810c4804>] do_last.isra.48+0x204/0x830
-[  596.277760]  [<ffffffff810c50a6>] path_openat+0xc6/0x370
-[  596.277769]  [<ffffffff8109a965>] ? handle_mm_fault+0x165/0x300
-[  596.277776]  [<ffffffff810c53ad>] do_filp_open+0x3d/0xa0
-[  596.277786]  [<ffffffff810d0697>] ? alloc_fd+0x47/0x130
-[  596.277795]  [<ffffffff810b6362>] do_sys_open+0xf2/0x1d0
-[  596.277803]  [<ffffffff810b645b>] sys_open+0x1b/0x20
-[  596.277812]  [<ffffffff8164debb>] system_call_fastpath+0x16/0x1b
-[  596.277817] Code: 00 e9 d2 00 00 00 49 8b 07 49 39 c7 75 15 49 8b 47 20 =
-41 c7 47 60 01 00 00 00 4c 39 d0 0f 84 ad 00 00 00 8b 53 18 39 50 20 72 2f =
-<0f> 0b 44 8b 40 24 8b 53 0c ff c6 41 8b 7d 00 89 70 20 41 0f af=20
-[  596.277879] RIP  [<ffffffff816464a6>] cache_alloc_refill+0x111/0x4a6
-[  596.277888]  RSP <ffff88012e231b88>
-[  596.277894] ---[ end trace 01e175dd97a8992b ]---
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-
-Justin.
-
---655872-385324938-1313619239=:11234--
