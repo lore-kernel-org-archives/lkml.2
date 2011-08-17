@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab1HQAmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 20:42:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58213 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751824Ab1HQAmc (ORCPT
+	id S1752942Ab1HQAmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 20:42:52 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53053 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887Ab1HQAmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 20:42:32 -0400
-Date: Tue, 16 Aug 2011 17:45:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Lennart Poettering <lennart@poettering.net>
-Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple
- process supervision
-Message-Id: <20110816174520.945ecd07.akpm@linux-foundation.org>
-In-Reply-To: <CAPXgP11n54=M8dVhtpJ3h_nuFivYKtqXXue5sATbXu80RXfqHA@mail.gmail.com>
-References: <1311897706.16657.2.camel@mop>
-	<20110816131010.7a6e9a99.akpm@linux-foundation.org>
-	<CAPXgP11n54=M8dVhtpJ3h_nuFivYKtqXXue5sATbXu80RXfqHA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Aug 2011 20:42:51 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LQ1R67-01-82X-02
+X-M-MSG: 
+Date: Wed, 17 Aug 2011 02:39:42 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Mike Waychison <mikew@google.com>
+CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] oprofilefs: Handle zero-length writes.
+Message-ID: <20110817003941.GC11702@erda.amd.com>
+References: <1313192539-19581-1-git-send-email-mikew@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1313192539-19581-1-git-send-email-mikew@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 02:32:39 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
+On 12.08.11 19:42:19, Mike Waychison wrote:
+> Currently in oprofilefs, files that use ulong_fops mis-handle writes of
+> zero length.  A count of 0 causes oprofilefs_ulong_from_user to return
+> 0 (success), which then leads to oprofile_set_ulong being called to
+> stuff "value" into file->private_data without it being initialized.
+> 
+> Fix this by moving the check for a zero-length write up into
+> ulong_write_file.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+>  drivers/oprofile/oprofilefs.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+> index e9ff6f7..ee14e6e 100644
+> --- a/drivers/oprofile/oprofilefs.c
+> +++ b/drivers/oprofile/oprofilefs.c
+> @@ -65,9 +65,6 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
+>  	char tmpbuf[TMPBUFSIZE];
+>  	unsigned long flags;
+>  
+> -	if (!count)
+> -		return 0;
+> -
 
-> On Tue, Aug 16, 2011 at 22:10, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Fri, 29 Jul 2011 02:01:44 +0200
-> > Kay Sievers <kay.sievers@vrfy.org> wrote:
-> >
-> >> From: Lennart Poettering <lennart@poettering.net>
-> >> Subject: prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple process supervision
-> >>
-> >> Userspace service managers/supervisors need to track their started
-> >> services. Many services daemonize by double-forking and get implicitely
-> >> re-parented to PID 1. The process manager will no longer be able to
-> >> receive the SIGCHLD signals for them.
-> >>
-> >> With this prctl, a service manager can mark itself as a sort of
-> >> 'sub-init' process, able to stay as the parent process for all processes
-> >> created by the started services. All SIGCHLD signals will be delivered
-> >> to the service manager.
-> >>
-> >> As a side effect, the relevant parent PID information does not get lost
-> >> by a double-fork, which results in a more elaborate process tree and 'ps'
-> >> output.
-> >>
-> >> This is orthogonal to PID namespaces. PID namespaces are isolated
-> >> from each other, while a service management process usually requires
-> >> the serices to live in the same namespace, to be able to talk to each
-> >> other.
-> >>
-> >> Users of this will be the systemd per-user instance, which provides
-> >> init-like functionality for the user's login session and D-Bus, which
-> >> activates bus services on on-demand. Both will need init-like capabilities
-> >> to be able to properly keep track of the services they start.
-> >>
-> >
-> > Interesting patch. __I can't immediately see any nasty effects from it..
-> >
-> > Did you consider using the existing taskstats capability for this?
-> 
-> Yes, but as it always is with buffered async interfaces, they are
-> tricky regarding ordering, races and possible overflows.
-> 
-> SIGCHLD is async too, but it has important differences in this case:
-> If the service-manager is the reaper, it will do the waitpid() itself,
-> and before it reaps the child, it can still investigate the existing
-> task and it will also directly receive the return values from
-> waitpid(). If we let the pids re-parent to PID 1, then the dead pids
-> and most of their information is gone before the service manager sees
-> the taskstats event.
-> 
-> The service-manager needs to handle SIGCHLD and waitpid() anyway for
-> all the stuff that does not double-fork, so the code is already there
-> and does all what we need without involving a second interface just
-> for re-parenting processes.
-> 
-> My very personal favourite is that 'ps afx' looks so nice now. The
-> tree of the processes of the login session start to make sense, and we
-> don't have half of the user processes hanging off PID 1. But that's
-> surely just cosmetics, and no reason to do that. I just like pretty
-> things. :)
+Yes, *val is clearly used uninitialized for !count.
 
-Spose so.  I spy suitable changelog enhancements.
+But it might be ok, not to touch it in oprofilefs_ulong_from_user.
+>From man 3 write:
 
-Also, other means of notification if they exist.  I'm sure they do ;)
+ "if nbyte is zero and the file is a regular file ... the write()
+ function shall return zero and have no other results"
 
-> > The comment block over find_new_reaper() is now incomplete. __Please
-> > update it?
+Actually, oprofilefs_ulong_from_user() must be called with an
+initialized value ...
+
+>  	if (count > TMPBUFSIZE - 1)
+>  		return -EINVAL;
+>  
+> @@ -97,6 +94,8 @@ static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_
+>  
+>  	if (*offset)
+>  		return -EINVAL;
+> +	if (count == 0)
+> +		return 0;
+
+... or we add this check to all other users of
+oprofilefs_ulong_from_user() too. Without those checks they would set
+its value to 0 if count is 0.
+
+A small nitpick: I would prefer
+
+	if (!count) ...
+
+-Robert
+
+>  
+>  	retval = oprofilefs_ulong_from_user(&value, buf, count);
+>  	if (retval)
+> -- 
+> 1.7.3.1
 > 
-> '... give it to the child reaper process (ie "init") in out pid
-> space.' still kind of fits, I think?
 > 
-> Would:
-> '... give it to the child reaper process (ie 'init' or parent marked
-> as reaper) in our pid space.' sound better?
 
-At a minimum.  A nice discourse on what that code is doing in there
-(and why!) would be better.  After all, the comment is supposed to
-explain the function.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
