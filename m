@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1HQRGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:06:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4300 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab1HQRG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:06:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807116"
-Message-Id: <20110817163522.477085366@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:25 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 28/36] Hexagon: Add ioremap support
-References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=ioremap.diff
+	id S1752590Ab1HQMHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 08:07:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898Ab1HQMG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 08:06:59 -0400
+Date: Wed, 17 Aug 2011 14:04:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Petr Vandrovec <petr@vandrovec.name>,
+        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 40/41] ncpfs: Use set_current_blocked()
+Message-ID: <20110817120405.GA10709@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-41-git-send-email-matt@console-pimps.org> <20110816175643.GI29190@redhat.com> <1313528170.3436.200.camel@mfleming-mobl1.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313528170.3436.200.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+On 08/16, Matt Fleming wrote:
+>
+> On Tue, 2011-08-16 at 19:56 +0200, Oleg Nesterov wrote:
+> > On 08/11, Matt Fleming wrote:
+> > >
+> > > As described in e6fa16ab ("signal: sigprocmask() should do
+> > > retarget_shared_pending()") the modification of current->blocked is
+> > > incorrect as we need to check whether the signal we're about to block
+> > > is pending in the shared queue.
+> >
+> > I'd wish I could understand this code but this seems impossible ;)
+>
+> Yeah, I gave up after staring at it for about twenty minutes. I couldn't
+> fathom the logic behind it.
+>
+> > IOW, "This doesn't seem right at all." looks reasonable, and the
+> > PF_EXITING adds even more confusion.
+>
+> Definitely. If I was more confident in this area of the kernel I would
+> have just deleted it ;-)
 
----
- arch/hexagon/mm/ioremap.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+Same here ;)
 
-Index: linux-hexagon-kernel/arch/hexagon/mm/ioremap.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/mm/ioremap.c	2011-07-20 15:19:43.695151542 -0500
-@@ -0,0 +1,57 @@
-+/*
-+ * I/O remap functions for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/vmalloc.h>
-+
-+void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size)
-+{
-+	unsigned long last_addr, addr;
-+	unsigned long offset = phys_addr & ~PAGE_MASK;
-+	struct vm_struct *area;
-+
-+	pgprot_t prot = __pgprot(_PAGE_PRESENT|_PAGE_READ|_PAGE_WRITE
-+					|(__HEXAGON_C_DEV << 6));
-+
-+	last_addr = phys_addr + size - 1;
-+
-+	/*  Wrapping not allowed  */
-+	if (!size || (last_addr < phys_addr))
-+		return NULL;
-+
-+	/*  Rounds up to next page size, including whole-page offset */
-+	size = PAGE_ALIGN(offset + size);
-+
-+	area = get_vm_area(size, VM_IOREMAP);
-+	addr = (unsigned long)area->addr;
-+
-+	if (ioremap_page_range(addr, addr+size, phys_addr, prot)) {
-+		vunmap((void *)addr);
-+		return NULL;
-+	}
-+
-+	flush_cache_vmap(addr, addr+size);
-+	return (void __iomem *) (offset + addr);
-+}
-+
-+void __iounmap(const volatile void __iomem *addr)
-+{
-+	vunmap((void *) ((unsigned long) addr & PAGE_MASK));
-+}
+> Because the thread doesn't hold ->siglock over do_ncp_rpc_call() another
+> thread could change the signal handler for SIGINT or SIGQUIT mid-call.
+> Which makes the code under "if (server->m.flags & NCP_MOUNT_INTR)"
+> pointless.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+(indeed, and see below)
+
+> > Why do we take ->siglock in the first place?
+> >
+> > I think it is not needed. We can calculate mask/blocked lockless and
+> > use set_task_blocked(). This also makes sense because __set_task_blocked
+> > is not exported ;)
+>
+> Eek! Sorry, I didn't realise this didn't compile.
+>
+> > the sighand->action[] checks are racy anyway in the mt case, siglock
+> > can't help.
+>
+> Hmm.. really? I thought that ->siglock serialised modifications to
+> sighand->action[] even in the mt case, no?
+
+Sure. But another thread can change sighand->action[] right after we
+drop ->siglock. So how can this lock help? We simply read the word,
+this is atomic and doesn't need the locking.
+
+Oleg.
 
