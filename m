@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1HQRGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:06:46 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:28286 "EHLO
+	id S1754574Ab1HQRGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:06:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26066 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab1HQRGe (ORCPT
+	with ESMTP id S1754491Ab1HQRGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:06:34 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004300"
-Message-Id: <20110817163522.758180689@codeaurora.org>
+	Wed, 17 Aug 2011 13:06:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004148"
+Message-Id: <20110817163521.637768691@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:28 -0500
+Date: Wed, 17 Aug 2011 11:35:16 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Cc: Linas Vepstas <linas@codeaurora.org>
-Subject: [patch 31/36] Hexagon: kgdb support files
+Subject: [patch 19/36] Hexagon: Add ptrace support
 References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=kgdb.diff
+Content-Disposition: inline; filename=ptrace.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
 ---
- arch/hexagon/include/asm/kgdb.h |   39 ++++++
- arch/hexagon/kernel/kgdb.c      |  241 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 280 insertions(+)
+ arch/hexagon/include/asm/ptrace.h |   90 +++++++
+ arch/hexagon/kernel/ptrace.c      |  437 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 527 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/ptrace.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h	2011-07-20 15:19:44.505151353 -0500
-@@ -0,0 +1,39 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/ptrace.h	2011-07-20 15:19:41.335152144 -0500
+@@ -0,0 +1,90 @@
 +/*
-+ * arch/hexagon/include/asm/kgdb.h - Hexagon KGDB Support
++ * Ptrace definitions for the Hexagon architecture
 + *
-+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -53,34 +52,85 @@ Index: linux-hexagon-kernel/arch/hexagon/include/asm/kgdb.h
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __HEXAGON_KGDB_H__
-+#define __HEXAGON_KGDB_H__
++#ifndef _ASM_PTRACE_H
++#define _ASM_PTRACE_H
 +
-+#define BREAK_INSTR_SIZE 4
-+#define CACHE_FLUSH_IS_SAFE   1
-+#define BUFMAX       ((NUMREGBYTES * 2) + 512)
++#include <asm/registers.h>
 +
-+static inline void arch_kgdb_breakpoint(void)
-+{
-+	asm("trap0(#0xDB)");
-+}
++/*  arch_ptrace and ptrace_disable use task_struct in arg lists  */
++struct task_struct;
 +
-+/* Registers:
-+ * 32 gpr + sa0/1 + lc0/1 + m0/1 + gp + ugp + pred + pc = 42 total.
++/*
++ * ptrace commands not part of Linux base set (but common to essentially
++ * all supported architectures).
 + */
-+#define NUMREGBYTES  (42*4)
-+#define DBG_MAX_REG_NUM 42
 +
-+#endif /* __HEXAGON_KGDB_H__ */
-Index: linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c
++#define PTRACE_GETREGS	12
++#define PTRACE_SETREGS	13
++
++/*
++ * Register numbers used in ptrace calls.  0-31 represent GPRs R0-R31
++ */
++#define PT_R0		0
++#define PT_R1		1
++#define PT_R2		2
++#define PT_R3		3
++#define PT_R4		4
++#define PT_R5		5
++#define PT_R6		6
++#define PT_R7		7
++#define PT_R8		8
++#define PT_R9		9
++#define PT_R10		10
++#define PT_R11		11
++#define PT_R12		12
++#define PT_R13		13
++#define PT_R14		14
++#define PT_R15		15
++#define PT_R16		16
++#define PT_R17		17
++#define PT_R18		18
++#define PT_R19		19
++#define PT_R20		20
++#define PT_R21		21
++#define PT_R22		22
++#define PT_R23		23
++#define PT_R24		24
++#define PT_R25		25
++#define PT_R26		26
++#define PT_R27		27
++#define PT_R28		28
++#define PT_R29		29
++#define PT_R30		30
++#define PT_R31		31
++#define PT_GP		32
++#define PT_UGP		33
++#define PT_SA0		34
++#define PT_LC0		35
++#define PT_SA1		36
++#define PT_LC1		37
++#define PT_M0		38
++#define PT_M1		39
++#define PT_PREDS	40
++#define PT_PC		41
++#define PT_CAUSE	42
++#define PT_BADVA	43
++
++#define N_PTRACE_REGS	44
++
++#define profile_pc(regs) instruction_pointer(regs)
++#define instruction_pointer(regs) pt_elr(regs)
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/kernel/ptrace.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c	2011-07-20 15:19:44.505151353 -0500
-@@ -0,0 +1,241 @@
++++ linux-hexagon-kernel/arch/hexagon/kernel/ptrace.c	2011-07-20 15:19:41.335152144 -0500
+@@ -0,0 +1,437 @@
 +/*
-+ * arch/hexagon/kernel/kgdb.c - Hexagon KGDB Support
++ * Ptrace support for Hexagon
 + *
-+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -97,227 +147,423 @@ Index: linux-hexagon-kernel/arch/hexagon/kernel/kgdb.c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/kdebug.h>
-+#include <linux/kgdb.h>
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/smp.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/user.h>
 +
-+/* All registers are 4 bytes, for now */
-+#define GDB_SIZEOF_REG 4
++#include <asm/uaccess.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/system.h>
++#include <asm/processor.h>
++#include <asm/cacheflush.h>
 +
-+/* The register names are used during printing of the regs;
-+ * Keep these at three letters to pretty-print. */
-+struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
-+	{ " r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, r00)},
-+	{ " r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, r01)},
-+	{ " r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, r02)},
-+	{ " r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, r03)},
-+	{ " r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, r04)},
-+	{ " r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, r05)},
-+	{ " r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, r06)},
-+	{ " r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, r07)},
-+	{ " r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, r08)},
-+	{ " r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, r09)},
-+	{ "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, r10)},
-+	{ "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, r11)},
-+	{ "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, r12)},
-+	{ "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, r13)},
-+	{ "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, r14)},
-+	{ "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, r15)},
-+	{ "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, r16)},
-+	{ "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, r17)},
-+	{ "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, r18)},
-+	{ "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, r19)},
-+	{ "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, r20)},
-+	{ "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, r21)},
-+	{ "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, r22)},
-+	{ "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, r23)},
-+	{ "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, r24)},
-+	{ "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, r25)},
-+	{ "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, r26)},
-+	{ "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, r27)},
-+	{ "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, r28)},
-+	{ "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, r29)},
-+	{ "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, r30)},
-+	{ "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, r31)},
++/*  ToDo:  see include/linux/regset.h  */
 +
-+	{ "usr", GDB_SIZEOF_REG, offsetof(struct pt_regs, usr)},
-+	{ "preds", GDB_SIZEOF_REG, offsetof(struct pt_regs, preds)},
-+	{ " m0", GDB_SIZEOF_REG, offsetof(struct pt_regs, m0)},
-+	{ " m1", GDB_SIZEOF_REG, offsetof(struct pt_regs, m1)},
-+	{ "sa0", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa0)},
-+	{ "sa1", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa1)},
-+	{ "lc0", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc0)},
-+	{ "lc1", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc1)},
-+	{ " gp", GDB_SIZEOF_REG, offsetof(struct pt_regs, gp)},
-+	{ "ugp", GDB_SIZEOF_REG, offsetof(struct pt_regs, ugp)},
-+};
-+
-+struct kgdb_arch arch_kgdb_ops = {
-+	/* trap0(#0xDB) 0x0cdb0054 */
-+	.gdb_bpt_instr = {0x54, 0x00, 0xdb, 0x0c},
-+};
-+
-+char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
++void ptrace_disable(struct task_struct *child)
 +{
-+	if (regno >= DBG_MAX_REG_NUM || regno < 0)
-+		return NULL;
-+
-+	*((unsigned long *) mem) = *((unsigned long *) ((void *)regs +
-+		dbg_reg_def[regno].offset));
-+
-+	return dbg_reg_def[regno].name;
++	/* Boilerplate - resolves to null inline if no HW single-step */
++	user_disable_single_step(child);
 +}
 +
-+int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
++/*
++ * Examine a specific register of a task
++ */
++static int ptrace_peekusr(struct task_struct *child, int regnum,
++			  void __user *data)
 +{
-+	if (regno >= DBG_MAX_REG_NUM || regno < 0)
-+		return -EINVAL;
++	struct pt_regs *regs = task_pt_regs(child);
++	unsigned long tmp;
 +
-+	*((unsigned long *) ((void *)regs + dbg_reg_def[regno].offset)) =
-+		*((unsigned long *) mem);
++	switch (regnum) {
++	case PT_R0:
++		tmp = regs->r00;
++		break;
++	case PT_R1:
++		tmp = regs->r01;
++		break;
++	case PT_R2:
++		tmp = regs->r02;
++		break;
++	case PT_R3:
++		tmp = regs->r03;
++		break;
++	case PT_R4:
++		tmp = regs->r04;
++		break;
++	case PT_R5:
++		tmp = regs->r05;
++		break;
++	case PT_R6:
++		tmp = regs->r06;
++		break;
++	case PT_R7:
++		tmp = regs->r07;
++		break;
++	case PT_R8:
++		tmp = regs->r08;
++		break;
++	case PT_R9:
++		tmp = regs->r09;
++		break;
++	case PT_R10:
++		tmp = regs->r10;
++		break;
++	case PT_R11:
++		tmp = regs->r11;
++		break;
++	case PT_R12:
++		tmp = regs->r12;
++		break;
++	case PT_R13:
++		tmp = regs->r13;
++		break;
++	case PT_R14:
++		tmp = regs->r14;
++		break;
++	case PT_R15:
++		tmp = regs->r15;
++		break;
++	case PT_R16:
++		tmp = regs->r16;
++		break;
++	case PT_R17:
++		tmp = regs->r17;
++		break;
++	case PT_R18:
++		tmp = regs->r18;
++		break;
++	case PT_R19:
++		tmp = regs->r19;
++		break;
++	case PT_R20:
++		tmp = regs->r20;
++		break;
++	case PT_R21:
++		tmp = regs->r21;
++		break;
++	case PT_R22:
++		tmp = regs->r22;
++		break;
++	case PT_R23:
++		tmp = regs->r23;
++		break;
++	case PT_R24:
++		tmp = regs->r24;
++		break;
++	case PT_R25:
++		tmp = regs->r25;
++		break;
++	case PT_R26:
++		tmp = regs->r26;
++		break;
++	case PT_R27:
++		tmp = regs->r27;
++		break;
++	case PT_R28:
++		tmp = regs->r28;
++		break;
++	case PT_R29:
++		tmp = regs->r29;
++		break;
++	case PT_R30:
++		tmp = regs->r30;
++		break;
++	case PT_R31:
++		tmp = regs->r31;
++		break;
++	case PT_GP:
++		tmp = regs->gp;
++		break;
++	case PT_UGP:
++		tmp = regs->ugp;
++		break;
++	case PT_SA0:
++		tmp = regs->sa0;
++		break;
++	case PT_LC0:
++		tmp = regs->lc0;
++		break;
++	case PT_SA1:
++		tmp = regs->sa1;
++		break;
++	case PT_LC1:
++		tmp = regs->lc1;
++		break;
++	case PT_M0:
++		tmp = regs->m0;
++		break;
++	case PT_M1:
++		tmp = regs->m1;
++		break;
++	case PT_PREDS:
++		tmp = regs->preds;
++		break;
++	case PT_PC:
++		tmp = pt_elr(regs);
++		break;
++	case PT_CAUSE:
++		tmp = pt_cause(regs);
++		break;
++	case PT_BADVA:
++		tmp = pt_badva(regs);
++		break;
++	default:
++		return -EIO;
++	}
++	return put_user(tmp, (unsigned long __user *)data);
++}
++
++/*
++ * Modify a specific register of a task.  CAUSE and BADVA aren't writeable.
++ */
++static int ptrace_pokeusr(struct task_struct *child, int regnum,
++				unsigned long data)
++{
++	struct pt_regs *regs = task_pt_regs(child);
++
++	switch (regnum) {
++	case PT_R0:
++		regs->r00 = data;
++		break;
++	case PT_R1:
++		regs->r01 = data;
++		break;
++	case PT_R2:
++		regs->r02 = data;
++		break;
++	case PT_R3:
++		regs->r03 = data;
++		break;
++	case PT_R4:
++		regs->r04 = data;
++		break;
++	case PT_R5:
++		regs->r05 = data;
++		break;
++	case PT_R6:
++		regs->r06 = data;
++		break;
++	case PT_R7:
++		regs->r07 = data;
++		break;
++	case PT_R8:
++		regs->r08 = data;
++		break;
++	case PT_R9:
++		regs->r09 = data;
++		break;
++	case PT_R10:
++		regs->r10 = data;
++		break;
++	case PT_R11:
++		regs->r11 = data;
++		break;
++	case PT_R12:
++		regs->r12 = data;
++		break;
++	case PT_R13:
++		regs->r13 = data;
++		break;
++	case PT_R14:
++		regs->r14 = data;
++		break;
++	case PT_R15:
++		regs->r15 = data;
++		break;
++	case PT_R16:
++		regs->r16 = data;
++		break;
++	case PT_R17:
++		regs->r17 = data;
++		break;
++	case PT_R18:
++		regs->r18 = data;
++		break;
++	case PT_R19:
++		regs->r19 = data;
++		break;
++	case PT_R20:
++		regs->r20 = data;
++		break;
++	case PT_R21:
++		regs->r21 = data;
++		break;
++	case PT_R22:
++		regs->r22 = data;
++		break;
++	case PT_R23:
++		regs->r23 = data;
++		break;
++	case PT_R24:
++		regs->r24 = data;
++		break;
++	case PT_R25:
++		regs->r25 = data;
++		break;
++	case PT_R26:
++		regs->r26 = data;
++		break;
++	case PT_R27:
++		regs->r27 = data;
++		break;
++	case PT_R28:
++		regs->r28 = data;
++		break;
++	case PT_R29:
++		regs->r29 = data;
++		/*
++		 * This is special; SP is actually restored by the VM via the
++		 * special event record which is set by the special trap.
++		 */
++		regs->hvmer.vmpsp = data;
++		break;
++	case PT_R30:
++		regs->r30 = data;
++		break;
++	case PT_R31:
++		regs->r31 = data;
++		break;
++	case PT_GP:
++		regs->gp = data;
++		break;
++	case PT_UGP:
++		regs->ugp = data;
++		break;
++	case PT_SA0:
++		regs->sa0 = data;
++		break;
++	case PT_LC0:
++		regs->lc0 = data;
++		break;
++	case PT_SA1:
++		regs->sa1 = data;
++		break;
++	case PT_LC1:
++		regs->lc1 = data;
++		break;
++	case PT_M0:
++		regs->m0 = data;
++		break;
++	case PT_M1:
++		regs->m1 = data;
++		break;
++	case PT_PREDS:
++		regs->preds = data;
++		break;
++	case PT_PC:
++		pt_elr(regs) = data;
++		break;
++	default:
++		return -EIO;
++	}
++	return 0;
++}
++
++#define reg_acc(err, fn, reg, offset)	\
++	do {				\
++		err = fn(reg, offset);	\
++		if (err)		\
++			return err;	\
++	} while (0)
++
++/*
++ * Read the full register set of a task.  Layout is *not* the same
++ * as pt_regs, but is instead an array of longs whose indices are
++ * defined in ptrace.h.
++ */
++int ptrace_getregs(struct task_struct *child, unsigned long __user *data)
++{
++	struct pt_regs *regs = task_pt_regs(child);
++	int err;
++	int i;
++
++	if (!access_ok(VERIFY_WRITE, data, N_PTRACE_REGS * sizeof(long)))
++		return -EIO;
++
++	for (i = 0; i < 32; i++)
++		reg_acc(err, __put_user, *((unsigned long *)(&regs->r0100) + i),
++			data + i);
++
++	reg_acc(err, __put_user, regs->gp, data + PT_GP);
++	reg_acc(err, __put_user, regs->ugp, data + PT_UGP);
++	reg_acc(err, __put_user, regs->sa0, data + PT_SA0);
++	reg_acc(err, __put_user, regs->lc0, data + PT_LC0);
++	reg_acc(err, __put_user, regs->sa1, data + PT_SA1);
++	reg_acc(err, __put_user, regs->lc1, data + PT_LC1);
++	reg_acc(err, __put_user, regs->m0, data + PT_M0);
++	reg_acc(err, __put_user, regs->m1, data + PT_M1);
++	reg_acc(err, __put_user, regs->preds, data + PT_PREDS);
++	reg_acc(err, __put_user, pt_elr(regs), data + PT_PC);
++	reg_acc(err, __put_user, pt_cause(regs), data + PT_CAUSE);
++	reg_acc(err, __put_user, pt_badva(regs), data + PT_BADVA);
 +
 +	return 0;
 +}
 +
-+void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
-+{
-+	instruction_pointer(regs) = pc;
-+}
-+
-+#ifdef CONFIG_SMP
-+
-+/**
-+ * kgdb_roundup_cpus - Get other CPUs into a holding pattern
-+ * @flags: Current IRQ state
-+ *
-+ * On SMP systems, we need to get the attention of the other CPUs
-+ * and get them be in a known state.  This should do what is needed
-+ * to get the other CPUs to call kgdb_wait(). Note that on some arches,
-+ * the NMI approach is not used for rounding up all the CPUs. For example,
-+ * in case of MIPS, smp_call_function() is used to roundup CPUs. In
-+ * this case, we have to make sure that interrupts are enabled before
-+ * calling smp_call_function(). The argument to this function is
-+ * the flags that will be used when restoring the interrupts. There is
-+ * local_irq_save() call before kgdb_roundup_cpus().
-+ *
-+ * On non-SMP systems, this is not called.
++/*
++ * Write the full register set of a task, with same layout as ptrace_getregs.
++ * BADVA and CAUSE aren't modifiable, however.
 + */
-+
-+static void hexagon_kgdb_nmi_hook(void *ignored)
++int ptrace_setregs(struct task_struct *child, unsigned long __user *data)
 +{
-+	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++	struct pt_regs *regs = task_pt_regs(child);
++	int i;
++	int err;
++
++	if (!access_ok(VERIFY_READ, data, (N_PTRACE_REGS - 2) * sizeof(long)))
++		return -EIO;
++
++	for (i = 0; i < 32; i++)
++		reg_acc(err, __get_user, *((unsigned long *)(&regs->r0100) + i),
++			data + i);
++
++	reg_acc(err, __get_user, regs->gp, data + PT_GP);
++	reg_acc(err, __get_user, regs->ugp, data + PT_UGP);
++	reg_acc(err, __get_user, regs->sa0, data + PT_SA0);
++	reg_acc(err, __get_user, regs->lc0, data + PT_LC0);
++	reg_acc(err, __get_user, regs->sa1, data + PT_SA1);
++	reg_acc(err, __get_user, regs->lc1, data + PT_LC1);
++	reg_acc(err, __get_user, regs->m0, data + PT_M0);
++	reg_acc(err, __get_user, regs->m1, data + PT_M1);
++	reg_acc(err, __get_user, regs->preds, data + PT_PREDS);
++	reg_acc(err, __get_user, pt_elr(regs), data + PT_PC);
++
++	return 0;
 +}
 +
-+void kgdb_roundup_cpus(unsigned long flags)
++long arch_ptrace(struct task_struct *child, long request,
++		 unsigned long addr, unsigned long data)
 +{
-+	smp_call_function(hexagon_kgdb_nmi_hook, NULL, 0);
-+}
-+#endif
-+
-+
-+/*  Not yet working  */
-+void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
-+				 struct task_struct *task)
-+{
-+	struct pt_regs *thread_regs;
-+
-+	if (task == NULL)
-+		return;
-+
-+	/* Initialize to zero */
-+	memset(gdb_regs, 0, NUMREGBYTES);
-+
-+	/* Otherwise, we have only some registers from switch_to() */
-+	thread_regs = task_pt_regs(task);
-+	gdb_regs[PT_R0] = thread_regs->r00;
-+}
-+
-+/**
-+ * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
-+ * @vector: The error vector of the exception that happened.
-+ * @signo: The signal number of the exception that happened.
-+ * @err_code: The error code of the exception that happened.
-+ * @remcom_in_buffer: The buffer of the packet we have read.
-+ * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
-+ * @regs: The &struct pt_regs of the current process.
-+ *
-+ * This function MUST handle the 'c' and 's' command packets,
-+ * as well packets to set / remove a hardware breakpoint, if used.
-+ * If there are additional packets which the hardware needs to handle,
-+ * they are handled here.  The code should return -1 if it wants to
-+ * process more packets, and a %0 or %1 if it wants to exit from the
-+ * kgdb callback.
-+ *
-+ * Not yet working.
-+ */
-+int kgdb_arch_handle_exception(int vector, int signo, int err_code,
-+			       char *remcom_in_buffer, char *remcom_out_buffer,
-+			       struct pt_regs *linux_regs)
-+{
-+	switch (remcom_in_buffer[0]) {
-+	case 's':
-+	case 'c':
-+		return 0;
-+	}
-+	/* Stay in the debugger. */
-+	return -1;
-+}
-+
-+static int __kgdb_notify(struct die_args *args, unsigned long cmd)
-+{
-+	struct pt_regs *regs = args->regs;
-+#if 0
-+	ret = kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
-+				    regs);
-+	if (ret)
-+		return NOTIFY_DONE;
-+#endif
-+	return NOTIFY_STOP;
-+}
-+
-+static int
-+kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
-+{
-+	unsigned long flags;
 +	int ret;
 +
-+	local_irq_save(flags);
-+	ret = __kgdb_notify(ptr, cmd);
-+	local_irq_restore(flags);
++	switch (request) {
++	case PTRACE_PEEKUSR:	/* read register specified by addr. */
++		ret = ptrace_peekusr(child, addr, (void __user *) data);
++		break;
++	case PTRACE_POKETEXT:	/* write the word at location addr. */
++	case PTRACE_POKEDATA:
++		ret = generic_ptrace_pokedata(child, addr, data);
++		break;
++	case PTRACE_POKEUSR:	/* write register specified by addr. */
++		ret = ptrace_pokeusr(child, addr, data);
++		break;
++	case PTRACE_GETREGS:
++		ret = ptrace_getregs(child, (void __user *) data);
++		break;
++	case PTRACE_SETREGS:
++		ret = ptrace_setregs(child, (void __user *) data);
++		break;
++	default:
++		ret = ptrace_request(child, request, addr, data);
++	}
 +
 +	return ret;
 +}
-+
-+static struct notifier_block kgdb_notifier = {
-+	.notifier_call = kgdb_notify,
-+
-+	/*
-+	 * Lowest-prio notifier priority, we want to be notified last:
-+	 */
-+	.priority = -INT_MAX,
-+};
-+
-+/**
-+ * kgdb_arch_init - Perform any architecture specific initalization.
-+ *
-+ * This function will handle the initalization of any architecture
-+ * specific callbacks.
-+ */
-+int kgdb_arch_init(void)
-+{
-+	return register_die_notifier(&kgdb_notifier);
-+}
-+
-+/**
-+ * kgdb_arch_exit - Perform any architecture specific uninitalization.
-+ *
-+ * This function will handle the uninitalization of any architecture
-+ * specific callbacks, for dynamic registration and unregistration.
-+ */
-+void kgdb_arch_exit(void)
-+{
-+	unregister_die_notifier(&kgdb_notifier);
-+}
-+
 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
