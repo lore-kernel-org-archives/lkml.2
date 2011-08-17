@@ -1,151 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1HQOVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 10:21:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824Ab1HQOVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 10:21:13 -0400
-Date: Wed, 17 Aug 2011 10:18:53 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wanlong Gao <wanlong.gao@gmail.com>, Jens Axboe <jaxboe@fusionio.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        lizf@cn.fujitsu.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH v5] blk-cgroup:be able to remove the record of unplugged
- device
-Message-ID: <20110817141853.GC14813@redhat.com>
-References: <20110726192441.GD13780@redhat.com>
- <1311725508-4419-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <20110727141142.GA17743@redhat.com>
- <1313585865.1807.2.camel@Allen>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313585865.1807.2.camel@Allen>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753854Ab1HQODi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:03:38 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:57944 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753821Ab1HQODc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 10:03:32 -0400
+X-AuditID: 12074424-b7bcaae000000a05-7b-4e4bca5fa43e
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH v4 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
+Date: Wed, 17 Aug 2011 10:03:18 -0400
+Message-Id: <e6c5440954c28e9738b8d4919a9db2d10c9a1757.1313586473.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <cover.1313586473.git.luto@mit.edu>
+References: <cover.1313586473.git.luto@mit.edu>
+In-Reply-To: <cover.1313586473.git.luto@mit.edu>
+References: <cover.1313586473.git.luto@mit.edu>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsUixG6noht/ytvPYMdiPou+K0fZLdqmOVrs
+	fPiWzWL5vn5Gi8u75rBZbLnUzGpx9eFsFosfGx6zOnB43Gr7w+yxc9Zddo/Fe14yeWxa1cnm
+	se7GV3aPz5vkAtiiuGxSUnMyy1KL9O0SuDIWfj/OWHBAvOJt52LWBsYpwl2MnBwSAiYS/3d/
+	YYKwxSQu3FvP1sXIxSEksI9R4n7zHGYIZwOjxJMpF5ggnGdMEt/eT2cGaWETUJHoWPoArF1E
+	wEBiy8oXrCBFzAJXGCUuzr8BViQsECBxZ9Z3FhCbRUBV4tXnD2BxXoEgiSubfkPtlpM4cvk5
+	mM0JNOhz3yl2EFtIQF9i2ZoL7LjEJzAKLGBkWMUom5JbpZubmJlTnJqsW5ycmJeXWqRrrpeb
+	WaKXmlK6iREcxC4qOxibDykdYhTgYFTi4Q3q9/ITYk0sK67MPcQoycGkJMobd9LbT4gvKT+l
+	MiOxOCO+qDQntfgQowQHs5IIr89BoBxvSmJlVWpRPkxKmoNFSZzXZqeDn5BAemJJanZqakFq
+	EUxWhoNDSYI3DWSoYFFqempFWmZOCUKaiYMTZDgP0PDJIDW8xQWJucWZ6RD5U4yKUuK86SAJ
+	AZBERmkeXC8sybxiFAd6RZg3HKSKB5ig4LpfAQ1mAhp8a5cHyOCSRISUVAMjmwO3S4/Hfrnz
+	L7+IXnXbti/Zhqn6z1c/JeXvXMfOeutE5j3g0pj379U0lk3P3XZ02244eiSC/96FWdwt9kbq
+	LOGpMzOTpbsXqL1cm9jW5OqYdk+L2TKRS/2AxfsHsmYPXT22/XFb+uLS5UtTluZIanOvcVuz
+	RmZFML/f7DN3Ek3nb5x/bqmGEktxRqKhFnNRcSIA0yU8BA0DAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 08:57:45PM +0800, Wanlong Gao wrote:
-> On Wed, 2011-07-27 at 10:11 -0400, Vivek Goyal wrote:
-> > On Wed, Jul 27, 2011 at 08:11:48AM +0800, Wanlong Gao wrote:
-> > > The bug is we're not able to remove the device from blkio cgroup's
-> > > per-device control files if it gets unplugged.
-> > > 
-> > > To reproduce the bug:
-> > > 
-> > >   # mount -t cgroup -o blkio xxx /cgroup
-> > >   # cd /cgroup
-> > >   # echo "8:0 1000" > blkio.throttle.read_bps_device
-> > >   # unplug the device
-> > >   # cat blkio.throttle.read_bps_device
-> > >   8:0	1000
-> > >   # echo "8:0 0" > blkio.throttle.read_bps_device
-> > >   -bash: echo: write error: No such device
-> > > 
-> > > After patching, the device removal will succeed.
-> > > 
-> > > Thanks for the comments of Paul, Zefan, and Vivek.
-> > > 
-> > > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> > 
-> > Thanks. This looks good to me.
-> > 
-> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> > 
-> > Vivek
-> > 
-> > > ---
-> > >  block/blk-cgroup.c |   37 ++++++++++++++++---------------------
-> > >  1 files changed, 16 insertions(+), 21 deletions(-)
-> > > 
-> > > diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> > > index bcaf16e..b596e54 100644
-> > > --- a/block/blk-cgroup.c
-> > > +++ b/block/blk-cgroup.c
-> > > @@ -785,10 +785,10 @@ static int blkio_policy_parse_and_set(char *buf,
-> > >  {
-> > >  	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
-> > >  	int ret;
-> > > -	unsigned long major, minor, temp;
-> > > +	unsigned long major, minor;
-> > >  	int i = 0;
-> > >  	dev_t dev;
-> > > -	u64 bps, iops;
-> > > +	u64 temp;
-> > >  
-> > >  	memset(s, 0, sizeof(s));
-> > >  
-> > > @@ -826,20 +826,23 @@ static int blkio_policy_parse_and_set(char *buf,
-> > >  
-> > >  	dev = MKDEV(major, minor);
-> > >  
-> > > -	ret = blkio_check_dev_num(dev);
-> > > +	ret = strict_strtoull(s[1], 10, &temp);
-> > >  	if (ret)
-> > > -		return ret;
-> > > +		return -EINVAL;
-> > >  
-> > > -	newpn->dev = dev;
-> > > +	/* For rule removal, do not check for device presence. */
-> > > +	if (temp) {
-> > > +		ret = blkio_check_dev_num(dev);
-> > > +		if (ret)
-> > > +			return ret;
-> > > +	}
-> > >  
-> > > -	if (s[1] == NULL)
-> > > -		return -EINVAL;
-> > > +	newpn->dev = dev;
-> > >  
-> > >  	switch (plid) {
-> > >  	case BLKIO_POLICY_PROP:
-> > > -		ret = strict_strtoul(s[1], 10, &temp);
-> > > -		if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
-> > > -			temp > BLKIO_WEIGHT_MAX)
-> > > +		if ((temp < BLKIO_WEIGHT_MIN && temp > 0) ||
-> > > +		     temp > BLKIO_WEIGHT_MAX)
-> > >  			return -EINVAL;
-> > >  
-> > >  		newpn->plid = plid;
-> > > @@ -850,26 +853,18 @@ static int blkio_policy_parse_and_set(char *buf,
-> > >  		switch(fileid) {
-> > >  		case BLKIO_THROTL_read_bps_device:
-> > >  		case BLKIO_THROTL_write_bps_device:
-> > > -			ret = strict_strtoull(s[1], 10, &bps);
-> > > -			if (ret)
-> > > -				return -EINVAL;
-> > > -
-> > >  			newpn->plid = plid;
-> > >  			newpn->fileid = fileid;
-> > > -			newpn->val.bps = bps;
-> > > +			newpn->val.bps = temp;
-> > >  			break;
-> > >  		case BLKIO_THROTL_read_iops_device:
-> > >  		case BLKIO_THROTL_write_iops_device:
-> > > -			ret = strict_strtoull(s[1], 10, &iops);
-> > > -			if (ret)
-> > > -				return -EINVAL;
-> > > -
-> > > -			if (iops > THROTL_IOPS_MAX)
-> > > +			if (temp > THROTL_IOPS_MAX)
-> > >  				return -EINVAL;
-> > >  
-> > >  			newpn->plid = plid;
-> > >  			newpn->fileid = fileid;
-> > > -			newpn->val.iops = (unsigned int)iops;
-> > > +			newpn->val.iops = (unsigned int)temp;
-> > >  			break;
-> > >  		}
-> > >  		break;
-> > > -- 
-> > > 1.7.6
-> 
-> How about this? For a long time.
+Intel SDM volume 3A, 8.4.2 says:
 
-I have already acked this patch. Jens, what do you think about it.
+  Software can disable fast-string operation by clearing the
+  fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+  However, Intel recomments that system software always enable
+  fast-string operation.
 
-Thanks
-Vivek
+The Intel DQ67SW board (with latest BIOS) disables fast string
+operations if TXT is enabled.  A Lenovo X220 disables it regardless
+of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+this.
+
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+---
+ arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index ed6086e..1f7367d 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -30,6 +30,7 @@
+ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ {
+ 	u64 misc_enable;
++	bool allow_fast_string = true;
+ 
+ 	/* Unmask CPUID levels if masked: */
+ 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+@@ -118,10 +119,11 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 	 * (model 2) with the same problem.
+ 	 */
+ 	if (c->x86 == 15) {
+-		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++		allow_fast_string = false;
+ 
++		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+ 		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
+-			printk(KERN_INFO "kmemcheck: Disabling fast string operations\n");
++			printk_once(KERN_INFO "kmemcheck: Disabling fast string operations\n");
+ 
+ 			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
+ 			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+@@ -130,13 +132,29 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ #endif
+ 
+ 	/*
+-	 * If fast string is not enabled in IA32_MISC_ENABLE for any reason,
+-	 * clear the fast string and enhanced fast string CPU capabilities.
++	 * If BIOS didn't enable fast string operation, try to enable
++	 * it ourselves.  If that fails, then clear the fast string
++	 * and enhanced fast string CPU capabilities.
+ 	 */
+ 	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+ 		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++
++		if (allow_fast_string &&
++		    !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
++			misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
++			wrmsr_safe(MSR_IA32_MISC_ENABLE, (u32)misc_enable,
++				   (u32)(misc_enable >> 32));
++
++			/* Re-read to make sure it stuck. */
++			rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
++
++			if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)
++				printk_once(KERN_INFO FW_WARN "IA32_MISC_ENABLE.FAST_STRING_ENABLE was not set\n");
++		}
++
+ 		if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
+-			printk(KERN_INFO "Disabled fast string operations\n");
++			if (allow_fast_string)
++				printk_once(KERN_INFO "Failed to enable fast string operations\n");
+ 			setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+-- 
+1.7.6
+
