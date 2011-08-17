@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab1HQVhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 17:37:37 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57954 "EHLO hera.kernel.org"
+	id S1754605Ab1HQVjg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 17:39:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:26025 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751570Ab1HQVhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 17:37:36 -0400
-Date: Wed, 17 Aug 2011 23:36:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        David Ahern <daahern@cisco.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, acme@ghostprotocols.net
-Subject: Re: [GIT PULL 0/6] perf/core fixes and improvements
-Message-ID: <20110817213617.GA9634@kernel.org>
-References: <1313505695-20724-1-git-send-email-acme@infradead.org>
+	id S1751570Ab1HQVjc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 17:39:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,241,1312182000"; 
+   d="scan'208";a="42445915"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Andy Lutomirski <luto@MIT.EDU>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Wed, 17 Aug 2011 14:38:30 -0700
+Subject: RE: [PATCH v4 1/2] x86: Enable fast strings on Intel if BIOS hasn't
+ already
+Thread-Topic: [PATCH v4 1/2] x86: Enable fast strings on Intel if BIOS
+ hasn't already
+Thread-Index: Acxc5nXlDaOI/3DsS5uzJsWj/LlLOgAP04Qw
+Message-ID: <493994B35A117E4F832F97C4719C4C040132E3F8D2@orsmsx505.amr.corp.intel.com>
+References: <cover.1313586473.git.luto@mit.edu>
+ <e6c5440954c28e9738b8d4919a9db2d10c9a1757.1313586473.git.luto@mit.edu>
+In-Reply-To: <e6c5440954c28e9738b8d4919a9db2d10c9a1757.1313586473.git.luto@mit.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313505695-20724-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Wed, 17 Aug 2011 21:37:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-
-> Hi Ingo,
+> -----Original Message-----
+> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+> Sent: Wednesday, August 17, 2011 7:03 AM
+> To: x86@kernel.org; linux-kernel@vger.kernel.org
+> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+> Subject: [PATCH v4 1/2] x86: Enable fast strings on Intel if BIOS
+> hasn't already
 > 
->         Please consider pulling from:
+> Intel SDM volume 3A, 8.4.2 says:
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+>   Software can disable fast-string operation by clearing the
+>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>   However, Intel recomments that system software always enable
+>   fast-string operation.
 > 
-> Regards,
+> The Intel DQ67SW board (with latest BIOS) disables fast string
+> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+> this.
 > 
-> - Arnaldo
-> 
-> Stephane Eranian (6):
->   perf list: Fix exit value
->   perf evlist: Fix missing event name init for default event (v2)
->   perf tools: Fix error handling of unknown events
->   perf annotate: Make output more readable
->   perf annotate: Add --symfs option
->   perf stat: Add -o and --append options
-> 
->  tools/perf/Documentation/perf-annotate.txt |   11 ++
->  tools/perf/Documentation/perf-stat.txt     |    7 ++
->  tools/perf/builtin-annotate.c              |    6 +
->  tools/perf/builtin-stat.c                  |  155 ++++++++++++++++-----------
->  tools/perf/util/annotate.c                 |    5 +-
->  tools/perf/util/color.c                    |    2 +-
->  tools/perf/util/evlist.c                   |   11 ++-
->  tools/perf/util/parse-events.c             |    8 +-
->  tools/perf/util/symbol.c                   |    2 +
->  tools/perf/util/symbol.h                   |    4 +-
->  10 files changed, 141 insertions(+), 70 deletions(-)
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
 
-hm, shouldnt these:
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 
->   perf list: Fix exit value
->   perf evlist: Fix missing event name init for default event (v2)
->   perf tools: Fix error handling of unknown events
-
-be in perf/urgent (based on -git) and go into v3.1, while the rest is 
-for perf/core and goes into v3.2?
-
-Thanks,
-
-	Ingo
