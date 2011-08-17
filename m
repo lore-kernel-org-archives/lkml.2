@@ -1,71 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1HQNTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:19:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37367 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1HQNTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:19:08 -0400
-Date: Wed, 17 Aug 2011 15:19:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, "Huang, Ying" <ying.huang@intel.com>,
-        "He, Fan F" <fan.f.he@intel.com>
-Subject: Re: perf: problem of 32bit mmap call graph recording
-Message-ID: <20110817131900.GF32132@somewhere.redhat.com>
-References: <1313569203.4115.149.camel@minggr.sh.intel.com>
+	id S1753976Ab1HQREo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:04:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64394 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753558Ab1HQREn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 13:04:43 -0400
+Date: Wed, 17 Aug 2011 19:01:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/41] signal: Use set_current_blocked()
+Message-ID: <20110817170152.GA22499@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <20110811160358.GA7989@redhat.com> <1313523659.3436.184.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1313569203.4115.149.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1313523659.3436.184.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 04:20:03PM +0800, Lin Ming wrote:
-> Hi all, 
-> 
-> On 32 bit machine, we have problem to get the usersapce call graph of
-> mmap syscall.
-> 
-> You can reproduce it with below command on 32bit machine.
-> 
-> sudo perf record -f -g -e raw_syscalls:sys_enter --filter "id==192" ls
-> 
-> sudo perf report |less
-> 
-> # Events: 26 
-> #
-> # Overhead  Command      Shared Object  Symbol
-> # ........  .......  .................  ......
-> #
->    100.00%       ls  [kernel.kallsyms]  [k] syscall_trace_enter
->                  |
->                  --- syscall_trace_enter
->                      syscall_trace_entry
->                     |          
->                     |--88.46%-- __mmap  <--- only __mmap, no more userspace call stacks
->                     |          
->                      --11.54%-- 0xffffe424
-> 
-> 
-> Kernel relies on userspace bp register to get call graph information.
-> But for mmap syscall, the bp register is used to pass in the sixth
-> parameter(offset).
-> 
-> void *mmap(void *addr, size_t length, int prot, int flags,
->                   int fd, off_t offset);
-> 
-> Anyway to fix this issue on 32bit machine?
+On 08/16, Matt Fleming wrote:
+>
+> Did you want me to send just the updated
+> versions of patches or the entire series again? It would seem over the
+> top to send the entire series.
 
-Ah... Well we can't do much about that I fear :)
-The only way would be to rely on dwarf informations to do the
-unwind. The upside is that it would work about everywhere
-even on places that don't have frame pointers, the downside
-is some overhead on sample records (dump a bunch of stack every
-sample) and a lot of work :)
+This is up to you. Just in case, feel free to add my acked-by or
+reviewed-by to any patch I didn't comment explicitly. Or may be
+
+> Also, are you going to pull these patches into your tree and send them
+> to Linus or would it be better to route them through -mm?
+
+This is the question ;)
+
+I simply do not know what should we do. I think this should be
+routed via maintainers.
+
+Or I can push this into the poor ptrace branch... but I am
+thinking with horror about the possible conflicts in arch/ code...
+
+What do you think?
+
+
+
+Damn. And I can't relax. This is very minor, but I still think
+it would be nice to have a common helper which plays sa_mask /
+SA_NODEFER to set ->blocked. But in this case, you probably need
+to resend the whole series ;)
+
+I mean something like the patch below. OK, nevermind. Probably
+this factorization doesn't buy too much, but it will complicate
+the merging.
+
+Oleg.
+
+--- x/include/linux/signal.h
++++ x/include/linux/signal.h
+@@ -254,6 +254,7 @@ extern void set_current_blocked(const si
+ extern int show_unhandled_signals;
+ 
+ extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
++extern void xxx(struct k_sigaction *ka);
+ extern void exit_signals(struct task_struct *tsk);
+ 
+ extern struct kmem_cache *sighand_cachep;
+--- x/kernel/signal.c
++++ x/kernel/signal.c
+@@ -2314,6 +2314,16 @@ relock:
+ 	return signr;
+ }
+ 
++void xxx(struct k_sigaction *ka)
++{
++	sigset_t blocked;
++
++	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
++		sigaddset(&blocked, sig);
++	set_current_blocked(&blocked);
++}
++
+ /*
+  * It could be that complete_signal() picked us to notify about the
+  * group-wide signal. Other threads should be notified now to take
+--- x/arch/x86/kernel/signal.c
++++ x/arch/x86/kernel/signal.c
+@@ -682,7 +682,6 @@ static int
+ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 		struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int ret;
+ 
+ 	/* Are we from a system call? */
+@@ -733,14 +732,10 @@ handle_signal(unsigned long sig, siginfo
+ 	 */
+ 	regs->flags &= ~X86_EFLAGS_TF;
+ 
+-	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&blocked, sig);
+-	set_current_blocked(&blocked);
++	xxx(ka);
+ 
+ 	tracehook_signal_handler(sig, info, ka, regs,
+ 				 test_thread_flag(TIF_SINGLESTEP));
+-
+ 	return 0;
+ }
+ 
+
