@@ -1,136 +1,492 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab1HQQSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:18:15 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39186 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab1HQQSM (ORCPT
+	id S1754411Ab1HQRNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:13:53 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26011 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab1HQRFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:18:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=RpIUdoJbUq7Eqrqztn+LR/CX+8+ywF3rrii7onnb6g0km2U7B6Vi1j8JUQfHQ8LL0
-	Zg+oq7w8r7jRktD6r9G+Q==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v9 06/13] memcg: add dirty limits to mem_cgroup
-Date: Wed, 17 Aug 2011 09:14:58 -0700
-Message-Id: <1313597705-6093-7-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+	Wed, 17 Aug 2011 13:05:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004070"
+Message-Id: <20110817163520.145693358@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:00 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch 03/36] Hexagon: Add bitops support
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=bitops.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend mem_cgroup to contain dirty page limits.
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
-Changelog since v8:
-- Use 'memcg' rather than 'mem' for local variables and parameters.
-  This is consistent with other memory controller code.
+ arch/hexagon/include/asm/bitops.h       |  219 ++++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/bitops/__ffs.h |   42 ++++++
+ arch/hexagon/include/asm/bitops/__fls.h |   41 +++++
+ arch/hexagon/include/asm/bitops/ffs.h   |   43 ++++++
+ arch/hexagon/include/asm/bitops/ffz.h   |   38 +++++
+ arch/hexagon/include/asm/bitops/fls.h   |   42 ++++++
+ 6 files changed, 425 insertions(+)
 
- mm/memcontrol.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 49 insertions(+), 1 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index eda0d9a..070c4ab 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -254,6 +254,13 @@ const char *scanstat_string[NR_SCANSTATS] = {
- #define SCANSTAT_WORD_SYSTEM	"_by_system"
- #define SCANSTAT_WORD_HIERARCHY	"_under_hierarchy"
- 
-+/* Dirty memory parameters */
-+struct vm_dirty_param {
-+	int dirty_ratio;
-+	int dirty_background_ratio;
-+	unsigned long dirty_bytes;
-+	unsigned long dirty_background_bytes;
-+};
- 
- /*
-  * The memory controller data structure. The memory controller controls both
-@@ -303,6 +310,10 @@ struct mem_cgroup {
- 	atomic_t	refcnt;
- 
- 	int	swappiness;
-+
-+	/* control memory cgroup dirty pages */
-+	struct vm_dirty_param dirty_param;
-+
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
- 
-@@ -1348,6 +1359,36 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- 	return memcg->swappiness;
- }
- 
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,219 @@
 +/*
-+ * Return true if the current memory cgroup has local dirty memory settings.
-+ * There is an allowed race between the current task migrating in-to/out-of the
-+ * root cgroup while this routine runs.  So the return value may be incorrect if
-+ * the current task is being simultaneously migrated.
++ * Bit operations for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+static bool mem_cgroup_has_dirty_limit(struct mem_cgroup *memcg)
++
++#ifndef _ASM_BITOPS_H
++#define _ASM_BITOPS_H
++
++#include <linux/compiler.h>
++#include <asm/byteorder.h>
++#include <asm/system.h>
++#include <asm/atomic.h>
++
++#ifdef __KERNEL__
++
++#define smp_mb__before_clear_bit()	barrier()
++#define smp_mb__after_clear_bit()	barrier()
++
++/*
++ * The offset calculations for these are based on BITS_PER_LONG == 32
++ * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
++ * mask by 0x0000001F)
++ *
++ * Typically, R10 is clobbered for address, R11 bit nr, and R12 is temp
++ */
++
++/**
++ * test_and_clear_bit - clear a bit and return its old value
++ * @nr:  bit number to clear
++ * @addr:  pointer to memory
++ */
++static inline int test_and_clear_bit(int nr, volatile void *addr)
 +{
-+	return memcg && !mem_cgroup_is_root(memcg);
++	int oldval;
++
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = clrbit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
++
++	return oldval;
++}
++
++/**
++ * test_and_set_bit - set a bit and return its old value
++ * @nr:  bit number to set
++ * @addr:  pointer to memory
++ */
++static inline int test_and_set_bit(int nr, volatile void *addr)
++{
++	int oldval;
++
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = setbit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
++
++
++	return oldval;
++
++}
++
++/**
++ * test_and_change_bit - toggle a bit and return its old value
++ * @nr:  bit number to set
++ * @addr:  pointer to memory
++ */
++static inline int test_and_change_bit(int nr, volatile void *addr)
++{
++	int oldval;
++
++	__asm__ __volatile__ (
++	"	{R10 = %1; R11 = asr(%2,#5); }\n"
++	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
++	"1:	R12 = memw_locked(R10);\n"
++	"	{ P0 = tstbit(R12,R11); R12 = togglebit(R12,R11); }\n"
++	"	memw_locked(R10,P1) = R12;\n"
++	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
++	: "=&r" (oldval)
++	: "r" (addr), "r" (nr)
++	: "r10", "r11", "r12", "p0", "p1", "memory"
++	);
++
++	return oldval;
++
 +}
 +
 +/*
-+ * Returns a snapshot of the current dirty limits which is not synchronized with
-+ * the routines that change the dirty limits.  If this routine races with an
-+ * update to the dirty bytes/ratio value, then the caller must handle the case
-+ * where neither dirty_[background_]_ratio nor _bytes are set.
++ * Atomic, but doesn't care about the return value.
++ * Rewrite later to save a cycle or two.
 + */
-+static void mem_cgroup_dirty_param(struct vm_dirty_param *param,
-+				   struct mem_cgroup *memcg)
++
++static inline void clear_bit(int nr, volatile void *addr)
 +{
-+	if (mem_cgroup_has_dirty_limit(memcg)) {
-+		*param = memcg->dirty_param;
-+	} else {
-+		param->dirty_ratio = vm_dirty_ratio;
-+		param->dirty_bytes = vm_dirty_bytes;
-+		param->dirty_background_ratio = dirty_background_ratio;
-+		param->dirty_background_bytes = dirty_background_bytes;
-+	}
++	test_and_clear_bit(nr, addr);
 +}
 +
- static void mem_cgroup_start_move(struct mem_cgroup *mem)
- {
- 	int cpu;
-@@ -5220,8 +5261,15 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	mem->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&mem->oom_notify);
- 
--	if (parent)
-+	if (parent) {
- 		mem->swappiness = mem_cgroup_swappiness(parent);
-+		mem_cgroup_dirty_param(&mem->dirty_param, parent);
-+	} else {
-+		/*
-+		 * The root cgroup dirty_param field is not used, instead,
-+		 * system-wide dirty limits are used.
-+		 */
-+	}
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
- 	mutex_init(&mem->thresholds_lock);
--- 
-1.7.3.1
++static inline void set_bit(int nr, volatile void *addr)
++{
++	test_and_set_bit(nr, addr);
++}
++
++static inline void change_bit(int nr, volatile void *addr)
++{
++	test_and_change_bit(nr, addr);
++}
++
++
++/*
++ * These are allowed to be non-atomic.  In fact the generic flavors are
++ * in non-atomic.h.  Would it be better to use intrinsics for this?
++ *
++ * OK, writes in our architecture do not invalidate LL/SC, so this has to
++ * be atomic, particularly for things like slab_lock and slab_unlock.
++ *
++ */
++static inline void __clear_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_clear_bit(nr, addr);
++}
++
++static inline void __set_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_set_bit(nr, addr);
++}
++
++static inline void __change_bit(int nr, volatile unsigned long *addr)
++{
++	test_and_change_bit(nr, addr);
++}
++
++/*  Apparently, at least some of these are allowed to be non-atomic  */
++static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_clear_bit(nr, addr);
++}
++
++static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_set_bit(nr, addr);
++}
++
++static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
++{
++	return test_and_change_bit(nr, addr);
++}
++
++static inline int __test_bit(int nr, const volatile unsigned long *addr)
++{
++	int retval;
++
++	asm volatile(
++	"{P0 = tstbit(%1,%2); if (P0.new) %0 = #1; if (!P0.new) %0 = #0;}\n"
++	: "=&r" (retval)
++	: "r" (addr[BIT_WORD(nr)]), "r" (nr % BITS_PER_LONG)
++	: "p0"
++	);
++
++	return retval;
++}
++
++#define test_bit(nr, addr) __test_bit(nr, addr)
++
++#ifdef CONFIG_HEXAGON_BITOPS
++#include <asm/bitops/ffz.h>
++#include <asm/bitops/fls.h>
++#include <asm/bitops/ffs.h>
++#include <asm/bitops/__ffs.h>
++#include <asm/bitops/__fls.h>
++#else
++#include <asm-generic/bitops/ffz.h>
++#include <asm-generic/bitops/fls.h>
++#include <asm-generic/bitops/ffs.h>
++#include <asm-generic/bitops/__ffs.h>
++#define __fls(x) (fls(x) - 1)
++#endif
++
++#include <asm-generic/bitops/lock.h>
++#include <asm-generic/bitops/find.h>
++
++#include <asm-generic/bitops/fls64.h>
++#include <asm-generic/bitops/sched.h>
++#include <asm-generic/bitops/hweight.h>
++
++#include <asm-generic/bitops/le.h>
++#include <asm-generic/bitops/ext2-atomic.h>
++
++#endif /* __KERNEL__ */
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__ffs.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__ffs.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,42 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_BITOPS___FFS_H_
++#define _ASM_BITOPS___FFS_H_
++
++/*
++ * __ffs - find first bit in word.
++ * @word: The word to search
++ *
++ * Undefined if no bit exists, so code should check against 0 first.
++ *
++ * bits_per_long assumed to be 32
++ * numbering starts at 0 I think (instead of 1 like ffs)
++ */
++static inline unsigned long __ffs(unsigned long word)
++{
++	int num;
++
++	asm volatile("%0 = ct0(%1);\n"
++		: "=&r" (num)
++		: "r" (word));
++
++	return num;
++}
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__fls.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/__fls.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_BITOPS___FLS_H_
++#define _ASM_BITOPS___FLS_H_
++
++/*
++ * __fls - find last (most-significant) set bit in a long word
++ * @word: the word to search
++ *
++ * Undefined if no set bit exists, so code should check against 0 first.
++ * bits_per_long assumed to be 32
++ */
++static inline unsigned long __fls(unsigned long word)
++{
++	int num;
++
++	asm volatile("%0 = cl0(%1);\n"
++		"%0 = sub(#31,%0);\n"
++		: "=&r" (num)
++		: "r" (word));
++
++	return num;
++}
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffs.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffs.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,43 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_BITOPS_FFS_H_
++#define _ASM_BITOPS_FFS_H_
++
++/*
++ * ffs - find first bit set
++ * @x: the word to search
++ *
++ * This is defined the same way as
++ * the libc and compiler builtin ffs routines, therefore
++ * differs in spirit from the above ffz (man ffs).
++ */
++static inline int ffs(int x)
++{
++	int r;
++
++	asm volatile("{ P0 = cmp.eq(%1,#0); %0 = ct0(%1);}\n"
++		"{ if P0 %0 = #0; if !P0 %0 = add(%0,#1);}\n"
++		: "=&r" (r)
++		: "r" (x)
++		: "p0");
++
++	return r;
++}
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffz.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/ffz.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_BITOPS_FFZ_H_
++#define _ASM_BITOPS_FFZ_H_
++
++/*
++ * ffz - find first zero in word.
++ * @word: The word to search
++ *
++ * Undefined if no zero exists, so code should check against ~0UL first.
++ */
++static inline int ffz(int x)
++{
++	int r;
++
++	asm volatile("%0 = ct1(%1);\n"
++		: "=&r" (r)
++		: "r" (x));
++	return r;
++}
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bitops/fls.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bitops/fls.h	2011-07-20 15:19:35.455153985 -0500
+@@ -0,0 +1,42 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_BITOPS_FLS_H_
++#define _ASM_BITOPS_FLS_H_
++
++/*
++ * fls - find last (most-significant) bit set
++ * @x: the word to search
++ *
++ * This is defined the same way as ffs.
++ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
++ */
++static inline int fls(int x)
++{
++	int r;
++
++	asm volatile("{ %0 = cl0(%1);}\n"
++		"%0 = sub(#32,%0);\n"
++		: "=&r" (r)
++		: "r" (x)
++		: "p0");
++
++	return r;
++}
++
++#endif
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
