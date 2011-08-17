@@ -1,141 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab1HQQID (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:08:03 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:39521 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753939Ab1HQQIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:08:01 -0400
-Date: Wed, 17 Aug 2011 11:07:59 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] specific do_timer_cpu value for nohz off mode
-Message-ID: <20110817160759.GA3482@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754093Ab1HQQRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:17:17 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:40772 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab1HQQRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 12:17:14 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=Uu5Jw+6DvlPQu489/qii0vA7zBajp7tDbryOtgrH3QYB6LYd9bbZJpGYM+0X2VUk1
+	VPKMHpfgdvUMQwT07JTyg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 01/13] memcg: document cgroup dirty memory interfaces
+Date: Wed, 17 Aug 2011 09:14:53 -0700
+Message-Id: <1313597705-6093-2-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reposting this, as this was posted 2 weeks ago with no replies.
+Document cgroup dirty memory interfaces and statistics.
 
-Jiffies updates are currently done by the tick_do_timer_cpu.  This has a
-non-deterministic value that can be any running cpu on the system.  It
-changes dynamically in nohz mode.  When nohz mode is off, it gets set to
-a more static, but still non-deterministic value.
+The implementation for these new interfaces routines comes in a series
+of following patches.
 
-While the nohz behavior is necessary, is there a reason why the nohz off
-case can't have a specific value, say 0 as it was on earlier kernels?
-If the cpu is offlined, let the value change at that time (note that the
-x86 arch disallows offlining cpu 0).
-
-There are certain cases where this would be advantageous, especially where
-timely jiffies updates may not necessarily occur on specific processors.
-
-The following sample patch presents one way that this could be done.
-Processors wait for the selected cpu to enter high resolution mode before
-they do so.
-
-Note that this patch is not hotplug aware (however, should the
-tick_static_do_timer_cpu be offlined, the tick_do_timer_cpu simply becomes
-another cpu anyway).
-
-Comments on this idea, or the sample patch?
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- Documentation/kernel-parameters.txt |    8 +++++
- kernel/time/tick-sched.c            |   46 ++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
+ Documentation/cgroups/memory.txt |   70 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 70 insertions(+), 0 deletions(-)
 
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c
-+++ linux/kernel/time/tick-sched.c
-@@ -30,11 +30,54 @@
-  */
- static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 6f3c598..5fd6ab8 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -389,6 +389,10 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+ pgpgin		- # of pages paged in (equivalent to # of charging events).
+ pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+ swap		- # of bytes of swap usage
++dirty		- # of bytes that are waiting to get written back to the disk.
++writeback	- # of bytes that are actively being written back to the disk.
++nfs_unstable	- # of bytes sent to the NFS server, but not yet committed to
++		the actual storage.
+ inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+ 		LRU list.
+ active_anon	- # of bytes of anonymous and swap cache memory on active
+@@ -410,6 +414,9 @@ total_mapped_file	- sum of all children's "cache"
+ total_pgpgin		- sum of all children's "pgpgin"
+ total_pgpgout		- sum of all children's "pgpgout"
+ total_swap		- sum of all children's "swap"
++total_dirty		- sum of all children's "dirty"
++total_writeback		- sum of all children's "writeback"
++total_nfs_unstable	- sum of all children's "nfs_unstable"
+ total_inactive_anon	- sum of all children's "inactive_anon"
+ total_active_anon	- sum of all children's "active_anon"
+ total_inactive_file	- sum of all children's "inactive_file"
+@@ -567,6 +574,69 @@ unevictable=<total anon pages> N0=<node 0 pages> N1=<node 1 pages> ...
  
-+DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
-+
- /*
-  * The time, when the last jiffy update happened. Protected by xtime_lock.
-  */
- static ktime_t last_jiffies_update;
+ And we have total = file + anon + unevictable.
  
-+/*
-+ * Static tick_do_timer_cpu
-+ */
-+static int tick_static_do_timer_cpu __read_mostly = -1;
++5.7 dirty memory
 +
-+/*
-+ * Set tick_do_timer_cpu to a static cpu.
-+ *
-+ * Supported on systems w/nohz=off only.
-+ * Selected cpu can be offlined.  If this is done, another cpu will be chosen,
-+ * but will not revert back if selected cpu is onlined again.
-+ */
-+static int __init setup_static_do_timer_cpu(char *s)
-+{
-+	if (kstrtoint(s, 0, &tick_static_do_timer_cpu) < 0) {
-+		printk(KERN_WARNING "Invalid tick_static_do_timer_cpu specified\n");
-+		return 0;
-+	}
-+	printk(KERN_INFO "Set tick_static_do_timer_cpu %d\n",
-+		tick_static_do_timer_cpu);
++Control the maximum amount of dirty pages a cgroup can have at any given time.
 +
-+	return 1;
-+}
-+__setup("do_timer_cpu=", setup_static_do_timer_cpu);
++Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
++page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
++not be able to consume more than their designated share of dirty pages and will
++be throttled if they cross that limit.  System-wide dirty limits are also
++consulted.  Dirty memory consumption is checked against both system-wide and
++per-cgroup dirty limits.
 +
-+/*
-+ * Check to see if we need to wait for the selected static do_timer_cpu
-+ * to enter high res mode first.
-+ */
-+static int wait_for_static_do_timer_cpu(void)
-+{
-+	if (tick_static_do_timer_cpu == -1)
-+		return 0;
++The interface is similar to the procfs interface: /proc/sys/vm/dirty_*.  It is
++possible to configure a limit to trigger throttling of a dirtier or queue
++background writeback.  The root cgroup memory.dirty_* control files are
++read-only and match the contents of the /proc/sys/vm/dirty_* files.
 +
-+	if (smp_processor_id() != tick_static_do_timer_cpu &&
-+	    !*per_cpu_ptr(&hrtimer_bases.hres_active, tick_static_do_timer_cpu))
-+		return 1;
++Per-cgroup dirty limits can be set using the following files in the cgroupfs:
 +
-+	return 0;
-+}
++- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
++  cgroup memory) at which a process generating dirty pages will be throttled.
++  The default value is the system-wide dirty ratio, /proc/sys/vm/dirty_ratio.
 +
- struct tick_sched *tick_get_tick_sched(int cpu)
- {
- 	return &per_cpu(tick_cpu_sched, cpu);
-@@ -848,6 +891,9 @@ int tick_check_oneshot_change(int allow_
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++- memory.dirty_limit_in_bytes: the amount of dirty memory (expressed in bytes)
++  in the cgroup at which a process generating dirty pages will be throttled.
++  Suffix (k, K, m, M, g, or G) can be used to indicate that value is kilo, mega
++  or gigabytes.  The default value is the system-wide dirty limit,
++  /proc/sys/vm/dirty_bytes.
++
++  Note: memory.dirty_limit_in_bytes is the counterpart of memory.dirty_ratio.
++  Only one may be specified at a time.  When one is written it is immediately
++  taken into account to evaluate the dirty memory limits and the other appears
++  as 0 when read.
++
++- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
++  (expressed as a percentage of cgroup memory) at which background writeback
++  kernel threads will start writing out dirty data.  The default value is the
++  system-wide background dirty ratio, /proc/sys/vm/dirty_background_ratio.
++
++- memory.dirty_background_limit_in_bytes: the amount of dirty memory (expressed
++  in bytes) in the cgroup at which background writeback kernel threads will
++  start writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to
++  indicate that value is kilo, mega or gigabytes.  The default value is the
++  system-wide dirty background limit, /proc/sys/vm/dirty_background_bytes.
++
++  Note: memory.dirty_background_limit_in_bytes is the counterpart of
++  memory.dirty_background_ratio.  Only one may be specified at a time.  When one
++  is written it is immediately taken into account to evaluate the dirty memory
++  limits and the other appears as 0 when read.
++
++A cgroup may contain more dirty memory than its dirty limit.  This is possible
++because of the principle that the first cgroup to touch a page is charged for
++it.  Subsequent page counting events (dirty, writeback, nfs_unstable) are also
++counted to the originally charged cgroup.  Example: If page is allocated by a
++cgroup A task, then the page is charged to cgroup A.  If the page is later
++dirtied by a task in cgroup B, then the cgroup A dirty count will be
++incremented.  If cgroup A is over its dirty limit but cgroup B is not, then
++dirtying a cgroup A page from a cgroup B task may push cgroup A over its dirty
++limit without throttling the dirtying cgroup B task.
++
++When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
++When use_hierarchy=1 the dirty limits of parent cgroups are also checked to
++ensure that no dirty limit is exceeded.
++
+ 6. Hierarchy support
  
-+	if (!allow_nohz && !tick_nohz_enabled && wait_for_static_do_timer_cpu())
-+		return 0;
-+
- 	if (!test_and_clear_bit(0, &ts->check_clocks))
- 		return 0;
- 
-Index: linux/Documentation/kernel-parameters.txt
-===================================================================
---- linux.orig/Documentation/kernel-parameters.txt
-+++ linux/Documentation/kernel-parameters.txt
-@@ -665,6 +665,14 @@ bytes respectively. Such letter suffixes
- 			The filter can be disabled or changed to another
- 			driver later using sysfs.
- 
-+	do_timer_cpu=<cpu number>
-+			This selects the cpu to process jiffies updates
-+			when nohz mode is disabled.
-+			Works only with high resolution mode enabled.
-+			The selected cpu can be offlined.  If this is done,
-+			another cpu will be chosen, but will not revert back
-+			if the selected cpu is onlined again.
-+
- 	dscc4.setup=	[NET]
- 
- 	earlycon=	[KNL] Output early console device and options.
+ The memory controller supports a deep hierarchy and hierarchical accounting.
+-- 
+1.7.3.1
+
