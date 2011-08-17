@@ -1,34 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1HQGsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 02:48:11 -0400
-Received: from zfrontend1.aha.ru ([195.2.83.147]:36614 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751277Ab1HQGsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 02:48:07 -0400
-X-Greylist: delayed 3603 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 02:48:06 EDT
-From: "werner" <w.landgraf@ru.ru>
-Subject: 3.1-rc2 boot crashs
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Wed, 17 Aug 2011 01:47:58 -0400
-Message-ID: <web-589640183@zbackend1.aha.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+	id S1751599Ab1HQGzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 02:55:09 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:61541 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1HQGzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 02:55:07 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix line over 80 charcter issue in cb_pcidda.c
+Date: Wed, 17 Aug 2011 02:54:45 -0400
+Message-Id: <1313564085-2842-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging:comedi:fix line over 80 character issue in cb_pcidda.c>
+References: <[PATCH]Staging:comedi:fix line over 80 character issue in cb_pcidda.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-rc1 and 2 crash during boot, within 1 sec after 
-starting (screen stays black, harddisk lamp stops to 
-blink, no error messg obtainable). That's with the allyes 
-config, which with 3.0.1 , 3.0.2 don't have any problems 
-(3.0.2 i compiled today too and it runs normally).  To 
-avoid that this problem continues long time until 
-corrected, I advice, although I cannot help with an error 
-message.  Who want can give me suggestions what to 
-disable.
-wl
+From: Ravishankar <ravi.shankar@greenturtles.in>
+
+This is a patch to the ni_labpc.c file that fixes up a line over 80 charcter warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
-Professional hosting for everyone - http://www.host.ru
+ drivers/staging/comedi/drivers/cb_pcidda.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
+index 49102b3..5c7d454 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidda.c
++++ b/drivers/staging/comedi/drivers/cb_pcidda.c
+@@ -227,8 +227,10 @@ struct cb_pcidda_private {
+ 	/* unsigned long control_status; */
+ 	/* unsigned long adc_fifo; */
+ 
+-	unsigned int dac_cal1_bits;	/*  bits last written to da calibration register 1 */
+-	unsigned int ao_range[MAX_AO_CHANNELS];	/*  current range settings for output channels */
++	/* bits last written to da calibration register 1 */
++	unsigned int dac_cal1_bits;
++	/* current range settings for output channels */
++	unsigned int ao_range[MAX_AO_CHANNELS];
+ 	u16 eeprom_data[EEPROM_SIZE];	/*  software copy of board's eeprom */
+ };
+ 
+-- 
+1.7.6
+
