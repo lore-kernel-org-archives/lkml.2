@@ -1,105 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab1HQCoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 22:44:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60698 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753194Ab1HQCoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 22:44:01 -0400
-Message-ID: <4E4B2B06.4010108@cn.fujitsu.com>
-Date: Wed, 17 Aug 2011 10:44:22 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
+	id S1753292Ab1HQCuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 22:50:39 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:40853 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753129Ab1HQCuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 22:50:37 -0400
+Date: Tue, 16 Aug 2011 19:49:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 8/8] res_counter: Allow charge failure pointer to be null
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-9-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1311956010-32076-9-git-send-email-fweisbec@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 10:42:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 10:42:45,
-	Serialize complete at 2011-08-17 10:42:45
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 14/32] nohz/cpuset: Don't turn off the tick if rcu
+ needs it
+Message-ID: <20110817024914.GA2745@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
+ <20110816201342.GG2404@linux.vnet.ibm.com>
+ <20110817021024.GB32132@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817021024.GB32132@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> So that callers of res_counter_charge() don't have to create and
-> pass this pointer even if they aren't interested in it.
+On Wed, Aug 17, 2011 at 04:10:27AM +0200, Frederic Weisbecker wrote:
+> On Tue, Aug 16, 2011 at 01:13:42PM -0700, Paul E. McKenney wrote:
+> > On Mon, Aug 15, 2011 at 05:52:11PM +0200, Frederic Weisbecker wrote:
+> > > If RCU is waiting for the current CPU to complete a grace
+> > > period, don't turn off the tick. Unlike dynctik-idle, we
+> > 
+> > s/dynctik/dyntick/  ;-)
 > 
-
-Why not make this change early, or even do this in "[PATCH 5/8]".
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Aditya Kali <adityakali@google.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/cgroup_task_counter.c |    6 ++----
->  kernel/res_counter.c         |    6 ++++--
->  2 files changed, 6 insertions(+), 6 deletions(-)
+> Heh! :)
 > 
-> diff --git a/kernel/cgroup_task_counter.c b/kernel/cgroup_task_counter.c
-> index 7f12ac9..dacc4a9 100644
-> --- a/kernel/cgroup_task_counter.c
-> +++ b/kernel/cgroup_task_counter.c
-> @@ -93,11 +93,10 @@ static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_
->  {
->  	struct res_counter *res = cgroup_task_counter_res(cgrp);
->  	struct res_counter *old_res = cgroup_task_counter_res(old_cgrp);
-> -	struct res_counter *limit_fail_at;
->  
->  	common_ancestor = res_counter_common_ancestor(res, old_res);
->  
-> -	return res_counter_charge_until(res, common_ancestor, 1, &limit_fail_at);
-> +	return res_counter_charge_until(res, common_ancestor, 1, NULL);
->  }
->  
->  static void task_counter_cancel_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> @@ -154,13 +153,12 @@ int cgroup_task_counter_fork(struct task_struct *child)
->  {
->  	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
->  	struct cgroup *cgrp = css->cgroup;
-> -	struct res_counter *limit_fail_at;
->  
->  	/* Optimize for the root cgroup case, which doesn't have a limit */
->  	if (!cgrp->parent)
->  		return 0;
->  
-> -	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
-> +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, NULL);
->  }
->  
->  struct cgroup_subsys tasks_subsys = {
-> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> index 725dfa6..7eac803 100644
-> --- a/kernel/res_counter.c
-> +++ b/kernel/res_counter.c
-> @@ -43,14 +43,16 @@ int res_counter_charge_until(struct res_counter *counter,
->  	unsigned long flags;
->  	struct res_counter *c, *u;
->  
-> -	*limit_fail_at = NULL;
-> +	if (limit_fail_at)
-> +		*limit_fail_at = NULL;
->  	local_irq_save(flags);
->  	for (c = counter; c != limit; c = c->parent) {
->  		spin_lock(&c->lock);
->  		ret = res_counter_charge_locked(c, val);
->  		spin_unlock(&c->lock);
->  		if (ret < 0) {
-> -			*limit_fail_at = c;
-> +			if (limit_fail_at)
-> +				*limit_fail_at = c;
->  			goto undo;
->  		}
->  	}
+> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > > index 99f9aa7..55a482a 100644
+> > > --- a/include/linux/rcupdate.h
+> > > +++ b/include/linux/rcupdate.h
+> > > @@ -133,6 +133,7 @@ static inline int rcu_preempt_depth(void)
+> > >  extern void rcu_sched_qs(int cpu);
+> > >  extern void rcu_bh_qs(int cpu);
+> > >  extern void rcu_check_callbacks(int cpu, int user);
+> > > +extern int rcu_pending(int cpu);
+> > >  struct notifier_block;
+> > > 
+> > >  #ifdef CONFIG_NO_HZ
+> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > index ba06207..0009bfc 100644
+> > > --- a/kernel/rcutree.c
+> > > +++ b/kernel/rcutree.c
+> > > @@ -205,7 +205,6 @@ int rcu_cpu_stall_suppress __read_mostly;
+> > >  module_param(rcu_cpu_stall_suppress, int, 0644);
+> > > 
+> > >  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
+> > > -static int rcu_pending(int cpu);
+> > > 
+> > >  /*
+> > >   * Return the number of RCU-sched batches processed thus far for debug & stats.
+> > > @@ -1729,7 +1728,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+> > >   * by the current CPU, returning 1 if so.  This function is part of the
+> > >   * RCU implementation; it is -not- an exported member of the RCU API.
+> > >   */
+> > > -static int rcu_pending(int cpu)
+> > > +int rcu_pending(int cpu)
+> > >  {
+> > >  	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
+> > >  	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
+> > > diff --git a/kernel/sched.c b/kernel/sched.c
+> > > index 0e1aa4e..353a66f 100644
+> > > --- a/kernel/sched.c
+> > > +++ b/kernel/sched.c
+> > > @@ -2439,6 +2439,7 @@ DEFINE_PER_CPU(int, task_nohz_mode);
+> > >  bool cpuset_nohz_can_stop_tick(void)
+> > >  {
+> > >  	struct rq *rq;
+> > > +	int cpu;
+> > > 
+> > >  	rq = this_rq();
+> > > 
+> > > @@ -2446,6 +2447,19 @@ bool cpuset_nohz_can_stop_tick(void)
+> > >  	if (rq->nr_running > 1)
+> > >  		return false;
+> > > 
+> > > +	cpu = smp_processor_id();
+> > > +
+> > > +	/*
+> > > +	 * FIXME: will probably be removed soon as it's
+> > > +	 * already checked from tick_nohz_stop_sched_tick()
+> > > +	 */
+> > > +	if (rcu_needs_cpu(cpu))
+> > > +		return false;
+> > > +
+> > > +	/* Is there a grace period to complete ? */
+> > > +	if (rcu_pending(cpu))
+> > 
+> > This is from a quiescent state for both RCU and RCU-bh, right?
+> > Or can their be RCU or RCU-bh read-side critical sections held
+> > across here?  (It would be mildly bad if so.)
+> 
+> Yeah this can happen. This is called from the timer interrupt
+> or from an IPI. We can be in any kind of rcu critical section.
+> 
+> > But force_quiescent_state() will catch cases where RCU needs
+> > quiescent states from CPUs, so is this check really needed?
+> 
+> Yeah we should receive IPIs from CPUs that need us. This can
+> be an optimization though. No need to run into a cycle of
+> on timers shutdown/restart if we can complete something
+> right away.
+
+Never mind...  I was confusing this with rcu_needs_cpu(), which should not
+be called from within an RCU-sched or RCU-bh read-side critical section.
+
+It is plenty fine to call rcu_pending() from within RCU read-side
+critical sections.
+
+							Thanx, Paul
