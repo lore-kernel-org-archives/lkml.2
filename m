@@ -1,105 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1HQQcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:32:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52824 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab1HQQcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:32:33 -0400
-Date: Wed, 17 Aug 2011 09:32:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>, chase.douglas@canonical.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 4/8 v3] Input: synaptics - add image sensor support
-Message-ID: <20110817163226.GB4877@core.coreip.homeip.net>
-References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
- <1313169407-4358-5-git-send-email-djkurtz@chromium.org>
- <20110812210911.GA9124@polaris.bitmath.org>
- <CAGS+omAo1tPzBQ_s+vz-7_5SS6vWv4bdzD1JfqepUS7wYxK5sA@mail.gmail.com>
- <CAGS+omCeb6R_Y7Js+da=E+etNYXWu+DjT=Mio_DLSwQo97yNkg@mail.gmail.com>
+	id S1754089Ab1HQQID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:08:03 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:39521 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753939Ab1HQQIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 12:08:01 -0400
+Date: Wed, 17 Aug 2011 11:07:59 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20110817160759.GA3482@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGS+omCeb6R_Y7Js+da=E+etNYXWu+DjT=Mio_DLSwQo97yNkg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 10:05:48PM +0800, Daniel Kurtz wrote:
-> On Mon, Aug 15, 2011 at 3:17 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> >
-> > Hi Henrik,
-> >
-> > Thanks for the great feedback.
-> >
-> > On Sat, Aug 13, 2011 at 5:09 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > > Hi Daniel,
-> > >
-> > > looks good, some details below.
-> > >
-> > > The ABS_MT_TOUCH_MAJOR is supposed to have zero intercept, to remain
-> > > compatible with user space handling of type A devices. Also, the scale
-> > > should match the screen/pad size, such that the actual size of the
-> > > touch area can be deduced. In addition, based on the current sensor
-> > > technologies, ABS_MT_PRESSURE and ABS_MT_TOUCH_MAJOR are normally
-> > > mutually exclusive.
-> > >
-> > > All in all, I would prefer to only report width via (the single-finger
-> > > axis) ABS_TOOL_WIDTH, and only for compatibility reasons.
-> > >
-> > > +
-> > > +static void synaptics_report_slot_agm(struct input_dev *dev, int slot,
-> > > +                                   const struct synaptics_hw_state *agm)
-> > > +{
-> > > +     input_mt_slot(dev, slot);
-> > > +     input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
-> > > +     input_report_abs(dev, ABS_MT_POSITION_X, agm->x);
-> > > +     input_report_abs(dev, ABS_MT_POSITION_Y, invert_y(agm->y));
-> > > +     input_report_abs(dev, ABS_MT_PRESSURE, agm->z);
-> > > +}
-> >
-> > With ABS_MT_TOUCH_MAJOR dropped, sgm and agm seems to coincide...
-> > ....
-> > >
-> > > Looks good otherwise.
-> > >
-> > > Thanks,
-> > > Henrik
-> > >
-> >
-> > Ahh....  ok, this makes sense.  I missed this detail previously.
-> > Basically:
-> >  * Only report synaptics "w" as ABS_TOOL_WIDTH (for backwards compatibility)
-> >  * Report synaptics "z" as ABS_MT_TOUCH_MAJOR (assuming it is really
-> > 'width of finger in surface units'), and ABS_PRESSURE (for backwards
-> > compatibility).
-> >  * Don't use ABS_MT_PRESSURE.
-> >  * This will simplify agm/sgm reporting by making them both reoprt
-> > the same axes.
-> 
-> Hi Henrik,
-> 
-> I think I was wrong in my previous comment.
-> 
-> I agree we should drop reporting synaptics 'w' (4-15, arbitrary units)
-> in ABS_MT_TOUCH_MAJOR.
-> Instead, to support legacy, report 'w' in ABS_TOOL_WIDTH, and do not
-> report ABS_MT_TOUCH_MAJOR at all.
-> 
-> However, I believe we should still report synaptics 'z' (0-255, in
-> arbitrary units) as ABS_MT_PRESSURE.
-> This will, in turn, be used by input_mt_report_pointer_emulation() to
-> determine the correct ABS_PRESSURE to report for legacy userspace
-> uses.
+Reposting this, as this was posted 2 weeks ago with no replies.
 
-Alternatively, you can use input_mt_set_value() to save Z value to be
-used by input_mt_report_pointer_emulation() later, but not report it as
-part of MT packet.
+Jiffies updates are currently done by the tick_do_timer_cpu.  This has a
+non-deterministic value that can be any running cpu on the system.  It
+changes dynamically in nohz mode.  When nohz mode is off, it gets set to
+a more static, but still non-deterministic value.
 
--- 
-Dmitry
+While the nohz behavior is necessary, is there a reason why the nohz off
+case can't have a specific value, say 0 as it was on earlier kernels?
+If the cpu is offlined, let the value change at that time (note that the
+x86 arch disallows offlining cpu 0).
+
+There are certain cases where this would be advantageous, especially where
+timely jiffies updates may not necessarily occur on specific processors.
+
+The following sample patch presents one way that this could be done.
+Processors wait for the selected cpu to enter high resolution mode before
+they do so.
+
+Note that this patch is not hotplug aware (however, should the
+tick_static_do_timer_cpu be offlined, the tick_do_timer_cpu simply becomes
+another cpu anyway).
+
+Comments on this idea, or the sample patch?
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ Documentation/kernel-parameters.txt |    8 +++++
+ kernel/time/tick-sched.c            |   46 ++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
+
+Index: linux/kernel/time/tick-sched.c
+===================================================================
+--- linux.orig/kernel/time/tick-sched.c
++++ linux/kernel/time/tick-sched.c
+@@ -30,11 +30,54 @@
+  */
+ static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+ 
++DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
++
+ /*
+  * The time, when the last jiffy update happened. Protected by xtime_lock.
+  */
+ static ktime_t last_jiffies_update;
+ 
++/*
++ * Static tick_do_timer_cpu
++ */
++static int tick_static_do_timer_cpu __read_mostly = -1;
++
++/*
++ * Set tick_do_timer_cpu to a static cpu.
++ *
++ * Supported on systems w/nohz=off only.
++ * Selected cpu can be offlined.  If this is done, another cpu will be chosen,
++ * but will not revert back if selected cpu is onlined again.
++ */
++static int __init setup_static_do_timer_cpu(char *s)
++{
++	if (kstrtoint(s, 0, &tick_static_do_timer_cpu) < 0) {
++		printk(KERN_WARNING "Invalid tick_static_do_timer_cpu specified\n");
++		return 0;
++	}
++	printk(KERN_INFO "Set tick_static_do_timer_cpu %d\n",
++		tick_static_do_timer_cpu);
++
++	return 1;
++}
++__setup("do_timer_cpu=", setup_static_do_timer_cpu);
++
++/*
++ * Check to see if we need to wait for the selected static do_timer_cpu
++ * to enter high res mode first.
++ */
++static int wait_for_static_do_timer_cpu(void)
++{
++	if (tick_static_do_timer_cpu == -1)
++		return 0;
++
++	if (smp_processor_id() != tick_static_do_timer_cpu &&
++	    !*per_cpu_ptr(&hrtimer_bases.hres_active, tick_static_do_timer_cpu))
++		return 1;
++
++	return 0;
++}
++
+ struct tick_sched *tick_get_tick_sched(int cpu)
+ {
+ 	return &per_cpu(tick_cpu_sched, cpu);
+@@ -848,6 +891,9 @@ int tick_check_oneshot_change(int allow_
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 
++	if (!allow_nohz && !tick_nohz_enabled && wait_for_static_do_timer_cpu())
++		return 0;
++
+ 	if (!test_and_clear_bit(0, &ts->check_clocks))
+ 		return 0;
+ 
+Index: linux/Documentation/kernel-parameters.txt
+===================================================================
+--- linux.orig/Documentation/kernel-parameters.txt
++++ linux/Documentation/kernel-parameters.txt
+@@ -665,6 +665,14 @@ bytes respectively. Such letter suffixes
+ 			The filter can be disabled or changed to another
+ 			driver later using sysfs.
+ 
++	do_timer_cpu=<cpu number>
++			This selects the cpu to process jiffies updates
++			when nohz mode is disabled.
++			Works only with high resolution mode enabled.
++			The selected cpu can be offlined.  If this is done,
++			another cpu will be chosen, but will not revert back
++			if the selected cpu is onlined again.
++
+ 	dscc4.setup=	[NET]
+ 
+ 	earlycon=	[KNL] Output early console device and options.
