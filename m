@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab1HQKeG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 06:34:06 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:35092 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab1HQKeB convert rfc822-to-8bit (ORCPT
+	id S1754622Ab1HQRGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:06:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4300 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab1HQRG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 06:34:01 -0400
-Subject: Re: [stable] [Stable-review] Future of the -longterm kernel releases
- (i.e. how we pick them).
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Jeremiah Foster <jeremiah@jeremiahfoster.com>
-In-Reply-To: <20110816223327.GA1534@kroah.com>
-Date: Wed, 17 Aug 2011 12:33:56 +0200
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, stable-review@kernel.org,
-        alan@lxorguk.ukuu.org.uk,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <056B8993-8B70-470A-AFDD-53F587AF3312@jeremiahfoster.com>
-References: <20110815041524.GA7578@kroah.com>
- <1313460542.2981.76.camel@deadeye>
- <17669FB8-C6FF-4B1F-9765-F1FD991D14CB@jeremiahfoster.com>
- <20110816223327.GA1534@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1084)
-X-Pobox-Relay-ID: 6A9E900E-C8BC-11E0-8295-1DC62E706CDE-97416961!b-pb-sasl-quonix.pobox.com
+	Wed, 17 Aug 2011 13:06:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807116"
+Message-Id: <20110817163522.477085366@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:25 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch 28/36] Hexagon: Add ioremap support
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=ioremap.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-On Aug 17, 2011, at 00:33, Greg KH wrote:
-> On Tue, Aug 16, 2011 at 09:26:24PM +0200, Jeremiah C. Foster wrote:
->> I'd like to echo Ben's sentiment, particularly in the area of automotive. 
->> A car has to be supported with parts for at least ten years, often longer, 
->> and this includes the build system for the infotainment software.
->> The GENIVI Alliance is now building infotainment systems for their member 
->> companies (BMW, GM, PSA, Hyundai, etc.) which will have to preserve a 
->> working kernel for a long time, like lark's tongues in aspic. So there is an 
->> interest in a "longterm, stable" kernel in the automotive industry. Furthermore,
->> know-how around choosing a long term kernel relevant to a car is in short 
->> supply, so there is a lot of reliance on the distros and commercial OSVs in 
->> this regard.
-> 
-> Isn't that the job of the distros and commercial OSVs today?  
+---
+ arch/hexagon/mm/ioremap.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
-My understanding is yes. It appears to be a business opportunity for many OSVs and others as well, but the distro's are doing a good job so increasingly commercial companies are turning to distros, at least initially.
+Index: linux-hexagon-kernel/arch/hexagon/mm/ioremap.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/ioremap.c	2011-07-20 15:19:43.695151542 -0500
+@@ -0,0 +1,57 @@
++/*
++ * I/O remap functions for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/io.h>
++#include <linux/vmalloc.h>
++
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size)
++{
++	unsigned long last_addr, addr;
++	unsigned long offset = phys_addr & ~PAGE_MASK;
++	struct vm_struct *area;
++
++	pgprot_t prot = __pgprot(_PAGE_PRESENT|_PAGE_READ|_PAGE_WRITE
++					|(__HEXAGON_C_DEV << 6));
++
++	last_addr = phys_addr + size - 1;
++
++	/*  Wrapping not allowed  */
++	if (!size || (last_addr < phys_addr))
++		return NULL;
++
++	/*  Rounds up to next page size, including whole-page offset */
++	size = PAGE_ALIGN(offset + size);
++
++	area = get_vm_area(size, VM_IOREMAP);
++	addr = (unsigned long)area->addr;
++
++	if (ioremap_page_range(addr, addr+size, phys_addr, prot)) {
++		vunmap((void *)addr);
++		return NULL;
++	}
++
++	flush_cache_vmap(addr, addr+size);
++	return (void __iomem *) (offset + addr);
++}
++
++void __iounmap(const volatile void __iomem *addr)
++{
++	vunmap((void *) ((unsigned long) addr & PAGE_MASK));
++}
 
-> Are they
-> somehow not doing this job well?  
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-I think they are doing the job well which is why there is increasing choice; use a distro or pay for an OSV? Rely on the community or develop in-house competence? These questions are new, at least for the automotive industry, since previously it was all proprietary all the time.
-
-> Do they need help from the community
-> instead to help define, implement, and maintain this for them?
-
-I think the answer is yes.
-
-> I'm genuinely curious about this, I haven't heard this directly from
-> users before, only from companies who are in this line of work, wanting
-> help in doing this for them, for a variety of odd reasons.
-
-If it helps at all, I can bring up this topic inside GENIVI and ask if there are OEMs, Tier 1s and others who would be interested in how to identify a kernel that is appropriate for their long-term needs. I have participated in GENIVI discussions like this previously and there has not necessarily been clarity. Having your perspective and the perspective of others with experience in kernel maintenance would be helpful.
-
-> If so, doesn't this imply that maybe those users should be choosing a
-> different company for this support, or that they have given up on this
-> and want to work directly with the community instead?  
-
-That is the eternal question. For the auto industry it often boils down to the cost / benefit ratio and the cost sensitivity for production vehicles per unit is a major factor in what they choose. I think if they can find a reasonable long-term kernel they'll help maintain it in conjunction with the community.
-
-> If the latter,
-> I'd be very happy to work with them, contacts are greatly appreciated.
-
-Very generous of you. Let me see if I can pull together a list of people where this can be discussed.
-
-@everyone: Should I trim the CC list and limit this to a mailing list? Or would people prefer to remain on CC?
-
-Regards,
-
-Jeremiah
