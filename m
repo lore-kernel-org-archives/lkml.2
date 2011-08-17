@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab1HQBUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 21:20:16 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42910 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab1HQBUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 21:20:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 17 Aug 2011 10:12:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Ying Han <yinghan@google.com>, Balbir Singh <bsingharora@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [patch 2/2] mm: vmscan: drop nr_force_scan[] from
- get_scan_count
-Message-Id: <20110817101249.03963ae4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313094715-31187-2-git-send-email-jweiner@redhat.com>
-References: <1313094715-31187-1-git-send-email-jweiner@redhat.com>
-	<1313094715-31187-2-git-send-email-jweiner@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1753263Ab1HQBVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 21:21:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58760 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab1HQBVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 21:21:21 -0400
+Date: Wed, 17 Aug 2011 11:21:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: linux-next: boot test failure (net tree)
+Message-Id: <20110817112110.ec81ef078204bf4a02049a66@canb.auug.org.au>
+In-Reply-To: <20110816.175657.1688139393736610845.davem@davemloft.net>
+References: <20110817100146.3b557cf815a5a2ae09bc09a7@canb.auug.org.au>
+	<20110816.171525.639251389938336183.davem@davemloft.net>
+	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
+	<20110816.175657.1688139393736610845.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Aug 2011 22:31:55 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+--Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The nr_force_scan[] tuple holds the effective scan numbers for anon
-> and file pages in case the situation called for a forced scan and the
-> regularly calculated scan numbers turned out zero.
-> 
-> However, the effective scan number can always be assumed to be
-> SWAP_CLUSTER_MAX right before the division into anon and file.  The
-> numerators and denominator are properly set up for all cases, be it
-> force scan for just file, just anon, or both, to do the right thing.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Ying Han <yinghan@google.com>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: Mel Gorman <mel@csn.ul.ie>
+Hi Dave,
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Tue, 16 Aug 2011 17:56:57 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 17 Aug 2011 10:50:02 +1000
+>=20
+> > Which is a bit of a pain for automated systems.  Ours does (essentially=
+):
+> >=20
+> > yes '' | make oldconfig
+> >=20
+> > We really don't want to select every new config item that comes along.
+>=20
+> If you're indeed piping "yes" output to "make oldconfig" on an
+> existing config, it would select the new guards for you.
 
+Notice the '' that just is the same as typing return to every prompt.  In
+the case of these new gueards, that means 'n'.  This will be the same
+with "make silentoldconfig".
+
+> This happens on other occaisions, I see new group guards all
+> the time when I resync my net and net-next trees with Linus.
+
+"All the time"?  really?
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOSxeGAAoJEDMEi1NhKgbs4yAIAIVTC3VMasJyGhXNJvpBsCV8
+ux9PSxAs+tBgMrlzvylUGOt0xZKm8pLj4qpjB29MhZlEeircR1xZt6Upb/MVlov/
+M1rzZLCyj2f8Zenrzeq+aNYYHusUBLXbQkqL/+i6rGhq7DaRLvpht3pTiXpyebiY
+cUjb1nH4Px99gUhq+ySFVcO7P7emByzM6W7gWcQ4SBHonqb4P14s2zrVBSi+QGaX
+lwPAMRA8luJZMXRuoI0yR6szZKRILik4sgiVI8AbV/lJoPFe39DLjnvUlK+kPnEi
+M29Zz8PCTAhlUR3NRQHHAJV5bS0TTP2+F9jdyi8uFEHfZ43GPQvTKuJndE41SNs=
+=oYQ6
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs--
