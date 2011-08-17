@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab1HQO4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 10:56:46 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:38012 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab1HQO4n (ORCPT
+	id S1754181Ab1HQQZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:25:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58027 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753946Ab1HQQZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 10:56:43 -0400
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 10:56:43 EDT
-Message-ID: <4E4BD560.4010806@bootc.net>
-Date: Wed, 17 Aug 2011 15:51:12 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 17 Aug 2011 12:25:28 -0400
+Date: Wed, 17 Aug 2011 12:25:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+In-Reply-To: <op.v0c5nezf3l0zgt@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108171224380.2100-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: target-devel@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        linux-scsi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: FireWire/SBP2 Target mode
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+On Wed, 17 Aug 2011, Michal Nazarewicz wrote:
 
-Now that we have a nice SCSI target framework in the kernel, and drivers 
-either in-tree or being worked on for iSCSI, FC, FCoE, SAS and iSER, I 
-was wondering about the possibility of adding FireWire to that list. 
-Apple Macs have had a FireWire Target Disk mode for a long time, and 
-there is even a program called Endpoint[1] that apparently does this on 
-Linux though it looks completely untouched since 2003 and no longer 
-works as it depends on the old FireWire stack.
+> >>>> --- a/drivers/usb/gadget/file_storage.c
+> >>>> +++ b/drivers/usb/gadget/file_storage.c
+> >>>> @@ -3562,11 +3562,7 @@ static void fsg_resume(struct usb_gadget  
+> >>>> *gadget)
+> >>>>  static struct usb_gadget_driver		fsg_driver = {
+> >>>> -#ifdef CONFIG_USB_GADGET_DUALSPEED
+> >>>>  	.speed		= USB_SPEED_HIGH,
+> >>>> -#else
+> >>>> -	.speed		= USB_SPEED_FULL,
+> >>>> -#endif
+> >>>>  	.function	= (char *) fsg_string_product,
+> >>>>  	.unbind		= fsg_unbind,
+> >>>>  	.disconnect	= fsg_disconnect,
+> 
+> >>> You mustn't remove the .speed field entirely.  Set it to  
+> >>> USB_SPEED_HIGH.
+> 
+> >> Please note that the field is not in fact removed.
+> 
+> > No, but you removed its initializer and as a result, it will be set to
+> > 0 whereas it should be set to USB_SPEED_HIGH.
+> 
+> The initializer is still there. ;)  Only the “#” lines and the initializer
+> in the “#else” part are removed.
 
-I would very much like to see something like this added to the kernel, 
-and would very much like to contribute to writing this feature. However 
-my kernel development knowledge is very limited indeed so this would 
-require a lot hand-holding and mentoring.
+I must be going selectively blind.  Never mind...
 
-What's the interest in such a feature? Would anyone be able to give some 
-(a lot?) of their time to help write this?
-
-Thanks,
-Chris
-
-[1] http://oss.oracle.com/projects/endpoint/
+Alan Stern
 
