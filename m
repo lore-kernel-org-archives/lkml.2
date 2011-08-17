@@ -1,68 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab1HQRoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:44:19 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33715 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab1HQRoR convert rfc822-to-8bit (ORCPT
+	id S1754666Ab1HQRJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:09:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49025 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1HQRGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:44:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <201108171914.52257.oliver@neukum.org>
-References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-	<201108171914.52257.oliver@neukum.org>
-Date: Wed, 17 Aug 2011 19:44:16 +0200
-Message-ID: <CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
-Subject: Re: [PATCH] Increase usbfs bulk buffer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Aug 2011 13:06:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807102"
+Message-Id: <20110817163522.192253113@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:22 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch 25/36] Hexagon: Implement basic cache-flush support
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=cache.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We have separate I/D caches.  Data caches are physically indexed.
 
-On Wed, Aug 17, 2011 at 7:14 PM, Oliver Neukum <oliver@neukum.org> wrote:
-> Am Mittwoch, 17. August 2011, 19:07:01 schrieb Markus Rechberger:
->> Hi,
->>
->> this patch increases the maximum buffersize for bulk transfers, our
->> devices support at least up to 46k bytes for bulk transfers.
->> This patch allows us to lower the iterations between kernel and
->> userspace and lower the system pressure.
->
-> You must not do this. It increases memory pressure too much
-> by forcing very high order allocations. If your problem is really
-> the number of syscalls, you must implement scatter/gather.
->
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-I understand that USBFS is not 100% optimized, although we are already
-using 3-4 times that much buffer with isochronous and it was working
-fine for years so far as long as the system doesn't run out of memory
-.. but even kerneldrivers would have issues with it in such a
-situation.
+---
+ arch/hexagon/include/asm/cache.h      |   34 +++++++++++
+ arch/hexagon/include/asm/cacheflush.h |   97 ++++++++++++++++++++++++++++++++++
+ arch/hexagon/mm/cache.c               |   85 +++++++++++++++++++++++++++++
+ 3 files changed, 216 insertions(+)
 
-An example analog video frames 170 mbit per second
-~3000 bytes * 64 microframes = 192000
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/cacheflush.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/cacheflush.h	2011-07-20 15:19:42.925151729 -0500
+@@ -0,0 +1,97 @@
++/*
++ * Cache flush operations for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_CACHEFLUSH_H
++#define _ASM_CACHEFLUSH_H
++
++#include <linux/cache.h>
++#include <linux/mm.h>
++#include <asm/string.h>
++#include <asm-generic/cacheflush.h>
++
++/* Cache flushing:
++ *
++ *  - flush_cache_all() flushes entire cache
++ *  - flush_cache_mm(mm) flushes the specified mm context's cache lines
++ *  - flush_cache_page(mm, vmaddr, pfn) flushes a single page
++ *  - flush_cache_range(vma, start, end) flushes a range of pages
++ *  - flush_icache_range(start, end) flush a range of instructions
++ *  - flush_dcache_page(pg) flushes(wback&invalidates) a page for dcache
++ *  - flush_icache_page(vma, pg) flushes(invalidates) a page for icache
++ *
++ *  Need to doublecheck which one is really needed for ptrace stuff to work.
++ */
++#define LINESIZE	32
++#define LINEBITS	5
++
++/*
++ * Flush Dcache range through current map.
++ */
++extern void flush_dcache_range(unsigned long start, unsigned long end);
++
++/*
++ * Flush Icache range through current map.
++ */
++#undef flush_icache_range
++extern void flush_icache_range(unsigned long start, unsigned long end);
++
++/*
++ * Memory-management related flushes are there to ensure in non-physically
++ * indexed cache schemes that stale lines belonging to a given ASID aren't
++ * in the cache to confuse things.  The prototype Hexagon Virtual Machine
++ * only uses a single ASID for all user-mode maps, which should
++ * mean that they aren't necessary.  A brute-force, flush-everything
++ * implementation, with the name xxxxx_hexagon() is present in
++ * arch/hexagon/mm/cache.c, but let's not wire it up until we know
++ * it is needed.
++ */
++extern void flush_cache_all_hexagon(void);
++
++/*
++ * This may or may not ever have to be non-null, depending on the
++ * virtual machine MMU.  For a native kernel, it's definitiely  a no-op
++ *
++ * This is also the place where deferred cache coherency stuff seems
++ * to happen, classically...  but instead we do it like ia64 and
++ * clean the cache when the PTE is set.
++ *
++ */
++static inline void update_mmu_cache(struct vm_area_struct *vma,
++					unsigned long address, pte_t *ptep)
++{
++	/*  generic_ptrace_pokedata doesn't wind up here, does it?  */
++}
++
++#undef copy_to_user_page
++static inline void copy_to_user_page(struct vm_area_struct *vma,
++					     struct page *page,
++					     unsigned long vaddr,
++					     void *dst, void *src, int len)
++{
++	memcpy(dst, src, len);
++	if (vma->vm_flags & VM_EXEC) {
++		flush_icache_range((unsigned long) dst,
++		(unsigned long) dst + len);
++	}
++}
++
++
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/cache.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/cache.h	2011-07-20 15:19:42.925151729 -0500
+@@ -0,0 +1,34 @@
++/*
++ * Cache definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef __ASM_CACHE_H
++#define __ASM_CACHE_H
++
++/* Bytes per L1 cache line */
++#define L1_CACHE_SHIFT		(5)
++#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
++
++#define __cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
++#define ____cacheline_aligned	__attribute__((aligned(L1_CACHE_BYTES)))
++
++/* See http://kerneltrap.org/node/15100  */
++#define __read_mostly
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/mm/cache.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/cache.c	2011-07-20 15:19:42.925151729 -0500
+@@ -0,0 +1,85 @@
++/*
++ * Cache management functions for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/mm.h>
++#include <asm/cacheflush.h>
++#include <asm/hexagon_vm.h>
++
++#define spanlines(start, end) \
++	(((end - (start & ~(LINESIZE - 1))) >> LINEBITS) + 1)
++
++void flush_dcache_range(unsigned long start, unsigned long end)
++{
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
++
++	start &= ~(LINESIZE - 1);
++
++	local_irq_save(flags);
++
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++		"	dccleaninva(%0);	"
++		:
++		: "r" (start)
++		);
++		start += LINESIZE;
++	}
++	local_irq_restore(flags);
++}
++
++void flush_icache_range(unsigned long start, unsigned long end)
++{
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
++
++	start &= ~(LINESIZE - 1);
++
++	local_irq_save(flags);
++
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++			"	dccleana(%0); "
++			"	icinva(%0);	"
++			:
++			: "r" (start)
++		);
++		start += LINESIZE;
++	}
++	__asm__ __volatile__ (
++		"isync"
++	);
++	local_irq_restore(flags);
++}
++
++/*
++ * This is just really brutal and shouldn't be used anyways,
++ * especially on V2.  Left here just in case.
++ */
++void flush_cache_all_hexagon(void)
++{
++	unsigned long flags;
++	local_irq_save(flags);
++	__vmcache_ickill();
++	__vmcache_dckill();
++	__vmcache_l2kill();
++	local_irq_restore(flags);
++	mb();
++}
 
-The bulk buffers we are asking for are for encoded videostreams, which
-is much smaller than analog TV frames.
-So for bulk we are just asking for around 1/4 of that buffersize.
-Our application works fine with USBFS in Isochronous mode, however
-some embedded systems don't support Isochronous so we are switching to
-Bulk. I submitted the Isochronous patch for accepting bigger buffers
-around 1-2 years ago the allocations and iterations went down from 600
-to around 125 per second. For the enduser exerience since that time
-it's possible to start heavy IO/memory applications without hurting
-the video process.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-BR,
-Markus
-
->        Regards
->                Ôliver
->
