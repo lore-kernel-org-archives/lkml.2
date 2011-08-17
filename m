@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086Ab1HQEzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 00:55:55 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:44647 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab1HQEzy (ORCPT
+	id S1751202Ab1HQE6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 00:58:18 -0400
+Received: from mail.umed.lodz.pl ([212.51.198.225]:38797 "EHLO
+	mail.umed.lodz.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab1HQE6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 00:55:54 -0400
-Subject: Re: [PATCH] mtd: plat_nand: fix `bbt_options' compile error
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, avorontsov@ru.mvista.com,
-        axel.lin@gmail.com
-Date: Wed, 17 Aug 2011 07:57:34 +0300
-In-Reply-To: <CAN8TOE_DUqzcwQnLQ8TEqoOX3D8Rn1ZxJuSpQbabPfDd83PQUA@mail.gmail.com>
-References: <1312827993-19163-1-git-send-email-computersforpeace@gmail.com>
-	 <1313502412.21711.1.camel@sauron>
-	 <CAN8TOE_DUqzcwQnLQ8TEqoOX3D8Rn1ZxJuSpQbabPfDd83PQUA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313557059.2679.6.camel@sauron>
-Mime-Version: 1.0
+	Wed, 17 Aug 2011 00:58:15 -0400
+X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 00:58:15 EDT
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Wed, 17 Aug 2011 05:49:35 +0100
+From: Systemu Administrator <dorota.kusztal@umed.lodz.pl>
+To: undisclosed-recipients:;
+Subject: =?UTF-8?Q?B=C5=82=C4=85d=20Zauwa=C5=BCy=C5=82em=20Code=20=35=37?=
+ =?UTF-8?Q?=33FKx=39=2E?=
+Organization: Systemu Administrator
+Reply-To: customercarewebdept40@w.cn
+Message-ID: <1c03a78dd5fdef2b01d628c1fa8cea61@localhost>
+User-Agent: Roundcube Webmail/0.4
+X-Remote-Browser: Mozilla/5.0 (Windows NT 6.0; rv:2.0.1) Gecko/20100101
+ Firefox/4.0.1
+X-Originating-IP: 41.138.191.64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 15:15 -0700, Brian Norris wrote:
-> On Tue, Aug 16, 2011 at 6:46 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> > Merged this fix with that commit in the l2-mtd-2.6.git tree, thanks!
-> 
-> I don't see any "merge." Perhaps an oversight on the push?
+--
+Do wiadomości:
 
-Yes, fixed.
+Ze względu na niedawne śladu przez naszych pracowników administratora, 
+zauważyliśmy, że różne komputerów zalogowaniu się do poczty 
+ektronicznej i wielu haseł awariibyły obecne przed zalogować. Dlatego 
+twoje konto zostało ograniczone.
 
--- 
-Best Regards,
-Artem Bityutskiy
+Dostęp do portalu zarządzania dla przywrócenia kontroli oraz kadry 
+zarządzającej. Wystarczy kliknąć odpowiedzieć na tę wiadomość 
+natychmiast i wprowadź szczegóły konta poniżej.
+
+E-mail w celu potwierdzenia tożsamości poniżej:
+Użytkownik:
+E-mail Użytkownik :
+Hasło :
+Potwierdź hasło :
+Data urodzenia :
+Przyszłości Hasło :
+
+
+Uwaga: Tylko przywrócony konto nie zostanie zablokowane.
+
+Dziękuję za współpracę.
+
+Webmail Help Desk.
+Systemu Administrator
 
