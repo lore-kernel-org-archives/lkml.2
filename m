@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1HQNJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:09:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab1HQNJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:09:03 -0400
-Date: Wed, 17 Aug 2011 15:05:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, kay.sievers@vrfy.org,
-        linux-man@vger.kernel.org, roland@hack.frob.com,
-        torvalds@linux-foundation.org
-Subject: Re: +
-	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
-	.patch added to -mm tree
-Message-ID: <20110817130531.GA12204@redhat.com>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110817115543.GA8745@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753819Ab1HQODc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:03:32 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:57944 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753606Ab1HQODa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 10:03:30 -0400
+X-AuditID: 12074424-b7bcaae000000a05-71-4e4bca5cb555
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH v4 0/2] Forcibly enable some MISC_ENABLE features on Intel
+Date: Wed, 17 Aug 2011 10:03:17 -0400
+Message-Id: <cover.1313586473.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsUixCmqrRtzytvPYN5WTYu+K0fZLdqmOVrs
+	fPiWzWL5vn5Gi8u75rBZbLnUzGpx9eFsFosfGx6zOnB43Gr7w+yxc9Zddo/Fe14yeWxa1cnm
+	se7GV3aPz5vkAtiiuGxSUnMyy1KL9O0SuDI6VpsWbGWvWPb0K2sD4xfWLkZODgkBE4nd/xoZ
+	IWwxiQv31rN1MXJxCAnsY5RY8/U9M4SzgVHi/PUJjBDOMyaJSZe+grWzCahIdCx9wARiiwgY
+	SGxZ+YIVpIhZ4AqjxMX5N5hBEsICXhL9LVvAGlgEVCV6/n4Ca+AV0Jf48vIBM8RuOYkjl58z
+	TWDkWcDIsIpRNiW3Sjc3MTOnODVZtzg5MS8vtUjXXC83s0QvNaV0EyMoxNhdVHYwNh9SOsQo
+	wMGoxMMb1O/lJ8SaWFZcmXuIUZKDSUmUN+6kt58QX1J+SmVGYnFGfFFpTmrxIUYJDmYlEV6f
+	g0A53pTEyqrUonyYlDQHi5I4r81OBz8hgfTEktTs1NSC1CKYrAwHh5IEbxrIUMGi1PTUirTM
+	nBKENBMHJ8hwHqDhk0FqeIsLEnOLM9Mh8qcYFaXEedNBEgIgiYzSPLheWAp4xSgO9IowbzhI
+	FQ8wfcB1vwIazAQ0+NYuD5DBJYkIKakGRouvXFN6yuat++b7Z/msQvnFc6ti2DqXLvBoXXTh
+	GeftI5eXZ13smLffJ+Ksw8a6g8zBJSIsaa/27ZE2eb/5s+wz5tj1G2WXSk+/E9122yPqUl+y
+	huh6xoKm3zeOdmxpz2iX/NpYdurY5NzdDz1eF/ctTVVlP/0mJDtQ7OCqCTl302RaH8dcWazE
+	UpyRaKjFXFScCADmhxDq3AIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17, Oleg Nesterov wrote:
->
-> On 08/16, Andrew Morton wrote:
-> >
-> > From: Lennart Poettering <lennart@poettering.net>
-> >
-> > Userspace service managers/supervisors need to track their started
-> > services.  Many services daemonize by double-forking and get implicitely
-> > re-parented to PID 1.  The process manager will no longer be able to
-> > receive the SIGCHLD signals for them.
-> >
-> > With this prctl, a service manager can mark itself as a sort of 'sub-init'
-> > process, able to stay as the parent process for all processes created by
-> > the started services.  All SIGCHLD signals will be delivered to the
-> > service manager.
->
-> I try to never argue with the new features. But to be honest, this
-> doesn't look very good to me.
->
-> OK, a service manager M does prctl(PR_SET_CHILD_REAPER), then it forks
-> a service X which forks another child C and exits. Then C exits and
-> notifies M.
->
-> But. How can M know that the service X should be restarted? It only
-> knows the pid. What if wait(WEXITED) succeeds because C in turn does
-> fork + exit? What M has 2 or more services?
+Intel allows BIOS or the OS to enable or disable some CPU fueatures via
+IA32_MISC_ENABLE.  I have machines that don't enable fast strings or
+monitor/mwait in BIOS, so do it on bootup instead.
 
-Also. I am almost sure I have already reviewed a very similar patch
-a long ago. Ungortunately, I can't find the previous discussion, and
-I can't recall why that patch was not accepted.
+Changes from v3:
+ - Don't display CPU index (and therefore don't break !SMP build)
+ - Don't display "Failed to enable..." when kmemcheck is on
 
-But, I seem to remember, that patch cleared ->child_reaper on exec,
-I think this makes sense.
+Changes from v2:
+ - Don't linebreak printk messages (for ease of grepping)
+ - Use printk_once
+ - Update the "Disabled fast string operations" message
 
-And I am not sure about security. No, I do not see any problems, just
-I don't know. Say, should we check the creds during reparenting? I
-dunno.
+Changes from v1:
+ - Display FW_WARN messages.
+ - Don't change the kmemcheck message.
+ - Improve the fast string comment.
+ - Improve the changelogs.
 
-Oleg.
+Andy Lutomirski (2):
+  x86: Enable fast strings on Intel if BIOS hasn't already
+  x86: Enable monitor/mwait on Intel if BIOS hasn't already
+
+ arch/x86/kernel/cpu/intel.c |   51 ++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 46 insertions(+), 5 deletions(-)
+
+-- 
+1.7.6
 
