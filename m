@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab1HQPmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 11:42:40 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:45419 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab1HQPmj convert rfc822-to-8bit (ORCPT
+	id S1753873Ab1HQOGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:06:15 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43998 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab1HQOGM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 11:42:39 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 11:42:39 EDT
-From: "Cisneros, Jorge (George)" <jorge.cisneros@hp.com>
-To: "syslinux@zytor.com." <syslinux@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [patch 1/1] syslinux: add suport for com32 entries in the menu
-Thread-Topic: [patch 1/1] syslinux: add suport for com32 entries in the menu
-Thread-Index: Acxc82YCk0Nu3wJ3SIidoqp4Y/CSig==
-Date: Wed, 17 Aug 2011 15:36:19 +0000
-Message-ID: <E78CE97B1F363A40BABB9C077B911FB001ACF8@G9W0339.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Aug 2011 10:06:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=ur2w6RhZYsgjmTX2ZwsrYPkyb1MLqkXjvQjgL82LeBoV0Nf4TwKF6V8bWifYIU61o
+	Dr1NyIyL6mKOej6QWr6Wg==
 MIME-Version: 1.0
+In-Reply-To: <CAGS+omAo1tPzBQ_s+vz-7_5SS6vWv4bdzD1JfqepUS7wYxK5sA@mail.gmail.com>
+References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
+ <1313169407-4358-5-git-send-email-djkurtz@chromium.org> <20110812210911.GA9124@polaris.bitmath.org>
+ <CAGS+omAo1tPzBQ_s+vz-7_5SS6vWv4bdzD1JfqepUS7wYxK5sA@mail.gmail.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Wed, 17 Aug 2011 22:05:48 +0800
+X-Google-Sender-Auth: jy5My-Ys799KeJmvR4xS8nXCmj0
+Message-ID: <CAGS+omCeb6R_Y7Js+da=E+etNYXWu+DjT=Mio_DLSwQo97yNkg@mail.gmail.com>
+Subject: Re: [PATCH 4/8 v3] Input: synaptics - add image sensor support
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jorge D Cisneros <jorge.cisneros@hp.com>
+On Mon, Aug 15, 2011 at 3:17 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+>
+> Hi Henrik,
+>
+> Thanks for the great feedback.
+>
+> On Sat, Aug 13, 2011 at 5:09 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > Hi Daniel,
+> >
+> > looks good, some details below.
+> >
+> > The ABS_MT_TOUCH_MAJOR is supposed to have zero intercept, to remain
+> > compatible with user space handling of type A devices. Also, the scale
+> > should match the screen/pad size, such that the actual size of the
+> > touch area can be deduced. In addition, based on the current sensor
+> > technologies, ABS_MT_PRESSURE and ABS_MT_TOUCH_MAJOR are normally
+> > mutually exclusive.
+> >
+> > All in all, I would prefer to only report width via (the single-finger
+> > axis) ABS_TOOL_WIDTH, and only for compatibility reasons.
+> >
+> > +
+> > +static void synaptics_report_slot_agm(struct input_dev *dev, int slot,
+> > +                                   const struct synaptics_hw_state *agm)
+> > +{
+> > +     input_mt_slot(dev, slot);
+> > +     input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
+> > +     input_report_abs(dev, ABS_MT_POSITION_X, agm->x);
+> > +     input_report_abs(dev, ABS_MT_POSITION_Y, invert_y(agm->y));
+> > +     input_report_abs(dev, ABS_MT_PRESSURE, agm->z);
+> > +}
+>
+> With ABS_MT_TOUCH_MAJOR dropped, sgm and agm seems to coincide...
+> ....
+> >
+> > Looks good otherwise.
+> >
+> > Thanks,
+> > Henrik
+> >
+>
+> Ahh....  ok, this makes sense.  I missed this detail previously.
+> Basically:
+>  * Only report synaptics "w" as ABS_TOOL_WIDTH (for backwards compatibility)
+>  * Report synaptics "z" as ABS_MT_TOUCH_MAJOR (assuming it is really
+> 'width of finger in surface units'), and ABS_PRESSURE (for backwards
+> compatibility).
+>  * Don't use ABS_MT_PRESSURE.
+>  * This will simplify agm/sgm reporting by making them both reoprt
+> the same axes.
 
-Problem: The actual code only check for entries with kernel or linux, so this example will not work, this patch is to add support to gfxboot to detect the entry COM32 and use  any module, in this case the module is chain.c32
-Version: Syslinux 4.04
+Hi Henrik,
 
+I think I was wrong in my previous comment.
 
-Example:
-UI gfxboot.c32
+I agree we should drop reporting synaptics 'w' (4-15, arbitrary units)
+in ABS_MT_TOUCH_MAJOR.
+Instead, to support legacy, report 'w' in ABS_TOOL_WIDTH, and do not
+report ABS_MT_TOUCH_MAJOR at all.
 
-LABEL boot_hd0
-MENU LABEL Boot from first hard drive
-COM32 chain.c32
-APPEND hd0
+However, I believe we should still report synaptics 'z' (0-255, in
+arbitrary units) as ABS_MT_PRESSURE.
+This will, in turn, be used by input_mt_report_pointer_emulation() to
+determine the correct ABS_PRESSURE to report for legacy userspace
+uses.
 
-Signed-off-by: Jorge D Cisneros <jorge.cisneros@hp.com>
+Do you agree with this?
 
---
-
---- com32/gfxboot/gfxboot.c.orig        2011-08-17 10:04:44.000000000 -0500
-+++ com32/gfxboot/gfxboot.c     2011-08-17 10:07:34.000000000 -0500
-@@ -125,6 +125,7 @@ typedef struct menu_s {
-   char *alt_kernel;    // alternative name in case user has replaced it
-   char *linux;         // de facto an alias for 'kernel'
-   char *localboot;     // boot from local disk
-+  char *com32;         // boot other com32 modules
-   char *initrd;                // initrd as separate line (instead of as part of 'append')
-   char *append;                // kernel args
-   char *ipappend;      // append special pxelinux args (see doc)
-@@ -374,6 +375,11 @@ int read_config_file(const char *filenam
-       continue;
-     }
-
-+    if(!strcasecmp(s, "com32") && menu_ptr) {
-+      menu_ptr->com32 = strdup(t);
-+      continue;
-+    }
-+
-     if(!strcasecmp(s, "initrd") && menu_ptr) {
-       menu_ptr->initrd = strdup(t);
-       continue;
-@@ -866,7 +872,13 @@ void boot_entry(menu_t *menu_ptr, char *
-   if(menu_ptr->localboot) {
-     gfx_done();
-     syslinux_local_boot(strtol(menu_ptr->localboot, NULL, 0));
-+    return;
-+  }
-
-+  if(menu_ptr->com32) {
-+    gfx_done();
-+    asprintf(&cmd_buf, "%s %s", menu_ptr->com32, arg);
-+    syslinux_run_command(cmd_buf);
-     return;
-   }
-
+Thanks,
+-Dan
