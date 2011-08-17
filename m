@@ -1,176 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1HQV6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 17:58:48 -0400
-Received: from mail.microway.com ([206.173.81.22]:39329 "EHLO microway.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751956Ab1HQV6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 17:58:46 -0400
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 17:58:46 EDT
-From: Rick Warner <rick@microway.com>
-Organization: Microway, Inc
-To: linux-kernel@vger.kernel.org
-Subject: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call trace included
-Date: Wed, 17 Aug 2011 17:51:51 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo-r3-herp; KDE/4.6.3; x86_64; ; )
-Cc: Richard Houghton <rhoughton@microway.com>
-Message-Id: <201108171751.51648.rick@microway.com>
-X-Sanitizer: Advosys mail filter
+	id S1754578Ab1HQWBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 18:01:37 -0400
+Received: from exprod6og105.obsmtp.com ([64.18.1.189]:52752 "EHLO
+	exprod6og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab1HQWBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 18:01:35 -0400
+Message-ID: <4E4C3A2B.3000405@cray.com>
+Date: Wed, 17 Aug 2011 17:01:15 -0500
+From: Andrew Barry <abarry@cray.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-2.3 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset="us-ascii"
+To: linux-mm <linux-mm@kvack.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [PATCH 1/1] hugepages: Fix race between hugetlbfs umount and quota
+ update.
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This patch fixes a race between the umount of a hugetlbfs filesystem, and quota
+updates in that filesystem, which can result in the update of the filesystem
+quota record, after the record structure has been freed.
 
-I am getting a kernel oops/panic on a dual xeon system that is the master of a 
-60 node HPC cluster.  This is happening while stress testing the system 
-including significant network traffic.  The OS is openSuse 11.4. 
+Rather than an address-space struct pointer, it puts a hugetlbfs_sb_info struct
+pointer into page_private of the page struct. A reference count and an active
+bit are added to the hugetlbfs_sb_info struct; the reference count is increased
+by hugetlb_get_quota and decreased by hugetlb_put_quota. When hugetlbfs is
+unmounted, it frees the hugetlbfs_sb_info struct, but only if the reference
+count is zero, otherwise it clears the active bit. The last hugetlb_put_quota
+then frees the hugetlbfs_sb_info struct.
 
-We are running a custom compiled 2.6.39.3 kernel on the systems due to a bug 
-in the stock kernel 11.4 provided (igb driver related).  After 1-3 days of 
-heavy testing, the master node locks up with the caps lock and scroll lock 
-keys on the keyboard blinking with the following output captured via a serial 
-console:
+Discussion was titled:  Fix refcounting in hugetlbfs quota handling.
+See:  https://lkml.org/lkml/2011/8/11/28
 
-[381920.681113] BUG: unable to handle kernel NULL pointer dereference at           
-(null)
-[381920.689067] IP: [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
-[381920.695187] PGD 30c27a067 PUD 16efe6067 PMD 0 
-[381920.699782] Oops: 0000 [#1] PREEMPT SMP 
-[381920.703866] last sysfs file: 
-/sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
-[381920.711868] CPU 6 
-[381920.713800] Modules linked in: md5 ipmi_devintf ipmi_si ipmi_msghandler 
-nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_MASQUERADE iptable_mangle 
-iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter 
-ip_tables x_tables af_packet edd cpufreq_conservative cpufreq_userspace 
-cpufreq_powersave acpi_cpufreq mperf xfs dm_mod ioatdma i7core_edac edac_core 
-sr_mod cdrom joydev igb i2c_i801 sg button ghes hed iTCO_wdt 
-iTCO_vendor_support dca pcspkr ext4 jbd2 crc16 raid456 async_raid6_recov 
-async_pq raid6_pq async_xor xor async_memcpy async_tx raid10 raid1 raid0 fan 
-processor thermal thermal_sys ata_generic pata_atiixp arcmsr
-[381920.771623] 
-[381920.773210] Pid: 12701, comm: cluster Not tainted 2.6.39.3-microwaycustom 
-#1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-[381920.783292] RIP: 0010:[<ffffffff812a7510>]  [<ffffffff812a7510>] 
-acpi_atomic_read+0xe3/0x120
-[381920.791853] RSP: 0000:ffff88063fc47d98  EFLAGS: 00010046
-[381920.797260] RAX: 0000000000000000 RBX: 00000000bf7b5ff0 RCX: ffffffff81a3cdd0
-[381920.804486] RDX: 00000000bf7b6010 RSI: 00000000bf7b6000 RDI: 
-ffff88062d4b95c0
-[381920.811712] RBP: ffff88063fc47dc8 R08: ffff88063fc47d98 R09: 0000000000000002
-[381920.818940] R10: 0000000000000083 R11: 0000000000000010 R12: 
-ffffc90003044c20
-[381920.826168] R13: ffff88063fc47de0 R14: 0000000000000000 R15: 
-0000000000000000
-[381920.833392] FS:  0000000000000000(0000) GS:ffff88063fc40000(0000) 
-knlGS:0000000000000000
-[381920.841571] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-[381920.847409] CR2: 0000000000000000 CR3: 00000001d2d0f000 CR4: 
-00000000000006e0
-[381920.854635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-0000000000000000
-[381920.861861] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[381920.869088] Process cluster (pid: 12701, threadinfo ffff880028284000, task 
-ffff880550184380)
-[381920.877608] Stack:
-[381920.879717]  ffffffff81a3cdd0 00000000bf7b5ff0 ffff88062b2cc140 ffffc90003044ca8
-[381920.887288]  ffff88062b2cc140 0000000000000001 ffff88063fc47e08 ffffffffa002b21f
-[381920.894862]  0000000000000000 0000000000000000 ffff88062b2cc140 
-0000000000000000
-[381920.902435] Call Trace:
-[381920.904969]  <NMI> 
-[381920.907201]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
-[381920.913726]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
-[381920.920076]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
-[381920.926080]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
-[381920.932864]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
-[381920.939473]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
-[381920.944691]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
-[381920.949649]  [<ffffffff81517550>] nmi+0x20/0x30
-[381920.954269]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
-[381920.960536]  <<EOE>> 
-[381920.962725]  <IRQ> 
-[381920.965132]  [<ffffffff8101131e>] intel_pmu_disable_all+0x3e/0x120
-[381920.971399]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
-[381920.977066]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
-[381920.982817]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
-[381920.989082]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
-[381920.994740]  [<ffffffff81067097>] update_process_times+0x67/0x80
-[381921.000832]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
-[381921.006578]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
-[381921.012758]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
-[381921.018414]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
-[381921.024343]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
-[381921.030793]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
-[381921.036891]  <EOI> 
-[381921.038913] Code: fc 10 74 1f 77 08 41 80 fc 08 75 48 eb 0e 41 80 fc 20 74 
-17 41 80 fc 40 75 3a eb 15 8a 00 0f b6 c0 eb 11 66 8b 00 0f b7 c0 eb 09 <8b> 
-00 89 c0 eb 03 48 8b 00 49 89 45 00 e8 8e 2b e2 ff eb 1b 0f 
-[381921.059462] RIP  [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
-[381921.065669]  RSP <ffff88063fc47d98>
-[381921.069242] CR2: 0000000000000000
-[381921.072645] ---[ end trace 52697bfc73a34a90 ]---
-[381921.077343] Kernel panic - not syncing: Fatal exception in interrupt
-[381921.083784] Pid: 12701, comm: cluster Tainted: G      D     2.6.39.3-
-microwaycustom #1
-[381921.091788] Call Trace:
-[381921.094333]  <NMI>  [<ffffffff81513300>] panic+0x9f/0x1da
-[381921.099881]  [<ffffffff81517f8c>] oops_end+0xdc/0xf0
-[381921.104952]  [<ffffffff81032b91>] no_context+0xf1/0x260
-[381921.110277]  [<ffffffff81032e55>] __bad_area_nosemaphore+0x155/0x200
-[381921.116739]  [<ffffffff81032f0e>] bad_area_nosemaphore+0xe/0x10
-[381921.122766]  [<ffffffff81519f46>] do_page_fault+0x366/0x530
-[381921.128440]  [<ffffffff810ee929>] ? __perf_event_overflow+0xa9/0x220
-[381921.134896]  [<ffffffff810ef99b>] ? perf_event_update_userpage+0x9b/0xe0
-[381921.141698]  [<ffffffff81012249>] ? intel_pmu_enable_all+0xc9/0x1a0
-[381921.148061]  [<ffffffff810123ff>] ? x86_perf_event_set_period+0xdf/0x170
-[381921.154852]  [<ffffffff81517295>] page_fault+0x25/0x30
-[381921.160081]  [<ffffffff812a7510>] ? acpi_atomic_read+0xe3/0x120
-[381921.166094]  [<ffffffff812a7486>] ? acpi_atomic_read+0x59/0x120
-[381921.172107]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
-[381921.178639]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
-[381921.185004]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
-[381921.191003]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
-[381921.197789]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
-[381921.204399]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
-[381921.209624]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
-[381921.214584]  [<ffffffff81517550>] nmi+0x20/0x30
-[381921.219208]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
-[381921.225470]  <<EOE>>  <IRQ>  [<ffffffff8101131e>] 
-intel_pmu_disable_all+0x3e/0x120
-[381921.233174]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
-[381921.238836]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
-[381921.244582]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
-[381921.250855]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
-[381921.256520]  [<ffffffff81067097>] update_process_times+0x67/0x80
-[381921.262618]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
-[381921.268363]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
-[381921.274540]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
-[381921.280198]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
-[381921.286125]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
-[381921.292578]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
-[381921.298673]  <EOI>
+Signed-off-by: Andrew Barry <abarry@cray.com>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+
+---
 
 
-I recompiled the kernel again, disabling the tickless feature as I saw "nohz" 
-early in the call trace.  After that, it reproduced again but the call trace 
-only changed slightly having tick_init_highres in there instead of 
-tick_nohz_handler.  I have that call trace if it is desired as well.  It is 
-nearly identical though.
+ fs/hugetlbfs/inode.c    |   40 ++++++++++++++++++++++++++--------------
+ include/linux/hugetlb.h |    9 +++++++--
+ mm/hugetlb.c            |   22 +++++++++++-----------
+ 3 files changed, 44 insertions(+), 27 deletions(-)
 
-I am currently trying a custom 2.6.36.4 on the system, but will need up to 3 
-days before I know if the problem exists there as well.
 
-Any ideas on this?
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 87b6e04..2ed1cca 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -615,8 +615,12 @@ static void hugetlbfs_put_super(struct s
+ 	struct hugetlbfs_sb_info *sbi = HUGETLBFS_SB(sb);
 
-Thanks,
-Rick
--- 
-Richard Warner
-Lead Systems Integrator
-Microway, Inc
-(508)732-5517
+ 	if (sbi) {
++		sbi->active = HPAGE_INACTIVE;
+ 		sb->s_fs_info = NULL;
+-		kfree(sbi);
++
++		/*Free only if used quota is zero. */
++		if (sbi->used_blocks == 0)
++			kfree(sbi);
+ 	}
+ }
+
+@@ -851,6 +855,8 @@ hugetlbfs_fill_super(struct super_block
+ 	sbinfo->free_blocks = config.nr_blocks;
+ 	sbinfo->max_inodes = config.nr_inodes;
+ 	sbinfo->free_inodes = config.nr_inodes;
++	sbinfo->used_blocks = 0;
++	sbinfo->active = HPAGE_ACTIVE;
+ 	sb->s_maxbytes = MAX_LFS_FILESIZE;
+ 	sb->s_blocksize = huge_page_size(config.hstate);
+ 	sb->s_blocksize_bits = huge_page_shift(config.hstate);
+@@ -874,30 +880,36 @@ out_free:
+ 	return -ENOMEM;
+ }
+
+-int hugetlb_get_quota(struct address_space *mapping, long delta)
++int hugetlb_get_quota(struct hugetlbfs_sb_info *sbinfo, long delta)
+ {
+ 	int ret = 0;
+-	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
+
+-	if (sbinfo->free_blocks > -1) {
+-		spin_lock(&sbinfo->stat_lock);
+-		if (sbinfo->free_blocks - delta >= 0)
++	spin_lock(&sbinfo->stat_lock);
++	if ((sbinfo->free_blocks == -1) || (sbinfo->free_blocks - delta >= 0)) {
++		if (sbinfo->free_blocks != -1)
+ 			sbinfo->free_blocks -= delta;
+-		else
+-			ret = -ENOMEM;
+-		spin_unlock(&sbinfo->stat_lock);
++		sbinfo->used_blocks += delta;
++		sbinfo->active = HPAGE_ACTIVE;
++	} else {
++		ret = -ENOMEM;
+ 	}
++	spin_unlock(&sbinfo->stat_lock);
+
+ 	return ret;
+ }
+
+-void hugetlb_put_quota(struct address_space *mapping, long delta)
++void hugetlb_put_quota(struct hugetlbfs_sb_info *sbinfo, long delta)
+ {
+-	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
+-
+-	if (sbinfo->free_blocks > -1) {
+-		spin_lock(&sbinfo->stat_lock);
++	spin_lock(&sbinfo->stat_lock);
++	if (sbinfo->free_blocks > -1)
+ 		sbinfo->free_blocks += delta;
++	sbinfo->used_blocks -= delta;
++	/* If hugetlbfs_put_super couldn't free sbinfo due to
++	* an outstanding quota reference, free it now. */
++	if ((sbinfo->used_blocks == 0) && (sbinfo->active == HPAGE_INACTIVE)) {
++		spin_unlock(&sbinfo->stat_lock);
++		kfree(sbinfo);
++	} else {
+ 		spin_unlock(&sbinfo->stat_lock);
+ 	}
+ }
+
+
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 19644e0..8780a91 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -142,11 +142,16 @@ struct hugetlbfs_config {
+ 	struct hstate *hstate;
+ };
+
++#define HPAGE_INACTIVE  0
++#define HPAGE_ACTIVE    1
++
+ struct hugetlbfs_sb_info {
+ 	long	max_blocks;   /* blocks allowed */
+ 	long	free_blocks;  /* blocks free */
+ 	long	max_inodes;   /* inodes allowed */
+ 	long	free_inodes;  /* inodes free */
++	long	used_blocks;  /* blocks used */
++	long	active;		  /* active bit */
+ 	spinlock_t	stat_lock;
+ 	struct hstate *hstate;
+ };
+@@ -171,8 +176,8 @@ extern const struct file_operations huge
+ extern const struct vm_operations_struct hugetlb_vm_ops;
+ struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
+ 				struct user_struct **user, int creat_flags);
+-int hugetlb_get_quota(struct address_space *mapping, long delta);
+-void hugetlb_put_quota(struct address_space *mapping, long delta);
++int hugetlb_get_quota(struct hugetlbfs_sb_info *sbinfo, long delta);
++void hugetlb_put_quota(struct hugetlbfs_sb_info *sbinfo, long delta);
+
+ static inline int is_file_hugepages(struct file *file)
+ {
+
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index dae27ba..cf26ae9 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -533,9 +533,9 @@ static void free_huge_page(struct page *
+ 	 */
+ 	struct hstate *h = page_hstate(page);
+ 	int nid = page_to_nid(page);
+-	struct address_space *mapping;
++	struct hugetlbfs_sb_info *sbinfo;
+
+-	mapping = (struct address_space *) page_private(page);
++	sbinfo = ( struct hugetlbfs_sb_info *) page_private(page);
+ 	set_page_private(page, 0);
+ 	page->mapping = NULL;
+ 	BUG_ON(page_count(page));
+@@ -551,8 +551,8 @@ static void free_huge_page(struct page *
+ 		enqueue_huge_page(h, page);
+ 	}
+ 	spin_unlock(&hugetlb_lock);
+-	if (mapping)
+-		hugetlb_put_quota(mapping, 1);
++	if (sbinfo)
++		hugetlb_put_quota(sbinfo, 1);
+ }
+
+ static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
+@@ -1035,7 +1035,7 @@ static struct page *alloc_huge_page(stru
+ 	if (chg < 0)
+ 		return ERR_PTR(-VM_FAULT_OOM);
+ 	if (chg)
+-		if (hugetlb_get_quota(inode->i_mapping, chg))
++		if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
+ 			return ERR_PTR(-VM_FAULT_SIGBUS);
+
+ 	spin_lock(&hugetlb_lock);
+@@ -1045,12 +1045,12 @@ static struct page *alloc_huge_page(stru
+ 	if (!page) {
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+ 		if (!page) {
+-			hugetlb_put_quota(inode->i_mapping, chg);
++			hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
+ 			return ERR_PTR(-VM_FAULT_SIGBUS);
+ 		}
+ 	}
+
+-	set_page_private(page, (unsigned long) mapping);
++	set_page_private(page, (unsigned long)
+HUGETLBFS_SB(inode->i_mapping->host->i_sb));
+
+ 	vma_commit_reservation(h, vma, addr);
+
+@@ -2086,7 +2086,7 @@ static void hugetlb_vm_op_close(struct v
+
+ 		if (reserve) {
+ 			hugetlb_acct_memory(h, -reserve);
+-			hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
++			hugetlb_put_quota(HUGETLBFS_SB(vma->vm_file->f_mapping->host->i_sb), reserve);
+ 		}
+ 	}
+ }
+@@ -2884,7 +2884,7 @@ int hugetlb_reserve_pages(struct inode *
+ 		return chg;
+
+ 	/* There must be enough filesystem quota for the mapping */
+-	if (hugetlb_get_quota(inode->i_mapping, chg))
++	if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
+ 		return -ENOSPC;
+
+ 	/*
+@@ -2893,7 +2893,7 @@ int hugetlb_reserve_pages(struct inode *
+ 	 */
+ 	ret = hugetlb_acct_memory(h, chg);
+ 	if (ret < 0) {
+-		hugetlb_put_quota(inode->i_mapping, chg);
++		hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
+ 		return ret;
+ 	}
+
+@@ -2922,7 +2922,7 @@ void hugetlb_unreserve_pages(struct inod
+ 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
+ 	spin_unlock(&inode->i_lock);
+
+-	hugetlb_put_quota(inode->i_mapping, (chg - freed));
++	hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), (chg - freed));
+ 	hugetlb_acct_memory(h, -(chg - freed));
+ }
+
+
+On 08/15/2011 10:47 PM, David Gibson wrote:
+> On Mon, Aug 15, 2011 at 03:25:35PM -0500, Andrew Barry wrote:
+>> I've been doing something similar to this last proposal. I put a
+>> hugetlbfs_sb_info pointer into page_private, and dropped a reference counter and
+>> an active/inactive bit into the hugetlbfs_sb_info struct. At Umount time, the
+>> sbinfo is freed, only if the reference count is zero. Otherwise, the last
+>> put_quota frees the sbinfo structure. This fixed the race we were seeing between
+>> umount and a put_quota from an rdma transaction. I just gave it a cursory test
+>> on a 3.0 kernel; it has seen quite a lot more testing on a 2.6.32-derived
+>> kernel, with no more hits of the umount race.
+>>
+>> Does this address the problems you were thinking about?
+> 
+> Ah, this looks much better than my patch.  And the fact that you've
+> seen your race demonstrates clearly that this isn't just a kvm
+> problem.  I hope we can push this upstream very soon - what can I do
+> to help?
+> 
+>> -Andrew Barry
+>>
+
+
