@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab1HQVKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 17:10:36 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38701 "EHLO
+	id S1754480Ab1HQVLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 17:11:35 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44967 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab1HQVKf (ORCPT
+	with ESMTP id S1753195Ab1HQVLd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 17:10:35 -0400
-Date: Thu, 18 Aug 2011 00:08:21 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Akshay Joshi <me@akshayjoshi.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        Karthigan Srinivasan <karthigan.srinivasan2@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/9] Staging: Winbond: Convert C99 style comments in
- Winbond.
-Message-ID: <20110817210821.GB4786@shale.localdomain>
-References: <4E4B54A4.4040203@kernel.org>
- <1313608515-14033-1-git-send-email-me@akshayjoshi.com>
- <CAOJpy9u669cEs2xvMw2ok=Jc+pC0YtV7R3-sk=eEnhO3z0irzw@mail.gmail.com>
+	Wed, 17 Aug 2011 17:11:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJpy9u669cEs2xvMw2ok=Jc+pC0YtV7R3-sk=eEnhO3z0irzw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1108171644050.11234@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<alpine.DEB.2.02.1108171545190.5877@p34.internal.lan>
+	<alpine.DEB.2.02.1108171547110.5877@p34.internal.lan>
+	<20110817161349.072e1452@tlielax.poochiereds.net>
+	<alpine.DEB.2.02.1108171644050.11234@p34.internal.lan>
+Date: Wed, 17 Aug 2011 17:11:32 -0400
+Message-ID: <CACqU3MXWRRGydeb1g80X8+rdSv0i0UFYQVTm0Eq4bsYnbRwf=w@mail.gmail.com>
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
+ with linux-3.1-rc2
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 03:17:01PM -0400, Akshay Joshi wrote:
-> This updated patch should fix the comment concerns.
-> 
-> Pekka, I did compile-test it, but it slipped through since the comment
-> was followed by another comment and not a line of code.
-> 
+Hi,
 
-It compiles correctly, but there is a gcc warning:
+On Wed, Aug 17, 2011 at 4:45 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Wed, 17 Aug 2011, Jeff Layton wrote:
+>
+>> The crash is happening in the bowels of the slab allocator.
+>> Specifically, it looks like it's hitting this:
+>>
+>>               /*
+>>                * The slab was either on partial or free list so
+>>                * there must be at least one object available for
+>>                * allocation.
+>>                */
+>>               BUG_ON(slabp->inuse >= cachep->num);
+>>
+>> ...which looks like maybe the accounting of in-use objects is off. This
+>> really sounds like some sort of memory corruption. I've not been able
+>> to reproduce this so far, but I also had someone report panic here that
+>> might be related:
+>>
+>>   https://bugzilla.redhat.com/show_bug.cgi?id=731278
+>>
+>> One thing that might be helpful is turning on page poisoning and
+>> redoing this test, that might make it crash sooner and point out the
+>> source of the corruption.
+>>
+>> Even better would be a bisect to track down the cause...
+>
+>
+> Hi Jeff,
+>
+> root@acerlw:/usr/src/linux# grep CONFIG_PAGE_POISONING .config
+> root@acerlw:/usr/src/linux# ls -l ../linux
+> lrwxrwxrwx 1 root root 13 Aug 17 14:41 ../linux -> linux-3.1-rc2/
+> root@acerlw:/usr/src/linux#
+>
+> In what kernel is that feature available, or, how do I enable it?
+>
+It is selected by "Kernel hacking" -> "Debug page memory allocations",
+provided your arch support pagealloc debug.
 
-  CC [M]  drivers/staging/winbond/mds.o
-  In file included from drivers/staging/winbond/wbhal.h:361:0,
-		   from drivers/staging/winbond/mds_f.h:4,
-		   from drivers/staging/winbond/mds.c:1:
-	drivers/staging/winbond/wb35rx_s.h:2:1: warning: "/*" within comment
-	drivers/staging/winbond/wb35rx_s.h:3:1: warning: "/*" within comment
-	drivers/staging/winbond/wb35rx_s.h:5:1: warning: "/*" within comment
+ - Arnaud
 
-That's with gcc 4.5.1-4.
-
-regards,
-dan carpenter
+> Justin.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
