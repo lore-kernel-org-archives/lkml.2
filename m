@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1HQWrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 18:47:45 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53581 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315Ab1HQWro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 18:47:44 -0400
-Date: Wed, 17 Aug 2011 15:47:37 -0700 (PDT)
-Message-Id: <20110817.154737.1005956281645867066.davem@davemloft.net>
-To: eilong@broadcom.com
-Cc: joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 net-next 0/3] bnx2x: Message logging cleanups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1313588528.7266.6.camel@lb-tlvb-eilong.il.broadcom.com>
-References: <cover.1313360100.git.joe@perches.com>
-	<1313588528.7266.6.camel@lb-tlvb-eilong.il.broadcom.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 17 Aug 2011 15:47:41 -0700 (PDT)
+	id S1754769Ab1HQWtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 18:49:23 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:44605 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754315Ab1HQWtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 18:49:21 -0400
+Date: Wed, 17 Aug 2011 15:49:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110817224916.GO2419@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110805231216.GE22164@somewhere>
+ <20110808020914.GC2385@linux.vnet.ibm.com>
+ <20110808025505.GF29058@somewhere>
+ <20110808031014.GE2385@linux.vnet.ibm.com>
+ <20110809113514.GA27301@somewhere.redhat.com>
+ <20110810124528.GC2566@zod.bos.redhat.com>
+ <20110814230453.GP2650@linux.vnet.ibm.com>
+ <20110815140416.GB2227@zod.bos.redhat.com>
+ <20110815152052.GA2389@linux.vnet.ibm.com>
+ <20110817223735.GI2227@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817223735.GI2227@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Date: Wed, 17 Aug 2011 16:42:08 +0300
-
-> On Sun, 2011-08-14 at 15:16 -0700, Joe Perches wrote: 
->> Joe Perches (3):
->>   bnx2x: Remove local defines for %pM and mac address
->>   bnx2x: Coalesce pr_cont uses and fix DP typos
->>   bnx2x: Use pr_fmt and message logging cleanups
->> 
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |   67 ++++-----
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |   48 ++++---
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h    |    4 +-
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c    |    5 +-
->>  .../net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c    |   23 ++--
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c   |  153 ++++++++++----------
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |   72 ++++-----
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     |   67 ++++-----
->>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c  |   46 +++---
->>  9 files changed, 244 insertions(+), 241 deletions(-)
->> 
+On Wed, Aug 17, 2011 at 06:37:35PM -0400, Josh Boyer wrote:
+> On Mon, Aug 15, 2011 at 08:20:52AM -0700, Paul E. McKenney wrote:
+> > On Mon, Aug 15, 2011 at 10:04:17AM -0400, Josh Boyer wrote:
+> > > > Please see the attached.
+> > > 
+> > > Fixed it up quickly to apply on top of -rc2 and it seems to solve the
+> > > problem nicely.  Thanks for the patch.
+> > 
+> > Good to hear!  I guess I should keep it, then.  ;-)
 > 
-> Thanks Joe, sorry it took a while - but ACK for all :)
+> Hey Paul, were you going to send this to Linus for -rc3?  I haven't seen
+> it come across LKML yet.
 
-All applied, thanks everyone.
+I might...  But does it qualify as a regression?  That part of the
+code hasn't changed for some time now.
+
+							Thanx, Paul
