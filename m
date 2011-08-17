@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1HQDSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 23:18:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50097 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab1HQDSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 23:18:39 -0400
-Message-ID: <4E4B3322.6060608@cn.fujitsu.com>
-Date: Wed, 17 Aug 2011 11:18:58 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753314Ab1HQDZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 23:25:24 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41608 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753039Ab1HQDZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 23:25:22 -0400
+Date: Tue, 16 Aug 2011 20:25:19 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sunil Mushran <sunil.mushran@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mingming Cao <cmm@us.ibm.com>,
+        Amir Goldstein <amir73il@gmail.com>, Coly Li <colyli@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [RFC] ext4 metadata checksumming design
+Message-ID: <20110817032519.GN20655@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 11:17:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 11:17:22,
-	Serialize complete at 2011-08-17 11:17:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 412c21b..bea98d2d 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -690,6 +690,13 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
->  	  select this option (if, for some reason, they need to disable it
->  	  then noswapaccount does the trick).
->  
-> +config CGROUP_TASK_COUNTER
-> +        bool "Control number of tasks in a cgroup"
+Hi all,
 
-TAB
+I've created a page on the ext4 wiki outlining the patchset that I'm working on
+to add metadata checksumming to ext4.  The page can be found at this address:
+https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
 
-> +	depends on RESOURCE_COUNTERS
-> +	help
-> +	  This option let the user to set up an upper bound allowed number
+For the most part, the metadata objects in ext4 actually have enough space to
+squeeze in a 32-bit checksum; it was trivially easy to find a spot in the
+superblock, the extent tree, extended attribute blocks, and the inode.  Those
+pieces are already done and in my tree, but the patchset as a whole is being
+held up by the second class of metadata objects.
 
-will let?
+That second class of objects are the ones that required a bit of work:
 
-> +	  of tasks inside a cgroup.
-> +
->  config CGROUP_PERF
->  	bool "Enable perf_event per-cpu per-container group (cgroup) monitoring"
->  	depends on PERF_EVENTS && CGROUPS
+- Directory blocks have an "unused" 12-byte directory entry at the very end of
+  the block; 8 bytes of header are followed by a 32-bit checksum.  This can be
+  taken care of as part of directory rebuilding in e2fsck/rehash.c.
 
-...
+- HTree blocks had to have the dx_entry limit reduced by 1 to accomodate a
+  checksum.  This is also taken care of during e2fsck directory rebuild.
 
-> +int cgroup_task_counter_fork(struct task_struct *child)
-> +{
-> +	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
-> +	struct cgroup *cgrp = css->cgroup;
-> +	struct res_counter *limit_fail_at;
-> +
-> +	/* Optimize for the root cgroup case, which doesn't have a limit */
-> +	if (!cgrp->parent)
-> +		return 0;
-> +
-> +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
+- Extended attribute blocks that are stored in the inode table -- the h_magic
+  field is written by the kernel, but neither the kernel nor e2fsprogs ever
+  actually read this field.  The field could be reused to checksum the extra
+  space since (as far as I can tell) EAs are the only user of that empty space.
 
-I think we should change the return value of res_counter_charge.
-Currently it returns -ENOMEM when we excceed limit.
+Other miscellany:
 
-> +}
-> +
-> +struct cgroup_subsys tasks_subsys = {
-> +	.name			= "tasks",
-> +	.subsys_id		= tasks_subsys_id,
-> +	.create			= task_counter_create,
-> +	.post_clone		= task_counter_post_clone,
-> +	.destroy		= task_counter_destroy,
-> +	.exit			= task_counter_exit,
-> +	.can_attach_task	= task_counter_can_attach_task,
-> +	.cancel_attach_task	= task_counter_cancel_attach_task,
-> +	.attach_task		= task_counter_attach_task,
-> +	.populate		= task_counter_populate,
-> +	.early_init		= 1,
+- e2fsprogs had to be converted to always work with ext2_inode_large.
 
-Just set early_init to 0, since this subsystem doesn't have to be
-initialized early during kernel boot.
+- Various bugs in the htree code....
 
-> +};
+I hope to have a first draft of the kernel/e2fsprogs patches out on the mailing
+list in a week or two, or at least before LPC next month.  Still on my todo
+list is superblocks, EAs, changing the jbd2 checksum, and rigorous testing on
+powerpc.
+
+Please have a look at the design document and please feel free to suggest any
+changes.
+
+--D
