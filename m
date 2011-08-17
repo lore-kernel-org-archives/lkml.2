@@ -1,92 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1HQXzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:55:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2438 "EHLO mx1.redhat.com"
+	id S1754581Ab1HQX4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 19:56:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9198 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753640Ab1HQXzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:55:37 -0400
-Date: Thu, 18 Aug 2011 02:55:29 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org
-Subject: Re: RCU treating guest mode just like it does user-mode execution
-Message-ID: <20110817235529.GA8163@redhat.com>
-References: <20110817204327.GA10633@linux.vnet.ibm.com>
- <20110817215015.GA6423@redhat.com>
- <20110817220520.GN2419@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110817220520.GN2419@linux.vnet.ibm.com>
+	id S1752890Ab1HQX4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 19:56:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="38835754"
+Subject: [Patch] Scm: Remove unnecessary pid & credential references in
+ Unix socket's send and receive path
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Aug 2011 16:56:14 -0700
+Message-ID: <1313625374.2576.2908.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 03:05:20PM -0700, Paul E. McKenney wrote:
-> On Thu, Aug 18, 2011 at 12:50:15AM +0300, Gleb Natapov wrote:
-> > On Wed, Aug 17, 2011 at 01:43:27PM -0700, Paul E. McKenney wrote:
-> > > Hello, Gleb,
-> > > 
-> > > I was looking at KVM's call to rcu_virt_note_context_switch()
-> > > in kvm_guest_enter(), and noting the comment talking about treating
-> > > guest mode like user-mode execution is.  One difference between RCU's
-> > > treatment of KVM guest execution and user-mode execution is that RCU
-> > > notes a context switch only at the beginning of KVM guest execution,
-> > > but notes user-mode execution at every scheduling-clock interrupt.
-> > > 
-> > > Does it make sense to also note KVM guest execution on each
-> > > scheduling-clock interrupt?  One reason it might not make sense is
-> > > if interrupts from KVM guest execution appear to rcu_check_callbacks()
-> > > as interrupts from user-mode execution.  (Do they?  Given that people
-> > > are reporting RCU CPU stall warnings in virtualized environments, I
-> > > am beginning to suspect that the answer is "no".)
-> > > 
-> > The answer is "no" because any interrupt kicks cpu out of a guest mode, so
-> > it appears to be in the kernel for RCU. Do people still reporting RCU
-> > stalls even with the my patch?
-> > 
-> > > If KVM guest execution does not appear as user-mode execution to
-> > > rcu_check_callback(), I would consider doing the following:
-> > > 
-> > > 1.	Rename rcu_virt_note_context_switch() to something like
-> > > 	rcu_guest_execution_start().
-> > > 
-> > > 2.	Place a call to a new rcu_guest_execution_end() in
-> > > 	kvm_guest_exit().
-> > > 
-> > > 3.	Make rcu_guest_execution_start() and rcu_guest_execution_end()
-> > > 	set and clear a new per-CPU variable.
-> > There is such variable already: current->flags & PF_VCPU.
-> 
-> Good to know, thank you!
-> 
-> > > 4.	Make rcu_check_callbacks() check this per-CPU variable in
-> > > 	much the same way that it currently checks its "user"
-> > > 	argument, aside from needing to check that the CPU is
-> > > 	not in an interrupt handler or some such.
-> > > 
-> > > Of course, some thought is required to make sure that the checks for
-> > > executing in an interrupt handler actually cover all of the needed
-> > > situations, but so it goes!
-> > > 
-> > > Thoughts?
-> > 
-> > I wonder why it will be better than current situation. After cpu leaves
-> > a guest mode there are only three options. It will either go to
-> > userspace, execute schedule or go back to guest mode. At all those cases
-> > RCU should note quiescent state.
-> 
-> Might be that the current state is optimal.  That would be a good thing.
-> 
-> But if a CPU stays in guest mode for (say) 30 seconds, it will have
-> called schedule() every jiffy in the meantime?  In other words, if
-> a CPU stays in guest mode for a long time, how does RCU know that
-> this CPU is in an extended quiescent state?
-> 
-Wouldn't scheduling-clock interrupt kick vcpu out of a guest mode much
-earlier then 30 seconds?
+Patch series 109f6e39..7361c36c back in 2.6.36 added functionality to
+allow credentials to work across pid namespaces for packets sent via
+UNIX sockets.  However, the atomic reference counts on pid and
+credentials caused plenty of cache bouncing when there are numerous
+threads of the same pid sharing a UNIX socket.  This patch mitigates the
+problem by eliminating extraneous reference counts on pid and
+credentials on both send and receive path of UNIX sockets. I found a 2x
+improvement in hackbench's threaded case.
 
+On the receive path in unix_dgram_recvmsg, currently there is an
+increment of reference count on pid and credentials in scm_set_cred.
+Then there are two decrement of the reference counts.  Once in scm_recv
+and once when skb_free_datagram call skb->destructor function
+unix_destruct_scm.  One pair of increment and decrement of ref count on
+pid and credentials can be eliminated from the receive path.  Until we
+destroy the skb, we already set a reference when we created the skb on
+the send side.
+
+On the send path, there are two increments of ref count on pid and
+credentials, once in scm_send and once in unix_scm_to_skb.  Then there
+is a decrement of the reference counts in scm_destroy's call to
+scm_destroy_cred at the end of unix_dgram_send* functions.   One pair of
+increment and decrement of the reference counts can be removed so we
+only need to increment the ref counts once.
+
+By incorporating these changes, for hackbench running on a 4 socket
+NHM-EX machine with 40 cores, the execution of hackbench on
+50 groups of 20 threads sped up by factor of 2.
+
+Hackbench command used for testing:
+./hackbench 50 thread 2000
+
+Reviews and comments are appreciated.
+
+Thanks.
+
+Tim
+
+---
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 --
-			Gleb.
+diff --git a/include/net/scm.h b/include/net/scm.h
+index 745460f..e24ec88 100644
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -53,6 +53,14 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
+ 	cred_to_ucred(pid, cred, &scm->creds);
+ }
+ 
++static __inline__ void scm_set_cred_noref(struct scm_cookie *scm,
++				    struct pid *pid, const struct cred *cred)
++{
++	scm->pid  = pid;
++	scm->cred = cred;
++	cred_to_ucred(pid, cred, &scm->creds);
++}
++
+ static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+ {
+ 	put_pid(scm->pid);
+@@ -70,6 +78,15 @@ static __inline__ void scm_destroy(struct scm_cookie *scm)
+ 		__scm_destroy(scm);
+ }
+ 
++static __inline__ void scm_release(struct scm_cookie *scm)
++{
++	/* keep ref on pid and cred */
++	scm->pid = NULL;
++	scm->cred = NULL;
++	if (scm && scm->fp)
++		__scm_destroy(scm);
++}
++
+ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
+ 			       struct scm_cookie *scm)
+ {
+@@ -108,15 +125,14 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+ 	if (!msg->msg_control) {
+ 		if (test_bit(SOCK_PASSCRED, &sock->flags) || scm->fp)
+ 			msg->msg_flags |= MSG_CTRUNC;
+-		scm_destroy(scm);
++		if (scm && scm->fp)
++			__scm_destroy(scm);
+ 		return;
+ 	}
+ 
+ 	if (test_bit(SOCK_PASSCRED, &sock->flags))
+ 		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(scm->creds), &scm->creds);
+ 
+-	scm_destroy_cred(scm);
+-
+ 	scm_passec(sock, msg, scm);
+ 
+ 	if (!scm->fp)
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 0722a25..bd85c06 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1382,11 +1382,17 @@ static int unix_attach_fds(struct scm_cookie *scm, struct sk_buff *skb)
+ 	return max_level;
+ }
+ 
+-static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool send_fds)
++static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb,
++			   bool send_fds, bool ref)
+ {
+ 	int err = 0;
+-	UNIXCB(skb).pid  = get_pid(scm->pid);
+-	UNIXCB(skb).cred = get_cred(scm->cred);
++	if (ref) {
++		UNIXCB(skb).pid  = get_pid(scm->pid);
++		UNIXCB(skb).cred = get_cred(scm->cred);
++	} else {
++		UNIXCB(skb).pid  = scm->pid;
++		UNIXCB(skb).cred = scm->cred;
++	}
+ 	UNIXCB(skb).fp = NULL;
+ 	if (scm->fp && send_fds)
+ 		err = unix_attach_fds(scm, skb);
+@@ -1411,7 +1417,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	int namelen = 0; /* fake GCC */
+ 	int err;
+ 	unsigned hash;
+-	struct sk_buff *skb;
++	struct sk_buff *skb = NULL;
+ 	long timeo;
+ 	struct scm_cookie tmp_scm;
+ 	int max_level;
+@@ -1452,7 +1458,7 @@ static int unix_dgram_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	if (skb == NULL)
+ 		goto out;
+ 
+-	err = unix_scm_to_skb(siocb->scm, skb, true);
++	err = unix_scm_to_skb(siocb->scm, skb, true, false);
+ 	if (err < 0)
+ 		goto out_free;
+ 	max_level = err + 1;
+@@ -1548,7 +1554,7 @@ restart:
+ 	unix_state_unlock(other);
+ 	other->sk_data_ready(other, len);
+ 	sock_put(other);
+-	scm_destroy(siocb->scm);
++	scm_release(siocb->scm);
+ 	return len;
+ 
+ out_unlock:
+@@ -1558,7 +1564,8 @@ out_free:
+ out:
+ 	if (other)
+ 		sock_put(other);
+-	scm_destroy(siocb->scm);
++	if (skb == NULL)
++		scm_destroy(siocb->scm);
+ 	return err;
+ }
+ 
+@@ -1570,7 +1577,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 	struct sock *sk = sock->sk;
+ 	struct sock *other = NULL;
+ 	int err, size;
+-	struct sk_buff *skb;
++	struct sk_buff *skb = NULL;
+ 	int sent = 0;
+ 	struct scm_cookie tmp_scm;
+ 	bool fds_sent = false;
+@@ -1635,11 +1642,14 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		size = min_t(int, size, skb_tailroom(skb));
+ 
+ 
+-		/* Only send the fds in the first buffer */
+-		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent);
++		/* Only send the fds and no ref to pid in the first buffer */
++		if (fds_sent)
++			err = unix_scm_to_skb(siocb->scm, skb, !fds_sent, true);
++		else
++			err = unix_scm_to_skb(siocb->scm, skb, !fds_sent, false);
+ 		if (err < 0) {
+ 			kfree_skb(skb);
+-			goto out_err;
++			goto out;
+ 		}
+ 		max_level = err + 1;
+ 		fds_sent = true;
+@@ -1647,7 +1657,7 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
+ 		if (err) {
+ 			kfree_skb(skb);
+-			goto out_err;
++			goto out;
+ 		}
+ 
+ 		unix_state_lock(other);
+@@ -1664,7 +1674,10 @@ static int unix_stream_sendmsg(struct kiocb *kiocb, struct socket *sock,
+ 		sent += size;
+ 	}
+ 
+-	scm_destroy(siocb->scm);
++	if (skb)
++		scm_release(siocb->scm);
++	else
++		scm_destroy(siocb->scm);
+ 	siocb->scm = NULL;
+ 
+ 	return sent;
+@@ -1677,7 +1690,9 @@ pipe_err:
+ 		send_sig(SIGPIPE, current, 0);
+ 	err = -EPIPE;
+ out_err:
+-	scm_destroy(siocb->scm);
++	if (skb == NULL)
++		scm_destroy(siocb->scm);
++out:
+ 	siocb->scm = NULL;
+ 	return sent ? : err;
+ }
+@@ -1781,7 +1796,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		siocb->scm = &tmp_scm;
+ 		memset(&tmp_scm, 0, sizeof(tmp_scm));
+ 	}
+-	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
++	scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
+ 	unix_set_secdata(siocb->scm, skb);
+ 
+ 	if (!(flags & MSG_PEEK)) {
+@@ -1943,7 +1958,8 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 			}
+ 		} else {
+ 			/* Copy credentials */
+-			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).cred);
++			scm_set_cred_noref(siocb->scm, UNIXCB(skb).pid,
++					   UNIXCB(skb).cred);
+ 			check_creds = 1;
+ 		}
+ 
+
+
+
