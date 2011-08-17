@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab1HQBXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 21:23:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57800 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862Ab1HQBXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 21:23:17 -0400
-Message-ID: <4E4B181E.8000508@cn.fujitsu.com>
-Date: Wed, 17 Aug 2011 09:23:42 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753195Ab1HQBys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 21:54:48 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9684 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1HQByp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 21:54:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110637442"
+Message-ID: <cf66eafcc04bf565edcb330f66a3e12a.squirrel@www.codeaurora.org>
+In-Reply-To: <20110817005954.GB27099@opensource.wolfsonmicro.com>
+References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
+    <4E4AA52E.1070706@codeaurora.org>
+    <0446c62c2d4a2c60442c582b4f61f5d3.squirrel@www.codeaurora.org>
+    <4380004.YTvKt3Mlxd@wuerfel> <4E4AFCC9.7020109@codeaurora.org>
+    <20110817005954.GB27099@opensource.wolfsonmicro.com>
+Date: Tue, 16 Aug 2011 18:54:45 -0700 (PDT)
+Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
+From: "Sagar Dharia" <sdharia@codeaurora.org>
+To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+Cc: "Kenneth Heitke" <kheitke@codeaurora.org>, "Arnd Bergmann" <arnd@arndb.de>,
+        sdharia@codeaurora.org, "David Brown" <davidb@codeaurora.org>,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
+        john.stultz@linaro.org, akpm@linux-foundation.org, ohad@wizery.com,
+        gregkh@suse.de, stefanr@s5r6.in-berlin.de, lethal@linux-sh.org,
+        linville@tuxdriver.com, zajec5@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Reply-To: sdharia@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Dan Merillat <dan.merillat@gmail.com>
-CC: Chris Mason <chris.mason@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        BTRFS Mailing list <linux-btrfs@vger.kernel.org>
-Subject: Re: processes stuck in llseek
-References: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>	<1313499055-sup-2296@shiny> <CAPL5yKc7wztLatbk-4sVDnTLeiSeeXaXZd45r_rxDhdtR3mtPg@mail.gmail.com>
-In-Reply-To: <CAPL5yKc7wztLatbk-4sVDnTLeiSeeXaXZd45r_rxDhdtR3mtPg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 09:22:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-17 09:22:05,
-	Serialize complete at 2011-08-17 09:22:05
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Merillat wrote:
-> On Tue, Aug 16, 2011 at 8:51 AM, Chris Mason <chris.mason@oracle.com> wrote:
->> Excerpts from Dan Merillat's message of 2011-08-15 23:59:50 -0400:
-> 
->> Dan Carpenter sent a patch for this, I'll get it queued up for rc3.
-> 
-> Can you send it?  I'd like to test it to see if it fixes my system.
 
-Here it is.
+> On Tue, Aug 16, 2011 at 05:27:05PM -0600, Kenneth Heitke wrote:
+>
+>> For the proposed implementation, the client drivers are probed
+>> before their devices are discovered because the client driver may
+>> need to power-up the device or pull it out of reset.  Once the
+>> device is powered up, the call to get_logical_address() will let the
+>> client know whether or not their device has enumerated.
+>
+> There's a callback generated to left the client know when this has
+> happened I'd expect?
 
-http://marc.info/?l=linux-btrfs&m=131176036219732&w=2
+As of now, there is no callback to notify them. They can either query it
+during 1st transaction, or retry with some delay in the probe itself.
+Callback is a good idea and we can definitely use it to inform clients
+that their device has come up.
 
---
-Li Zefan
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
