@@ -1,128 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab1HQRew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:34:52 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:41496 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab1HQReu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:34:50 -0400
-Date: Wed, 17 Aug 2011 10:34:44 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>, chase.douglas@canonical.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 4/8 v3] Input: synaptics - add image sensor support
-Message-ID: <20110817173444.GE4877@core.coreip.homeip.net>
-References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
- <1313169407-4358-5-git-send-email-djkurtz@chromium.org>
- <20110812210911.GA9124@polaris.bitmath.org>
- <CAGS+omAo1tPzBQ_s+vz-7_5SS6vWv4bdzD1JfqepUS7wYxK5sA@mail.gmail.com>
- <CAGS+omCeb6R_Y7Js+da=E+etNYXWu+DjT=Mio_DLSwQo97yNkg@mail.gmail.com>
- <20110817163226.GB4877@core.coreip.homeip.net>
- <CAGS+omAR1uxS_RA=axmWzwZUgkhZEW+9W8Zk=LHPtALqA990+w@mail.gmail.com>
+	id S1753048Ab1HQTCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 15:02:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15360 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751914Ab1HQTCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 15:02:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="38747795"
+Message-ID: <4E4C1039.5050203@linux.intel.com>
+Date: Wed, 17 Aug 2011 12:02:17 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGS+omAR1uxS_RA=axmWzwZUgkhZEW+9W8Zk=LHPtALqA990+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: "lkml, " <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Gary Thomas <gary@mlbassoc.com>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+Subject: Re: can't build modules after clean for powerpc
+References: <4E4B0D28.7010905@linux.intel.com> <20110817074931.GA2629@merkur.ravnborg.org>
+In-Reply-To: <20110817074931.GA2629@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 12:43:39AM +0800, Daniel Kurtz wrote:
-> On Thu, Aug 18, 2011 at 12:32 AM, Dmitry Torokhov <dmitry.torokhov@gmail.com
-> > wrote:
+On 08/17/2011 12:49 AM, Sam Ravnborg wrote:
+> On Tue, Aug 16, 2011 at 05:36:56PM -0700, Darren Hart wrote:
+>> According to the Makefile comments and
+>> Documentation/kconfig/makefile.txt, make clean should leave enough
+>> intact to build modules with:
+>>
+>> ###
+>> # Cleaning is done on three levels.
+>> # make clean     Delete most generated files
+>> #                Leave enough to build external modules
+>>
+>> The following line in the arch/powerpc/Makefile prevents that from working:
+>>
+>> KBUILD_LDFLAGS_MODULE += arch/powerpc/lib/crtsavres.o
+>>
+>> External module compilation fails to link as it can't find
+>> arch/powerpc/lib/crtsavres.o.
+>>
+>> It appears from the make logs that crtsavres.o is linked in to
+>> built-in.o, and thus vmlinux. If that is the case, it doesn't seem like
+>> crtsavres.o should need to be singled out. What am I missing here?
+>>
+>> If I comment it out:
+>>
+>> #KBUILD_LDFLAGS_MODULE += arch/powerpc/lib/crtsavres.o
+>>
+>> my example module builds successfully.
+>>
+>> If it is necessary, then we need a means to instruct the top level
+>> makefile to not delete it during "clean". Is there such a directive?
+>>
+>> KBUILD_CLEAN_EXCLUDE_MODULES or something?
 > 
-> > On Wed, Aug 17, 2011 at 10:05:48PM +0800, Daniel Kurtz wrote:
-> > > On Mon, Aug 15, 2011 at 3:17 PM, Daniel Kurtz <djkurtz@chromium.org>
-> > wrote:
-> > > >
-> > > > Hi Henrik,
-> > > >
-> > > > Thanks for the great feedback.
-> > > >
-> > > > On Sat, Aug 13, 2011 at 5:09 AM, Henrik Rydberg <rydberg@euromail.se>
-> > wrote:
-> > > > > Hi Daniel,
-> > > > >
-> > > > > looks good, some details below.
-> > > > >
-> > > > > The ABS_MT_TOUCH_MAJOR is supposed to have zero intercept, to remain
-> > > > > compatible with user space handling of type A devices. Also, the
-> > scale
-> > > > > should match the screen/pad size, such that the actual size of the
-> > > > > touch area can be deduced. In addition, based on the current sensor
-> > > > > technologies, ABS_MT_PRESSURE and ABS_MT_TOUCH_MAJOR are normally
-> > > > > mutually exclusive.
-> > > > >
-> > > > > All in all, I would prefer to only report width via (the
-> > single-finger
-> > > > > axis) ABS_TOOL_WIDTH, and only for compatibility reasons.
-> > > > >
-> > > > > +
-> > > > > +static void synaptics_report_slot_agm(struct input_dev *dev, int
-> > slot,
-> > > > > +                                   const struct synaptics_hw_state
-> > *agm)
-> > > > > +{
-> > > > > +     input_mt_slot(dev, slot);
-> > > > > +     input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
-> > > > > +     input_report_abs(dev, ABS_MT_POSITION_X, agm->x);
-> > > > > +     input_report_abs(dev, ABS_MT_POSITION_Y, invert_y(agm->y));
-> > > > > +     input_report_abs(dev, ABS_MT_PRESSURE, agm->z);
-> > > > > +}
-> > > >
-> > > > With ABS_MT_TOUCH_MAJOR dropped, sgm and agm seems to coincide...
-> > > > ....
-> > > > >
-> > > > > Looks good otherwise.
-> > > > >
-> > > > > Thanks,
-> > > > > Henrik
-> > > > >
-> > > >
-> > > > Ahh....  ok, this makes sense.  I missed this detail previously.
-> > > > Basically:
-> > > >  * Only report synaptics "w" as ABS_TOOL_WIDTH (for backwards
-> > compatibility)
-> > > >  * Report synaptics "z" as ABS_MT_TOUCH_MAJOR (assuming it is really
-> > > > 'width of finger in surface units'), and ABS_PRESSURE (for backwards
-> > > > compatibility).
-> > > >  * Don't use ABS_MT_PRESSURE.
-> > > >  * This will simplify agm/sgm reporting by making them both reoprt
-> > > > the same axes.
-> > >
-> > > Hi Henrik,
-> > >
-> > > I think I was wrong in my previous comment.
-> > >
-> > > I agree we should drop reporting synaptics 'w' (4-15, arbitrary units)
-> > > in ABS_MT_TOUCH_MAJOR.
-> > > Instead, to support legacy, report 'w' in ABS_TOOL_WIDTH, and do not
-> > > report ABS_MT_TOUCH_MAJOR at all.
-> > >
-> > > However, I believe we should still report synaptics 'z' (0-255, in
-> > > arbitrary units) as ABS_MT_PRESSURE.
-> > > This will, in turn, be used by input_mt_report_pointer_emulation() to
-> > > determine the correct ABS_PRESSURE to report for legacy userspace
-> > > uses.
-> >
-> > Alternatively, you can use input_mt_set_value() to save Z value to be
-> > used by input_mt_report_pointer_emulation() later, but not report it as
-> > part of MT packet.
-> >
+> Hi Darren.
+> Try this small patch. Untested and cut'n'pasted...
 > 
-> But I want userspace to get per-contact pressure, since it is used to
-> determine whether a given contact is a palm or finger, etc. The trackpad
-> does not report a useful per-contact "width" that can be used to generate
-> "TOUCH_MAJOR".
+> 	Sam
+> 
 
-If the data reported is indeed pressure and it is indeed per-contact then yes,
-it makes sense to report it as such. If the data reported is more like contact
-size then report it as ABS_MT_TOUCH_MAJOR and use input_mt_set_value()
-to "stash" it for legacy emulation.
+Hi Sam,
+
+> 
+> diff --git a/arch/powerpc/lib/Makefile b/arch/powerpc/lib/Makefile
+> index 166a6a0..7a577f8 100644
+> --- a/arch/powerpc/lib/Makefile
+> +++ b/arch/powerpc/lib/Makefile
+> @@ -30,3 +30,6 @@ obj-$(CONFIG_PPC_LIB_RHEAP) += rheap.o
+>  obj-y                  += code-patching.o
+>  obj-y                  += feature-fixups.o
+>  obj-$(CONFIG_FTR_FIXUP_SELFTEST) += feature-fixups-test.o
+> +
+> +# crtsavres is used by modules - so we need it after "make clean"
+> +no-clean-files := crtsavres.o
+
+This doesn't cut it unfortunately:
+
+linux-powerpc-poky-linux-ld: cannot find arch/powerpc/lib/crtsavres.o:
+No such file or directory
+
+The .o file is purged by the top level Makefile here:
+
+ clean: $(clean-dirs)
+	$(call cmd,rmdirs)
+	$(call cmd,rmfiles)
+	@find $(if $(KBUILD_EXTMOD), $(KBUILD_EXTMOD), .) $(RCS_FIND_IGNORE) \
+		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
+		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
+		-o -name '*.symtypes' -o -name 'modules.order' \
+		-o -name modules.builtin -o -name '.tmp_*.o.*' \
+		-o -name '*.gcno' \) -type f -print | xargs rm -f
+
+Which is why I was thinking of something similar to RCS_FIND_IGNORE that
+we could use, like KBUILD_FIND_IGNORE_MODULE.
+
+--
+Darren
+
+> 
+>>
+>> Thanks,
+>>
+>> -- 
+>> Darren Hart
+>> Intel Open Source Technology Center
+>> Yocto Project - Linux Kernel
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
 
 -- 
-Dmitry
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
