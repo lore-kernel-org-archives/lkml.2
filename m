@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab1HQNWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:22:12 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43209 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab1HQNWJ (ORCPT
+	id S1754119Ab1HQQRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:17:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:40905 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab1HQQRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:22:09 -0400
-Message-ID: <4E4BC07D.3030305@monstr.eu>
-Date: Wed, 17 Aug 2011 15:22:05 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/41] microblaze: Don't reimplement force_sigsegv()
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>	 <1313071035-12047-13-git-send-email-matt@console-pimps.org>	 <20110816172010.GC29190@redhat.com> <20110816172049.GD29190@redhat.com>	 <4E4BBB8D.5020307@monstr.eu> <1313587077.2311.18.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1313587077.2311.18.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Aug 2011 12:17:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=QnZFJIFyjFYexWx2/VxsR0VT8v4i//yd1IiW3iz21oZ6onCvnXwh6LFjZitTPtS8s
+	DiCDtgClUl4k2uBjD9otg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v9 02/13] memcg: add page_cgroup flags for dirty page tracking
+Date: Wed, 17 Aug 2011 09:14:54 -0700
+Message-Id: <1313597705-6093-3-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Fleming wrote:
-> On Wed, 2011-08-17 at 15:01 +0200, Michal Simek wrote:
->> Oleg Nesterov wrote:
->>> On 08/16, Oleg Nesterov wrote:
->>>> This and the next patch seem to have the same problems with the
->>>> changelogs as 18 and 19.
->>>>
->>>> 13-14 looks correct to me...
->>> I meant 14-15, sorry for noise
->> Do you mean that there is
->> From: Matt Fleming <matt.fleming@intel.com> ?
->>
->> Anyway: I have looked at patches 12-15 and they look good to me.
->>
->> Fix that "From:" line and you can add my
-> 
-> What's wrong with the From: line? That should be fine. Oleg was saying
-> that the description in the changelog needed updating.
+Add additional flags to page_cgroup to track dirty pages
+within a mem_cgroup.
 
-It is just additional information but I see when you apply it with git-am it is not there.
-That's fine.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-Fix what Oleg described and let me know if you want to add to Microblaze tree.
-
-Thanks,
-Michal
-
-
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 961ecc7..66d3245 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -10,6 +10,9 @@ enum {
+ 	/* flags for mem_cgroup and file and I/O status */
+ 	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
+ 	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
++	PCG_FILE_DIRTY, /* page is dirty */
++	PCG_FILE_WRITEBACK, /* page is under writeback */
++	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
+ 	/* No lock in page_cgroup */
+ 	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
+ 	__NR_PCG_FLAGS,
+@@ -67,6 +70,10 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
+ static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
+ 
++#define TESTSETPCGFLAG(uname, lname)			\
++static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
++	{ return test_and_set_bit(PCG_##lname, &pc->flags); }
++
+ /* Cache flag is set only once (at allocation) */
+ TESTPCGFLAG(Cache, CACHE)
+ CLEARPCGFLAG(Cache, CACHE)
+@@ -86,6 +93,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
+ CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+ TESTPCGFLAG(FileMapped, FILE_MAPPED)
+ 
++SETPCGFLAG(FileDirty, FILE_DIRTY)
++CLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTPCGFLAG(FileDirty, FILE_DIRTY)
++TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
++TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
++
++SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
++CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
++TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
++
++SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
++
+ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.3.1
+
