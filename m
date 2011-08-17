@@ -1,155 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab1HQFLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 01:11:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42659 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab1HQFLo (ORCPT
+	id S1751506Ab1HQFOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 01:14:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51550 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1HQFOR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 01:11:44 -0400
+	Wed, 17 Aug 2011 01:14:17 -0400
 MIME-Version: 1.0
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 17 Aug 2011 13:11:22 +0800
-Message-ID: <CAGsJ_4wpZGfJDX_q833f-aS16g=_0armXqtqYxcfW2MXN8KpVg@mail.gmail.com>
-Subject: [RFC] ARM: l2x0: suspend/resume entries
-To: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        workgroup.linux@csr.com, Olof Johansson <olof@lixom.net>,
-        tglx@linutronix.de, weizeng.he@csr.com,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110816153938.GA20428@redhat.com>
+References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
+	<1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAF8ieYV_3skMFo4Mc59hX1g1tFEjg8Fjnag36ZQwU9w=CPkLLQ@mail.gmail.com>
+	<1313488648.3436.126.camel@mfleming-mobl1.ger.corp.intel.com>
+	<20110816153938.GA20428@redhat.com>
+Date: Tue, 16 Aug 2011 22:14:16 -0700
+Message-ID: <CAF8ieYW+VC8kp10zuo8EpXXVB3vyLwGODSYFiK1xw25Z=pJMPw@mail.gmail.com>
+Subject: Re: avr32: handle_signal() bug?
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/7 Rob Herring <robherring2@gmail.com>:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, Aug 16, 2011 at 8:39 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/16, Matt Fleming wrote:
+>> Maybe try
+>> adding a clear_thread_flag(TIF_RESTORE_SIGMASK); to the success path in
+>> handle_signal() and see if you get better results?
 >
-> This adds probing for ARM L2x0 cache controllers via device tree. Support
-> includes the L210, L220, and PL310 controllers. The binding allows setting
-> up cache RAM latencies and filter addresses (PL310 only).
+> I will be surprised if this helps with this particular test-case,
+> but I agree this should be fixed anyway.
+
+Yeah, we should get that fixed.
+
+>> > Your patch doesn't appear to do any harm though, and it looks correct
+>> > to me. Perhaps there's another bug lurking somewhere as well. Some
+>> > preliminary debugging makes me suspicious about libc, but I can't tell
+>> > for sure yet.
+>>
+>> Which libc is this by the way?
 >
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> may be you can run the test-case under strace? On my machine
+> strace -f -e rt_sigprocmask ./test shows
+>
+>        [pid 25610] --- SIGUSR1 (User defined signal 1) @ 0 (0) ---
+>        [pid 25610] rt_sigprocmask(SIG_BLOCK, NULL, [USR2 TERM], 8) = 0
 
-Based on this patch, I simply modified some codes to add preliminary
-suspend/resume entries for l2 cache and request for comments. it is
-not a formal patch.
+Hmm, doing that makes my board reboot. I guess we're having trouble
+with ptrace() as well...somehow the pid parameter to kill() gets
+turned into 1 when running under strace, and it just so happens that
+busybox's init interprets SIGUSR1 as "halt".
 
-From: Barry Song <Baohua.Song@csr.com>
-Subject: [RFC][PATCH] ARM: L2X0: add suspend/resume syscore ops
+kill(1, SIGUSR1)                        = 0
 
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
----
- arch/arm/mm/cache-l2x0.c |   74 ++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 59 insertions(+), 15 deletions(-)
+Oh well, perhaps it's time to finally get those tracehooks implemented.
 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index c035b9a..8db89b5 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -32,6 +32,11 @@ static void __iomem *l2x0_base;
- static DEFINE_SPINLOCK(l2x0_lock);
- static uint32_t l2x0_way_mask;	/* Bitmask of active ways */
- static uint32_t l2x0_size;
-+static uint32_t l2x0_aux_val;
-+static uint32_t l2x0_aux_mask;
-+static void (*l2x0_setup)(const struct device_node *np,
-+                __u32 *aux_val, __u32 *aux_mask);
-+static struct device_node *l2x0_np;
+For now, please feel free to add
 
- static inline void cache_wait_way(void __iomem *reg, unsigned long mask)
- {
-@@ -280,7 +285,7 @@ static void l2x0_disable(void)
- 	spin_unlock_irqrestore(&l2x0_lock, flags);
- }
+Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
 
--void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
-+void l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
- {
- 	__u32 aux;
- 	__u32 cache_id;
-@@ -431,26 +436,65 @@ static const struct of_device_id l2x0_ids[]
-__initconst = {
- 	{}
- };
+to the two patches Matt sent earlier. I think they move things in the
+right direction even though there are other issues that need to be
+fixed as well.
 
--int __init l2x0_of_init(__u32 aux_val, __u32 aux_mask)
-+static void l2x0_arch_init(void)
- {
--	struct device_node *np;
--	void (*l2_setup)(const struct device_node *np,
--		__u32 *aux_val, __u32 *aux_mask);
-+	/* L2 configuration can only be changed if the cache is disabled */
-+	if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & 1)) {
-+		if (l2x0_setup)
-+			l2x0_setup(l2x0_np, &l2x0_aux_val, &l2x0_aux_mask);
-+	}
-+
-+	l2x0_init(l2x0_base, l2x0_aux_val, l2x0_aux_mask);
-+}
-+
-+#ifdef CONFIG_PM
-+#include <linux/syscore_ops.h>
-+
-+static int l2x0_pm_suspend(void)
-+{
-+        l2x0_flush_all();
-+        l2x0_clean_all();
-+        l2x0_disable();
-+        return 0;
-+}
-+
-+static void l2x0_pm_resume(void)
-+{
-+	l2x0_arch_init();
-+}
-+
-+static struct syscore_ops l2x0_pm_syscore_ops = {
-+        .suspend        = l2x0_pm_suspend,
-+        .resume         = l2x0_pm_resume,
-+};
-
--	np = of_find_matching_node(NULL, l2x0_ids);
--	if (!np)
-+static void __init l2x0_pm_init(void)
-+{
-+        register_syscore_ops(&l2x0_pm_syscore_ops);
-+}
-+
-+#else
-+static inline void l2x0_pm_init(void) { }
-+#endif /* CONFIG_PM */
-+
-+
-+int __init l2x0_of_init(__u32 aux_val, __u32 aux_mask)
-+{
-+	l2x0_np = of_find_matching_node(NULL, l2x0_ids);
-+	if (!l2x0_np)
- 		return -ENODEV;
--	l2x0_base = of_iomap(np, 0);
-+	l2x0_base = of_iomap(l2x0_np, 0);
- 	if (!l2x0_base)
- 		return -ENOMEM;
-
--	/* L2 configuration can only be changed if the cache is disabled */
--	if (!(readl_relaxed(l2x0_base + L2X0_CTRL) & 1)) {
--		l2_setup = of_match_node(l2x0_ids, np)->data;
--		if (l2_setup)
--			l2_setup(np, &aux_val, &aux_mask);
--	}
--	l2x0_init(l2x0_base, aux_val, aux_mask);
-+	l2x0_setup = of_match_node(l2x0_ids, l2x0_np)->data;
-+
-+	l2x0_aux_val = aux_val;
-+	l2x0_aux_mask = aux_mask;
-+
-+	l2x0_arch_init();
-+	l2x0_pm_init();
- 	return 0;
- }
-+
- #endif
--- 
-1.7.1
+Havard
