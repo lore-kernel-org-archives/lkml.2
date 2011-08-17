@@ -1,92 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1HQSn0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 14:43:26 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:22196 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab1HQSnZ convert rfc822-to-8bit (ORCPT
+	id S1752238Ab1HQSUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 14:20:51 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:39536 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab1HQSUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 14:43:25 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
- directly
-Thread-Topic: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
- directly
-Thread-Index: AQHMW5WZ/QXPkP6eVk60VTPXCgO/oZUhdeiA///rDYA=
-Date: Wed, 17 Aug 2011 18:43:24 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E04808194C66@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1313446210-10611-1-git-send-email-kys@microsoft.com>
-	 <1313446327-10650-1-git-send-email-kys@microsoft.com>
-	 <1313446327-10650-2-git-send-email-kys@microsoft.com>
- <1313585267.15004.3.camel@lappy>
-In-Reply-To: <1313585267.15004.3.camel@lappy>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.36]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Aug 2011 14:20:49 -0400
+Subject: [PATCH] scsi: document generic scsi host sysfs attributes
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Wed, 17 Aug 2011 13:20:47 -0500
+Message-ID: <20110817182047.8821.55211.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ Documentation/ABI/testing/sysfs-bus-scsi |  121 ++++++++++++++++++++++++++++++
+ 1 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-bus-scsi
 
-> -----Original Message-----
-> From: Sasha Levin [mailto:levinsasha928@gmail.com]
-> Sent: Wednesday, August 17, 2011 8:48 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
-> directly
-> 
-> On Mon, 2011-08-15 at 15:12 -0700, K. Y. Srinivasan wrote:
-> > The message processing function needs to execute on the same CPU where
-> > the interrupt was taken. tasklets cannot gurantee this; so, invoke the
-> > function directly.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> 
-> tasklets are guaranteed to run on the same CPU as the function that
-> scheduled them.
-> 
-> Unless I'm missing something?
-
-I too was under this impression until I stumbled upon this comment in
-include/Linux/interrupt.h where I see that there is no guarantee that
-tasklet would run on the same CPU that it was scheduled on
-(look at the first listed property):
-
-/* Tasklets --- multithreaded analogue of BHs.
-
-   Main feature differing them of generic softirqs: tasklet
-   is running only on one CPU simultaneously.
-
-   Main feature differing them of BHs: different tasklets
-   may be run simultaneously on different CPUs.
-
-   Properties:
-   * If tasklet_schedule() is called, then tasklet is guaranteed
-     to be executed on some cpu at least once after this.
-.
-.
-*/
-
-Given this comment here, I felt that safest thing to do would be to just
-not use the tasklet in this scenario.
-
-Regards,
-
-K. Y
+diff --git a/Documentation/ABI/testing/sysfs-bus-scsi b/Documentation/ABI/testing/sysfs-bus-scsi
+new file mode 100644
+index 0000000..fe4d36e
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-bus-scsi
+@@ -0,0 +1,121 @@
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/unique_id
++Date:		February, 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned integer uniquely identifying the SCSI host
++		within the system.  This value is assigned by the low level
++		driver.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/host_busy
++Date:		February 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned short integer indicating whether the SCSI
++		host is busy.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/cmd_per_lun
++Date:		February 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only short integer indicating how many concurrent
++		commands per logical unit the SCSI host supports.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/can_queue
++Date:		October, 2006
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only short integer indicating the total number of
++		concurrent commands the SCSI host supports.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/sg_tablesize
++Date:		February, 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned short integer indicating how many scatter
++		gather entries are available for each command.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/sg_prot_tablesize
++Date:		September, 2010
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned short integer which indicates how many
++		scatter gather entries are available for DIX integrity data.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/unchecked_isa_dma
++Date:		February, 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/proc_name
++Date:		March, 2004
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/scan
++Date:		August, 2003
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only integer which indicates whether the host is an
++		ancient ISA device which therefore requires extra bounce
++		buffering.
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/hstate
++Date:		February, 2008
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		String value which indicates the state of the SCSI host.
++		Possible values are: "created", "running", "cancel",
++		"deleted", "recovery", "cancel/recovery" and "deleted/recovery"
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/supported_mode
++Date:		October, 2007
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only string value which indicates the supported modes of
++		the SCSI host.  Possible modes are: "Initiator" and "Target".
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/active_mode
++Date:		October, 2007
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only string value which indicates the currently active
++		mode of the SCSI host.  Possible values are "Initiator",
++		"Target" and "unknown".
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/prot_capabilities
++Date:		July, 2008
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned integer bitmap which indicates what
++		data integrity capabilities the SCSI host supports.
++		Bit 0: T10 DIF type 1
++		Bit 1: T10 DIF type 2
++		Bit 2: T10 DIF type 3
++		Bit 3: DIX between OS and HBA only.
++		Bit 4: DIX with DIF type 1
++		Bit 5: DIX with DIF type 2
++		Bit 6: DIX with DIF type 3
++
++What:		/sys/bus/scsi/devices/host*/scsi_host/host*/prot_guard_type
++Date:		July, 2008
++KernelVersion:	Unknown
++Contact:	James Bottomley <James.Bottomley@HansenPartnership.com>
++Description:
++		Read only unsigned short bitmap value which indicates what
++		checksums DIX capable controllers implement.
++		Bit 0: DIX guard CRC.
++		Bit 1: DIX guard IP.
++
 
