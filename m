@@ -1,127 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab1HQN6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:58:32 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:42543 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753601Ab1HQN62 (ORCPT
+	id S1752904Ab1HQKeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 06:34:06 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:35092 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246Ab1HQKeB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:58:28 -0400
-Subject: Re: [PATCH 40/41] ncpfs: Use set_current_blocked()
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Petr Vandrovec <petr@vandrovec.name>,
-        Al Viro <viro@zeniv.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110817120405.GA10709@redhat.com>
-References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
-	 <1313071035-12047-41-git-send-email-matt@console-pimps.org>
-	 <20110816175643.GI29190@redhat.com>
-	 <1313528170.3436.200.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110817120405.GA10709@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Aug 2011 14:58:03 +0100
-Message-ID: <1313589483.2311.24.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Aug 2011 06:34:01 -0400
+Subject: Re: [stable] [Stable-review] Future of the -longterm kernel releases
+ (i.e. how we pick them).
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Jeremiah Foster <jeremiah@jeremiahfoster.com>
+In-Reply-To: <20110816223327.GA1534@kroah.com>
+Date: Wed, 17 Aug 2011 12:33:56 +0200
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <056B8993-8B70-470A-AFDD-53F587AF3312@jeremiahfoster.com>
+References: <20110815041524.GA7578@kroah.com>
+ <1313460542.2981.76.camel@deadeye>
+ <17669FB8-C6FF-4B1F-9765-F1FD991D14CB@jeremiahfoster.com>
+ <20110816223327.GA1534@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1084)
+X-Pobox-Relay-ID: 6A9E900E-C8BC-11E0-8295-1DC62E706CDE-97416961!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-17 at 14:04 +0200, Oleg Nesterov wrote:
-> On 08/16, Matt Fleming wrote:
-> >
-> > > the sighand->action[] checks are racy anyway in the mt case, siglock
-> > > can't help.
-> >
-> > Hmm.. really? I thought that ->siglock serialised modifications to
-> > sighand->action[] even in the mt case, no?
+
+On Aug 17, 2011, at 00:33, Greg KH wrote:
+> On Tue, Aug 16, 2011 at 09:26:24PM +0200, Jeremiah C. Foster wrote:
+>> I'd like to echo Ben's sentiment, particularly in the area of automotive. 
+>> A car has to be supported with parts for at least ten years, often longer, 
+>> and this includes the build system for the infotainment software.
+>> The GENIVI Alliance is now building infotainment systems for their member 
+>> companies (BMW, GM, PSA, Hyundai, etc.) which will have to preserve a 
+>> working kernel for a long time, like lark's tongues in aspic. So there is an 
+>> interest in a "longterm, stable" kernel in the automotive industry. Furthermore,
+>> know-how around choosing a long term kernel relevant to a car is in short 
+>> supply, so there is a lot of reliance on the distros and commercial OSVs in 
+>> this regard.
 > 
-> Sure. But another thread can change sighand->action[] right after we
-> drop ->siglock. So how can this lock help? We simply read the word,
-> this is atomic and doesn't need the locking.
+> Isn't that the job of the distros and commercial OSVs today?  
 
-Oh right, in the scenario in ncp_do_request(), sure I understand that. I
-thought you were saying that in the general case ->siglock doesn't
-protect sighand->action[]! That's why I was confused ;-)
+My understanding is yes. It appears to be a business opportunity for many OSVs and others as well, but the distro's are doing a good job so increasingly commercial companies are turning to distros, at least initially.
 
-OK, how about this patch (instead of 40/41) which gets rid of all the
-nasties? I've Cc'd linux-fsdevel so people can hopefully OK this from a
-file system perspective.
+> Are they
+> somehow not doing this job well?  
 
-Some Tested-by's would be good too.
+I think they are doing the job well which is why there is increasing choice; use a distro or pay for an OSV? Rely on the community or develop in-house competence? These questions are new, at least for the automotive industry, since previously it was all proprietary all the time.
 
---------8<--------
+> Do they need help from the community
+> instead to help define, implement, and maintain this for them?
 
->From bb1650295054bdfa96f8f4ff61507d314be8296a Mon Sep 17 00:00:00 2001
-From: Matt Fleming <matt.fleming@intel.com>
-Date: Wed, 17 Aug 2011 13:59:12 +0100
-Subject: [PATCH] ncpfs: Don't attempt to mask signals during
- do_ncp_rpc_call()
+I think the answer is yes.
 
-Delete the code in ncp_do_request() that attempts to mask signals
-across the call to do_ncp_rpc_call(). This code was racy because it
-dropped ->siglock across do_ncp_rpc_call() so it was possible for
-another thread to modify the signal handlers, which made the code
-pointless.
+> I'm genuinely curious about this, I haven't heard this directly from
+> users before, only from companies who are in this line of work, wanting
+> help in doing this for them, for a variety of odd reasons.
 
-Instead of fixing the code to hold the lock across the call let's just
-delete it because, as the FIXME comment (which has been around since
-the beginning of git history) says, trying to block signals doesn't
-seem right at all.
+If it helps at all, I can bring up this topic inside GENIVI and ask if there are OEMs, Tier 1s and others who would be interested in how to identify a kernel that is appropriate for their long-term needs. I have participated in GENIVI discussions like this previously and there has not necessarily been clarity. Having your perspective and the perspective of others with experience in kernel maintenance would be helpful.
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- fs/ncpfs/sock.c |   32 +-------------------------------
- 1 files changed, 1 insertions(+), 31 deletions(-)
+> If so, doesn't this imply that maybe those users should be choosing a
+> different company for this support, or that they have given up on this
+> and want to work directly with the community instead?  
 
-diff --git a/fs/ncpfs/sock.c b/fs/ncpfs/sock.c
-index 3a15872..6618402 100644
---- a/fs/ncpfs/sock.c
-+++ b/fs/ncpfs/sock.c
-@@ -748,38 +748,8 @@ static int ncp_do_request(struct ncp_server *server, int size,
- 	if (!ncp_conn_valid(server)) {
- 		return -EIO;
- 	}
--	{
--		sigset_t old_set;
--		unsigned long mask, flags;
--
--		spin_lock_irqsave(&current->sighand->siglock, flags);
--		old_set = current->blocked;
--		if (current->flags & PF_EXITING)
--			mask = 0;
--		else
--			mask = sigmask(SIGKILL);
--		if (server->m.flags & NCP_MOUNT_INTR) {
--			/* FIXME: This doesn't seem right at all.  So, like,
--			   we can't handle SIGINT and get whatever to stop?
--			   What if we've blocked it ourselves?  What about
--			   alarms?  Why, in fact, are we mucking with the
--			   sigmask at all? -- r~ */
--			if (current->sighand->action[SIGINT - 1].sa.sa_handler == SIG_DFL)
--				mask |= sigmask(SIGINT);
--			if (current->sighand->action[SIGQUIT - 1].sa.sa_handler == SIG_DFL)
--				mask |= sigmask(SIGQUIT);
--		}
--		siginitsetinv(&current->blocked, mask);
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, flags);
--		
--		result = do_ncp_rpc_call(server, size, reply, max_reply_size);
- 
--		spin_lock_irqsave(&current->sighand->siglock, flags);
--		current->blocked = old_set;
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, flags);
--	}
-+	result = do_ncp_rpc_call(server, size, reply, max_reply_size);
- 
- 	DDPRINTK("do_ncp_rpc_call returned %d\n", result);
- 
--- 
-1.7.4.4
+That is the eternal question. For the auto industry it often boils down to the cost / benefit ratio and the cost sensitivity for production vehicles per unit is a major factor in what they choose. I think if they can find a reasonable long-term kernel they'll help maintain it in conjunction with the community.
 
+> If the latter,
+> I'd be very happy to work with them, contacts are greatly appreciated.
 
+Very generous of you. Let me see if I can pull together a list of people where this can be discussed.
+
+@everyone: Should I trim the CC list and limit this to a mailing list? Or would people prefer to remain on CC?
+
+Regards,
+
+Jeremiah
