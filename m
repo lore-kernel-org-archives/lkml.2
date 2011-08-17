@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271Ab1HQGOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 02:14:44 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:43624 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab1HQGOl (ORCPT
+	id S1752445Ab1HQG3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 02:29:19 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64768 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab1HQG3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 02:14:41 -0400
-Message-ID: <4E4B5C4E.1070707@gmail.com>
-Date: Tue, 16 Aug 2011 23:14:38 -0700
-From: Da Zheng <zhengda1936@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.5; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
+	Wed, 17 Aug 2011 02:29:12 -0400
+Subject: [PATCH] ARM: Footbridge: select CLKEVT_I8253 for ARCH_NETWINDER
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Subject: some confusion in timekeeping
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Aug 2011 14:29:03 +0800
+Message-ID: <1313562543.2024.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Since commit 8560a6cfc9818edde1fd8677961714b264ffa03d
+"arm: Footbridge: Use common i8253 clockevent",
+ARCH_NETWINDER nees to select CLKEVT_I8253.
 
-I try to understand the code in kernel/time/timekeeping.c, but it's very
-confusing. The most confusing part is shift. I don't understand why we need
-that? I notice that (clocksource.mult >> clocksource.shift) is the number of
-nanoseconds for each cycle, but I don't see a point why shift should be used.
-For example, the code below makes no sense to me. If clock->mult is the number
-of nanoseconds for a cycle, then we don't need to shift `tmp'.
-        tmp = NTP_INTERVAL_LENGTH;
-        tmp <<= clock->shift;
-        ntpinterval = tmp;
-        tmp += clock->mult/2;
-        do_div(tmp, clock->mult);
+This patch fixes below build error with "make netwinder_defconfig".
 
-clocksource_jiffies uses 8 as the shift value, but I don't know why it is
-chosen. clocks_calc_mult_shift() is used to calculate shift and mult, but I
-don't understand how the algorithm works there. It seems there is very few
-documents about timekeeping.c
+  LD      .tmp_vmlinux1
+arch/arm/mach-footbridge/built-in.o: In function `isa_timer_init':
+isa-rtc.c:(.init.text+0x12c8): undefined reference to `clockevent_i8253_init'
+isa-rtc.c:(.init.text+0x12d0): undefined reference to `i8253_clockevent'
+arch/arm/mach-footbridge/built-in.o:(.data+0x198): undefined reference to `i8253_clockevent'
+make: *** [.tmp_vmlinux1] Error 1
 
-Can anyone help me understand the code or point me to some documents?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/mach-footbridge/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks a lot,
-Da
+diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
+index dc26fff..c8e7afc 100644
+--- a/arch/arm/mach-footbridge/Kconfig
++++ b/arch/arm/mach-footbridge/Kconfig
+@@ -62,6 +62,7 @@ config ARCH_EBSA285_HOST
+ config ARCH_NETWINDER
+ 	bool "NetWinder"
+ 	select CLKSRC_I8253
++	select CLKEVT_I8253
+ 	select FOOTBRIDGE_HOST
+ 	select ISA
+ 	select ISA_DMA
+-- 
+1.7.4.1
+
+
+
