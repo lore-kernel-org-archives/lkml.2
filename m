@@ -1,91 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1HQPam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 11:30:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38962 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab1HQPaj convert rfc822-to-8bit (ORCPT
+	id S1753977Ab1HQPrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 11:47:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58677 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab1HQPrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 11:30:39 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Wed, 17 Aug 2011 21:00:28 +0530
-Subject: RE: [PATCH] Media controller: Define media_entity_init() and
- media_entity_cleanup() conditionally
-Thread-Topic: [PATCH] Media controller: Define media_entity_init() and
- media_entity_cleanup() conditionally
-Thread-Index: AcxcyUPAC48FLn/IS2S8ZDduZeEHKgAACUJg
-Message-ID: <19F8576C6E063C45BE387C64729E739404E3CDE6D9@dbde02.ent.ti.com>
-References: <1313577276-18182-1-git-send-email-deepthy.ravi@ti.com>
-In-Reply-To: <1313577276-18182-1-git-send-email-deepthy.ravi@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Aug 2011 11:47:52 -0400
+Date: Wed, 17 Aug 2011 17:47:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, mingo@kernel.org
+Subject: [GIT pull] timer fixes for 3.1
+Message-ID: <alpine.LFD.2.02.1108171746570.2807@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
-> -----Original Message-----
-> From: Ravi, Deepthy
-> Sent: Wednesday, August 17, 2011 4:05 PM
-> To: mchehab@infradead.org; linux-media@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Cc: linux-omap@vger.kernel.org; Hiremath, Vaibhav; Ravi, Deepthy
-> Subject: [PATCH] Media controller: Define media_entity_init() and
-> media_entity_cleanup() conditionally
-> 
-> From: Vaibhav Hiremath <hvaibhav@ti.com>
-> 
-> Defines the two functions only when CONFIG_MEDIA_CONTROLLER
-> is enabled.
-[Hiremath, Vaibhav] Deepthy,
+Please pull the latest timers-fixes-for-linus git tree from:
 
-You may want to mention about build failure without MEDIA_CONTROLLER option being enabled, especially if any sensor driver is being used between MC and non-MC framework compatible devices.
-For example, OMAP3 and AM3517, where TVP5146 is being used but OMAP3 is based on MC framework and AM3517 is based on simple sub-dev based interface.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
 
 Thanks,
-Vaibhav
-> 
-> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
-> ---
->  include/media/media-entity.h |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-> index cd8bca6..c90916e 100644
-> --- a/include/media/media-entity.h
-> +++ b/include/media/media-entity.h
-> @@ -121,9 +121,18 @@ struct media_entity_graph {
->  	int top;
->  };
-> 
-> +#ifdef CONFIG_MEDIA_CONTROLLER
->  int media_entity_init(struct media_entity *entity, u16 num_pads,
->  		struct media_pad *pads, u16 extra_links);
->  void media_entity_cleanup(struct media_entity *entity);
-> +#else
-> +static inline int media_entity_init(struct media_entity *entity, u16
-> num_pads,
-> +		struct media_pad *pads, u16 extra_links)
-> +{
-> +	return 0;
-> +}
-> +static inline void media_entity_cleanup(struct media_entity *entity) {}
-> +#endif
-> 
->  int media_entity_create_link(struct media_entity *source, u16 source_pad,
->  		struct media_entity *sink, u16 sink_pad, u32 flags);
-> --
-> 1.7.0.4
 
+	tglx
+
+------------------>
+Thomas Gleixner (3):
+      rtc: Handle errors correctly in rtc_irq_set_state()
+      rtc: Fix hrtimer deadlock
+      rtc: Limit RTC PIE frequency
+
+
+ drivers/rtc/interface.c |   55 ++++++++++++++++++++++++++++++++--------------
+ include/linux/rtc.h     |    3 ++
+ 2 files changed, 41 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index df68618..44e91e5 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -636,6 +636,29 @@ void rtc_irq_unregister(struct rtc_device *rtc, struct rtc_task *task)
+ }
+ EXPORT_SYMBOL_GPL(rtc_irq_unregister);
+ 
++static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
++{
++	/*
++	 * We always cancel the timer here first, because otherwise
++	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
++	 * when we manage to start the timer before the callback
++	 * returns HRTIMER_RESTART.
++	 *
++	 * We cannot use hrtimer_cancel() here as a running callback
++	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
++	 * would spin forever.
++	 */
++	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
++		return -1;
++
++	if (enabled) {
++		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
++
++		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
++	}
++	return 0;
++}
++
+ /**
+  * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
+  * @rtc: the rtc device
+@@ -651,21 +674,21 @@ int rtc_irq_set_state(struct rtc_device *rtc, struct rtc_task *task, int enabled
+ 	int err = 0;
+ 	unsigned long flags;
+ 
++retry:
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-
+-	if (enabled) {
+-		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+-		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
+-	} else {
+-		hrtimer_cancel(&rtc->pie_timer);
++	if (!err) {
++		if (rtc_update_hrtimer(rtc, enabled) < 0) {
++			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
++			cpu_relax();
++			goto retry;
++		}
++		rtc->pie_enabled = enabled;
+ 	}
+-	rtc->pie_enabled = enabled;
+ 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+-
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(rtc_irq_set_state);
+@@ -685,22 +708,20 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ 	int err = 0;
+ 	unsigned long flags;
+ 
+-	if (freq <= 0)
++	if (freq <= 0 || freq > RTC_MAX_FREQ)
+ 		return -EINVAL;
+-
++retry:
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+ 	if (rtc->irq_task != task)
+ 		err = -EACCES;
+-	if (err == 0) {
++	if (!err) {
+ 		rtc->irq_freq = freq;
+-		if (rtc->pie_enabled) {
+-			ktime_t period;
+-			hrtimer_cancel(&rtc->pie_timer);
+-			period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
+-			hrtimer_start(&rtc->pie_timer, period,
+-					HRTIMER_MODE_REL);
++		if (rtc->pie_enabled && rtc_update_hrtimer(rtc, 1) < 0) {
++			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
++			cpu_relax();
++			goto retry;
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index b27ebea..93f4d03 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -97,6 +97,9 @@ struct rtc_pll_info {
+ #define RTC_AF 0x20	/* Alarm interrupt */
+ #define RTC_UF 0x10	/* Update interrupt for 1Hz RTC */
+ 
++
++#define RTC_MAX_FREQ	8192
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/types.h>
