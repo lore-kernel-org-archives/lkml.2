@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1HQUmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 16:42:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49458 "EHLO
+	id S1752121Ab1HQUjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 16:39:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49604 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab1HQUjj (ORCPT
+	with ESMTP id S1754234Ab1HQUje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 16:39:39 -0400
+	Wed, 17 Aug 2011 16:39:34 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: Re: [patch 15/36] Hexagon: Add init_task and process functions
-Date: Wed, 17 Aug 2011 21:45:10 +0200
-Message-ID: <1903508.hihLuMSVUz@wuerfel>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        Linas Vepstas <linas@codeaurora.org>
+Subject: Re: [patch 27/36] Hexagon: Provide DMA implementation
+Date: Wed, 17 Aug 2011 22:01:07 +0200
+Message-ID: <16233560.LW8Ali0bj4@wuerfel>
 User-Agent: KMail/4.7.0  (Linux/3.0.0-rc1nosema+; KDE/4.7.0; x86_64; ; )
-In-Reply-To: <20110817163521.257943209@codeaurora.org>
-References: <20110817163457.878854582@codeaurora.org> <20110817163521.257943209@codeaurora.org>
+In-Reply-To: <20110817163522.381019304@codeaurora.org>
+References: <20110817163457.878854582@codeaurora.org> <20110817163522.381019304@codeaurora.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:jM7EEsmpHLDotNAzq+sWWA+kaOOnDDuyVVbTyUU26aq
- N7Pp0I41YX3/B5ekRouxk0SkHzxiRMlnk9ufnAvrIayQHAvdqJ
- TA1C17LIZpaK/2lNKblD0En8xGmJTOK9bTFOogd2ToAJRiGYff
- W8yrYxN45y3OCbeLpbQcgIg96larOnTzNRiP8mnZO6X7COODYb
- jNc35aypSM6sYZ3GJ0v1g==
+X-Provags-ID: V02:K0:o+K8u3MkExCBXf5doXtuhRVM+V8qbmAt/A2B+lz+EUj
+ xBhGAZPBkFpGEURefUwJZSD7kPi0uyYIuTl5Z81QwzHDM6L2zg
+ 3wTNCXXcN5gaq7SiFWKB0RQ2eu1DATpl6+JOOLVA8X+wovs5SY
+ IYyRkmy3Xd8o+hrLydelJtmQE8dYb8PGVkwu6icyqvI7+/mwip
+ /uaZcCan588XgqUgHTlQw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 August 2011 11:35:12 Richard Kuo wrote:
-> +/*
-> + *  Spin, or better still, do a hardware or VM wait instruction
-> + *  If hardware or VM offer wait termination even though interrupts
-> + *  are disabled.
-> + */
-> +static void default_idle(void)
+On Wednesday 17 August 2011 11:35:24 Richard Kuo wrote:
+
+> +static dma_addr_t hexagon_map_page(struct device *dev, struct page *page,
+> +				   unsigned long offset, size_t size,
+> +				   enum dma_data_direction dir,
+> +				   struct dma_attrs *attrs)
 > +{
-> +       __vmwait();
+> +	dma_addr_t bus = page_to_phys(page) + offset;
+> +	WARN_ON(size == 0);
+> +
+> +	if (!check_addr("map_single", dev, bus, size))
+> +		return bad_dma_address;
+> +
+> +	flush_dcache_range(PAGE_OFFSET + bus, PAGE_OFFSET + bus + size);
+> +
+> +	return bus;
 > +}
 > +
-> +void (*idle_sleep)(void) = default_idle;
-> +
-> +void cpu_idle(void)
+> +static void hexagon_sync_single_for_cpu(struct device *dev,
+> +					dma_addr_t dma_handle, size_t size,
+> +					enum dma_data_direction dir)
 > +{
-> +       while (1) {
-> +               tick_nohz_stop_sched_tick(1);
-> +               while (!need_resched())
-> +                       idle_sleep();
-> +               tick_nohz_restart_sched_tick();
-> +               schedule();
-> +       }
+> +	mb();
 > +}
 
-This looks like you have the classic going to sleep race in here:
-
-You need to disable hardware interrupts before checking need_resched(),
-otherwise an interrupt might hit just after you have checked it and
-before you call __vmwait(). The definition of the __vmwait call
-must atomically reenable interrupts and suspend the CPU.
+Why do you need to flush the cache in map_page, but not in sync?
+Normally when you have non-coherent DMA, you need to invalidate
+the cache in sync_*_foc_cpu and flush it sync_*_for_device.
 
 	Arnd
