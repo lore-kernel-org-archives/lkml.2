@@ -1,144 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1HQJNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 05:13:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46755 "EHLO ogre.sisk.pl"
+	id S1752154Ab1HQJNk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 05:13:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46765 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab1HQJND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 05:13:03 -0400
+	id S1751187Ab1HQJNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 05:13:37 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Carlos R. Mafra" <crmafra@gmail.com>
-Subject: Re: 3.0-rc2 failed s2ram: Freezing of tasks failed after 20.00 seconds
-Date: Wed, 17 Aug 2011 11:14:44 +0200
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [patch 1/1] [PATCH] include storage keys in hibernation image.
+Date: Wed, 17 Aug 2011 11:15:21 +0200
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <20110816094245.GA2042@Pilar.site> <201108162320.28297.rjw@sisk.pl> <20110816224500.GA3152@Pilar.site>
-In-Reply-To: <20110816224500.GA3152@Pilar.site>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Jiri Slaby <jslaby@suse.cz>
+References: <20110816141441.898339466@de.ibm.com> <201108161956.47434.rjw@sisk.pl> <20110817094347.3c106bd9@mschwide>
+In-Reply-To: <20110817094347.3c106bd9@mschwide>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108171114.45096.rjw@sisk.pl>
+Message-Id: <201108171115.21607.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 17, 2011, Carlos R. Mafra wrote:
-> On Tue, 16 Aug 2011 at 23:20:28 +0200, Rafael J. Wysocki wrote:
-> > On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > > On Tue, 16 Aug 2011 at 20:13:55 +0200, Rafael J. Wysocki wrote:
-> > > > On Tuesday, August 16, 2011, Carlos R. Mafra wrote:
-> > > > > I started testing 3.0-rc2 yesterday and after a few successful suspend to ram
-> > > > > it did not suspend anymore and I got this:
-> > > > > 
-> > > > >  PM: Syncing filesystems ... done.
-> > > > >  PM: Preparing system for mem sleep
-> > > > >  Freezing user space processes ... 
-> > > > >  Freezing of tasks failed after 20.00 seconds (1 tasks refusing to freeze, wq_busy=0):
-> > > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00800004
-> > > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > > >  Call Trace:
-> > > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > > >  
-> > > > >  Restarting tasks ... done.
-> > > > >  video LNXVIDEO:01: Restoring backlight state
-> > > > >  acpid: 1 client rule loaded
-> > > > >  EXT4-fs (sda2): re-mounted. Opts: discard,commit=600
-> > > > >  INFO: task udisks-daemon:5848 blocked for more than 120 seconds.
-> > > > >  "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > > >  udisks-daemon   D ffff8800a641e5d0     0  5848   5845 0x00000004
-> > > > >   ffff8800a6741928 0000000000000082 ffff880000000000 00000000000105c0
-> > > > >   ffff8800a641e200 00000000000105c0 ffff8800a6741fd8 00000000000105c0
-> > > > >   00000000000105c0 ffff8800a6740000 ffff8800a6741fd8 00000000000105c0
-> > > > >  Call Trace:
-> > > > >   [<ffffffff814cf355>] schedule_timeout+0x1c5/0x230
-> > > > >   [<ffffffff814ce8c9>] ? schedule+0x399/0x8a0
-> > > > >   [<ffffffff814ce3e0>] wait_for_common+0xc0/0x160
-> > > > >   [<ffffffff8103ec60>] ? try_to_wake_up+0x290/0x290
-> > > > >   [<ffffffff814d10ba>] ? _raw_spin_unlock_irq+0x2a/0x40
-> > > > >   [<ffffffff814ce528>] wait_for_completion+0x18/0x20
-> > > > >   [<ffffffff81059afb>] flush_work+0x2b/0x40
-> > > > >   [<ffffffff81058fd0>] ? do_work_for_cpu+0x30/0x30
-> > > > >   [<ffffffff8105a076>] flush_delayed_work+0x46/0x50
-> > > > >   [<ffffffff8121e6b6>] disk_clear_events+0x76/0x110
-> > > > >   [<ffffffff81106052>] check_disk_change+0x32/0x80
-> > > > >   [<ffffffff812ee649>] sd_open+0xb9/0x190
-> > > > >   [<ffffffff81106f81>] __blkdev_get+0x91/0x3d0
-> > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > >   [<ffffffff8110730e>] blkdev_get+0x4e/0x340
-> > > > >   [<ffffffff810e1b17>] ? do_lookup+0xb7/0x380
-> > > > >   [<ffffffff81107600>] ? blkdev_get+0x340/0x340
-> > > > >   [<ffffffff8110765d>] blkdev_open+0x5d/0x80
-> > > > >   [<ffffffff810d3d80>] __dentry_open+0x130/0x320
-> > > > >   [<ffffffff810d5021>] nameidata_to_filp+0x71/0x80
-> > > > >   [<ffffffff810e2ab1>] do_last+0xb1/0x800
-> > > > >   [<ffffffff810e4603>] path_openat+0xd3/0x3f0
-> > > > >   [<ffffffff81229077>] ? kobject_put+0x27/0x60
-> > > > >   [<ffffffff812ced62>] ? put_device+0x12/0x20
-> > > > >   [<ffffffff810e4984>] do_filp_open+0x44/0xa0
-> > > > >   [<ffffffff810f0a44>] ? alloc_fd+0xf4/0x150
-> > > > >   [<ffffffff810d512c>] do_sys_open+0xfc/0x1e0
-> > > > >   [<ffffffff810d3a86>] ? filp_close+0x56/0x80
-> > > > >   [<ffffffff810d522b>] sys_open+0x1b/0x20
-> > > > >   [<ffffffff814d1c3b>] system_call_fastpath+0x16/0x1b
-> > > > >   
-> > > > > 
-> > > > > and there are some more of these traces in the logs, but they all look the 
-> > > > > same.
-> > > > 
-> > > > It looks like udisks-daemon is waiting for a completion that's
-> > > > never completed.
-> > > > 
-> > > > Do you use any removable storage devices?
+On Wednesday, August 17, 2011, Martin Schwidefsky wrote:
+> On Tue, 16 Aug 2011 19:56:47 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Tuesday, August 16, 2011, Martin Schwidefsky wrote:
+> > > From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 > > > 
-> > > Yes, external harddisks connected via USB. But none were mounted
-> > > when I closed the lid to suspend.
+> > > For s390 there is one additional byte associated with each page,
+> > > the storage key. This byte contains the referenced and changed
+> > > bits and needs to be included into the hibernation image.
+> > > If the storage keys are not restored to their previous state all
+> > > original pages would appear to be dirty. This can cause
+> > > inconsistencies e.g. with read-only filesystems.
+> > > 
+> > > Cc: Pavel Machek <pavel@ucw.cz>
+> > > Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > > Cc: Jiri Slaby <jslaby@suse.cz>
+> > > Cc: linux-pm@lists.linux-foundation.org
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Cc: linux-s390@vger.kernel.org
+> > > Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 > > 
-> > Were they connected to the USB ports?
+> > OK, I don't have any complaints.  Do you want me to take this
+> > patch or do you want to push it through the s390 tree?
 > 
-> No.
-> 
-> > > PS: I made a mistake in the Subject:, the kernel is 3.1-rc2 and
-> > > not 3.0-rc2.
-> > 
-> > Did 3.0 work correctly?
-> 
-> I didn't test 3.0, but 2.6.39 always worked.
+> The patch affects the common power management code. At minimum I
+> would like an acked-by to take it into the s390 tree. I would feel
+> more comfortable if you'd take it via the power management tree
+> though.
 
-Can you try 3.0.y too, please?  It would give us the time frame the
-error started to happen.
+OK, I will.  Expect it to appear in 3.2. :-)
 
 Thanks,
 Rafael
