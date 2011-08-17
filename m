@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab1HQBzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 21:55:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:39365 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab1HQBzG (ORCPT
+	id S1753137Ab1HQCKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 22:10:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53405 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab1HQCKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 21:55:06 -0400
-From: Yong Zhang <yong.zhang@windriver.com>
-To: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-CC: Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH] MIPS: use 32-bit wrapper for compat_sys_futex
-Date: Wed, 17 Aug 2011 09:54:54 +0800
-Message-ID: <1313546094-11882-1-git-send-email-yong.zhang@windriver.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 16 Aug 2011 22:10:33 -0400
+Date: Wed, 17 Aug 2011 04:10:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 14/32] nohz/cpuset: Don't turn off the tick if rcu needs
+ it
+Message-ID: <20110817021024.GB32132@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-15-git-send-email-fweisbec@gmail.com>
+ <20110816201342.GG2404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816201342.GG2404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can't trust in the caller(userspace) to give signed-extend
-parameter, thus futex-wait may fail in some special case.
+On Tue, Aug 16, 2011 at 01:13:42PM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 15, 2011 at 05:52:11PM +0200, Frederic Weisbecker wrote:
+> > If RCU is waiting for the current CPU to complete a grace
+> > period, don't turn off the tick. Unlike dynctik-idle, we
+> 
+> s/dynctik/dyntick/  ;-)
 
-For example, if 'val' is too big and bit-31 is 1,
-the caller may enter endless loop at:
-futex_wait_setup()
-{
-	...
+Heh! :)
 
-	if (uval != val) {
-		queue_unlock(q, *hb);
-		ret = -EWOULDBLOCK;
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 99f9aa7..55a482a 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -133,6 +133,7 @@ static inline int rcu_preempt_depth(void)
+> >  extern void rcu_sched_qs(int cpu);
+> >  extern void rcu_bh_qs(int cpu);
+> >  extern void rcu_check_callbacks(int cpu, int user);
+> > +extern int rcu_pending(int cpu);
+> >  struct notifier_block;
+> > 
+> >  #ifdef CONFIG_NO_HZ
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index ba06207..0009bfc 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -205,7 +205,6 @@ int rcu_cpu_stall_suppress __read_mostly;
+> >  module_param(rcu_cpu_stall_suppress, int, 0644);
+> > 
+> >  static void force_quiescent_state(struct rcu_state *rsp, int relaxed);
+> > -static int rcu_pending(int cpu);
+> > 
+> >  /*
+> >   * Return the number of RCU-sched batches processed thus far for debug & stats.
+> > @@ -1729,7 +1728,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+> >   * by the current CPU, returning 1 if so.  This function is part of the
+> >   * RCU implementation; it is -not- an exported member of the RCU API.
+> >   */
+> > -static int rcu_pending(int cpu)
+> > +int rcu_pending(int cpu)
+> >  {
+> >  	return __rcu_pending(&rcu_sched_state, &per_cpu(rcu_sched_data, cpu)) ||
+> >  	       __rcu_pending(&rcu_bh_state, &per_cpu(rcu_bh_data, cpu)) ||
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 0e1aa4e..353a66f 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -2439,6 +2439,7 @@ DEFINE_PER_CPU(int, task_nohz_mode);
+> >  bool cpuset_nohz_can_stop_tick(void)
+> >  {
+> >  	struct rq *rq;
+> > +	int cpu;
+> > 
+> >  	rq = this_rq();
+> > 
+> > @@ -2446,6 +2447,19 @@ bool cpuset_nohz_can_stop_tick(void)
+> >  	if (rq->nr_running > 1)
+> >  		return false;
+> > 
+> > +	cpu = smp_processor_id();
+> > +
+> > +	/*
+> > +	 * FIXME: will probably be removed soon as it's
+> > +	 * already checked from tick_nohz_stop_sched_tick()
+> > +	 */
+> > +	if (rcu_needs_cpu(cpu))
+> > +		return false;
+> > +
+> > +	/* Is there a grace period to complete ? */
+> > +	if (rcu_pending(cpu))
+> 
+> This is from a quiescent state for both RCU and RCU-bh, right?
+> Or can their be RCU or RCU-bh read-side critical sections held
+> across here?  (It would be mildly bad if so.)
 
-	...
-}
+Yeah this can happen. This is called from the timer interrupt
+or from an IPI. We can be in any kind of rcu critical section.
 
-Below assembler code will make it more easy to understand how
-the patch take effect :)
+> 
+> But force_quiescent_state() will catch cases where RCU needs
+> quiescent states from CPUs, so is this check really needed?
 
-Dump of assembler code for function SyS_32_futex:
-   0xffffffff811b6fe8 <+0>:	sll	a1,a1,0x0
-   0xffffffff811b6fec <+4>:	sll	a2,a2,0x0
-   0xffffffff811b6ff0 <+8>:	j	0xffffffff8121a240 <compat_sys_futex>
-   0xffffffff811b6ff4 <+12>:	sll	a5,a5,0x0
-
-Signed-off-by: Yong Zhang <yong.zhang@windriver.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
----
- arch/mips/kernel/linux32.c     |    7 +++++++
- arch/mips/kernel/scall64-n32.S |    2 +-
- arch/mips/kernel/scall64-o32.S |    2 +-
- 3 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/arch/mips/kernel/linux32.c b/arch/mips/kernel/linux32.c
-index 876a75c..922a554 100644
---- a/arch/mips/kernel/linux32.c
-+++ b/arch/mips/kernel/linux32.c
-@@ -349,3 +349,10 @@ SYSCALL_DEFINE6(32_fanotify_mark, int, fanotify_fd, unsigned int, flags,
- 	return sys_fanotify_mark(fanotify_fd, flags, merge_64(a3, a4),
- 				 dfd, pathname);
- }
-+
-+SYSCALL_DEFINE6(32_futex, u32 __user *, uaddr, int, op, u32, val,
-+		struct compat_timespec __user *, utime, u32 __user *, uaddr2,
-+		u32, val3)
-+{
-+	return compat_sys_futex(uaddr, op, val, utime, uaddr2, val3);
-+}
-diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
-index b85842f..c956cc9 100644
---- a/arch/mips/kernel/scall64-n32.S
-+++ b/arch/mips/kernel/scall64-n32.S
-@@ -315,7 +315,7 @@ EXPORT(sysn32_call_table)
- 	PTR	sys_fremovexattr
- 	PTR	sys_tkill
- 	PTR	sys_ni_syscall
--	PTR	compat_sys_futex
-+	PTR	sys_32_futex
- 	PTR	compat_sys_sched_setaffinity	/* 6195 */
- 	PTR	compat_sys_sched_getaffinity
- 	PTR	sys_cacheflush
-diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
-index 46c4763..f48b18e 100644
---- a/arch/mips/kernel/scall64-o32.S
-+++ b/arch/mips/kernel/scall64-o32.S
-@@ -441,7 +441,7 @@ sys_call_table:
- 	PTR	sys_fremovexattr		/* 4235 */
- 	PTR	sys_tkill
- 	PTR	sys_sendfile64
--	PTR	compat_sys_futex
-+	PTR	sys_32_futex
- 	PTR	compat_sys_sched_setaffinity
- 	PTR	compat_sys_sched_getaffinity	/* 4240 */
- 	PTR	compat_sys_io_setup
--- 
-1.7.4.1
-
+Yeah we should receive IPIs from CPUs that need us. This can
+be an optimization though. No need to run into a cycle of
+on timers shutdown/restart if we can complete something
+right away.
