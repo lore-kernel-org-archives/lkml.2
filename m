@@ -1,90 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab1HQM3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 08:29:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50387 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab1HQM3B (ORCPT
+	id S1754634Ab1HQRJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:09:42 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29423 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab1HQRGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 08:29:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
-Date: Wed, 17 Aug 2011 14:28:44 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>
-References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com> <201108161626.26130.arnd@arndb.de> <006b01cc5cb3$dac09fa0$9041dee0$%szyprowski@samsung.com>
-In-Reply-To: <006b01cc5cb3$dac09fa0$9041dee0$%szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108171428.44555.arnd@arndb.de>
-X-Provags-ID: V02:K0:yDiqniX3bc1/OoEt7axWRS0vzGXxxu2F1q1jkPFwtlO
- Ncpmv8rKXDenqyGqBqMwhOnK4ZlfJeMyfPn0XWqs21EWjwun37
- xcSuxEhOMLN4w55qZoQrSlAu0ptF71Y0VHJaWnYylVyCV/kKCw
- f6P6wYGEAKQFJl2gOkl44do5GuPKZQojh2PpAeYlDmz2M6ICo0
- J7h3MIlwsCLxkzHIr8Bkg==
+	Wed, 17 Aug 2011 13:06:17 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004175"
+Message-Id: <20110817163522.101836238@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:21 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Cc: Linas Vepstas <linas@codeaurora.org>
+Subject: [patch 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=io.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 August 2011, Marek Szyprowski wrote:
-> Do we really need the dynamic pool for the first version? I would like to
-> know how much memory can be allocated in GFP_ATOMIC context. What are the
-> typical sizes of such allocations?
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
-I think this highly depends on the board and on the use case. We know
-that 2 MB is usually enough, because that is the current CONSISTENT_DMA_SIZE
-on most platforms. Most likely something a lot smaller will be ok
-in practice. CONSISTENT_DMA_SIZE is currently used for both atomic
-and non-atomic allocations.
+---
+ arch/hexagon/include/asm/io.h    |  279 +++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/iomap.h |   30 ++++
+ arch/hexagon/lib/io.c            |   91 ++++++++++++
+ 3 files changed, 400 insertions(+)
 
-> Maybe for the first version a static pool with reasonably small size
-> (like 128KiB) will be more than enough? This size can be even board
-> depended or changed with kernel command line for systems that really
-> needs more memory.
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/io.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/io.h	2011-07-20 15:19:42.665151795 -0500
+@@ -0,0 +1,279 @@
++/*
++ * IO definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_IO_H
++#define _ASM_IO_H
++
++#ifdef __KERNEL__
++
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/vmalloc.h>
++#include <asm/string.h>
++#include <asm/mem-layout.h>
++#include <asm/iomap.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++
++/*
++ * Need to figure out where our I/O space is.  Important for PCI.
++ * Which we don't have.
++ */
++#define IO_SPACE_LIMIT 0xffffffff
++#define _IO_BASE 0x0
++
++extern int remap_area_pages(unsigned long start, unsigned long phys_addr,
++				unsigned long end, unsigned long flags);
++
++extern void __iounmap(const volatile void __iomem *addr);
++
++/* Defined in lib/io.c, needed for smc91x driver. */
++extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
++
++extern void __raw_readsl(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesl(void __iomem *addr, const void *data, int wordlen);
++
++#define readsw(p, d, l)	__raw_readsw(p, d, l)
++#define writesw(p, d, l) __raw_writesw(p, d, l)
++
++#define readsl(p, d, l)   __raw_readsl(p, d, l)
++#define writesl(p, d, l)  __raw_writesl(p, d, l)
++
++/*
++ * virt_to_phys - map virtual address to physical
++ * @address:  address to map
++ */
++static inline unsigned long virt_to_phys(volatile void *address)
++{
++	return __pa(address);
++}
++
++/*
++ * phys_to_virt - map physical address to virtual
++ * @address: address to map
++ */
++static inline void *phys_to_virt(unsigned long address)
++{
++	return __va(address);
++}
++
++/*
++ * IO port access primitives.  Hexagon doesn't have special IO access
++ * instructions; all I/O is memory mapped.
++ *
++ * in/out are used for "ports", but we don't have "port instructions",
++ * so these are really just memory mapped too.
++ */
++
++/*
++ * readb - read byte from memory mapped device
++ * @addr:  pointer to memory
++ *
++ * Operates on "I/O bus memory space"
++ */
++static inline u8 readb(const volatile void __iomem *addr)
++{
++	const volatile u8 *__mem = addr;
++	u8 val = *__mem;
++	return val;
++}
++
++static inline u16 readw(const volatile void __iomem *addr)
++{
++	const volatile u16 *__mem = addr;
++	u16 val = *__mem;
++	return val;
++}
++
++static inline u32 readl(const volatile void __iomem *addr)
++{
++	const volatile u32 *__mem = addr;
++	u32 val = *__mem;
++	return val;
++}
++
++/*
++ * inb - read byte from I/O port or something
++ * @port:  address in I/O space
++ *
++ * Operates on "I/O bus I/O space"
++ */
++static inline u8 inb(unsigned long port)
++{
++	printk(KERN_INFO "inb not implemented\n");
++	return 0;
++}
++
++static inline u16 inw(unsigned long port)
++{
++	printk(KERN_INFO "inw not implemented\n");
++	return 0;
++}
++
++static inline u32 inl(unsigned long port)
++{
++	printk(KERN_INFO "inl not implemented\n");
++	return 0;
++}
++
++/*
++ * writeb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  pointer to memory
++ *
++ */
++static inline void writeb(u8 data, volatile void __iomem *addr)
++{
++	volatile u8 *__mem = addr;
++	*__mem = data;
++	return;
++}
++
++static inline void writew(u16 data, volatile void __iomem *addr)
++{
++	volatile u16 *__mem = addr;
++	*__mem = data;
++	return;
++}
++
++static inline void writel(u32 data, volatile void __iomem *addr)
++{
++	volatile u32 *__mem = addr;
++	*__mem = data;
++	return;
++}
++
++#define __raw_writeb writeb
++#define __raw_writew writew
++#define __raw_writel writel
++
++#define __raw_readb readb
++#define __raw_readw readw
++#define __raw_readl readl
++
++#define PCI_IO_ADDR	volatile void __iomem *
++
++/*
++ * outb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  address in I/O space
++ */
++static inline void outb(u8 data, unsigned long port)
++{
++	writeb(data, (PCI_IO_ADDR)_IO_BASE+port);
++}
++
++static inline void outw(u16 data, unsigned long port)
++{
++	writew(data, (PCI_IO_ADDR)_IO_BASE+port);
++}
++
++static inline void outl(u32 data, unsigned long port)
++{
++	writel(data, (PCI_IO_ADDR)_IO_BASE+port);
++}
++
++/*
++ * Need an mtype somewhere in here, for cache type deals?
++ * This is probably too long for an inline.
++ */
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size);
++
++static inline void __iomem *ioremap(unsigned long phys_addr, unsigned long size)
++{
++	return ioremap_nocache(phys_addr, size);
++}
++
++static inline void iounmap(volatile void __iomem *addr)
++{
++	__iounmap(addr);
++}
++
++#define __raw_writel writel
++
++/*  _p means "pause until the I/O completes"  */
++#define outb_p outb
++#define outw_p outw
++#define outl_p outl
++
++#define inb_p inb
++#define inw_p inw
++#define inl_p inl
++
++static inline void insb(unsigned long addr, void *buffer, int count)
++{
++	printk(KERN_INFO "insb not implemented\n");
++}
++
++static inline void insw(unsigned long addr, void *buffer, int count)
++{
++	printk(KERN_INFO "insw not implemented\n");
++}
++
++static inline void insl(unsigned long addr, void *buffer, int count)
++{
++	printk(KERN_INFO "insl not implemented\n");
++}
++
++static inline void outsb(unsigned long addr, const void *buffer, int count)
++{
++	printk(KERN_INFO "outsb not implemented\n");
++}
++
++static inline void outsw(unsigned long addr, const void *buffer, int count)
++{
++	printk(KERN_INFO "outsw not implemented\n");
++}
++
++static inline void outsl(unsigned long addr, const void *buffer, int count)
++{
++	printk(KERN_INFO "outsl not implemented\n");
++}
++
++static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
++	int count)
++{
++	memcpy(dst, (void *) src, count);
++}
++
++static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
++	int count)
++{
++	memcpy((void *) dst, src, count);
++}
++
++/*
++ * convert a physical pointer to a virtual kernel pointer for
++ * /dev/mem access.
++ */
++#define xlate_dev_kmem_ptr(p)    __va(p)
++#define xlate_dev_mem_ptr(p)    __va(p)
++
++/*  generic versions defined in lib/iomap.c  */
++extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
++extern void ioport_unmap(void __iomem *addr);
++
++#define flush_write_buffers() do { } while (0)
++
++#endif /* __KERNEL__ */
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/lib/io.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/lib/io.c	2011-07-20 15:19:42.665151795 -0500
+@@ -0,0 +1,91 @@
++/*
++ * I/O access functions for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <asm/io.h>
++
++/*  These are all FIFO routines!  */
++
++/*
++ * __raw_readsw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
++ */
++void __raw_readsw(const void __iomem *addr, void *data, int len)
++{
++	const volatile short int *src = (short int *) addr;
++	short int *dst = (short int *) data;
++
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to readsw");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
++}
++
++/*
++ * __raw_writesw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
++ */
++void __raw_writesw(void __iomem *addr, const void *data, int len)
++{
++	const short int *src = (short int *)data;
++	volatile short int *dst = (short int *)addr;
++
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to writesw");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
++}
++
++/*  Pretty sure len is pre-adjusted for the length of the access already */
++void __raw_readsl(const void __iomem *addr, void *data, int len)
++{
++	const volatile long *src = (long *) addr;
++	long *dst = (long *) data;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to readsl");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
++
++}
++
++void __raw_writesl(void __iomem *addr, const void *data, int len)
++{
++	const long *src = (long *)data;
++	volatile long *dst = (long *)addr;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to writesl");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
++}
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/iomap.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/iomap.h	2011-07-20 15:19:42.665151795 -0500
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _HEXAGON_IOMAP_H
++#define _HEXAGON_IOMAP_H
++
++#ifndef __ASSEMBLY__
++#include <asm-generic/iomap.h>
++#endif
++
++#ifdef CONFIG_HEXAGON_COMET
++#include "platform/comet/comet_iomap.h"
++#endif
++
++#endif
 
-For a first version that sounds good enough. Maybe we could use a fraction
-of the CONSISTENT_DMA_SIZE as an estimate?
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-For the long-term solution, I see two options:
-
-1. make the preallocated pool rather small so we normally don't need it.
-2. make it large enough so we can also fulfill most nonatomic allocations
-   from that pool to avoid the TLB flushes and going through the CMA
-   code. Only use the real CMA region when the pool allocation fails.
-
-In either case, there should be some method for balancing the pool
-size.
-
-> I noticed one more problem. The size of the CMA managed area must be
-> the multiple of 16MiBs (MAX_ORDER+1). This means that the smallest CMA area
-> is 16MiB. These values comes from the internals of the kernel memory 
-> management design and page blocks are the only entities that can be managed
-> with page migration code.
-> 
-> I'm not sure if all ARMv6+ boards have at least 32MiB of memory be able to
-> create a CMA area.
-
-My guess is that you can assume to have 64 MB or more on ARMv6 running Linux,
-but other people may have more accurate data.
-
-Also, there is the option of setting a lower value for FORCE_MAX_ZONEORDER
-for some platforms if it becomes a problem.
-
-	Arnd
