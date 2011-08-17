@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1HQAmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 20:42:52 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53053 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab1HQAmv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 20:42:51 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQ1R67-01-82X-02
-X-M-MSG: 
-Date: Wed, 17 Aug 2011 02:39:42 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Mike Waychison <mikew@google.com>
-CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] oprofilefs: Handle zero-length writes.
-Message-ID: <20110817003941.GC11702@erda.amd.com>
-References: <1313192539-19581-1-git-send-email-mikew@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1313192539-19581-1-git-send-email-mikew@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1752822Ab1HQAuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 20:50:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36977 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab1HQAuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 20:50:11 -0400
+Date: Wed, 17 Aug 2011 10:50:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: linux-next: boot test failure (net tree)
+Message-Id: <20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
+In-Reply-To: <20110816.171525.639251389938336183.davem@davemloft.net>
+References: <20110817100146.3b557cf815a5a2ae09bc09a7@canb.auug.org.au>
+	<20110816.171525.639251389938336183.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__17_Aug_2011_10_50_02_+1000_bjSpbQJdqfBPVWqv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.08.11 19:42:19, Mike Waychison wrote:
-> Currently in oprofilefs, files that use ulong_fops mis-handle writes of
-> zero length.  A count of 0 causes oprofilefs_ulong_from_user to return
-> 0 (success), which then leads to oprofile_set_ulong being called to
-> stuff "value" into file->private_data without it being initialized.
-> 
-> Fix this by moving the check for a zero-length write up into
-> ulong_write_file.
-> 
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  drivers/oprofile/oprofilefs.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
-> index e9ff6f7..ee14e6e 100644
-> --- a/drivers/oprofile/oprofilefs.c
-> +++ b/drivers/oprofile/oprofilefs.c
-> @@ -65,9 +65,6 @@ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_
->  	char tmpbuf[TMPBUFSIZE];
->  	unsigned long flags;
->  
-> -	if (!count)
-> -		return 0;
-> -
+--Signature=_Wed__17_Aug_2011_10_50_02_+1000_bjSpbQJdqfBPVWqv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, *val is clearly used uninitialized for !count.
+Hi Dave,
 
-But it might be ok, not to touch it in oprofilefs_ulong_from_user.
->From man 3 write:
+On Tue, 16 Aug 2011 17:15:25 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 17 Aug 2011 10:01:46 +1000
+>=20
+> > In particular, CONFIG_TIGON3 newly depends on
+> > CONFIG_NET_VENDOR_BROADCOM which will no be selected when doing a
+> > "make oldconfig" from a working config.
+>=20
+> When you type "make oldconfig" with an existing .config it prompts you
+> for those vendor guards, giving you ample opportunity to say yes to
+> them.
 
- "if nbyte is zero and the file is a regular file ... the write()
- function shall return zero and have no other results"
+Which is a bit of a pain for automated systems.  Ours does (essentially):
 
-Actually, oprofilefs_ulong_from_user() must be called with an
-initialized value ...
+yes '' | make oldconfig
 
->  	if (count > TMPBUFSIZE - 1)
->  		return -EINVAL;
->  
-> @@ -97,6 +94,8 @@ static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_
->  
->  	if (*offset)
->  		return -EINVAL;
-> +	if (count == 0)
-> +		return 0;
+We really don't want to select every new config item that comes along.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-... or we add this check to all other users of
-oprofilefs_ulong_from_user() too. Without those checks they would set
-its value to 0 if count is 0.
+--Signature=_Wed__17_Aug_2011_10_50_02_+1000_bjSpbQJdqfBPVWqv
+Content-Type: application/pgp-signature
 
-A small nitpick: I would prefer
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-	if (!count) ...
+iQEcBAEBAgAGBQJOSxA6AAoJEDMEi1NhKgbs5poIAJX2IEDHnKRjzgCYHQ+OOreD
+cLUNWn/D6O0YRT7j7OGd/NEWGpuYFAyDyCRCZohrccUu741Y9RC9J9x3dwrBK5Wv
+vNR1eJlSJh/aREV88gC1R5B+aKm2jZR4JmdiZ4tP+sQQme7wgZLn84xbiu8tr2sr
+2kNHMDGWIldu1SKdMTqx56OI4W3RrSenEWDjgQeM5dxITNUaur1kBzG9MlJ/KEzT
+NAC+K5s8/T4ONhV29LZnbS7QQnhTu3W7uOgSfhaY0x5MOXAieHEsxD8Km0IslYR/
+IQlLrLBeBlQnaEbCraceJz5jL7DP7pzLhDZlNknuK40ZTAWYqyOIEoQfleOU+gg=
+=LZcD
+-----END PGP SIGNATURE-----
 
--Robert
-
->  
->  	retval = oprofilefs_ulong_from_user(&value, buf, count);
->  	if (retval)
-> -- 
-> 1.7.3.1
-> 
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+--Signature=_Wed__17_Aug_2011_10_50_02_+1000_bjSpbQJdqfBPVWqv--
