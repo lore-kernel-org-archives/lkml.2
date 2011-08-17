@@ -1,102 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab1HQRGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:06:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4300 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab1HQRGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:06:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807262"
-Message-Id: <20110817163523.134537432@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:32 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 35/36] Hexagon: Add basic stacktrace functionality for Hexagon architecture.
+	id S1753074Ab1HQTXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 15:23:10 -0400
+Received: from threatwall.zlynx.org ([64.81.105.251]:44008 "EHLO zlynx.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751534Ab1HQTXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 15:23:05 -0400
+Subject: Re: [patch 00/36] Hexagon: Add support for Qualcomm Hexagon
+ architecture
+From: Zan Lynx <zlynx@acm.org>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Date: Wed, 17 Aug 2011 13:00:44 -0600
+In-Reply-To: <20110817163457.878854582@codeaurora.org>
 References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=stacktrace.diff
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-VFpadi6cgDfbD80bpLr5"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313607653.7431.3.camel@knife>
+Mime-Version: 1.0
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20110817/1QtlME-0001cn-71-linux-kernel@vger.kernel.org:zlynx@acm.org:64.81.105.251
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
----
- arch/hexagon/kernel/stacktrace.c |   66 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/stacktrace.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/stacktrace.c	2011-07-20 15:19:45.665151100 -0500
-@@ -0,0 +1,66 @@
-+/*
-+ * Stacktrace support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/stacktrace.h>
-+#include <linux/thread_info.h>
-+#include <linux/module.h>
-+
-+register unsigned long current_frame_pointer asm("r30");
-+
-+struct stackframe {
-+	unsigned long fp;
-+	unsigned long rets;
-+};
-+
-+/*
-+ * Save stack-backtrace addresses into a stack_trace buffer.
-+ */
-+void save_stack_trace(struct stack_trace *trace)
-+{
-+	unsigned long low, high;
-+	unsigned long fp;
-+	struct stackframe *frame;
-+	int skip = trace->skip;
-+
-+	low = (unsigned long)task_stack_page(current);
-+	high = low + THREAD_SIZE;
-+	fp = current_frame_pointer;
-+
-+	while (fp >= low && fp <= (high - sizeof(*frame))) {
-+		frame = (struct stackframe *)fp;
-+
-+		if (skip) {
-+			skip--;
-+		} else {
-+			trace->entries[trace->nr_entries++] = frame->rets;
-+			if (trace->nr_entries >= trace->max_entries)
-+				break;
-+		}
-+
-+		/*
-+		 * The next frame must be at a higher address than the
-+		 * current frame.
-+		 */
-+		low = fp + sizeof(*frame);
-+		fp = frame->fp;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(save_stack_trace);
+--=-VFpadi6cgDfbD80bpLr5
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On Wed, 2011-08-17 at 11:34 -0500, Richard Kuo wrote:
+> The following patch set is intended to add support for the Qualcomm Hexag=
+on
+> architecture to the Linux kernel.
+>=20
+> The Hexagon architecture is designed to deliver performance with low powe=
+r
+> over a variety of applications.  It has features such as multithreading,
+> privilege levels, VLIW, and instructions geared toward efficient signal
+> processing.  The port of Linux for Hexagon runs under a hypervisor layer.
+
+I am curious about the hypervisor layer.
+
+I can guess that it's an attempt to abstract away low level hardware
+changes, a sort of software version of CPU microcode.
+
+Or maybe it's a Transmeta kind of thing with dynamic recompilation into
+a quickly evolving VLIW instruction set.
+
+But what's the real reason?
+--=20
+Knowledge Is Power
+Power Corrupts
+Study Hard
+Be Evil
+
+--=-VFpadi6cgDfbD80bpLr5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAk5MD9wACgkQ1IRuMHS+h7GFJQCffkjluJPTH1n+kN16LXh0r9DR
+MxUAn2Jvv/zo7tPsxd0Bn+nd6aTrxFES
+=8UrT
+-----END PGP SIGNATURE-----
+
+--=-VFpadi6cgDfbD80bpLr5--
 
