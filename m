@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1HQT7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 15:59:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61579 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab1HQT7S (ORCPT
+	id S1753818Ab1HQUAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 16:00:32 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:46519 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab1HQUAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 15:59:18 -0400
-From: Akshay Joshi <me@akshayjoshi.com>
-To: Matt Mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Akshay Joshi <me@akshayjoshi.com>
-Subject: [PATCH 2/2] Staging: usbip: Fix braces and spaces to match coding style.
-Date: Wed, 17 Aug 2011 15:58:32 -0400
-Message-Id: <1313611112-16083-2-git-send-email-me@akshayjoshi.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1313611112-16083-1-git-send-email-me@akshayjoshi.com>
-References: <1313611112-16083-1-git-send-email-me@akshayjoshi.com>
+	Wed, 17 Aug 2011 16:00:30 -0400
+Date: Wed, 17 Aug 2011 15:00:28 -0500
+From: scameron@beardog.cce.hp.com
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Document generic scsi device attributes
+Message-ID: <20110817200028.GB8422@beardog.cce.hp.com>
+References: <20110817182055.8848.75862.stgit@beardog.cce.hp.com> <1313610306.6345.4.camel@mulgrave>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313610306.6345.4.camel@mulgrave>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix brace positioning and spaces at the start of lines in order to
-comply with the kernel coding style.
+On Wed, Aug 17, 2011 at 12:45:06PM -0700, James Bottomley wrote:
+> On Wed, 2011-08-17 at 13:20 -0500, Stephen M. Cameron wrote:
+> > From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > 
+> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-class-scsi_devices |  123 ++++++++++++++++++++
+> >  1 files changed, 123 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/ABI/testing/sysfs-class-scsi_devices
+> > 
+> > diff --git a/Documentation/ABI/testing/sysfs-class-scsi_devices b/Documentation/ABI/testing/sysfs-class-scsi_devices
+> > new file mode 100644
+> > index 0000000..ad2d36b
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-class-scsi_devices
+> > @@ -0,0 +1,123 @@
+> > +What:           /sys/class/scsi_device/..../device/device_blocked
+> > +Date:           December, 2002
+> > +KernelVersion:  Unknown
+> > +Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
+> 
+> Hmm, so I get fingered for every screw up in our sysfs ABI? nice wide
+> receiver buck pass move.
 
-Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
----
- drivers/staging/usbip/stub_dev.c |    2 +-
- drivers/staging/usbip/stub_rx.c  |    3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+Uh, sorry if that wasn't the right thing to do, which it sounds
+like it wasn't.  I just put your name there because you're the SCSI
+maintainer.  I can dig through all the commits and see who added what
+if that's preferable.  Or leave the names out?  or something else?
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index 1dacdc0..77d6469 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -548,4 +548,4 @@ struct usb_driver stub_driver = {
- 	.id_table	= stub_table,
- 	.pre_reset	= stub_pre_reset,
- 	.post_reset	= stub_post_reset,
-- };
-+};
-diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-index 1c1957f..6b4e3e1 100644
---- a/drivers/staging/usbip/stub_rx.c
-+++ b/drivers/staging/usbip/stub_rx.c
-@@ -179,8 +179,7 @@ static int tweak_reset_device_cmd(struct urb *urb)
- 	 * longer unbinds. This allows the use of synchronous reset.
- 	 */
- 
--	if (usb_lock_device_for_reset(sdev->udev, sdev->interface)<0)
--	{
-+	if (usb_lock_device_for_reset(sdev->udev, sdev->interface) < 0) {
- 		dev_err(&urb->dev->dev, "could not obtain lock to reset device\n");
- 		return 0;
- 	}
--- 
-1.7.5.4
+-- steve
 
