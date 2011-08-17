@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1HQDZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 23:25:24 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41608 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753039Ab1HQDZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 23:25:22 -0400
-Date: Tue, 16 Aug 2011 20:25:19 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sunil Mushran <sunil.mushran@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mingming Cao <cmm@us.ibm.com>,
-        Amir Goldstein <amir73il@gmail.com>, Coly Li <colyli@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [RFC] ext4 metadata checksumming design
-Message-ID: <20110817032519.GN20655@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
+	id S1753334Ab1HQD24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 23:28:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34463 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab1HQD2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 23:28:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Tue, 16 Aug 2011 23:28:22 -0400
+Message-ID: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+Subject: [PATCH] ath9k: make driver usable standalone
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>
+Cc: linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+When ath9k is the only wireless driver included in the build
+WIRELESS_EXT configuration option becomes undefined. Because of that
+driver becomes essentially unusable as you can't actually connect to
+any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
+that build with ath9k and without other drivers (having WIRELESS_EXT
+selected in their Kconfig) is actually usable.
 
-I've created a page on the ext4 wiki outlining the patchset that I'm working on
-to add metadata checksumming to ext4.  The page can be found at this address:
-https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+---
 
-For the most part, the metadata objects in ext4 actually have enough space to
-squeeze in a 32-bit checksum; it was trivially easy to find a spot in the
-superblock, the extent tree, extended attribute blocks, and the inode.  Those
-pieces are already done and in my tree, but the patchset as a whole is being
-held up by the second class of metadata objects.
-
-That second class of objects are the ones that required a bit of work:
-
-- Directory blocks have an "unused" 12-byte directory entry at the very end of
-  the block; 8 bytes of header are followed by a 32-bit checksum.  This can be
-  taken care of as part of directory rebuilding in e2fsck/rehash.c.
-
-- HTree blocks had to have the dx_entry limit reduced by 1 to accomodate a
-  checksum.  This is also taken care of during e2fsck directory rebuild.
-
-- Extended attribute blocks that are stored in the inode table -- the h_magic
-  field is written by the kernel, but neither the kernel nor e2fsprogs ever
-  actually read this field.  The field could be reused to checksum the extra
-  space since (as far as I can tell) EAs are the only user of that empty space.
-
-Other miscellany:
-
-- e2fsprogs had to be converted to always work with ext2_inode_large.
-
-- Various bugs in the htree code....
-
-I hope to have a first draft of the kernel/e2fsprogs patches out on the mailing
-list in a week or two, or at least before LPC next month.  Still on my todo
-list is superblocks, EAs, changing the jbd2 checksum, and rigorous testing on
-powerpc.
-
-Please have a look at the design document and please feel free to suggest any
-changes.
-
---D
+diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
+b/drivers/net/wireless/ath/ath9k/Kconfig
+index d9c08c6..2573f77 100644
+--- a/drivers/net/wireless/ath/ath9k/Kconfig
++++ b/drivers/net/wireless/ath/ath9k/Kconfig
+@@ -11,6 +11,7 @@ config ATH9K
+ 	select LEDS_CLASS
+ 	select NEW_LEDS
+ 	select ATH9K_COMMON
++	select WIRELESS_EXT
+ 	---help---
+ 	  This module adds support for wireless adapters based on
+ 	  Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
