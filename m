@@ -1,634 +1,762 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab1HQSCM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 14:02:12 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46238 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751798Ab1HQSCE (ORCPT
+	id S1754157Ab1HQRFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:05:35 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61492 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab1HQRFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 14:02:04 -0400
-X-Sasl-enc: Im79G00il/3d9oPeLvwMNY6znOCtZzBCx0GFnYKAI5i1 1313604063
-Date: Wed, 17 Aug 2011 11:00:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.3
-Message-ID: <20110817180038.GB16619@kroah.com>
-References: <20110817180027.GA16619@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110817180027.GA16619@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Aug 2011 13:05:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110806961"
+Message-Id: <20110817163520.053182080@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:34:59 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Cc: Linas Vepstas <linas@codeaurora.org>
+Subject: [patch 02/36] Hexagon: Core arch-specific header files
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=basic-asm-headers.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Documentation/virtual/lguest/lguest.c b/Documentation/virtual/lguest/lguest.c
-index cd9d6af..aec80e5 100644
---- a/Documentation/virtual/lguest/lguest.c
-+++ b/Documentation/virtual/lguest/lguest.c
-@@ -2008,6 +2008,9 @@ int main(int argc, char *argv[])
- 	/* We use a simple helper to copy the arguments separated by spaces. */
- 	concat((char *)(boot + 1), argv+optind+2);
- 
-+	/* Set kernel alignment to 16M (CONFIG_PHYSICAL_ALIGN) */
-+	boot->hdr.kernel_alignment = 0x1000000;
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+
+---
+ arch/hexagon/include/asm/auxvec.h     |    3 
+ arch/hexagon/include/asm/bugs.h       |    1 
+ arch/hexagon/include/asm/byteorder.h  |   28 ++++
+ arch/hexagon/include/asm/elf.h        |  222 ++++++++++++++++++++++++++++++++++
+ arch/hexagon/include/asm/fpu.h        |    4 
+ arch/hexagon/include/asm/ftrace.h     |    1 
+ arch/hexagon/include/asm/futex.h      |  137 ++++++++++++++++++++
+ arch/hexagon/include/asm/hw_irq.h     |    1 
+ arch/hexagon/include/asm/linkage.h    |   25 +++
+ arch/hexagon/include/asm/module.h     |   26 +++
+ arch/hexagon/include/asm/param.h      |   26 +++
+ arch/hexagon/include/asm/pci.h        |    1 
+ arch/hexagon/include/asm/perf_event.h |   24 +++
+ arch/hexagon/include/asm/segment.h    |    3 
+ arch/hexagon/include/asm/stat.h       |    1 
+ arch/hexagon/include/asm/string.h     |   32 ++++
+ arch/hexagon/include/asm/suspend.h    |   27 ++++
+ arch/hexagon/include/asm/swab.h       |   24 +++
+ arch/hexagon/include/asm/timex.h      |   29 ++++
+ 19 files changed, 615 insertions(+)
+
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/auxvec.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/auxvec.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,3 @@
++#ifndef _ASM_AUXVEC_H
++#define _ASM_AUXVEC_H
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/bugs.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/bugs.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1 @@
++#include <asm-generic/bugs.h>
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/byteorder.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/byteorder.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,28 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
 +
- 	/* Boot protocol version: 2.07 supports the fields for lguest. */
- 	boot->hdr.version = 0x207;
- 
-diff --git a/Makefile b/Makefile
-index 794fa28..c44d720 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 2
-+SUBLEVEL = 3
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
-index 645b84b..7ad43c6 100644
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -613,6 +613,18 @@ static bool radeon_dp_get_link_status(struct radeon_connector *radeon_connector,
- 	return true;
- }
- 
-+bool radeon_dp_needs_link_train(struct radeon_connector *radeon_connector)
++#ifndef _ASM_BYTEORDER_H
++#define _ASM_BYTEORDER_H
++
++#if defined(__GNUC__) && !defined(__STRICT_ANSI__) || defined(__KERNEL__)
++#  define __BYTEORDER_HAS_U64__
++#endif
++
++#include <linux/byteorder/little_endian.h>
++
++#endif /* _ASM_BYTEORDER_H */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/elf.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/elf.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,222 @@
++/*
++ * ELF definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef __ASM_ELF_H
++#define __ASM_ELF_H
++
++#include <asm/ptrace.h>
++#include <asm/user.h>
++
++/*
++ * This should really be in linux/elf-em.h.
++ */
++#define EM_HEXAGON	164   /* QUALCOMM Hexagon */
++
++struct elf32_hdr;
++
++/*
++ * ELF header e_flags defines.
++ */
++
++/*  should have stuff like "CPU type" and maybe "ABI version", etc  */
++
++/* Hexagon relocations */
++  /* V2 */
++#define R_HEXAGON_NONE           0
++#define R_HEXAGON_B22_PCREL      1
++#define R_HEXAGON_B15_PCREL      2
++#define R_HEXAGON_B7_PCREL       3
++#define R_HEXAGON_LO16           4
++#define R_HEXAGON_HI16           5
++#define R_HEXAGON_32             6
++#define R_HEXAGON_16             7
++#define R_HEXAGON_8              8
++#define R_HEXAGON_GPREL16_0      9
++#define R_HEXAGON_GPREL16_1     10
++#define R_HEXAGON_GPREL16_2     11
++#define R_HEXAGON_GPREL16_3     12
++#define R_HEXAGON_HL16          13
++  /* V3 */
++#define R_HEXAGON_B13_PCREL     14
++  /* V4 */
++#define R_HEXAGON_B9_PCREL      15
++  /* V4 (extenders) */
++#define R_HEXAGON_B32_PCREL_X   16
++#define R_HEXAGON_32_6_X        17
++  /* V4 (extended) */
++#define R_HEXAGON_B22_PCREL_X   18
++#define R_HEXAGON_B15_PCREL_X   19
++#define R_HEXAGON_B13_PCREL_X   20
++#define R_HEXAGON_B9_PCREL_X    21
++#define R_HEXAGON_B7_PCREL_X    22
++#define R_HEXAGON_16_X          23
++#define R_HEXAGON_12_X          24
++#define R_HEXAGON_11_X          25
++#define R_HEXAGON_10_X          26
++#define R_HEXAGON_9_X           27
++#define R_HEXAGON_8_X           28
++#define R_HEXAGON_7_X           29
++#define R_HEXAGON_6_X           30
++  /* V2 PIC */
++#define R_HEXAGON_32_PCREL      31
++#define R_HEXAGON_COPY          32
++#define R_HEXAGON_GLOB_DAT      33
++#define R_HEXAGON_JMP_SLOT      34
++#define R_HEXAGON_RELATIVE      35
++#define R_HEXAGON_PLT_B22_PCREL 36
++#define R_HEXAGON_GOTOFF_LO16   37
++#define R_HEXAGON_GOTOFF_HI16   38
++#define R_HEXAGON_GOTOFF_32     39
++#define R_HEXAGON_GOT_LO16      40
++#define R_HEXAGON_GOT_HI16      41
++#define R_HEXAGON_GOT_32        42
++#define R_HEXAGON_GOT_16        43
++
++/*
++ * ELF register definitions..
++ */
++typedef unsigned long elf_greg_t;
++
++/*  May need an ELF_NGREG later down the line  */
++typedef struct user_regs_struct elf_gregset_t;
++
++/*  Placeholder  */
++typedef unsigned long elf_fpregset_t;
++
++/*
++ * Bypass the whole "regsets" thing for now and use the define.
++ */
++
++#define ELF_CORE_COPY_REGS(DEST, REGS)	\
++do {					\
++	DEST.r0 = REGS->r00;		\
++	DEST.r1 = REGS->r01;		\
++	DEST.r2 = REGS->r02;		\
++	DEST.r3 = REGS->r03;		\
++	DEST.r4 = REGS->r04;		\
++	DEST.r5 = REGS->r05;		\
++	DEST.r6 = REGS->r06;		\
++	DEST.r7 = REGS->r07;		\
++	DEST.r8 = REGS->r08;		\
++	DEST.r9 = REGS->r09;		\
++	DEST.r10 = REGS->r10;		\
++	DEST.r11 = REGS->r11;		\
++	DEST.r12 = REGS->r12;		\
++	DEST.r13 = REGS->r13;		\
++	DEST.r14 = REGS->r14;		\
++	DEST.r15 = REGS->r15;		\
++	DEST.r16 = REGS->r16;		\
++	DEST.r17 = REGS->r17;		\
++	DEST.r18 = REGS->r18;		\
++	DEST.r19 = REGS->r19;		\
++	DEST.r20 = REGS->r20;		\
++	DEST.r21 = REGS->r21;		\
++	DEST.r22 = REGS->r22;		\
++	DEST.r23 = REGS->r23;		\
++	DEST.r24 = REGS->r24;		\
++	DEST.r25 = REGS->r25;		\
++	DEST.r26 = REGS->r26;		\
++	DEST.r27 = REGS->r27;		\
++	DEST.r28 = REGS->r28;		\
++	DEST.r29 = pt_psp(REGS);	\
++	DEST.r30 = REGS->r30;		\
++	DEST.r31 = REGS->r31;		\
++	DEST.gp = REGS->gp;		\
++	DEST.ugp = REGS->ugp;		\
++	DEST.sa0 = REGS->sa0;		\
++	DEST.lc0 = REGS->lc0;		\
++	DEST.sa1 = REGS->sa1;		\
++	DEST.lc1 = REGS->lc1;		\
++	DEST.m0 = REGS->m0;		\
++	DEST.m1 = REGS->m1;		\
++	DEST.p3_0 = REGS->preds;	\
++	DEST.pc = pt_elr(REGS);	\
++	DEST.cause = pt_cause(REGS);	\
++	DEST.badva = pt_badva(REGS);	\
++} while (0);
++
++
++
++/*
++ * This is used to ensure we don't load something for the wrong architecture.
++ * Checks the machine and ABI type.
++ */
++#define elf_check_arch(hdr)	((hdr)->e_machine == EM_HEXAGON)
++
++/*
++ * These are used to set parameters in the core dumps.
++ */
++#define ELF_CLASS	ELFCLASS32
++#define ELF_DATA	ELFDATA2LSB
++#define ELF_ARCH	EM_HEXAGON
++
++#ifdef CONFIG_HEXAGON_ARCH_V2
++#define ELF_CORE_EFLAGS 0x1
++#endif
++
++#ifdef CONFIG_HEXAGON_ARCH_V3
++#define ELF_CORE_EFLAGS 0x2
++#endif
++
++#ifdef CONFIG_HEXAGON_ARCH_V4
++#define ELF_CORE_EFLAGS 0x3
++#endif
++
++/*
++ * Some architectures have ld.so set up a pointer to a function
++ * to be registered using atexit, to facilitate cleanup.  So that
++ * static executables will be well-behaved, we would null the register
++ * in question here, in the pt_regs structure passed.  For now,
++ * leave it a null macro.
++ */
++#define ELF_PLAT_INIT(regs, load_addr) do { } while (0)
++
++#define USE_ELF_CORE_DUMP
++#define ELF_FDPIC_CORE_EFLAGS	0x0
++
++/* Hrm is this going to cause problems for changing PAGE_SIZE?  */
++#define ELF_EXEC_PAGESIZE	4096
++
++/*
++ * This is the location that an ET_DYN program is loaded if exec'ed.  Typical
++ * use of this is to invoke "./ld.so someprog" to test out a new version of
++ * the loader.  We need to make sure that it is out of the way of the program
++ * that it will "exec", and that there is sufficient room for the brk.
++ */
++#define ELF_ET_DYN_BASE         0x08000000UL
++
++/*
++ * This yields a mask that user programs can use to figure out what
++ * instruction set this cpu supports.
++ */
++#define ELF_HWCAP	(0)
++
++/*
++ * This yields a string that ld.so will use to load implementation
++ * specific libraries for optimization.  This is more specific in
++ * intent than poking at uname or /proc/cpuinfo.
++ */
++#define ELF_PLATFORM  (NULL)
++
++#ifdef __KERNEL__
++#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
++#endif
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/fpu.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/fpu.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,4 @@
++/*
++ * If the FPU is used inside the kernel,
++ * kernel_fpu_end() will be defined here.
++ */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/ftrace.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/ftrace.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1 @@
++/*  Function trace code to go here.  */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/futex.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/futex.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,137 @@
++#ifndef _ASM_HEXAGON_FUTEX_H
++#define _ASM_HEXAGON_FUTEX_H
++
++#ifdef __KERNEL__
++
++#include <linux/futex.h>
++#include <linux/uaccess.h>
++#include <asm/errno.h>
++
++/* XXX TODO-- need to add sync barriers! */
++
++#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg) \
++	__asm__ __volatile( \
++	"1: %0 = memw_locked(%3);\n" \
++	    /* For example: %1 = %4 */ \
++	    insn \
++	"2: memw_locked(%3,p2) = %1;\n" \
++	"   if !p2 jump 1b;\n" \
++	"   %1 = #0;\n" \
++	"3:\n" \
++	".section .fixup,\"ax\"\n" \
++	"4: %1 = #%5;\n" \
++	"   jump 3b\n" \
++	".previous\n" \
++	".section __ex_table,\"a\"\n" \
++	".long 1b,4b,2b,4b\n" \
++	".previous\n" \
++	: "=&r" (oldval), "=&r" (ret), "+m" (*uaddr) \
++	: "r" (uaddr), "r" (oparg), "i" (-EFAULT) \
++	: "p2", "memory")
++
++
++static inline int
++futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
 +{
-+	u8 link_status[DP_LINK_STATUS_SIZE];
-+	struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
++	int op = (encoded_op >> 28) & 7;
++	int cmp = (encoded_op >> 24) & 15;
++	int oparg = (encoded_op << 8) >> 20;
++	int cmparg = (encoded_op << 20) >> 20;
++	int oldval = 0, ret;
++	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
++		oparg = 1 << oparg;
 +
-+	if (!radeon_dp_get_link_status(radeon_connector, link_status))
-+		return false;
-+	if (dp_channel_eq_ok(link_status, dig->dp_lane_count))
-+		return false;
-+	return true;
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
++		return -EFAULT;
++
++	pagefault_disable();
++
++	switch (op) {
++	case FUTEX_OP_SET:
++		__futex_atomic_op("%1 = %4\n", ret, oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_ADD:
++		__futex_atomic_op("%1 = add(%0,%4)\n", ret, oldval, uaddr,
++				  oparg);
++		break;
++	case FUTEX_OP_OR:
++		__futex_atomic_op("%1 = or(%0,%4)\n", ret, oldval, uaddr,
++				  oparg);
++		break;
++	case FUTEX_OP_ANDN:
++		__futex_atomic_op("%1 = not(%4); %1 = and(%0,%1)\n", ret,
++				  oldval, uaddr, oparg);
++		break;
++	case FUTEX_OP_XOR:
++		__futex_atomic_op("%1 = xor(%0,%4)\n", ret, oldval, uaddr,
++				  oparg);
++		break;
++	default:
++		ret = -ENOSYS;
++	}
++
++	pagefault_enable();
++
++	if (!ret) {
++		switch (cmp) {
++		case FUTEX_OP_CMP_EQ:
++			ret = (oldval == cmparg);
++			break;
++		case FUTEX_OP_CMP_NE:
++			ret = (oldval != cmparg);
++			break;
++		case FUTEX_OP_CMP_LT:
++			ret = (oldval < cmparg);
++			break;
++		case FUTEX_OP_CMP_GE:
++			ret = (oldval >= cmparg);
++			break;
++		case FUTEX_OP_CMP_LE:
++			ret = (oldval <= cmparg);
++			break;
++		case FUTEX_OP_CMP_GT:
++			ret = (oldval > cmparg);
++			break;
++		default:
++			ret = -ENOSYS;
++		}
++	}
++	return ret;
 +}
 +
- struct radeon_dp_link_train_info {
- 	struct radeon_device *rdev;
- 	struct drm_encoder *encoder;
-diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-index 6d6b5f1..6ab6c41 100644
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -60,18 +60,20 @@ void radeon_connector_hotplug(struct drm_connector *connector)
- 
- 	radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
- 
--	/* powering up/down the eDP panel generates hpd events which
--	 * can interfere with modesetting.
--	 */
--	if (connector->connector_type == DRM_MODE_CONNECTOR_eDP)
-+	/* if the connector is already off, don't turn it back on */
-+	if (connector->dpms != DRM_MODE_DPMS_ON)
- 		return;
- 
--	/* pre-r600 did not always have the hpd pins mapped accurately to connectors */
--	if (rdev->family >= CHIP_R600) {
--		if (radeon_hpd_sense(rdev, radeon_connector->hpd.hpd))
-+	/* just deal with DP (not eDP) here. */
-+	if (connector->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
-+		int saved_dpms = connector->dpms;
++static inline int
++futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr, u32 oldval,
++			      u32 newval)
++{
++	int prev;
++	int ret;
 +
-+		if (radeon_hpd_sense(rdev, radeon_connector->hpd.hpd) &&
-+		    radeon_dp_needs_link_train(radeon_connector))
- 			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
- 		else
- 			drm_helper_connector_dpms(connector, DRM_MODE_DPMS_OFF);
-+		connector->dpms = saved_dpms;
- 	}
- }
- 
-diff --git a/drivers/gpu/drm/radeon/radeon_encoders.c b/drivers/gpu/drm/radeon/radeon_encoders.c
-index b293487..319d85d 100644
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -2323,6 +2323,9 @@ radeon_add_atom_encoder(struct drm_device *dev,
- 	default:
- 		encoder->possible_crtcs = 0x3;
- 		break;
-+	case 4:
-+		encoder->possible_crtcs = 0xf;
-+		break;
- 	case 6:
- 		encoder->possible_crtcs = 0x3f;
- 		break;
-diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
-index d09031c..68820f5 100644
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -479,6 +479,7 @@ extern void radeon_dp_set_link_config(struct drm_connector *connector,
- 				      struct drm_display_mode *mode);
- extern void radeon_dp_link_train(struct drm_encoder *encoder,
- 				 struct drm_connector *connector);
-+extern bool radeon_dp_needs_link_train(struct radeon_connector *radeon_connector);
- extern u8 radeon_dp_getsinktype(struct radeon_connector *radeon_connector);
- extern bool radeon_dp_getdpcd(struct radeon_connector *radeon_connector);
- extern void atombios_dig_encoder_setup(struct drm_encoder *encoder, int action, int panel_mode);
-diff --git a/drivers/hwmon/ibmaem.c b/drivers/hwmon/ibmaem.c
-index 1a409c5..c316294 100644
---- a/drivers/hwmon/ibmaem.c
-+++ b/drivers/hwmon/ibmaem.c
-@@ -432,13 +432,15 @@ static int aem_read_sensor(struct aem_data *data, u8 elt, u8 reg,
- 	aem_send_message(ipmi);
- 
- 	res = wait_for_completion_timeout(&ipmi->read_complete, IPMI_TIMEOUT);
--	if (!res)
--		return -ETIMEDOUT;
-+	if (!res) {
-+		res = -ETIMEDOUT;
-+		goto out;
-+	}
- 
- 	if (ipmi->rx_result || ipmi->rx_msg_len != rs_size ||
- 	    memcmp(&rs_resp->id, &system_x_id, sizeof(system_x_id))) {
--		kfree(rs_resp);
--		return -ENOENT;
-+		res = -ENOENT;
-+		goto out;
- 	}
- 
- 	switch (size) {
-@@ -463,8 +465,11 @@ static int aem_read_sensor(struct aem_data *data, u8 elt, u8 reg,
- 		break;
- 	}
- 	}
-+	res = 0;
- 
--	return 0;
-+out:
-+	kfree(rs_resp);
-+	return res;
- }
- 
- /* Update AEM energy registers */
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index b6c5d37..1ae8913 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1748,6 +1748,8 @@ ath5k_beacon_setup(struct ath5k_softc *sc, struct ath5k_buf *bf)
- 
- 	if (dma_mapping_error(sc->dev, bf->skbaddr)) {
- 		ATH5K_ERR(sc, "beacon DMA mapping failed\n");
-+		dev_kfree_skb_any(skb);
-+		bf->skb = NULL;
- 		return -EIO;
- 	}
- 
-@@ -1832,8 +1834,6 @@ ath5k_beacon_update(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
- 	ath5k_txbuf_free_skb(sc, avf->bbuf);
- 	avf->bbuf->skb = skb;
- 	ret = ath5k_beacon_setup(sc, avf->bbuf);
--	if (ret)
--		avf->bbuf->skb = NULL;
- out:
- 	return ret;
- }
-@@ -1854,6 +1854,7 @@ ath5k_beacon_send(struct ath5k_softc *sc)
- 	struct ath5k_vif *avf;
- 	struct ath5k_buf *bf;
- 	struct sk_buff *skb;
-+	int err;
- 
- 	ATH5K_DBG_UNLIMIT(sc, ATH5K_DEBUG_BEACON, "in beacon_send\n");
- 
-@@ -1902,11 +1903,6 @@ ath5k_beacon_send(struct ath5k_softc *sc)
- 
- 	avf = (void *)vif->drv_priv;
- 	bf = avf->bbuf;
--	if (unlikely(bf->skb == NULL || sc->opmode == NL80211_IFTYPE_STATION ||
--			sc->opmode == NL80211_IFTYPE_MONITOR)) {
--		ATH5K_WARN(sc, "bf=%p bf_skb=%p\n", bf, bf ? bf->skb : NULL);
--		return;
--	}
- 
- 	/*
- 	 * Stop any current dma and put the new frame on the queue.
-@@ -1920,8 +1916,17 @@ ath5k_beacon_send(struct ath5k_softc *sc)
- 
- 	/* refresh the beacon for AP or MESH mode */
- 	if (sc->opmode == NL80211_IFTYPE_AP ||
--			sc->opmode == NL80211_IFTYPE_MESH_POINT)
--		ath5k_beacon_update(sc->hw, vif);
-+			sc->opmode == NL80211_IFTYPE_MESH_POINT) {
-+		err = ath5k_beacon_update(sc->hw, vif);
-+		if (err)
-+			return;
-+	}
++	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
++		return -EFAULT;
 +
-+	if (unlikely(bf->skb == NULL || sc->opmode == NL80211_IFTYPE_STATION ||
-+			sc->opmode == NL80211_IFTYPE_MONITOR)) {
-+		ATH5K_WARN(sc, "bf=%p bf_skb=%p\n", bf, bf->skb);
-+		return;
-+	}
- 
- 	trace_ath5k_tx(sc, bf->skb, &sc->txqs[sc->bhalq]);
- 
-diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
-index 6766f46..4bb5fff 100644
---- a/drivers/staging/rtl8192u/r819xU_firmware.c
-+++ b/drivers/staging/rtl8192u/r819xU_firmware.c
-@@ -399,10 +399,7 @@ download_firmware_fail:
- 
- }
- 
--
--
--
--
--
--
-+MODULE_FIRMWARE("RTL8192U/boot.img");
-+MODULE_FIRMWARE("RTL8192U/main.img");
-+MODULE_FIRMWARE("RTL8192U/data.img");
- 
-diff --git a/drivers/usb/class/usbtmc.c b/drivers/usb/class/usbtmc.c
-index 385acb8..3f94ac3 100644
---- a/drivers/usb/class/usbtmc.c
-+++ b/drivers/usb/class/usbtmc.c
-@@ -268,7 +268,7 @@ usbtmc_abort_bulk_in_status:
- 				dev_err(dev, "usb_bulk_msg returned %d\n", rv);
- 				goto exit;
- 			}
--		} while ((actual = max_size) &&
-+		} while ((actual == max_size) &&
- 			 (n < USBTMC_MAX_READS_TO_CLEAR_BULK_IN));
- 
- 	if (actual == max_size) {
-diff --git a/drivers/usb/core/config.c b/drivers/usb/core/config.c
-index c962608..26678ca 100644
---- a/drivers/usb/core/config.c
-+++ b/drivers/usb/core/config.c
-@@ -123,10 +123,11 @@ static void usb_parse_ss_endpoint_companion(struct device *ddev, int cfgno,
- 	}
- 
- 	if (usb_endpoint_xfer_isoc(&ep->desc))
--		max_tx = ep->desc.wMaxPacketSize * (desc->bMaxBurst + 1) *
--			(desc->bmAttributes + 1);
-+		max_tx = (desc->bMaxBurst + 1) * (desc->bmAttributes + 1) *
-+			le16_to_cpu(ep->desc.wMaxPacketSize);
- 	else if (usb_endpoint_xfer_int(&ep->desc))
--		max_tx = ep->desc.wMaxPacketSize * (desc->bMaxBurst + 1);
-+		max_tx = le16_to_cpu(ep->desc.wMaxPacketSize) *
-+			(desc->bMaxBurst + 1);
- 	else
- 		max_tx = 999999;
- 	if (le16_to_cpu(desc->wBytesPerInterval) > max_tx) {
-@@ -134,10 +135,10 @@ static void usb_parse_ss_endpoint_companion(struct device *ddev, int cfgno,
- 				"config %d interface %d altsetting %d ep %d: "
- 				"setting to %d\n",
- 				usb_endpoint_xfer_isoc(&ep->desc) ? "Isoc" : "Int",
--				desc->wBytesPerInterval,
-+				le16_to_cpu(desc->wBytesPerInterval),
- 				cfgno, inum, asnum, ep->desc.bEndpointAddress,
- 				max_tx);
--		ep->ss_ep_comp.wBytesPerInterval = max_tx;
-+		ep->ss_ep_comp.wBytesPerInterval = cpu_to_le16(max_tx);
- 	}
- }
- 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 04b90ad..e9f004e 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -803,7 +803,7 @@ static void __devinit quirk_usb_handoff_xhci(struct pci_dev *pdev)
- 
- 	/* If the BIOS owns the HC, signal that the OS wants it, and wait */
- 	if (val & XHCI_HC_BIOS_OWNED) {
--		writel(val & XHCI_HC_OS_OWNED, base + ext_cap_offset);
-+		writel(val | XHCI_HC_OS_OWNED, base + ext_cap_offset);
- 
- 		/* Wait for 5 seconds with 10 microsecond polling interval */
- 		timeout = handshake(base + ext_cap_offset, XHCI_HC_BIOS_OWNED,
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index f5fe1ac..9824761 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -345,7 +345,8 @@ static void xhci_event_ring_work(unsigned long arg)
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	temp = xhci_readl(xhci, &xhci->op_regs->status);
- 	xhci_dbg(xhci, "op reg status = 0x%x\n", temp);
--	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
-+	if (temp == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_dbg(xhci, "HW died, polling stopped.\n");
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
-@@ -939,8 +940,11 @@ static int xhci_check_args(struct usb_hcd *hcd, struct usb_device *udev,
- 		return 0;
- 	}
- 
-+	xhci = hcd_to_xhci(hcd);
-+	if (xhci->xhc_state & XHCI_STATE_HALTED)
-+		return -ENODEV;
++	__asm__ __volatile__ (
++	"1: %1 = memw_locked(%3)\n"
++	"   {\n"
++	"      p2 = cmp.eq(%1,%4)\n"
++	"      if !p2.new jump:NT 3f\n"
++	"   }\n"
++	"2: memw_locked(%3,p2) = %5\n"
++	"   if !p2 jump 1b\n"
++	"3:\n"
++	".section .fixup,\"ax\"\n"
++	"4: %0 = #%6\n"
++	"   jump 3b\n"
++	".previous\n"
++	".section __ex_table,\"a\"\n"
++	".long 1b,4b,2b,4b\n"
++	".previous\n"
++	: "+r" (ret), "=&r" (prev), "+m" (*uaddr)
++	: "r" (uaddr), "r" (oldval), "r" (newval), "i"(-EFAULT)
++	: "p2", "memory");
 +
- 	if (check_virt_dev) {
--		xhci = hcd_to_xhci(hcd);
- 		if (!udev->slot_id || !xhci->devs
- 			|| !xhci->devs[udev->slot_id]) {
- 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
-@@ -1242,7 +1246,8 @@ int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
- 		xhci_urb_free_priv(xhci, urb_priv);
- 		return ret;
- 	}
--	if (xhci->xhc_state & XHCI_STATE_DYING) {
-+	if ((xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_dbg(xhci, "Ep 0x%x: URB %p to be canceled on "
- 				"non-responsive xHCI host.\n",
- 				urb->ep->desc.bEndpointAddress, urb);
-@@ -2667,7 +2672,10 @@ void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
- 	int i, ret;
- 
- 	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);
--	if (ret <= 0)
-+	/* If the host is halted due to driver unload, we still need to free the
-+	 * device.
-+	 */
-+	if (ret <= 0 && ret != -ENODEV)
- 		return;
- 
- 	virt_dev = xhci->devs[udev->slot_id];
-@@ -2681,7 +2689,8 @@ void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
- 	spin_lock_irqsave(&xhci->lock, flags);
- 	/* Don't disable the slot if the host controller is dead. */
- 	state = xhci_readl(xhci, &xhci->op_regs->status);
--	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING)) {
-+	if (state == 0xffffffff || (xhci->xhc_state & XHCI_STATE_DYING) ||
-+			(xhci->xhc_state & XHCI_STATE_HALTED)) {
- 		xhci_free_virt_device(xhci, udev->slot_id);
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return;
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index 6aeb363..548338c 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1698,6 +1698,8 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
- 
- 	is_on = !!is_on;
- 
-+	pm_runtime_get_sync(musb->controller);
++	*uval = prev;
++	return ret;
++}
 +
- 	/* NOTE: this assumes we are sensing vbus; we'd rather
- 	 * not pullup unless the B-session is active.
- 	 */
-@@ -1707,6 +1709,9 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
- 		musb_pullup(musb, is_on);
- 	}
- 	spin_unlock_irqrestore(&musb->lock, flags);
-+
-+	pm_runtime_put(musb->controller);
-+
- 	return 0;
- }
- 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 2e06b90..9afb361 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1171,7 +1171,7 @@ static __u32 get_ftdi_divisor(struct tty_struct *tty,
- 	case FT2232H: /* FT2232H chip */
- 	case FT4232H: /* FT4232H chip */
- 	case FT232H:  /* FT232H chip */
--		if ((baud <= 12000000) & (baud >= 1200)) {
-+		if ((baud <= 12000000) && (baud >= 1200)) {
- 			div_value = ftdi_2232h_baud_to_divisor(baud);
- 		} else if (baud < 1200) {
- 			div_value = ftdi_232bm_baud_to_divisor(baud);
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 60b25d8..8156561 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -148,6 +148,10 @@ static void option_instat_callback(struct urb *urb);
- #define HUAWEI_PRODUCT_K4505			0x1464
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
-+#define HUAWEI_PRODUCT_K3770			0x14C9
-+#define HUAWEI_PRODUCT_K3771			0x14CA
-+#define HUAWEI_PRODUCT_K4510			0x14CB
-+#define HUAWEI_PRODUCT_K4511			0x14CC
- #define HUAWEI_PRODUCT_ETS1220			0x1803
- #define HUAWEI_PRODUCT_E353			0x1506
- 
-@@ -547,6 +551,14 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x32) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4510, 0xff, 0x01, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4510, 0xff, 0x01, 0x32) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4511, 0xff, 0x01, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4511, 0xff, 0x01, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 54a9dab..27f9ae4 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -45,6 +45,7 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
-+	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index ccff348..3041a97 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1988,6 +1988,16 @@ UNUSUAL_DEV(  0x4146, 0xba01, 0x0100, 0x0100,
- 		"Micro Mini 1GB",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_NOT_LOCKABLE ),
- 
++#endif /* __KERNEL__ */
++#endif /* _ASM_HEXAGON_FUTEX_H */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/hw_irq.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/hw_irq.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1 @@
++/*  this space intentionally left blank  */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/linkage.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/linkage.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,25 @@
 +/*
-+ * Nick Bowler <nbowler@elliptictech.com>
-+ * SCSI stack spams (otherwise harmless) error messages.
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+UNUSUAL_DEV(  0xc251, 0x4003, 0x0100, 0x0100,
-+		"Keil Software, Inc.",
-+		"V2M MotherBoard",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NOT_LOCKABLE),
 +
- /* Reported by Andrew Simmons <andrew.simmons@gmail.com> */
- UNUSUAL_DEV(  0xed06, 0x4500, 0x0001, 0x0001,
- 		"DataStor",
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 1d34d75..d3d451b 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -732,9 +732,10 @@ static void free_unmap_vmap_area_addr(unsigned long addr)
- #define VMAP_BBMAP_BITS_MIN	(VMAP_MAX_ALLOC*2)
- #define VMAP_MIN(x, y)		((x) < (y) ? (x) : (y)) /* can't use min() */
- #define VMAP_MAX(x, y)		((x) > (y) ? (x) : (y)) /* can't use max() */
--#define VMAP_BBMAP_BITS		VMAP_MIN(VMAP_BBMAP_BITS_MAX,		\
--					VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
--						VMALLOC_PAGES / NR_CPUS / 16))
-+#define VMAP_BBMAP_BITS		\
-+		VMAP_MIN(VMAP_BBMAP_BITS_MAX,	\
-+		VMAP_MAX(VMAP_BBMAP_BITS_MIN,	\
-+			VMALLOC_PAGES / roundup_pow_of_two(NR_CPUS) / 16))
- 
- #define VMAP_BLOCK_SIZE		(VMAP_BBMAP_BITS * PAGE_SIZE)
- 
-diff --git a/net/atm/br2684.c b/net/atm/br2684.c
-index 2252c20..52cfd0c 100644
---- a/net/atm/br2684.c
-+++ b/net/atm/br2684.c
-@@ -242,8 +242,6 @@ static int br2684_xmit_vcc(struct sk_buff *skb, struct net_device *dev,
- 		if (brdev->payload == p_bridged) {
- 			skb_push(skb, 2);
- 			memset(skb->data, 0, 2);
--		} else { /* p_routed */
--			skb_pull(skb, ETH_HLEN);
- 		}
- 	}
- 	skb_debug(skb);
-diff --git a/sound/soc/samsung/jive_wm8750.c b/sound/soc/samsung/jive_wm8750.c
-index 3b53ad5..14eb6ea 100644
---- a/sound/soc/samsung/jive_wm8750.c
-+++ b/sound/soc/samsung/jive_wm8750.c
-@@ -131,7 +131,7 @@ static struct snd_soc_dai_link jive_dai = {
- 	.cpu_dai_name	= "s3c2412-i2s",
- 	.codec_dai_name = "wm8750-hifi",
- 	.platform_name	= "samsung-audio",
--	.codec_name	= "wm8750-codec.0-0x1a",
-+	.codec_name	= "wm8750-codec.0-001a",
- 	.init		= jive_wm8750_init,
- 	.ops		= &jive_ops,
- };
-diff --git a/sound/soc/tegra/tegra_pcm.c b/sound/soc/tegra/tegra_pcm.c
-index 3c271f9..6201710 100644
---- a/sound/soc/tegra/tegra_pcm.c
-+++ b/sound/soc/tegra/tegra_pcm.c
-@@ -309,9 +309,14 @@ static int tegra_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
- 
- static void tegra_pcm_deallocate_dma_buffer(struct snd_pcm *pcm, int stream)
- {
--	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
--	struct snd_dma_buffer *buf = &substream->dma_buffer;
-+	struct snd_pcm_substream *substream;
-+	struct snd_dma_buffer *buf;
++#ifndef __ASM_LINKAGE_H
++#define __ASM_LINKAGE_H
 +
-+	substream = pcm->streams[stream].substream;
-+	if (!substream)
-+		return;
- 
-+	buf = &substream->dma_buffer;
- 	if (!buf->area)
- 		return;
- 
-diff --git a/sound/soc/tegra/tegra_wm8903.c b/sound/soc/tegra/tegra_wm8903.c
-index 0d6738a..7766478 100644
---- a/sound/soc/tegra/tegra_wm8903.c
-+++ b/sound/soc/tegra/tegra_wm8903.c
-@@ -56,6 +56,7 @@
- #define GPIO_HP_MUTE    BIT(1)
- #define GPIO_INT_MIC_EN BIT(2)
- #define GPIO_EXT_MIC_EN BIT(3)
-+#define GPIO_HP_DET     BIT(4)
- 
- struct tegra_wm8903 {
- 	struct tegra_asoc_utils_data util_data;
-@@ -304,6 +305,7 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
- 		snd_soc_jack_add_gpios(&tegra_wm8903_hp_jack,
- 					1,
- 					&tegra_wm8903_hp_jack_gpio);
-+		machine->gpio_requested |= GPIO_HP_DET;
- 	}
- 
- 	snd_soc_jack_new(codec, "Mic Jack", SND_JACK_MICROPHONE,
-@@ -429,10 +431,10 @@ static int __devexit tegra_wm8903_driver_remove(struct platform_device *pdev)
- 	struct tegra_wm8903 *machine = snd_soc_card_get_drvdata(card);
- 	struct tegra_wm8903_platform_data *pdata = machine->pdata;
- 
--	snd_soc_unregister_card(card);
--
--	tegra_asoc_utils_fini(&machine->util_data);
--
-+	if (machine->gpio_requested & GPIO_HP_DET)
-+		snd_soc_jack_free_gpios(&tegra_wm8903_hp_jack,
-+					1,
-+					&tegra_wm8903_hp_jack_gpio);
- 	if (machine->gpio_requested & GPIO_EXT_MIC_EN)
- 		gpio_free(pdata->gpio_ext_mic_en);
- 	if (machine->gpio_requested & GPIO_INT_MIC_EN)
-@@ -441,6 +443,11 @@ static int __devexit tegra_wm8903_driver_remove(struct platform_device *pdev)
- 		gpio_free(pdata->gpio_hp_mute);
- 	if (machine->gpio_requested & GPIO_SPKR_EN)
- 		gpio_free(pdata->gpio_spkr_en);
-+	machine->gpio_requested = 0;
++#define __ALIGN		.align 4
++#define __ALIGN_STR	".align 4"
 +
-+	snd_soc_unregister_card(card);
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/module.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/module.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
 +
-+	tegra_asoc_utils_fini(&machine->util_data);
- 
- 	kfree(machine);
- 
-diff --git a/sound/usb/caiaq/audio.c b/sound/usb/caiaq/audio.c
-index d0d493c..aa52b3e 100644
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -614,6 +614,7 @@ static void read_completed(struct urb *urb)
- 	struct snd_usb_caiaqdev *dev;
- 	struct urb *out;
- 	int frame, len, send_it = 0, outframe = 0;
-+	size_t offset = 0;
- 
- 	if (urb->status || !info)
- 		return;
-@@ -634,7 +635,8 @@ static void read_completed(struct urb *urb)
- 		len = urb->iso_frame_desc[outframe].actual_length;
- 		out->iso_frame_desc[outframe].length = len;
- 		out->iso_frame_desc[outframe].actual_length = 0;
--		out->iso_frame_desc[outframe].offset = BYTES_PER_FRAME * frame;
-+		out->iso_frame_desc[outframe].offset = offset;
-+		offset += len;
- 
- 		if (len > 0) {
- 			spin_lock(&dev->spinlock);
-@@ -650,7 +652,7 @@ static void read_completed(struct urb *urb)
- 	}
- 
- 	if (send_it) {
--		out->number_of_packets = FRAMES_PER_URB;
-+		out->number_of_packets = outframe;
- 		out->transfer_flags = URB_ISO_ASAP;
- 		usb_submit_urb(out, GFP_ATOMIC);
- 	}
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index e02d78c..6c86eca 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -399,7 +399,6 @@ static int perf_config_global(void)
- int perf_config(config_fn_t fn, void *data)
- {
- 	int ret = 0, found = 0;
--	char *repo_config = NULL;
- 	const char *home = NULL;
- 
- 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
-@@ -421,12 +420,6 @@ int perf_config(config_fn_t fn, void *data)
- 		free(user_config);
- 	}
- 
--	repo_config = perf_pathdup("config");
--	if (!access(repo_config, R_OK)) {
--		ret += perf_config_from_file(fn, repo_config, data);
--		found += 1;
--	}
--	free(repo_config);
- 	if (found == 0)
- 		return -1;
- 	return ret;
++#ifndef _ASM_MODULE_H
++#define _ASM_MODULE_H
++
++#include <asm-generic/module.h>
++
++#define MODULE_ARCH_VERMAGIC __stringify(PROCESSOR_MODEL_NAME) " "
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/param.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/param.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PARAM_H
++#define _ASM_PARAM_H
++
++#define EXEC_PAGESIZE	16384
++
++#include <asm-generic/param.h>
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/pci.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/pci.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1 @@
++#include <asm-generic/pci.h>
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/segment.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/segment.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,3 @@
++#ifndef _ASM_SEGMENT_H
++#define _ASM_SEGMENT_H
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/stat.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/stat.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1 @@
++#include <asm-generic/stat.h>
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/string.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/string.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,32 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_STRING_H_
++#define _ASM_STRING_H_
++
++#ifdef __KERNEL__
++#define __HAVE_ARCH_MEMCPY
++extern void *memcpy(void *__to, __const__ void *__from, size_t __n);
++
++/*  ToDo:  use dczeroa, accelerate the compiler-constant zero case  */
++#define __HAVE_ARCH_MEMSET
++extern void *memset(void *__to, int c, size_t __n);
++#endif
++
++
++#endif /* _ASM_STRING_H_ */
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/suspend.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/suspend.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_SUSPEND_H
++#define _ASM_SUSPEND_H
++
++static inline int arch_prepare_suspend(void)
++{
++	return 0;
++}
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/swab.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/swab.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_SWAB_H
++#define _ASM_SWAB_H
++
++#define __SWAB_64_THRU_32__
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/timex.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/timex.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,29 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_TIMEX_H
++#define _ASM_TIMEX_H
++
++#include <asm-generic/timex.h>
++#include <asm/timer-regs.h>
++
++/*  Using TCX0 as our clock.  */
++#define CLOCK_TICK_RATE		TCX0_CLK_RATE
++
++#endif
++
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/perf_event.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/perf_event.h	2011-07-20 15:19:34.605154290 -0500
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PERF_EVENT_H
++#define _ASM_PERF_EVENT_H
++
++#define PERF_EVENT_INDEX_OFFSET	0
++
++#endif /* _ASM_PERF_EVENT_H */
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
