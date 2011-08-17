@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab1HQCTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 22:19:55 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51594 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1HQCTx (ORCPT
+	id S1753234Ab1HQCaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 22:30:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62639 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab1HQCaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 22:19:53 -0400
-X-AuditID: b753bd60-9ea82ba000000655-d4-4e4b2546ade0
-X-AuditID: b753bd60-9ea82ba000000655-d4-4e4b2546ade0
-Message-ID: <4E4B253B.4000703@hitachi.com>
-Date: Wed, 17 Aug 2011 11:19:39 +0900
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Tue, 16 Aug 2011 22:30:08 -0400
+Date: Wed, 17 Aug 2011 04:30:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Blanchard <anton@au1.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>
+Subject: Re: [PATCH 24/32] nohz/cpuset: Handle kernel entry/exit to account
+ cputime
+Message-ID: <20110817023000.GD32132@somewhere.redhat.com>
+References: <1313423549-27093-1-git-send-email-fweisbec@gmail.com>
+ <1313423549-27093-25-git-send-email-fweisbec@gmail.com>
+ <20110816203820.GI2404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v3 2/5] perf: change perf_event_header.misc to PERF_RECORD_MISC_USER
- for BTS
-References: <20110811120555.5900.23642.stgit@linux3>  <20110811120620.5900.50427.stgit@linux3> <1313065126.7144.6.camel@twins>
-In-Reply-To: <1313065126.7144.6.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816203820.GI2404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/08/11 21:18), Peter Zijlstra wrote:
-> On Thu, 2011-08-11 at 21:06 +0900, Akihiro Nagai wrote:
->> Change perf_event_headder.misc to PERF_RECORD_MISC_USER for
->> BTS records, because BTS traces both kernel and user spaces
->> nevertheless perf specifies to trace only kernel or user space.
->
-> Now I'm confused..
->
-> If BTS traces both kernel and user, the MISC bit should reflect the
-> right state per-sample, on x86 that's easy enough to do by the address.
-Yes.
-However, PERF_RECORD_MISC_KERNEL can be specified only when
-both from_addr and to_addr are kernel-space. Since current perf always enables
-IA32_DEBUGCTL_MSR.BTS_OFF_OS flag when it uses BTS, such BTS records are not
-output. So, it's enough to specify only PERF_RECORD_MISC_USER.
+On Tue, Aug 16, 2011 at 01:38:20PM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 15, 2011 at 05:52:21PM +0200, Frederic Weisbecker wrote:
+> > Provide a few APIs that archs can call to tell they are entering
+> > or exiting the kernel so that when we are in nohz adaptive mode
+> > we know precisely where we need to account the cputime.
+> > 
+> > The new APIs are:
+> > 
+> > - tick_nohz_enter_kernel() (called when we enter a syscall)
+> > - tick_nohz_exit_kernel() (called when we exit a syscall)
+> > - tick_nohz_enter_exception() (called when we enter any
+> >   exception, trap, faults...but not irqs)
+> > - tick_nohz_exit_exception() (called when we exit any exception)
+> > 
+> > Hooks into syscalls are typically driven by the TIF_NOHZ thread
+> > flag.
+> > 
+> > In addition, we use the value returned by user_mode(regs) from
+> > the timer interrupt to know where we are.
+> > Nonetheless, we can rely on user_mode(regs) != 0 to know
+> > we are in userspace, but we can't rely on user_mode(regs) == 0
+> > to know we are in the system.
+> > 
+> > Consider the following scenario: we stop the tick after syscall
+> > return, so we set TIF_NOHZ but the syscall exit hook is behind us.
+> > If we haven't yet returned to userspace, then we have
+> > user_mode(regs) == 0. If on top of that we consider we are in
+> > system mode, and later we issue a syscall but restart the tick
+> > right before reaching the syscall entry hook, then we have no clue
+> > that the whole elapsed cputime was not in the system but in the
+> > userspace.
+> > 
+> > The only way to fix this is to only start entering nohz mode once
+> > we know we are in userspace a first time, like when we reach the
+> > kernel exit hook or when a timer tick with user_mode(regs) == 1
+> > fires. Kernel threads don't have this worry.
+> > 
+> > This sucks but for now I have no better solution. Let's hope we
+> > can find better.
+> > 
+> > TODO: wrap operation on jiffies?
+> 
+> Hmmm...  Does the RCU dyntick-idle code need to know about exception
+> entry and exit?
+> 
+> 							Thanx, Paul
 
->
->
->> ---
->>
->>   arch/x86/kernel/cpu/perf_event_intel_ds.c |    8 ++++++++
->>   1 files changed, 8 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> index 1b1ef3a..323f3f0 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
->> @@ -340,6 +340,14 @@ static int intel_pmu_drain_bts_buffer(void)
->>   	 */
->>   	perf_prepare_sample(&header,&data, event,&regs);
->>
->> +	/*
->> +	 * Since BTS can not trace kernel and user space separately, set
->
-> Uhm, IA32_DEBUGCTL_MSR.BTS_OFF_{OS,USR} seem to suggest it can?!
-Current perf always enables IA32_DEBUGCTL_MSR.BTS_OFF_OS when traces with BTS.
-However, BTS records branches which jump from kernel(irq_return) to user, because
-the msr is to stop tracing in Ring0. It's different with kernel-space in the
-strict sense.
+At that time it doesn't because we don't yet call rcu_enter_nohz()
+when switching to userspace. Instead we shutdown the tick and
+restart it when needed when a remote CPU sends us an IPI to complete
+a grace period.
 
->
->> +	 * PERF_RECORD_MISC_USER in header.misc to resolve both kernel and
->> +	 * user DSOs and symbols.
->> +	 */
->> +	header.misc&= ~PERF_RECORD_MISC_CPUMODE_MASK;
->> +	header.misc |= PERF_RECORD_MISC_USER;
->
->
-> So what's wrong with something like:
->
-> 	header.misc |= is_kernel_address(at->from) ?
-> 			PERF_RECORD_MISC_KERNEL :
-> 			PERF_RECORD_MISC_USER;
->
-It looks good.
-However, current perf doesn't output "kernel to kernel" BTS records.
-So, it is unnecessary yet.
+The patch that switches to extended qs is the 31/32 and it handles
+syscalls and exceptions as well.
 
-Thank you.
+I wanted to have support on rcu extended quiescent states late
+in the patchset so that it's considered as an incremental feature
+and not a core piece of the adaptive nohz (ie: it's no mandatory thing,
+just an optimization). This way we can use cpuset nohz without that
+rcu extended quiescent state feature and hence make that small part
+bisectable.
 
->>   	if (perf_output_begin(&handle, event, header.size * (top - at)))
->>   		return 1;
->>
->>
->
->
-
+Patch 30 activates support for cpuset nohz (support from x86).
+Patch 31 activates the rcu extended quiescent state support in
+userspace as a bonus.
