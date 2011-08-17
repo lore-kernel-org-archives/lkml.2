@@ -1,155 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1HQPrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 11:47:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58677 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab1HQPrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 11:47:52 -0400
-Date: Wed, 17 Aug 2011 17:47:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, mingo@kernel.org
-Subject: [GIT pull] timer fixes for 3.1
-Message-ID: <alpine.LFD.2.02.1108171746570.2807@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754168Ab1HQQYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 12:24:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745Ab1HQQYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 12:24:05 -0400
+Date: Wed, 17 Aug 2011 18:20:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        lennart@poettering.net, linux-man@vger.kernel.org,
+        roland@hack.frob.com, torvalds@linux-foundation.org
+Subject: Re: +
+	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+	.patch added to -mm tree
+Message-ID: <20110817162041.GA21406@redhat.com>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com> <20110817134516.GA14136@redhat.com> <CAPXgP101N_GESzpqu=P_H8cLoekMzb2_W2eWyAqATSjm4Gj9CA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPXgP101N_GESzpqu=P_H8cLoekMzb2_W2eWyAqATSjm4Gj9CA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 08/17, Kay Sievers wrote:
+>
+> On Wed, Aug 17, 2011 at 15:45, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > OK. So, this patch can only help to handle the legacy services?
+>
+> It helps them with services that need it. It is not recommended to
+> double-fork ever with a modern init system, but it's historic default
+> and common practice, and we are not going to change that any time
+> soon.
+>
+> > And
+> > the service should participate (write pid files for example). And,
+>
+> This is not meant as a security feature, if that's what your asking.
 
-Please pull the latest timers-fixes-for-linus git tree from:
+Not at all.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+> It will not prevent services from doing nasty things and escape the
+> process that started them. But it's still a feature that today only
+> PID 1 and which we need for more processes.
+>
+> >> > What if wait(WEXITED) succeeds because C in turn does
+> >> > fork + exit?
+> >>
+> >> Nothing is really doing this.
+> >
+> > OK. But this means you propose this patch to solve the very specific
+> > problems.
+>
+> No, it's for a very common problem. But again, it's not a security feature.
 
-Thanks,
+Once again, I didn't meant security.
 
-	tglx
+> > IOW, imho this doesn't look very useful "in general" to me.
+>
+> It is very useful if you have an init-like daemon.
 
------------------->
-Thomas Gleixner (3):
-      rtc: Handle errors correctly in rtc_irq_set_state()
-      rtc: Fix hrtimer deadlock
-      rtc: Limit RTC PIE frequency
+Well, this is subjective, but personally I don't agree.
 
+> > May be we need something else instead... And iiuc you don't really
+> > need to change the reparenting, you only want the notification if
+> > the process exits.
+>
+> No, we want to be the parent of the process,
+> ...
+> The sub-init is the babysitter of all the things it has
+> started, and that should be reflected in the parent child relation.
 
- drivers/rtc/interface.c |   55 ++++++++++++++++++++++++++++++++--------------
- include/linux/rtc.h     |    3 ++
- 2 files changed, 41 insertions(+), 17 deletions(-)
+OK. But could you explain why do we want this? This is not clear from
+the changelog/discussion.
 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index df68618..44e91e5 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -636,6 +636,29 @@ void rtc_irq_unregister(struct rtc_device *rtc, struct rtc_task *task)
- }
- EXPORT_SYMBOL_GPL(rtc_irq_unregister);
- 
-+static int rtc_update_hrtimer(struct rtc_device *rtc, int enabled)
-+{
-+	/*
-+	 * We always cancel the timer here first, because otherwise
-+	 * we could run into BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
-+	 * when we manage to start the timer before the callback
-+	 * returns HRTIMER_RESTART.
-+	 *
-+	 * We cannot use hrtimer_cancel() here as a running callback
-+	 * could be blocked on rtc->irq_task_lock and hrtimer_cancel()
-+	 * would spin forever.
-+	 */
-+	if (hrtimer_try_to_cancel(&rtc->pie_timer) < 0)
-+		return -1;
-+
-+	if (enabled) {
-+		ktime_t period = ktime_set(0, NSEC_PER_SEC / rtc->irq_freq);
-+
-+		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
-+	}
-+	return 0;
-+}
-+
- /**
-  * rtc_irq_set_state - enable/disable 2^N Hz periodic IRQs
-  * @rtc: the rtc device
-@@ -651,21 +674,21 @@ int rtc_irq_set_state(struct rtc_device *rtc, struct rtc_task *task, int enabled
- 	int err = 0;
- 	unsigned long flags;
- 
-+retry:
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task != NULL && task == NULL)
- 		err = -EBUSY;
- 	if (rtc->irq_task != task)
- 		err = -EACCES;
--
--	if (enabled) {
--		ktime_t period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
--		hrtimer_start(&rtc->pie_timer, period, HRTIMER_MODE_REL);
--	} else {
--		hrtimer_cancel(&rtc->pie_timer);
-+	if (!err) {
-+		if (rtc_update_hrtimer(rtc, enabled) < 0) {
-+			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
-+			cpu_relax();
-+			goto retry;
-+		}
-+		rtc->pie_enabled = enabled;
- 	}
--	rtc->pie_enabled = enabled;
- 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
--
- 	return err;
- }
- EXPORT_SYMBOL_GPL(rtc_irq_set_state);
-@@ -685,22 +708,20 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
- 	int err = 0;
- 	unsigned long flags;
- 
--	if (freq <= 0)
-+	if (freq <= 0 || freq > RTC_MAX_FREQ)
- 		return -EINVAL;
--
-+retry:
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task != NULL && task == NULL)
- 		err = -EBUSY;
- 	if (rtc->irq_task != task)
- 		err = -EACCES;
--	if (err == 0) {
-+	if (!err) {
- 		rtc->irq_freq = freq;
--		if (rtc->pie_enabled) {
--			ktime_t period;
--			hrtimer_cancel(&rtc->pie_timer);
--			period = ktime_set(0, NSEC_PER_SEC/rtc->irq_freq);
--			hrtimer_start(&rtc->pie_timer, period,
--					HRTIMER_MODE_REL);
-+		if (rtc->pie_enabled && rtc_update_hrtimer(rtc, 1) < 0) {
-+			spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
-+			cpu_relax();
-+			goto retry;
- 		}
- 	}
- 	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index b27ebea..93f4d03 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -97,6 +97,9 @@ struct rtc_pll_info {
- #define RTC_AF 0x20	/* Alarm interrupt */
- #define RTC_UF 0x10	/* Update interrupt for 1Hz RTC */
- 
-+
-+#define RTC_MAX_FREQ	8192
-+
- #ifdef __KERNEL__
- 
- #include <linux/types.h>
+> > You should check ->child_reaper only. But see above, it can be multithreaded.
+>
+> The main PID 1 from the system has no ->child_reaper set as far as I
+> see, hence we check for init_task.
+
+No, you don't. Once again, if pid_ns->child_reaper exits, you should
+not even try to find the sub-reaper in its parents chain.
+
+see also below...
+
+> >> > Also. You shouldn't do this if the sub-namespace init exits, this is
+> >> > wrong.
+> >>
+> >> It we find a sub-init, before the namespace PID1, why wouldn't we return it?
+> >
+> > Ah, I meant pid_ns->child_reaper, not task->child_reaper.
+> >
+> > If pid_ns->child_reaper exits we should never try to "reparent" its
+> > children, see zap_pid_ns_processes() in particular. IOW, this should
+> > go into the "else" branch of "if (pid_ns->child_reaper == father)"
+>
+> I don't understand this. If we find a marked task->child_reaper
+> _before_ we find a pid_ns->child_reaper in the chain of parents,
+
+This is fine.
+
+OK. I guess I wasn't clear, and I do not know how to explaine better.
+Please look at your code ;) Suppose that a sub-namespace init exits.
+Not the global /sbin/init. Not the caller of prctl(REAPER).
+
+In this case we should kill the children, not reparent them. Or panic
+if it is the global init (see above).
+
+See?
+
+Oleg.
+
