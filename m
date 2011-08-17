@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab1HQXpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:45:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35322 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab1HQXpp (ORCPT
+	id S1754229Ab1HQXsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 19:48:14 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58538 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab1HQXsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:45:45 -0400
-MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <1490448.Ut7YRxkLUk@wuerfel>
-References: <20110817163457.878854582@codeaurora.org> <20110817163522.852412019@codeaurora.org>
- <1490448.Ut7YRxkLUk@wuerfel>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Wed, 17 Aug 2011 18:45:24 -0500
-Message-ID: <CAHrUA37Z1A_UNaOrSu3VXyV3jJumEoCAU4hsqQm4RHraLrAu3A@mail.gmail.com>
-Subject: Re: [patch 32/36] Hexagon: Comet platform support
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Kuo <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Aug 2011 19:48:13 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Thomas Backlund <tmb@mageia.org>
+Cc: Andreas Dilger <adilger@dilger.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: INFO: task jbd2/dm-0-8:3993 blocked for more than 120 seconds
+In-Reply-To: Your message of "Thu, 18 Aug 2011 00:08:53 +0300."
+             <4E4C2DE5.5020100@mageia.org>
+From: Valdis.Kletnieks@vt.edu
+References: <4E4BC296.1040004@mageia.org> <96850198-2253-40F7-B99C-62A6097278FA@dilger.ca>
+            <4E4C2DE5.5020100@mageia.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1313624887_2796P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 17 Aug 2011 19:48:07 -0400
+Message-ID: <27048.1313624887@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4E4C5338.0026,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 August 2011 15:07, Arnd Bergmann <arnd@arndb.de> wrote:
+--==_Exmh_1313624887_2796P
+Content-Type: text/plain; charset=us-ascii
 
->> + * linux/arch/hexagon/platform/comet/board.c
->
-> We really don't want to have board files in new architectures any more. If your
-> hardware is not fully discoverable, you should instead describe it in a device
-> tree source file, see powerpc, microblaze, and the newer arm platforms.
+On Thu, 18 Aug 2011 00:08:53 +0300, Thomas Backlund said:
+> Andreas Dilger skrev 17.8.2011 17:35:
 
-Working on device-tree support, slowly but surely, but this could get
-all tangled
-for a while as many of the devices are common with the arm.  The goal is to
-yank this file before the final submission. but for now, it seemed
-easier to mail
-this as a work in progress.
+> > This is a problem with your disk hardware.
 
--- Linas
+> Are you sure?
+> I get nothing from smart, even after I had executed the long test...
+
+SMART is nice, but it isn't guaranteed.  In particular, you need to
+double-check that what you think it's testing in a "long" test is what
+it actually did...
+
+> # smartctl -a /dev/sda
+> smartctl 5.39.1 2010-01-28 r3054 [x86_64-mandriva-linux-gnu] (local build)
+> Copyright (C) 2002-10 by Bruce Allen, http://smartmontools.sourceforge.net
+> 
+> === START OF INFORMATION SECTION ===
+> Device Model:     WDC WD1002FAEX-00Z3A0
+> Serial Number:    WD-WCATR3168879
+> Firmware Version: 05.01D05
+> User Capacity:    1,000,204,886,016 bytes
+
+So we're looking at a terabyte of disk...
+
+> Selective self-test flags (0x0):
+>    After scanning selected spans, do NOT read-scan remainder of disk.
+
+And it's *NOT* doing a read-scan of the entire terabyte.
+
+
+--==_Exmh_1313624887_2796P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOTFM3cC3lWbTT17ARAkMFAJ9dv9vHc/L2OtWOzT+f2ODVgjs3hwCeJlVq
+iCIinxQmh0I0JVWt31cy0OA=
+=KHlq
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1313624887_2796P--
+
