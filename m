@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1HQNto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:49:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:56940 "EHLO mga14.intel.com"
+	id S1753584Ab1HQNmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:42:25 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1027 "EHLO mms2.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397Ab1HQNtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:49:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,240,1312182000"; 
-   d="scan'208";a="39415486"
-Date: Wed, 17 Aug 2011 21:49:36 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110817134936.GA22484@localhost>
-References: <20110816022006.348714319@intel.com>
- <20110816022328.811348370@intel.com>
- <20110816194112.GA25517@quack.suse.cz>
- <20110817132347.GA6628@localhost>
+	id S1753363Ab1HQNmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 09:42:22 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Subject: Re: [PATCH V2 net-next 0/3] bnx2x: Message logging cleanups
+From: "Eilon Greenstein" <eilong@broadcom.com>
+Reply-to: eilong@broadcom.com
+To: "Joe Perches" <joe@perches.com>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <cover.1313360100.git.joe@perches.com>
+References: <cover.1313360100.git.joe@perches.com>
+Organization: Broadcom
+Date: Wed, 17 Aug 2011 16:42:08 +0300
+Message-ID: <1313588528.7266.6.camel@lb-tlvb-eilong.il.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110817132347.GA6628@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.28.3
+X-WSS-ID: 6255190E3W45706309-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +		if (x_intercept < limit) {
-> > > +			x_intercept = limit;	/* auxiliary control line */
-> > > +			setpoint += span;
-> > > +			pos_ratio >>= 1;
-> > > +		}
-> >   And here you stretch the control area upto the global dirty limit. I
-> > understand you maybe don't want to be really strict and cut control area at
-> > bdi_thresh but your choice looks like too benevolent - when you have
-> > several active bdi's with different speeds this will effectively erase
-> > difference between them, won't it? E.g. with 10 bdi's (x_intercept -
-> > bdi_dirty) / (x_intercept - setpoint) is going to be close to 1 unless
-> > bdi_dirty really heavily exceeds bdi_thresh.
+On Sun, 2011-08-14 at 15:16 -0700, Joe Perches wrote: 
+> Joe Perches (3):
+>   bnx2x: Remove local defines for %pM and mac address
+>   bnx2x: Coalesce pr_cont uses and fix DP typos
+>   bnx2x: Use pr_fmt and message logging cleanups
 > 
-> Yes the auxiliary control line could be very flat (small slope).
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |   67 ++++-----
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c    |   48 ++++---
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h    |    4 +-
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c    |    5 +-
+>  .../net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c    |   23 ++--
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c   |  153 ++++++++++----------
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |   72 ++++-----
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c     |   67 ++++-----
+>  drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c  |   46 +++---
+>  9 files changed, 244 insertions(+), 241 deletions(-)
 > 
-> However it's not normal for the bdi dirty pages to fall into the
-> range of auxiliary control line at all. And once it takes effect, 
-> the pos_ratio is at most 0.5 (which is the value at the connection
-> point with the main bdi control line) which is strong enough to pull
-> the dirty pages off the auxiliary bdi control line and into the scope
-> of main bdi control line.
-> 
-> The auxiliary control line is intended for bringing down the bdi_dirty
-> of the USB key before 250s (where the "pos bandwidth" line keeps low): 
-> 
-> http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/1UKEY+1HDD-3G/ext4-4dd-1M-8p-2945M-20%25-2.6.38-rc5-dt6+-2011-02-22-09-46/balance_dirty_pages-pages.png
-> 
-> After that the bdi_dirty will fluctuate around bdi_thresh and won't
-> grow high and step into the scope of the auxiliary control line.
 
-Note that the main/auxiliary bdi control lines won't take effect at
-the same time: the main bdi control lines works around and under the
-bdi setpoint, and the auxiliary line takes over in the higher scope up
-to @limit.
+Thanks Joe, sorry it took a while - but ACK for all :)
+Eilon
 
-In the 1UKEY+1HDD test case, the bdi_dirty of the UKEY rushes at the
-free run stage when global dirty pages are smaller than (thresh+bg_thresh)/2.
 
-So it will be initially under the control the auxiliary line. Hence the
-dirtier task will progress at 1/4 to 1/2 of the UKEY's write bandwidth. 
-This will bring down the bdi_dirty reasonably fast while still allowing
-the dirtier task to make some progress.
-
-The connection point of the main/auxiliary control lines has pos_ratio=0.5.
-
-After 250 second, the main bdi control line takes over, indicated by
-the bdi_dirty fluctuating around bdi setpoint and the position rate
-(green line) fluctuating around the base ratelimit(blue line).
-
-Thanks,
-Fengguang
