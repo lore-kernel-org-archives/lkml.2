@@ -1,332 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1HQRLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:11:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26066 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab1HQRF5 (ORCPT
+	id S1753986Ab1HQOim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 10:38:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64098 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab1HQOil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:05:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004112"
-Message-Id: <20110817163521.257943209@codeaurora.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:12 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 15/36] Hexagon: Add init_task and process functions
-References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=init-task.diff
+	Wed, 17 Aug 2011 10:38:41 -0400
+Message-ID: <4E4BD1F9.4010805@ru.mvista.com>
+Date: Wed, 17 Aug 2011 18:36:41 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+MIME-Version: 1.0
+To: Michal Nazarewicz <mnazarewicz@google.com>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: get rid of USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED
+References: <4E4B9D9C.2010607@linutronix.de> <aeb2d1e4eb36e6a0265ed0e6c279e81880bbfef2.1313585187.git.mina86@mina86.com>
+In-Reply-To: <aeb2d1e4eb36e6a0265ed0e6c279e81880bbfef2.1313585187.git.mina86@mina86.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Hello.
 
----
- arch/hexagon/kernel/init_task.c |   54 +++++++++
- arch/hexagon/kernel/process.c   |  235 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 289 insertions(+)
+Michal Nazarewicz wrote:
 
-Index: linux-hexagon-kernel/arch/hexagon/kernel/init_task.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/init_task.c	2011-07-20 15:19:40.255152444 -0500
-@@ -0,0 +1,54 @@
-+/*
-+ * Init task definition
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/init_task.h>
-+#include <linux/fs.h>
-+#include <linux/mqueue.h>
-+#include <asm/thread_info.h>
-+#include <asm/uaccess.h>
-+#include <asm/pgtable.h>
-+
-+static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
-+static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
-+
-+/*
-+ * Initial thread structure.
-+ *
-+ * We need to make sure that this is 8192-byte aligned due to the
-+ * way process stacks are handled. This is done by making sure
-+ * the linker maps this in the .text segment right after head.S,
-+ * and making head.S ensure the proper alignment.
-+ */
-+union thread_union init_thread_union
-+	__attribute__((__section__(".data.init_task"),
-+		__aligned__(THREAD_SIZE))) = {
-+			INIT_THREAD_INFO(init_task)
-+		};
-+
-+/*
-+ * Initial task structure.
-+ *
-+ * All other task structs will be allocated on slabs in fork.c
-+ */
-+struct task_struct init_task = INIT_TASK(init_task);
-+EXPORT_SYMBOL(init_task);
-Index: linux-hexagon-kernel/arch/hexagon/kernel/process.c
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/kernel/process.c	2011-07-20 15:19:40.255152444 -0500
-@@ -0,0 +1,235 @@
-+/*
-+ * Process creation support for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/module.h>
-+#include <linux/tick.h>
-+#include <linux/uaccess.h>
-+
-+/*
-+ * Kernel thread creation.  The desired kernel function is "wrapped"
-+ * in the kernel_thread_helper function, which does cleanup
-+ * afterwards.
-+ */
-+static void __noreturn kernel_thread_helper(void *arg, int (*fn)(void *))
-+{
-+	do_exit(fn(arg));
-+}
-+
-+int kernel_thread(int (*fn)(void *), void *arg, unsigned long flags)
-+{
-+	struct pt_regs regs;
-+
-+	memset(&regs, 0, sizeof(regs));
-+	/*
-+	 * Yes, we're exploting illicit knowledge of the ABI here.
-+	 */
-+	regs.r00 = (unsigned long) arg;
-+	regs.r01 = (unsigned long) fn;
-+	pt_set_elr(&regs, (unsigned long)kernel_thread_helper);
-+	pt_set_kmode(&regs);
-+
-+	return do_fork(flags|CLONE_VM|CLONE_UNTRACED, 0, &regs, 0, NULL, NULL);
-+}
-+EXPORT_SYMBOL(kernel_thread);
-+
-+/*
-+ * Program thread launch.  Often defined as a macro in processor.h,
-+ * but we're shooting for a small footprint and it's not an inner-loop
-+ * performance-critical operation.
-+ *
-+ * The Hexagon ABI specifies that R28 is zero'ed before program launch,
-+ * so that gets automatically done here.  If we ever stop doing that here,
-+ * we'll probably want to define the ELF_PLAT_INIT macro.
-+ */
-+void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
-+{
-+	/* Set to run with user-mode data segmentation */
-+	set_fs(USER_DS);
-+	/* We want to zero all data-containing registers. Is this overkill? */
-+	memset(regs, 0, sizeof(*regs));
-+	/* We might want to also zero all Processor registers here */
-+	pt_set_usermode(regs);
-+	pt_set_elr(regs, pc);
-+	pt_set_rte_sp(regs, sp);
-+}
-+
-+/*
-+ *  Spin, or better still, do a hardware or VM wait instruction
-+ *  If hardware or VM offer wait termination even though interrupts
-+ *  are disabled.
-+ */
-+static void default_idle(void)
-+{
-+	__vmwait();
-+}
-+
-+void (*idle_sleep)(void) = default_idle;
-+
-+void cpu_idle(void)
-+{
-+	while (1) {
-+		tick_nohz_stop_sched_tick(1);
-+		while (!need_resched())
-+			idle_sleep();
-+		tick_nohz_restart_sched_tick();
-+		schedule();
-+	}
-+}
-+
-+/*
-+ *  Return saved PC of a blocked thread
-+ */
-+unsigned long thread_saved_pc(struct task_struct *tsk)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * Copy architecture-specific thread state
-+ */
-+int copy_thread(unsigned long clone_flags, unsigned long usp,
-+		unsigned long unused, struct task_struct *p,
-+		struct pt_regs *regs)
-+{
-+	struct thread_info *ti = task_thread_info(p);
-+	struct hexagon_switch_stack *ss;
-+	struct pt_regs *childregs;
-+	asmlinkage void ret_from_fork(void);
-+
-+	childregs = (struct pt_regs *) (((unsigned long) ti + THREAD_SIZE) -
-+					sizeof(*childregs));
-+
-+	memcpy(childregs, regs, sizeof(*childregs));
-+	ti->regs = childregs;
-+
-+	/*
-+	 * Establish kernel stack pointer and initial PC for new thread
-+	 */
-+	ss = (struct hexagon_switch_stack *) ((unsigned long) childregs -
-+						    sizeof(*ss));
-+	ss->lr = (unsigned long)ret_from_fork;
-+	p->thread.switch_sp = ss;
-+
-+	/* If User mode thread, set pt_reg stack pointer as per parameter */
-+	if (user_mode(childregs)) {
-+		pt_set_rte_sp(childregs, usp);
-+
-+		/* Child sees zero return value */
-+		childregs->r00 = 0;
-+
-+		/*
-+		 * The clone syscall has the C signature:
-+		 * int [r0] clone(int flags [r0],
-+		 *           void *child_frame [r1],
-+		 *           void *parent_tid [r2],
-+		 *           void *child_tid [r3],
-+		 *           void *thread_control_block [r4]);
-+		 * ugp is used to provide TLS support.
-+		 */
-+		if (clone_flags & CLONE_SETTLS)
-+			childregs->ugp = childregs->r04;
-+
-+		/*
-+		 * Parent sees new pid -- not necessary, not even possible at
-+		 * this point in the fork process
-+		 * Might also want to set things like ti->addr_limit
-+		 */
-+	} else {
-+		/*
-+		 * If kernel thread, resume stack is kernel stack base.
-+		 * Note that this is pointer arithmetic on pt_regs *
-+		 */
-+		pt_set_rte_sp(childregs, (unsigned long)(childregs + 1));
-+		/*
-+		 * We need the current thread_info fast path pointer
-+		 * set up in pt_regs.  The register to be used is
-+		 * parametric for assembler code, but the mechanism
-+		 * doesn't drop neatly into C.  Needs to be fixed.
-+		 */
-+		childregs->THREADINFO_REG = (unsigned long) ti;
-+	}
-+
-+	/*
-+	 * thread_info pointer is pulled out of task_struct "stack"
-+	 * field on switch_to.
-+	 */
-+	p->stack = (void *)ti;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Release any architecture-specific resources locked by thread
-+ */
-+void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/*
-+ * Free any architecture-specific thread data structures, etc.
-+ */
-+void exit_thread(void)
-+{
-+}
-+
-+/*
-+ * Some archs flush debug and FPU info here
-+ */
-+void flush_thread(void)
-+{
-+}
-+
-+/*
-+ * The "wait channel" terminology is archaic, but what we want
-+ * is an identification of the point at which the scheduler
-+ * was invoked by a blocked thread.
-+ */
-+unsigned long get_wchan(struct task_struct *p)
-+{
-+	unsigned long fp, pc;
-+	unsigned long stack_page;
-+	int count = 0;
-+	if (!p || p == current || p->state == TASK_RUNNING)
-+		return 0;
-+
-+	stack_page = (unsigned long)task_stack_page(p);
-+	fp = ((struct hexagon_switch_stack *)p->thread.switch_sp)->fp;
-+	do {
-+		if (fp < (stack_page + sizeof(struct thread_info)) ||
-+			fp >= (THREAD_SIZE - 8 + stack_page))
-+			return 0;
-+		pc = ((unsigned long *)fp)[1];
-+		if (!in_sched_functions(pc))
-+			return pc;
-+		fp = *(unsigned long *) fp;
-+	} while (count++ < 16);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Required placeholder.
-+ */
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
-+{
-+	return 0;
-+}
+> From: Michal Nazarewicz <mina86@mina86.com>
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> This commit removes the use of USB_GADGET_DUALSPEED and
+> USB_GADGET_SUPERSPEED Kconfig options.  Those were selected
+> by UDC drivers which supported respective speeds.
 
+> However, since kernel now allows multiple UDC drivers to be
+> compiled, the options in question may no longer reflect the
+> state of all gadgets.
+
+> For instance, if one driver that supports dual speed is selected
+> and another that does not, the USB_GADGE_DUALSPEED will be set
+> "for both".
+
+> This commit replaces all the #ifdefs by a run-time checks made
+> by calling gadget_is_dualspeed().
+
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+[...]
+
+> diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+> index 1b24099..1869478 100644
+> --- a/drivers/usb/gadget/inode.c
+> +++ b/drivers/usb/gadget/inode.c
+[...]
+> @@ -1015,9 +1013,8 @@ ep0_read (struct file *fd, char __user *buf, size_t len, loff_t *ptr)
+>  			if (dev->current_config) {
+>  				unsigned power;
+>  
+> -				if (gadget_is_dualspeed(dev->gadget)
+> -						&& (dev->gadget->speed
+> -							== USB_SPEED_HIGH))
+> +				if (gadget_is_dualspeed(dev->gadget) &&
+> +				    (dev->gadget->speed == USB_SPEED_HIGH))
+
+    As Alan noted, this is quite unrelated white space change.
+
+>  					power = dev->hs_config->bMaxPower;
+>  				else
+>  					power = dev->config->bMaxPower;
+> @@ -1354,10 +1350,8 @@ static void make_qualifier (struct dev_data *dev)
+>  
+>  	memcpy (dev->rbuf, &qual, sizeof qual);
+>  }
+> -#endif
+>  
+> -static int
+> -config_buf (struct dev_data *dev, u8 type, unsigned index)
+> +static int config_buf (struct dev_data *dev, u8 type, unsigned index)
+>  {
+>  	int		len;
+>  	int		hs = 0;
+
+WARNING: space prohibited between function name and open parenthesis '('
+#291: FILE: drivers/usb/gadget/inode.c:1354:
++static int config_buf (struct dev_data *dev, u8 type, unsigned index)
+
+total: 0 errors, 1 warnings, 400 lines checked
+
+patches/usb-gadget-get-rid-of-USB_GADGET_DUALSPEED-and-USB_GADGET_SUPERSPEED.patch 
+has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+WBR, Sergei
