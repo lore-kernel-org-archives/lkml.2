@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab1HQXcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:32:14 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46653 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab1HQXcK (ORCPT
+	id S1754173Ab1HQXdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 19:33:43 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:11456 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab1HQXdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:32:10 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes with linux-3.1-rc2
-In-Reply-To: Your message of "Wed, 17 Aug 2011 15:16:40 EDT."
-             <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan> <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
-            <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1313623869_2796P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 17 Aug 2011 19:33:42 -0400
+Message-ID: <4E4C4FAA.70409@micron.com>
+Date: Wed, 17 Aug 2011 17:32:58 -0600
+From: Asai Thambi S P <asamymuthupa@micron.com>
+Reply-To: <asamymuthupa@micron.com>
+Organization: Micron
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, Christoph Hellwig <hch@infradead.org>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+Subject: Re: [PATCH v3 1/3] drivers/block/mtip32xx: Adding header file and
+  source for pci and block related operation
+References: <22A973199D2C2F46933448F6E7990A3002C80025@ntxboimbx31.micron.com> <4E44DE84.2030306@fusionio.com>
+In-Reply-To: <4E44DE84.2030306@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Date: Wed, 17 Aug 2011 19:31:09 -0400
-Message-ID: <26399.1313623869@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4E4C4F3F.0072,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Originating-IP: [10.16.30.125]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
+X-TM-AS-Result: No--15.467600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1313623869_2796P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 17 Aug 2011 15:16:40 EDT, Justin Piszcz said:
-
-> Tried with linux-3.1-rc2 and:
+On 8/12/2011 2:04 AM, Jens Axboe wrote:
+> On 2011-08-11 20:52, Asai Thambi Samymuthu Pattrayasamy (asamymuthupa) [CONTRACTOR] wrote:
+>> +       /*
+>> +        * Semaphore used to lock out read/write commands during the
+>> +        * execution of an internal command.
+>> +        */
+>> +       struct rw_semaphore internal_sem;
 > 
-> You don't even need to get a successful mount:
+> I hope you are not using that in a hot path...
+
+As we don't use a queue, we can't inject the IOCTL/PIO commands at the
+head of the queue like the ahci stack. So we have to wait on all NCQ
+commands to complete while preventing more from being issued, issue our
+'internal' command, wait for it to complete, and  then resume NCQ
+submissions. Ideally, we'd like to do this without the overhead of
+managing a queue for performance reasons. Do you have any suggestion for
+this problem?
+
+>> +int mtip_block_initialize(struct driver_data *dd)
+>> +{
+>> +       int rv = 0;
+>> +       sector_t capacity;
+>> +       unsigned int index = 0;
+>> +       struct kobject *kobj;
+>> +
+>> +       /* Initialize the protocol layer. */
+>> +       rv = mtip_hw_init(dd);
+>> +       if (rv < 0) {
+>> +               dev_err(&dd->pdev->dev,
+>> +                       "Protocol layer initialization failed\n");
+>> +               rv = -EINVAL;
+>> +               goto protocol_init_error;
+>> +       }
+>> +
+>> +       /* Allocate the request queue. */
+>> +       dd->queue = blk_alloc_queue(GFP_KERNEL);
 > 
-> Does anyone know if any kernel supports CIFS w/out crashing? I'd like to 
-> backup some CIFS shares, thanks.
+> It'd be nice for a high perf device like this to allocate the queue node
+> local.
 
-3.1.0-rc1-next-20110808 is talking CIFS to our NetApp without any complaint.
-Not heavily stress tested, but it mounted, I can see files, I can open files, I
-specifically tried 'df' and didn't crash.
-
-So I'm guessing there's some subtle difference between what my NetApp feeds my
-laptop over the wire and what you're seeing from your Windows box?
+We thought not to mess with block layer housekeeping for request queue.
+Will there be any performance gain if the driver allocates the request
+queue? Is there any other benefit?
 
 
---==_Exmh_1313623869_2796P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOTE89cC3lWbTT17ARAnGZAKDjNIGBTZpkursKwWIiwlXHkk3D9QCfel2r
-Q1bFNvO338NdGfRmwnWlhfk=
-=+vGx
------END PGP SIGNATURE-----
-
---==_Exmh_1313623869_2796P--
-
+-- 
+Regards,
+Asai Thambi
