@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab1HQRap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:30:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235Ab1HQRao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:30:44 -0400
-Date: Wed, 17 Aug 2011 19:27:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Linas Vepstas <linasvepstas@gmail.com>,
-        Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/eeh: remove eeh_event_handler()->daemonize()
-Message-ID: <20110817172713.GA24544@redhat.com>
-References: <20110816190858.GA4890@redhat.com> <20110816192629.GB2803@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110816192629.GB2803@mtj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753351Ab1HQSlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 14:41:01 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44112 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab1HQSk6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 14:40:58 -0400
+References: <20110727095557.GL3824@shale.localdomain> <9C2475AA-829E-4BB8-A3D2-2444803A33D3@gmail.com> <4E33C3F5.9000602@bfs.de> <20110730085131.GE5575@shale.localdomain>
+In-Reply-To: <20110730085131.GE5575@shale.localdomain>
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+Message-Id: <56274C82-8FCA-45F9-B3DC-9863889694AA@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Cc: walter harms <wharms@bfs.de>, Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
+Subject: Re: [patch] w1: off by one in w1_f29_remove_slave()
+Date: Wed, 17 Aug 2011 14:42:56 -0400
+To: Dan Carpenter <error27@gmail.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Tejun Heo wrote:
->
-> On Tue, Aug 16, 2011 at 09:08:58PM +0200, Oleg Nesterov wrote:
-> > daemonize() is only needed when a user-space task does kernel_thread().
-> >
-> > eeh_event_handler() thread is created by the worker kthread, and thus
-> > it doesn't need the soon-to-be-deprecated daemonize().
-> >
-> > Note: looks like eeh_event_wq can be static and it can do all work
-> > itself without kernel_thread().
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->
-> Acked-by: Tejun Heo <tj@kernel.org>
 
-Thanks.
+On Jul 30, 2011, at 4:51, Dan Carpenter wrote:
 
-> How do you wanna route these?  Through -mm?
+> On Sat, Jul 30, 2011 at 10:42:29AM +0200, walter harms wrote:
+>> Is there any reason to release the data "backwards" ?
+>> The default way is to go upwards. that looks more readable.
+> 
+> I considered doing it that way.  It would work.  I throught maybe
+> they were going to add something where it needed to be unwound LIFO
+> order.
+> 
+> I'll wait for Jean-Françoisto say which way is prefered.
+> 
+Sorry for the delay. Sorry also for the trouble this dummy copy/paste mistake is causing. It's a bit embarrassing even if the intentions are good ;) This second mistake explains why I wasn't getting ill effects from the remove.
 
-Oh, I don't know. -mm, or probably maintainers can pick them.
-They don't depend on each other.
+The sysfs files were removed backwards as a programmer reflex. In this case it is not really necessary since there are no real dependencies between the function implementations... but there may be in the future. This is why it's a safe habit to do it this way.
 
+I would keep the removal in reverse order,  so I will ack the the v2 patch
 
-
-Btw. Perhaps we should kill CLONE_KERNEL? And note that the only
-user is eeh_thread_launcher().
-
-The problem is, CLONE_KERNEL looks as "use me if you want to create
-a kernel thread". But CLONE_SIGHAND means the kernel thread should
-not play with signals, and this is not obvious.
-
-Oleg.
+Cheers!
+/jfd
+> regards,
+> dan carpenter
 
