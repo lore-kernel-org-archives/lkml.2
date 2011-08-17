@@ -1,135 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab1HQSA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 14:00:56 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44772 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751443Ab1HQSAy (ORCPT
+	id S1751500Ab1HQRoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:44:19 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33715 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1HQRoR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 14:00:54 -0400
-X-Sasl-enc: 90+HmDhM6vJPUNlXdY4weGMLjhewZn6HnD6JaRC3xxci 1313604047
-Date: Wed, 17 Aug 2011 11:00:27 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org
-Cc: lwn@lwn.net
-Subject: Linux 3.0.3
-Message-ID: <20110817180027.GA16619@kroah.com>
+	Wed, 17 Aug 2011 13:44:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201108171914.52257.oliver@neukum.org>
+References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
+	<201108171914.52257.oliver@neukum.org>
+Date: Wed, 17 Aug 2011 19:44:16 +0200
+Message-ID: <CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
+Subject: Re: [PATCH] Increase usbfs bulk buffer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm announcing the release of the 3.0.3 kernel.
+Hi,
 
-All users of the 3.0 kernel series must upgrade.
+On Wed, Aug 17, 2011 at 7:14 PM, Oliver Neukum <oliver@neukum.org> wrote:
+> Am Mittwoch, 17. August 2011, 19:07:01 schrieb Markus Rechberger:
+>> Hi,
+>>
+>> this patch increases the maximum buffersize for bulk transfers, our
+>> devices support at least up to 46k bytes for bulk transfers.
+>> This patch allows us to lower the iterations between kernel and
+>> userspace and lower the system pressure.
+>
+> You must not do this. It increases memory pressure too much
+> by forcing very high order allocations. If your problem is really
+> the number of syscalls, you must implement scatter/gather.
+>
 
-The updated 3.0.y git tree can be found at:
-        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-3.0.y.git
-and can be browsed at the normal kernel.org git web browser:
-        http://git.kernel.org/?p=linux/kernel/git/stable/linux-3.0.y.git;a=summary
+I understand that USBFS is not 100% optimized, although we are already
+using 3-4 times that much buffer with isochronous and it was working
+fine for years so far as long as the system doesn't run out of memory
+.. but even kerneldrivers would have issues with it in such a
+situation.
 
-thanks,
+An example analog video frames 170 mbit per second
+~3000 bytes * 64 microframes = 192000
 
-greg k-h
+The bulk buffers we are asking for are for encoded videostreams, which
+is much smaller than analog TV frames.
+So for bulk we are just asking for around 1/4 of that buffersize.
+Our application works fine with USBFS in Isochronous mode, however
+some embedded systems don't support Isochronous so we are switching to
+Bulk. I submitted the Isochronous patch for accepting bigger buffers
+around 1-2 years ago the allocations and iterations went down from 600
+to around 125 per second. For the enduser exerience since that time
+it's possible to start heavy IO/memory applications without hurting
+the video process.
 
-------------
+BR,
+Markus
 
- Documentation/virtual/lguest/lguest.c      |    3 +++
- Makefile                                   |    2 +-
- drivers/gpu/drm/radeon/atombios_dp.c       |   12 ++++++++++++
- drivers/gpu/drm/radeon/radeon_connectors.c |   16 +++++++++-------
- drivers/gpu/drm/radeon/radeon_encoders.c   |    3 +++
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
- drivers/hwmon/ibmaem.c                     |   15 ++++++++++-----
- drivers/net/wireless/ath/ath5k/base.c      |   23 ++++++++++++++---------
- drivers/staging/rtl8192u/r819xU_firmware.c |    9 +++------
- drivers/usb/class/usbtmc.c                 |    2 +-
- drivers/usb/core/config.c                  |   11 ++++++-----
- drivers/usb/host/pci-quirks.c              |    2 +-
- drivers/usb/host/xhci.c                    |   19 ++++++++++++++-----
- drivers/usb/musb/musb_gadget.c             |    5 +++++
- drivers/usb/serial/ftdi_sio.c              |    2 +-
- drivers/usb/serial/option.c                |   12 ++++++++++++
- drivers/usb/serial/qcserial.c              |    1 +
- drivers/usb/storage/unusual_devs.h         |   10 ++++++++++
- mm/vmalloc.c                               |    7 ++++---
- net/atm/br2684.c                           |    2 --
- sound/soc/samsung/jive_wm8750.c            |    2 +-
- sound/soc/tegra/tegra_pcm.c                |    9 +++++++--
- sound/soc/tegra/tegra_wm8903.c             |   15 +++++++++++----
- sound/usb/caiaq/audio.c                    |    6 ++++--
- tools/perf/util/config.c                   |    7 -------
- 25 files changed, 134 insertions(+), 62 deletions(-)
-Alex Deucher (3):
-      drm/radeon/kms: don't enable connectors that are off in the hotplug handler
-      drm/radeon/kms: fix regression is handling >2 heads on cedar/caicos
-      drm/radeon/kms: don't try to be smart in the hpd handler
-
-Andrew Bird (4):
-      USB: option driver: add PID for Vodafone-Huawei K3770
-      USB: option driver: add PID for Vodafone-Huawei K3771
-      USB: option driver: add PID for Vodafone-Huawei K4510
-      USB: option driver: add PID for Vodafone-Huawei K4511
-
-Bob Copeland (1):
-      ath5k: fix error handling in ath5k_beacon_send
-
-Chas Williams (1):
-      atm: br2864: sent packets truncated in VC routed mode
-
-Clemens Ladisch (1):
-      mm: fix wrong vmap address calculations with odd NR_CPUS values
-
-Daniel Mack (1):
-      ALSA: snd-usb-caiaq: Correct offset fields of outbound iso_frame_desc
-
-Greg Kroah-Hartman (1):
-      Linux 3.0.3
-
-Ionut Nicu (1):
-      USB: ftdi_sio: fix minor typo in get_ftdi_divisor
-
-JiSheng Zhang (1):
-      USB: xhci: fix OS want to own HC
-
-John Stultz (1):
-      usb: musb: fix oops on musb_gadget_pullup
-
-Jonathan Nieder (1):
-      perf tools: do not look at ./config for configuration
-
-Julia Lawall (1):
-      hwmon: (ibmaem) add missing kfree
-
-Mark Brown (1):
-      ASoC: Fix binding of WM8750 on Jive
-
-Maxim Nikulin (1):
-      USB: assign instead of equal in usbtmc.c
-
-Nick Bowler (1):
-      USB: usb-storage: unusual_devs entry for ARM V2M motherboard.
-
-Rusty Russell (1):
-      lguest: allow booting guest with CONFIG_RELOCATABLE=y
-
-Sarah Sharp (1):
-      xhci: Don't submit commands or URBs to halted hosts.
-
-Sebastian Andrzej Siewior (1):
-      usb/config: use proper endian access for wMaxPacketSize
-
-Stefan Lippers-Hollmann (1):
-      staging: rtl8192u: declare MODULE_FIRMWARE
-
-Stephen Warren (2):
-      ASoC: Tegra: tegra_pcm_deallocate_dma_buffer: Don't OOPS
-      ASoC: Tegra: wm8903 machine driver: Allow re-insertion of module
-
-Vijay Chavan (1):
-      USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
-
+>        Regards
+>                Ôliver
+>
