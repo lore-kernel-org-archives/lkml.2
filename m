@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1HQBVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 21:21:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58760 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab1HQBVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 21:21:21 -0400
-Date: Wed, 17 Aug 2011 11:21:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
-Subject: Re: linux-next: boot test failure (net tree)
-Message-Id: <20110817112110.ec81ef078204bf4a02049a66@canb.auug.org.au>
-In-Reply-To: <20110816.175657.1688139393736610845.davem@davemloft.net>
-References: <20110817100146.3b557cf815a5a2ae09bc09a7@canb.auug.org.au>
-	<20110816.171525.639251389938336183.davem@davemloft.net>
-	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
-	<20110816.175657.1688139393736610845.davem@davemloft.net>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs"
+	id S1753160Ab1HQBXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 21:23:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57800 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862Ab1HQBXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 21:23:17 -0400
+Message-ID: <4E4B181E.8000508@cn.fujitsu.com>
+Date: Wed, 17 Aug 2011 09:23:42 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Dan Merillat <dan.merillat@gmail.com>
+CC: Chris Mason <chris.mason@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        BTRFS Mailing list <linux-btrfs@vger.kernel.org>
+Subject: Re: processes stuck in llseek
+References: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>	<1313499055-sup-2296@shiny> <CAPL5yKc7wztLatbk-4sVDnTLeiSeeXaXZd45r_rxDhdtR3mtPg@mail.gmail.com>
+In-Reply-To: <CAPL5yKc7wztLatbk-4sVDnTLeiSeeXaXZd45r_rxDhdtR3mtPg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-17 09:22:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-17 09:22:05,
+	Serialize complete at 2011-08-17 09:22:05
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dan Merillat wrote:
+> On Tue, Aug 16, 2011 at 8:51 AM, Chris Mason <chris.mason@oracle.com> wrote:
+>> Excerpts from Dan Merillat's message of 2011-08-15 23:59:50 -0400:
+> 
+>> Dan Carpenter sent a patch for this, I'll get it queued up for rc3.
+> 
+> Can you send it?  I'd like to test it to see if it fixes my system.
 
-Hi Dave,
+Here it is.
 
-On Tue, 16 Aug 2011 17:56:57 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 17 Aug 2011 10:50:02 +1000
->=20
-> > Which is a bit of a pain for automated systems.  Ours does (essentially=
-):
-> >=20
-> > yes '' | make oldconfig
-> >=20
-> > We really don't want to select every new config item that comes along.
->=20
-> If you're indeed piping "yes" output to "make oldconfig" on an
-> existing config, it would select the new guards for you.
+http://marc.info/?l=linux-btrfs&m=131176036219732&w=2
 
-Notice the '' that just is the same as typing return to every prompt.  In
-the case of these new gueards, that means 'n'.  This will be the same
-with "make silentoldconfig".
-
-> This happens on other occaisions, I see new group guards all
-> the time when I resync my net and net-next trees with Linus.
-
-"All the time"?  really?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOSxeGAAoJEDMEi1NhKgbs4yAIAIVTC3VMasJyGhXNJvpBsCV8
-ux9PSxAs+tBgMrlzvylUGOt0xZKm8pLj4qpjB29MhZlEeircR1xZt6Upb/MVlov/
-M1rzZLCyj2f8Zenrzeq+aNYYHusUBLXbQkqL/+i6rGhq7DaRLvpht3pTiXpyebiY
-cUjb1nH4Px99gUhq+ySFVcO7P7emByzM6W7gWcQ4SBHonqb4P14s2zrVBSi+QGaX
-lwPAMRA8luJZMXRuoI0yR6szZKRILik4sgiVI8AbV/lJoPFe39DLjnvUlK+kPnEi
-M29Zz8PCTAhlUR3NRQHHAJV5bS0TTP2+F9jdyi8uFEHfZ43GPQvTKuJndE41SNs=
-=oYQ6
------END PGP SIGNATURE-----
-
---Signature=_Wed__17_Aug_2011_11_21_10_+1000_5_nkI05MstdTgYNs--
+--
+Li Zefan
