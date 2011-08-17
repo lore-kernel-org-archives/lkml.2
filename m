@@ -1,398 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754409Ab1HQQTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:19:19 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39606 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375Ab1HQQTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:19:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=OC7uetWJXDdjSoasJiF/VbQgS/SvEl4DuoZHR5IhTXoU+NzkqO51+f8Brn5bw+qSU
-	y2nlLk1rAe41jodg0PNLA==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v9 11/13] writeback: make background writeback cgroup aware
-Date: Wed, 17 Aug 2011 09:15:03 -0700
-Message-Id: <1313597705-6093-12-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+	id S1753369Ab1HQLsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 07:48:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33872 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab1HQLsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 07:48:02 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <tom.leiming@gmail.com>, <toddpoynor@google.com>
+Subject: [PATCH 2/5 v5] arm: omap: usb: ehci and ohci hwmod structures for omap3
+Date: Wed, 17 Aug 2011 17:13:56 +0530
+Message-ID: <1313581439-4279-3-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1313581439-4279-2-git-send-email-keshava_mgowda@ti.com>
+References: <1313581439-4279-1-git-send-email-keshava_mgowda@ti.com>
+ <1313581439-4279-2-git-send-email-keshava_mgowda@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system is under background dirty memory threshold but some
-cgroups are over their background dirty memory thresholds, then only
-writeback inodes associated with the over-limit cgroups.
+Following 4 hwmod strcuture are added:
+UHH hwmod of usbhs with uhh base address and functional clock,
+EHCI hwmod with irq and base address,
+OHCI hwmod with irq and base address,
+TLL hwmod of usbhs with the TLL base address and irq.
 
-In addition to checking if the system dirty memory usage is over the
-system background threshold, over_bground_thresh() now checks if any
-cgroups are over their respective background dirty memory thresholds.
-
-If over-limit cgroups are found, then the new
-wb_writeback_work.for_cgroup field is set to distinguish between system
-and memcg overages.  The new wb_writeback_work.shared_inodes field is
-also set.  Inodes written by multiple cgroup are marked owned by
-I_MEMCG_SHARED rather than a particular cgroup.  Such shared inodes
-cannot easily be attributed to a cgroup, so per-cgroup writeback
-(futures version of wakeup_flusher_threads and balance_dirty_pages)
-performs suboptimally in the presence of shared inodes.  Therefore,
-write shared inodes when performing cgroup background writeback.
-
-If performing cgroup writeback, move_expired_inodes() skips inodes that
-do not contribute dirty pages to the cgroup being written back.
-
-After writing some pages, wb_writeback() will call
-mem_cgroup_writeback_done() to update the set of over-bg-limits memcg.
-
-This change also makes wakeup_flusher_threads() memcg aware so that
-per-cgroup try_to_free_pages() is able to operate more efficiently
-without having to write pages of foreign containers.  This change adds a
-mem_cgroup parameter to wakeup_flusher_threads() to allow callers,
-especially try_to_free_pages() and foreground writeback from
-balance_dirty_pages(), to specify a particular cgroup to write inodes
-from.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 ---
-Changelog since v8:
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  279 ++++++++++++++++++++++++++++
+ 1 files changed, 279 insertions(+), 0 deletions(-)
 
-- Added optional memcg parameter to __bdi_start_writeback(),
-  bdi_start_writeback(), wakeup_flusher_threads(), writeback_inodes_wb().
-
-- move_expired_inodes() now uses pass in struct wb_writeback_work instead of
-  struct writeback_control.
-
-- Added comments to over_bground_thresh().
-
- fs/buffer.c               |    2 +-
- fs/fs-writeback.c         |   96 +++++++++++++++++++++++++++++++++-----------
- fs/sync.c                 |    2 +-
- include/linux/writeback.h |    6 ++-
- mm/backing-dev.c          |    3 +-
- mm/page-writeback.c       |    3 +-
- mm/vmscan.c               |    3 +-
- 7 files changed, 84 insertions(+), 31 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index dd0220b..da1fb23 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -293,7 +293,7 @@ static void free_more_memory(void)
- 	struct zone *zone;
- 	int nid;
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 59fdb9f..d7316b3 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -84,6 +84,10 @@ static struct omap_hwmod omap3xxx_mcbsp4_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp5_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp2_sidetone_hwmod;
+ static struct omap_hwmod omap3xxx_mcbsp3_sidetone_hwmod;
++static struct omap_hwmod omap34xx_usb_host_hs_hwmod;
++static struct omap_hwmod omap34xx_usbhs_ohci_hwmod;
++static struct omap_hwmod omap34xx_usbhs_ehci_hwmod;
++static struct omap_hwmod omap34xx_usb_tll_hs_hwmod;
  
--	wakeup_flusher_threads(1024);
-+	wakeup_flusher_threads(1024, NULL);
- 	yield();
- 
- 	for_each_online_node(nid) {
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index e91fb82..ba55336 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -38,10 +38,14 @@ struct wb_writeback_work {
- 	struct super_block *sb;
- 	unsigned long *older_than_this;
- 	enum writeback_sync_modes sync_mode;
-+	unsigned short memcg_id;	/* If non-zero, then writeback specified
-+					 * cgroup. */
- 	unsigned int tagged_writepages:1;
- 	unsigned int for_kupdate:1;
- 	unsigned int range_cyclic:1;
- 	unsigned int for_background:1;
-+	unsigned int for_cgroup:1;	/* cgroup writeback */
-+	unsigned int shared_inodes:1;	/* write inodes spanning cgroups */
- 
- 	struct list_head list;		/* pending work list */
- 	struct completion *done;	/* set if the caller waits */
-@@ -114,9 +118,12 @@ static void bdi_queue_work(struct backing_dev_info *bdi,
- 	spin_unlock_bh(&bdi->wb_lock);
- }
+ /* L3 -> L4_CORE interface */
+ static struct omap_hwmod_ocp_if omap3xxx_l3_main__l4_core = {
+@@ -3196,6 +3200,276 @@ static struct omap_hwmod omap3xxx_mmc3_hwmod = {
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+ };
  
 +/*
-+ * @memcg is optional.  If set, then limit writeback to the specified cgroup.
++ * 'usb_host_hs' class
++ * high-speed multi-port usb host controller
 + */
- static void
- __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
--		      bool range_cyclic)
-+		      bool range_cyclic, struct mem_cgroup *memcg)
- {
- 	struct wb_writeback_work *work;
- 
-@@ -136,6 +143,8 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
- 	work->sync_mode	= WB_SYNC_NONE;
- 	work->nr_pages	= nr_pages;
- 	work->range_cyclic = range_cyclic;
-+	work->memcg_id = memcg ? css_id(mem_cgroup_css(memcg)) : 0;
-+	work->for_cgroup = memcg != NULL;
- 
- 	bdi_queue_work(bdi, work);
- }
-@@ -153,7 +162,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
-  */
- void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages)
- {
--	__bdi_start_writeback(bdi, nr_pages, true);
-+	__bdi_start_writeback(bdi, nr_pages, true, NULL);
- }
- 
- /**
-@@ -257,15 +266,20 @@ static int move_expired_inodes(struct list_head *delaying_queue,
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
- 	struct super_block *sb = NULL;
--	struct inode *inode;
-+	struct inode *inode, *tmp_inode;
- 	int do_sb_sort = 0;
- 	int moved = 0;
- 
--	while (!list_empty(delaying_queue)) {
--		inode = wb_inode(delaying_queue->prev);
-+	list_for_each_entry_safe_reverse(inode, tmp_inode, delaying_queue,
-+					 i_wb_list) {
- 		if (work->older_than_this &&
- 		    inode_dirtied_after(inode, *work->older_than_this))
- 			break;
-+		if (work->for_cgroup &&
-+		    !should_writeback_mem_cgroup_inode(inode,
-+						       work->memcg_id,
-+						       work->shared_inodes))
-+			continue;
- 		if (sb && sb != inode->i_sb)
- 			do_sb_sort = 1;
- 		sb = inode->i_sb;
-@@ -643,31 +657,63 @@ static long __writeback_inodes_wb(struct bdi_writeback *wb,
- 	return wrote;
- }
- 
--long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages)
++static struct omap_hwmod_ocp_if omap34xx_usb_host_hs__l3_main_2 = {
++	.master		= &omap34xx_usb_host_hs_hwmod,
++	.slave		= &omap3xxx_l3_main_hwmod,
++	.clk		= "core_l3_ick",
++	.user		= OCP_USER_MPU,
++};
++
++static struct omap_hwmod_class_sysconfig omap34xx_usb_host_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap34xx_usb_host_hs_hwmod_class = {
++	.name = "usbhs_uhh",
++	.sysc = &omap34xx_usb_host_hs_sysc,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_masters[] = {
++	&omap34xx_usb_host_hs__l3_main_2,
++};
++
++static struct omap_hwmod_addr_space omap34xx_usb_host_hs_addrs[] = {
++	{
++		.name		= "uhh",
++		.pa_start	= 0x48064000,
++		.pa_end		= 0x480643ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{} /* Terminating Entry */
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_host_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usb_host_hs_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usb_host_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_f128m_cfg__usb_host_hs = {
++	.clk		= "usbhost_120m_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_f48m_cfg__usb_host_hs = {
++	.clk		= "usbhost_48m_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_host_hs_slaves[] = {
++	&omap34xx_l4_cfg__usb_host_hs,
++	&omap34xx_f128m_cfg__usb_host_hs,
++	&omap34xx_f48m_cfg__usb_host_hs,
++};
++
++static struct omap_hwmod omap34xx_usb_host_hs_hwmod = {
++	.name		= "usbhs_uhh",
++	.class		= &omap34xx_usb_host_hs_hwmod_class,
++	.main_clk	= "usbhost_ick",
++	.prcm = {
++		.omap2 = {
++			.module_offs = OMAP3430ES2_USBHOST_MOD,
++			.prcm_reg_id = 1,
++			.module_bit = 0,
++			.idlest_reg_id = 1,
++			.idlest_idle_bit = 1,
++			.idlest_stdby_bit = 0,
++		},
++	},
++	.slaves		= omap34xx_usb_host_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_slaves),
++	.masters	= omap34xx_usb_host_hs_masters,
++	.masters_cnt	= ARRAY_SIZE(omap34xx_usb_host_hs_masters),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
++/* 'usbhs_ohci' class  */
++static struct omap_hwmod_ocp_if omap34xx_usbhs_ohci__l3_main_2 = {
++	.master		= &omap34xx_usbhs_ohci_hwmod,
++	.slave		= &omap3xxx_l3_main_hwmod,
++	.clk		= "core_l3_ick",
++	.user		= OCP_USER_MPU,
++};
++
++static struct omap_hwmod_class omap34xx_usbhs_ohci_hwmod_class = {
++	.name = "usbhs_ohci",
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usbhs_ohci_masters[] = {
++	&omap34xx_usbhs_ohci__l3_main_2,
++};
++
++static struct omap_hwmod_irq_info omap34xx_usbhs_ohci_irqs[] = {
++	{ .name = "ohci-irq", .irq = 76 },
++	{ .irq = -1 } /* Terminating IRQ */
++};
++
++static struct omap_hwmod_addr_space omap34xx_usbhs_ohci_addrs[] = {
++	{
++		.name		= "ohci",
++		.pa_start	= 0x48064400,
++		.pa_end		= 0x480647FF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{} /* Terminating Entry */
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usbhs_ohci = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usbhs_ohci_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usbhs_ohci_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usbhs_ohci_slaves[] = {
++	&omap34xx_l4_cfg__usbhs_ohci,
++};
++
++static struct omap_hwmod omap34xx_usbhs_ohci_hwmod = {
++	.name		= "usbhs_ohci",
++	.class		= &omap34xx_usbhs_ohci_hwmod_class,
++	.mpu_irqs	= omap34xx_usbhs_ohci_irqs,
++	.slaves		= omap34xx_usbhs_ohci_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usbhs_ohci_slaves),
++	.masters	= omap34xx_usbhs_ohci_masters,
++	.masters_cnt	= ARRAY_SIZE(omap34xx_usbhs_ohci_masters),
++	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
++/* 'usbhs_ehci' class  */
++static struct omap_hwmod_ocp_if omap34xx_usbhs_ehci__l3_main_2 = {
++	.master		= &omap34xx_usbhs_ehci_hwmod,
++	.slave		= &omap3xxx_l3_main_hwmod,
++	.clk		= "core_l3_ick",
++	.user		= OCP_USER_MPU,
++};
++
++static struct omap_hwmod_class omap34xx_usbhs_ehci_hwmod_class = {
++	.name = "usbhs_ehci",
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usbhs_ehci_masters[] = {
++	&omap34xx_usbhs_ehci__l3_main_2,
++};
++
++static struct omap_hwmod_irq_info omap34xx_usbhs_ehci_irqs[] = {
++	{ .name = "ehci-irq", .irq = 77 },
++	{ .irq = -1 } /* Terminating IRQ */
++};
++
++static struct omap_hwmod_addr_space omap34xx_usbhs_ehci_addrs[] = {
++	{
++		.name		= "ehci",
++		.pa_start	= 0x48064800,
++		.pa_end		= 0x48064CFF,
++		.flags		= ADDR_MAP_ON_INIT
++	},
++	{} /* Terminating Entry */
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usbhs_ehci = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usbhs_ehci_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usbhs_ehci_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usbhs_ehci_slaves[] = {
++	&omap34xx_l4_cfg__usbhs_ehci,
++};
++
++static struct omap_hwmod omap34xx_usbhs_ehci_hwmod = {
++	.name		= "usbhs_ehci",
++	.class		= &omap34xx_usbhs_ehci_hwmod_class,
++	.mpu_irqs	= omap34xx_usbhs_ehci_irqs,
++	.slaves		= omap34xx_usbhs_ehci_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usbhs_ehci_slaves),
++	.masters	= omap34xx_usbhs_ehci_masters,
++	.masters_cnt	= ARRAY_SIZE(omap34xx_usbhs_ehci_masters),
++	.flags		= HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
 +/*
-+ * @memcg is optional.  If set, then limit writeback to the specified cgroup.
-+ * If @shared_inodes is set then writeback inodes shared by several memcg.
++ * 'usb_tll_hs' class
++ * usb_tll_hs module is the adapter on the usb_host_hs ports
 + */
-+long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
-+			 struct mem_cgroup *memcg, bool shared_inodes)
- {
- 	struct wb_writeback_work work = {
- 		.nr_pages	= nr_pages,
- 		.sync_mode	= WB_SYNC_NONE,
-+		.memcg_id	= memcg ? css_id(mem_cgroup_css(memcg)) : 0,
-+		.for_cgroup	= (memcg != NULL) || shared_inodes,
-+		.shared_inodes	= shared_inodes,
- 		.range_cyclic	= 1,
- 	};
- 
- 	spin_lock(&wb->list_lock);
- 	if (list_empty(&wb->b_io))
--		queue_io(wb, NULL);
-+		queue_io(wb, &work);
- 	__writeback_inodes_wb(wb, &work);
- 	spin_unlock(&wb->list_lock);
- 
- 	return nr_pages - work.nr_pages;
- }
- 
--static inline bool over_bground_thresh(void)
-+static inline bool over_bground_thresh(struct wb_writeback_work *work)
- {
- 	unsigned long background_thresh, dirty_thresh;
- 
- 	global_dirty_limits(&background_thresh, &dirty_thresh);
- 
--	return (global_page_state(NR_FILE_DIRTY) +
--		global_page_state(NR_UNSTABLE_NFS) > background_thresh);
-+	if (global_page_state(NR_FILE_DIRTY) +
-+	    global_page_state(NR_UNSTABLE_NFS) > background_thresh) {
-+		work->for_cgroup = 0;
-+		return true;
-+	}
++static struct omap_hwmod_class_sysconfig omap34xx_usb_tll_hs_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
 +
-+	/*
-+	 * System dirty memory is below system background limit.  Check if any
-+	 * memcg are over memcg background limit.
-+	 */
-+	if (mem_cgroups_over_bground_dirty_thresh()) {
-+		work->for_cgroup = 1;
++static struct omap_hwmod_class omap34xx_usb_tll_hs_hwmod_class = {
++	.name = "usbhs_tll",
++	.sysc = &omap34xx_usb_tll_hs_sysc,
++};
 +
-+		/*
-+		 * Set shared_inodes so that background flusher writes shared
-+		 * inodes in addition to inodes in over-limit memcg.  Such
-+		 * shared inodes should be rarer than inodes written by a single
-+		 * memcg.  Shared inodes limit the ability to map from memcg to
-+		 * inode in wakeup_flusher_threads() and writeback_inodes_wb().
-+		 * So the quicker such shared inodes are written, the better.
-+		 */
-+		work->shared_inodes = 1;
-+		return true;
-+	}
++static struct omap_hwmod_irq_info omap34xx_usb_tll_hs_irqs[] = {
++	{ .name = "tll-irq", .irq = 78 },
++	{ .irq = -1 } /* Terminating IRQ */
++};
 +
-+	return false;
- }
- 
- /*
-@@ -729,7 +775,7 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		 * For background writeout, stop when we are below the
- 		 * background dirty threshold
- 		 */
--		if (work->for_background && !over_bground_thresh())
-+		if (work->for_background && !over_bground_thresh(work))
- 			break;
- 
- 		if (work->for_kupdate) {
-@@ -749,6 +795,9 @@ static long wb_writeback(struct bdi_writeback *wb,
- 
- 		wb_update_bandwidth(wb, wb_start);
- 
-+		if (progress)
-+			mem_cgroup_writeback_done();
++static struct omap_hwmod_addr_space omap34xx_usb_tll_hs_addrs[] = {
++	{
++		.name		= "tll",
++		.pa_start	= 0x48062000,
++		.pa_end		= 0x48062fff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{} /* Terminating Entry */
++};
 +
- 		/*
- 		 * Did we write something? Try for more
- 		 *
-@@ -813,17 +862,15 @@ static unsigned long get_nr_dirty_pages(void)
++static struct omap_hwmod_ocp_if omap34xx_f_cfg__usb_tll_hs = {
++	.clk		= "usbtll_fck",
++	.user		= OCP_USER_MPU,
++	.flags		= OCPIF_SWSUP_IDLE,
++};
++
++static struct omap_hwmod_ocp_if omap34xx_l4_cfg__usb_tll_hs = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_usb_tll_hs_hwmod,
++	.clk		= "l4_ick",
++	.addr		= omap34xx_usb_tll_hs_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if *omap34xx_usb_tll_hs_slaves[] = {
++	&omap34xx_l4_cfg__usb_tll_hs,
++	&omap34xx_f_cfg__usb_tll_hs,
++};
++
++static struct omap_hwmod omap34xx_usb_tll_hs_hwmod = {
++	.name		= "usbhs_tll",
++	.class		= &omap34xx_usb_tll_hs_hwmod_class,
++	.mpu_irqs	= omap34xx_usb_tll_hs_irqs,
++	.main_clk	= "usbtll_ick",
++	.prcm = {
++		.omap2 = {
++			.module_offs = CORE_MOD,
++			.prcm_reg_id = 3,
++			.module_bit = 2,
++			.idlest_reg_id = 3,
++			.idlest_idle_bit = 2,
++		},
++	},
++	.slaves		= omap34xx_usb_tll_hs_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap34xx_usb_tll_hs_slaves),
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++};
++
+ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	&omap3xxx_l3_main_hwmod,
+ 	&omap3xxx_l4_core_hwmod,
+@@ -3278,6 +3552,11 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	/* usbotg for am35x */
+ 	&am35xx_usbhsotg_hwmod,
  
- static long wb_check_background_flush(struct bdi_writeback *wb)
- {
--	if (over_bground_thresh()) {
--
--		struct wb_writeback_work work = {
--			.nr_pages	= LONG_MAX,
--			.sync_mode	= WB_SYNC_NONE,
--			.for_background	= 1,
--			.range_cyclic	= 1,
--		};
-+	struct wb_writeback_work work = {
-+		.nr_pages	= LONG_MAX,
-+		.sync_mode	= WB_SYNC_NONE,
-+		.for_background	= 1,
-+		.range_cyclic	= 1,
-+	};
- 
-+	if (over_bground_thresh(&work))
- 		return wb_writeback(wb, &work);
--	}
- 
- 	return 0;
- }
-@@ -968,10 +1015,11 @@ int bdi_writeback_thread(void *data)
- 
- 
- /*
-- * Start writeback of `nr_pages' pages.  If `nr_pages' is zero, write back
-- * the whole world.
-+ * Start writeback of `nr_pages' pages.  If `nr_pages' is zero, write back the
-+ * whole world.  If 'memcg' is non-NULL, then limit attempt to only write pages
-+ * from the specified cgroup.
-  */
--void wakeup_flusher_threads(long nr_pages)
-+void wakeup_flusher_threads(long nr_pages, struct mem_cgroup *memcg)
- {
- 	struct backing_dev_info *bdi;
- 
-@@ -984,7 +1032,7 @@ void wakeup_flusher_threads(long nr_pages)
- 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
- 		if (!bdi_has_dirty_io(bdi))
- 			continue;
--		__bdi_start_writeback(bdi, nr_pages, false);
-+		__bdi_start_writeback(bdi, nr_pages, false, memcg);
- 	}
- 	rcu_read_unlock();
- }
-diff --git a/fs/sync.c b/fs/sync.c
-index c98a747..7c1ba55 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -98,7 +98,7 @@ static void sync_filesystems(int wait)
-  */
- SYSCALL_DEFINE0(sync)
- {
--	wakeup_flusher_threads(0);
-+	wakeup_flusher_threads(0, NULL);
- 	sync_filesystems(0);
- 	sync_filesystems(1);
- 	if (unlikely(laptop_mode))
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index d12d070..e6790e8 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -40,6 +40,7 @@
- #define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
- 
- struct backing_dev_info;
-+struct mem_cgroup;
- 
- /*
-  * fs/fs-writeback.c
-@@ -85,9 +86,10 @@ void writeback_inodes_sb_nr(struct super_block *, unsigned long nr);
- int writeback_inodes_sb_if_idle(struct super_block *);
- int writeback_inodes_sb_nr_if_idle(struct super_block *, unsigned long nr);
- void sync_inodes_sb(struct super_block *);
--long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages);
-+long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
-+			 struct mem_cgroup *memcg, bool shared_inodes);
- long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
--void wakeup_flusher_threads(long nr_pages);
-+void wakeup_flusher_threads(long nr_pages, struct mem_cgroup *memcg);
- 
- /* writeback.h requires fs.h; it, too, is not included from here. */
- static inline void wait_on_inode(struct inode *inode)
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index d6edf8d..60d101d 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -456,7 +456,8 @@ static int bdi_forker_thread(void *ptr)
- 				 * the bdi from the thread. Hopefully 1024 is
- 				 * large enough for efficient IO.
- 				 */
--				writeback_inodes_wb(&bdi->wb, 1024);
-+				writeback_inodes_wb(&bdi->wb, 1024, NULL,
-+						    false);
- 			} else {
- 				/*
- 				 * The spinlock makes sure we do not lose
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 12b3900..64de98c 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -736,7 +736,8 @@ static void balance_dirty_pages(struct address_space *mapping,
- 		trace_balance_dirty_start(bdi);
- 		if (bdi_nr_reclaimable > task_bdi_thresh) {
- 			pages_written += writeback_inodes_wb(&bdi->wb,
--							     write_chunk);
-+							     write_chunk,
-+							     NULL, false);
- 			trace_balance_dirty_written(bdi, pages_written);
- 			if (pages_written >= write_chunk)
- 				break;		/* We've done our duty */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3153729..fb0ae99 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2223,7 +2223,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		 */
- 		writeback_threshold = sc->nr_to_reclaim + sc->nr_to_reclaim / 2;
- 		if (total_scanned > writeback_threshold) {
--			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
-+			wakeup_flusher_threads(laptop_mode ? 0 : total_scanned,
-+					       sc->mem_cgroup);
- 			sc->may_writepage = 1;
- 		}
++	&omap34xx_usb_host_hs_hwmod,
++	&omap34xx_usbhs_ohci_hwmod,
++	&omap34xx_usbhs_ehci_hwmod,
++	&omap34xx_usb_tll_hs_hwmod,
++
+ 	NULL,
+ };
  
 -- 
-1.7.3.1
+1.6.0.4
 
