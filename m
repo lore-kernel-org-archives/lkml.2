@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1HQXUq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:20:46 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:49090 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab1HQXUo (ORCPT
+	id S1753893Ab1HQXXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 19:23:55 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49562 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1HQXXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:20:44 -0400
-Message-ID: <4E4C4CC2.2070702@lwfinger.net>
-Date: Wed, 17 Aug 2011 18:20:34 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>,
-        Pavel Ivanov <paivanof@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ath9k: make driver usable standalone
-References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com> <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com> <CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>            <CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com> <24649.1313621503@turing-police.cc.vt.edu>
-In-Reply-To: <24649.1313621503@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 17 Aug 2011 19:23:52 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Roland McGrath <mcgrathr@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mmap: add sysctl for controlling ~VM_MAYEXEC taint
+In-Reply-To: Your message of "Tue, 16 Aug 2011 10:07:46 PDT."
+             <CAB=4xhqu1FsJnNbHNeokyROvEFpRJYKhcHRLLw5QTVKOkbkWfQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1313441856-1419-1-git-send-email-wad@chromium.org> <20110816093303.GA4484@csn.ul.ie>
+            <CAB=4xhqu1FsJnNbHNeokyROvEFpRJYKhcHRLLw5QTVKOkbkWfQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1313623354_2796P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 17 Aug 2011 19:22:35 -0400
+Message-ID: <26032.1313623355@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4E4C4D3E.0089,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2011 05:51 PM, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 17 Aug 2011 18:25:49 +0200, Gábor Stefanik said:
->
->> Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
->> configuration tool.
->
-> Somebody better tell Fedora Rawhide - as of the version released on July 27,
-> their 'initscripts' RPM was still using iwconfig in /etc/sysconfig/network-scripts/ifup-wireless
->
-> So don't be quite so fast to be declaring WIRELESS_EXT dead just yet.
+--==_Exmh_1313623354_2796P
+Content-Type: text/plain; charset=us-ascii
 
-Well, any distro is free to include any package they want. They can even devote 
-resources to maintaining it after it is abandoned. Given the feelings among 
-developers about the WEXT methods, I doubt that will happen.
+On Tue, 16 Aug 2011 10:07:46 PDT, Roland McGrath said:
 
-The distro is also including one of the drivers that need WEXT, which is what 
-the OP refused to do. If and when all such drivers are converted or removed, the 
-distro is still free to patch in the WEXT code, but again I doubt that will happen.
+> I think the expectation is that the administrator or system builder
+> who decides to set the (non-default) noexec mount option will also
+> set the sysctl at the same time.
 
-Anyone using deprecated methods has been warned.
+On the other hand, a design that requires 2 separate actions to be taken in
+order to make it work, and which fails unsafe if the second step isn't taken,
+is a bad design. If we're talking "expectations", let's not forget that the
+mount option is called "noexec", not "only-really-noexec-if-you-set-a-magic-sysctl". 
 
-Larry
+I'll also point out that we didn't add a sysctl in 2.6.0 to say whether or not
+to still allow the old "/lib/ld-linux.so your-binary-here" hack to execute binaries
+off a partition mounted noexec - we simply said "this will no longer be permitted".
+
+--==_Exmh_1313623354_2796P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOTE06cC3lWbTT17ARArvUAKDn6sm9pSqqg7YUK9N/vKxyJ5+bZgCg4o87
+t2rPh/FpyLsAJFxJFeBX0/0=
+=PKOP
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1313623354_2796P--
+
