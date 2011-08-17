@@ -1,118 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1HQFqM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 01:46:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59023 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1HQFqI (ORCPT
+	id S1752098Ab1HQFyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 01:54:46 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:1277
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750813Ab1HQFyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 01:46:08 -0400
+	Wed, 17 Aug 2011 01:54:41 -0400
+X-SpamScore: -15
+X-BigFish: VS-15(z37d5kz9371K179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 17 Aug 2011 14:02:43 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [RFC PATCH v2 06/13] docs/dt: Document nvidia,tegra20-pinmux
+ binding
+Message-ID: <20110817060242.GA10037@S2100-06.ap.freescale.net>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+ <1313440100-17131-7-git-send-email-swarren@nvidia.com>
+ <201108161551.31389.arnd@arndb.de>
+ <74CDBE0F657A3D45AFBB94109FB122FF04AEA2537D@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Wed, 17 Aug 2011 13:45:27 +0800
-Message-ID: <CANFwon2DrFordKntgdXF_JiAo4r=WqUsnbS0pBt7Jj9qeyC13A@mail.gmail.com>
-Subject: A script that used by GDB to load the symbols from Linux kernel modules
-To: linux-kernel@vger.kernel.org, gdb@sourceware.org
-Content-Type: multipart/mixed; boundary=00151747b3623b5f3e04aaad0384
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA2537D@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151747b3623b5f3e04aaad0384
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Aug 16, 2011 at 10:32:05AM -0700, Stephen Warren wrote:
+> Arnd Bergmann wrote at Tuesday, August 16, 2011 7:52 AM:
+> > On Monday 15 August 2011, Stephen Warren wrote:
+> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > > ---
+> > >  .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |  294 ++++++++++++++++++++
+> > >  1 files changed, 294 insertions(+), 0 deletions(-)
+> > >  create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+> > >
+> > > diff --git a/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+> > > new file mode 100644
+> > > index 0000000..744e1b7
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
+> > > @@ -0,0 +1,294 @@
+> > > +NVIDIA Tegra 2 pinmux controller
+> > > +
+> > > +Required properties:
+> > > +- compatible : "nvidia,tegra20-pinmux"
+> > 
+> > Hmm, I think it would be much better in general if we could define
+> > pinmux bindings in a way that is less specific to just one soc.
+> 
+> > The contents of this file seem to be specific to even just one
+> > version of the tegra chip, and might be completely different for
+> > tegra30 and later, right?
+> 
+> The general concepts are the same between tegra20 and tegra30.
+> 
+> Tegra30 has a different set of mux and drive pingroups.
+> 
+> Tegra30 has more functions that can be assigned to pins.
+> 
+> Tegra30 has three more options per mux pingroup, although I haven't
+> Investigated whether any of those would need to be represented in DT;
+> I suspect at least one will, possibly all.
+> 
+> > Maybe Linus W can comment on this and say whether he thinks it can
+> > be generalized enough to apply to other pinmux drivers.
+> > 
+> > > +Optional sub-nodes:
+> > > +- nvidia,mux-groups : Mux group settings; see below.
+> > > +- nvidia,drive-groups : Drive group settings; see below.
+> > > +
+> > > +nvidia,mux-groups sub-node:
+> > 
+> > These concepts seem general enough to me that they can apply to
+> > other chips, and I would consequently drop the nvidia, prefix.
+> 
+> Two things to note about Tegra that might not apply to all SoCs:
+> 
+> * There are separate groups of pins for Muxing (plus some config) vs.
+> drive-strength (and related config). Some SoCs might use the same set
+> of groups for both. Perhaps some SoC might even have three or more types
+> of groups! I expect this to have some impact on the binding; I created
+> explicit mux-groups and drive-groups sub-nodes to represent this.
+> 
+> * Tegra's pinmux apply settings to groups of pins instead of individual
+> pins. Some SoCs might allow each setting to be configurable per-pin.
+> I don't expect this to have any impact as far as the bindings go though;
+> it'll simply impact the names of the available pin "groups"; some SoCs
+> will name groups, others pins.
+> 
++1
 
-Hi,
+imx's pinmux applies settings to individual pins.
 
-When use GDB to debug or trace your kernel with KGDB, QEMU debug
-interface or KGTP.  You must get some trouble with LKM symbols.  For
-example:
-(gdb) target remote localhost:12345
-Remote debugging using localhost:12345
-native_safe_halt () at
-/home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
-50	}
-(gdb) b e100_poll
-Function "e100_poll" not defined.
-Make breakpoint pending on future shared library load? (y or [n])
-This is because GDB didn't get the LKM symbols.  You can do it with
-your hand.  But if you have a lot of LKMs, it will need some time.
+> > > +Each mux pin group is represented as a sub-node of the nvidia,mux-groups node.
+> > > +The name of the sub-node should be the name of the mux pingroup. The following
+> > > +names are valid:
+> > > +
+> > > +	ata
+> > > +	atb
+> > > +	atc
+> > > +	atd
+> > > +	ate
+> > > +	cdev1
+> > > +	cdev2
+> > > ...
+> > 
+> > I noticed that each board you define has a complete list of these. Would
+> > it be possible to move a generic list into a tegra20-pinmux.dtsi file and
+> > just override the pins in the per-board .dts file that require some special
+> > setup?
+> 
 
-Now, GDB support python script.  The attachment is a script to load
-all symbols from Linux kernel modules to GDB.
-For example:
-(gdb) target remote localhost:12345
-Remote debugging using localhost:12345
-native_safe_halt () at
-/home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
-50	}
-(gdb) so ~/kernel/svn/branches/teawater/getmod.py
-(gdb) b e100_poll
-Breakpoint 1 at 0xc889db40: file
-/home/teawater/big/kernel/linux-2.6/drivers/net/e100.c, line 2165.
+It sounds sane for imx though.  I'm going to take this suggestion to
+have imx53-pinmux.dtsi holding register offset for each pin, which is
+common across all i.mx53 boards.
 
-This script will include in KGTP(https://code.google.com/p/kgtp/) source.
+> I'm not sure how much commonality there will really be.
+> 
+> Certainly, many boards are based off our reference designs and so will
+> have many similarities that could be shared.
+> 
+> That said, comparing even tegra-harmony.dts and tegra-seaboard.dts shows
+> a lot of differences. It seems a lot less error-prone to just completely
+> describe the entire pinmux state in each board's .dts file, rather than
+> trying to represent half the information as default in the SoC .dtsi file,
+> and just the diff in the board .dts file. I suppose perhaps if we put the
+> hardware's own default settings in tegra20.dtsi, that'd make sense, since
+> people are presumably reasonably aware of the delta relative to that.
+> 
+> We'd need to add new properties to override defaults, like:
+> 
+> nvidia,tristate --> nvidia,drive
+> nvidia,pull-*   --> nvidia,no-pull
+> 
+> > > +
+> > > +optional subnode-properties:
+> > > +- nvidia,pull-up : Boolean, apply Tegra's internal pull-up to the pin.
+> > > +- nvidia,pull-down : Boolean, apply Tegra's internal pull-down to the pin.
+> > > +- nvidia,tristate : Boolean, tristate the pin. Otherwise, drive it.
+> > > +
+> > > +If both nvidia,pull-up and nvidia,pull-down are specified, nvidia,pull-up
+> > > +takes precedence.
+> > 
+> > These again seem generic enough to go into a general pinmux binding, without
+> > the nvidia, prefix.
+> 
+> Yes, I believe Jamie Iles was going to try cooking up a generic core binding
+> that could be shared across different SoCs, and extended with custom stuff.
+> 
+I would image that whatever common binding for pin/pad configuration
+comes can hardly work for imx out of box.  For each pin/pad, imx have
+4 configurations for pull:
 
-Thanks,
-Hui
+  00: 100KOhm Pull Down
+  01: 47KOhm Pull Up
+  10: 100KOhm Pull Up
+  11: 22KOhm Pull Up
 
---00151747b3623b5f3e04aaad0384
-Content-Type: text/x-python; charset=US-ASCII; name="getmod.py"
-Content-Disposition: attachment; filename="getmod.py"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_grfv29w80
+4 configurations for drive:
 
-IyEvdXNyL2Jpbi9weXRob24KCiMgVGhpcyBzY3JpcHQgaXMgdXNlZCBieSBHREIgdG8gbG9hZCB0
-aGUgc3ltYm9scyBmcm9tIExpbnV4IGtlcm5lbCBtb2R1bGVzCiMgR1BMCiMgQ29weXJpZ2h0KEMp
-IEh1aSBaaHUgKHRlYXdhdGVyQGdtYWlsLmNvbSksIDIwMTEKCiNTZXQgc3BlY2lhbCBtb2Rfc2Vh
-cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0iZGlyIgojQ2xlYXIgc3BlY2lhbCBtb2Rfc2Vh
-cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0odm9pZCkxCgppbXBvcnQgZ2RiOwppbXBvcnQg
-b3M7CgpkZWYgZm9ybWF0X2ZpbGUobmFtZSk6Cgl0bXAgPSAiIjsKCWZvciBjIGluIG5hbWU6CgkJ
-aWYgYyA9PSAiXyI6CgkJCWMgPSAiLSI7CgkJdG1wICs9IGM7CglyZXR1cm4gdG1wOwoKI0dldCB0
-aGUgbW9kX3NlYXJjaF9kaXIKbW9kX3NlYXJjaF9kaXIgPSBnZGIucGFyc2VfYW5kX2V2YWwoIiRt
-b2Rfc2VhcmNoX2RpciIpOwppZiBtb2Rfc2VhcmNoX2Rpci50eXBlLmNvZGUgPT0gZ2RiLlRZUEVf
-Q09ERV9BUlJBWToKCW1vZF9zZWFyY2hfZGlyID0gc3RyKG1vZF9zZWFyY2hfZGlyKTsKCW1vZF9z
-ZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMTpsZW4obW9kX3NlYXJjaF9kaXIpXTsKCW1vZF9z
-ZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMDptb2RfbmFtZS5pbmRleCgiXCIiKV07CmVsc2U6
-Cgltb2Rfc2VhcmNoX2RpciA9IHN0cihnZGIuZXhlY3V0ZSgiaW5mbyBmaWxlcyIsIEZhbHNlLCBU
-cnVlKSk7Cgltb2Rfc2VhcmNoX2RpciA9IG1vZF9zZWFyY2hfZGlyW21vZF9zZWFyY2hfZGlyLmlu
-ZGV4KCJTeW1ib2xzIGZyb20gXCIiKStsZW4oIlN5bWJvbHMgZnJvbSBcIiIpOmxlbihtb2Rfc2Vh
-cmNoX2RpcildOwoJbW9kX3NlYXJjaF9kaXIgPSBtb2Rfc2VhcmNoX2RpclswOm1vZF9zZWFyY2hf
-ZGlyLmluZGV4KCJcIiIpXTsKCW1vZF9zZWFyY2hfZGlyID0gbW9kX3NlYXJjaF9kaXJbMDptb2Rf
-c2VhcmNoX2Rpci5yaW5kZXgoIi8iKV07CnByaW50ICJTZWFyY2ggbW9kdWxlcyBmcm9tICIrbW9k
-X3NlYXJjaF9kaXIrIlxuIjsKCm1vZF9saXN0X29mZnNldCA9IGxvbmcoZ2RiLnBhcnNlX2FuZF9l
-dmFsKCIoKHNpemVfdCkgJigoKHN0cnVjdCBtb2R1bGUgKikwKS0+bGlzdCkpIikpOwptb2RfbGlz
-dCA9IGxvbmcoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoJm1vZHVsZXMpIikpOwptb2RfbGlzdF9jdXJy
-ZW50ID0gbW9kX2xpc3Q7Cgp3aGlsZSAxOgoJbW9kX2xpc3RfY3VycmVudCA9IGxvbmcoZ2RiLnBh
-cnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBsaXN0X2hlYWQgKikgIitzdHIobW9kX2xpc3RfY3VycmVu
-dCkrIiktPm5leHQiKSk7CgoJI2NoZWNrIGlmIG5lZWQgYnJlYWsgdGhlIGxvb3AKCWlmIG1vZF9s
-aXN0ID09IG1vZF9saXN0X2N1cnJlbnQ6CgkJYnJlYWs7CgoJbW9kID0gbW9kX2xpc3RfY3VycmVu
-dCAtIG1vZF9saXN0X29mZnNldDsKCgkjZ2V0IG1vZF9uYW1lCgltb2RfbmFtZSA9IHN0cihnZGIu
-cGFyc2VfYW5kX2V2YWwoIigoc3RydWN0IG1vZHVsZSAqKSIrc3RyKG1vZCkrIiktPm5hbWUiKSk7
-Cgltb2RfbmFtZSA9IG1vZF9uYW1lW21vZF9uYW1lLmluZGV4KCJcIiIpKzE6bGVuKG1vZF9uYW1l
-KV07Cgltb2RfbmFtZSA9IG1vZF9uYW1lWzA6bW9kX25hbWUuaW5kZXgoIlwiIildOwoJbW9kX25h
-bWUgKz0gIi5rbyIKCW1vZF9uYW1lID0gZm9ybWF0X2ZpbGUobW9kX25hbWUpOwoKCSNnZXQgbW9k
-X2Rpcl9uYW1lCgltb2RfZGlyX25hbWUgPSAiIjsKCWZvciByb290LCBkaXJzLCBmaWxlcyBpbiBv
-cy53YWxrKG1vZF9zZWFyY2hfZGlyKToKCQlmb3IgYWZpbGUgaW4gZmlsZXM6CgkJCXRtcF9maWxl
-ID0gZm9ybWF0X2ZpbGUoYWZpbGUpOwoJCQlpZiB0bXBfZmlsZSA9PSBtb2RfbmFtZToKCQkJCW1v
-ZF9kaXJfbmFtZSA9IG9zLnBhdGguam9pbihyb290LGFmaWxlKTsKCQkJCWJyZWFrOwoJCWlmIG1v
-ZF9kaXJfbmFtZSAhPSAiIjoKCQkJYnJlYWs7CgoJY29tbWFuZCA9ICIgIjsKCgkjQWRkIG1vZHVs
-ZV9jb3JlIHRvIGNvbW1hbmQKCWNvbW1hbmQgKz0gc3RyKGdkYi5wYXJzZV9hbmRfZXZhbCgiKChz
-dHJ1Y3QgbW9kdWxlICopIitzdHIobW9kKSsiKS0+bW9kdWxlX2NvcmUiKSk7CgoJI0FkZCBlYWNo
-IHNlY3RfYXR0cnMtPmF0dHJzIHRvIGNvbW1hbmQKCSNnZXQgbnNlY3Rpb25zCgluc2VjdGlvbnMg
-PSBpbnQoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBtb2R1bGUgKikiK3N0cihtb2QpKyIp
-LT5zZWN0X2F0dHJzLT5uc2VjdGlvbnMiKSk7CglzZWN0X2F0dHJzID0gbG9uZyhnZGIucGFyc2Vf
-YW5kX2V2YWwoIih1NjQpKChzdHJ1Y3QgbW9kdWxlICopIitzdHIobW9kKSsiKS0+c2VjdF9hdHRy
-cyIpKTsKCWZvciBpIGluIHJhbmdlKDAsIG5zZWN0aW9ucyk6CgkJY29tbWFuZCArPSAiIC1zIjsK
-CQl0bXAgPSBzdHIoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBtb2R1bGVfc2VjdF9hdHRy
-cyAqKSIrc3RyKHNlY3RfYXR0cnMpKyIpLT5hdHRyc1siK3N0cihpKSsiXS5uYW1lIikpOwoJCXRt
-cCA9IHRtcFt0bXAuaW5kZXgoIlwiIikrMTpsZW4odG1wKV07CgkJdG1wID0gdG1wWzA6dG1wLmlu
-ZGV4KCJcIiIpXTsKCQljb21tYW5kICs9ICIgIit0bXA7CgkJdG1wID0gc3RyKGdkYi5wYXJzZV9h
-bmRfZXZhbCgiKChzdHJ1Y3QgbW9kdWxlX3NlY3RfYXR0cnMgKikiK3N0cihzZWN0X2F0dHJzKSsi
-KS0+YXR0cnNbIitzdHIoaSkrIl0uYWRkcmVzcyIpKTsKCQljb21tYW5kICs9ICIgIit0bXA7CgoJ
-aWYgbW9kX2Rpcl9uYW1lID09ICIiOgoJCXByaW50ICJDYW4gZmluZCBvdXQiLG1vZF9uYW1lLCJm
-cm9tIGRpcmVjdG9yeS4iOwoJCXByaW50ICJQbGVhc2UgdXNlIGZvbGxvd2luZyBjb21tYW5kIGxv
-YWQgdGhlIHN5bWJvbHMgZnJvbSBpdDoiCgkJcHJpbnQgImFkZC1zeW1ib2wtZmlsZSBzb21lX2Rp
-ci8iK21vZF9uYW1lK2NvbW1hbmQ7CgllbHNlOgoJCSNwcmludCAiYWRkLXN5bWJvbC1maWxlICIr
-bW9kX2Rpcl9uYW1lK2NvbW1hbmQ7CgkJZ2RiLmV4ZWN1dGUoImFkZC1zeW1ib2wtZmlsZSAiK21v
-ZF9kaXJfbmFtZStjb21tYW5kLCBGYWxzZSwgRmFsc2UpOwo=
---00151747b3623b5f3e04aaad0384--
+  00: 100KOhm Pull Down
+  01: 47KOhm Pull Up
+  10: 100KOhm Pull Up
+  11: 22KOhm Pull Up
+
+some other 1 bit configuration fields:
+
+  low/high output voltage Field
+  Hyst. Enable Field
+  Pull / Keep Enable Field
+  Pull / Keep Select Field
+  Slew Rate Field
+
+All these are all in one register <pad_name>_PAD_CTL (mux configuration
+is in another register <pad_name>_PAD_MUX).  The best binding for
+PAD_CTL I can think of so far is to encode the register value in DT
+directly.
+
+-- 
+Regards,
+Shawn
+
