@@ -1,41 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1HQRLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:11:49 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:60897 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab1HQRLp convert rfc822-to-8bit (ORCPT
+	id S1754608Ab1HQRGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:06:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28286 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab1HQRGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:11:45 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Markus Rechberger <mrechberger@gmail.com>
-Subject: Re: [PATCH] Increase usbfs bulk buffer size
-Date: Wed, 17 Aug 2011 19:14:52 +0200
-User-Agent: KMail/1.13.5 (Linux/3.1.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-In-Reply-To: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108171914.52257.oliver@neukum.org>
+	Wed, 17 Aug 2011 13:06:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004187"
+Message-Id: <20110817163522.285882900@codeaurora.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Aug 2011 11:35:23 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: [patch 26/36] Hexagon: Implement basic TLB management routines for Hexagon.
+References: <20110817163457.878854582@codeaurora.org>
+Content-Disposition: inline; filename=tlb.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 17. August 2011, 19:07:01 schrieb Markus Rechberger:
-> Hi,
-> 
-> this patch increases the maximum buffersize for bulk transfers, our
-> devices support at least up to 46k bytes for bulk transfers.
-> This patch allows us to lower the iterations between kernel and
-> userspace and lower the system pressure.
+Mostly all stubs, as the TLB is managed by the hypervisor.
 
-You must not do this. It increases memory pressure too much
-by forcing very high order allocations. If your problem is really
-the number of syscalls, you must implement scatter/gather.
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 
-	Regards
-		Ôliver
+
+---
+ arch/hexagon/include/asm/tlb.h      |   39 +++++++++++++++
+ arch/hexagon/include/asm/tlbflush.h |   58 ++++++++++++++++++++++
+ arch/hexagon/mm/vm_tlb.c            |   93 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 190 insertions(+)
+
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/tlbflush.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/tlbflush.h	2011-07-20 15:19:43.175151668 -0500
+@@ -0,0 +1,58 @@
++/*
++ * TLB flush support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_TLBFLUSH_H
++#define _ASM_TLBFLUSH_H
++
++#include <linux/mm.h>
++#include <asm/processor.h>
++
++/*
++ * TLB flushing -- in "SMP", these routines get defined to be the
++ * ones from smp.c, else they are some local flavors.
++ */
++
++/*
++ * These functions are commonly macros, but in the interests of
++ * VM vs. native implementation and code size, we simply declare
++ * the function prototypes here.
++ */
++extern void tlb_flush_all(void);
++extern void flush_tlb_mm(struct mm_struct *mm);
++extern void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr);
++extern void flush_tlb_range(struct vm_area_struct *vma,
++				unsigned long start, unsigned long end);
++extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void flush_tlb_one(unsigned long);
++
++/*
++ * "This is called in munmap when we have freed up some page-table pages.
++ * We don't need to do anything here..."
++ *
++ * The VM kernel doesn't walk page tables, and they are passed to the VMM
++ * by logical address. There doesn't seem to be any possibility that they
++ * could be referenced by the VM kernel based on a stale mapping, since
++ * they would only be located by consulting the mm structure, and they
++ * will have been purged from that structure by the munmap.  Seems like
++ * a noop on HVM as well.
++ */
++#define flush_tlb_pgtables(mm, start, end)
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/tlb.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/tlb.h	2011-07-20 15:19:43.185151665 -0500
+@@ -0,0 +1,39 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_TLB_H
++#define _ASM_TLB_H
++
++#include <linux/pagemap.h>
++#include <asm/tlbflush.h>
++
++/*
++ * We don't need any special per-pte or per-vma handling...
++ */
++#define tlb_start_vma(tlb, vma)				do { } while (0)
++#define tlb_end_vma(tlb, vma)				do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
++
++/*
++ * .. because we flush the whole mm when it fills up
++ */
++#define tlb_flush(tlb)		flush_tlb_mm((tlb)->mm)
++
++#include <asm-generic/tlb.h>
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/mm/vm_tlb.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/vm_tlb.c	2011-07-20 15:19:43.185151665 -0500
+@@ -0,0 +1,93 @@
++/*
++ * Hexagon Virtual Machine TLB functions
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++/*
++ * The Hexagon Virtual Machine conceals the real workings of
++ * the TLB, but there are one or two functions that need to
++ * be instantiated for it, differently from a native build.
++ */
++#include <linux/mm.h>
++#include <asm/page.h>
++#include <asm/hexagon_vm.h>
++
++/*
++ * Initial VM implementation has only one map active at a time, with
++ * TLB purgings on changes.  So either we're nuking the current map,
++ * or it's a no-op.  This operation is messy on true SMPs where other
++ * processors must be induced to flush the copies in their local TLBs,
++ * but Hexagon thread-based virtual processors share the same MMU.
++ */
++void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
++{
++	struct mm_struct *mm = vma->vm_mm;
++
++	if (mm->context.ptbase == current->active_mm->context.ptbase)
++		__vmclrmap((void *)start, end - start);
++}
++
++/*
++ * Flush a page from the kernel virtual map - used by highmem
++ */
++void flush_tlb_one(unsigned long vaddr)
++{
++	__vmclrmap((void *)vaddr, PAGE_SIZE);
++}
++
++/*
++ * Flush all TLBs across all CPUs, virtual or real.
++ * A single Hexagon core has 6 thread contexts but
++ * only one TLB.
++ */
++void tlb_flush_all(void)
++{
++	/*  should probably use that fixaddr end or whateve label  */
++	__vmclrmap(0, 0xffff0000);
++}
++
++/*
++ * Flush TLB entries associated with a given mm_struct mapping.
++ */
++void flush_tlb_mm(struct mm_struct *mm)
++{
++	/* Current Virtual Machine has only one map active at a time */
++	if (current->active_mm->context.ptbase == mm->context.ptbase)
++		tlb_flush_all();
++}
++
++/*
++ * Flush TLB state associated with a page of a vma.
++ */
++void flush_tlb_page(struct vm_area_struct *vma, unsigned long vaddr)
++{
++	struct mm_struct *mm = vma->vm_mm;
++
++	if (mm->context.ptbase  == current->active_mm->context.ptbase)
++		__vmclrmap((void *)vaddr, PAGE_SIZE);
++}
++
++/*
++ * Flush TLB entries associated with a kernel address range.
++ * Like flush range, but without the check on the vma->vm_mm.
++ */
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++		__vmclrmap((void *)start, end - start);
++}
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
