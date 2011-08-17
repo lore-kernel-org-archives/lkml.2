@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab1HQQZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:25:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58027 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753946Ab1HQQZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:25:28 -0400
-Date: Wed, 17 Aug 2011 12:25:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mina86@mina86.com>
-cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-In-Reply-To: <op.v0c5nezf3l0zgt@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108171224380.2100-100000@iolanthe.rowland.org>
+	id S1753425Ab1HQNJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908Ab1HQNJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 09:09:03 -0400
+Date: Wed, 17 Aug 2011 15:05:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lennart@poettering.net, kay.sievers@vrfy.org,
+        linux-man@vger.kernel.org, roland@hack.frob.com,
+        torvalds@linux-foundation.org
+Subject: Re: +
+	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+	.patch added to -mm tree
+Message-ID: <20110817130531.GA12204@redhat.com>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817115543.GA8745@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011, Michal Nazarewicz wrote:
+On 08/17, Oleg Nesterov wrote:
+>
+> On 08/16, Andrew Morton wrote:
+> >
+> > From: Lennart Poettering <lennart@poettering.net>
+> >
+> > Userspace service managers/supervisors need to track their started
+> > services.  Many services daemonize by double-forking and get implicitely
+> > re-parented to PID 1.  The process manager will no longer be able to
+> > receive the SIGCHLD signals for them.
+> >
+> > With this prctl, a service manager can mark itself as a sort of 'sub-init'
+> > process, able to stay as the parent process for all processes created by
+> > the started services.  All SIGCHLD signals will be delivered to the
+> > service manager.
+>
+> I try to never argue with the new features. But to be honest, this
+> doesn't look very good to me.
+>
+> OK, a service manager M does prctl(PR_SET_CHILD_REAPER), then it forks
+> a service X which forks another child C and exits. Then C exits and
+> notifies M.
+>
+> But. How can M know that the service X should be restarted? It only
+> knows the pid. What if wait(WEXITED) succeeds because C in turn does
+> fork + exit? What M has 2 or more services?
 
-> >>>> --- a/drivers/usb/gadget/file_storage.c
-> >>>> +++ b/drivers/usb/gadget/file_storage.c
-> >>>> @@ -3562,11 +3562,7 @@ static void fsg_resume(struct usb_gadget  
-> >>>> *gadget)
-> >>>>  static struct usb_gadget_driver		fsg_driver = {
-> >>>> -#ifdef CONFIG_USB_GADGET_DUALSPEED
-> >>>>  	.speed		= USB_SPEED_HIGH,
-> >>>> -#else
-> >>>> -	.speed		= USB_SPEED_FULL,
-> >>>> -#endif
-> >>>>  	.function	= (char *) fsg_string_product,
-> >>>>  	.unbind		= fsg_unbind,
-> >>>>  	.disconnect	= fsg_disconnect,
-> 
-> >>> You mustn't remove the .speed field entirely.  Set it to  
-> >>> USB_SPEED_HIGH.
-> 
-> >> Please note that the field is not in fact removed.
-> 
-> > No, but you removed its initializer and as a result, it will be set to
-> > 0 whereas it should be set to USB_SPEED_HIGH.
-> 
-> The initializer is still there. ;)  Only the “#” lines and the initializer
-> in the “#else” part are removed.
+Also. I am almost sure I have already reviewed a very similar patch
+a long ago. Ungortunately, I can't find the previous discussion, and
+I can't recall why that patch was not accepted.
 
-I must be going selectively blind.  Never mind...
+But, I seem to remember, that patch cleared ->child_reaper on exec,
+I think this makes sense.
 
-Alan Stern
+And I am not sure about security. No, I do not see any problems, just
+I don't know. Say, should we check the creds during reparenting? I
+dunno.
+
+Oleg.
 
