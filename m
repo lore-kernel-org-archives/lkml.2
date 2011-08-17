@@ -1,141 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1HQTAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 15:00:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab1HQTAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 15:00:43 -0400
-Date: Wed, 17 Aug 2011 20:57:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        lennart@poettering.net, linux-man@vger.kernel.org,
-        roland@hack.frob.com, torvalds@linux-foundation.org
-Subject: Re: +
-	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
-	.patch added to -mm tree
-Message-ID: <20110817185709.GA27663@redhat.com>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com> <20110817134516.GA14136@redhat.com> <CAPXgP101N_GESzpqu=P_H8cLoekMzb2_W2eWyAqATSjm4Gj9CA@mail.gmail.com> <20110817162041.GA21406@redhat.com> <CAPXgP13Dn2c-OnYg-Cty5r4JbqeH_zYPtXDj5GAfK1btoKYmDg@mail.gmail.com>
+	id S1754147Ab1HQRR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:17:57 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:16878 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab1HQRRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 13:17:55 -0400
+Message-ID: <4E4BF7C0.80703@cavium.com>
+Date: Wed, 17 Aug 2011 10:17:52 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP13Dn2c-OnYg-Cty5r4JbqeH_zYPtXDj5GAfK1btoKYmDg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Yong Zhang <yong.zhang@windriver.com>
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH] MIPS: use 32-bit wrapper for compat_sys_futex
+References: <1313546094-11882-1-git-send-email-yong.zhang@windriver.com>
+In-Reply-To: <1313546094-11882-1-git-send-email-yong.zhang@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Aug 2011 17:17:53.0680 (UTC) FILETIME=[99653900:01CC5D01]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17, Kay Sievers wrote:
+On 08/16/2011 06:54 PM, Yong Zhang wrote:
+> We can't trust in the caller(userspace) to give signed-extend
+> parameter, thus futex-wait may fail in some special case.
 >
-> On Wed, Aug 17, 2011 at 18:20, Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 08/17, Kay Sievers wrote:
+> For example, if 'val' is too big and bit-31 is 1,
+> the caller may enter endless loop at:
+> futex_wait_setup()
+> {
+> 	...
 >
-> >> No, we want to be the parent of the process,
-> >> ...
-> >> The sub-init is the babysitter of all the things it has
-> >> started, and that should be reflected in the parent child relation.
-> >
-> > OK. But could you explain why do we want this? This is not clear from
-> > the changelog/discussion.
+> 	if (uval != val) {
+> 		queue_unlock(q, *hb);
+> 		ret = -EWOULDBLOCK;
 >
-> As said, PID1 has the privilege of reaping all processes that
-> double-fork. Any sub-init wants to do the same for the stuff it
-> watches. The process that reaps has all the information about the
-> process as long as wants, it can look up stuff in /proc if needed or
-> has all the return values of wait().
-
-OK.
-
-> Async notifications like
-> taskstats just can not provide what SIGCHLD, /proc and wait() offer.
-
-Why not? Async notifications can't delay the reaping, yes. But I am
-not sure /proc/ is that useful when the task exits. OK, I won't argue.
-
-
-
-
-> >> > You should check ->child_reaper only. But see above, it can be multithreaded.
-> >>
-> >> The main PID 1 from the system has no ->child_reaper set as far as I
-> >> see, hence we check for init_task.
-> >
-> > No, you don't.
+> 	...
+> }
 >
-> Don't? I don't check, or we don't have it set?
-
-Argh, sorry. "No, this is not needed", this is what I tried to say.
-
-> > Once again, if pid_ns->child_reaper exits, you should
-> > not even try to find the sub-reaper in its parents chain.
+> Below assembler code will make it more easy to understand how
+> the patch take effect :)
 >
-> That would mean we can never run a sub-init in a pid namespace? Why not?
+> Dump of assembler code for function SyS_32_futex:
+>     0xffffffff811b6fe8<+0>:	sll	a1,a1,0x0
+>     0xffffffff811b6fec<+4>:	sll	a2,a2,0x0
+>     0xffffffff811b6ff0<+8>:	j	0xffffffff8121a240<compat_sys_futex>
+>     0xffffffff811b6ff4<+12>:	sll	a5,a5,0x0
 >
-> Or do you mean that we *are* already the pid_ns->child_reaper, not
-> that one *exists*?
+> Signed-off-by: Yong Zhang<yong.zhang@windriver.com>
+> Cc: Ralf Baechle<ralf@linux-mips.org>
+> ---
+>   arch/mips/kernel/linux32.c     |    7 +++++++
+>   arch/mips/kernel/scall64-n32.S |    2 +-
+>   arch/mips/kernel/scall64-o32.S |    2 +-
+>   3 files changed, 9 insertions(+), 2 deletions(-)
+[...]
+> diff --git a/arch/mips/kernel/linux32.c b/arch/mips/kernel/linux32.c
+> index 876a75c..922a554 100644
+> --- a/arch/mips/kernel/linux32.c
+> +++ b/arch/mips/kernel/linux32.c
+> @@ -349,3 +349,10 @@ SYSCALL_DEFINE6(32_fanotify_mark, int, fanotify_fd, unsigned int, flags,
+>   	return sys_fanotify_mark(fanotify_fd, flags, merge_64(a3, a4),
+>   				 dfd, pathname);
+>   }
+> +
+> +SYSCALL_DEFINE6(32_futex, u32 __user *, uaddr, int, op, u32, val,
+> +		struct compat_timespec __user *, utime, u32 __user *, uaddr2,
+> +		u32, val3)
+> +{
+> +	return compat_sys_futex(uaddr, op, val, utime, uaddr2, val3);
+> +}
+> diff --git a/arch/mips/kernel/scall64-n32.S b/arch/mips/kernel/scall64-n32.S
+> index b85842f..c956cc9 100644
+> --- a/arch/mips/kernel/scall64-n32.S
+> +++ b/arch/mips/kernel/scall64-n32.S
+> @@ -315,7 +315,7 @@ EXPORT(sysn32_call_table)
+>   	PTR	sys_fremovexattr
+>   	PTR	sys_tkill
+>   	PTR	sys_ni_syscall
+> -	PTR	compat_sys_futex
+> +	PTR	sys_32_futex
+>   	PTR	compat_sys_sched_setaffinity	/* 6195 */
+>   	PTR	compat_sys_sched_getaffinity
+>   	PTR	sys_cacheflush
+> diff --git a/arch/mips/kernel/scall64-o32.S b/arch/mips/kernel/scall64-o32.S
+> index 46c4763..f48b18e 100644
+> --- a/arch/mips/kernel/scall64-o32.S
+> +++ b/arch/mips/kernel/scall64-o32.S
+> @@ -441,7 +441,7 @@ sys_call_table:
+>   	PTR	sys_fremovexattr		/* 4235 */
+>   	PTR	sys_tkill
+>   	PTR	sys_sendfile64
+> -	PTR	compat_sys_futex
+> +	PTR	sys_32_futex
 
-I already got lost a bit, not sure I understand.
-I meant we *are* (the caller) the exiting pid_ns->child_reaper thread.
+This change is redundant, scall64-o32.S already does the right thing
+so additional zero extending is not needed and is just extra
+instructions to execute for no reason.
 
-> >> >> > Also. You shouldn't do this if the sub-namespace init exits, this is
-> >> >> > wrong.
-> >> >>
-> >> >> It we find a sub-init, before the namespace PID1, why wouldn't we return it?
-> >> >
-> >> > Ah, I meant pid_ns->child_reaper, not task->child_reaper.
-> >> >
-> >> > If pid_ns->child_reaper exits we should never try to "reparent" its
-> >> > children, see zap_pid_ns_processes() in particular. IOW, this should
-> >> > go into the "else" branch of "if (pid_ns->child_reaper == father)"
-> >>
-> >> I don't understand this. If we find a marked task->child_reaper
-> >> _before_ we find a pid_ns->child_reaper in the chain of parents,
-> >
-> > This is fine.
-> >
-> > OK. I guess I wasn't clear, and I do not know how to explaine better.
-> > Please look at your code ;) Suppose that a sub-namespace init exits.
-> > Not the global /sbin/init. Not the caller of prctl(REAPER).
-> >
-> > In this case we should kill the children, not reparent them. Or panic
-> > if it is the global init (see above).
-> >
-> > See?
->
-> Not sure. You mean that the lookup for a possible task->cild_reaper
-> should be _before_ the check for pid_ns->child_reaper == father which
-> is currently below?
+>   	PTR	compat_sys_sched_setaffinity
+>   	PTR	compat_sys_sched_getaffinity	/* 4240 */
+>   	PTR	compat_sys_io_setup
 
-Hmm. I am even more confused.
+But really I think this patch fixes things at the wrong level.  Each
+architecture potentially needs a similar patch.  What would happen if
+we did something like:
 
-So. I actually applied your patch. The code is
 
-	for (reaper = father->parent;
-	     reaper != &init_task && reaper != pid_ns->child_reaper;
-	     reaper = reaper->parent)
-		if (reaper->child_reaper)
-			return reaper;
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index 5f9e689..74ada65 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -180,9 +180,9 @@ err_unlock:
+  	return ret;
+  }
 
-	if (unlikely(pid_ns->child_reaper == father)) {
-		...
+-asmlinkage long compat_sys_futex(u32 __user *uaddr, int op, u32 val,
+-		struct compat_timespec __user *utime, u32 __user *uaddr2,
+-		u32 val3)
++SYSCALL_DEFINE6(compat_sys_futex, u32 __user *, uaddr, int , op, u32, val,
++		struct compat_timespec __user *, utime, u32 __user *, uaddr2,
++		u32, val3)
+  {
+  	struct timespec ts;
+  	ktime_t t, *tp = NULL;
 
-The lookup is already _before_ the check for pid_ns->child_reaper == father,
-what do you mean?
+Obviously the function name is wrong, but a varient of
+SYSCALL_DEFINE*() could be created so the proper function names are
+produced.
 
-And, ignoring the mt problems I mentioned, I mean we should do
-
-	if (pid_ns->child_reaper == father) {
-
-		panic_or_kill_this_namespace;	// the current code
-
-	} else {
-		for (reaper = father->parent;
-		     reaper != pid_ns->child_reaper;
-		     reaper = reaper->parent)
-			if (reaper->child_reaper)
-				return reaper;
-	}
-
-Oleg.
-
+David Daney
