@@ -1,202 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab1HQFyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 01:54:46 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:1277
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750813Ab1HQFyl (ORCPT
+	id S1752134Ab1HQF6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 01:58:09 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37569 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab1HQF6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 01:54:41 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(z37d5kz9371K179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 17 Aug 2011 14:02:43 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [RFC PATCH v2 06/13] docs/dt: Document nvidia,tegra20-pinmux
- binding
-Message-ID: <20110817060242.GA10037@S2100-06.ap.freescale.net>
-References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
- <1313440100-17131-7-git-send-email-swarren@nvidia.com>
- <201108161551.31389.arnd@arndb.de>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA2537D@HQMAIL01.nvidia.com>
+	Wed, 17 Aug 2011 01:58:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA2537D@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
+Date: Wed, 17 Aug 2011 07:57:44 +0200
+Message-ID: <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
+Subject: Re: [PATCH] ath9k: make driver usable standalone
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 10:32:05AM -0700, Stephen Warren wrote:
-> Arnd Bergmann wrote at Tuesday, August 16, 2011 7:52 AM:
-> > On Monday 15 August 2011, Stephen Warren wrote:
-> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > > ---
-> > >  .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |  294 ++++++++++++++++++++
-> > >  1 files changed, 294 insertions(+), 0 deletions(-)
-> > >  create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
-> > >
-> > > diff --git a/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
-> > > new file mode 100644
-> > > index 0000000..744e1b7
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
-> > > @@ -0,0 +1,294 @@
-> > > +NVIDIA Tegra 2 pinmux controller
-> > > +
-> > > +Required properties:
-> > > +- compatible : "nvidia,tegra20-pinmux"
-> > 
-> > Hmm, I think it would be much better in general if we could define
-> > pinmux bindings in a way that is less specific to just one soc.
-> 
-> > The contents of this file seem to be specific to even just one
-> > version of the tegra chip, and might be completely different for
-> > tegra30 and later, right?
-> 
-> The general concepts are the same between tegra20 and tegra30.
-> 
-> Tegra30 has a different set of mux and drive pingroups.
-> 
-> Tegra30 has more functions that can be assigned to pins.
-> 
-> Tegra30 has three more options per mux pingroup, although I haven't
-> Investigated whether any of those would need to be represented in DT;
-> I suspect at least one will, possibly all.
-> 
-> > Maybe Linus W can comment on this and say whether he thinks it can
-> > be generalized enough to apply to other pinmux drivers.
-> > 
-> > > +Optional sub-nodes:
-> > > +- nvidia,mux-groups : Mux group settings; see below.
-> > > +- nvidia,drive-groups : Drive group settings; see below.
-> > > +
-> > > +nvidia,mux-groups sub-node:
-> > 
-> > These concepts seem general enough to me that they can apply to
-> > other chips, and I would consequently drop the nvidia, prefix.
-> 
-> Two things to note about Tegra that might not apply to all SoCs:
-> 
-> * There are separate groups of pins for Muxing (plus some config) vs.
-> drive-strength (and related config). Some SoCs might use the same set
-> of groups for both. Perhaps some SoC might even have three or more types
-> of groups! I expect this to have some impact on the binding; I created
-> explicit mux-groups and drive-groups sub-nodes to represent this.
-> 
-> * Tegra's pinmux apply settings to groups of pins instead of individual
-> pins. Some SoCs might allow each setting to be configurable per-pin.
-> I don't expect this to have any impact as far as the bindings go though;
-> it'll simply impact the names of the available pin "groups"; some SoCs
-> will name groups, others pins.
-> 
-+1
+On Wed, Aug 17, 2011 at 5:28 AM, Pavel Ivanov <paivanof@gmail.com> wrote:
+> When ath9k is the only wireless driver included in the build
+> WIRELESS_EXT configuration option becomes undefined. Because of that
+> driver becomes essentially unusable as you can't actually connect to
+> any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
+> that build with ath9k and without other drivers (having WIRELESS_EXT
+> selected in their Kconfig) is actually usable.
 
-imx's pinmux applies settings to individual pins.
+WIRELESS_EXT is not required for configuring wireless on recent
+kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
 
-> > > +Each mux pin group is represented as a sub-node of the nvidia,mux-groups node.
-> > > +The name of the sub-node should be the name of the mux pingroup. The following
-> > > +names are valid:
-> > > +
-> > > +	ata
-> > > +	atb
-> > > +	atc
-> > > +	atd
-> > > +	ate
-> > > +	cdev1
-> > > +	cdev2
-> > > ...
-> > 
-> > I noticed that each board you define has a complete list of these. Would
-> > it be possible to move a generic list into a tegra20-pinmux.dtsi file and
-> > just override the pins in the per-board .dts file that require some special
-> > setup?
-> 
+>
+> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+> ---
+>
+> diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
+> b/drivers/net/wireless/ath/ath9k/Kconfig
+> index d9c08c6..2573f77 100644
+> --- a/drivers/net/wireless/ath/ath9k/Kconfig
+> +++ b/drivers/net/wireless/ath/ath9k/Kconfig
+> @@ -11,6 +11,7 @@ config ATH9K
+>        select LEDS_CLASS
+>        select NEW_LEDS
+>        select ATH9K_COMMON
+> +       select WIRELESS_EXT
+>        ---help---
+>          This module adds support for wireless adapters based on
+>          Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-It sounds sane for imx though.  I'm going to take this suggestion to
-have imx53-pinmux.dtsi holding register offset for each pin, which is
-common across all i.mx53 boards.
 
-> I'm not sure how much commonality there will really be.
-> 
-> Certainly, many boards are based off our reference designs and so will
-> have many similarities that could be shared.
-> 
-> That said, comparing even tegra-harmony.dts and tegra-seaboard.dts shows
-> a lot of differences. It seems a lot less error-prone to just completely
-> describe the entire pinmux state in each board's .dts file, rather than
-> trying to represent half the information as default in the SoC .dtsi file,
-> and just the diff in the board .dts file. I suppose perhaps if we put the
-> hardware's own default settings in tegra20.dtsi, that'd make sense, since
-> people are presumably reasonably aware of the delta relative to that.
-> 
-> We'd need to add new properties to override defaults, like:
-> 
-> nvidia,tristate --> nvidia,drive
-> nvidia,pull-*   --> nvidia,no-pull
-> 
-> > > +
-> > > +optional subnode-properties:
-> > > +- nvidia,pull-up : Boolean, apply Tegra's internal pull-up to the pin.
-> > > +- nvidia,pull-down : Boolean, apply Tegra's internal pull-down to the pin.
-> > > +- nvidia,tristate : Boolean, tristate the pin. Otherwise, drive it.
-> > > +
-> > > +If both nvidia,pull-up and nvidia,pull-down are specified, nvidia,pull-up
-> > > +takes precedence.
-> > 
-> > These again seem generic enough to go into a general pinmux binding, without
-> > the nvidia, prefix.
-> 
-> Yes, I believe Jamie Iles was going to try cooking up a generic core binding
-> that could be shared across different SoCs, and extended with custom stuff.
-> 
-I would image that whatever common binding for pin/pad configuration
-comes can hardly work for imx out of box.  For each pin/pad, imx have
-4 configurations for pull:
-
-  00: 100KOhm Pull Down
-  01: 47KOhm Pull Up
-  10: 100KOhm Pull Up
-  11: 22KOhm Pull Up
-
-4 configurations for drive:
-
-  00: 100KOhm Pull Down
-  01: 47KOhm Pull Up
-  10: 100KOhm Pull Up
-  11: 22KOhm Pull Up
-
-some other 1 bit configuration fields:
-
-  low/high output voltage Field
-  Hyst. Enable Field
-  Pull / Keep Enable Field
-  Pull / Keep Select Field
-  Slew Rate Field
-
-All these are all in one register <pad_name>_PAD_CTL (mux configuration
-is in another register <pad_name>_PAD_MUX).  The best binding for
-PAD_CTL I can think of so far is to encode the register value in DT
-directly.
 
 -- 
-Regards,
-Shawn
-
+Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
