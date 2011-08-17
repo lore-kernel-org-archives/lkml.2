@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1HQNNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:13:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44548 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1HQNNa (ORCPT
+	id S1753553Ab1HQNTM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:19:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37367 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab1HQNTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:13:30 -0400
-Date: Wed, 17 Aug 2011 14:12:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, Jean Delvare <khali@linux-fr.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>, rdunlap@xenotime.net,
-        john.stultz@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
-        ohad@wizery.com, gregkh@suse.de, stefanr@s5r6.in-berlin.de,
-        lethal@linux-sh.org, linville@tuxdriver.com, zajec5@gmail.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20110817131256.GA10209@sirena.org.uk>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
- <20110815193724.GB2465@flint.arm.linux.org.uk>
+	Wed, 17 Aug 2011 09:19:08 -0400
+Date: Wed, 17 Aug 2011 15:19:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, "Huang, Ying" <ying.huang@intel.com>,
+        "He, Fan F" <fan.f.he@intel.com>
+Subject: Re: perf: problem of 32bit mmap call graph recording
+Message-ID: <20110817131900.GF32132@somewhere.redhat.com>
+References: <1313569203.4115.149.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110815193724.GB2465@flint.arm.linux.org.uk>
-X-Cookie: Being ugly isn't illegal.  Yet.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1313569203.4115.149.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 08:37:24PM +0100, Russell King wrote:
-> On Wed, Aug 10, 2011 at 05:31:28PM -0600, Kenneth Heitke wrote:
+On Wed, Aug 17, 2011 at 04:20:03PM +0800, Lin Ming wrote:
+> Hi all, 
+> 
+> On 32 bit machine, we have problem to get the usersapce call graph of
+> mmap syscall.
+> 
+> You can reproduce it with below command on 32bit machine.
+> 
+> sudo perf record -f -g -e raw_syscalls:sys_enter --filter "id==192" ls
+> 
+> sudo perf report |less
+> 
+> # Events: 26 
+> #
+> # Overhead  Command      Shared Object  Symbol
+> # ........  .......  .................  ......
+> #
+>    100.00%       ls  [kernel.kallsyms]  [k] syscall_trace_enter
+>                  |
+>                  --- syscall_trace_enter
+>                      syscall_trace_entry
+>                     |          
+>                     |--88.46%-- __mmap  <--- only __mmap, no more userspace call stacks
+>                     |          
+>                      --11.54%-- 0xffffe424
+> 
+> 
+> Kernel relies on userspace bp register to get call graph information.
+> But for mmap syscall, the bp register is used to pass in the sixth
+> parameter(offset).
+> 
+> void *mmap(void *addr, size_t length, int prot, int flags,
+>                   int fd, off_t offset);
+> 
+> Anyway to fix this issue on 32bit machine?
 
-> > SLIMbus (Serial Low Power Interchip Media Bus) is a specification
-> > developed by MIPI (Mobile Industry Processor Interface) alliance.
-
-> This looks like another bus doing the same thing as SPI and I2C.
-
-It's got some similarities with I2C and SPI but there's some important
-diffferences too, in terms of software it's got many of the features of
-things like USB - there's data channels, bus wide clocking and a probe
-mechanism.
-
-> 3. drivers contain essentially the same ID structure:
-> #define I2C_NAME_SIZE   20
-> #define I2C_MODULE_PREFIX "i2c:"
-> struct i2c_device_id {
-
-In this case the IDs should definitely be different as there's IDs in
-the hardware which drivers ought to be able to bind to (in theory the
-bus can be hotplugged).
-
-I do agree that there's room for some code sharing with the
-non-probeable buses.
+Ah... Well we can't do much about that I fear :)
+The only way would be to rely on dwarf informations to do the
+unwind. The upside is that it would work about everywhere
+even on places that don't have frame pointers, the downside
+is some overhead on sample records (dump a bunch of stack every
+sample) and a lot of work :)
