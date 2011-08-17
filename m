@@ -1,41 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab1HQRFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 13:05:52 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:61506 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab1HQRFp (ORCPT
+	id S1754641Ab1HQRGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:06:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28286 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602Ab1HQRGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 13:05:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110807032"
-Message-Id: <20110817163520.794979085@codeaurora.org>
+	Wed, 17 Aug 2011 13:06:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="111004208"
+Message-Id: <20110817163522.569291997@codeaurora.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Aug 2011 11:35:07 -0500
+Date: Wed, 17 Aug 2011 11:35:26 -0500
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Subject: [patch 10/36] Hexagon: Add memcpy and memset accelerated functions
+Cc: Linas Vepstas <linas@codeaurora.org>
+Subject: [patch 29/36] Hexagon: Add page table header files & etc.
 References: <20110817163457.878854582@codeaurora.org>
-Content-Disposition: inline; filename=memcpy.diff
+Content-Disposition: inline; filename=pgtables-highmem.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 
 ---
- arch/hexagon/lib/memcpy.S |  543 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/lib/memset.S |  316 ++++++++++++++++++++++++++
- 2 files changed, 859 insertions(+)
+ arch/hexagon/include/asm/fixmap.h      |   73 ++++
+ arch/hexagon/include/asm/highmem.h     |  111 +++++++
+ arch/hexagon/include/asm/mmu.h         |   34 ++
+ arch/hexagon/include/asm/mmu_context.h |  100 ++++++
+ arch/hexagon/include/asm/page.h        |  157 ++++++++++
+ arch/hexagon/include/asm/pgalloc.h     |  146 +++++++++
+ arch/hexagon/include/asm/pgtable.h     |  514 +++++++++++++++++++++++++++++++++
+ arch/hexagon/mm/kmap.c                 |  150 +++++++++
+ arch/hexagon/mm/pgalloc.c              |   25 +
+ 9 files changed, 1310 insertions(+)
 
-Index: linux-hexagon-kernel/arch/hexagon/lib/memcpy.S
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/fixmap.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/lib/memcpy.S	2011-07-20 15:19:38.275153041 -0500
-@@ -0,0 +1,543 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/fixmap.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,73 @@
++/*
++ * Fixmap support for Hexagon - enough to support highmem features
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_FIXMAP_H
++#define _ASM_FIXMAP_H
++
++/*
++ * A lot of the fixmap info is already in mem-layout.h
++ */
++#include <asm/mem-layout.h>
++
++/*
++ * Full fixmap support involves set_fixmap() functions, but
++ * these may not be needed if all we're after is an area for
++ * highmem kernel mappings.
++ */
++#define	__fix_to_virt(x)	(FIXADDR_TOP - ((x) << PAGE_SHIFT))
++#define	__virt_to_fix(x)	((FIXADDR_TOP - ((x)&PAGE_MASK)) >> PAGE_SHIFT)
++
++extern void __this_fixmap_does_not_exist(void);
++
++/**
++ * fix_to_virt -- "index to address" translation.
++ *
++ * If anyone tries to use the idx directly without translation,
++ * we catch the bug with a NULL-deference kernel oops. Illegal
++ * ranges of incoming indices are caught too.
++ */
++static inline unsigned long fix_to_virt(const unsigned int idx)
++{
++	/*
++	 * This branch gets completely eliminated after inlining,
++	 * except when someone tries to use fixaddr indices in an
++	 * illegal way. (such as mixing up address types or using
++	 * out-of-range indices).
++	 *
++	 * If it doesn't get removed, the linker will complain
++	 * loudly with a reasonably clear error message..
++	 */
++	if (idx >= __end_of_fixed_addresses)
++		__this_fixmap_does_not_exist();
++
++	return __fix_to_virt(idx);
++}
++
++static inline unsigned long virt_to_fix(const unsigned long vaddr)
++{
++	BUG_ON(vaddr >= FIXADDR_TOP || vaddr < FIXADDR_START);
++	return __virt_to_fix(vaddr);
++}
++
++#define kmap_get_fixmap_pte(vaddr) \
++	pte_offset_kernel(pmd_offset(pud_offset(pgd_offset_k(vaddr), \
++				(vaddr)), (vaddr)), (vaddr))
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/highmem.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/highmem.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,111 @@
++/*
++ * Highmem definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_HIGHMEM_H
++#define _ASM_HIGHMEM_H
++
++#ifdef __KERNEL__
++
++#include <linux/init.h>
++
++#define NR_TLB_LINES		64
++
++#ifndef __ASSEMBLY__
++
++#include <linux/interrupt.h>
++#include <asm/kmap_types.h>
++#include <asm/pgtable.h>
++#include <asm/fixmap.h>
++
++/*
++ * Indicate the memory range of "high memory";
++ * look at how this changes for noncontig mem configs
++ */
++extern unsigned long highstart_pfn, highend_pfn;
++
++/* Default kmap page protection; used in mm/highmem.c  */
++extern pgprot_t kmap_prot;
++
++#define flush_cache_kmaps()  do { \
++	printk(KERN_INFO "flush_cache_kmaps not implemented yet\n");\
++} while (0)
++
++extern void __init kmap_init(void);
++extern void *kmap_high(struct page *page);   /*  defined in mm/highmem.c  */
++extern void kunmap_high(struct page *page);  /*  defined in mm/highmem.c  */
++
++/* Use the defaults in <linux/highmem.h> if CONFIG_HIGHMEM not set */
++/**
++ * kmap - creates kernel mapping for a page
++ * @page: pointer to page struct (in mem_map)
++ *
++ * Looks like this routine checks to see if the page is actually in the
++ * highmem range in the first place; if not, then it gives the
++ * logical/virtual address of the page back.
++ *
++ * Otherwise it calls kmap_high, which returns the logical address of
++ * the newly mapped highmem page.  The code seems to indicate that ALL
++ * kmaps go into the "permanent kernel mapping" array, which is a static
++ * size array.
++ *
++ * This code repeatedly calls page_address over and over again.
++ * XXX Todo: fix the above ...
++ *
++ * The map_new_virtual call is the guy that actually "flushes zero pkmaps"
++ * when it searches for a free kmap slot.  If it doesn't find one, then it
++ * sleeps in a waitqueue.
++ *
++ * A pkmap_count of 1 means "need flush".
++ * A pkmap_count of 0 means it's available.
++ */
++extern void *kmap_hexagon(struct page *page);
++#define kmap(p)		kmap_hexagon((p))
++
++/**
++ * kunmap - unmaps a kernel mapping
++ * @page: pointer to page struct
++ *
++ * If it's not in highmem, then you ain't unmapping anybody.
++ *
++ * If it is in highmem, it calls kunmap_high, which magically
++ * removes the mapping or something.  Seems to only decrement pkmap_count
++ * for the page.  If the pkmap_count was decremented to 1, that means it's
++ * ready to be flushed.
++ *
++ * It also is responsible for waking anybody up that was waiting for a kmap
++ * to free up.
++ */
++extern void kunmap_hexagon(struct page *page);
++#define kunmap(p)	kunmap_hexagon((p))
++
++extern struct page *kmap_atomic_to_page_hexagon(void *ptr);
++#define kmap_atomic_to_page(p)	kmap_atomic_to_page_hexagon((p))
++
++extern void *kmap_atomic_prot(struct page *page, pgprot_t prot);
++extern void __kunmap_atomic(void *);
++
++static inline void *__kmap_atomic(struct page *page)
++{
++	return kmap_atomic_prot(page, kmap_prot);
++}
++
++#endif /* !__ASSEMBLY__ */
++#endif /* __KERNEL__ */
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/mmu_context.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/mmu_context.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,100 @@
++/*
++ * MM context support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_MMU_CONTEXT_H
++#define _ASM_MMU_CONTEXT_H
++
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgalloc.h>
++#include <asm/mem-layout.h>
++
++static inline void destroy_context(struct mm_struct *mm)
++{
++}
++
++/*
++ * VM port hides all TLB management, so "lazy TLB" isn't very
++ * meaningful.  Even for ports to architectures with visble TLBs,
++ * this is almost invariably a null function.
++ */
++static inline void enter_lazy_tlb(struct mm_struct *mm,
++	struct task_struct *tsk)
++{
++}
++
++/*
++ * Architecture-specific actions, if any, for memory map deactivation.
++ */
++static inline void deactivate_mm(struct task_struct *tsk,
++	struct mm_struct *mm)
++{
++}
++
++/**
++ * init_new_context - initialize context related info for new mm_struct instance
++ * @tsk: pointer to a task struct
++ * @mm: pointer to a new mm struct
++ */
++static inline int init_new_context(struct task_struct *tsk,
++					struct mm_struct *mm)
++{
++	/* mm->context is set up by pgd_alloc */
++	return 0;
++}
++
++/*
++ *  Switch active mm context
++ */
++static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++				struct task_struct *tsk)
++{
++	int l1;
++
++	/*
++	 * For virtual machine, we have to update system map if it's been
++	 * touched.
++	 */
++	if (next->context.generation < prev->context.generation) {
++		for (l1 = MIN_KERNEL_SEG; l1 <= max_kernel_seg; l1++)
++			next->pgd[l1] = init_mm.pgd[l1];
++
++		next->context.generation = prev->context.generation;
++	}
++
++	__vmnewmap((void *)next->context.ptbase);
++}
++
++/*
++ *  Activate new memory map for task
++ */
++static inline void activate_mm(struct mm_struct *prev, struct mm_struct *next)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++	switch_mm(prev, next, current_thread_info()->task);
++	local_irq_restore(flags);
++}
++
++/*  Generic hooks for arch_dup_mmap and arch_exit_mmap  */
++#include <asm-generic/mm_hooks.h>
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/mmu.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/mmu.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,34 @@
 +/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
-+ *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
 + * only version 2 as published by the Free Software Foundation.
@@ -51,537 +358,31 @@ Index: linux-hexagon-kernel/arch/hexagon/lib/memcpy.S
 + * 02110-1301, USA.
 + */
 +
++#ifndef _ASM_MMU_H
++#define _ASM_MMU_H
++
 +/*
-+ * Description
-+ *
-+ *   library function for memcpy where length bytes are copied from
-+ *   ptr_in to ptr_out. ptr_out is returned unchanged.
-+ *   Allows any combination of alignment on input and output pointers
-+ *   and length from 0 to 2^32-1
-+ *
-+ * Restrictions
-+ *   The arrays should not overlap, the program will produce undefined output
-+ *   if they do.
-+ *   For blocks less than 16 bytes a byte by byte copy is performed. For
-+ *   8byte alignments, and length multiples, a dword copy is performed up to
-+ *   96bytes
-+ * History
-+ *
-+ *   DJH  5/15/09 Initial version 1.0
-+ *   DJH  6/ 1/09 Version 1.1 modified ABI to inlcude R16-R19
-+ *   DJH  7/12/09 Version 1.2 optimized codesize down to 760 was 840
-+ *   DJH 10/14/09 Version 1.3 added special loop for aligned case, was
-+ *                            overreading bloated codesize back up to 892
-+ *   DJH  4/20/10 Version 1.4 fixed Ldword_loop_epilog loop to prevent loads
-+ *                            occuring if only 1 left outstanding, fixes bug
-+ *                            # 3888, corrected for all alignments. Peeled off
-+ *                            1 32byte chunk from kernel loop and extended 8byte
-+ *                            loop at end to solve all combinations and prevent
-+ *                            over read.  Fixed Ldword_loop_prolog to prevent
-+ *                            overread for blocks less than 48bytes. Reduced
-+ *                            codesize to 752 bytes
-+ *   DJH  4/21/10 version 1.5 1.4 fix broke code for input block ends not
-+ *                            aligned to dword boundaries,underwriting by 1
-+ *                            byte, added detection for this and fixed. A
-+ *                            little bloat.
-+ *   DJH  4/23/10 version 1.6 corrected stack error, R20 was not being restored
-+ *                            always, fixed the error of R20 being modified
-+ *                            before it was being saved
-+ * Natural c model
-+ * ===============
-+ * void * memcpy(char * ptr_out, char * ptr_in, int length) {
-+ *   int i;
-+ *   if(length) for(i=0; i < length; i++) { ptr_out[i] = ptr_in[i]; }
-+ *   return(ptr_out);
-+ * }
-+ *
-+ * Optimized memcpy function
-+ * =========================
-+ * void * memcpy(char * ptr_out, char * ptr_in, int len) {
-+ *   int i, prolog, kernel, epilog, mask;
-+ *   u8 offset;
-+ *   s64 data0, dataF8, data70;
-+ *
-+ *   s64 * ptr8_in;
-+ *   s64 * ptr8_out;
-+ *   s32 * ptr4;
-+ *   s16 * ptr2;
-+ *
-+ *   offset = ((int) ptr_in) & 7;
-+ *   ptr8_in = (s64 *) &ptr_in[-offset];   //read in the aligned pointers
-+ *
-+ *   data70 = *ptr8_in++;
-+ *   dataF8 = *ptr8_in++;
-+ *
-+ *   data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *
-+ *   prolog = 32 - ((int) ptr_out);
-+ *   mask  = 0x7fffffff >> HEXAGON_R_cl0_R(len);
-+ *   prolog = prolog & mask;
-+ *   kernel = len - prolog;
-+ *   epilog = kernel & 0x1F;
-+ *   kernel = kernel>>5;
-+ *
-+ *   if (prolog & 1) { ptr_out[0] = (u8) data0; data0 >>= 8; ptr_out += 1;}
-+ *   ptr2 = (s16 *) &ptr_out[0];
-+ *   if (prolog & 2) { ptr2[0] = (u16) data0;  data0 >>= 16; ptr_out += 2;}
-+ *   ptr4 = (s32 *) &ptr_out[0];
-+ *   if (prolog & 4) { ptr4[0] = (u32) data0;  data0 >>= 32; ptr_out += 4;}
-+ *
-+ *   offset = offset + (prolog & 7);
-+ *   if (offset >= 8) {
-+ *     data70 = dataF8;
-+ *     dataF8 = *ptr8_in++;
-+ *   }
-+ *   offset = offset & 0x7;
-+ *
-+ *   prolog = prolog >> 3;
-+ *   if (prolog) for (i=0; i < prolog; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = dataF8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   if(kernel) { kernel -= 1; epilog += 32; }
-+ *   if(kernel) for(i=0; i < kernel; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(data70, dataF8, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       dataF8 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = *ptr8_in++;
-+ *
-+ *       data0 = HEXAGON_P_valignb_PPp(data70, dataF8, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   epilogdws = epilog >> 3;
-+ *   if (epilogdws) for (i=0; i < epilogdws; i++) {
-+ *       data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *       ptr8_out = (s64 *) &ptr_out[0]; *ptr8_out = data0; ptr_out += 8;
-+ *       data70 = dataF8;
-+ *       dataF8 = *ptr8_in++;
-+ *   }
-+ *   data0 = HEXAGON_P_valignb_PPp(dataF8, data70, offset);
-+ *
-+ *   ptr4 = (s32 *) &ptr_out[0];
-+ *   if (epilog & 4) { ptr4[0] = (u32) data0; data0 >>= 32; ptr_out += 4;}
-+ *   ptr2 = (s16 *) &ptr_out[0];
-+ *   if (epilog & 2) { ptr2[0] = (u16) data0; data0 >>= 16; ptr_out += 2;}
-+ *   if (epilog & 1) { *ptr_out++ = (u8) data0; }
-+ *
-+ *   return(ptr_out - length);
-+ * }
-+ *
-+ * Codesize : 784 bytes
++ * Architecture-specific state for a mm_struct.
++ * For the Hexagon Virtual Machine, it can be a copy
++ * of the pointer to the page table base.
 + */
++struct mm_context {
++	unsigned long long generation;
++	unsigned long ptbase;
++};
 +
++typedef struct mm_context mm_context_t;
 +
-+#define ptr_out		R0	/*  destination  pounter  */
-+#define ptr_in		R1	/*  source pointer  */
-+#define len		R2	/*  length of copy in bytes  */
-+
-+#define data70		R13:12	/*  lo 8 bytes of non-aligned transfer  */
-+#define dataF8		R11:10	/*  hi 8 bytes of non-aligned transfer  */
-+#define ldata0		R7:6	/*  even 8 bytes chunks  */
-+#define ldata1		R25:24	/*  odd 8 bytes chunks  */
-+#define data1		R7	/*  lower 8 bytes of ldata1  */
-+#define data0		R6	/*  lower 8 bytes of ldata0  */
-+
-+#define ifbyte		p0	/*  if transfer has bytes in epilog/prolog  */
-+#define ifhword		p0	/*  if transfer has shorts in epilog/prolog  */
-+#define ifword		p0	/*  if transfer has words in epilog/prolog  */
-+#define noprolog	p0	/*  no prolog, xfer starts at 32byte  */
-+#define nokernel	p1	/*  no 32byte multiple block in the transfer  */
-+#define noepilog	p0	/*  no epilog, xfer ends on 32byte boundary  */
-+#define align		p2	/*  alignment of input rel to 8byte boundary  */
-+#define kernel1		p0	/*  kernel count == 1  */
-+
-+#define dalign		R25	/*  rel alignment of input to output data  */
-+#define star3		R16	/*  number bytes in prolog - dwords  */
-+#define rest		R8	/*  length - prolog bytes  */
-+#define back		R7	/*  nr bytes > dword boundary in src block  */
-+#define epilog		R3	/*  bytes in epilog  */
-+#define inc		R15:14	/*  inc kernel by -1 and defetch ptr by 32  */
-+#define kernel		R4	/*  number of 32byte chunks in kernel  */
-+#define ptr_in_p_128	R5	/*  pointer for prefetch of input data  */
-+#define mask		R8	/*  mask used to determine prolog size  */
-+#define shift		R8	/*  used to work a shifter to extract bytes  */
-+#define shift2		R5	/*  in epilog to workshifter to extract bytes */
-+#define prolog		R15	/*  bytes in  prolog  */
-+#define epilogdws	R15	/*  number dwords in epilog  */
-+#define shiftb		R14	/*  used to extract bytes  */
-+#define offset		R9	/*  same as align in reg  */
-+#define ptr_out_p_32	R17	/*  pointer to output dczero  */
-+#define align888	R14	/*  if simple dword loop can be used  */
-+#define len8		R9	/*  number of dwords in length  */
-+#define over		R20	/*  nr of bytes > last inp buf dword boundary */
-+
-+#define ptr_in_p_128kernel	R5:4	/*  packed fetch pointer & kernel cnt */
-+
-+	.section .text
-+	.p2align 4
-+        .global memcpy
-+        .type memcpy, @function
-+memcpy:
-+{
-+	p2 = cmp.eq(len, #0);		/*  =0 */
-+	align888 = or(ptr_in, ptr_out);	/*  %8 < 97 */
-+	p0 = cmp.gtu(len, #23);		/*  %1, <24 */
-+	p1 = cmp.eq(ptr_in, ptr_out);	/*  attempt to overwrite self */
-+}
-+{
-+	p1 = or(p2, p1);
-+	p3 = cmp.gtu(len, #95);		/*  %8 < 97 */
-+	align888 = or(align888, len);	/*  %8 < 97 */
-+	len8 = lsr(len, #3);		/*  %8 < 97 */
-+}
-+{
-+	dcfetch(ptr_in);		/*  zero/ptrin=ptrout causes fetch */
-+	p2 = bitsclr(align888, #7);	/*  %8 < 97  */
-+	if(p1) jumpr r31;		/*  =0  */
-+}
-+{
-+	p2 = and(p2,!p3);			/*  %8 < 97  */
-+	if (p2.new) len = add(len, #-8);	/*  %8 < 97  */
-+	if (p2.new) jump:NT .Ldwordaligned; 	/*  %8 < 97  */
-+}
-+{
-+	if(!p0) jump .Lbytes23orless;	/*  %1, <24  */
-+	mask.l = #LO(0x7fffffff);
-+	/*  all bytes before line multiples of data  */
-+	prolog = sub(#0, ptr_out);
-+}
-+{
-+	/*  save r31 on stack, decrement sp by 16  */
-+	allocframe(#24);
-+	mask.h = #HI(0x7fffffff);
-+	ptr_in_p_128 = add(ptr_in, #32);
-+	back = cl0(len);
-+}
-+{
-+	memd(sp+#0) = R17:16;		/*  save r16,r17 on stack6  */
-+	r31.l = #LO(.Lmemcpy_return);	/*  set up final return pointer  */
-+	prolog &= lsr(mask, back);
-+	offset = and(ptr_in, #7);
-+}
-+{
-+	memd(sp+#8) = R25:24;		/*  save r25,r24 on stack  */
-+	dalign = sub(ptr_out, ptr_in);
-+	r31.h = #HI(.Lmemcpy_return);	/*  set up final return pointer  */
-+}
-+{
-+	/*  see if there if input buffer end if aligned  */
-+	over = add(len, ptr_in);
-+	back = add(len, offset);
-+	memd(sp+#16) = R21:20;		/*  save r20,r21 on stack  */
-+}
-+{
-+	noprolog = bitsclr(prolog, #7);
-+	prolog = and(prolog, #31);
-+	dcfetch(ptr_in_p_128);
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	kernel = sub(len, prolog);
-+	shift = asl(prolog, #3);
-+	star3 = and(prolog, #7);
-+	ptr_in = and(ptr_in, #-8);
-+}
-+{
-+	prolog = lsr(prolog, #3);
-+	epilog = and(kernel, #31);
-+	ptr_out_p_32 = add(ptr_out, prolog);
-+	over = and(over, #7);
-+}
-+{
-+	p3 = cmp.gtu(back, #8);
-+	kernel = lsr(kernel, #5);
-+	dcfetch(ptr_in_p_128);
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	p1 = cmp.eq(prolog, #0);
-+	if(!p1.new) prolog = add(prolog, #1);
-+	dcfetch(ptr_in_p_128);	/*  reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+}
-+{
-+	nokernel = cmp.eq(kernel,#0);
-+	dcfetch(ptr_in_p_128);	/* reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+	shiftb = and(shift, #8);
-+}
-+{
-+	dcfetch(ptr_in_p_128);		/*  reserve the line 64bytes on  */
-+	ptr_in_p_128 = add(ptr_in_p_128, #32);
-+	if(nokernel) jump .Lskip64;
-+	p2 = cmp.eq(kernel, #1);	/*  skip ovr if kernel == 0  */
-+}
-+{
-+	dczeroa(ptr_out_p_32);
-+	/*  don't advance pointer  */
-+	if(!p2) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dalign = and(dalign, #31);
-+	dczeroa(ptr_out_p_32);
-+}
-+.Lskip64:
-+{
-+	data70 = memd(ptr_in++#16);
-+	if(p3) dataF8 = memd(ptr_in+#8);
-+	if(noprolog) jump .Lnoprolog32;
-+	align = offset;
-+}
-+/*  upto initial 7 bytes  */
-+{
-+	ldata0 = valignb(dataF8, data70, align);
-+	ifbyte = tstbit(shift,#3);
-+	offset = add(offset, star3);
-+}
-+{
-+	if(ifbyte) memb(ptr_out++#1) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	shiftb = and(shift, #16);
-+	ifhword = tstbit(shift,#4);
-+}
-+{
-+	if(ifhword) memh(ptr_out++#2) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifword = tstbit(shift,#5);
-+	p2 = cmp.gtu(offset, #7);
-+}
-+{
-+	if(ifword) memw(ptr_out++#4) = data0;
-+	if(p2) data70 = dataF8;
-+	if(p2) dataF8 = memd(ptr_in++#8);	/*  another 8 bytes  */
-+	align = offset;
-+}
-+.Lnoprolog32:
-+{
-+	p3 = sp1loop0(.Ldword_loop_prolog, prolog)
-+	rest = sub(len, star3);	/*  whats left after the loop  */
-+	p0 = cmp.gt(over, #0);
-+}
-+	if(p0) rest = add(rest, #16);
-+.Ldword_loop_prolog:
-+{
-+	if(p3) memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	p0 = cmp.gt(rest, #16);
-+}
-+{
-+	data70 = dataF8;
-+	if(p0) dataF8 = memd(ptr_in++#8);
-+	rest = add(rest, #-8);
-+}:endloop0
-+.Lkernel:
-+{
-+	/*  kernel is at least 32bytes  */
-+	p3 = cmp.gtu(kernel, #0);
-+	/*  last itn. remove edge effects  */
-+	if(p3.new) kernel = add(kernel, #-1);
-+	/*  dealt with in last dword loop  */
-+	if(p3.new) epilog = add(epilog, #32);
-+}
-+{
-+	nokernel = cmp.eq(kernel, #0);		/*  after adjustment, recheck */
-+	if(nokernel.new) jump:NT .Lepilog;	/*  likely not taken  */
-+	inc = combine(#32, #-1);
-+	p3 = cmp.gtu(dalign, #24);
-+}
-+{
-+	if(p3) jump .Lodd_alignment;
-+}
-+{
-+	loop0(.Loword_loop_25to31, kernel);
-+	kernel1 = cmp.gtu(kernel, #1);
-+	rest = kernel;
-+}
-+	.falign
-+.Loword_loop_25to31:
-+{
-+	dcfetch(ptr_in_p_128);	/*  prefetch 4 lines ahead  */
-+	if(kernel1) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dczeroa(ptr_out_p_32);	/*  reserve the next 32bytes in cache  */
-+	p3 = cmp.eq(kernel, rest);
-+}
-+{
-+	/*  kernel -= 1  */
-+	ptr_in_p_128kernel = vaddw(ptr_in_p_128kernel, inc);
-+	/*  kill write on first iteration  */
-+	if(!p3) memd(ptr_out++#8) = ldata1;
-+	ldata1 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata1;
-+	ldata1 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+	kernel1 = cmp.gtu(kernel, #1);
-+}:endloop0
-+{
-+	memd(ptr_out++#8) = ldata1;
-+	jump .Lepilog;
-+}
-+.Lodd_alignment:
-+{
-+	loop0(.Loword_loop_00to24, kernel);
-+	kernel1 = cmp.gtu(kernel, #1);
-+	rest = add(kernel, #-1);
-+}
-+	.falign
-+.Loword_loop_00to24:
-+{
-+	dcfetch(ptr_in_p_128);	/*  prefetch 4 lines ahead  */
-+	ptr_in_p_128kernel = vaddw(ptr_in_p_128kernel, inc);
-+	if(kernel1) ptr_out_p_32 = add(ptr_out_p_32, #32);
-+}
-+{
-+	dczeroa(ptr_out_p_32);	/*  reserve the next 32bytes in cache  */
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	data70 = memd(ptr_in++#8);
-+}
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(data70, dataF8, align);
-+	dataF8 = memd(ptr_in++#8);
-+	kernel1 = cmp.gtu(kernel, #1);
-+}:endloop0
-+.Lepilog:
-+{
-+	noepilog = cmp.eq(epilog,#0);
-+	epilogdws = lsr(epilog, #3);
-+	kernel = and(epilog, #7);
-+}
-+{
-+	if(noepilog) jumpr r31;
-+	if(noepilog) ptr_out = sub(ptr_out, len);
-+	p3 = cmp.eq(epilogdws, #0);
-+	shift2 = asl(epilog, #3);
-+}
-+{
-+	shiftb = and(shift2, #32);
-+	ifword = tstbit(epilog,#2);
-+	if(p3) jump .Lepilog60;
-+	if(!p3) epilog = add(epilog, #-16);
-+}
-+{
-+	loop0(.Ldword_loop_epilog, epilogdws);
-+	/*  stop criteria is lsbs unless = 0 then its 8  */
-+	p3 = cmp.eq(kernel, #0);
-+	if(p3.new) kernel= #8;
-+	p1 = cmp.gt(over, #0);
-+}
-+	/*  if not aligned to end of buffer execute 1 more iteration  */
-+	if(p1) kernel= #0;
-+.Ldword_loop_epilog:
-+{
-+	memd(ptr_out++#8) = ldata0;
-+	ldata0 = valignb(dataF8, data70, align);
-+	p3 = cmp.gt(epilog, kernel);
-+}
-+{
-+	data70 = dataF8;
-+	if(p3) dataF8 = memd(ptr_in++#8);
-+	epilog = add(epilog, #-8);
-+}:endloop0
-+/* copy last 7 bytes */
-+.Lepilog60:
-+{
-+	if(ifword) memw(ptr_out++#4) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifhword = tstbit(epilog,#1);
-+	shiftb = and(shift2, #16);
-+}
-+{
-+	if(ifhword) memh(ptr_out++#2) = data0;
-+	ldata0 = lsr(ldata0, shiftb);
-+	ifbyte = tstbit(epilog,#0);
-+	if(ifbyte.new) len = add(len, #-1);
-+}
-+{
-+	if(ifbyte) memb(ptr_out) = data0;
-+	ptr_out = sub(ptr_out, len);	/*  return dest pointer  */
-+        jumpr r31;
-+}
-+/*  do byte copy for small n  */
-+.Lbytes23orless:
-+{
-+	p3 = sp1loop0(.Lbyte_copy, len);
-+	len = add(len, #-1);
-+}
-+.Lbyte_copy:
-+{
-+	data0 = memb(ptr_in++#1);
-+	if(p3) memb(ptr_out++#1) = data0;
-+}:endloop0
-+{
-+	memb(ptr_out) = data0;
-+	ptr_out = sub(ptr_out, len);
-+	jumpr r31;
-+}
-+/*  do dword copies for aligned in, out and length  */
-+.Ldwordaligned:
-+{
-+	p3 = sp1loop0(.Ldword_copy, len8);
-+}
-+.Ldword_copy:
-+{
-+	if(p3) memd(ptr_out++#8) = ldata0;
-+	ldata0 = memd(ptr_in++#8);
-+}:endloop0
-+{
-+	memd(ptr_out) = ldata0;
-+	ptr_out = sub(ptr_out, len);
-+	jumpr r31;	/*  return to function caller  */
-+}
-+.Lmemcpy_return:
-+	r21:20 = memd(sp+#16);	/*  restore r20+r21  */
-+{
-+	r25:24 = memd(sp+#8);	/*  restore r24+r25  */
-+	r17:16 = memd(sp+#0);	/*  restore r16+r17  */
-+}
-+	deallocframe;	/*  restore r31 and incrment stack by 16  */
-+	jumpr r31
-Index: linux-hexagon-kernel/arch/hexagon/lib/memset.S
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/page.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hexagon-kernel/arch/hexagon/lib/memset.S	2011-07-20 15:19:38.275153041 -0500
-@@ -0,0 +1,316 @@
++++ linux-hexagon-kernel/arch/hexagon/include/asm/page.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,157 @@
 +/*
-+ * Copyright (c) 2011 Code Aurora Forum. All rights reserved.
++ * Page management definitions for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -598,303 +399,997 @@ Index: linux-hexagon-kernel/arch/hexagon/lib/memset.S
 + * 02110-1301, USA.
 + */
 +
++#ifndef _ASM_PAGE_H
++#define _ASM_PAGE_H
 +
-+/* HEXAGON assembly optimized memset */
-+/* Replaces the standard library function memset */
++#include <linux/const.h>
 +
++/*  This is probably not the most graceful way to handle this.  */
 +
-+        .macro HEXAGON_OPT_FUNC_BEGIN name
-+	.text
-+	.p2align 4
-+	.globl \name
-+	.type  \name, @function
-+\name:
-+	.endm
-+
-+	.macro HEXAGON_OPT_FUNC_FINISH name
-+	.size  \name, . - \name
-+	.endm
-+
-+/* FUNCTION: memset (v2 version) */
-+#if __HEXAGON_ARCH__ < 3
-+HEXAGON_OPT_FUNC_BEGIN memset
-+	{
-+		r6 = #8
-+		r7 = extractu(r0, #3 , #0)
-+		p0 = cmp.eq(r2, #0)
-+		p1 = cmp.gtu(r2, #7)
-+	}
-+	{
-+		r4 = vsplatb(r1)
-+		r8 = r0           /* leave r0 intact for return val  */
-+		r9 = sub(r6, r7)  /* bytes until double alignment  */
-+		if p0 jumpr r31   /* count == 0, so return  */
-+	}
-+	{
-+		r3 = #0
-+		r7 = #0
-+		p0 = tstbit(r9, #0)
-+		if p1 jump 2f /* skip byte loop */
-+	}
-+
-+/* less than 8 bytes to set, so just set a byte at a time and return  */
-+
-+		loop0(1f, r2) /* byte loop */
-+	.falign
-+1: /* byte loop */
-+	{
-+		memb(r8++#1) = r4
-+	}:endloop0
-+		jumpr r31
-+	.falign
-+2: /* skip byte loop */
-+	{
-+		r6 = #1
-+		p0 = tstbit(r9, #1)
-+		p1 = cmp.eq(r2, #1)
-+		if !p0 jump 3f /* skip initial byte store */
-+	}
-+	{
-+		memb(r8++#1) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+3: /* skip initial byte store */
-+	{
-+		r6 = #2
-+		p0 = tstbit(r9, #2)
-+		p1 = cmp.eq(r2, #2)
-+		if !p0 jump 4f /* skip initial half store */
-+	}
-+	{
-+		memh(r8++#2) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+4: /* skip initial half store */
-+	{
-+		r6 = #4
-+		p0 = cmp.gtu(r2, #7)
-+		p1 = cmp.eq(r2, #4)
-+		if !p0 jump 5f /* skip initial word store */
-+	}
-+	{
-+		memw(r8++#4) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		p0 = cmp.gtu(r2, #11)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+5: /* skip initial word store */
-+	{
-+		r10 = lsr(r2, #3)
-+		p1 = cmp.eq(r3, #1)
-+		if !p0 jump 7f /* skip double loop */
-+	}
-+	{
-+		r5 = r4
-+		r6 = #8
-+		loop0(6f, r10) /* double loop */
-+	}
-+
-+/* set bytes a double word at a time  */
-+
-+	.falign
-+6: /* double loop */
-+	{
-+		memd(r8++#8) = r5:4
-+		r3:2 = sub(r3:2, r7:6)
-+		p1 = cmp.eq(r2, #8)
-+	}:endloop0
-+	.falign
-+7: /* skip double loop */
-+	{
-+		p0 = tstbit(r2, #2)
-+		if p1 jumpr r31
-+	}
-+	{
-+		r6 = #4
-+		p0 = tstbit(r2, #1)
-+		p1 = cmp.eq(r2, #4)
-+		if !p0 jump 8f /* skip final word store */
-+	}
-+	{
-+		memw(r8++#4) = r4
-+		r3:2 = sub(r3:2, r7:6)
-+		if p1 jumpr r31
-+	}
-+	.falign
-+8: /* skip final word store */
-+	{
-+		p1 = cmp.eq(r2, #2)
-+		if !p0 jump 9f /* skip final half store */
-+	}
-+	{
-+		memh(r8++#2) = r4
-+		if p1 jumpr r31
-+	}
-+	.falign
-+9: /* skip final half store */
-+	{
-+		memb(r8++#1) = r4
-+		jumpr r31
-+	}
-+HEXAGON_OPT_FUNC_FINISH memset
++#ifdef CONFIG_PAGE_SIZE_4KB
++#define PAGE_SHIFT 12
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_4KB
 +#endif
 +
-+
-+/*  FUNCTION: memset (v3 and higher version)  */
-+#if __HEXAGON_ARCH__ >= 3
-+HEXAGON_OPT_FUNC_BEGIN memset
-+	{
-+		r7=vsplatb(r1)
-+		r6 = r0
-+		if (r2==#0) jump:nt .L1
-+	}
-+	{
-+		r5:4=combine(r7,r7)
-+		p0 = cmp.gtu(r2,#8)
-+		if (p0.new) jump:nt .L3
-+	}
-+	{
-+		r3 = r0
-+		loop0(.L47,r2)
-+	}
-+	.falign
-+.L47:
-+	{
-+		memb(r3++#1) = r1
-+	}:endloop0 /* start=.L47 */
-+		jumpr r31
-+.L3:
-+	{
-+		p0 = tstbit(r0,#0)
-+		if (!p0.new) jump:nt .L8
-+		p1 = cmp.eq(r2, #1)
-+	}
-+	{
-+		r6 = add(r0, #1)
-+		r2 = add(r2,#-1)
-+		memb(r0) = r1
-+		if (p1) jump .L1
-+	}
-+.L8:
-+	{
-+		p0 = tstbit(r6,#1)
-+		if (!p0.new) jump:nt .L10
-+	}
-+	{
-+		r2 = add(r2,#-2)
-+		memh(r6++#2) = r7
-+		p0 = cmp.eq(r2, #2)
-+		if (p0.new) jump:nt .L1
-+	}
-+.L10:
-+	{
-+		p0 = tstbit(r6,#2)
-+		if (!p0.new) jump:nt .L12
-+	}
-+	{
-+		r2 = add(r2,#-4)
-+		memw(r6++#4) = r7
-+		p0 = cmp.eq(r2, #4)
-+		if (p0.new) jump:nt .L1
-+	}
-+.L12:
-+	{
-+		p0 = cmp.gtu(r2,#127)
-+		if (!p0.new) jump:nt .L14
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+		r3 = and(r6,#31)
-+		if (r3==#0) jump:nt .L17
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}
-+.L17:
-+	{
-+		r3 = lsr(r2,#5)
-+		if (r1!=#0) jump:nt .L18
-+	}
-+	{
-+		r8 = r3
-+		r3 = r6
-+		loop0(.L46,r3)
-+	}
-+	.falign
-+.L46:
-+	{
-+		dczeroa(r6)
-+		r6 = add(r6,#32)
-+		r2 = add(r2,#-32)
-+	}:endloop0 /* start=.L46 */
-+.L14:
-+	{
-+		p0 = cmp.gtu(r2,#7)
-+		if (!p0.new) jump:nt .L28
-+		r8 = lsr(r2,#3)
-+	}
-+		loop0(.L44,r8)
-+	.falign
-+.L44:
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-8)
-+	}:endloop0 /* start=.L44 */
-+.L28:
-+	{
-+		p0 = tstbit(r2,#2)
-+		if (!p0.new) jump:nt .L33
-+	}
-+	{
-+		r2 = add(r2,#-4)
-+		memw(r6++#4) = r7
-+	}
-+.L33:
-+	{
-+		p0 = tstbit(r2,#1)
-+		if (!p0.new) jump:nt .L35
-+	}
-+	{
-+		r2 = add(r2,#-2)
-+		memh(r6++#2) = r7
-+	}
-+.L35:
-+		p0 = cmp.eq(r2,#1)
-+		if (p0) memb(r6) = r1
-+.L1:
-+		jumpr r31
-+.L18:
-+		loop0(.L45,r3)
-+	.falign
-+.L45:
-+		dczeroa(r6)
-+	{
-+		memd(r6++#8) = r5:4
-+		r2 = add(r2,#-32)
-+	}
-+		memd(r6++#8) = r5:4
-+		memd(r6++#8) = r5:4
-+	{
-+		memd(r6++#8) = r5:4
-+	}:endloop0 /* start=.L45  */
-+		jump .L14
-+HEXAGON_OPT_FUNC_FINISH memset
++#ifdef CONFIG_PAGE_SIZE_16KB
++#define PAGE_SHIFT 14
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_16KB
 +#endif
++
++#ifdef CONFIG_PAGE_SIZE_64KB
++#define PAGE_SHIFT 16
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_64KB
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_256KB
++#define PAGE_SHIFT 18
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_256KB
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_1MB
++#define PAGE_SHIFT 20
++#define HEXAGON_L1_PTE_SIZE __HVM_PDE_S_1MB
++#endif
++
++/*
++ *  These should be defined in hugetlb.h, but apparently not.
++ *  "Huge" for us should be 4MB or 16MB, which are both represented
++ *  in L1 PTE's.  Right now, it's set up for 4MB.
++ */
++#ifdef CONFIG_HUGETLB_PAGE
++#define HPAGE_SHIFT 22
++#define HPAGE_SIZE (1UL << HPAGE_SHIFT)
++#define HPAGE_MASK (~(HPAGE_SIZE-1))
++#define HUGETLB_PAGE_ORDER (HPAGE_SHIFT-PAGE_SHIFT)
++#define HVM_HUGEPAGE_SIZE 0x5
++#endif
++
++#define PAGE_SIZE  (1UL << PAGE_SHIFT)
++#define PAGE_MASK  (~((1 << PAGE_SHIFT) - 1))
++
++#ifdef __KERNEL__
++#ifndef __ASSEMBLY__
++
++/*
++ * This is for PFN_DOWN, which mm.h needs.  Seems the right place to pull it in.
++ */
++#include <linux/pfn.h>
++
++/*
++ * We implement a two-level architecture-specific page table structure.
++ * Null intermediate page table level (pmd, pud) definitions will come from
++ * asm-generic/pagetable-nopmd.h and asm-generic/pagetable-nopud.h
++ */
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++typedef struct page *pgtable_t;
++
++#define pte_val(x)     ((x).pte)
++#define pgd_val(x)     ((x).pgd)
++#define pgprot_val(x)  ((x).pgprot)
++#define __pte(x)       ((pte_t) { (x) })
++#define __pgd(x)       ((pgd_t) { (x) })
++#define __pgprot(x)    ((pgprot_t) { (x) })
++
++/*
++ * We need a __pa and a __va routine for kernel space.
++ * MIPS says they're only used during mem_init.
++ * also, check if we need a PHYS_OFFSET.
++ */
++#define __pa(x) ((unsigned long)(x) - PAGE_OFFSET)
++#define __va(x) ((void *)((unsigned long)(x) + PAGE_OFFSET))
++
++/* The "page frame" descriptor is defined in linux/mm.h */
++struct page;
++
++/* Returns page frame descriptor for virtual address. */
++#define virt_to_page(kaddr) pfn_to_page(PFN_DOWN(__pa(kaddr)))
++
++/* Default vm area behavior seems to be full access  */
++#define VM_DATA_DEFAULT_FLAGS (VM_READ | VM_WRITE | VM_EXEC | \
++				VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++#define pfn_valid(pfn) ((pfn) < max_mapnr)
++#define virt_addr_valid(kaddr) pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
++
++/*  Need to not use a define for linesize; may move this to another file.  */
++static inline void clear_page(void *page)
++{
++	/*  This can only be done on pages with L1 WB cache */
++	asm volatile(
++		"	loop0(1f,%1);\n"
++		"1:	{ dczeroa(%0);\n"
++		"	  %0 = add(%0,#32); }:endloop0\n"
++		: "+r" (page)
++		: "r" (PAGE_SIZE/32)
++		: "lc0", "sa0", "memory"
++	);
++}
++
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++/*
++ * Under assumption that kernel always "sees" user map...
++ */
++#define clear_user_page(page, vaddr, pg)	clear_page(page)
++#define copy_user_page(to, from, vaddr, pg)	copy_page(to, from)
++
++/*
++ * page_to_phys - convert page to physical address
++ * @page - pointer to page entry in mem_map
++ */
++#define page_to_phys(page)      (page_to_pfn(page) << PAGE_SHIFT)
++
++/*
++ * For port to Hexagon Virtual Machine, MAYBE we check for attempts
++ * to reference reserved HVM space, but in any case, the VM will be
++ * protected.
++ */
++#define kern_addr_valid(addr)   (1)
++
++#include <asm-generic/memory_model.h>
++/* XXX Todo: implement assembly-optimized version of getorder. */
++#include <asm-generic/getorder.h>
++
++#endif /* ifdef __ASSEMBLY__ */
++#endif /* ifdef __KERNEL__ */
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/pgalloc.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/pgalloc.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,146 @@
++/*
++ * Page table support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PGALLOC_H
++#define _ASM_PGALLOC_H
++
++#include <asm/mem-layout.h>
++#include <asm/atomic.h>
++
++#define check_pgt_cache() do {} while (0)
++
++extern unsigned long long kmap_generation;
++
++/*
++ * Page table creation interface
++ */
++static inline pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *pgd;
++
++	pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
++
++	/*
++	 * There may be better ways to do this, but to ensure
++	 * that new address spaces always contain the kernel
++	 * base mapping, and to ensure that the user area is
++	 * initially marked invalid, initialize the new map
++	 * map with a copy of the kernel's persistent map.
++	 */
++
++	memcpy(pgd, swapper_pg_dir, PTRS_PER_PGD*sizeof(pgd_t *));
++	mm->context.generation = kmap_generation;
++
++	/* Physical version is what is passed to virtual machine on switch */
++	mm->context.ptbase = __pa(pgd);
++
++	return pgd;
++}
++
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_page((unsigned long) pgd);
++}
++
++static inline struct page *pte_alloc_one(struct mm_struct *mm,
++					 unsigned long address)
++{
++	struct page *pte;
++
++	pte = alloc_page(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO);
++
++	if (pte)
++		pgtable_page_ctor(pte);
++
++	return pte;
++}
++
++/* _kernel variant gets to use a different allocator */
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++					  unsigned long address)
++{
++	gfp_t flags =  GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO;
++	return (pte_t *) __get_free_page(flags);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_page_dtor(pte);
++	__free_page(pte);
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_page((unsigned long)pte);
++}
++
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++				pgtable_t pte)
++{
++	/*
++	 * Conveniently, zero in 3 LSB means indirect 4K page table.
++	 * Not so convenient when you're trying to vary the page size.
++	 */
++	set_pmd(pmd, __pmd(((unsigned long)page_to_pfn(pte) << PAGE_SHIFT) |
++		HEXAGON_L1_PTE_SIZE));
++}
++
++/*
++ * Other architectures seem to have ways of making all processes
++ * share the same pmd's for their kernel mappings, but the v0.3
++ * Hexagon VM spec has a "monolithic" L1 table for user and kernel
++ * segments.  We track "generations" of the kernel map to minimize
++ * overhead, and update the "slave" copies of the kernel mappings
++ * as part of switch_mm.  However, we still need to update the
++ * kernel map of the active thread who's calling pmd_populate_kernel...
++ */
++static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
++				       pte_t *pte)
++{
++	extern spinlock_t kmap_gen_lock;
++	pmd_t *ppmd;
++	int pmdindex;
++
++	spin_lock(&kmap_gen_lock);
++	kmap_generation++;
++	mm->context.generation = kmap_generation;
++	current->active_mm->context.generation = kmap_generation;
++	spin_unlock(&kmap_gen_lock);
++
++	set_pmd(pmd, __pmd(((unsigned long)__pa(pte)) | HEXAGON_L1_PTE_SIZE));
++
++	/*
++	 * Now the "slave" copy of the current thread.
++	 * This is pointer arithmetic, not byte addresses!
++	 */
++	pmdindex = (pgd_t *)pmd - mm->pgd;
++	ppmd = (pmd_t *)current->active_mm->pgd + pmdindex;
++	set_pmd(ppmd, __pmd(((unsigned long)__pa(pte)) | HEXAGON_L1_PTE_SIZE));
++	if (pmdindex > max_kernel_seg)
++		max_kernel_seg = pmdindex;
++}
++
++#define __pte_free_tlb(tlb, pte, addr)		\
++do {						\
++	pgtable_page_dtor((pte));		\
++	tlb_remove_page((tlb), (pte));		\
++} while (0)
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/include/asm/pgtable.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/include/asm/pgtable.h	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,514 @@
++/*
++ * Page table support for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_PGTABLE_H
++#define _ASM_PGTABLE_H
++
++/*
++ * Page table definitions for Qualcomm Hexagon processor.
++ */
++#include <linux/swap.h>
++#include <asm/page.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++/* A handy thing to have if one has the RAM. Declared in head.S */
++extern unsigned long empty_zero_page;
++extern unsigned long zero_page_mask;
++
++/*
++ * The PTE model described here is that of the Hexagon Virtual Machine,
++ * which autonomously walks 2-level page tables.  At a lower level, we
++ * also describe the RISCish software-loaded TLB entry structure of
++ * the underlying Hexagon processor. A kernel built to run on the
++ * virtual machine has no need to know about the underlying hardware.
++ */
++#include <asm/vm_mmu.h>
++
++/*
++ * To maximize the comfort level for the PTE manipulation macros,
++ * define the "well known" architecture-specific bits.
++ */
++#define _PAGE_READ	__HVM_PTE_R
++#define _PAGE_WRITE	__HVM_PTE_W
++#define _PAGE_EXECUTE	__HVM_PTE_X
++#define _PAGE_USER	__HVM_PTE_U
++
++/*
++ * We have a total of 4 "soft" bits available in the abstract PTE.
++ * The two mandatory software bits are Dirty and Accessed.
++ * To make nonlinear swap work according to the more recent
++ * model, we want a low order "Present" bit to indicate whether
++ * the PTE describes MMU programming or swap space.
++ */
++#define _PAGE_PRESENT	(1<<0)
++#define _PAGE_DIRTY	(1<<1)
++#define _PAGE_ACCESSED	(1<<2)
++
++/*
++ * _PAGE_FILE is only meaningful if _PAGE_PRESENT is false, while
++ * _PAGE_DIRTY is only meaningful if _PAGE_PRESENT is true.
++ * So we can overload the bit...
++ */
++#define _PAGE_FILE	_PAGE_DIRTY /* set:  pagecache, unset = swap */
++
++/*
++ * For now, let's say that Valid and Present are the same thing.
++ * Alternatively, we could say that it's the "or" of R, W, and X
++ * permissions.
++ */
++#define _PAGE_VALID	_PAGE_PRESENT
++
++/*
++ * We're not defining _PAGE_GLOBAL here, since there's no concept
++ * of global pages or ASIDs exposed to the Hexagon Virtual Machine,
++ * and we want to use the same page table structures and macros in
++ * the native kernel as we do in the virtual machine kernel.
++ * So we'll put up with a bit of inefficiency for now...
++ */
++
++/*
++ * Top "FOURTH" level (pgd), which for the Hexagon VM is really
++ * only the second from the bottom, pgd and pud both being collapsed.
++ * Each entry represents 4MB of virtual address space, 4K of table
++ * thus maps the full 4GB.
++ */
++#define PGDIR_SHIFT 22
++#define PTRS_PER_PGD 1024
++
++#define PGDIR_SIZE (1UL << PGDIR_SHIFT)
++#define PGDIR_MASK (~(PGDIR_SIZE-1))
++
++#ifdef CONFIG_PAGE_SIZE_4KB
++#define PTRS_PER_PTE 1024
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_64KB
++#define PTRS_PER_PTE 64
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_256KB
++#define PTRS_PER_PTE 16
++#endif
++
++#ifdef CONFIG_PAGE_SIZE_1MB
++#define PTRS_PER_PTE 4
++#endif
++
++/*  Any bigger and the PTE disappears.  */
++#define pgd_ERROR(e) \
++	printk(KERN_ERR "%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__,\
++		pgd_val(e))
++
++/*
++ * Page Protection Constants. Includes (in this variant) cache attributes.
++ */
++extern unsigned long _dflt_cache_att;
++
++#define PAGE_NONE	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_dflt_cache_att)
++#define PAGE_READONLY	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_PAGE_READ | _PAGE_EXECUTE | _dflt_cache_att)
++#define PAGE_COPY	PAGE_READONLY
++#define PAGE_EXEC	__pgprot(_PAGE_PRESENT | _PAGE_USER | \
++				_PAGE_READ | _PAGE_EXECUTE | _dflt_cache_att)
++#define PAGE_COPY_EXEC	PAGE_EXEC
++#define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++				_PAGE_EXECUTE | _PAGE_WRITE | _dflt_cache_att)
++#define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_READ | \
++				_PAGE_WRITE | _PAGE_EXECUTE | _dflt_cache_att)
++
++
++/*
++ * Aliases for mapping mmap() protection bits to page protections.
++ * These get used for static initialization, so using the _dflt_cache_att
++ * variable for the default cache attribute isn't workable. If the
++ * default gets changed at boot time, the boot option code has to
++ * update data structures like the protaction_map[] array.
++ */
++#define CACHEDEF	(CACHE_DEFAULT << 6)
++
++/* Private (copy-on-write) page protections. */
++#define __P000 __pgprot(_PAGE_PRESENT | _PAGE_USER | CACHEDEF)
++#define __P001 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | CACHEDEF)
++#define __P010 __P000	/* Write-only copy-on-write */
++#define __P011 __P001	/* Read/Write copy-on-write */
++#define __P100 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | CACHEDEF)
++#define __P101 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_EXECUTE | \
++			_PAGE_READ | CACHEDEF)
++#define __P110 __P100	/* Write/execute copy-on-write */
++#define __P111 __P101	/* Read/Write/Execute, copy-on-write */
++
++/* Shared page protections. */
++#define __S000 __P000
++#define __S001 __P001
++#define __S010 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_WRITE | CACHEDEF)
++#define __S011 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++			_PAGE_WRITE | CACHEDEF)
++#define __S100 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | CACHEDEF)
++#define __S101 __P101
++#define __S110 __pgprot(_PAGE_PRESENT | _PAGE_USER | \
++			_PAGE_EXECUTE | _PAGE_WRITE | CACHEDEF)
++#define __S111 __pgprot(_PAGE_PRESENT | _PAGE_USER | _PAGE_READ | \
++			_PAGE_EXECUTE | _PAGE_WRITE | CACHEDEF)
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];  /* located in head.S */
++
++/* Seems to be zero even in architectures where the zero page is firewalled? */
++#define FIRST_USER_ADDRESS 0
++#define pte_special(pte)	0
++#define pte_mkspecial(pte)	(pte)
++
++/*  HUGETLB not working currently  */
++#ifdef CONFIG_HUGETLB_PAGE
++#define pte_mkhuge(pte) __pte((pte_val(pte) & ~0x3) | HVM_HUGEPAGE_SIZE)
++#endif
++
++/*
++ * For now, assume that higher-level code will do TLB/MMU invalidations
++ * and don't insert that overhead into this low-level function.
++ */
++extern void sync_icache_dcache(pte_t pte);
++
++#define pte_present_exec_user(pte) \
++	((pte_val(pte) & (_PAGE_EXECUTE | _PAGE_USER)) == \
++	(_PAGE_EXECUTE | _PAGE_USER))
++
++static inline void set_pte(pte_t *ptep, pte_t pteval)
++{
++	/*  should really be using pte_exec, if it weren't declared later. */
++	if (pte_present_exec_user(pteval))
++		sync_icache_dcache(pteval);
++
++	*ptep = pteval;
++}
++
++/*
++ * For the Hexagon Virtual Machine MMU (or its emulation), a null/invalid
++ * L1 PTE (PMD/PGD) has 7 in the least significant bits. For the L2 PTE
++ * (Linux PTE), the key is to have bits 11..9 all zero.  We'd use 0x7
++ * as a universal null entry, but some of those least significant bits
++ * are interpreted by software.
++ */
++#define _NULL_PMD	0x7
++#define _NULL_PTE	0x0
++
++static inline void pmd_clear(pmd_t *pmd_entry_ptr)
++{
++	 pmd_val(*pmd_entry_ptr) = _NULL_PMD;
++}
++
++/*
++ * Conveniently, a null PTE value is invalid.
++ */
++static inline void pte_clear(struct mm_struct *mm, unsigned long addr,
++				pte_t *ptep)
++{
++	pte_val(*ptep) = _NULL_PTE;
++}
++
++#ifdef NEED_PMD_INDEX_DESPITE_BEING_2_LEVEL
++/**
++ * pmd_index - returns the index of the entry in the PMD page
++ * which would control the given virtual address
++ */
++#define pmd_index(address) (((address) >> PMD_SHIFT) & (PTRS_PER_PMD-1))
++
++#endif
++
++/**
++ * pgd_index - returns the index of the entry in the PGD page
++ * which would control the given virtual address
++ *
++ * This returns the *index* for the address in the pgd_t
++ */
++#define pgd_index(address) (((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
++
++/*
++ * pgd_offset - find an offset in a page-table-directory
++ */
++#define pgd_offset(mm, addr) ((mm)->pgd + pgd_index(addr))
++
++/*
++ * pgd_offset_k - get kernel (init_mm) pgd entry pointer for addr
++ */
++#define pgd_offset_k(address) pgd_offset(&init_mm, address)
++
++/**
++ * pmd_none - check if pmd_entry is mapped
++ * @pmd_entry:  pmd entry
++ *
++ * MIPS checks it against that "invalid pte table" thing.
++ */
++static inline int pmd_none(pmd_t pmd)
++{
++	return pmd_val(pmd) == _NULL_PMD;
++}
++
++/**
++ * pmd_present - is there a page table behind this?
++ * Essentially the inverse of pmd_none.  We maybe
++ * save an inline instruction by defining it this
++ * way, instead of simply "!pmd_none".
++ */
++static inline int pmd_present(pmd_t pmd)
++{
++	return pmd_val(pmd) != (unsigned long)_NULL_PMD;
++}
++
++/**
++ * pmd_bad - check if a PMD entry is "bad". That might mean swapped out.
++ * As we have no known cause of badness, it's null, as it is for many
++ * architectures.
++ */
++static inline int pmd_bad(pmd_t pmd)
++{
++	return 0;
++}
++
++/*
++ * pmd_page - converts a PMD entry to a page pointer
++ */
++#define pmd_page(pmd)  (pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++/**
++ * pte_none - check if pte is mapped
++ * @pte: pte_t entry
++ */
++static inline int pte_none(pte_t pte)
++{
++	return pte_val(pte) == _NULL_PTE;
++};
++
++/*
++ * pte_present - check if page is present
++ */
++static inline int pte_present(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_PRESENT;
++}
++
++/* mk_pte - make a PTE out of a page pointer and protection bits */
++#define mk_pte(page, pgprot) pfn_pte(page_to_pfn(page), (pgprot))
++
++/* pte_page - returns a page (frame pointer/descriptor?) based on a PTE */
++#define pte_page(x) pfn_to_page(pte_pfn(x))
++
++/* pte_mkold - mark PTE as not recently accessed */
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_ACCESSED;
++	return pte;
++}
++
++/* pte_mkyoung - mark PTE as recently accessed */
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++/* pte_mkclean - mark page as in sync with backing store */
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_DIRTY;
++	return pte;
++}
++
++/* pte_mkdirty - mark page as modified */
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++/* pte_young - "is PTE marked as accessed"? */
++static inline int pte_young(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_ACCESSED;
++}
++
++/* pte_dirty - "is PTE dirty?" */
++static inline int pte_dirty(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_DIRTY;
++}
++
++/* pte_modify - set protection bits on PTE */
++static inline pte_t pte_modify(pte_t pte, pgprot_t prot)
++{
++	pte_val(pte) &= PAGE_MASK;
++	pte_val(pte) |= pgprot_val(prot);
++	return pte;
++}
++
++/* pte_wrprotect - mark page as not writable */
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_WRITE;
++	return pte;
++}
++
++/* pte_mkwrite - mark page as writable */
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++/* pte_mkexec - mark PTE as executable */
++static inline pte_t pte_mkexec(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_EXECUTE;
++	return pte;
++}
++
++/* pte_read - "is PTE marked as readable?" */
++static inline int pte_read(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_READ;
++}
++
++/* pte_write - "is PTE marked as writable?" */
++static inline int pte_write(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_WRITE;
++}
++
++
++/* pte_exec - "is PTE marked as executable?" */
++static inline int pte_exec(pte_t pte)
++{
++	return pte_val(pte) & _PAGE_EXECUTE;
++}
++
++/* __pte_to_swp_entry - extract swap entry from PTE */
++#define __pte_to_swp_entry(pte) ((swp_entry_t) { pte_val(pte) })
++
++/* __swp_entry_to_pte - extract PTE from swap entry */
++#define __swp_entry_to_pte(x) ((pte_t) { (x).val })
++
++/* pfn_pte - convert page number and protection value to page table entry */
++#define pfn_pte(pfn, pgprot) __pte((pfn << PAGE_SHIFT) | pgprot_val(pgprot))
++
++/* pte_pfn - convert pte to page frame number */
++#define pte_pfn(pte) (pte_val(pte) >> PAGE_SHIFT)
++#define set_pmd(pmdptr, pmdval) (*(pmdptr) = (pmdval))
++
++/*
++ * set_pte_at - update page table and do whatever magic may be
++ * necessary to make the underlying hardware/firmware take note.
++ *
++ * VM may require a virtual instruction to alert the MMU.
++ */
++#define set_pte_at(mm, addr, ptep, pte) set_pte(ptep, pte)
++
++/*
++ * May need to invoke the virtual machine as well...
++ */
++#define pte_unmap(pte)		do { } while (0)
++#define pte_unmap_nested(pte)	do { } while (0)
++
++/*
++ * pte_offset_map - returns the linear address of the page table entry
++ * corresponding to an address
++ */
++#define pte_offset_map(dir, address)                                    \
++	((pte_t *)page_address(pmd_page(*(dir))) + __pte_offset(address))
++
++#define pte_offset_map_nested(pmd, addr) pte_offset_map(pmd, addr)
++
++/* pte_offset_kernel - kernel version of pte_offset */
++#define pte_offset_kernel(dir, address) \
++	((pte_t *) (unsigned long) __va(pmd_val(*dir) & PAGE_MASK) \
++				+  __pte_offset(address))
++
++/* ZERO_PAGE - returns the globally shared zero page */
++#define ZERO_PAGE(vaddr) (virt_to_page(&empty_zero_page))
++
++#define __pte_offset(address) (((address) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
++
++/* Nothing special about IO remapping at this point */
++#define io_remap_pfn_range(vma, vaddr, pfn, size, prot) \
++	remap_pfn_range(vma, vaddr, pfn, size, prot)
++
++/*  I think this is in case we have page table caches; needed by init/main.c  */
++#define pgtable_cache_init()    do { } while (0)
++
++/*
++ * Swap/file PTE definitions.  If _PAGE_PRESENT is zero, the rest of the
++ * PTE is interpreted as swap information.  Depending on the _PAGE_FILE
++ * bit, the remaining free bits are eitehr interpreted as a file offset
++ * or a swap type/offset tuple.  Rather than have the TLB fill handler
++ * test _PAGE_PRESENT, we're going to reserve the permissions bits
++ * and set them to all zeros for swap entries, which speeds up the
++ * miss handler at the cost of 3 bits of offset.  That trade-off can
++ * be revisited if necessary, but Hexagon processor architecture and
++ * target applications suggest a lot of TLB misses and not much swap space.
++ *
++ * Format of swap PTE:
++ *	bit	0:	Present (zero)
++ *	bit	1:	_PAGE_FILE (zero)
++ *	bits	2-6:	swap type (arch independent layer uses 5 bits max)
++ *	bits	7-9:	bits 2:0 of offset
++ *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
++ *	bits 13-31:  bits 21:3 of swap offset
++ *
++ * Format of file PTE:
++ *	bit	0:	Present (zero)
++ *	bit	1:	_PAGE_FILE (zero)
++ *	bits	2-9:	bits 7:0 of offset
++ *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
++ *	bits 13-31:  bits 26:8 of swap offset
++ *
++ * The split offset makes some of the following macros a little gnarly,
++ * but there's plenty of precedent for this sort of thing.
++ */
++#define PTE_FILE_MAX_BITS     27
++
++/* Used for swap PTEs */
++#define __swp_type(swp_pte)		(((swp_pte).val >> 2) & 0x1f)
++
++#define __swp_offset(swp_pte) \
++	((((swp_pte).val >> 7) & 0x7) | (((swp_pte).val >> 10) & 0x003ffff8))
++
++#define __swp_entry(type, offset) \
++	((swp_entry_t)	{ \
++		((type << 2) | \
++		 ((offset & 0x3ffff8) << 10) | ((offset & 0x7) << 7)) })
++
++/* Used for file PTEs */
++#define pte_file(pte) \
++	((pte_val(pte) & (_PAGE_FILE | _PAGE_PRESENT)) == _PAGE_FILE)
++
++#define pte_to_pgoff(pte) \
++	(((pte_val(pte) >> 2) & 0xff) | ((pte_val(pte) >> 5) & 0x07ffff00))
++
++#define pgoff_to_pte(off) \
++	((pte_t) { ((((off) & 0x7ffff00) << 5) | (((off) & 0xff) << 2)\
++	| _PAGE_FILE) })
++
++/*  Oh boy.  There are a lot of possible arch overrides found in this file.  */
++#include <asm-generic/pgtable.h>
++
++#endif
+Index: linux-hexagon-kernel/arch/hexagon/mm/kmap.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/kmap.c	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,150 @@
++/*
++ * Highmem support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++/*
++ * These are often inlined, but in the interest of footprint as * well as
++ * debug traceability, we are implementing them as real subroutines.
++ */
++#include <linux/module.h>
++#include <linux/highmem.h>
++#include <asm/tlbflush.h>
++
++pte_t *kmap_pte;
++
++pgprot_t kmap_prot;
++EXPORT_SYMBOL(kmap_prot);
++
++void __init kmap_init(void)
++{
++	unsigned long kmap_vstart;
++
++	kmap_vstart = __fix_to_virt(FIX_KMAP_BEGIN);
++	kmap_pte = kmap_get_fixmap_pte(kmap_vstart);
++
++	kmap_prot = PAGE_KERNEL;
++}
++
++/*
++ * Return a kernel virtual address for a given page, mapping if necessarly.
++ */
++void *kmap_hexagon(struct page *page)
++{
++	void *addr;
++
++	if (!PageHighMem(page))
++		return page_address(page);
++	addr = kmap_high(page);
++	flush_tlb_one((unsigned long)addr);
++
++	return addr;
++}
++EXPORT_SYMBOL(kmap_hexagon);
++
++/*
++ * Abandon a pevious mapping.
++ */
++void kunmap_hexagon(struct page *page)
++{
++	BUG_ON(in_interrupt());
++
++	if (!PageHighMem(page))
++		return;
++	kunmap_high(page);
++}
++EXPORT_SYMBOL(kunmap_hexagon);
++
++/*
++ * Legacy "atomic" variants.
++ * The use of kmap_atomic/kunmap_atomic is discouraged - kmap/kunmap
++ * gives a more generic (and caching) interface. But kmap_atomic can
++ * be used in IRQ contexts, so in some (very limited) cases we need
++ * it.
++ */
++void *kmap_atomic_prot(struct page *page, pgprot_t prot)
++{
++	enum fixed_addresses idx;
++	unsigned long vaddr;
++	enum km_type type;
++
++	/* even !CONFIG_PREEMPT needs this, for in_atomic in do_page_fault */
++	pagefault_disable();
++	if (!PageHighMem(page))
++		return page_address(page);
++
++	type = kmap_atomic_idx_push();
++	idx = type + KM_TYPE_NR*smp_processor_id();
++	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
++#ifdef CONFIG_DEBUG_HIGHMEM
++	BUG_ON(!pte_none(*(kmap_pte - idx)));
++#endif
++	set_pte(kmap_pte - idx, mk_pte(page, kmap_prot));
++	flush_tlb_one((unsigned long)vaddr);
++
++	return (void *)vaddr;
++}
++EXPORT_SYMBOL(kmap_atomic_prot);
++
++void __kunmap_atomic(void *kvaddr)
++{
++	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
++	enum km_type type;
++
++	if (vaddr < __fix_to_virt(FIX_KMAP_END)) {
++		pagefault_enable();
++		return;
++	}
++
++	type = kmap_atomic_idx();
++
++#ifdef CONFIG_DEBUG_HIGHMEM
++	{
++		enum fixed_addresses idx = type + KM_TYPE_NR*smp_processor_id();
++
++		BUG_ON(vaddr != __fix_to_virt(FIX_KMAP_BEGIN+idx));
++
++		/*
++		 * Force other mappings to Oops if they'll try to access
++		 * this pte without first remapping it? Sparc dumps cache here!
++		 */
++		pte_clear(&init_mm, vaddr, kmap_pte-idx);
++		local_flush_tlb_one(vaddr);
++	}
++#endif
++
++	kmap_atomic_idx_pop();
++	pagefault_enable();
++}
++EXPORT_SYMBOL(__kunmap_atomic);
++
++/*
++ * Returns a page struct pointer for a previously kmap_atomic'ed page.
++ */
++struct page *kmap_atomic_to_page_hexagon(void *ptr)
++{
++	unsigned long idx, vaddr = (unsigned long)ptr;
++	pte_t *pte;
++
++	if (vaddr < FIXADDR_START)
++		return virt_to_page(ptr);
++
++	idx = virt_to_fix(vaddr);
++	pte = kmap_pte - (idx - FIX_KMAP_BEGIN);
++	return pte_page(*pte);
++}
+Index: linux-hexagon-kernel/arch/hexagon/mm/pgalloc.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-hexagon-kernel/arch/hexagon/mm/pgalloc.c	2011-07-20 15:19:43.945151483 -0500
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/init.h>
++
++void __init pgtable_cache_init(void)
++{
++}
++
 +
 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
