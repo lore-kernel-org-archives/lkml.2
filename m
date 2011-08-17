@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1HQQSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 12:18:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41331 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab1HQQSg (ORCPT
+	id S1753223Ab1HQLH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 07:07:28 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42819 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1HQLH1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 12:18:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=Glm4HnTmbk8eVxBGKsKE91He2nnz41s7qr48Yhtz48KtMmg0TK/L/usRwlpKtw+4Y
-	BjWurOIaaCfpGS6bqpYAw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, linux-fsdevel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v9 10/13] writeback: pass wb_writeback_work into move_expired_inodes()
-Date: Wed, 17 Aug 2011 09:15:02 -0700
-Message-Id: <1313597705-6093-11-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+	Wed, 17 Aug 2011 07:07:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAEwRVpMF-eN=9t_V8uFkJ8CAfp8fPd2kHh5a1gonEP5un6qk_A@mail.gmail.com>
+References: <20110815041524.GA7578@kroah.com>
+	<4E48C136.6090306@web.de>
+	<alpine.DEB.2.02.1108150004520.24266@asgard.lang.hm>
+	<CAEwRVpMF-eN=9t_V8uFkJ8CAfp8fPd2kHh5a1gonEP5un6qk_A@mail.gmail.com>
+Date: Wed, 17 Aug 2011 12:07:26 +0100
+Message-ID: <CAAMvbhFEYYENwer30kBJU=yhM2LFaOhMYGQZjUBhbMOZeWS5uQ@mail.gmail.com>
+Subject: Re: Future of the -longterm kernel releases (i.e. how we pick them).
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Teck Choon Giam <giamteckchoon@gmail.com>
+Cc: david@lang.hm, =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>,
+        linux-kernel@vger.kernel.org, stable@linux.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A later change to move_expired_inodes() requires passing fields from
-writeback work descriptor into memcontrol code when determining if an
-inode should be written back considered.
+On 15 August 2011 08:16, Teck Choon Giam <giamteckchoon@gmail.com> wrote:
+> 2011/8/15  <david@lang.hm>:
+>> On Mon, 15 Aug 2011, J?rg-Volker Peetz wrote:
+>>
+>>> Greg KH wrote, on 08/15/11 06:15:
+>>> <snip>
+>>>>
+>>>> - a new -longterm kernel is picked every year.
+>>>> - a -longterm kernel is maintained for 2 years and then dropped.
+>>>
+>>> <snip>
+>>>
+>>> Just a little nitpick: with this scheme you will accumulate longterm
+>>> kernels. If
+>>> I understand it right, one longterm kernel is added every year.
+>>
+>> but with one new kernel being added each year, and then being dropped two
+>> years later, there are only 2 long term kernels at any one time (that Greg
+>> will be maintaining at least, nothing stops other people from maintaining
+>> other long term kernels in addition)
+>
+> Err... sorry from my understanding like this year... one new long term
+> kernel added so it is N+1 then next year is N+1+1 and two years drop
+> one so it is N+1+1-1... so every year there will be one new long term
+> added and every two years there will be one overall long term kernel
+> added to total number of long term kernels... since two are added
+> within 2 years and one dropped every 2 years.  So there are not only 2
+> long term kernels at any one time in this case... ... someone correct
+> me if I am wrong.
+>
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- fs/fs-writeback.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+I think your maths might be wrong.
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 6bf4c49..e91fb82 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -252,7 +252,7 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
-  */
- static int move_expired_inodes(struct list_head *delaying_queue,
- 			       struct list_head *dispatch_queue,
--			       unsigned long *older_than_this)
-+			       struct wb_writeback_work *work)
- {
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
-@@ -263,8 +263,8 @@ static int move_expired_inodes(struct list_head *delaying_queue,
- 
- 	while (!list_empty(delaying_queue)) {
- 		inode = wb_inode(delaying_queue->prev);
--		if (older_than_this &&
--		    inode_dirtied_after(inode, *older_than_this))
-+		if (work->older_than_this &&
-+		    inode_dirtied_after(inode, *work->older_than_this))
- 			break;
- 		if (sb && sb != inode->i_sb)
- 			do_sb_sort = 1;
-@@ -303,13 +303,14 @@ out:
-  *                                           |
-  *                                           +--> dequeue for IO
-  */
--static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
-+static void queue_io(struct bdi_writeback *wb, struct wb_writeback_work *work)
- {
- 	int moved;
- 	assert_spin_locked(&wb->list_lock);
- 	list_splice_init(&wb->b_more_io, &wb->b_io);
--	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
--	trace_writeback_queue_io(wb, older_than_this, moved);
-+	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, work);
-+	trace_writeback_queue_io(wb, work ? work->older_than_this : NULL,
-+				 moved);
- }
- 
- static int write_inode(struct inode *inode, struct writeback_control *wbc)
-@@ -739,7 +740,7 @@ static long wb_writeback(struct bdi_writeback *wb,
- 
- 		trace_writeback_start(wb->bdi, work);
- 		if (list_empty(&wb->b_io))
--			queue_io(wb, work->older_than_this);
-+			queue_io(wb, work);
- 		if (work->sb)
- 			progress = writeback_sb_inodes(work->sb, wb, work);
- 		else
--- 
-1.7.3.1
-
+Year 1, long term kernel 1 starts  (total concurrent long term = 1)
+Year 2, long term kernel 2 starts  (total concurrent long term = 2)
+Year 3, long term kernel 3 starts, long term kernel 1 stops. (total
+concurrent long term = 2)
+Year 4, long term kernel 4 starts, long term kernel 2 stops. (total
+concurrent long term = 2)
+Year 5, long term kernel 5 starts, long term kernel 3 stops. (total
+concurrent long term = 2)
