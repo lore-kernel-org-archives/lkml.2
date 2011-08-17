@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab1HQNaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 09:30:52 -0400
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:50434 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab1HQNav (ORCPT
+	id S1751427Ab1HQRew (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 13:34:52 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:41496 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab1HQReu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 09:30:51 -0400
-X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Aug 2011 09:30:51 EDT
-X-AuditID: b753bd60-9fe84ba000000655-91-4e4bc0e7a203
-X-AuditID: b753bd60-9fe84ba000000655-91-4e4bc0e7a203
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH] avoid null pointer access in vm_struct
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Wed, 17 Aug 2011 22:28:48 +0900
-Message-ID: <20110817132848.2352.80544.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Wed, 17 Aug 2011 13:34:50 -0400
+Date: Wed, 17 Aug 2011 10:34:44 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>, chase.douglas@canonical.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Subject: Re: [PATCH 4/8 v3] Input: synaptics - add image sensor support
+Message-ID: <20110817173444.GE4877@core.coreip.homeip.net>
+References: <1313169407-4358-1-git-send-email-djkurtz@chromium.org>
+ <1313169407-4358-5-git-send-email-djkurtz@chromium.org>
+ <20110812210911.GA9124@polaris.bitmath.org>
+ <CAGS+omAo1tPzBQ_s+vz-7_5SS6vWv4bdzD1JfqepUS7wYxK5sA@mail.gmail.com>
+ <CAGS+omCeb6R_Y7Js+da=E+etNYXWu+DjT=Mio_DLSwQo97yNkg@mail.gmail.com>
+ <20110817163226.GB4877@core.coreip.homeip.net>
+ <CAGS+omAR1uxS_RA=axmWzwZUgkhZEW+9W8Zk=LHPtALqA990+w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGS+omAR1uxS_RA=axmWzwZUgkhZEW+9W8Zk=LHPtALqA990+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The /proc/vmallocinfo shows information about vmalloc allocations in vmlist
-that is a linklist of vm_struct. It, however, may access pages field of
-vm_struct where a page was not allocated, which results in a null pointer
-access and leads to a kernel panic.
+On Thu, Aug 18, 2011 at 12:43:39AM +0800, Daniel Kurtz wrote:
+> On Thu, Aug 18, 2011 at 12:32 AM, Dmitry Torokhov <dmitry.torokhov@gmail.com
+> > wrote:
+> 
+> > On Wed, Aug 17, 2011 at 10:05:48PM +0800, Daniel Kurtz wrote:
+> > > On Mon, Aug 15, 2011 at 3:17 PM, Daniel Kurtz <djkurtz@chromium.org>
+> > wrote:
+> > > >
+> > > > Hi Henrik,
+> > > >
+> > > > Thanks for the great feedback.
+> > > >
+> > > > On Sat, Aug 13, 2011 at 5:09 AM, Henrik Rydberg <rydberg@euromail.se>
+> > wrote:
+> > > > > Hi Daniel,
+> > > > >
+> > > > > looks good, some details below.
+> > > > >
+> > > > > The ABS_MT_TOUCH_MAJOR is supposed to have zero intercept, to remain
+> > > > > compatible with user space handling of type A devices. Also, the
+> > scale
+> > > > > should match the screen/pad size, such that the actual size of the
+> > > > > touch area can be deduced. In addition, based on the current sensor
+> > > > > technologies, ABS_MT_PRESSURE and ABS_MT_TOUCH_MAJOR are normally
+> > > > > mutually exclusive.
+> > > > >
+> > > > > All in all, I would prefer to only report width via (the
+> > single-finger
+> > > > > axis) ABS_TOOL_WIDTH, and only for compatibility reasons.
+> > > > >
+> > > > > +
+> > > > > +static void synaptics_report_slot_agm(struct input_dev *dev, int
+> > slot,
+> > > > > +                                   const struct synaptics_hw_state
+> > *agm)
+> > > > > +{
+> > > > > +     input_mt_slot(dev, slot);
+> > > > > +     input_mt_report_slot_state(dev, MT_TOOL_FINGER, true);
+> > > > > +     input_report_abs(dev, ABS_MT_POSITION_X, agm->x);
+> > > > > +     input_report_abs(dev, ABS_MT_POSITION_Y, invert_y(agm->y));
+> > > > > +     input_report_abs(dev, ABS_MT_PRESSURE, agm->z);
+> > > > > +}
+> > > >
+> > > > With ABS_MT_TOUCH_MAJOR dropped, sgm and agm seems to coincide...
+> > > > ....
+> > > > >
+> > > > > Looks good otherwise.
+> > > > >
+> > > > > Thanks,
+> > > > > Henrik
+> > > > >
+> > > >
+> > > > Ahh....  ok, this makes sense.  I missed this detail previously.
+> > > > Basically:
+> > > >  * Only report synaptics "w" as ABS_TOOL_WIDTH (for backwards
+> > compatibility)
+> > > >  * Report synaptics "z" as ABS_MT_TOUCH_MAJOR (assuming it is really
+> > > > 'width of finger in surface units'), and ABS_PRESSURE (for backwards
+> > > > compatibility).
+> > > >  * Don't use ABS_MT_PRESSURE.
+> > > >  * This will simplify agm/sgm reporting by making them both reoprt
+> > > > the same axes.
+> > >
+> > > Hi Henrik,
+> > >
+> > > I think I was wrong in my previous comment.
+> > >
+> > > I agree we should drop reporting synaptics 'w' (4-15, arbitrary units)
+> > > in ABS_MT_TOUCH_MAJOR.
+> > > Instead, to support legacy, report 'w' in ABS_TOOL_WIDTH, and do not
+> > > report ABS_MT_TOUCH_MAJOR at all.
+> > >
+> > > However, I believe we should still report synaptics 'z' (0-255, in
+> > > arbitrary units) as ABS_MT_PRESSURE.
+> > > This will, in turn, be used by input_mt_report_pointer_emulation() to
+> > > determine the correct ABS_PRESSURE to report for legacy userspace
+> > > uses.
+> >
+> > Alternatively, you can use input_mt_set_value() to save Z value to be
+> > used by input_mt_report_pointer_emulation() later, but not report it as
+> > part of MT packet.
+> >
+> 
+> But I want userspace to get per-contact pressure, since it is used to
+> determine whether a given contact is a palm or finger, etc. The trackpad
+> does not report a useful per-contact "width" that can be used to generate
+> "TOUCH_MAJOR".
 
-Why this happen:
-For example, in __vmalloc_area_node, the nr_pages field of vm_struct are
-set to the expected number of pages to be allocated, before the actual
-pages allocations. At the same time, when the /proc/vmallocinfo is read, it
-accesses the pages field of vm_struct according to the nr_pages field at
-show_numa_info(). Thus, a null pointer access happens.
+If the data reported is indeed pressure and it is indeed per-contact then yes,
+it makes sense to report it as such. If the data reported is more like contact
+size then report it as ABS_MT_TOUCH_MAJOR and use input_mt_set_value()
+to "stash" it for legacy emulation.
 
-Patch:
-This patch avoids accessing the pages field with unallocated page when
-show_numa_info() is called. So, it can solve this problem.
-
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
-
- mm/vmalloc.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 7ef0903..e2ec5b0 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2472,13 +2472,16 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
- 	if (NUMA_BUILD) {
- 		unsigned int nr, *counters = m->private;
- 
--		if (!counters)
-+		if (!counters || !v->nr_pages || !v->pages)
- 			return;
- 
- 		memset(counters, 0, nr_node_ids * sizeof(unsigned int));
- 
--		for (nr = 0; nr < v->nr_pages; nr++)
-+		for (nr = 0; nr < v->nr_pages; nr++) {
-+			if (!v->pages[nr])
-+				break;
- 			counters[page_to_nid(v->pages[nr])]++;
-+		}
- 
- 		for_each_node_state(nr, N_HIGH_MEMORY)
- 			if (counters[nr])
-
+-- 
+Dmitry
