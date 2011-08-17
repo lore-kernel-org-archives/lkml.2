@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab1HQDsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 23:48:16 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4466 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab1HQDsP (ORCPT
+	id S1750896Ab1HQELP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 00:11:15 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:37426 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750756Ab1HQELM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 23:48:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6440"; a="110849875"
-Date: Tue, 16 Aug 2011 20:48:04 -0700
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2 0/4] Initial DT support for MSM8660
-Message-ID: <20110817034804.GA3673@huya.qualcomm.com>
-References: <1313517136-27414-1-git-send-email-davidb@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313517136-27414-1-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Aug 2011 00:11:12 -0400
+Date: Tue, 16 Aug 2011 21:11:09 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Daney <david.daney@cavium.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] pci/of: Don't crash when bridge parent is NULL.
+Message-ID: <20110816211109.13c80d34@jbarnes-e6510>
+In-Reply-To: <1313522178.3664.69.camel@pasglop>
+References: <1313519077-18457-1-git-send-email-david.daney@cavium.com>
+	<1313522178.3664.69.camel@pasglop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 10:52:12AM -0700, David Brown wrote:
-> This series adds initial support for booting the MSM8660 via
-> devicetree.  The target boots with a serial console, and no platform
-> data.
+On Tue, 16 Aug 2011 14:16:18 -0500
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
 
-For some reason, patches I send with git send-email don't seem to make
-it to the devicetree-discuss mailing list.  They are going to other
-mailing lists.
+> On Tue, 2011-08-16 at 11:24 -0700, David Daney wrote:
+> > In pcibios_get_phb_of_node(), we will crash while booting if
+> > bus->bridge->parent is NULL.
+> > 
+> > Check for this case and avoid dereferencing the NULL pointer.
+> > 
+> > Signed-off-by: David Daney <david.daney@cavium.com>
+> 
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> 
+> Jesse or Grant, I'm travelling, can any of you send that to Linus
+> asap ?
 
-Hopefully, I'm just unable to see the typo I've made in the list, but
-I'm not getting bounces or anything, just no messages.
+Sure looks fine.  I'll send it off tomorrow (now that I'm back :).
 
-Any ideas?
-
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Jesse
