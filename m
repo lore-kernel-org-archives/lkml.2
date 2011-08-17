@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1HQAb7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Aug 2011 20:31:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61587 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab1HQAb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Aug 2011 20:31:58 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=6-3U9yaARtIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_215YmrjArjZZLGXAsUA:9 a=-lb6ABCIPENFWEz99l4A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 1/8] perf: Separate out trace-cmd parse-events
- from perf files
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <4E4B0667.8090107@gmail.com>
-References: <20110805205921.909038487@goodmis.org>
-	 <20110805211300.324726820@goodmis.org>  <4E4945F8.2080004@gmail.com>
-	 <1313425364.15704.9.camel@gandalf.stny.rr.com> <4E4B0667.8090107@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 16 Aug 2011 20:31:54 -0400
-Message-ID: <1313541114.15704.35.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1751870Ab1HQAcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Aug 2011 20:32:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5024 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752592Ab1HQAcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Aug 2011 20:32:08 -0400
+Date: Tue, 16 Aug 2011 20:31:39 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: Oops in minixfs_statfs
+Message-ID: <20110817003138.GF2227@zod.bos.redhat.com>
+References: <20110816164809.GE2227@zod.bos.redhat.com>
+ <CAEKwDSC+dKrNWnCZ+VSszuHZL3g=Upr8wSO32r5a8o9Ty0mtTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEKwDSC+dKrNWnCZ+VSszuHZL3g=Upr8wSO32r5a8o9Ty0mtTg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 18:08 -0600, David Ahern wrote:
-
-> > They are based off of v3.0. You can get these patches from my repo as
-> > described in the 0/8 announce email.
+On Tue, Aug 16, 2011 at 06:20:05PM -0400, Bob Copeland wrote:
+> On Tue, Aug 16, 2011 at 12:48 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+> > it seems we're getting a negative number in this particular calculation
+> > in fs/minix/bitmap.c, count_free:
+> >
+> >        i = ((numbits - (numblocks-1) * bh->b_size * 8) / 16) * 2;
+> [...]
+> > I'm not familiar enough with minixfs to know what the above is trying to
+> > actually accomplish.  I instrumented that function a bit and here is
+> > some data from the 3 filesytems in question:
 > 
-> Unfortunately I hastily deleted the 0/8 thread while on vacation last
-> week (gmail on Android thing), so I apologize for shifting the discussion.
-
-Understood.
-
+> I don't know minix either but I'll take a shot.  This is trying to
+> count the number of bits in the free map for inodes or data blocks
+> that don't fit in a full file system block.
 > 
-> With a little bit of hacking on top of your patches I was able to get
-> the trace-cmd plugins working with perf. e.g.,
->         qemu-kvm 11971 [001] 30401.777391: kvm_apic_accept_irq: apicid 0
-> vec 239 (Fixed|edge)
->         qemu-kvm 11971 [001] 30401.777405: kvm_inj_virq: irq 239
->         qemu-kvm 11971 [001] 30401.777415: kvm_entry: vcpu 0
->         qemu-kvm 11971 [001] 30401.777430: kvm_exit: reason APIC_ACCESS
-> rip 0xffffffff8101dbe4 info 10b0 0
-
-That's awesome!
-
+> count_free takes 3 params:
+>   map - an array of buffer heads that represent the free map for a 'thingy'
+>         (thingy being the technical term for inode, or data block)
+>   numblocks - the number of blocks to scan
+>   numbits - the maximum-valued thingy
 > 
-> So, what is the next step for making this a reality -- i.e., getting the
-> common code into a lib in tools?
+> So, for example, there might be 4800 inodes in the filesystem.  That
+> means there are 4800/8 = 600 bits to represent their in-use state,
+> and supposing a buffer head represents a 512-byte buffer (bh->b_size=512),
+> you would need two blocks to store that.  numblocks in this hypothetical
+> example is 2 and numbits is 4801.
 
-Yeah, once everyone agrees with everything. I personally prefer things
-to be in tools/lib/... and have all other tools depend on it. For the
-names of these libraries, I'm game for anything.
+Yep, I gathered that.  In the real case, there are 7 blocks, and the
+block size of the fs is 4096.  Though numbits still seems to be "maximum
+number of blocks" based on the value and what is being passed to
+count_free.
 
-Arnaldo, what's your preference, as you were the one that suggested that
-it not be called libperf?
+> Here's some annotated code with uninteresting parts removed:
+> 
+> Loop over all but the last block:
+> 
+> 	for (i=0; i<numblocks-1; i++) {
+> 			sum += nibblemap[bh->b_data[j] & 0xf]
+> 				+ nibblemap[(bh->b_data[j]>>4) & 0xf];
+> 	}
+> 
+> Since we're counting zero bits this is just computing hweight(~x)...
+> 
+> 	if (numblocks==0 || !(bh=map[numblocks-1]))
+> 		return(0);
+> 
+> Lookout, bh is assigned in the conditional!
+> 
+> Ok so bh is the last block which might not be full of thingys, so
+> we only want to look at the part that has thingys and not the rest.
+> 
+> numblocks - 1 * bh->b_size * 8 is the number of bits we've already
+> looked at.  We'll call it nthingys.  numbits - nthingys is the number
+> of bits we want to continue to look at.  "(x / 16) * 2 is a fancy way
 
-But I think this is a great step forward in making ftrace and perf work
-better together :)
+Yes, except here numbits - nthingys winds up being a negative number in
+the failing case.
 
--- Steve
+> of saying "x / 8" except the result is on 2-byte boundaries.  So that's
+> the number of bytes left to look at, except for up to 15 possible
+> extra bits.
+> 
+> 	i = ((numbits - (numblocks-1) * bh->b_size * 8) / 16) * 2;
+> 	for (j=0; j<i; j++) {
+> 		sum += nibblemap[bh->b_data[j] & 0xf]
+> 			+ nibblemap[(bh->b_data[j]>>4) & 0xf];
+> 	}
 
+And we blow up in here somewhere.
 
+> And then count the remaining 15 bits by masking off whatever portion
+> is less than numbits and doing some fancy u16 casting.
+> 
+> 	i = numbits%16;
+> 	if (i!=0) {
+> 		i = *(__u16 *)(&bh->b_data[j]) | ~((1<<i) - 1);
+> 		sum += nibblemap[i & 0xf] + nibblemap[(i>>4) & 0xf];
+> 		sum += nibblemap[(i>>8) & 0xf] + nibblemap[(i>>12) & 0xf];
+> 	}
+> 
+> 	return(sum);
+> }
+> 
+> Does that help?
+
+It helps me understand what the code is doing a bit better, yes.  Thank
+you for that.  Unfortunately, it doesn't really tell me why we get a
+negative number in this case, and if we should be checking for that here
+and what to do about it.
+
+josh
