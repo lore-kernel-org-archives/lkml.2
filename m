@@ -1,96 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1HQKmf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 06:42:35 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65504 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab1HQKmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 06:42:32 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Date: Wed, 17 Aug 2011 12:42:24 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Kenneth Heitke <kheitke@codeaurora.org>, sdharia@codeaurora.org,
-        David Brown <davidb@codeaurora.org>, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org> <1772239.ndMLD9ec3r@wuerfel> <20110817080327.GD13460@opensource.wolfsonmicro.com>
-In-Reply-To: <20110817080327.GD13460@opensource.wolfsonmicro.com>
+	id S1753577Ab1HQNX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 09:23:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30161 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753477Ab1HQNXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 09:23:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,240,1312182000"; 
+   d="scan'208";a="39408676"
+Date: Wed, 17 Aug 2011 21:23:47 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110817132347.GA6628@localhost>
+References: <20110816022006.348714319@intel.com>
+ <20110816022328.811348370@intel.com>
+ <20110816194112.GA25517@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108171242.24918.arnd@arndb.de>
-X-Provags-ID: V02:K0:vhq6sl/A2gpKQw5gzXeid4ekMGoArdmsk9Mu5hbHk0H
- MCBm2t82vdW3LtlRZYJf3tuwT8kcJlt1TsrLfMqtwfu7YACD3B
- sIE4A7l7XCrw2WNaTq0/dVIDbzvjbMKhtTdyQu+/i+Hh8V/XBZ
- 0Ko9tyXmKAUFq0UCjkciCHgIjiz4XJxWQU46lNusfhg1P5KbY1
- gZFKdxpssIYxjXqn5NnVg==
+Content-Type: multipart/mixed; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+In-Reply-To: <20110816194112.GA25517@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 August 2011, Mark Brown wrote:
-> On Wed, Aug 17, 2011 at 09:09:44AM +0200, Arnd Bergmann wrote:
+
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Jan,
+
+On Wed, Aug 17, 2011 at 03:41:12AM +0800, Jan Kara wrote:
+>   Hello Fengguang,
 > 
-> > * Move the logic for enabling and disabling devices into a host specific
-> >   driver that takes care of powering the devices up initially, identifying
-> >   them and putting them into run-time PM disabled state when no driver was
-> >   found or the device is unused.
+>   this patch is much easier to read than in older versions! Good work!
+
+Thank you :)
+
+> > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> > +					unsigned long thresh,
+> > +					unsigned long bg_thresh,
+> > +					unsigned long dirty,
+> > +					unsigned long bdi_thresh,
+> > +					unsigned long bdi_dirty)
+> > +{
+> > +	unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
+> > +	unsigned long limit = hard_dirty_limit(thresh);
+> > +	unsigned long x_intercept;
+> > +	unsigned long setpoint;		/* the target balance point */
+> > +	unsigned long span;
+> > +	long long pos_ratio;		/* for scaling up/down the rate limit */
+> > +	long x;
+> > +
+> > +	if (unlikely(dirty >= limit))
+> > +		return 0;
+> > +
+> > +	/*
+> > +	 * global setpoint
+> > +	 *
+> > +	 *                         setpoint - dirty 3
+> > +	 *        f(dirty) := 1 + (----------------)
+> > +	 *                         limit - setpoint
+> > +	 *
+> > +	 * it's a 3rd order polynomial that subjects to
+> > +	 *
+> > +	 * (1) f(freerun)  = 2.0 => rampup base_rate reasonably fast
+> > +	 * (2) f(setpoint) = 1.0 => the balance point
+> > +	 * (3) f(limit)    = 0   => the hard limit
+> > +	 * (4) df/dx       < 0	 => negative feedback control
+> > +	 * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
+> > +	 *     => fast response on large errors; small oscillation near setpoint
+> > +	 */
+> > +	setpoint = (freerun + limit) / 2;
+> > +	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
+> > +		    limit - setpoint + 1);
+> > +	pos_ratio = x;
+> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> > +	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+> > +
+> > +	/*
+> > +	 * bdi setpoint
+> > +	 *
+> > +	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
+> > +	 *
+> > +	 * The main bdi control line is a linear function that subjects to
+> > +	 *
+> > +	 * (1) f(setpoint) = 1.0
+> > +	 * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
+> > +	 *     or equally: x_intercept = setpoint + 8 * write_bw
+> > +	 *
+> > +	 * For single bdi case, the dirty pages are observed to fluctuate
+> > +	 * regularly within range
+> > +	 *        [setpoint - write_bw/2, setpoint + write_bw/2]
+> > +	 * for various filesystems, where (2) can yield in a reasonable 12.5%
+> > +	 * fluctuation range for pos_ratio.
+> > +	 *
+> > +	 * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
+> > +	 * own size, so move the slope over accordingly.
+> > +	 */
+> > +	if (unlikely(bdi_thresh > thresh))
+> > +		bdi_thresh = thresh;
+> > +	/*
+> > +	 * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
+> > +	 */
+> > +	x = div_u64((u64)bdi_thresh << 16, thresh | 1);
+> > +	setpoint = setpoint * (u64)x >> 16;
+> > +	/*
+> > +	 * Use span=(4*write_bw) in single bdi case as indicated by
+> > +	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
+> > +	 */
+> > +	span = div_u64((u64)bdi_thresh * (thresh - bdi_thresh) +
+> > +		       (u64)(4 * bdi->avg_write_bandwidth) * bdi_thresh,
+> > +		       thresh + 1);
+>   I think you can slightly simplify this to:
+> (thresh - bdi_thresh + 4 * bdi->avg_write_bandwidth) * (u64)x >> 16;
+
+Good idea!
+
+> > +	x_intercept = setpoint + 2 * span;
+>   What if x_intercept >  bdi_thresh? Since 8*bdi->avg_write_bandwidth is
+> easily 500 MB, that happens quite often I imagine?
+
+That's fine because I no longer target "bdi_thresh" as some limiting
+factor as the global "thresh". Due to it being unstable in small
+memory JBOD systems, which is the big and unique problem in JBOD.
+
+> > +
+> > +	if (unlikely(bdi_dirty > setpoint + span)) {
+> > +		if (unlikely(bdi_dirty > limit))
+> > +			return 0;
+>   Shouldn't this be bdi_thresh instead of limit? I understand this is a
+> hard limit but with more bdis this condition is rather weak and almost
+> never true.
+
+Yeah, I mean @limit. @bdi_thresh is made weak in IO-less
+balance_dirty_pages() in order to get reasonable smooth dirty rate in
+the face of a fluctuating @bdi_thresh.
+
+The tradeoff is to let bdi dirty pages fluctuate more or less freely,
+as long as they don't drop low and risk IO queue underflow. The
+attached patch tries to prevent the underflow (which is good but not
+perfect).
+
+> > +		if (x_intercept < limit) {
+> > +			x_intercept = limit;	/* auxiliary control line */
+> > +			setpoint += span;
+> > +			pos_ratio >>= 1;
+> > +		}
+>   And here you stretch the control area upto the global dirty limit. I
+> understand you maybe don't want to be really strict and cut control area at
+> bdi_thresh but your choice looks like too benevolent - when you have
+> several active bdi's with different speeds this will effectively erase
+> difference between them, won't it? E.g. with 10 bdi's (x_intercept -
+> bdi_dirty) / (x_intercept - setpoint) is going to be close to 1 unless
+> bdi_dirty really heavily exceeds bdi_thresh.
+
+Yes the auxiliary control line could be very flat (small slope).
+
+However it's not normal for the bdi dirty pages to fall into the
+range of auxiliary control line at all. And once it takes effect, 
+the pos_ratio is at most 0.5 (which is the value at the connection
+point with the main bdi control line) which is strong enough to pull
+the dirty pages off the auxiliary bdi control line and into the scope
+of main bdi control line.
+
+The auxiliary control line is intended for bringing down the bdi_dirty
+of the USB key before 250s (where the "pos bandwidth" line keeps low): 
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v6/1UKEY+1HDD-3G/ext4-4dd-1M-8p-2945M-20%25-2.6.38-rc5-dt6+-2011-02-22-09-46/balance_dirty_pages-pages.png
+
+After that the bdi_dirty will fluctuate around bdi_thresh and won't
+grow high and step into the scope of the auxiliary control line.
+
+> So wouldn't it be better to
+> just make sure control area is reasonably large (e.g. at least 16 MB) to
+> allow BDI to ramp up it's bdi_thresh but don't extend it upto global dirty
+> limit?
+
+In order to take bdi_thresh as some semi-strict limit, we need to make
+it very stable at first..otherwise the whole control system may fluctuate
+violently.
+
+Thanks,
+Fengguang
+
+> > +	}
+> > +	pos_ratio *= x_intercept - bdi_dirty;
+> > +	do_div(pos_ratio, x_intercept - setpoint + 1);
+> > +
+> > +	return pos_ratio;
+> > +}
+> > +
 > 
-> > This will make it possible to reuse the same driver for multiple machines
-> > that have the same endpoint devices, while moving all the board specific
-> > clock and reset logic into a separate driver, which can be very small in
-> > many cases.
-> 
-> There should be no more need for this with slimbus than there is with
-> any of our other buses - this sort of dynamic enable and disable is
-> already standard practice for devices in embedded systems.  There's some
-> stuff it'd be good to do here but it shouldn't be driver specific, it
-> should be a generic device model thing.  The main problem cases right
-> now are things like USB which currently assume there's no magic going on
-> outside of the bus.
+> 								Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 
-My main point here is not how the enable/disable is handled but how
-the bus is probed. It's a bit unfortunate that the initial slimbus
-code was modeled after i2c and spi, when it's really more like USB
-in the sense that devices can (and should) actually be discovered
-using methods provided by the bus spec.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=bdi-reserve-area
 
-> One thing I've wanted to do for a while but never quite got the time to
-> look at yet is to add support for automatically enabling and disabling
-> regulators along with the probe, remove, suspend and runtime suspend
-> paths.  If there's sufficient hooks for that they should also be usable
-> for anything that is suitably board specific.
+Subject: writeback: dirty position control - bdi reserve area
+Date: Thu Aug 04 22:16:46 CST 2011
 
-Yes, that would be nice.
+Keep a minimal pool of dirty pages for each bdi, so that the disk IO
+queues won't underrun.
 
-> > I would guess that in many cases, the logic for enabling the devices
-> > fits into the slimbus host driver. If that is not the case, e.g. when
-> > a lot of machines have the same host controller but each of them uses
-> > a different way to get the devices out of reset, you can turn the host
-> 
-> I'd expect that bringing the device out of reset is going to be largely
-> unrelated to the host controller, it's going to be GPIOs, clocks and
-> regulators.  The individual drivers are going to want to manage this
-> stuff dynamically at runtime too.
+It's particularly useful for JBOD and small memory system.
 
-But it's even less related to the individual driver than to the host.
-Clearly, the code for starting up the device has to live somewhere, but
-I think that should not be the device driver that is responsible
-for talking to the slimbus device itself, because that each board
-will do that slightly differently and the slimbus_driver should not
-need to know about the device before it has been found on the bus.
+XXX:
+When memory is small (in comparison to write bandwidth), this control
+line may result in (pos_ratio > 1) at the setpoint and push the dirty
+pages high. This is more or less intended because the bdi is in the
+danger of IO queue underflow. However the global dirty pages, when
+pushed close to limit, will eventually conteract our desire to push up
+the low bdi_dirty. In low memory JBOD tests we do see disks
+under-utilized from time to time.
 
-The way I see this working is that something outside of the driver
-should provide a way to enable each device in order for it to get
-probed, and the driver's ->probe callback does a pm_runtime_get()
-call when it wants to keep the device enabled.
+One scheme that may completely fix this is to add a BDI_queue_empty to
+indicate the block IO queue emptiness (but still there may be in flight
+IOs on the driver/hardware side) and to unthrottle the tasks regardless
+of the global limit on seeing BDI_queue_empty.
 
-	Arnd
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+--- linux-next.orig/mm/page-writeback.c	2011-08-16 09:06:46.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-16 09:06:50.000000000 +0800
+@@ -488,6 +488,16 @@ unsigned long bdi_dirty_limit(struct bac
+  *   0 +------------.------------------.----------------------*------------->
+  *           freerun^          setpoint^                 limit^   dirty pages
+  *
++ * (o) bdi reserve area
++ *
++ * The bdi reserve area tries to keep a reasonable number of dirty pages for
++ * preventing block queue underrun.
++ *
++ * reserve area, scale up rate as dirty pages drop low
++ * |<----------------------------------------------->|
++ * |-------------------------------------------------------*-------|----------
++ * 0                                           bdi setpoint^       ^bdi_thresh
++ *
+  * (o) bdi control lines
+  *
+  * The control lines for the global/bdi setpoints both stretch up to @limit.
+@@ -571,6 +581,19 @@ static unsigned long bdi_position_ratio(
+ 	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+ 
+ 	/*
++	 * bdi reserve area, safeguard against dirty pool underrun and disk idle
++	 */
++	x_intercept = min(bdi->avg_write_bandwidth + 2 * MIN_WRITEBACK_PAGES,
++			  freerun);
++	if (bdi_dirty < x_intercept) {
++		if (bdi_dirty > x_intercept / 8) {
++			pos_ratio *= x_intercept;
++			do_div(pos_ratio, bdi_dirty);
++		} else
++			pos_ratio *= 8;
++	}
++
++	/*
+ 	 * bdi setpoint
+ 	 *
+ 	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
+
+--d6Gm4EdcadzBjdND--
