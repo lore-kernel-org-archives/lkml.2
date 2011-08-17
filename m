@@ -1,68 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1HQUMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 16:12:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53590 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab1HQUMW convert rfc822-to-8bit (ORCPT
+	id S1753850Ab1HQUN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 16:13:58 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49451 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab1HQUNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 16:12:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110817163520.334269161@codeaurora.org>
-References: <20110817163457.878854582@codeaurora.org>
-	<20110817163520.334269161@codeaurora.org>
-Date: Wed, 17 Aug 2011 22:12:20 +0200
-Message-ID: <CACM3HyE=vHtr7Y-9k7PWvxmGt+O1bJyxs18CEmtzMdq9zOtfqw@mail.gmail.com>
-Subject: Re: [patch 05/36] Hexagon: Add syscalls
-From: Jonas Bonn <jonas.bonn@gmail.com>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Aug 2011 16:13:55 -0400
+Date: Wed, 17 Aug 2011 16:13:49 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
+ crashes with linux-3.1-rc2
+Message-ID: <20110817161349.072e1452@tlielax.poochiereds.net>
+In-Reply-To: <alpine.DEB.2.02.1108171547110.5877@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<alpine.DEB.2.02.1108171545190.5877@p34.internal.lan>
+	<alpine.DEB.2.02.1108171547110.5877@p34.internal.lan>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +
-> +#define __ARCH_WANT_SYSCALL_DEPRECATED
-> +
-> +#ifndef __GLIBC__
-> +/* It seems these are all needed for uClibc...
-> + * However, if glibc is compiled w/ these turned on, then it will
-> + * will fail (typically with 32/64-bit compat problems). */
-> +#define __ARCH_WANT_SYSCALL_OFF_T
-> +#define __ARCH_WANT_SYSCALL_NO_AT
-> +#define __ARCH_WANT_SYSCALL_NO_FLAGS
-> +#endif
-> +
+On Wed, 17 Aug 2011 15:47:23 -0400 (EDT)
+Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
 
-These are no longer appropriate for the mainline kernel.  These
-definitions are mainly intended to be used during a transitional
-period until the necessary changes can be made in the required C
-library.
+> 
+> 
+> On Wed, 17 Aug 2011, Justin Piszcz wrote:
+> 
+> >
+> >
+> > On Wed, 17 Aug 2011, Justin Piszcz wrote:
+> >
+> >> 
+> >> 
+> >> On Mon, 15 Aug 2011, Justin Piszcz wrote:
+> >
+> >
+> > Better output of crash: (again)
+> >
+> > [  214.557063] CIFS VFS: cifs_mount failed w/return code = -22
+> > [  216.607556] CIFS VFS: cifs_mount failed w/return code = -22
+> > [  222.637424] CIFS VFS: cifs_mount failed w/return code = -22
+> > [  228.988734] ------------[ cut here ]------------
+> > [  228.988752] kernel BUG at mm/slab.c:3111!
+> > [  228.988759] invalid opcode: 0000 [#1] SMP [  228.988769] CPU 1 [ 
+> > 228.988774] Modules linked in: netconsole rfcomm bnep bluetooth speedstep_lib 
+> > cryptd aes_x86_64 aes_generic configfs ath9k mac80211 uvcvideo ath9k_common 
+> > ath9k_hw ath ohci_hcd ssb videodev mmc_core edac_core v4l2_compat_ioctl32 
+> > i2c_piix4 edac_mce_amd k10temp battery ac cfg80211 pcmcia shpchp video rfkill 
+> > pci_hotplug wmi pcmcia_core
+> > [  228.988873] [  228.988880] Pid: 2869, comm: mount Not tainted 3.1.0-rc2 #2 
+> > Acer            Aspire 7551                    /Aspire 7551 [  228.988901] 
+> > RIP: 0010:[<ffffffff81646526>]  [<ffffffff81646526>] 
+> > cache_alloc_refill+0x111/0x4a6
+> > [  228.988922] RSP: 0018:ffff8801322e3cf8  EFLAGS: 00010046
+> > [  228.988929] RAX: ffff8801399b9000 RBX: ffff88013f000080 RCX: 
+> > 0000000000000007
+> > [  228.988936] RDX: 0000000000000070 RSI: dead000000200200 RDI: 
+> > 0000000000000035
+> > [  228.988944] RBP: ffff8801322e3d58 R08: 0000000000000033 R09: 
+> > ffff88013f004450
+> > [  228.988950] R10: ffff88013f004460 R11: ffff8801322e3d60 R12: 
+> > 00000000000000d0
+> > [  228.988956] R13: ffff88013f0c1400 R14: 00000000000000d0 R15: 
+> > ffff88013f004440
+> > [  228.988964] FS:  00007f421e4957e0(0000) GS:ffff88013fc80000(0000) 
+> > knlGS:0000000000000000
+> > [  228.988972] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [  228.988979] CR2: 000000000130d000 CR3: 0000000132205000 CR4: 
+> > 00000000000006e0
+> > [  228.988986] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+> > 0000000000000000
+> > [  228.988993] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
+> > 0000000000000400
+> > [  228.989001] Process mount (pid: 2869, threadinfo ffff8801322e2000, task 
+> > ffff88013f278620)
+> > [  228.989005] Stack:
+> > [  228.989005]  ffff8801322e3d28 000000000000003c 000000000000001c 
+> > 0000000000000000
+> > [  228.989005]  000000d00000001c 0000001000000000 ffff8801322e3dc8 
+> > 0000000000000010
+> > [  228.989005]  0000000000000202 ffff88013f000080 00000000000000d0 
+> > ffff880139a94940
+> > [  228.989005] Call Trace:
+> > [  228.989005]  [<ffffffff810ae053>] __kmalloc+0xb3/0xe0
+> > [  228.989005]  [<ffffffff810911e5>] kstrdup+0x35/0x60
+> > [  228.989005]  [<ffffffff810d1e51>] alloc_vfsmnt+0xa1/0x190
+> > [  228.989005]  [<ffffffff810d21dd>] vfs_kern_mount+0x2d/0xa0
+> > [  228.989005]  [<ffffffff810d260f>] do_kern_mount+0x4f/0x100
+> > [  228.989005]  [<ffffffff810d4002>] do_mount+0x532/0x830
+> > [  228.989005]  [<ffffffff810d3955>] ? copy_mount_options+0x35/0x170
+> > [  228.989005]  [<ffffffff810d46c3>] sys_mount+0x93/0xe0
+> > [  228.989005]  [<ffffffff8164df3b>] system_call_fastpath+0x16/0x1b
+> > [  228.989005] Code: 00 e9 d2 00 00 00 49 8b 07 49 39 c7 75 15 49 8b 47 20 41 
+> > c7 47 60 01 00 00 00 4c 39 d0 0f 84 ad 00 00 00 8b 53 18 39 50 20 72 2f <0f> 
+> > 0b 44 8b 40 24 8b 53 0c ff c6 41 8b 7d 00 89 70 20 41 0f af [  228.989005] 
+> > RIP  [<ffffffff81646526>] cache_alloc_refill+0x111/0x4a6
+> > [  228.989005]  RSP <ffff8801322e3cf8>
+> > [  228.989005] ---[ end trace 8859f1f50ceed0f6 ]---
+> >
+> > Justin.
+> >
 
-The recommendation is to just carry these defines as an external patch
-while the necessary changes are made in uClibc.  I've just about got
-the necessary changes done and will send them to the uClibc mailing
-list shortly, so hopefully the need for these defines will go away
-really soon now.
+The crash is happening in the bowels of the slab allocator.
+Specifically, it looks like it's hitting this:
 
+                /*
+                 * The slab was either on partial or free list so
+                 * there must be at least one object available for
+                 * allocation.
+                 */
+                BUG_ON(slabp->inuse >= cachep->num);
 
-> +asmlinkage int sys_fork(void)
-> +{
-> +       struct pt_regs *pregs = current_thread_info()->regs;
-> +
-> +       return do_fork(SIGCHLD, pregs->SP, pregs, 0, NULL, NULL);
-> +}
-> +
-> +asmlinkage int sys_vfork(void)
-> +{
-> +       struct pt_regs *pregs = current_thread_info()->regs;
-> +
-> +       return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD,
-> +                      pregs->SP, pregs, 0, NULL, NULL);
-> +}
+...which looks like maybe the accounting of in-use objects is off. This
+really sounds like some sort of memory corruption. I've not been able
+to reproduce this so far, but I also had someone report panic here that
+might be related:
 
-These two are deprecated.
+    https://bugzilla.redhat.com/show_bug.cgi?id=731278
 
-/Jonas
+One thing that might be helpful is turning on page poisoning and
+redoing this test, that might make it crash sooner and point out the
+source of the corruption.
+
+Even better would be a bisect to track down the cause...
+
+-- 
+Jeff Layton <jlayton@samba.org>
