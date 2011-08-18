@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1HRS7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 14:59:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab1HRS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 14:59:47 -0400
-Message-ID: <4E4D610D.9010701@redhat.com>
-Date: Thu, 18 Aug 2011 20:59:25 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+	id S1752793Ab1HRTAD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:00:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49899 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367Ab1HRTAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:00:00 -0400
+Date: Thu, 18 Aug 2011 19:59:59 +0100
+To: richard@nod.at
+Subject: Subject: [PATCH 06/91] um: PTRACE_[GS]ETFPXREGS had been wired on the wrong subarch
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-To: Lukas Czerner <lczerner@redhat.com>
-CC: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
-        achender@linux.vnet.ibm.com, Jens Axboe <jaxboe@fusionio.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] loop: add discard support for loop devices
-References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
-In-Reply-To: <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
-X-Enigmail-Version: 1.2.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <E1Qu7ot-0007R0-66@ZenIV.linux.org.uk>
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 05:49 PM, Lukas Czerner wrote:
-> On Thu, 18 Aug 2011, Jeff Moyer wrote:
->> Seems you missed the bizarre case of configuring a loop device over top
->> of a block device.
-> 
-> Wow, that is a bizarre case I did not think about at all. But since it
-> is so bizarre, do we even care ? The thing is that the only case where
-> it would make a difference is if the loop device is put on top of block
-> device which actually supports discard.
-> 
-> In order to fix that I would need to dig out the actual limits for that
-> device and set that appropriately for the loop device. Is that worth it
-> ? It is not like someone will ever do that (or should) :).
 
-It is bizarre (and being device-mapper developer I surely know better way :-)
-but people are still using that.
+It's 32bit-only, not 64bit-only...  And while we are at it, it's
+set_fpxregs(), not set_fpregs()...
 
-Historically one of the use of underlying block device was cryptoloop, but here
-I think it should be completely deprecated (cryptsetup can handle all old loop
-modes as well and default modes for cryptoloop are not safe).
-[Can we finally remove crypto loop option it from kernel? ... ok, just tried:)]
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/um/sys-i386/ptrace.c   |   14 +++++++++++++-
+ arch/um/sys-x86_64/ptrace.c |   14 +-------------
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-There is also out of tree loop-aes based on heavily patched loop device
-which usually uses block device underneath
-(cryptsetup already can handle all loop-aes modes as well).
+diff --git a/arch/um/sys-i386/ptrace.c b/arch/um/sys-i386/ptrace.c
+index d23b2d3..49fd25a 100644
+--- a/arch/um/sys-i386/ptrace.c
++++ b/arch/um/sys-i386/ptrace.c
+@@ -206,5 +206,17 @@ int set_fpxregs(struct user_fxsr_struct __user *buf, struct task_struct *child)
+ long subarch_ptrace(struct task_struct *child, long request,
+ 		    unsigned long addr, unsigned long data)
+ {
+-	return -EIO;
++	int ret = -EIO;
++	void __user *datap = (void __user *) data;
++
++	switch (request) {
++	case PTRACE_GETFPXREGS: /* Get the child FPU state. */
++		ret = get_fpxregs(datap, child);
++		break;
++	case PTRACE_SETFPXREGS: /* Set the child FPU state. */
++		ret = set_fpxregs(datap, child);
++		break;
++	}
++
++	return ret;
+ }
+diff --git a/arch/um/sys-x86_64/ptrace.c b/arch/um/sys-x86_64/ptrace.c
+index f436136..7ed49ac 100644
+--- a/arch/um/sys-x86_64/ptrace.c
++++ b/arch/um/sys-x86_64/ptrace.c
+@@ -178,17 +178,5 @@ int set_fpregs(struct user_i387_struct __user *buf, struct task_struct *child)
+ long subarch_ptrace(struct task_struct *child, long request,
+ 		    unsigned long addr, unsigned long data)
+ {
+-	int ret = -EIO;
+-	void __user *datap = (void __user *) data;
+-
+-	switch (request) {
+-	case PTRACE_GETFPXREGS: /* Get the child FPU state. */
+-		ret = get_fpregs(datap, child);
+-		break;
+-	case PTRACE_SETFPXREGS: /* Set the child FPU state. */
+-		ret = set_fpregs(datap, child);
+-		break;
+-	}
+-
+-	return ret;
++	return -EIO;
+ }
+-- 
+1.7.2.5
 
-Sometimes it is used with --offset parameter for some reason
-(like linear device-mapper mapping).
 
-So I do not care if you do not support discard here but please do not break
-support for block device mapped through loop.
-
-Thanks,
-Milan
