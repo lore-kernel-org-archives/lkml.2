@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab1HRBNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 21:13:08 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49275 "EHLO
+	id S1754571Ab1HRBUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 21:20:35 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44516 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab1HRBNF (ORCPT
+	with ESMTP id S1752090Ab1HRBUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 21:13:05 -0400
+	Wed, 17 Aug 2011 21:20:34 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 10:05:35 +0900
+Date: Thu, 18 Aug 2011 10:13:04 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -22,11 +22,11 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         Andrea Righi <andrea@betterlinux.com>,
         Ciju Rajan K <ciju@linux.vnet.ibm.com>,
         David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v9 08/13] memcg: dirty page accounting support routines
-Message-Id: <20110818100535.ecdb4a12.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313597705-6093-9-git-send-email-gthelen@google.com>
+Subject: Re: [PATCH v9 09/13] memcg: create support routines for writeback
+Message-Id: <20110818101304.fa662053.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1313597705-6093-10-git-send-email-gthelen@google.com>
 References: <1313597705-6093-1-git-send-email-gthelen@google.com>
-	<1313597705-6093-9-git-send-email-gthelen@google.com>
+	<1313597705-6093-10-git-send-email-gthelen@google.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -36,188 +36,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 09:15:00 -0700
+On Wed, 17 Aug 2011 09:15:01 -0700
 Greg Thelen <gthelen@google.com> wrote:
 
-> Added memcg dirty page accounting support routines.  These routines are
-> used by later changes to provide memcg aware writeback and dirty page
-> limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
-> allow for easier understanding of memcg writeback operation.
+> Introduce memcg routines to assist in per-memcg writeback:
+> 
+> - mem_cgroups_over_bground_dirty_thresh() determines if any cgroups need
+>   writeback because they are over their dirty memory threshold.
+> 
+> - should_writeback_mem_cgroup_inode() will be called by writeback to
+>   determine if a particular inode should be written back.  The answer
+>   depends on the writeback context (foreground, background,
+>   try_to_free_pages, etc.).
+> 
+> - mem_cgroup_writeback_done() is used periodically during writeback to
+>   update memcg writeback data.
+> 
+> These routines make use of a new over_bground_dirty_thresh bitmap that
+> indicates which mem_cgroup are over their respective dirty background
+> threshold.  As this bitmap is indexed by css_id, the largest possible
+> css_id value is needed to create the bitmap.  So move the definition of
+> CSS_ID_MAX from cgroup.c to cgroup.h.  This allows users of css_id() to
+> know the largest possible css_id value.  This knowledge can be used to
+> build such per-cgroup bitmaps.
+> 
+> Make determine_dirtyable_memory() non-static because it is needed by
+> mem_cgroup_writeback_done().
 > 
 > Signed-off-by: Greg Thelen <gthelen@google.com>
 
-I have small comments.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> ---
-> Changelog since v8:
-> - Use 'memcg' rather than 'mem' for local variables and parameters.
->   This is consistent with other memory controller code.
-> 
->  include/linux/memcontrol.h        |    9 ++
->  include/trace/events/memcontrol.h |   34 +++++++++
->  mm/memcontrol.c                   |  147 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 190 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 630d3fa..9cc8841 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -36,6 +36,15 @@ enum mem_cgroup_page_stat_item {
->  	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
->  	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
->  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
-> +	MEMCG_NR_DIRTYABLE_PAGES, /* # of pages that could be dirty */
-> +};
-> +
-> +struct dirty_info {
-> +	unsigned long dirty_thresh;
-> +	unsigned long background_thresh;
-> +	unsigned long nr_file_dirty;
-> +	unsigned long nr_writeback;
-> +	unsigned long nr_unstable_nfs;
->  };
->  
->  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
-> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
-> index 781ef9fc..abf1306 100644
-> --- a/include/trace/events/memcontrol.h
-> +++ b/include/trace/events/memcontrol.h
-> @@ -26,6 +26,40 @@ TRACE_EVENT(mem_cgroup_mark_inode_dirty,
->  	TP_printk("ino=%ld css_id=%d", __entry->ino, __entry->css_id)
->  )
->  
-> +TRACE_EVENT(mem_cgroup_dirty_info,
-> +	TP_PROTO(unsigned short css_id,
-> +		 struct dirty_info *dirty_info),
-> +
-> +	TP_ARGS(css_id, dirty_info),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned short, css_id)
-> +		__field(unsigned long, dirty_thresh)
-> +		__field(unsigned long, background_thresh)
-> +		__field(unsigned long, nr_file_dirty)
-> +		__field(unsigned long, nr_writeback)
-> +		__field(unsigned long, nr_unstable_nfs)
-> +		),
-> +
-> +	TP_fast_assign(
-> +		__entry->css_id = css_id;
-> +		__entry->dirty_thresh = dirty_info->dirty_thresh;
-> +		__entry->background_thresh = dirty_info->background_thresh;
-> +		__entry->nr_file_dirty = dirty_info->nr_file_dirty;
-> +		__entry->nr_writeback = dirty_info->nr_writeback;
-> +		__entry->nr_unstable_nfs = dirty_info->nr_unstable_nfs;
-> +		),
-> +
-> +	TP_printk("css_id=%d thresh=%ld bg_thresh=%ld dirty=%ld wb=%ld "
-> +		  "unstable_nfs=%ld",
-> +		  __entry->css_id,
-> +		  __entry->dirty_thresh,
-> +		  __entry->background_thresh,
-> +		  __entry->nr_file_dirty,
-> +		  __entry->nr_writeback,
-> +		  __entry->nr_unstable_nfs)
-> +)
-> +
->  #endif /* _TRACE_MEMCONTROL_H */
->  
->  /* This part must be outside protection */
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 4e01699..d54adf4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1366,6 +1366,11 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
->  	return memcg->swappiness;
->  }
->  
-> +static unsigned long dirty_info_reclaimable(struct dirty_info *info)
-> +{
-> +	return info->nr_file_dirty + info->nr_unstable_nfs;
-> +}
-> +
->  /*
->   * Return true if the current memory cgroup has local dirty memory settings.
->   * There is an allowed race between the current task migrating in-to/out-of the
-> @@ -1396,6 +1401,148 @@ static void mem_cgroup_dirty_param(struct vm_dirty_param *param,
->  	}
->  }
->  
-> +static inline bool mem_cgroup_can_swap(struct mem_cgroup *memcg)
-> +{
-> +	if (!do_swap_account)
-> +		return nr_swap_pages > 0;
-> +	return !memcg->memsw_is_minimum &&
-> +		(res_counter_read_u64(&memcg->memsw, RES_LIMIT) > 0);
-> +}
 
-I think
 
-	if (nr_swap_pages == 0)
-		return false;
-	if (!do_swap_account)
-		return true;
-	if (memcg->memsw_is_mininum)
-		return false;
-        if (res_counter_margin(&memcg->memsw) == 0)
-		return false;
-
-is a correct check.
-
-> +
-> +static s64 mem_cgroup_local_page_stat(struct mem_cgroup *memcg,
-> +				      enum mem_cgroup_page_stat_item item)
-> +{
-> +	s64 ret;
-> +
-> +	switch (item) {
-> +	case MEMCG_NR_FILE_DIRTY:
-> +		ret = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
-> +		break;
-> +	case MEMCG_NR_FILE_WRITEBACK:
-> +		ret = mem_cgroup_read_stat(memcg,
-> +					   MEM_CGROUP_STAT_FILE_WRITEBACK);
-> +		break;
-> +	case MEMCG_NR_FILE_UNSTABLE_NFS:
-> +		ret = mem_cgroup_read_stat(memcg,
-> +					   MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
-> +		break;
-> +	case MEMCG_NR_DIRTYABLE_PAGES:
-> +		ret = mem_cgroup_read_stat(memcg, LRU_ACTIVE_FILE) +
-> +			mem_cgroup_read_stat(memcg, LRU_INACTIVE_FILE);
-> +		if (mem_cgroup_can_swap(memcg))
-> +			ret += mem_cgroup_read_stat(memcg, LRU_ACTIVE_ANON) +
-> +				mem_cgroup_read_stat(memcg, LRU_INACTIVE_ANON);
-> +		break;
-> +	default:
-> +		BUG();
-> +		break;
-> +	}
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Return the number of additional pages that the @memcg cgroup could allocate.
-> + * If use_hierarchy is set, then this involves checking parent mem cgroups to
-> + * find the cgroup with the smallest free space.
-> + */
-> +static unsigned long
-> +mem_cgroup_hierarchical_free_pages(struct mem_cgroup *memcg)
-> +{
-> +	u64 free;
-> +	unsigned long min_free;
-> +
-> +	min_free = global_page_state(NR_FREE_PAGES);
-> +
-> +	while (memcg) {
-> +		free = (res_counter_read_u64(&memcg->res, RES_LIMIT) -
-> +			res_counter_read_u64(&memcg->res, RES_USAGE)) >>
-> +			PAGE_SHIFT;
-
-How about
-		free = mem_cgroup_margin(&mem->res);
-?
-
-Thanks,
--Kame
 
