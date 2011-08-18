@@ -1,144 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab1HRNKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:10:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44995 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588Ab1HRNKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 09:10:18 -0400
-Date: Thu, 18 Aug 2011 09:11:40 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
- crashes with linux-3.1-rc2
-Message-ID: <20110818091140.385a9455@barsoom.rdu.redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
-	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
-	<20110815064734.403b630f@corrin.poochiereds.net>
-	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
-	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
-	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-	<3300.1313637592@jrobl>
-	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
-	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755861Ab1HRNNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:13:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61866 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755240Ab1HRNNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 09:13:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,245,1312182000"; 
+   d="scan'208";a="39818450"
+Date: Thu, 18 Aug 2011 21:13:43 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH] writeback: Per-block device
+ bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
+Message-ID: <20110818131343.GA17473@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+ <20110818094824.GA25752@localhost>
+ <1313669702.6607.24.camel@sauron>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313669702.6607.24.camel@sauron>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
-Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+Hi Artem,
 
+> Here is a real use-case we had when developing the N900 phone. We had
+> internal flash and external microSD slot. Internal flash is soldered in
+> and cannot be removed by the user. MicroSD, in contrast, can be removed
+> by the user.
 > 
+> For the internal flash we wanted long intervals and relaxed limits to
+> gain better performance.
 > 
-> On Thu, 18 Aug 2011, Justin Piszcz wrote:
-> 
-> >
-> >
-> > On Thu, 18 Aug 2011, Justin Piszcz wrote:
-> >
-> >> 
-> >> 
-> >> On Thu, 18 Aug 2011, J. R. Okajima wrote:
-> >> 
-> >>> 
-> >>> Justin Piszcz:
-> >>>> Does anyone know if any kernel supports CIFS w/out crashing? I'd like to
-> >>>> backup some CIFS shares, thanks.
-> >>>> 
-> >>>> 
-> >>>> mount -t cifs //w2/x /mnt -o user=user,pass=pass
-> >>>> 
-> >>>> [  881.388836] CIFS VFS: cifs_mount failed w/return code = -22
-> >>> 	:::
-> >>> 
-> >>> Since it failed mounting, this patch will help you. Although the patch
-> >>> will fix one bug, there still may exist another problem.
-> >>> 
-> >>> http://marc.info/?l=linux-cifs&m=131345112022031&w=2
-> >> 
-> >> Hi,
-> >> 
-> >> Latest patch (this one) applied to linux-3.1-rc2 works, at least it mounted
-> >> this time and did not instantly crash the kernel!
-> >> 
-> >> I also tried the hostname again (and it did not crash the kernel, but it 
-> >> failed to mount).
-> >> 
-> >> Used the IP and it mounted successfully:
-> >> //10.0.0.11/x          28T  5.0T   23T  19% /mnt
-> >> //10.0.0.11/y          19T  1.2T   18T   7% /mnt2
-> >> 
-> >> It has not crashed yet (which is good), I'll apply this patch to my
-> >> production machine and test taking backups of this data and let you know
-> >> if it crashes again, thanks!
-> >> 
-> >> Justin.
-> >
-> >
-> > Hello,
-> >
-> > It is working but very slowly:
-> >
-> > Device eth6 [10.0.1.2] (1/1):
-> > ================================================================================
-> > Incoming:                               Outgoing:
-> > Curr: 37.60 MByte/s                     Curr: 0.44 MByte/s
-> > Avg: 4.98 MByte/s                       Avg: 0.09 MByte/s
-> > Min: 0.00 MByte/s                       Min: 0.00 MByte/s
-> > Max: 40.79 MByte/s                      Max: 0.48 MByte/s
-> > Ttl: 1.45 GByte                         Ttl: 26.77 MByte
-> >
-> > Over 10GbE the other direction (Linux -> Windows (via Samba)) I get 500MiB/s, 
-> > is CIFS slow?
-> >
-> > I'll look into options to tweak the speed but this is very poor speed when 
-> > you have to transfer 5-10TB.  However, it is not crashing anymore, so any 
-> > speed is better than that :)
-> >
-> > Justin.
-> 
-> Hi,
-> 
-> Mounting with:
-> rw,uid=1000,gid=100,mode=0644,rsize=130048,wsize=1048576,credentials=/root/.cifs 
-> Same speed:
-> Device eth6 [10.0.1.2] (1/1):
-> ================================================================================
-> Incoming:                               Outgoing:
-> Curr: 32.42 MByte/s                     Curr: 0.38 MByte/s
-> Avg: 30.72 MByte/s                      Avg: 0.39 MByte/s
-> Min: 0.00 MByte/s                       Min: 0.00 MByte/s
-> Max: 43.64 MByte/s                      Max: 0.59 MByte/s
-> Ttl: 20.15 GByte                        Ttl: 261.03 MByte
-> 
-> Thoughts?
-> 
-> Has anyone achieved > 30-40MB/s with CIFS?
-> This is a 10GbE link (and yes JUMBO frames are enabled on both sides, and 
-> again, samba from Linux->Windows = 500MB/s)
-> 
-> Justin.
-> 
+> For MicroSD we wanted very short intervals and tough limits to make sure
+> that if the user suddenly removes his microSD (users do this all the
+> time) - we do not lose data.
 
-To be clear -- incoming in this case is reads or writes?
+Thinking twice about it, I find that the different requirements for
+interval flash/external microSD can also be solved by this scheme.
 
-Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
-3.0 I added a patchset to increase the allowable wsize and to allow the
-kernel to issue writes in parallel.
+Introduce a per-bdi dirty_background_time (and optionally dirty_time)
+as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
+however with unit "milliseconds worth of data".
 
-Reads still suffer from the same problem however. I'm working on a
-patchset that should do the same thing for them, but it requires a
-fairly substantial overhaul of the receive codepaths.
+The per-bdi dirty_background_time will be set low for external microSD
+and high for internal flash. Then you get timely writeouts for microSD
+and reasonably delayed writes for internal flash (controllable by the
+global dirty_expire_centisecs).
 
--- 
-Jeff Layton <jlayton@samba.org>
+The dirty_background_time will actually work more reliable than
+dirty_expire_centisecs because it will checked immediately after the
+application dirties more pages. And the dirty_time could provide
+strong data integrity guarantee -- much stronger than
+dirty_expire_centisecs -- if used.
+
+Does that sound reasonable?
+
+Thanks,
+Fengguang
