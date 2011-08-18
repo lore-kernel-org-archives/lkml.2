@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab1HRElI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 00:41:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28959 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab1HRElF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 00:41:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,243,1312182000"; 
-   d="scan'208";a="39683080"
-Date: Thu, 18 Aug 2011 12:41:01 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110818044101.GA32326@localhost>
-References: <20110816022006.348714319@intel.com>
- <20110816022328.811348370@intel.com>
- <20110816194112.GA25517@quack.suse.cz>
- <20110817132347.GA6628@localhost>
- <20110817202414.GK9959@quack.suse.cz>
- <20110818041801.GA22662@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818041801.GA22662@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751886Ab1HRE4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 00:56:36 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57817 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab1HRE4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 00:56:35 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix line over 80 character and printk issue in cb_pcimdda.c
+Date: Thu, 18 Aug 2011 00:56:13 -0400
+Message-Id: <1313643373-2568-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <[PATCH]Staging:comedi: fix printk and line over 80 character issue in cb_pcimdda.c>
+References: <[PATCH]Staging:comedi: fix printk and line over 80 character issue in cb_pcimdda.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-> > > >   What if x_intercept >  bdi_thresh? Since 8*bdi->avg_write_bandwidth is
-> > > > easily 500 MB, that happens quite often I imagine?
-> > > 
-> > > That's fine because I no longer target "bdi_thresh" as some limiting
-> > > factor as the global "thresh". Due to it being unstable in small
-> > > memory JBOD systems, which is the big and unique problem in JBOD.
-> >   I see. Given the control mechanism below, I think we can try this idea
-> > and see whether it makes problems in practice or not. But the fact that
-> > bdi_thresh is no longer treated as limit should be noted in a changelog -
-> > probably of the last patch (although that is already too long for my taste
-> > so I'll look into how we could make it shorter so that average developer
-> > has enough patience to read it ;).
-> 
-> Good point. I'll make it a comment in the last patch.
+This is a patch to the cb_pcimdda.c file that fixes up a line over 80 character and printk warning found by the checkpatch.pl tool
 
-Just added this comment:
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/cb_pcimdda.c |   26 ++++++++++++++------------
+ 1 files changed, 14 insertions(+), 12 deletions(-)
 
-+               /*
-+                * bdi_thresh is not treated as some limiting factor as
-+                * dirty_thresh, due to reasons
-+                * - in JBOD setup, bdi_thresh can fluctuate a lot
-+                * - in a system with HDD and USB key, the USB key may somehow
-+                *   go into state (bdi_dirty >> bdi_thresh) either because
-+                *   bdi_dirty starts high, or because bdi_thresh drops low.
-+                *   In this case we don't want to hard throttle the USB key
-+                *   dirtiers for 100 seconds until bdi_dirty drops under
-+                *   bdi_thresh. Instead the auxiliary bdi control line in
-+                *   bdi_position_ratio() will let the dirtier task progress
-+                *   at some rate <= (write_bw / 2) for bringing down bdi_dirty.
-+                */
-                bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
+index 8c981a8..49a6c5e 100644
+--- a/drivers/staging/comedi/drivers/cb_pcimdda.c
++++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
+@@ -105,7 +105,8 @@ struct board_struct {
+ 	int ao_bits;
+ 	int dio_chans;
+ 	int dio_method;
+-	int dio_offset;		/* how many bytes into the BADR are the DIO ports */
++	int dio_offset;         /* how many bytes into the BADR are the DIO
++				 * ports */
+ 	int regs_badrindex;	/* IO Region for the control, analog output,
+ 				   and DIO registers */
+ 	int reg_sz;		/* number of bytes of registers in io region */
+@@ -154,7 +155,8 @@ MODULE_DEVICE_TABLE(pci, pci_table);
+ 
+ /* this structure is for data unique to this hardware driver.  If
+    several hardware drivers keep similar information in this structure,
+-   feel free to suggest moving the variable to the struct comedi_device struct.  */
++   feel free to suggest moving the variable to the struct comedi_device
++   struct. */
+ struct board_private_struct {
+ 	unsigned long registers;	/* set by probe */
+ 	unsigned long dio_registers;
+@@ -300,7 +302,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return err;
+ 
+ /* Output some info */
+-	printk("comedi%d: %s: ", dev->minor, thisboard->name);
++	pr_info("comedi%d: %s: ", dev->minor, thisboard->name);
+ 
+ /*
+  * Initialize dev->board_name.  Note that we can use the "thisboard"
+@@ -335,13 +337,14 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (thisboard->dio_chans) {
+ 		switch (thisboard->dio_method) {
+ 		case DIO_8255:
+-			/* this is a straight 8255, so register us with the 8255 driver */
++			/* this is a straight 8255, so register us with the 8255
++			 * driver */
+ 			subdev_8255_init(dev, s, NULL, devpriv->dio_registers);
+ 			devpriv->attached_to_8255 = 1;
+ 			break;
+ 		case DIO_INTERNAL:
+ 		default:
+-			printk("DIO_INTERNAL not implemented yet!\n");
++			pr_cont("DIO_INTERNAL not implemented yet!\n");
+ 			return -ENXIO;
+ 			break;
+ 		}
+@@ -351,7 +354,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	devpriv->attached_successfully = 1;
+ 
+-	printk("attached\n");
++	pr_cont("attached\n");
+ 
+ 	return 1;
+ }
+@@ -381,8 +384,8 @@ static int detach(struct comedi_device *dev)
+ 		}
+ 
+ 		if (devpriv->attached_successfully && thisboard)
+-			printk("comedi%d: %s: detached\n", dev->minor,
+-			       thisboard->name);
++			pr_info("comedi%d: %s: detached\n", dev->minor,
++					thisboard->name);
+ 
+ 	}
+ 
+@@ -489,8 +492,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+ 			devpriv->pci_dev = pcidev;
+ 			dev->board_ptr = boards + index;
+ 			if (comedi_pci_enable(pcidev, thisboard->name)) {
+-				printk
+-				    ("cb_pcimdda: Failed to enable PCI device and request regions\n");
++				pr_warn("cb_pcimdda: Failed to enable PCI device and request regions\n");
+ 				return -EIO;
+ 			}
+ 			registers =
+@@ -503,7 +505,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
+ 		}
+ 	}
+ 
+-	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
+-	       "card found at the requested position\n");
++	pr_warn("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
++			"card found at the requested position\n");
+ 	return -ENODEV;
+ }
+-- 
+1.7.6
 
-Thanks,
-Fengguang
