@@ -1,185 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1HRCqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 22:46:25 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16766 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab1HRCqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 22:46:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,242,1312182000"; 
-   d="scan'208";a="39654814"
-Date: Thu, 18 Aug 2011 10:36:10 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Li Shaohua <shaohua.li@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [PATCH v9 12/13] memcg: create support routines for page
- writeback
-Message-ID: <20110818023610.GA12514@localhost>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
- <1313597705-6093-13-git-send-email-gthelen@google.com>
- <20110818103803.c2617804.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754866Ab1HRCtx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 22:49:53 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:36751 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab1HRCtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 22:49:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=FFLcf2360aYxlXmCfI2rCcve4FMUlbKw5J0A+6H02ac0koySdMnpcMJQiOUGDYj67
+	EZhcgihSu7b70C8joLRLA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818103803.c2617804.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1313632629-23603-4-git-send-email-jj_ding@emc.com.tw>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-4-git-send-email-jj_ding@emc.com.tw>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 18 Aug 2011 10:49:29 +0800
+X-Google-Sender-Auth: 2fg-TshmTUiTcytcwOKbOjC0KLk
+Message-ID: <CAGS+omA0=Ypm0vRbBkSiGYc_NBf4adCBhPhpbrhineXe1+hcrw@mail.gmail.com>
+Subject: Re: [PATCH 3/6] Input: elantech - packet checking for v2 hardware
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +
-> > +			__set_current_state(TASK_UNINTERRUPTIBLE);
-> > +			io_schedule_timeout(pause);
-> > +
-> 
-> How do you think about MAX_PAUSE/PASS_GOOD ?
-> ==
->                 /*
->                  * max-pause area. If dirty exceeded but still within this
->                  * area, no need to sleep for more than 200ms: (a) 8 pages per
->                  * 200ms is typically more than enough to curb heavy dirtiers;
->                  * (b) the pause time limit makes the dirtiers more responsive.
->                  */
->                 if (nr_dirty < dirty_thresh +
->                                dirty_thresh / DIRTY_MAXPAUSE_AREA &&
->                     time_after(jiffies, start_time + MAX_PAUSE))
->                         break;
->                 /*
->                  * pass-good area. When some bdi gets blocked (eg. NFS server
->                  * not responding), or write bandwidth dropped dramatically due
->                  * to concurrent reads, or dirty threshold suddenly dropped and
->                  * the dirty pages cannot be brought down anytime soon (eg. on
->                  * slow USB stick), at least let go of the good bdi's.
->                  */
->                 if (nr_dirty < dirty_thresh +
->                                dirty_thresh / DIRTY_PASSGOOD_AREA &&
->                     bdi_dirty < bdi_thresh)
->                         break;
-> ==
+On Thu, Aug 18, 2011 at 9:57 AM, JJ Ding <jj_ding@emc.com.tw> wrote:
+> For v2 hardware, there is no real parity check, but we can still check
+> some constant bits for data integrity.
+>
+> Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
+> ---
+>  drivers/input/mouse/elantech.c |   26 +++++++++++++++++++++++---
+>  1 files changed, 23 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> index cf41f23..032181c 100644
+> --- a/drivers/input/mouse/elantech.c
+> +++ b/drivers/input/mouse/elantech.c
+> @@ -376,6 +376,25 @@ static int elantech_check_parity_v1(struct psmouse *psmouse)
+>               etd->parity[packet[3]] == p3;
+>  }
+>
+> +static int packet_simple_check_v2(struct psmouse *psmouse)
+> +{
+> +       struct elantech_data *etd = psmouse->private;
+> +       unsigned char *packet = psmouse->packet;
+> +
+> +       if (etd->reports_pressure)
+> +               return (packet[0] & 0x0c) == 0x04 &&
+> +                      (packet[3] & 0x0f) == 0x02;
+> +
+> +       if ((packet[0] & 0xc0) == 0x80)
+> +               return (packet[0] & 0x0c) == 0x0c &&
+> +                      (packet[3] & 0x0e) == 0x08;
+> +
+> +       return (packet[0] & 0x3c) == 0x3c &&
+> +              (packet[1] & 0xf0) == 0x00 &&
+> +              (packet[3] & 0x3e) == 0x38 &&
+> +              (packet[4] & 0xf0) == 0x00;
+> +}
+> +
+>  /*
+>  * Process byte stream from mouse and handle complete packets
+>  */
+> @@ -398,7 +417,9 @@ static psmouse_ret_t elantech_process_byte(struct psmouse *psmouse)
+>                break;
+>
+>        case 2:
+> -               /* We don't know how to check parity in protocol v2 */
+> +               if (etd->paritycheck && !packet_simple_check_v2(psmouse))
+> +                       return PSMOUSE_BAD_DATA;
+> +
+>                elantech_report_absolute_v2(psmouse);
+>                break;
+>        }
+> @@ -799,8 +820,7 @@ int elantech_init(struct psmouse *psmouse)
+>                etd->hw_version = 2;
+>                /* For now show extra debug information */
+>                etd->debug = 1;
+> -               /* Don't know how to do parity checking for version 2 */
+> -               etd->paritycheck = 0;
+> +               etd->paritycheck = 1;
 
-Sorry that piece of code actually has some problems in JBOD setup.
-I'm going to submit a patch for fixing it:
+If we always do some sort of check, can we just remove etd->paritycheck now?
 
-Subject: squeeze max-pause area and drop pass-good area
-Date: Tue Aug 16 13:37:14 CST 2011
-
-Remove the pass-good area introduced in ffd1f609ab10 ("writeback:
-introduce max-pause and pass-good dirty limits") and make the
-max-pause area smaller and safe.
-
-This fixes ~30% performance regression in the ext3 data=writeback
-fio_mmap_randwrite_64k/fio_mmap_randrw_64k test cases, where there are
-12 JBOD disks, on each disk runs 8 concurrent tasks doing reads+writes.
-
-Using deadline scheduler also has a regression, but not that big as
-CFQ, so this suggests we have some write starvation.
-
-The test logs show that
-
-- the disks are sometimes under utilized
-
-- global dirty pages sometimes rush high to the pass-good area for
-  several hundred seconds, while in the mean time some bdi dirty pages
-  drop to very low value (bdi_dirty << bdi_thresh).
-  Then suddenly the global dirty pages dropped under global dirty
-  threshold and bdi_dirty rush very high (for example, 2 times higher
-  than bdi_thresh). During which time balance_dirty_pages() is not
-  called at all.
-
-So the problems are
-
-1) The random writes progress so slow that they break the assumption of
-the max-pause logic that "8 pages per 200ms is typically more than
-enough to curb heavy dirtiers".
-
-2) The max-pause logic ignored task_bdi_thresh and thus opens the
-   possibility for some bdi's to over dirty pages, leading to
-   (bdi_dirty >> bdi_thresh) and then (bdi_thresh >> bdi_dirty) for others.
-
-3) The higher max-pause/pass-good thresholds somehow leads to some bad
-   swing of dirty pages.
-
-The fix is to allow the task to slightly dirty over task_bdi_thresh, but
-no way to exceed bdi_dirty and/or global dirty_thresh.
-
-Tests show that it fixed the JBOD regression completely (both behavior
-and performance), while still being able to cut down large pause times
-in balance_dirty_pages() for single-disk cases.
-
-Reported-by: Li Shaohua <shaohua.li@intel.com>
-Tested-by: Li Shaohua <shaohua.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/writeback.h |   11 -----------
- mm/page-writeback.c       |   15 ++-------------
- 2 files changed, 2 insertions(+), 24 deletions(-)
-
---- linux.orig/mm/page-writeback.c	2011-08-18 09:52:59.000000000 +0800
-+++ linux/mm/page-writeback.c	2011-08-18 10:28:57.000000000 +0800
-@@ -786,21 +786,10 @@ static void balance_dirty_pages(struct a
- 		 * 200ms is typically more than enough to curb heavy dirtiers;
- 		 * (b) the pause time limit makes the dirtiers more responsive.
- 		 */
--		if (nr_dirty < dirty_thresh +
--			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
-+		if (nr_dirty < dirty_thresh &&
-+		    bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2 &&
- 		    time_after(jiffies, start_time + MAX_PAUSE))
- 			break;
--		/*
--		 * pass-good area. When some bdi gets blocked (eg. NFS server
--		 * not responding), or write bandwidth dropped dramatically due
--		 * to concurrent reads, or dirty threshold suddenly dropped and
--		 * the dirty pages cannot be brought down anytime soon (eg. on
--		 * slow USB stick), at least let go of the good bdi's.
--		 */
--		if (nr_dirty < dirty_thresh +
--			       dirty_thresh / DIRTY_PASSGOOD_AREA &&
--		    bdi_dirty < bdi_thresh)
--			break;
- 
- 		/*
- 		 * Increase the delay for each loop, up to our previous
---- linux.orig/include/linux/writeback.h	2011-08-16 23:34:27.000000000 +0800
-+++ linux/include/linux/writeback.h	2011-08-18 09:53:03.000000000 +0800
-@@ -12,15 +12,6 @@
-  *
-  *	(thresh - thresh/DIRTY_FULL_SCOPE, thresh)
-  *
-- * The 1/16 region above the global dirty limit will be put to maximum pauses:
-- *
-- *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
-- *
-- * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
-- * to loops:
-- *
-- *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
-- *
-  * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
-  * time) for the dirty pages to drop, unless written enough pages.
-  *
-@@ -31,8 +22,6 @@
-  */
- #define DIRTY_SCOPE		8
- #define DIRTY_FULL_SCOPE	(DIRTY_SCOPE / 2)
--#define DIRTY_MAXPAUSE_AREA		16
--#define DIRTY_PASSGOOD_AREA		8
- 
- /*
-  * 4MB minimal write chunk size
+>
+>                if (etd->fw_version >= 0x020800)
+>                        etd->reports_pressure = true;
+> --
+> 1.7.4.1
+>
+>
