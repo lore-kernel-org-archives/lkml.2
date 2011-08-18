@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab1HRTMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:12:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:35656 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755142Ab1HRTMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:12:49 -0400
-Message-ID: <4E4D642F.3010909@nod.at>
-Date: Thu, 18 Aug 2011 21:12:47 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1755088Ab1HRTND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:13:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48432 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab1HRTMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:12:51 -0400
+Date: Thu, 18 Aug 2011 20:12:50 +0100
+To: richard@nod.at
+Subject: Subject: [PATCH 83/91] um: a couple of missing dependencies...
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-To: Al Viro <viro@ftp.linux.org.uk>
-CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: Subject: [PATCH 00/91] pending uml patches
-References: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
-In-Reply-To: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <E1Qu81K-00085s-2q@ZenIV.linux.org.uk>
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
 
-Am 18.08.2011 20:58, schrieb Al Viro:
->
-> My apologies for mailbomb from hell.  *All* this stuff is available in
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/um-header.git/ #master,
-> but since uml folks had been stuck with mail and patch for a long time...
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ drivers/net/wireless/ath/Kconfig     |    2 +-
+ drivers/net/wireless/rtlwifi/Kconfig |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Have you touched your patches since yesterday?
-I've already pulled and uploaded them to my shiny new git repo at:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/linux-um.git unstable
+diff --git a/drivers/net/wireless/ath/Kconfig b/drivers/net/wireless/ath/Kconfig
+index d1b2306..47d0de8 100644
+--- a/drivers/net/wireless/ath/Kconfig
++++ b/drivers/net/wireless/ath/Kconfig
+@@ -1,6 +1,6 @@
+ menuconfig ATH_COMMON
+ 	tristate "Atheros Wireless Cards"
+-	depends on CFG80211
++	depends on CFG80211 && (!UML || BROKEN)
+ 	---help---
+ 	  This will enable the support for the Atheros wireless drivers.
+ 	  ath5k, ath9k, ath9k_htc and ar9170 drivers share some common code, this option
+diff --git a/drivers/net/wireless/rtlwifi/Kconfig b/drivers/net/wireless/rtlwifi/Kconfig
+index 45e1476..d6c42e6 100644
+--- a/drivers/net/wireless/rtlwifi/Kconfig
++++ b/drivers/net/wireless/rtlwifi/Kconfig
+@@ -12,7 +12,7 @@ config RTL8192CE
+ 
+ config RTL8192SE
+ 	tristate "Realtek RTL8192SE/RTL8191SE PCIe Wireless Network Adapter"
+-	depends on MAC80211 && EXPERIMENTAL
++	depends on MAC80211 && EXPERIMENTAL && PCI
+ 	select FW_LOADER
+ 	select RTLWIFI
+ 	---help---
+@@ -23,7 +23,7 @@ config RTL8192SE
+ 
+ config RTL8192DE
+ 	tristate "Realtek RTL8192DE/RTL8188DE PCIe Wireless Network Adapter"
+-	depends on MAC80211 && EXPERIMENTAL
++	depends on MAC80211 && EXPERIMENTAL && PCI
+ 	select FW_LOADER
+ 	select RTLWIFI
+ 	---help---
+-- 
+1.7.2.5
 
-Due to the current mirroring problems with git.kernel.org I have not 
-sent made it public.
-Sorry for that, I screwed it. :-(
 
-> Anyway, most of the stuff in this pile is merging, cleaning and mutilating
-> subarchitecture-related code in arch/um.  By the end of it we have x86
-> bits largely merged between 32bit and 64bit variants and taken to arch/x86/um;
-> headers seriously cleaned up and mostly free of x86-isms now (not completely -
-> we still have page size dependencies in there).
->
-> Beginning of the series are pure build and driver fixes; those should go to
-> Linus before 3.1-final, IMO.
-
-Okay.
-
-> As far as I know, there's no regressions introduced by that pile; testing
-> and comments would be, of course, welcome.
->
-
-There was a small build regression, I've already fixed it!
-
-Thanks,
-//richard
