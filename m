@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab1HROT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 10:19:27 -0400
-Received: from mail02-md.ns.itscom.net ([175.177.155.112]:46408 "EHLO
-	mail02-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab1HROT0 (ORCPT
+	id S1755576Ab1HROZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 10:25:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56110 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab1HROZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 10:19:26 -0400
-From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes with linux-3.1-rc2
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan> <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-Date: Thu, 18 Aug 2011 23:19:21 +0900
-Message-ID: <9214.1313677161@jrobl>
+	Thu, 18 Aug 2011 10:25:03 -0400
+Date: Thu, 18 Aug 2011 09:25:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+Message-ID: <20110818142500.GC28313@thinkpad-t410>
+Mail-Followup-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+	Eric Piel <E.A.B.Piel@tudelft.nl>,
+	Daniel Kurtz <djkurtz@chromium.org>,
+	Chase Douglas <chase.douglas@canonical.com>,
+	Henrik Rydberg <rydberg@euromail.se>,
+	Alessandro Rubini <rubini@cvml.unipv.it>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+ <20110818135853.GA28313@thinkpad-t410>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818135853.GA28313@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 18, 2011 at 08:58:53AM -0500, Seth Forshee wrote:
+> The case 3 code is nearly identical to case 2. How about this?
+> 
+> 	case 2:
+> 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+> 		/* fall through */
+> 
+> 	case 3:
+> 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+> 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+> 		/* range of pressure and width is the same as v2 */
+> 		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+> 				     ETP_PMAX_V2, 0, 0);
+> 		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+> 				     ETP_WMAX_V2, 0, 0);
+> 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> 		input_mt_init_slots(dev, 2);
+> 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> 		break;
 
-Justin Piszcz:
-> > It has not crashed yet (which is good), I'll apply this patch to my
-> > production machine and test taking backups of this data and let you know
-> > if it crashes again, thanks!
-	:::
-> It is working but very slowly:
+Sorry, that should have been:
 
-As you might know, the patch is totally unrelated to the performance. It
-just fixes a memory corruption at unmounting or when an error in mounting.
+	case 2:
+		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+		/* fall through */
 
-
-> you have to transfer 5-10TB.  However, it is not crashing anymore, so any 
-> speed is better than that :)
-
-But you are not satisifed obviously. :-)
-
-
-J. R. Okajima
+	case 3:
+		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+		if (etd->reports_pressure) {
+			input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+					     ETP_PMAX_V2, 0, 0);
+			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+					     ETP_WMAX_V2, 0, 0);
+		}
+		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+		input_mt_init_slots(dev, 2);
+		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+		break;
