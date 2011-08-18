@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1HRUK3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:10:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46744 "EHLO hera.kernel.org"
+	id S1753172Ab1HRULW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:11:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46770 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab1HRUK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:10:27 -0400
-Date: Thu, 18 Aug 2011 20:10:08 GMT
+	id S1752088Ab1HRULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:11:21 -0400
+Date: Thu, 18 Aug 2011 20:10:41 GMT
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-77e57297b4ff3f602ba5105398d342a4b4a54774@git.kernel.org>
+Message-ID: <tip-cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110523123917.GA31060@quad>
-References: <20110523123917.GA31060@quad>
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110607161936.GA8163@quad>
+References: <20110607161936.GA8163@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf list: Fix exit value
-Git-Commit-ID: 77e57297b4ff3f602ba5105398d342a4b4a54774
+Subject: [tip:perf/core] perf evlist: Fix missing event name init for default event
+Git-Commit-ID: cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:10:09 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:10:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  77e57297b4ff3f602ba5105398d342a4b4a54774
-Gitweb:     http://git.kernel.org/tip/77e57297b4ff3f602ba5105398d342a4b4a54774
+Commit-ID:  cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
+Gitweb:     http://git.kernel.org/tip/cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Mon, 23 May 2011 14:39:17 +0200
+AuthorDate: Tue, 7 Jun 2011 18:19:36 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 18 Aug 2011 07:19:15 -0300
+CommitDate: Thu, 18 Aug 2011 07:20:31 -0300
 
-perf list: Fix exit value
+perf evlist: Fix missing event name init for default event
 
-This patch fixes an issue with the exit value of perf list:
+When no event is given to perf record, perf top, a default event is
+initialized (cycles). However, perf_evlist__add_default() was not
+setting the symbolic name for the event. Perf top worked simply because
+it was reconstructing the name from the event code. But it should not
+have to do this. This patch initializes the evsel->name field properly.
 
-$ perf list; echo $?
-129
+This second version improves the code flow on the non error path.
 
-perf list returns an error exit code even though there is no error.
-
-There was a stray exit(129) in print_events(). This patch removes this
-exit().
-
-$ perf list; echo $?
-0
-
-$ perf list hw sw
-  cpu-cycles OR cycles                               [Hardware event]
-  stalled-cycles-frontend OR idle-cycles-frontend    [Hardware event]
-  stalled-cycles-backend OR idle-cycles-backend      [Hardware event]
-  instructions                                       [Hardware event]
-  cache-references                                   [Hardware event]
-  cache-misses                                       [Hardware event]
-  branch-instructions OR branches                    [Hardware event]
-  branch-misses                                      [Hardware event]
-  bus-cycles                                         [Hardware event]
-
-  cpu-clock                                          [Software event]
-  task-clock                                         [Software event]
-  page-faults OR faults                              [Software event]
-  minor-faults                                       [Software event]
-  major-faults                                       [Software event]
-  context-switches OR cs                             [Software event]
-  cpu-migrations OR migrations                       [Software event]
-  alignment-faults                                   [Software event]
-  emulation-faults                                   [Software event]
-$ echo $?
-0
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20110523123917.GA31060@quad
+Link: http://lkml.kernel.org/r/20110607161936.GA8163@quad
 Signed-off-by: Stephane Eranian <eranian@google.com>
+[committer note: Use perf_evsel__delete() instead of plain free()]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ tools/perf/util/evlist.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 4ea7e19..d93f3ce 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1097,6 +1097,4 @@ void print_events(const char *event_glob)
- 	printf("\n");
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index e03e7bc..c12bd47 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
  
- 	print_tracepoint_events(NULL, NULL);
--
--	exit(129);
+ 	if (evsel == NULL)
+-		return -ENOMEM;
++		goto error;
++
++	/* use strdup() because free(evsel) assumes name is allocated */
++	evsel->name = strdup("cycles");
++	if (!evsel->name)
++		goto error_free;
+ 
+ 	perf_evlist__add(evlist, evsel);
+ 	return 0;
++error_free:
++	perf_evsel__delete(evsel);
++error:
++	return -ENOMEM;
  }
+ 
+ void perf_evlist__disable(struct perf_evlist *evlist)
