@@ -1,166 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab1HRRnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:43:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34122 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1HRRnE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:43:04 -0400
+	id S1752203Ab1HRRoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:44:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1HRRoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:44:32 -0400
+Date: Thu, 18 Aug 2011 13:44:25 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: aesni-intel - Add ivsize to ablk_ecb_alg
+Message-ID: <20110818174425.GN2227@zod.bos.redhat.com>
+References: <20110811164040.GB2167@zod.bos.redhat.com>
+ <20110815071528.GA29656@gondor.apana.org.au>
+ <20110815115038.GA2227@zod.bos.redhat.com>
+ <20110816123227.GB9413@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
-	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
-	<20110815064734.403b630f@corrin.poochiereds.net>
-	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
-	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
-	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-	<3300.1313637592@jrobl>
-	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
-	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
-	<20110818091140.385a9455@barsoom.rdu.redhat.com>
-	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
-	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
-	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
-	<CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
-	<alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
-Date: Thu, 18 Aug 2011 12:43:03 -0500
-Message-ID: <CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com>
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-From: Steve French <smfrench@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Jeff Layton <jlayton@samba.org>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816123227.GB9413@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If reading files - smbclient (ftp like syntax) should be able to reach
-wire speeds (assuming the server disk can keep up) and for
-writing it should be similar (perhaps a little slower but it won't
-use i/o sizes as large as cifs kernel client).  I would expect
-smbclient to/copy from Windows to be faster than Windows mount -> Samba.
+On Tue, Aug 16, 2011 at 08:32:27PM +0800, Herbert Xu wrote:
+> On Mon, Aug 15, 2011 at 07:50:39AM -0400, Josh Boyer wrote:
+> >
+> > Well, yes, it does in this code:
+> > 
+> > 	if (!((alg->cra_flags & CRYPTO_ALG_TYPE_MASK) ==
+> > 	      CRYPTO_ALG_TYPE_BLKCIPHER ? alg->cra_blkcipher.ivsize :
+> > 					  alg->cra_ablkcipher.ivsize)) {
+> > 
+> > 		printk(KERN_ERR "%s: %d\n", __func__, __LINE__);
+> > 		return alg;
+> > 	}
+> > 
+> > But the lookup seems to fail after it returns (see traces below).
+> 
+> OK something's clearly screwed up.  I'll try to reproduce this
+> here.
 
-I reached near wirespeeds for GigE with cifs client (writing) to
-Winodws 2003/2008/r2
-and Samba - but didn't have fast enough disks to test 10GigE although I expect
-very good performance with that if you have fast enough server disks (and
-am willing to put performance patches in, if you detect additional
-changes that we should make for 10GigE - in particular allowing
-more than 50 simultaneous requests).
+Any luck on this?  If there's anything further I can try or if you need
+some data from me, just let me know.
 
-If the registry fix for Windows 7 is in place (or if you copy to
-WIndows 2008, Windows 2003, WIndows 2008r2) -
-cifs kernel client is probably slightly faster for writes than alternatives,
-smbclient much faster for reads.
-
-If going the other direction (Windows client copying to/from Samba server) -
-Samba 3.6 (server) with SMB2 support
-turned on - is going to be faster than most alternatives.
-
-
-On Thu, Aug 18, 2011 at 12:33 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->
->
-> On Thu, 18 Aug 2011, Steve French wrote:
->
->> On Thu, Aug 18, 2011 at 12:16 PM, Justin Piszcz <jpiszcz@lucidpixels.com>
->> wrote:
->>>
->>>
->>> On Thu, 18 Aug 2011, Jeff Layton wrote:
->>>
->>>> On Thu, 18 Aug 2011 09:15:36 -0400 (EDT)
->>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->>>>
->>>>>
->>>>>
->>>>> On Thu, 18 Aug 2011, Jeff Layton wrote:
->>>>>
->>>>>> On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
->>>>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->>>>>>
->>>>>>> Justin.
->>>>>>>
->>>>>>
->>>>>> To be clear -- incoming in this case is reads or writes?
->>>>>
->>>>> Reading from the CIFS share (Windows 7).
->>>>>
->>>>>>
->>>>>> Up until 3.0 cifs.ko didn't parallelize writes from a single thread.
->>>>>> In
->>>>>> 3.0 I added a patchset to increase the allowable wsize and to allow
->>>>>> the
->>>>>> kernel to issue writes in parallel.
->>>>>
->>>>> Ahh, good to know, have not tried writes yet.
->>>>>
->>>>>>
->>>>>> Reads still suffer from the same problem however. I'm working on a
->>>>>> patchset that should do the same thing for them, but it requires a
->>>>>> fairly substantial overhaul of the receive codepaths.
->>>>>
->>>>> Ok, that explains it then, thanks.
->>>
->>>
->>> Hi,
->>>
->>> Watching the rsync, it ran for a while, then:
->>>
->>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
->>> allocate memory (12)
->>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_1.JPG": Cannot
->>> allocate memory (12)
->>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_2.JPG": Cannot
->>> allocate memory (12)
->>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
->>> allocate memory (12)
->>
->> When we were testing async write to Windows 7 Pavel mentioned to me
->> another WIndows 7 bug - which may be what you are hitting.
->>
->> Under stress of simultaneous operations, Windows 7 server will sometimes
->> start
->> responding with STATUS_INSUFF_SERVER_RESOURCES error code
->> (mapped to posix error ENOMEM by the Linux cifs kernel client)
->> He solved it by setting MaxWorkItems to 4096 in the Windows 7 registry.
->>
->> If anyone knows whether Microsoft has fixed this or has a bug #, let us
->> know
->> because it is easier to hit with Linux kernel 3.0 and later (to
->> Windows 7 server).
->
-> Ok, aside from sharing a few files, is there any recommended protocol to
-> transfer millions of files at 10GbE speeds (500MiB/s) in both directions
-> between Windows and Linux?
->
-> Specifically from Linux..
->
-> From Windows, it achieves 500MiB/s no issues (From Linux/Samba).
->
-> The other direction:
-> - 30mb/s over 10GbE
-> - Cannot allocate memory
->
-> This should be good for moving a small subset of files, but for larger
-> datasets
-> it will not work.  Any other filesystems/services/etc to try?
->
-> Justin.
->
->
->
-
-
-
--- 
-Thanks,
-
-Steve
+josh
