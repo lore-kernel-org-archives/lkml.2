@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab1HRSyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 14:54:06 -0400
-Received: from lucidpixels.com ([72.73.18.11]:52890 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab1HRSyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 14:54:03 -0400
-Date: Thu, 18 Aug 2011 14:54:02 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jeff Layton <jlayton@samba.org>
-cc: Steve French <smfrench@gmail.com>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-In-Reply-To: <20110818145257.035a38e9@barsoom.rdu.redhat.com>
-Message-ID: <alpine.DEB.2.02.1108181452080.7903@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan> <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
- <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan> <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan> <20110818091140.385a9455@barsoom.rdu.redhat.com>
- <alpine.DEB.2.02.1108180914180.7903@p34.internal.lan> <20110818130408.71c55b96@barsoom.rdu.redhat.com> <alpine.DEB.2.02.1108181314310.7903@p34.internal.lan> <CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com> <alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
- <CAH2r5msTpKdxwpgG+-3-gkkr5h7Ox1tL86q3LyTBMd1V8WS7aQ@mail.gmail.com> <alpine.DEB.2.02.1108181413030.7903@p34.internal.lan> <20110818145257.035a38e9@barsoom.rdu.redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751493Ab1HRS7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 14:59:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49873 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab1HRS7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 14:59:00 -0400
+Date: Thu, 18 Aug 2011 19:58:59 +0100
+To: richard@nod.at
+Subject: Subject: [PATCH 00/91] pending uml patches
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+My apologies for mailbomb from hell.  *All* this stuff is available in
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/um-header.git/ #master,
+but since uml folks had been stuck with mail and patch for a long time...
 
-On Thu, 18 Aug 2011, Jeff Layton wrote:
+Anyway, most of the stuff in this pile is merging, cleaning and mutilating
+subarchitecture-related code in arch/um.  By the end of it we have x86
+bits largely merged between 32bit and 64bit variants and taken to arch/x86/um;
+headers seriously cleaned up and mostly free of x86-isms now (not completely -
+we still have page size dependencies in there).
 
-> On Thu, 18 Aug 2011 14:18:15 -0400 (EDT)
-> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->
->>
->
-> Like I said, read performance with cifs.ko just plain sucks currently.
->
-> Don't look for cifs.ko to achieve anywhere near NFS' performance unless
-> you jump through some very odd hoops (like multithreading your workload
-> in userspace, etc). cifs.ko just doesn't do a good job of keeping the
-> pipe "stuffed" as most calls are handled synchronously. A single task
-> can only handle one call on the wire in most cases. The exception here
-> is writes, but that just recently changed...
->
-> Reads are done using relatively small buffers and then copied to
-> pagecache. Part of what I'm working on will be to allow for much larger
-> reads directly into the pagecache. That should also help performance
-> significantly.
+Beginning of the series are pure build and driver fixes; those should go to
+Linus before 3.1-final, IMO.
 
+As far as I know, there's no regressions introduced by that pile; testing
+and comments would be, of course, welcome.
 
-Jeff,
-
-Understood, thank you for the help thus far and the patch to stop the crashing
-kernel problem, it is much appreciated, I'll look forward to the new patch sets
-to improve the performance of CIFS mounts.
-
-Justin.
-
->
