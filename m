@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab1HRLhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:37:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12491 "EHLO mx1.redhat.com"
+	id S1755642Ab1HRLo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:44:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60456 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab1HRLhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 07:37:45 -0400
-Date: Thu, 18 Aug 2011 07:37:21 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix perf build against newer glibc
-Message-ID: <20110818113720.GL2227@zod.bos.redhat.com>
+	id S1755547Ab1HRLo1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 07:44:27 -0400
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>,
+        "Munegowda, Keshava" <keshava_mgowda@ti.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Date: Thu, 18 Aug 2011 17:14:17 +0530
+Subject: RE: [PATCH] mfd: omap-usb-host: Make TLL mode work again
+Thread-Topic: [PATCH] mfd: omap-usb-host: Make TLL mode work again
+Thread-Index: AcxdmXiwujTiLAScSU6P54WglM4LxQAAlsAw
+Message-ID: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D3ADE54@dbde03.ent.ti.com>
+References: <1313664271-694-1-git-send-email-gadiyar@ti.com>
+ <CAP05o4J01FpphHgV5tpkFGNfTBbjhtScKjWZm4iLi3H1V=EKDQ@mail.gmail.com>
+ <20110818112454.GS14514@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110818112454.GS14514@legolas.emea.dhcp.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upstream glibc commit 295e904 added a definition for __attribute_const__ to
-cdefs.h.  This causes the following error when building perf:
+Balbi, Felipe wrote:
+> HI,
+> 
+> On Thu, Aug 18, 2011 at 04:52:22PM +0530, Munegowda, Keshava wrote:
+> > On Thu, Aug 18, 2011 at 4:14 PM, Anand Gadiyar <gadiyar@ti.com> wrote:
+> > > This code section seems to have been accidentally copy pasted.
+> > > It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
+> > > register and prevents the TLL mode from working correctly.
+> > >
+> > > Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+> > > Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> 
+> Sam, you can apply this one:
+> 
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> 
+> But I think it needs to be resent with Cc: stable@kernel.org
 
-util/include/linux/compiler.h:8:0: error: "__attribute_const__" redefined [-Werror]
-/usr/include/sys/cdefs.h:226:0: note: this is the location of the previous definition
+I'm trying to avoid "Cc: stable@kernel.org" since RMK complained about
+this on the Linux ARM kernel list. [1]
 
-Wrap __attribute_const__ in #ifndef as we do for __always_inline.
+- Anand
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- tools/perf/util/include/linux/compiler.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/util/include/linux/compiler.h b/tools/perf/util/include/linux/compiler.h
-index 791f9dd..547628e 100644
---- a/tools/perf/util/include/linux/compiler.h
-+++ b/tools/perf/util/include/linux/compiler.h
-@@ -5,7 +5,9 @@
- #define __always_inline	inline
- #endif
- #define __user
-+#ifndef __attribute_const__
- #define __attribute_const__
-+#endif
- 
- #define __used		__attribute__((__unused__))
- 
--- 
-1.7.6
-
+[1] http://marc.info/?l=linux-arm-kernel&m=131107297012093&w=2
