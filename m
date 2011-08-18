@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab1HRLbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:31:31 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:36189 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab1HRLba convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 07:31:30 -0400
+	id S1755697Ab1HRLc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:32:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49781 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755587Ab1HRLcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 07:32:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,245,1312182000"; 
+   d="scan'208";a="39792981"
+Date: Thu, 18 Aug 2011 14:33:27 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cjb@laptop.org
+Subject: Re: [PATCH 1/2] mmc: add functions to enable/disable aggressive
+ clock gating
+Message-ID: <20110818113327.GY16790@intel.com>
+References: <e13e177c732ee8ad2d6fe389c9bac21877f60c59.1313400777.git.mika.westerberg@linux.intel.com>
+ <CACRpkdZ5oCmRupNn9HjZj534zXJQWD8OpycpMxG4Jhgsvk=kEQ@mail.gmail.com>
+ <20110817121914.GW16790@intel.com>
+ <20110818103441.GX16790@intel.com>
+ <CAHp75VfST5UnPXkCprx5_0UG0tCa2BDCJeAVmkdDi7_7BvQq3A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110818111359.GR14514@legolas.emea.dhcp.ti.com>
-References: <1313659726-9406-1-git-send-email-per.forlin@stericsson.com>
-	<20110818111359.GR14514@legolas.emea.dhcp.ti.com>
-Date: Thu, 18 Aug 2011 13:31:29 +0200
-Message-ID: <CAJ0pr197cyGDH8fr6dwNVx-vhKJqBqODskJOxQWo6uHHfdV3aA@mail.gmail.com>
-Subject: Re: [PATCH v4] usb: gadget: storage_common: make FSG_NUM_BUFFERS
- variable size
-From: Per Forlin <per.forlin@linaro.org>
-To: balbi@ti.com
-Cc: Per Forlin <per.forlin@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHp75VfST5UnPXkCprx5_0UG0tCa2BDCJeAVmkdDi7_7BvQq3A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 August 2011 13:14, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Thu, Aug 18, 2011 at 11:28:46AM +0200, Per Forlin wrote:
->> From: Per Forlin <per.forlin@linaro.org>
->>
->> FSG_NUM_BUFFERS is set to 2 as default.
->> Usually 2 buffers are enough to establish a good buffering pipeline.
->> The number may be increased in order to compensate a for bursty VFS
->> behaviour.
->>
->> Here follows a description of system that may require more than
->> 2 buffers.
->>  * CPU ondemand governor active
->>  * latency cost for wake up and/or frequency change
->>  * DMA for IO
->>
->> Use case description.
->>  * Data transfer from MMC via VFS to USB.
->>  * DMA shuffles data from MMC and to USB.
->>  * The CPU wakes up every now and then to pass data in and out from VFS,
->>    which cause the bursty VFS behaviour.
->>
->> Test set up
->>  * Running dd on the host reading from the mass storage device
->>  * cmdline: dd if=/dev/sdb of=/dev/null bs=4k count=$((256*100))
->>  * Caches are dropped on the host and on the device before each run
->>
->> Measurements on a Snowball board with ondemand_govenor active.
->>
->> FSG_NUM_BUFFERS 2
->> 104857600 bytes (105 MB) copied, 5.62173 s, 18.7 MB/s
->> 104857600 bytes (105 MB) copied, 5.61811 s, 18.7 MB/s
->> 104857600 bytes (105 MB) copied, 5.57817 s, 18.8 MB/s
->>
->> FSG_NUM_BUFFERS 4
->> 104857600 bytes (105 MB) copied, 5.26839 s, 19.9 MB/s
->> 104857600 bytes (105 MB) copied, 5.2691 s, 19.9 MB/s
->> 104857600 bytes (105 MB) copied, 5.2711 s, 19.9 MB/s
->>
->> There may not be one optimal number for all boards. This is why
->> the number is added to Kconfig. If selecting USB_DEBUG this value may be
->> set by a module parameter as well.
->>
->> Signed-off-by: Per Forlin <per.forlin@linaro.org>
->
-> Alan, are you ok with the change ? I'm not sure tying the parameter to
-> CONFIG_USB_DEBUG is a good idea, maybe CONFIG_USB_GADGET_DEBUG or
-> CONFIG_USB_FILE_STORAGE_TEST is better ?
->
-The reason for the module parameter is to enable runtime calibration
-of the optimal num_buffers. If the DEBUG-code adds
-overhead that affects the performance the calibration will be
-incorrect. I haven't measured the overhead of USB_DEBUG.
+On Thu, Aug 18, 2011 at 02:11:23PM +0300, Andy Shevchenko wrote:
 
-Regards,
-Per
+> Mika, do the patches to check host->clock in
+> (mmc|sdhci)_set_data_timeout() become useless after?
+> If so, probably you could revert them as well.
+
+IMHO these functions should work also when the clock is gated, so I suggest
+that we leave them as is for now.
