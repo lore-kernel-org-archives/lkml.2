@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab1HRRIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:08:16 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:44908 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751491Ab1HRRIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:08:15 -0400
-Subject: Re: [PATCH 5/6] MAINTAINERS: Fix list of perf events source files
-From: Joe Perches <joe@perches.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Geunsik Lim <geunsik.lim@samsung.com>,
-        Jiri Kosina <trivial@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <1313686204-30295-6-git-send-email-acme@infradead.org>
-References: <1313686204-30295-1-git-send-email-acme@infradead.org>
-	 <1313686204-30295-6-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Aug 2011 10:08:12 -0700
-Message-ID: <1313687292.32547.90.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752333Ab1HRRIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:08:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44594 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752115Ab1HRRIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:08:38 -0400
+Date: Thu, 18 Aug 2011 19:05:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Petr Vandrovec <petr@vandrovec.name>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Matt Fleming <matt@console-pimps.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 40/41] ncpfs: Use set_current_blocked()
+Message-ID: <20110818170538.GA6910@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-41-git-send-email-matt@console-pimps.org> <20110816175643.GI29190@redhat.com> <1313528170.3436.200.camel@mfleming-mobl1.ger.corp.intel.com> <20110817120405.GA10709@redhat.com> <1313589483.2311.24.camel@mfleming-mobl1.ger.corp.intel.com> <20110817144139.GA17271@redhat.com> <CA+i2_De=mKMHj++b5=ZPdXxp7pm2KzY+PzCaG++GWSud20a_qQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+i2_De=mKMHj++b5=ZPdXxp7pm2KzY+PzCaG++GWSud20a_qQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 13:50 -0300, Arnaldo Carvalho de Melo wrote:
-> From: Geunsik Lim <geunsik.lim@samsung.com>
-> Recent changes made kernel/perf_event.c be split and moved to
-> kernel/events/.
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -4971,7 +4971,7 @@ M:	Paul Mackerras <paulus@samba.org>
-[]
-> -F:	kernel/perf_event*.c
-> +F:	kernel/events/*
+On 08/17, Petr Vandrovec wrote:
+>
+> I do not care about 'intr' support, but regular code path blocking all
+> signals has to stay.
 
-Trivia...
+I do not care about SIGINT/SIGQUIT check, just I simply can't understand
+the logic.
 
-MAINTAINERS pattern matching in get_maintainer uses
+But PF_EXITING/SIGKILL code looks absolutely strange.
 
-directory/	to match all files and files in subdirectories
-directory/*	to match only the files in the directory
-		but no files in any subdirectory
+> PF_EXITING code is there because in the past something was BUG_ON-ing that
+> nobody should touch signals while exiting,
 
-This should probably be kernel/events/ so any
-future subdirectory files are also included.
+Not sure I understand... do you mean we have a kernel bug? it should be
+fixed then.
 
-There is no effective difference today because
-no subdirectories of kernel/event/ exist.
+> and same code made sure you
+> cannot send signals to exiting process.
 
+Again, can't understand.
+
+A PF_EXITING doesn't need to block the signals at all. See wants_siganl().
+
+But, otoh, even sigblock(SIGKILL) can't protect from SIGKILL or another
+fatal signal if this thread has a live subthread.
+
+However, blocking SIGKILL makes the difference if it exits with the pending
+SIGKILL. In this case recalc_sigpending() clears TIF_SIGPENDING, this "helps"
+to actually sleep in TASK_INTERRUPTIBLE.
+
+At the same time, ncp_do_request() can unblock, say, SIGINT. And this
+means that if this task exits because it was killed by SIGINT it won't
+block anyway.
+
+And I can't understand why it if fine to kill the live task, but not fine
+to interrupt the exiting task. If this was intended. And if you want to
+block all signals, why can't you do wait_event_uninterruptible() instead?
+Or interruptible/uninterruptible depending on PF_EXITING.
+
+
+Now suppose it is not PF_EXITING. In this case it is pointless to block
+any fatal signal unless this task is single-threaded.
+
+
+So far I think this code does not understand what it does ;)
+
+
+OK. I guess nobody cares. Matt, could you redo your original patch?
+just remove ->siglock and convert it to use set_current_blocked()
+leaving this logic alone.
+
+Oleg.
 
