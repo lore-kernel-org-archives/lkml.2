@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1HRR2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:28:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45930 "EHLO mx1.redhat.com"
+	id S1751458Ab1HRRd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:33:57 -0400
+Received: from lucidpixels.com ([72.73.18.11]:58372 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab1HRR2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:28:40 -0400
-Date: Thu, 18 Aug 2011 13:28:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v3 3/8] kdump: Add size to elfcorehdr kernel parameter
-Message-ID: <20110818172815.GD15413@redhat.com>
-References: <20110812134849.748973593@linux.vnet.ibm.com>
- <20110812134907.325789470@linux.vnet.ibm.com>
- <20110817210554.GD14813@redhat.com>
- <1313657279.3528.6.camel@br98xy6r>
+	id S1750896Ab1HRRd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:33:56 -0400
+Date: Thu, 18 Aug 2011 13:33:55 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Steve French <smfrench@gmail.com>
+cc: Jeff Layton <jlayton@samba.org>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
+ with linux-3.1-rc2
+In-Reply-To: <CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1108181331180.7903@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+ <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+ <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan> <20110818091140.385a9455@barsoom.rdu.redhat.com> <alpine.DEB.2.02.1108180914180.7903@p34.internal.lan> <20110818130408.71c55b96@barsoom.rdu.redhat.com> <alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+ <CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313657279.3528.6.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 10:47:59AM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> On Wed, 2011-08-17 at 17:05 -0400, Vivek Goyal wrote:
-> > On Fri, Aug 12, 2011 at 03:48:52PM +0200, Michael Holzheu wrote:
-> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > > 
-> > > Currently only the address of the pre-allocated ELF header is passed with
-> > > the elfcorehdr= kernel parameter. In order to reserve memory for the header
-> > > in the 2nd kernel also the size is required. Current kdump architecture
-> > > backends use different methods to do that, e.g. x86 uses the memmap= kernel
-> > > parameter. On s390 there is no easy way to transfer this information.
-> > > Therefore the elfcorehdr kernel parameter is extended to also pass the size.
-> > > This now can also be used as standard mechanism by all future kdump
-> > > architecture backends.
-> > 
-> > Michael,
-> > 
-> > This version looks much better. A quick question. Who parses this
-> > elfcorehdr= parameter in s390 and how do we make sure these headers are not
-> > overwritten.
-> 
-> The parameter is parsed in common code (kernel/crash_dump.c) in
-> early_param("elfcorehdr", setup_elfcorehdr), as it is already currently
-> the case.
-> 
-> We use address and size of the ELF core header to reserve the header
-> memory in setup.c (see patch #8):
-> 
-> +#ifdef CONFIG_CRASH_DUMP
-> +       if (is_kdump_kernel())
-> +               reserve_bootmem(elfcorehdr_addr - OLDMEM_BASE,
-> +                               PAGE_ALIGN(elfcorehdr_size), BOOTMEM_DEFAULT);
-> +#endif
-> 
-> Does that answer your question?
 
-Yes it does. Thanks.
 
-It brings up few more questions about rest of the memory mangement.
+On Thu, 18 Aug 2011, Steve French wrote:
 
-So kdump kernel is loaded in reserved area but does not run from there.
-It reloads itself into lower memory areas and swaps the contents of
-lower memory with reserved memory? If yes, how does it, kernel or
-purgatory?
+> On Thu, Aug 18, 2011 at 12:16 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>
+>>
+>> On Thu, 18 Aug 2011, Jeff Layton wrote:
+>>
+>>> On Thu, 18 Aug 2011 09:15:36 -0400 (EDT)
+>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>>
+>>>>
+>>>>
+>>>> On Thu, 18 Aug 2011, Jeff Layton wrote:
+>>>>
+>>>>> On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
+>>>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>>>>
+>>>>>> Justin.
+>>>>>>
+>>>>>
+>>>>> To be clear -- incoming in this case is reads or writes?
+>>>>
+>>>> Reading from the CIFS share (Windows 7).
+>>>>
+>>>>>
+>>>>> Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
+>>>>> 3.0 I added a patchset to increase the allowable wsize and to allow the
+>>>>> kernel to issue writes in parallel.
+>>>>
+>>>> Ahh, good to know, have not tried writes yet.
+>>>>
+>>>>>
+>>>>> Reads still suffer from the same problem however. I'm working on a
+>>>>> patchset that should do the same thing for them, but it requires a
+>>>>> fairly substantial overhaul of the receive codepaths.
+>>>>
+>>>> Ok, that explains it then, thanks.
+>>
+>>
+>> Hi,
+>>
+>> Watching the rsync, it ran for a while, then:
+>>
+>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
+>> allocate memory (12)
+>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_1.JPG": Cannot
+>> allocate memory (12)
+>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_2.JPG": Cannot
+>> allocate memory (12)
+>> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
+>> allocate memory (12)
+>
+> When we were testing async write to Windows 7 Pavel mentioned to me
+> another WIndows 7 bug - which may be what you are hitting.
+>
+> Under stress of simultaneous operations, Windows 7 server will sometimes start
+> responding with STATUS_INSUFF_SERVER_RESOURCES error code
+> (mapped to posix error ENOMEM by the Linux cifs kernel client)
+> He solved it by setting MaxWorkItems to 4096 in the Windows 7 registry.
+>
+> If anyone knows whether Microsoft has fixed this or has a bug #, let us know
+> because it is easier to hit with Linux kernel 3.0 and later (to
+> Windows 7 server).
 
-How does kernel come to know about how much memory is to be swapped
-and how do you bound the memory usage of second kernel so that it
-does not try to use other memory which has not been swapped into
-reserved area.
+Ok, aside from sharing a few files, is there any recommended protocol to
+transfer millions of files at 10GbE speeds (500MiB/s) in both directions
+between Windows and Linux?
 
-Thanks
-Vivek 
+Specifically from Linux..
+
+>From Windows, it achieves 500MiB/s no issues (From Linux/Samba).
+
+The other direction:
+- 30mb/s over 10GbE
+- Cannot allocate memory
+
+This should be good for moving a small subset of files, but for larger datasets
+it will not work.  Any other filesystems/services/etc to try?
+
+Justin.
+
+
