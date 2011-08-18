@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab1HRBr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 21:47:57 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32841 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab1HRBrz (ORCPT
+	id S1754823Ab1HRBzD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 21:55:03 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:8104 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab1HRBy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 21:47:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 10:40:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v9 13/13] memcg: check memcg dirty limits in page
- writeback
-Message-Id: <20110818104020.cb025fe1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313597705-6093-14-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
-	<1313597705-6093-14-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Aug 2011 21:54:59 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
+Subject: [PATCH 0/6] elantech: add support for newer generation hardware
+Date: Thu, 18 Aug 2011 09:57:03 +0800
+Message-Id: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 09:15:05 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Hi list,
 
-> If the current process is in a non-root memcg, then
-> balance_dirty_pages() will consider the memcg dirty limits as well as
-> the system-wide limits.  This allows different cgroups to have distinct
-> dirty limits which trigger direct and background writeback at different
-> levels.
-> 
-> If called with a mem_cgroup, then throttle_vm_writeout() queries the
-> given cgroup for its dirty memory usage limits.
-> 
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+This is a series of patches to add support for newer generation of ELAN
+touchpad.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Patches #1~5 are essentially fixes and cleanups that pave the way for
+patch #6, which really adds code for v3 hardware support.
 
+Any comments, suggestions are welcome.
+
+Thank you.
+
+JJ Ding (6):
+  Input: elantech - correct x, y value range for v2 hardware
+  Input: elantech - use firmware provided x, y ranges
+  Input: elantech - packet checking for v2 hardware
+  Input: elantech - work around EC buffer
+  Input: elantech - clean up elantech_init
+  Input: elantech - add v3 hardware support
+
+ Documentation/input/elantech.txt |  112 ++++++++++--
+ drivers/input/mouse/elantech.c   |  373 ++++++++++++++++++++++++++++++++------
+ drivers/input/mouse/elantech.h   |   15 ++-
+ 3 files changed, 426 insertions(+), 74 deletions(-)
+
+-- 
+1.7.4.1
 
