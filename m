@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab1HRFW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:22:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45266 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437Ab1HRFWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:22:24 -0400
-Date: Thu, 18 Aug 2011 15:22:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
-        Michael Neuling <mikey@neuling.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: boot test failure (net tree)
-Message-Id: <20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
-In-Reply-To: <20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
-References: <20110817100146.3b557cf815a5a2ae09bc09a7@canb.auug.org.au>
-	<20110816.171525.639251389938336183.davem@davemloft.net>
-	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__18_Aug_2011_15_22_14_+1000_.k30Cg4Upky1mi.q"
+	id S1753144Ab1HRFYH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:24:07 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:33751 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab1HRFYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 01:24:04 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: gaowanlong@cn.fujitsu.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+In-Reply-To: <4E4C80A0.8090708@cn.fujitsu.com>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4C80A0.8090708@cn.fujitsu.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 18 Aug 2011 13:26:13 +0800
+Message-ID: <87d3g347ey.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Aug_2011_15_22_14_+1000_.k30Cg4Upky1mi.q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wanlong Gao,
 
-Hi Dave,
-
-On Wed, 17 Aug 2011 10:50:02 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Tue, 16 Aug 2011 17:15:25 -0700 (PDT) David Miller <davem@davemloft.ne=
-t> wrote:
+On Thu, 18 Aug 2011 11:01:52 +0800, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> On 08/18/2011 09:57 AM, JJ Ding wrote:
+> > v3 hardware's packet format is almost identical to v2 (one/three finger touch),
+> > except when sensing two finger touch, the hardware sends 12 bytes of data.
 > >
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Wed, 17 Aug 2011 10:01:46 +1000
-> >=20
-> > > In particular, CONFIG_TIGON3 newly depends on
-> > > CONFIG_NET_VENDOR_BROADCOM which will no be selected when doing a
-> > > "make oldconfig" from a working config.
-> >=20
-> > When you type "make oldconfig" with an existing .config it prompts you
-> > for those vendor guards, giving you ample opportunity to say yes to
-> > them.
->=20
-> Which is a bit of a pain for automated systems.  Ours does (essentially):
->=20
-> yes '' | make oldconfig
->=20
-> We really don't want to select every new config item that comes along.
+> > Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
+> > ---
+> >   Documentation/input/elantech.txt |  104 ++++++++++++++++--
+> >   drivers/input/mouse/elantech.c   |  218 ++++++++++++++++++++++++++++++++++---
+> >   drivers/input/mouse/elantech.h   |   11 ++
+> >   3 files changed, 303 insertions(+), 30 deletions(-)
+> >
+> > +static int determine_packet_v3(struct psmouse *psmouse)
+> elantech_check_parity_v1
+> packet_simple_check_v2
+> determine_packet_v3
+> 
+> Why not consistent them?
+OK, how do these names sound to you?
 
-So, Mikey did a test for me (he was bitten by this today).  Just one of
-the powerpc configs (pseries_defconfig which should, in theory, build a
-kernel that will boot on almost all our POWER server machines) loses all
-these drivers if you do a "make pseries_defconfig":
+elantech_check_parity_v1
+elantech_packet_check_v2
+elantech_packet_check_v3
 
- -CONFIG_IBMVETH=3Dy
- -CONFIG_PCNET32=3Dy
- -CONFIG_E100=3Dy
- -CONFIG_ACENIC=3Dm
- -CONFIG_ACENIC_OMIT_TIGON_I=3Dy
- -CONFIG_E1000=3Dy
- -CONFIG_E1000E=3Dy
- -CONFIG_BNX2=3Dm
- -CONFIG_CHELSIO_T3=3Dm
- -CONFIG_CHELSIO_T4=3Dm
- -CONFIG_IXGBE=3Dm
- -CONFIG_IXGB=3Dm
- -CONFIG_S2IO=3Dm
- -CONFIG_MYRI10GE=3Dm
- -CONFIG_NETXEN_NIC=3Dm
- -CONFIG_QLGE=3Dm
- -CONFIG_BE2NET=3Dm
+Thanks,
+jj
 
-That is just one of our deconfigs ... there are over 400 defconfigs in
-the kernel and a lot of them will need to be updated.
-
-Mikey asks:  Will Dave take these updates if we get Acks from the
-maintainers?  :-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__18_Aug_2011_15_22_14_+1000_.k30Cg4Upky1mi.q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOTKGGAAoJEDMEi1NhKgbsQsQH/0D4ADXAIvC0vJ2Eeemshibr
-Tf+REPKNGzrR0cyGFufZVt31L0uckQlXIkgHv5Eg9A5hbwmCKPd4GfYCMWJ9h5dV
-+zqi/NUfU4JeAaMyIswvFAS7w8xgaKXrwxVetxd3D+a5tzJ1VdU8bKlU1B/MwGjn
-S7HSYQB81WNnbTOdz36ysjev5cfs98kDk6Odq+HJRS43u36GonHa//46A/OQ791d
-tIhR3Er9cu/sX2m+sXStZR/jVMel7ltYjYPvjY8/qU4tU/d8cRkETXoXidayTHBS
-AYkuPaPaCPqHXB764e9vg9lTTS1T9UAv2ZzQkgPSaN3FlfpOIMM5vWy4IvsWBCw=
-=oW8j
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Aug_2011_15_22_14_+1000_.k30Cg4Upky1mi.q--
+> -- 
+> Thanks
+> Wanlong Gao
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
