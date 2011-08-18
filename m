@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab1HRS7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 14:59:42 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49890 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab1HRS7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 14:59:39 -0400
-Date: Thu, 18 Aug 2011 19:59:39 +0100
-To: richard@nod.at
-Subject: Subject: [PATCH 04/91] um: winch_interrupt() can happen inside of free_winch()
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1752717Ab1HRS7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 14:59:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab1HRS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 14:59:47 -0400
+Message-ID: <4E4D610D.9010701@redhat.com>
+Date: Thu, 18 Aug 2011 20:59:25 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Lukas Czerner <lczerner@redhat.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        achender@linux.vnet.ibm.com, Jens Axboe <jaxboe@fusionio.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] loop: add discard support for loop devices
+References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
+X-Enigmail-Version: 1.2.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu7oZ-0007QL-4L@ZenIV.linux.org.uk>
-From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/18/2011 05:49 PM, Lukas Czerner wrote:
+> On Thu, 18 Aug 2011, Jeff Moyer wrote:
+>> Seems you missed the bizarre case of configuring a loop device over top
+>> of a block device.
+> 
+> Wow, that is a bizarre case I did not think about at all. But since it
+> is so bizarre, do we even care ? The thing is that the only case where
+> it would make a difference is if the loop device is put on top of block
+> device which actually supports discard.
+> 
+> In order to fix that I would need to dig out the actual limits for that
+> device and set that appropriately for the loop device. Is that worth it
+> ? It is not like someone will ever do that (or should) :).
 
-... so set winch->fd to -1 before doing free_irq(), to avoid having
-winch_interrupt() come from/during the latter and attempt to do
-reactivate_fd() on something that's already gone.
+It is bizarre (and being device-mapper developer I surely know better way :-)
+but people are still using that.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- arch/um/drivers/line.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+Historically one of the use of underlying block device was cryptoloop, but here
+I think it should be completely deprecated (cryptsetup can handle all old loop
+modes as well and default modes for cryptoloop are not safe).
+[Can we finally remove crypto loop option it from kernel? ... ok, just tried:)]
 
-diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index c5bff1d..91bf1894 100644
---- a/arch/um/drivers/line.c
-+++ b/arch/um/drivers/line.c
-@@ -725,6 +725,8 @@ struct winch {
- 
- static void free_winch(struct winch *winch, int free_irq_ok)
- {
-+	int fd = winch->fd;
-+	winch->fd = -1;
- 	if (free_irq_ok)
- 		free_irq(WINCH_IRQ, winch);
- 
-@@ -732,8 +734,8 @@ static void free_winch(struct winch *winch, int free_irq_ok)
- 
- 	if (winch->pid != -1)
- 		os_kill_process(winch->pid, 1);
--	if (winch->fd != -1)
--		os_close_file(winch->fd);
-+	if (fd != -1)
-+		os_close_file(fd);
- 	if (winch->stack != 0)
- 		free_stack(winch->stack, 0);
- 	kfree(winch);
--- 
-1.7.2.5
+There is also out of tree loop-aes based on heavily patched loop device
+which usually uses block device underneath
+(cryptsetup already can handle all loop-aes modes as well).
 
+Sometimes it is used with --offset parameter for some reason
+(like linear device-mapper mapping).
 
+So I do not care if you do not support discard here but please do not break
+support for block device mapped through loop.
+
+Thanks,
+Milan
