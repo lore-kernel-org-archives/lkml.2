@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab1HRIuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 04:50:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49460 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755119Ab1HRIuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 04:50:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] thermal: Rename generate_netlink_event
-Date: Thu, 18 Aug 2011 10:51:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, "R.Durgadoss" <durgadoss.r@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <20110818094944.3ce83401@endymion.delvare>
-In-Reply-To: <20110818094944.3ce83401@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755400Ab1HRIu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 04:50:26 -0400
+Received: from queue01.mail.zen.net.uk ([212.23.3.234]:59377 "EHLO
+	queue01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab1HRIuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 04:50:10 -0400
+X-Greylist: delayed 1316 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Aug 2011 04:50:10 EDT
+Subject: RE: [PATCH 7/9] ARM: DMA: steal memory for DMA coherent mappings
+From: Tixy <tixy@yxit.co.uk>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>, "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+In-Reply-To: <009101cc5cde$6dfaa660$49eff320$%szyprowski@samsung.com>
+References: <1313146711-1767-1-git-send-email-m.szyprowski@samsung.com>
+	 <201108161626.26130.arnd@arndb.de>
+	 <006b01cc5cb3$dac09fa0$9041dee0$%szyprowski@samsung.com>
+	 <201108171428.44555.arnd@arndb.de>
+	 <009101cc5cde$6dfaa660$49eff320$%szyprowski@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Aug 2011 09:27:53 +0100
+Message-ID: <1313656073.2254.23.camel@computer2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108181051.51492.rjw@sisk.pl>
+X-Originating-Smarthost04-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 18, 2011, Jean Delvare wrote:
-> It doesn't seem right for the thermal subsystem to export a symbol
-> named generate_netlink_event. This function is thermal-specific and
-> its name should reflect that fact. Rename it to
-> thermal_generate_netlink_event.
+On Wed, 2011-08-17 at 15:06 +0200, Marek Szyprowski wrote:
+[...]
+> > > Maybe for the first version a static pool with reasonably small size
+> > > (like 128KiB) will be more than enough? This size can be even board
+> > > depended or changed with kernel command line for systems that really
+> > > needs more memory.
+> > 
+> > For a first version that sounds good enough. Maybe we could use a fraction
+> > of the CONSISTENT_DMA_SIZE as an estimate?
 > 
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: R.Durgadoss <durgadoss.r@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
+> Ok, good. For the initial values I will probably use 1/8 of 
+> CONSISTENT_DMA_SIZE for coherent allocations. Writecombine atomic allocations
+> are extremely rare and rather ARM specific. 1/32 of CONSISTENT_DMA_SIZE should
+> be more than enough for them.
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+For people who aren't aware, we have a patch to remove the define
+CONSISTENT_DMA_SIZE and replace it with a runtime call to an
+initialisation function [1]. I don't believe this fundamentally changes
+anything being discussed though.
 
-> ---
->  Documentation/thermal/sysfs-api.txt |    2 +-
->  drivers/thermal/thermal_sys.c       |    4 ++--
->  include/linux/thermal.h             |    4 ++--
->  3 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> --- linux-3.1-rc2.orig/Documentation/thermal/sysfs-api.txt	2011-07-22 04:17:23.000000000 +0200
-> +++ linux-3.1-rc2/Documentation/thermal/sysfs-api.txt	2011-08-17 22:36:57.000000000 +0200
-> @@ -284,7 +284,7 @@ method, the sys I/F structure will be bu
->  The framework includes a simple notification mechanism, in the form of a
->  netlink event. Netlink socket initialization is done during the _init_
->  of the framework. Drivers which intend to use the notification mechanism
-> -just need to call generate_netlink_event() with two arguments viz
-> +just need to call thermal_generate_netlink_event() with two arguments viz
->  (originator, event). Typically the originator will be an integer assigned
->  to a thermal_zone_device when it registers itself with the framework. The
->  event will be one of:{THERMAL_AUX0, THERMAL_AUX1, THERMAL_CRITICAL,
-> --- linux-3.1-rc2.orig/drivers/thermal/thermal_sys.c	2011-08-16 11:49:57.000000000 +0200
-> +++ linux-3.1-rc2/drivers/thermal/thermal_sys.c	2011-08-17 22:37:22.000000000 +0200
-> @@ -1304,7 +1304,7 @@ static struct genl_multicast_group therm
->  	.name = THERMAL_GENL_MCAST_GROUP_NAME,
->  };
->  
-> -int generate_netlink_event(u32 orig, enum events event)
-> +int thermal_generate_netlink_event(u32 orig, enum events event)
->  {
->  	struct sk_buff *skb;
->  	struct nlattr *attr;
-> @@ -1363,7 +1363,7 @@ int generate_netlink_event(u32 orig, enu
->  
->  	return result;
->  }
-> -EXPORT_SYMBOL(generate_netlink_event);
-> +EXPORT_SYMBOL(thermal_generate_netlink_event);
->  
->  static int genetlink_init(void)
->  {
-> --- linux-3.1-rc2.orig/include/linux/thermal.h	2011-08-16 11:50:04.000000000 +0200
-> +++ linux-3.1-rc2/include/linux/thermal.h	2011-08-17 22:36:47.000000000 +0200
-> @@ -152,9 +152,9 @@ struct thermal_cooling_device *thermal_c
->  void thermal_cooling_device_unregister(struct thermal_cooling_device *);
->  
->  #ifdef CONFIG_NET
-> -extern int generate_netlink_event(u32 orig, enum events event);
-> +extern int thermal_generate_netlink_event(u32 orig, enum events event);
->  #else
-> -static inline int generate_netlink_event(u32 orig, enum events event)
-> +static inline int thermal_generate_netlink_event(u32 orig, enum events event)
->  {
->  	return 0;
->  }
-> 
-> 
-> 
+-- 
+Tixy
+
+[1] http://www.spinics.net/lists/arm-kernel/msg135589.html
 
