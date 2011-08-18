@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493Ab1HRS7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 14:59:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49873 "EHLO
+	id S1752277Ab1HRS7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 14:59:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49880 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab1HRS7A (ORCPT
+	with ESMTP id S1752130Ab1HRS7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 14:59:00 -0400
-Date: Thu, 18 Aug 2011 19:58:59 +0100
+	Thu, 18 Aug 2011 14:59:19 -0400
+Date: Thu, 18 Aug 2011 19:59:19 +0100
 To: richard@nod.at
-Subject: Subject: [PATCH 00/91] pending uml patches
+Subject: Subject: [PATCH 02/91] um: fix build breakage in mm/slub.c
 Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
+Message-Id: <E1Qu7oF-0007P3-3s@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-My apologies for mailbomb from hell.  *All* this stuff is available in
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/um-header.git/ #master,
-but since uml folks had been stuck with mail and patch for a long time...
+we have no equivalent of cpufeature machinery, so...
 
-Anyway, most of the stuff in this pile is merging, cleaning and mutilating
-subarchitecture-related code in arch/um.  By the end of it we have x86
-bits largely merged between 32bit and 64bit variants and taken to arch/x86/um;
-headers seriously cleaned up and mostly free of x86-isms now (not completely -
-we still have page size dependencies in there).
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ arch/x86/Kconfig.cpu |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Beginning of the series are pure build and driver fixes; those should go to
-Linus before 3.1-final, IMO.
+diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
+index e3ca7e0..94fed18 100644
+--- a/arch/x86/Kconfig.cpu
++++ b/arch/x86/Kconfig.cpu
+@@ -313,7 +313,7 @@ config CMPXCHG_LOCAL
+ 	def_bool X86_64 || (X86_32 && !M386)
+ 
+ config CMPXCHG_DOUBLE
+-	def_bool y
++	def_bool !UML
+ 
+ config X86_L1_CACHE_SHIFT
+ 	int
+-- 
+1.7.2.5
 
-As far as I know, there's no regressions introduced by that pile; testing
-and comments would be, of course, welcome.
 
