@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1HRTIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:08:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab1HRTIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:08:53 -0400
-Date: Thu, 18 Aug 2011 21:08:46 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Milan Broz <mbroz@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
-        linux-kernel@vger.kernel.org, achender@linux.vnet.ibm.com,
-        Jens Axboe <jaxboe@fusionio.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] loop: add discard support for loop devices
-In-Reply-To: <4E4D610D.9010701@redhat.com>
-Message-ID: <alpine.LFD.2.00.1108182104390.22042@dhcp-27-109.brq.redhat.com>
-References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
- <4E4D610D.9010701@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754571Ab1HRTJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:09:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47527 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab1HRTJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:09:00 -0400
+Date: Thu, 18 Aug 2011 20:08:59 +0100
+To: richard@nod.at
+Subject: Subject: [PATCH 60/91] um: kill useless include of user.h
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <E1Qu7xb-0007sY-Pq@ZenIV.linux.org.uk>
+From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011, Milan Broz wrote:
 
-> On 08/18/2011 05:49 PM, Lukas Czerner wrote:
-> > On Thu, 18 Aug 2011, Jeff Moyer wrote:
-> >> Seems you missed the bizarre case of configuring a loop device over top
-> >> of a block device.
-> > 
-> > Wow, that is a bizarre case I did not think about at all. But since it
-> > is so bizarre, do we even care ? The thing is that the only case where
-> > it would make a difference is if the loop device is put on top of block
-> > device which actually supports discard.
-> > 
-> > In order to fix that I would need to dig out the actual limits for that
-> > device and set that appropriately for the loop device. Is that worth it
-> > ? It is not like someone will ever do that (or should) :).
-> 
-> It is bizarre (and being device-mapper developer I surely know better way :-)
-> but people are still using that.
-> 
-> Historically one of the use of underlying block device was cryptoloop, but here
-> I think it should be completely deprecated (cryptsetup can handle all old loop
-> modes as well and default modes for cryptoloop are not safe).
-> [Can we finally remove crypto loop option it from kernel? ... ok, just tried:)]
-> 
-> There is also out of tree loop-aes based on heavily patched loop device
-> which usually uses block device underneath
-> (cryptsetup already can handle all loop-aes modes as well).
-> 
-> Sometimes it is used with --offset parameter for some reason
-> (like linear device-mapper mapping).
-> 
-> So I do not care if you do not support discard here but please do not break
-> support for block device mapped through loop.
+everything in USER_OBJ gets it via -include user.h
 
-I do not think that this is the case with my patch. Also, as you know using
-discard on encrypted device is not a good idea.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ fs/hostfs/hostfs_user.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Thanks!
--Lukas
-
-> 
-> Thanks,
-> Milan
-> 
-
+diff --git a/fs/hostfs/hostfs_user.c b/fs/hostfs/hostfs_user.c
+index d51a983..dd7bc38 100644
+--- a/fs/hostfs/hostfs_user.c
++++ b/fs/hostfs/hostfs_user.c
+@@ -16,7 +16,6 @@
+ #include <sys/vfs.h>
+ #include "hostfs.h"
+ #include "os.h"
+-#include "user.h"
+ #include <utime.h>
+ 
+ static void stat64_to_hostfs(const struct stat64 *buf, struct hostfs_stat *p)
 -- 
+1.7.2.5
+
+
