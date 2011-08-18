@@ -1,98 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1HRMxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:53:51 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:32240 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755417Ab1HRMxu convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 18 Aug 2011 08:53:50 -0400
-Message-Id: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 18 Aug 2011 13:54:44 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <stable@kernel.org>, <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] i386/bigsmp: eliminate false warnings regarding
-	 logical APIC ID mismatches
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755980Ab1HRMzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:55:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20675 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754840Ab1HRMze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 08:55:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,245,1312182000"; 
+   d="scan'208";a="39813149"
+Date: Thu, 18 Aug 2011 20:55:27 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: [PATCH] writeback: Per-block device
+ bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
+Message-ID: <20110818125526.GC1883@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+ <20110818094824.GA25752@localhost>
+ <CAFPAmTQ3jN8RF5-7E92AoGAGMz5H0GrPxkgJ0O6u_MViGC6KnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAFPAmTQ3jN8RF5-7E92AoGAGMz5H0GrPxkgJ0O6u_MViGC6KnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These warnings (generally one per CPU) are a result of initializing
-x86_cpu_to_logical_apicid while apic_default is still in use, but the
-check in setup_local_APIC() being done when apic_bigsmp was already
-used as an override in default_setup_apic_routing():
+Hi Kautuk,
 
-Overriding APIC driver with bigsmp
-Enabling APIC mode:  Physflat.  Using 5 I/O APICs
-------------[ cut here ]------------
-WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
-Hardware name: ...
-CPU0 logical APIC ID: 1 != 0
-Pid: 1, comm: swapper Not tainted 3.0.1-2011-08-09-jb #2
-Call Trace:
- [<c1005f91>] try_stack_unwind+0x1b1/0x1f0
- [<c1004cc7>] dump_trace+0x47/0x110
- [<c1005b0b>] show_trace_log_lvl+0x4b/0x60
- [<c1005b38>] show_trace+0x18/0x20
- [<c1261435>] dump_stack+0x6d/0x72
- [<c10355f7>] warn_slowpath_common+0x77/0xb0
- [<c10356c3>] warn_slowpath_fmt+0x33/0x40
- [<c13fda81>] setup_local_APIC+0x137/0x46b
- [<c13d1733>] native_smp_prepare_cpus+0x108/0x1cd
- [<c13c61ff>] kernel_init+0x37/0x12c
- [<c1264826>] kernel_thread_helper+0x6/0xd
----[ end trace 4eaa2a86a8e2da22 ]---
-...
-CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
-Booting Node   0, Processors  #1
-smpboot cpu 1: start_ip = 9e000
-Initializing CPU#1
-------------[ cut here ]------------
-WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
-Hardware name: ...
-CPU1 logical APIC ID: 2 != 8
-...
+> >> However, the user/admin might want to set different writeback speeds
+> >> for different block devices based on
+> >> their page write-back performance.
+> >
+> > How can the above two sysctl values impact "writeback speeds"?
+> > In particular, what's the "speed" you mean?
+> >
+> 
+> By writeback speed, I meant writeback interval, i.e. the maximum
+> interval after which the BDI
+> thread for a particular block device can wake up and try to sync pages
+> with disk.
 
-Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
-will get removed again, as Tehun says ought to be possible) by
-overriding the previously stored values at the point where the APIC
-driver gets overridden.
+OK.
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: stable@kernel.org (2.6.39 and onwards)
+> >> For example, the user might want to write-back pages in smaller
+> >> intervals to a block device which has a
+> >> faster known writeback speed.
+> >
+> > That's not a complete rational. What does the user ultimately want by
+> > setting a smaller interval? What would be the problems to the other
+> > slow devices if the user does so by simply setting a small value
+> > _globally_?
+> >
+> 
+> I think that the user might want to set a smaller interval for faster block
+> devices so that the dirty pages are synced with that block device/disk sooner.
+> This will unset the dirty bit of the page-cache pages sooner, which
+> will increase the
+> possibility of those pages getting reclaimed quickly in high memory
+> usage scenarios.
+> For a system that writes to disk very frequently and runs a lot of
+> memory intensive user-mode
+> applications, this might be crucial for their performance as they
+> would possibly have to sleep
+> comparitively lesser during page allocation.
+> For example, an server handling a database needs frequent disk access
+> as well as
+> anonymous memory. In such a case it would be nice to keep the
+> write-back interval for a USB pen
+> drive BDI thread as more than that of a SATA/SCSI disk.
 
----
- arch/x86/kernel/apic/probe_32.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+Nope. I'm afraid the above reasoning is totally wrong.
 
---- 3.1-rc2/arch/x86/kernel/apic/probe_32.c
-+++ 3.1-rc2-i386-bigsmp-early-lapicid-override/arch/x86/kernel/apic/probe_32.c
-@@ -203,7 +203,18 @@ void __init default_setup_apic_routing(v
- 	if (!cmdline_apic && apic == &apic_default) {
- 		struct apic *bigsmp = generic_bigsmp_probe();
- 		if (bigsmp) {
-+			unsigned int cpu;
-+
- 			apic = bigsmp;
-+			for_each_possible_cpu(cpu) {
-+				if (early_per_cpu(x86_cpu_to_logical_apicid,
-+						  cpu) == BAD_APICID)
-+					continue;
-+				early_per_cpu(x86_cpu_to_logical_apicid,
-+					      cpu) =
-+					bigsmp->x86_32_early_logical_apicid
-+						(cpu);
-+			}
- 			printk(KERN_INFO "Overriding APIC driver with %s\n",
- 			       apic->name);
- 		}
+Firstly, it's never a guarantee for a smaller interval to stop the
+dirty pages from growing large. Think about a dd task that dirties
+pages at 1GB/s speed. It's going to accumulate huge number of dirty
+pages before any "small" writeback interval elapsed.
 
+Secondly, according to your logic, it's actually the low speed device
+that need smaller intervals. Because if a dirtier task creates 100MB
+dirty pages in the same interval, it's the slow device that requires
+a lot more time to clean those pages, hence need to start the
+writeback earlier.
 
+The conclusion is, the dirty_expire_centisecs and
+dirty_writeback_centisecs interfaces are solely for data integrity
+purpose.
 
+We have dirty_ratio for controlling the maximum number of dirty pages
+and dirty_background_ratio for controlling when to start writeback.
+
+There does exist the problem that their default value 10%/20% can be
+too large for a system with 1TB memory and 100MB/s disk, or 4GB memory
+and a 10MB/s USB memory stick. In particular they will accumulate more
+than 30 seconds worth of data which could break the user assumption on
+what dirty_expire_centisecs seem to promise.
+
+Now that we have per-bdi write bandwidth estimation, that problem can
+be fixed by somehow auto lowering the effective dirty (background) ratio.
+I wonder if this is what you really want.  Greg had some concerns on
+this issue, too.
+
+Thanks,
+Fengguang
