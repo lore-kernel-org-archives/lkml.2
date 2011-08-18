@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771Ab1HRQzY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:55:24 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64176 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab1HRQzX convert rfc822-to-8bit (ORCPT
+	id S1751666Ab1HRQ7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:59:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59669 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab1HRQ7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:55:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <7087.1313450537@jrobl>
-References: <7087.1313450537@jrobl>
-Date: Thu, 18 Aug 2011 11:55:22 -0500
-Message-ID: <CAH2r5mvA3i8E-KAuQ=+10gfzF1q8dWwB2KQiY3W1FBw_gscurQ@mail.gmail.com>
-Subject: Re: Q: cifs, freeing volume_info->UNCip
-From: Steve French <smfrench@gmail.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kirk w <kirkpuppy@yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Aug 2011 12:59:21 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=6-3U9yaARtIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=padm9Ysyf1aMKPbWuSwA:9 a=sqX1MiIBQfUU3ogLKwoA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 1/8] perf: Separate out trace-cmd parse-events
+ from perf files
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <4E4D3FE2.8000504@gmail.com>
+References: <20110805205921.909038487@goodmis.org>
+	 <20110805211300.324726820@goodmis.org> <4E4945F8.2080004@gmail.com>
+	 <1313425364.15704.9.camel@gandalf.stny.rr.com> <4E4B0667.8090107@gmail.com>
+	 <20110818135112.GB10441@somewhere>  <4E4D3FE2.8000504@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 18 Aug 2011 12:59:17 -0400
+Message-ID: <1313686757.15704.75.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged
+On Thu, 2011-08-18 at 10:37 -0600, David Ahern wrote:
+> On 08/18/2011 07:51 AM, Frederic Weisbecker wrote:
 
-On Mon, Aug 15, 2011 at 6:22 PM, J. R. Okajima <hooanon05@yahoo.co.jp> wrote:
->
-> Hello,
->
-> CIFS cleanup_volume_info_contents() looks like having a memory
-> corruption problem.
-> When UNCip is set to "&vol->UNC[2]" in cifs_parse_mount_options(), it
-> should not be kfree()-ed in cleanup_volume_info_contents().
->
-> If it is correct and the code in mainline is not fixed yet, then here is
-> a patch.
->
-> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> index ccc1afa..e0ea721 100644
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -2838,7 +2838,8 @@ cleanup_volume_info_contents(struct smb_vol *volume_info)
->        kfree(volume_info->username);
->        kzfree(volume_info->password);
->        kfree(volume_info->UNC);
-> -       kfree(volume_info->UNCip);
-> +       if (volume_info->UNCip != volume_info->UNC + 2)
-> +               kfree(volume_info->UNCip);
->        kfree(volume_info->domainname);
->        kfree(volume_info->iocharset);
->        kfree(volume_info->prepath);
->
->
-> J. R. Okajima
->
+> I guess to be more specific about next steps:
+> - should trace-cmd be moved to the tools directory in the kernel repo?
+
+Nah, I rather keep it out of the kernel for now.
+
+> that would allow code movement to a lib directory and work to be done on
+> both trace-cmd and perf
+> - what's the conclusion about the name and path for the common parsing
+> code? seems like libtraceevent or libtraceparse had the fewest collisions
+
+I guess libtraceparse is fine. Or maybe even libtraceparser.
 
 
+> - should the plugin code be moved into its own directory - e.g.,
+> tools/lib/trace-plugins. I am working on plugin changes too (eg.,
+> resolving guest RIPs to symbols in the kvm plugin).
 
--- 
-Thanks,
+I think it should have its own directory. Or maybe even have it within
+the kernel proper itself?  Have it install like modules:
 
-Steve
+/lib/modules/v3.0-rc2/plugins/
+
+??
+
+
+> 
+> The current patch set from Steve needs some updates (in addition to what
+> is needed for perf to use the plugins) to handle trace-cmd and perf
+> differences, but this is getting far down the path.
+
+I'm currently working on other things, and I'm waiting for consensus
+before I waste more time on it.
+
+Don't worry about trace-cmd. If libtraceparser becomes an installed
+library, I'll have trace-cmd use it directly. As long as the library
+stays generic (which it should) this should not cause any issues. For
+now, trace-cmd will keep its original libparsevents, and I can update
+that until we have this library in distributions.
+
+Thanks!
+
+-- Steve
+
+
