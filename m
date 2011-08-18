@@ -1,99 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1HRFve (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:51:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56288 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1HRFvc (ORCPT
+	id S1752228Ab1HRF4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:56:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58163 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab1HRF4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:51:32 -0400
-Subject: RE: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
- directly
-From: Sasha Levin <levinsasha928@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E04808194C66@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1313446210-10611-1-git-send-email-kys@microsoft.com>
-	 <1313446327-10650-1-git-send-email-kys@microsoft.com>
-	 <1313446327-10650-2-git-send-email-kys@microsoft.com>
-	 <1313585267.15004.3.camel@lappy>
-	 <6E21E5352C11B742B20C142EB499E04808194C66@TK5EX14MBXC126.redmond.corp.microsoft.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Thu, 18 Aug 2011 08:50:20 +0300
-Message-ID: <1313646620.22532.16.camel@lappy>
+	Thu, 18 Aug 2011 01:56:19 -0400
+Date: Wed, 17 Aug 2011 22:53:56 -0700 (PDT)
+Message-Id: <20110817.225356.1790362313048139752.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
+        mikey@neuling.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: linux-next: boot test failure (net tree)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
+References: <20110816.171525.639251389938336183.davem@davemloft.net>
+	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
+	<20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 17 Aug 2011 22:54:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-17 at 18:43 +0000, KY Srinivasan wrote:
-> 
-> > -----Original Message-----
-> > From: Sasha Levin [mailto:levinsasha928@gmail.com]
-> > Sent: Wednesday, August 17, 2011 8:48 AM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> > Subject: Re: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
-> > directly
-> > 
-> > On Mon, 2011-08-15 at 15:12 -0700, K. Y. Srinivasan wrote:
-> > > The message processing function needs to execute on the same CPU where
-> > > the interrupt was taken. tasklets cannot gurantee this; so, invoke the
-> > > function directly.
-> > >
-> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > ---
-> > 
-> > tasklets are guaranteed to run on the same CPU as the function that
-> > scheduled them.
-> > 
-> > Unless I'm missing something?
-> 
-> I too was under this impression until I stumbled upon this comment in
-> include/Linux/interrupt.h where I see that there is no guarantee that
-> tasklet would run on the same CPU that it was scheduled on
-> (look at the first listed property):
-> 
-> /* Tasklets --- multithreaded analogue of BHs.
-> 
->    Main feature differing them of generic softirqs: tasklet
->    is running only on one CPU simultaneously.
-> 
->    Main feature differing them of BHs: different tasklets
->    may be run simultaneously on different CPUs.
-> 
->    Properties:
->    * If tasklet_schedule() is called, then tasklet is guaranteed
->      to be executed on some cpu at least once after this.
-> .
-> .
-> */
-> 
-> Given this comment here, I felt that safest thing to do would be to just
-> not use the tasklet in this scenario.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 18 Aug 2011 15:22:14 +1000
 
-Hm..
+> Mikey asks:  Will Dave take these updates if we get Acks from the
+> maintainers?  :-)
 
-Looking at __tasklet_schedule() it should be guaranteed to run on the
-same CPU, but as you said - the comment above is actually saying the
-opposite.
-
-The relevant documentation in the 'Linux Device Drivers' book also
-states that it is guaranteed, so maybe we can get a confirmation from
-Greg that this is still true and update the comment instead?
-
-Not using bottom halves and just calling the dpc handler would mean that
-you block interrupts for much longer than you need to.
-
--- 
-
-Sasha.
-
+I'm more than happy to :-)
