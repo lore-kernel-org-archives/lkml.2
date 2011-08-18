@@ -1,186 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1HRWCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:02:30 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:46734 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754812Ab1HRWC3 (ORCPT
+	id S1754759Ab1HRWHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:07:52 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44477 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab1HRWHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:02:29 -0400
-Date: Fri, 19 Aug 2011 01:02:25 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        James Nuss <jamesnuss@nanometrics.ca>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] ARM: davinci: da850, omapl138: introduce new
- board-omapl138-heliosv1
-Message-ID: <20110818220224.GE21064@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1313702401.git.bengardiner@nanometrics.ca>
- <f31e949dcaac301b40a0f6c0b611e84f57636ef0.1313702401.git.bengardiner@nanometrics.ca>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wchHw8dVAp53YPj8"
-Content-Disposition: inline
-In-Reply-To: <f31e949dcaac301b40a0f6c0b611e84f57636ef0.1313702401.git.bengardiner@nanometrics.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Aug 2011 18:07:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=to:cc:message-id:date:from:x-system-of-record;
+	b=u/pYMC8BgT6jWMMxnb9FKTmRGAt3jvx9IvK5X3Ybc1eFbmiSiXWy/JIdGvIeCDv2O
+	7Xt/zEg1yMcvJ+NL1NBXA==
+To: davem@davemloft.net, mst@redhat.com, rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, digitaleric@google.com, mikew@google.com,
+        miche@google.com, maccarro@google.com
+Message-Id: <20110818220732.459185C80B@san.sea.corp.google.com>
+Date: Thu, 18 Aug 2011 15:07:32 -0700 (PDT)
+From: san@google.com (San Mehat)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---wchHw8dVAp53YPj8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+TL;DR
+-----
+In this RFC we propose the introduction of the concept of hardware socket
+offload to the Linux kernel. Patches will accompany this RFC in a few days,
+but we felt we had enough on the design to solicit constructive discussion
+from the community at-large.
 
-Hi,
+BACKGROUND
+----------
+Many applications within enterprise organizations suitable for virtualization
+neither require nor desire a connection to the full internal Ethernet+IP
+network.  Rather, some specific socket connections -- for processing HTTP
+requests, making database queries, or interacting with storage -- are needed,
+and IP networking in the application may typically be discouraged for
+applications that do not sit on the edge of the network. Furthermore, removing
+the application's need to understand where its inputs come from / go to within
+the networking fabric can make save/restore/migration of a virtualized
+application substantially easier - especially in large clusters and on fabrics
+which can't handle IP re-assignment.
 
-On Thu, Aug 18, 2011 at 05:50:51PM -0400, Ben Gardiner wrote:
-> Add support for the Nanometrics Helios Platform V1 Hardware. Initially
-> support includes only serial console and watchdog support.
->=20
-> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-> Reviewed-by: James Nuss <jamesnuss@nanometrics.ca>
-> ---
->  arch/arm/mach-davinci/Kconfig                   |    9 ++++
->  arch/arm/mach-davinci/Makefile                  |    1 +
->  arch/arm/mach-davinci/board-omapl138-heliosv1.c |   51 +++++++++++++++++=
-++++++
->  3 files changed, 61 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-davinci/board-omapl138-heliosv1.c
->=20
-> diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-> index c0deaca..21a8ce9 100644
-> --- a/arch/arm/mach-davinci/Kconfig
-> +++ b/arch/arm/mach-davinci/Kconfig
-> @@ -224,6 +224,15 @@ config MACH_OMAPL138_HAWKBOARD
->  	  Information of this board may be found at
->  	  http://www.hawkboard.org/
-> =20
-> +config MACH_HELIOS_V1
-> +	bool "Nanometrics OMAPL-138 Helios V1 platform"
-> +	depends on ARCH_DAVINCI_DA850
-> +	help
-> +	  Say Y here to select the Nanometrics OMAPL-138 Helios V1 platform.
-> +	  This is a development system based on the DA850 EVM baseboard.
-> +	  It is the first Helios hardware platform upon which other platforms i=
-n the
-> +	  Helios product family are based.
-> +
->  config DAVINCI_MUX
->  	bool "DAVINCI multiplexing support"
->  	depends on ARCH_DAVINCI
-> diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makef=
-ile
-> index 9a01441..96d74c9 100644
-> --- a/arch/arm/mach-davinci/Makefile
-> +++ b/arch/arm/mach-davinci/Makefile
-> @@ -36,6 +36,7 @@ obj-$(CONFIG_MACH_DAVINCI_DA850_EVM)	+=3D board-da850-e=
-vm.o
->  obj-$(CONFIG_MACH_TNETV107X)		+=3D board-tnetv107x-evm.o
->  obj-$(CONFIG_MACH_MITYOMAPL138)		+=3D board-mityomapl138.o
->  obj-$(CONFIG_MACH_OMAPL138_HAWKBOARD)	+=3D board-omapl138-hawk.o
-> +obj-$(CONFIG_MACH_HELIOS_V1)		+=3D board-omapl138-heliosv1.o
-> =20
->  # Power Management
->  obj-$(CONFIG_CPU_FREQ)			+=3D cpufreq.o
-> diff --git a/arch/arm/mach-davinci/board-omapl138-heliosv1.c b/arch/arm/m=
-ach-davinci/board-omapl138-heliosv1.c
-> new file mode 100644
-> index 0000000..73cc0a9
-> --- /dev/null
-> +++ b/arch/arm/mach-davinci/board-omapl138-heliosv1.c
-> @@ -0,0 +1,51 @@
-> +/*
-> + * Nanometrics OMAPL-138 Helios V1 platform.
-> + *
-> + * Copyright (C) 2011 Nanometrics Inc.
-> + * This file is licensed under the terms of the GNU General Public Licen=
-se
-> + * version 2. This program is licensed "as is" without any warranty of
-> + * any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/console.h>
-> +#include <linux/gpio.h>
-> +
-> +#include <asm/mach-types.h>
-> +#include <asm/mach/arch.h>
-> +
-> +#include <mach/cp_intc.h>
-> +#include <mach/da8xx.h>
-> +#include <mach/da850-reference.h>
-> +
-> +static __init void helios_v1_init(void)
-> +{
-> +	int ret;
-> +
-> +	da850_reference_serial_init();
-> +
-> +	ret =3D da8xx_register_watchdog();
-> +	if (ret)
-> +		pr_warning("%s: watchdog registration failed: %d\n",
-> +			__func__, ret);
-> +}
-> +
-> +#ifdef CONFIG_SERIAL_8250_CONSOLE
-> +static int __init helios_v1_console_init(void)
-> +{
-> +	if (!machine_is_helios_v1())
-> +		return 0;
-> +
-> +	return da850_reference_add_preferred_console();
-> +}
-> +console_initcall(helios_v1_console_init);
-> +#endif
-> +
-> +MACHINE_START(HELIOS_V1, "Nanometrics OMAPL-138 Helios V1 platform")
-> +	.boot_params	=3D DA850_REFERENCE_BOOT_PARAMS,
-> +	.map_io		=3D da850_reference_map_io,
-> +	.init_irq	=3D cp_intc_init,
-> +	.timer		=3D &davinci_timer,
-> +	.init_machine	=3D helios_v1_init,
-> +MACHINE_END
+REQUIREMENTS
+------------
+ * Allow VM connectivity to internal resources without requiring additional
+   network resources (IPs, VLANs, etc).
+ * Easy authentication of network streams from a trusted domain (vmm).
+ * Protect host-kernel & network-fabric from direct exposure to untrusted
+   packet data-structures.
+ * Support for multiple distributions of Linux.
+ * Minimal third-party software maintenance burden.
+ * To be able to co-exist with the existing network stack and ethernet virtual
+   devices in the event that an applications specific requirements cannot be
+   met by this design.
 
-since this also omapl138-based, can't you re-use the
-board-omapl138-hawk.c board-file ? I mean, this is only initializing
-console and that's it. What else does this board have ? Does it have
-USB, that EMAC/MDIO device ?
+DESIGN
+------
+The Berkeley sockets coprocessor is a virtual PCI device which has the ability
+to offload socket activity from an unmodified application at the BSD sockets
+layer (Layer 4).  Offloaded socket requests bypass the local operating systems
+networking stack entirely via the card and are relayed into the VMM
+(Virtual Machine Manager) for processing. The VMM then passes the request to a
+socket backend for handling. The difference between a socket backend and a
+traditional VM ethernet backend is that the socket backend receives layer 4
+socket (STREAM/DGRAM) requests instead of a multiplexed stream of layer 2
+packets (ethernet) that must be interpreted by the host. This technique also
+improves security isolation as the guest is no longer constructing packets which
+are evaluated by the host or underlying network fabric; packet construction
+happens in the host.
 
-To me it looks like you could re-use that board-file and just add a few
-machine checks for the different part (??)
+Lastly, pushing socket processing back into the host allows for host-side
+control of the network protocols used, which limits the potential congestion
+problems that can arise when various guests are using their own congestion
+control algorithms.
 
-> --=20
-> 1.7.4.1
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+================================================================================
 
---=20
-balbi
+           +-----------------------------------------------------------------+
+           |                                                                 |
+  guest    |                      unmodified application                     |
+userspace  +-----------------------------------------------------------------+
+           |                         unmodified libc                         |
+           +-----------------------------------------------------------------+
+                            |                             / \
+                            |                              |
+=========================== | ============================ | ===================
+                            |                              |
+                           \ /                             |
+                 +------------------------------------------------------+
+                 |                       socket core                    |
+                 +----+============+------------------------------------+
+                      |    INET    |                   |         / \
+  guest               +-----+------+                   |          |
+  kernel              | TCP | UDP  |                   |          |
+                      +-----+------+                   | L4 reqs  |
+                      |   NETDEV   |                   |          |
+                      +------------+                   |          |
+                      | virtio_net |                  \ /         |
+                      +------------+               +------------------+
+                          |   / \                  |    hw_socket     |
+                          |    |                   +------------------+
+                          |    |                   |  virtio_socket   |
+                          |    |                   +------------------+
+                          |    |                        |       / \
+========================= | == | ====================== | ====== | =============
+                         \ /   |                       \ /       |
+  host           +---------------------+        +------------------------+
+userspace        |  virito net device  |        |  virtio socket device  |
+  (vmm)          +---------------------+        +------------------------+
+                 |  ethernet backend   |        |     socket backend     |
+                 +---------------------+        +------------------------+
+                        |     / \                      |        / \
+                 L2     |      |                       |         |     L4
+               packets  |      |                      \ /        |  requests
+                        |      |                +-----------------------+
+                        |      |                |    Socket Handlers    |
+                        |      |                +-----------------------+
+                        |      |                       |        / \
+======================= | ==== | ===================== | ======= | =============
+                        |      |                       |         |
+   host                \ /     |                      \ /        |
+  kernel
 
---wchHw8dVAp53YPj8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+================================================================================
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+One of the most appealing aspects of this design (to application developers) is
+that this approach can be completely transparent to the application, provided
+we're able to intercept the application's socket requests in such a way that we
+do not impact performance in a negative fashion, yet retain the API semantics
+the application expects. In the event that this design is not suitable for an
+application, the virtual machine may be also fitted with a normal virtual
+ethernet device in addition to the co-processor (as shown in the diagram above).
 
-iQEcBAEBAgAGBQJOTYvwAAoJEAv8Txj19kN193kIAJwGNLNdxBzzg+CHQwmh/UnF
-Q3A56qKjX0uEZ0K/vu1Rk9hBXj8hCSqD9OLpvOcjMV2kCyPcpDNnwZGgzs7x3g2c
-nQ5RF+0zE/vvwc2NDy2AUFunSNrCUUV/zEcKaqk+4WkQdLX8rwi/s4R/4CCMjU1f
-K+aXJq2jlLtRlCAFshXiTjBSyYtPyDZFgbsJe/9s/PO4K/N+KA+lEGcj/+qCnGTp
-3w9UFz0t4OLwGFoKM6ZujNq+uJ9Xv+xwnI9k63imF1B2k81wQn/s5NnJlSf8dcAV
-MKqfrr18RquGXicXOhKp7UvOcfb3RJuH0yMMH9DPG1CkaUNkpPjkbTO5u75Yrl8=
-=n08o
------END PGP SIGNATURE-----
+Since we wish to allow these paravirtualized sockets to coexist peacefully with
+the existing Linux socket system, we've chosen to introduce the idea that a
+socket can at some point transition from being managed by the O/S socket system
+to a more enlightened 'hardware assisted' socket. The transition is managed by
+a 'socket coprocessor' component which intercepts and gets first right of
+refusal on handling certain global socket calls (connect, sendto, bind, etc...).
+In this initial design, the policy on whether to transition a socket or not is
+made by the virtual hardware, although we understand that further measurement
+into operation latency is warranted.
 
---wchHw8dVAp53YPj8--
+In the event the determination is made to transition a socket to hw-assisted
+mode, the socket is marked as being assisted by hardware, and all socket
+operations are offloaded to hardware.
+
+The following flag values have been added to struct socket (only visible within
+the guest kernel):
+
+ * SOCK_HWASSIST
+    Indicates socket operations are handled by hardware
+
+In order to support a variety of socket address families, addresses are
+converted from their native socket family to an opaque string. Our initial
+design formats these strings as URIs. The currently supported conversions are:
+
++-----------------------------------------------------------------------------+
+|   Domain   |      Type     |	URI example conversion                        |
+|  AF_INET   |	SOCK_STREAM  |	tcp://x.x.x.x:yyyy                            |
+|  AF_INET   |	SOCK_DGRAM   |	udp://x.x.x.x:yyyy                            |
+|  AF_INET6  |	SOCK_STREAM  |	tcp6://aaaa:b:cccc:d:eeee:ffff:gggg:hhhh/ii   |
+|  AF_INET6  |	SOCK_DGRAM   |	udp6://aaaa:b:cccc:d:eeee:ffff:gggg:hhhh/ii   |
+|  AF_IPX    |	SOCK_DGRAM   |	ipx://xxxxxxxx.yyyyyyyyyy.zzzz                |
++-----------------------------------------------------------------------------+
+
+In order for the socket coprocessor to take control of a socket, hooks must be
+added to the socket core. Our initial implementation hooks a number of functions
+in the socket-core (too many), and after consideration we feel we can reduce it
+down considerably by managing the socket 'ops' pointers.
+
+ALTERNATIVE STRATEGIES
+----------------------
+
+An alternative strategy for providing similar functionality involves either
+modifying glibc or using LD_PRELOAD tricks to intercept socket calls. We were
+forced to rule this out due to the complexity (and fragility) involved with
+attempting to maintain a general solution compatible accross various
+distributions where platform-libraries differ.
+
+CAVEATS
+-------
+
+ * We're currently hooked into too many socket calls. We should be able to
+   reduce the number of hooks to 3 (__sock_create(), sys_connect(), sys_bind()).
+
+ * Our 'hw_socket' component should be folded into a netdev so we can leverage
+   NAPI.
+
+ * We don't handle SOCK_SEQPACKET, SOCK_RAW, SOCK_RDM, or SOCK_PACKET sockets.
+
+ * We don't currently have support for /proc/net. Our current plan is to
+   add '/proc/net/hwsock' (filename TBD) and add support for these sockets
+   to the net-tools packages (netstat & friends), rather than muck around with
+   plumbing hardware-assisted socket info into '/proc/net/tcp' and
+   '/proc/net/udp'.
+
+ * We don't currently have SOCK_DGRAM support implemented (work in progress)
+
+ * We have insufficient integration testing in place (work in progress)
