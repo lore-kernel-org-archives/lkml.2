@@ -1,125 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab1HRR0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:26:39 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:54632 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab1HRRZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752746Ab1HRRZy (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Aug 2011 13:25:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6441"; a="111095118"
-From: David Brown <davidb@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH v3 4/4] ARM: msm: Describe MSM 8660 SURF FPGA registers in DT
-Date: Thu, 18 Aug 2011 10:25:45 -0700
-Message-Id: <1313688345-17699-5-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1313688345-17699-1-git-send-email-davidb@codeaurora.org>
-References: <1313688345-17699-1-git-send-email-davidb@codeaurora.org>
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49496 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab1HRRZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:25:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<3300.1313637592@jrobl>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+	<20110818091140.385a9455@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+	<20110818130408.71c55b96@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108181314310.7903@p34.internal.lan>
+Date: Thu, 18 Aug 2011 12:25:50 -0500
+Message-ID: <CAH2r5mvNkUWh0rYTbTEWmUPiRsxUbmrGNpTOaebiG0CCKRfA1g@mail.gmail.com>
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
+ with linux-3.1-rc2
+From: Steve French <smfrench@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Jeff Layton <jlayton@samba.org>, "J. R. Okajima" <hooanon05@yahoo.co.jp>,
+        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSM 8660 SURF development board contains a register-accessible
-FPGA.  By default, this FPGA configures the first UART in output-only
-mode.  On this target, reconfigure this FPGA to enable the UART to be
-bidirectional.
+On Thu, Aug 18, 2011 at 12:16 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> On Thu, 18 Aug 2011, Jeff Layton wrote:
+>
+>> On Thu, 18 Aug 2011 09:15:36 -0400 (EDT)
+>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>
+>>>
+>>>
+>>> On Thu, 18 Aug 2011, Jeff Layton wrote:
+>>>
+>>>> On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
+>>>> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>>>>
+>>>>> Justin.
+>>>>>
+>>>>
+>>>> To be clear -- incoming in this case is reads or writes?
+>>>
+>>> Reading from the CIFS share (Windows 7).
+>>>
+>>>>
+>>>> Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
+>>>> 3.0 I added a patchset to increase the allowable wsize and to allow the
+>>>> kernel to issue writes in parallel.
+>>>
+>>> Ahh, good to know, have not tried writes yet.
+>>>
+>>>>
+>>>> Reads still suffer from the same problem however. I'm working on a
+>>>> patchset that should do the same thing for them, but it requires a
+>>>> fairly substantial overhaul of the receive codepaths.
+>>>
+>>> Ok, that explains it then, thanks.
+>
+>
+> Hi,
+>
+> Watching the rsync, it ran for a while, then:
+>
+> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
+> allocate memory (12)
+> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_1.JPG": Cannot
+> allocate memory (12)
+> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_2.JPG": Cannot
+> allocate memory (12)
+> rsync: send_files failed to open "/cifs/w1/r1/data/hs12/f4_0.JPG": Cannot
+> allocate memory (12)
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- arch/arm/boot/dts/msm8660-surf.dts |    5 +++
- arch/arm/mach-msm/board-msm8x60.c  |   49 +++++++++++++++++++++++++++++++++---
- 2 files changed, 50 insertions(+), 4 deletions(-)
+When we were testing async write to Windows 7 Pavel mentioned to me
+another WIndows 7 bug - which may be what you are hitting.
 
-diff --git a/arch/arm/boot/dts/msm8660-surf.dts b/arch/arm/boot/dts/msm8660-surf.dts
-index 15ded0d..3591c94 100644
---- a/arch/arm/boot/dts/msm8660-surf.dts
-+++ b/arch/arm/boot/dts/msm8660-surf.dts
-@@ -21,4 +21,9 @@
- 		      <0x19c00000 0x1000>;
- 		interrupts = <195>;
- 	};
-+
-+	qcom,fpga@1d000000 {
-+		compatible = "qcom,msm8660-surf-fpga";
-+		reg = < 0x1d000000 0x1000 >;
-+	};
- };
-diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-index 10fa8f6..f2dacfe 100644
---- a/arch/arm/mach-msm/board-msm8x60.c
-+++ b/arch/arm/mach-msm/board-msm8x60.c
-@@ -58,8 +58,52 @@ static void __init msm8x60_init_irq(void)
- 	}
- }
- 
-+static void __init msm8660_surf_fpga_init(void __iomem *fpga_mem)
-+{
-+	/* Advanced mode */
-+	writew(0xFFFF, fpga_mem + 0x15C);
-+	/* FPGA_UART_SEL */
-+	writew(0, fpga_mem + 0x172);
-+	/* FPGA_GPIO_CONFIG_117 */
-+	writew(1, fpga_mem + 0xEA);
-+	/* FPGA_GPIO_CONFIG_118 */
-+	writew(1, fpga_mem + 0xEC);
-+	dmb();
-+}
-+
-+static void __init msm8660_surf_fpga_init_platform(void)
-+{
-+	/* 0x1D000000 now belongs to EBI2:CS3 i.e. USB ISP Controller */
-+	void __iomem *fpga_mem = ioremap(0x1D000000, SZ_4K);
-+	msm8660_surf_fpga_init(fpga_mem);
-+	iounmap(fpga_mem);
-+}
-+
-+#ifdef CONFIG_OF
-+static void __init msm8660_surf_fpga_init_dt(void)
-+{
-+	struct device_node *node;
-+	void __iomem *fpga_mem;
-+
-+	node = of_find_compatible_node(NULL, NULL, "qcom,msm8660-surf-fpga");
-+	if (!node)
-+		return;
-+
-+	fpga_mem = of_iomap(node, 0);
-+	of_node_put(node);
-+	if (!fpga_mem) {
-+		printk(KERN_ERR "%s: Can't map fpga registers\n", __func__);
-+		return;
-+	}
-+
-+	msm8660_surf_fpga_init(fpga_mem);
-+	iounmap(fpga_mem);
-+}
-+#endif
-+
- static void __init msm8x60_init(void)
- {
-+	msm8660_surf_fpga_init_platform();
- }
- 
- #ifdef CONFIG_OF
-@@ -81,10 +125,7 @@ static void __init msm8x60_dt_init(void)
- 	if (node)
- 		irq_domain_add_simple(node, GIC_SPI_START);
- 
--	if (of_machine_is_compatible("qcom,msm8660-surf")) {
--		printk(KERN_INFO "Init surf UART registers\n");
--		msm8x60_init_uart12dm();
--	}
-+	msm8660_surf_fpga_init_dt();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table,
- 			msm_auxdata_lookup, NULL);
+Under stress of simultaneous operations, Windows 7 server will sometimes start
+responding with STATUS_INSUFF_SERVER_RESOURCES error code
+(mapped to posix error ENOMEM by the Linux cifs kernel client)
+He solved it by setting MaxWorkItems to 4096 in the Windows 7 registry.
+
+If anyone knows whether Microsoft has fixed this or has a bug #, let us know
+because it is easier to hit with Linux kernel 3.0 and later (to
+Windows 7 server).
+
+
+
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
 
+Steve
