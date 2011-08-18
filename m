@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1HRX1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 19:27:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59173 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751293Ab1HRX1b (ORCPT
+	id S1751565Ab1HRXdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 19:33:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49913 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab1HRXdG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 19:27:31 -0400
-Date: Thu, 18 Aug 2011 16:27:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Boyer <jwboyer@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-Id: <20110818162723.aa63bc38.akpm@linux-foundation.org>
-In-Reply-To: <20110818231646.GH2325@linux.vnet.ibm.com>
-References: <20110815152052.GA2389@linux.vnet.ibm.com>
-	<20110817223735.GI2227@zod.bos.redhat.com>
-	<20110817224916.GO2419@linux.vnet.ibm.com>
-	<20110817230219.GJ2227@zod.bos.redhat.com>
-	<20110817230641.GA7837@somewhere.redhat.com>
-	<20110817231750.GK2227@zod.bos.redhat.com>
-	<20110818183523.GD2325@linux.vnet.ibm.com>
-	<20110818140034.668e8dea.akpm@linux-foundation.org>
-	<20110818212334.GE2325@linux.vnet.ibm.com>
-	<20110818221920.GR2227@zod.bos.redhat.com>
-	<20110818231646.GH2325@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Aug 2011 19:33:06 -0400
+Content-Type: text/plain; charset=UTF-8
+Subject: Fwd: [PATCH] tags, powerpc: Update tags.sh to support _GLOBAL symbols
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Aug 2011 09:32:57 +1000
+Message-Id: <1313710351-sup-4548@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 16:16:46 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+I seem to have missed LKML in the CC for this patch...
 
-> Andrew, are you willing to ack this?
+--- Begin forwarded message from Ian Munsie ---
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev <linuxppc-dev@lists.ozlabs.org>, Michal Marek <mmarek@suse.cz>
+Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kbuild <linux-kbuild@vger.kernel.org>
+Date: Wed, 17 Aug 2011 16:25:47 +1000
+Subject: [PATCH] tags, powerpc: Update tags.sh to support _GLOBAL symbols
 
-WhoMeNope.  That would imply that I understood it, but my brain is far
-too small to understand rcutree.c - that's what we have paulmcks for.
+From: Ian Munsie <imunsie@au1.ibm.com>
+
+On PowerPC we use _GLOBAL throughout the assembly to define symbols, but
+currently these symbols are missing from the tags generated with
+ARCH=powerpc make tags. This patch modifies the tags.sh script to
+recognise _GLOBAL(.*) so that these symbols will be in the tags.
+
+This is almost (but not quite) PowerPC specific and this change should
+not affect anyone else:
+
+$ git grep -E '^_GLOBAL\(([^)]*)\).*' |sed 's/^\([^/]*\/[^/]*\)\/.*$/\1/'|uniq -c
+    627 arch/powerpc
+      2 arch/um
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ scripts/tags.sh |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 75c5d24f1..38f6617 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -129,7 +129,7 @@ exuberant()
+     -I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
+     -I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
+     --extra=+f --c-kinds=+px                                \
+-    --regex-asm='/^ENTRY\(([^)]*)\).*/\1/'                  \
++    --regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
+     --regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
+     --regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'        \
+     --regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'
+@@ -151,7 +151,7 @@ exuberant()
+ emacs()
+ {
+     all_sources | xargs $1 -a                               \
+-    --regex='/^ENTRY(\([^)]*\)).*/\1/'                      \
++    --regex='/^(ENTRY|_GLOBAL)(\([^)]*\)).*/\2/'            \
+     --regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
+     --regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'        \
+     --regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/'
+--- End forwarded message ---
