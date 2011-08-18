@@ -1,107 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab1HRHwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 03:52:34 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:60336 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab1HRHwb (ORCPT
+	id S1755314Ab1HRHy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 03:54:26 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:47718 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008Ab1HRHyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 03:52:31 -0400
-Date: Thu, 18 Aug 2011 00:52:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: JJ Ding <jj_ding@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Thu, 18 Aug 2011 03:54:22 -0400
+X-Greylist: delayed 643 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Aug 2011 03:54:21 EDT
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+From: Tom _Lin <tom_lin@emc.com.tw>
+To: jj_ding@emc.com.tw
+Cc: Daniel Kurtz <djkurtz@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 3/6] Input: elantech - packet checking for v2 hardware
-Message-ID: <20110818075226.GF10093@core.coreip.homeip.net>
+        Alessandro Rubini <rubini@cvml.unipv.it>, gaowanlong@cn.fujitsu.com
+In-Reply-To: <4E4CABE5.7020900@cn.fujitsu.com>
 References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-4-git-send-email-jj_ding@emc.com.tw>
- <20110818063818.GC10093@core.coreip.homeip.net>
- <87wreb2n1s.fsf@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wreb2n1s.fsf@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+	 <4E4C80A0.8090708@cn.fujitsu.com> <87d3g347ey.fsf@emc.com.tw>
+	 <4E4CA3A9.2010900@cn.fujitsu.com>
+	 <CAGS+omB0Ys-vEVq64W85Jmsz=TkgvNqn_iJkxynZJr8wvqifGQ@mail.gmail.com>
+	 <4E4CA6B4.5060807@cn.fujitsu.com>
+	 <CAGS+omDT1WNBoC-T4zmKx1SnVofLwUdt-pfQDWGicO87xUBqxw@mail.gmail.com>
+	 <4E4CABE5.7020900@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Aug 2011 15:49:01 +0800
+Message-ID: <1313653741.3495.13.camel@ubuntu1010-Veriton-M275>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 03:31:27PM +0800, JJ Ding wrote:
-> Hi Dmitry,
+Hi JJ
+On Thu, 2011-08-18 at 14:06 +0800, Wanlong Gao wrote:
+> On 08/18/2011 02:01 PM, Daniel Kurtz wrote:
+> > On Thu, Aug 18, 2011 at 1:44 PM, Wanlong Gao<gaowanlong@cn.fujitsu.com>  wrote:
+> >> On 08/18/2011 01:34 PM, Daniel Kurtz wrote:
+> >>>
+> >>> On Thu, Aug 18, 2011 at 1:31 PM, Wanlong Gao<gaowanlong@cn.fujitsu.com>
+> >>>   wrote:
+> >>>>
+> >>>> On 08/18/2011 01:26 PM, JJ Ding wrote:
+> >>>>>
+> >>>>> Hi Wanlong Gao,
+> >>>>>
+> >>>>> On Thu, 18 Aug 2011 11:01:52 +0800, Wanlong
+> >>>>> Gao<gaowanlong@cn.fujitsu.com>
+> >>>>>   wrote:
+> >>>>>>
+> >>>>>> On 08/18/2011 09:57 AM, JJ Ding wrote:
+> >>>>>>>
+> >>>>>>> v3 hardware's packet format is almost identical to v2 (one/three
+> >>>>>>> finger
+> >>>>>>> touch),
+> >>>>>>> except when sensing two finger touch, the hardware sends 12 bytes of
+> >>>>>>> data.
+> >>>>>>>
+> >>>>>>> Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
+> >>>>>>> ---
+> >>>>>>>    Documentation/input/elantech.txt |  104 ++++++++++++++++--
+> >>>>>>>    drivers/input/mouse/elantech.c   |  218
+> >>>>>>> ++++++++++++++++++++++++++++++++++---
+> >>>>>>>    drivers/input/mouse/elantech.h   |   11 ++
+> >>>>>>>    3 files changed, 303 insertions(+), 30 deletions(-)
+> >>>>>>>
+> >>>>>>> +static int determine_packet_v3(struct psmouse *psmouse)
+> >>>>>>
+> >>>>>> elantech_check_parity_v1
+> >>>>>> packet_simple_check_v2
+> >>>>>> determine_packet_v3
+> >>>>>>
+> >>>>>> Why not consistent them?
+> >>>>>
+> >>>>> OK, how do these names sound to you?
+> >>>>>
+> >>>>> elantech_check_parity_v1
+> >>>>> elantech_packet_check_v2
+> >>>>> elantech_packet_check_v3
+> >>>>>
+> >>>>> Thanks,
+> >>>>> jj
+> >>>>
+> >>>> Yeah, sounds perfectly.
+> >>>
+> >>> Or just:
+> >>>
+> >>> elantech_packet_check_v1
+> >>> elantech_packet_check_v2
+> >>> elantech_packet_check_v3
+I prefer this way. 
+> >>>
+> >>> :)
+> >>
+> >> Hmm... maybe they can go into an elantech_packet_check()?
+> >> like:
+> >> case 1:
+> >>         ...
+> >> case 2:
+> >>         ...
+> >> What do you think? ;)
+> >>
+> >> Thanks
+> >> -Wanlong Gao
+> >
+> > Since we've already parsed the hardware type at this point, it seems
+> > inefficient to parse it again inside another function.
+> > I would prefer individual functions.
+> >
+> > Thanks,
+> > -Daniel
+> >
 > 
-> On Wed, 17 Aug 2011 23:38:18 -0700, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > On Thu, Aug 18, 2011 at 09:57:06AM +0800, JJ Ding wrote:
-> > > For v2 hardware, there is no real parity check, but we can still check
-> > > some constant bits for data integrity.
-> > > 
-> > > Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
-> > > ---
-> > >  drivers/input/mouse/elantech.c |   26 +++++++++++++++++++++++---
-> > >  1 files changed, 23 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-> > > index cf41f23..032181c 100644
-> > > --- a/drivers/input/mouse/elantech.c
-> > > +++ b/drivers/input/mouse/elantech.c
-> > > @@ -376,6 +376,25 @@ static int elantech_check_parity_v1(struct psmouse *psmouse)
-> > >  	       etd->parity[packet[3]] == p3;
-> > >  }
-> > >  
-> > > +static int packet_simple_check_v2(struct psmouse *psmouse)
-> > > +{
-> > > +	struct elantech_data *etd = psmouse->private;
-> > > +	unsigned char *packet = psmouse->packet;
-> > > +
-> > > +	if (etd->reports_pressure)
-> > > +		return (packet[0] & 0x0c) == 0x04 &&
-> > > +		       (packet[3] & 0x0f) == 0x02;
->         this is for newer v2 hardware
+> Yeah, It makes sense.
 > 
-> > > +
-> > > +	if ((packet[0] & 0xc0) == 0x80)
-> > > +		return (packet[0] & 0x0c) == 0x0c &&
-> > > +		       (packet[3] & 0x0e) == 0x08;
->         this is for older v2, two finger touch 
+> Thanks
+> -Wanlong Gao
 > 
-> > > +
-> > > +	return (packet[0] & 0x3c) == 0x3c &&
-> > > +	       (packet[1] & 0xf0) == 0x00 &&
-> > > +	       (packet[3] & 0x3e) == 0x38 &&
-> > > +	       (packet[4] & 0xf0) == 0x00;
->         this is for older v2, 1/3 finger touch
->       
-> > 
-> > Can we please spell out the assumptions under which we decide that
-> > packet is invalid?
-> > 
-> > Thanks.
-> > 
-> > -- 
-> > Dmitry
-> V2 hardware has two flavors. Older ones that do not report pressure,
-> and newer ones that reports pressure and width.
-> 
-> With newer ones, all packets (1, 2, 3 finger touch) have the same
-> constant bits.
-> 
-> With older ones, 1/3 finger touch packets and 2 finger touch packets have
-> different constant bits.
-> 
-> With all three cases, if the constant bits are not exactly what I
-> expected, I consider them invalid.
-> 
-> Dmitry, how do you want me to improve this? not enough comments?
 
-Right, if you could put the above into comments right in the
-packet_simple_check_v2() that woudl be great.
+Thanks
+-TomLin
 
-Thanks.
-
--- 
-Dmitry
