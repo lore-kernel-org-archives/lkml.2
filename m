@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1HRF44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:56:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34222 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab1HRF4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:56:54 -0400
-Date: Thu, 18 Aug 2011 07:56:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: pin execution to current cpu while draining stock
-Message-ID: <20110818055649.GA23056@tiehlicka.suse.cz>
-References: <cover.1311338634.git.mhocko@suse.cz>
- <2f17df54db6661c39a05669d08a9e6257435b898.1311338634.git.mhocko@suse.cz>
- <20110725101657.21f85bf0.kamezawa.hiroyu@jp.fujitsu.com>
- <20110817194927.GA10982@redhat.com>
+	id S1752743Ab1HRGAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 02:00:46 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:53602 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940Ab1HRGAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 02:00:44 -0400
+Date: Wed, 17 Aug 2011 23:00:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: gaowanlong@cn.fujitsu.com, Daniel Kurtz <djkurtz@chromium.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 5/6] Input: elantech - clean up elantech_init
+Message-ID: <20110818060038.GA10093@core.coreip.homeip.net>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw>
+ <CAGS+omDVn1uoU85pPN+jeHMTMp83EA13b3E8Sca0QOqDBZHQFg@mail.gmail.com>
+ <4E4C8218.8040100@cn.fujitsu.com>
+ <87aab746ys.fsf@emc.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110817194927.GA10982@redhat.com>
+In-Reply-To: <87aab746ys.fsf@emc.com.tw>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 17-08-11 21:49:27, Johannes Weiner wrote:
-> Commit d1a05b6 'memcg: do not try to drain per-cpu caches without
-> pages' added a drain_local_stock() call to a preemptible section.
+On Thu, Aug 18, 2011 at 01:35:55PM +0800, JJ Ding wrote:
+> Hi Wanlong Gao, Daniel,
 > 
-> The draining task looks up the cpu-local stock twice to set the
-> draining-flag, then to drain the stock and clear the flag again.  If
-> the task is migrated to a different CPU in between, noone will clear
-> the flag on the first stock and it will be forever undrainable.  Its
-> charge can not be recovered and the cgroup can not be deleted anymore.
+> On Thu, 18 Aug 2011 11:08:08 +0800, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> > On 08/18/2011 11:04 AM, Daniel Kurtz wrote:
+> > > On Thu, Aug 18, 2011 at 9:57 AM, JJ Ding<jj_ding@emc.com.tw>  wrote:
+> > >>   /*
+> > >> + * determine hardware version and set some properties according to it.
+> > >> + */
+> > >> +static void elantech_set_properties(struct elantech_data *etd)
+> > >> +{
+> > >> +       /*
+> > >> +        * Assume every version greater than 0x020030 is new EeePC style
+> > >> +        * hardware with 6 byte packets, except 0x020600
+> > >> +        */
+> > >> +       if (etd->fw_version<  0x020030 || etd->fw_version == 0x020600)
+> > >> +               etd->hw_version = 1;
+> > >> +       else
+> > >> +               etd->hw_version = 2;
+> > >> +
+> > >> +       /*
+> > >> +        * Turn on packet checking by default.
+> > >> +        */
+> > >> +       etd->paritycheck = 1;
+> > >
+> > > Assuming paritycheck goes away:
+> > Agree.
+> I thought about removing it, too. But it occured to me that v1 and v2
+> hardware can still have the sysfs entry to turn off parity check.
 > 
-> Properly pin the task to the executing CPU while draining stocks.
+> And since it's exposed in sysfs, I suppose there might be some init
+> scripts relying on it.
 > 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com
-> Cc: Michal Hocko <mhocko@suse.cz>
+> What do you think, Dmitry?
+> Shall I remove it?
 
-My fault, I didn't realize that drain_local_stock needs preemption
-disabled. Sorry about that and good work, Johannes. 
+No, we should not remove it, since it is useful for V1 hardware which we
+still support.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+How confident are we in the V2/V3 checking not tripping on valid packets?
+
+Thanks.
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Dmitry
