@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab1HRJQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 05:16:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54071 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab1HRJQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 05:16:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@nvidia.com>
-Subject: Re: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-Date: Thu, 18 Aug 2011 11:15:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-References: <1313440100-17131-1-git-send-email-swarren@nvidia.com> <201108171323.38441.arnd@arndb.de> <74CDBE0F657A3D45AFBB94109FB122FF04AF6F3062@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AF6F3062@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108181115.53101.arnd@arndb.de>
-X-Provags-ID: V02:K0:NQyDB5FY3AstIXSEhnzlrJqTy4AL7DyGS3E5P7RquUP
- 7rQc6AaeaC4JUHumBGz9bTmnnBNhp8iOE+GfrxFnzNLXiJYND6
- SROPlJ+gCPcL60eV452kthmy2VF+cLhMKewcpOxYcpWQcyoOHs
- sq+2hdEoAoDMkx+Q6kzyLqql0SFU0qQDAvVXd4onRuwLQrEAOY
- DETjgWt9Jxqh3B9yPYn6A==
+	id S1755404Ab1HRJVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 05:21:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5265 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab1HRJV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 05:21:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="asc'?scan'208";a="39596440"
+Subject: Re: [PATCH] checkpatch: do not test/warn of leading whitespace
+ before signature tags
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Joe Perches <joe@perches.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        Anish Kumar <anish198519851985@gmail.com>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Thu, 18 Aug 2011 02:21:25 -0700
+In-Reply-To: <1313657762.32547.80.camel@Joe-Laptop>
+References: <1313650112-17287-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <1313652390.32547.53.camel@Joe-Laptop>
+	 <1313653632.2128.88.camel@jtkirshe-mobl>
+	 <1313654341.32547.62.camel@Joe-Laptop>
+	 <1313654829.2128.94.camel@jtkirshe-mobl>
+	 <1313655365.32547.68.camel@Joe-Laptop>
+	 <1313655961.2128.107.camel@jtkirshe-mobl>
+	 <1313656307.32547.73.camel@Joe-Laptop>
+	 <1313657022.2128.116.camel@jtkirshe-mobl>
+	 <1313657762.32547.80.camel@Joe-Laptop>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-h0gxOEqQjC+0fz2qJq1m"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313659287.2128.133.camel@jtkirshe-mobl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 August 2011, Stephen Warren wrote:
-> It looks like DT already supports the generic case for GPIO; each GPIO
-> reference is of the form:
-> 
-> <&gpio 69 0>
-> 
-> and so each GPIO has a "parent" specified, and hence can come from a
-> different controller.
-> 
-> For drivers, this is all completely hidden by of_get_gpio().
-> 
-> I imagine we'd just use the same pattern for pinmux. This would both
-> support the general case, and end up being consistent with how GPIOs
-> already work, so this seems like a win both ways.
-> 
 
-Ah right. I had not seen the gpio binding yet, so that definitely works.
+--=-h0gxOEqQjC+0fz2qJq1m
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+On Thu, 2011-08-18 at 01:56 -0700, Joe Perches wrote:
+> On Thu, 2011-08-18 at 01:43 -0700, Jeff Kirsher wrote:
+> > I understand what your saying, and I think that your suggestion about
+> > possibly implementing a "--input=3Dgit" option to checkpatch.pl might b=
+e a
+> > happy middle ground to resolve the numerous false warnings this check
+> > produces.
+>=20
+> As far as I can tell, --ignore=3D suffices.
+>=20
+> If you really want to use checkpatch for checking
+> already committed patches, maybe you should not
+> use git log but use git format-patch instead.
+>=20
+> $ git format-patch -1 --stdout | ./scripts/checkpatch.pl -
+>=20
+> That works without any problems.
+
+Thank you Joe, I will take a look at how we validate patches with
+checkpatch.pl and hopefully we can reduce the time I take reviewing
+checkpatch.pl warnings.
+
+
+--=-h0gxOEqQjC+0fz2qJq1m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJOTNmVAAoJECTsCADr/EWUb1wIALEZjdFzJqeffk1lWhka8bpC
+4+MZGCok+KTTqoJfgm53dOOlL1v1uHpsM+ar+Sgrz4s58TBuQRJZ+xsSknuka9MG
+jBwuHTPhoiwZ/HtglvcK904WuxguONPFWvtxxTPtQX1Yolxxod4ydpJAC1p1jFR8
+Hbujr7/hI0A9WhMZCLHlmeeWV1gs48/Y1ehWBsWC/N0/5mx8bE63H9g90WM8oi6s
+frKvzPCwzZHmFVhpn5XZTgKt4wJtZ7wwq+PMS1JFEwn6rSrzr3oX6uvacrgzRoZi
+kiA1yEb52z7KdJDYfQDw8Qni8t/Jvkpy4B/moqVl6Qtfc/+LLTeaEoB94x9/wzM=
+=SBH9
+-----END PGP SIGNATURE-----
+
+--=-h0gxOEqQjC+0fz2qJq1m--
+
