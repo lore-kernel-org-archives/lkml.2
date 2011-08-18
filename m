@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab1HRF4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:56:22 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58163 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab1HRF4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:56:19 -0400
-Date: Wed, 17 Aug 2011 22:53:56 -0700 (PDT)
-Message-Id: <20110817.225356.1790362313048139752.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
-        mikey@neuling.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: linux-next: boot test failure (net tree)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
-References: <20110816.171525.639251389938336183.davem@davemloft.net>
-	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
-	<20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 17 Aug 2011 22:54:08 -0700 (PDT)
+	id S1753404Ab1HRF44 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:56:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34222 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751127Ab1HRF4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 01:56:54 -0400
+Date: Thu, 18 Aug 2011 07:56:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] memcg: pin execution to current cpu while draining stock
+Message-ID: <20110818055649.GA23056@tiehlicka.suse.cz>
+References: <cover.1311338634.git.mhocko@suse.cz>
+ <2f17df54db6661c39a05669d08a9e6257435b898.1311338634.git.mhocko@suse.cz>
+ <20110725101657.21f85bf0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110817194927.GA10982@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817194927.GA10982@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 18 Aug 2011 15:22:14 +1000
+On Wed 17-08-11 21:49:27, Johannes Weiner wrote:
+> Commit d1a05b6 'memcg: do not try to drain per-cpu caches without
+> pages' added a drain_local_stock() call to a preemptible section.
+> 
+> The draining task looks up the cpu-local stock twice to set the
+> draining-flag, then to drain the stock and clear the flag again.  If
+> the task is migrated to a different CPU in between, noone will clear
+> the flag on the first stock and it will be forever undrainable.  Its
+> charge can not be recovered and the cgroup can not be deleted anymore.
+> 
+> Properly pin the task to the executing CPU while draining stocks.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-> Mikey asks:  Will Dave take these updates if we get Acks from the
-> maintainers?  :-)
+My fault, I didn't realize that drain_local_stock needs preemption
+disabled. Sorry about that and good work, Johannes. 
 
-I'm more than happy to :-)
+Acked-by: Michal Hocko <mhocko@suse.cz>
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
