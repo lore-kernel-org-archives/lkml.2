@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab1HRQ0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:26:01 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55943 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab1HRQZ7 (ORCPT
+	id S1756066Ab1HRQbB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:31:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48869 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755150Ab1HRQa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:25:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110818131343.GA17473@localhost>
-References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
-	<20110818094824.GA25752@localhost>
-	<1313669702.6607.24.camel@sauron>
-	<20110818131343.GA17473@localhost>
-Date: Thu, 18 Aug 2011 21:55:58 +0530
-Message-ID: <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
-Subject: Re: [PATCH] writeback: Per-block device bdi->dirty_writeback_interval
- and bdi->dirty_expire_interval.
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Aug 2011 12:30:59 -0400
+Subject: Re: [PATCH] virtio-blk: Add stats VQ to collect information about
+ devices
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <4E4D2B6D.1040908@redhat.com>
+References: <1313524071-27250-1-git-send-email-levinsasha928@gmail.com>
+	 <4E4C481A.5080205@redhat.com> <1313642283.22532.4.camel@lappy>
+	 <4E4D2B6D.1040908@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 18 Aug 2011 19:29:44 +0300
+Message-ID: <1313684984.30799.20.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wu,
+On Thu, 2011-08-18 at 08:10 -0700, Avi Kivity wrote:
+> On 08/17/2011 09:38 PM, Sasha Levin wrote:
+> > On Wed, 2011-08-17 at 16:00 -0700, Avi Kivity wrote:
+> > >  On 08/16/2011 12:47 PM, Sasha Levin wrote:
+> > >  >  This patch adds support for an optional stats vq that works similary to the
+> > >  >  stats vq provided by virtio-balloon.
+> > >  >
+> > >  >  The purpose of this change is to allow collection of statistics about working
+> > >  >  virtio-blk devices to easily analyze performance without having to tap into
+> > >  >  the guest.
+> > >  >
+> > >  >
+> > >
+> > >  Why can't you get the same info from the host?  i.e. read sectors?
+> >
+> > Some of the stats you can collect from the host, but some you can't.
+> >
+> > The ones you can't include all the timing statistics and the internal
+> > queue statistics (read/write merges).
+> 
+> Surely you can time the actual amount of time the I/O takes?  It doesn't 
+> account for the virtio round-trip, but does it matter?
+> 
+> Why is the merge count important for the host?
+> 
 
-On Thu, Aug 18, 2011 at 6:43 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> Hi Artem,
->
->> Here is a real use-case we had when developing the N900 phone. We had
->> internal flash and external microSD slot. Internal flash is soldered in
->> and cannot be removed by the user. MicroSD, in contrast, can be removed
->> by the user.
->>
->> For the internal flash we wanted long intervals and relaxed limits to
->> gain better performance.
->>
->> For MicroSD we wanted very short intervals and tough limits to make sure
->> that if the user suddenly removes his microSD (users do this all the
->> time) - we do not lose data.
->
-> Thinking twice about it, I find that the different requirements for
-> interval flash/external microSD can also be solved by this scheme.
->
-> Introduce a per-bdi dirty_background_time (and optionally dirty_time)
-> as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
-> however with unit "milliseconds worth of data".
->
-> The per-bdi dirty_background_time will be set low for external microSD
-> and high for internal flash. Then you get timely writeouts for microSD
-> and reasonably delayed writes for internal flash (controllable by the
-> global dirty_expire_centisecs).
->
-> The dirty_background_time will actually work more reliable than
-> dirty_expire_centisecs because it will checked immediately after the
-> application dirties more pages. And the dirty_time could provide
-> strong data integrity guarantee -- much stronger than
-> dirty_expire_centisecs -- if used.
->
-> Does that sound reasonable?
->
-> Thanks,
-> Fengguang
->
+I assumed that the time the request spends in the virtio layer is
+(somewhat) significant, specially since that this is something that adds
+up over time.
 
-My understanding of your email appears that you are agreeing in
-principle that the temporal
-aspect of this problem needs to be addressed along with your spatial
-pattern analysis technique.
+Merge count can be useful for several testing scenarios (I'll describe
+the reasoning behind this patch below).
 
-I feel a more generic solution to the problem is required because the
-problem faced by Artem can appear
-in a different situation for a different application.
+> >
+> > The idea behind providing all of the stats on the stats vq (which is
+> > basically what you see in '/dev/block/[device]/stats') is to give a
+> > consistent snapshot of the state of the device.
+> >
+> >
+> 
+> What can you do with it?
+> 
 
-I can re-implement my original patch in either centiseconds or
-milliseconds as suggested by you.
+I was actually planning on submitting another patch that would add
+something similar into virtio-net. My plan was to enable collecting
+statistics regarding memory, network and disk usage in a simple manner
+without accessing guests.
 
-Kindly advise if my understanding is correct.
+How can this be used? my vision behind it was automation of kernel
+testing and benchmarking.
 
-Thanks,
-Kautuk Consul.
+I created a simple set of scripts that does bisection of kernel issues
+(which is a combination of 'git bisect run' scripts and a simple
+framework that generates /sbin/init used for testing without having to
+touch any guests or images.
+
+The scripts builds a simple image which contains only whats required to
+test the kernel, and runs the test kernel and test image to determine
+whether we hit a 'git bisect good' or 'git bisect bad' automatically.
+
+I was looking to expand it to allow detection of more than just patches
+that break things, but also patches that caused a performance hit in a
+specific scenario.
+
+-- 
+
+Sasha.
+
