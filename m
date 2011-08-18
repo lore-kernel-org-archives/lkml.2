@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1HRKjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 06:39:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29897 "EHLO mx1.redhat.com"
+	id S1755522Ab1HRKom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 06:44:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46381 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1HRKj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 06:39:29 -0400
-Date: Thu, 18 Aug 2011 06:42:13 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
-Cc: smfrench@gmail.com, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kirk w <kirkpuppy@yahoo.com>
-Subject: Re: Q: cifs, freeing volume_info->UNCip
-Message-ID: <20110818064213.0e4d459d@corrin.poochiereds.net>
-In-Reply-To: <7087.1313450537@jrobl>
-References: <7087.1313450537@jrobl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755166Ab1HRKok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 06:44:40 -0400
+From: Anand Gadiyar <gadiyar@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: Anand Gadiyar <gadiyar@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH] mfd: omap-usb-host: Make TLL mode work again
+Date: Thu, 18 Aug 2011 16:14:31 +0530
+Message-ID: <1313664271-694-1-git-send-email-gadiyar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Aug 2011 08:22:17 +0900
-"J. R. Okajima" <hooanon05@yahoo.co.jp> wrote:
+This code section seems to have been accidentally copy pasted.
+It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
+register and prevents the TLL mode from working correctly.
 
-> 
-> Hello,
-> 
-> CIFS cleanup_volume_info_contents() looks like having a memory
-> corruption problem.
-> When UNCip is set to "&vol->UNC[2]" in cifs_parse_mount_options(), it
-> should not be kfree()-ed in cleanup_volume_info_contents().
-> 
-> If it is correct and the code in mainline is not fixed yet, then here is
-> a patch.
-> 
-> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> index ccc1afa..e0ea721 100644
-> --- a/fs/cifs/connect.c
-> +++ b/fs/cifs/connect.c
-> @@ -2838,7 +2838,8 @@ cleanup_volume_info_contents(struct smb_vol *volume_info)
->  	kfree(volume_info->username);
->  	kzfree(volume_info->password);
->  	kfree(volume_info->UNC);
-> -	kfree(volume_info->UNCip);
-> +	if (volume_info->UNCip != volume_info->UNC + 2)
-> +		kfree(volume_info->UNCip);
->  	kfree(volume_info->domainname);
->  	kfree(volume_info->iocharset);
->  	kfree(volume_info->prepath);
-> 
-> 
+Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+Against v3.1-rc2; tested against linux-next as of 20110817 as well.
 
-Also, this patch should obviously go to stable too.
+This probably needs to go to -stable as well. The original code
+by me worked fine but this was broken during the code reorganization
+Keshava did.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+ drivers/mfd/omap-usb-host.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+Index: linux-2.6/drivers/mfd/omap-usb-host.c
+===================================================================
+--- linux-2.6.orig/drivers/mfd/omap-usb-host.c
++++ linux-2.6/drivers/mfd/omap-usb-host.c
+@@ -676,7 +676,6 @@ static void usbhs_omap_tll_init(struct d
+ 				| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
+ 				| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
+ 
+-			reg |= (1 << (i + 1));
+ 		} else
+ 			continue;
+ 
