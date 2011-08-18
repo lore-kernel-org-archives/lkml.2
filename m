@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1HRUaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:30:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49039 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752840Ab1HRUaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:30:15 -0400
-Date: Thu, 18 Aug 2011 16:30:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mnazarewicz@google.com>
-cc: Sergei Shtylyov <sshtylyov@mvista.com>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-In-Reply-To: <op.v0fef7e2vgw7ix@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108181623390.1628-100000@iolanthe.rowland.org>
+	id S1753584Ab1HRUbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:31:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47364 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab1HRUbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:31:17 -0400
+Date: Thu, 18 Aug 2011 22:29:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Tracey Dent <tdent48227@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] misc/pti.c: Fix build error when PCI is not selected
+Message-ID: <20110818202938.GB28969@kernel.org>
+References: <20110811162306.GA30710@tj-desktop>
+ <20110811094520.4ee7819f.rdunlap@xenotime.net>
+ <20110811165911.GA6454@tj-desktop>
+ <20110818162419.GA26627@kernel.org>
+ <20110818183939.GD18881@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110818183939.GD18881@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:30:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
 
-> usb_add_function() is called before usb_composite_probe() which only then
-> calls usb_gadget_probe_driver().
-> 
-> What's more, if I understand it correctly, comment in usb_add_function()
-> says that we support all the speeds usb_composite_driver structure claims
-> we do but then return different sets of functions depending on speed.  Ie.
-> if a function is only full speed and host requests high speed,  
-> configuration
-> will lack that function.  The comment in question is:
-> 
-> 	/* We allow configurations that don't work at both speeds.
-> 	 * If we run into a lowspeed Linux system, treat it the same
-> 	 * as full speed ... it's the function drivers that will need
-> 	 * to avoid bulk and ISO transfers. */
-> 
-> usb_add_function() then proceeds to set config->fullspeed,  
-> config->highspeed
-> and config->superspeed depending on what descriptors function provides.
+* Greg KH <gregkh@suse.de> wrote:
 
-Have you misinterpreted that comment?  To me, it seems to be saying 
-that the gadget should allow connections that are slower than the 
-maximum supported speed.  But that's not what I'm talking about -- I'm 
-suggesting that the gadget needs to avoid running faster than the 
-maximum supported speed.
-
-> Those are later used in config_desc() where it iterates over all
-> configurations checking which have functions supporting given speed:
+> On Thu, Aug 18, 2011 at 06:24:19PM +0200, Ingo Molnar wrote:
+> > 
+> > * Tracey Dent <tdent48227@gmail.com> wrote:
+> > 
+> > > On Thu, Aug 11, 2011 at 09:45:20AM -0700, Randy Dunlap wrote:
+> > > > On Thu, 11 Aug 2011 12:23:06 -0400 Tracey Dent wrote:
+> > > > 
+> > > > > When you try to build INTEL_MID_PTI without having PCI
+> > > > > enabled. It fails like this-
+> > > > > 
+> > > > >  CC [M]  drivers/misc/pti.o
+> > > > >  drivers/misc/pti.c: In function ‘pti_pci_remove’:
+> > > > >  drivers/misc/pti.c:410: error: implicit declaration of function ‘pci_release_region’
+> > > > >  drivers/misc/pti.c: In function ‘pti_pci_probe’:
+> > > > >  drivers/misc/pti.c:859: error: implicit declaration of function ‘pci_request_region’
+> > > > > 
+> > > > > So make INTEL_MID_PTI depend on PCI to fix build error.
+> > > > 
+> > > > I think (hope) that Greg already has a patch like this queued.
+> > > > Greg- are you planning to push some patches soon?
+> > > > 
+> > > >
+> > > 
+> > > Okay, sorry for the noise then.
+> > 
+> > FYI, The fix is still not upstream, as of today's -git 
+> > (72ed62bdc46d):
+> > 
+> > drivers/misc/pti.c:410:3: error: implicit declaration of function ‘pci_release_region’ [-Werror=implicit-function-declaration]
+> > drivers/misc/pti.c:859:2: error: implicit declaration of function ‘pci_request_region’ [-Werror=implicit-function-declaration]
 > 
-> 	list_for_each_entry(c, &cdev->configs, list) {
-> 		switch (speed) {
-> 		case USB_SPEED_SUPER: if (!c->superspeed) continue; break;
-> 		case USB_SPEED_HIGH: if (!c->highspeed) continue; break;
-> 		default: if (!c->fullspeed) continue;
-> 		}
-> 		if (w_value == 0)
-> 			return config_buf(c, speed, cdev->req->buf, type);
-> 		w_value--;
-> 	}
-> 
-> config_buf() at the same time, iterates over all functions and skips the  
-> ones
-> that do not provide descriptors for given speed:
-> 
-> 	list_for_each_entry(f, &config->functions, list) {
-> 		switch (speed) {
-> 		case USB_SPEED_SUPER: descriptors = f->ss_descriptors; break;
-> 		case USB_SPEED_HIGH: descriptors = f->hs_descriptors; break;
-> 		default: descriptors = f->descriptors;
-> 		}
-> 		if (!descriptors)
-> 			continue;
-> [...]
-> 	}
-> 
-> So I think that your suggestion to use composite_driver.speed =
-> driver->max_speed was by all means correct.
+> Yes, sorry, stuck at LinuxCon this week, will get it to Linus next 
+> week. He's busy as well, so it's not like he could pull while 
+> underwater anyway :)
 
-Okay, that line was probably all right, but it seems that something
-else needs to be changed.  In a composite gadget, if none of the
-function drivers support SuperSpeed then we don't want
-composite_driver.speed to be set to USB_SPEED_SUPER.  It would be 
-foolish to allow the UDC to connect at a speed which would make the 
-gadget useless.
+No rush: the failures trigger pretty rately - just wanted to make 
+sure it's not lost.
 
-Alan Stern
+Thanks,
 
+	Ingo
