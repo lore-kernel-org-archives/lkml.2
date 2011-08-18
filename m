@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1HRW1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:27:54 -0400
-Received: from lunge.queued.net ([173.255.254.236]:37007 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab1HRW1x (ORCPT
+	id S1755140Ab1HRW3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:29:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52956 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754351Ab1HRW3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:27:53 -0400
-Date: Thu, 18 Aug 2011 15:27:50 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, cjb@laptop.org, jon.nettleton@gmail.com,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 1/3] staging: olpc_dcon: remove noinit module variable
-Message-ID: <20110818152750.6d393c43@debxo>
-In-Reply-To: <20110721203743.71c0aaee@debxo>
-References: <20110721203743.71c0aaee@debxo>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	Thu, 18 Aug 2011 18:29:30 -0400
+Date: Thu, 18 Aug 2011 15:28:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Barry <abarry@cray.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH 1/1] hugepages: Fix race between hugetlbfs umount and
+ quota update.
+Message-Id: <20110818152846.e76ff944.akpm@linux-foundation.org>
+In-Reply-To: <4E4C3A2B.3000405@cray.com>
+References: <4E4C3A2B.3000405@cray.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,55 +30,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, 17 Aug 2011 17:01:15 -0500
+Andrew Barry <abarry@cray.com> wrote:
 
-Did you see these?  I haven't seen any emails about them being merged
-into the staging tree yet..
-
-
-On Thu, 21 Jul 2011
-20:37:43 -0700 Andres Salomon <dilinger@queued.net> wrote:
-
-> This came from Jordan's original 2007 gxfb_dcon commit.  I've never
-> seen or heard of it actually being used.  Presumably it was once
-> useful for skipping hardware initialization when reloading the module
-> over and over during driver development..
+> This patch fixes a race between the umount of a hugetlbfs filesystem, and quota
+> updates in that filesystem, which can result in the update of the filesystem
+> quota record, after the record structure has been freed.
 > 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/staging/olpc_dcon/olpc_dcon.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
+> Rather than an address-space struct pointer, it puts a hugetlbfs_sb_info struct
+> pointer into page_private of the page struct. A reference count and an active
+> bit are added to the hugetlbfs_sb_info struct; the reference count is increased
+> by hugetlb_get_quota and decreased by hugetlb_put_quota. When hugetlbfs is
+> unmounted, it frees the hugetlbfs_sb_info struct, but only if the reference
+> count is zero, otherwise it clears the active bit. The last hugetlb_put_quota
+> then frees the hugetlbfs_sb_info struct.
 > 
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
-> b/drivers/staging/olpc_dcon/olpc_dcon.c index 750fe50..cf4b454 100644
-> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-> @@ -36,9 +36,6 @@
->  static int resumeline = 898;
->  module_param(resumeline, int, 0444);
->  
-> -static int noinit;
-> -module_param(noinit, int, 0444);
-> -
->  /* Default off since it doesn't work on DCON ASIC in B-test OLPC
-> board */ static int useaa = 1;
->  module_param(useaa, int, 0444);
-> @@ -90,7 +87,7 @@ static int dcon_hw_init(struct dcon_priv *dcon, int
-> is_init) }
->  	}
->  
-> -	if (ver < 0xdc02 && !noinit) {
-> +	if (ver < 0xdc02) {
->  		/* Initialize the DCON registers */
->  
->  		/* Start with work-arounds for DCON ASIC */
-> @@ -106,7 +103,7 @@ static int dcon_hw_init(struct dcon_priv *dcon,
-> int is_init) i2c_smbus_write_word_data(client, 0x3b, 0x002b);
->  		i2c_smbus_write_word_data(client, 0x41, 0x0101);
->  		i2c_smbus_write_word_data(client, 0x42, 0x0101);
-> -	} else if (!noinit) {
-> +	} else {
->  		/* SDRAM setup/hold time */
->  		i2c_smbus_write_word_data(client, 0x3a, 0xc040);
->  		i2c_smbus_write_word_data(client, 0x41, 0x0000);
+> Discussion was titled:  Fix refcounting in hugetlbfs quota handling.
+> See:  https://lkml.org/lkml/2011/8/11/28
 
+The changelog doesn't actually describe the race - it just asserts that
+there is one.  This makes it unnecessarily difficult to review the
+fix!  So I didn't really look at the code - I just scanned the trivial
+stuff.
+
+The patch was somewhat wordwrapped - please fix the email client then
+resend.
+
+> +		if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
+> +			hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
+> +	set_page_private(page, (unsigned long)HUGETLBFS_SB(inode->i_mapping->host->i_sb));
+> +			hugetlb_put_quota(HUGETLBFS_SB(vma->vm_file->f_mapping->host->i_sb), reserve);
+> +	if (hugetlb_get_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg))
+> +		hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), chg);
+> +	hugetlb_put_quota(HUGETLBFS_SB(inode->i_mapping->host->i_sb), (chg - freed));
+
+Are all the inode->i_mapping->host pointer hops actually necessary?  I
+didn't see anything about them in the changelog and I'd expect that
+inode->i_mapping->host is always equal to `inode' for hugetlbfs?
+
+If they _are_ necessary then I'd suggest that the code could be cleaned
+up by adding
+
+static struct hugetlbfs_sb_info *inode_to_sb(struct inode *inode)
+{
+	return HUGETLBFS_SB(inode->i_mapping->host->i_sb);
+}
+
+to hugetlbfs.c.  This will reduce the relatively large number of
+checkpatch warnings which were added.
