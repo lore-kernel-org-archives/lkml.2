@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1HRW7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:59:38 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40389 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754846Ab1HRW7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:59:37 -0400
-Date: Thu, 18 Aug 2011 23:57:19 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: san@google.com (San Mehat)
-Cc: davem@davemloft.net, mst@redhat.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        digitaleric@google.com, mikew@google.com, miche@google.com,
-        maccarro@google.com
-Subject: Re: [RFC 0/0] Introducing a generic socket offload framework
-Message-ID: <20110818235719.50365b0b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110818220756.5C93E5C80B@san.sea.corp.google.com>
-References: <20110818220756.5C93E5C80B@san.sea.corp.google.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755168Ab1HRXBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 19:01:13 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56125 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab1HRXBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 19:01:12 -0400
+Date: Thu, 18 Aug 2011 16:01:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110818230108.GG2325@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110817223735.GI2227@zod.bos.redhat.com>
+ <20110817224916.GO2419@linux.vnet.ibm.com>
+ <20110817230219.GJ2227@zod.bos.redhat.com>
+ <20110817230641.GA7837@somewhere.redhat.com>
+ <20110817231750.GK2227@zod.bos.redhat.com>
+ <20110818183523.GD2325@linux.vnet.ibm.com>
+ <20110818140034.668e8dea.akpm@linux-foundation.org>
+ <20110818212334.GE2325@linux.vnet.ibm.com>
+ <20110818215540.GA14098@linux.vnet.ibm.com>
+ <20110818222108.GS2227@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818222108.GS2227@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The Berkeley sockets coprocessor is a virtual PCI device which has the ability
-> to offload socket activity from an unmodified application at the BSD sockets
+On Thu, Aug 18, 2011 at 06:21:08PM -0400, Josh Boyer wrote:
+> On Thu, Aug 18, 2011 at 02:55:40PM -0700, Paul E. McKenney wrote:
+> > And here is this patch ported to v3.1-rc2, FYI.
+> > 
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > rcu: Avoid having just-onlined CPU resched itself when RCU is idle
+> > 
+> > CPUs set rdp->qs_pending when coming online to resolve races with
+> > grace-period start.  However, this means that if RCU is idle, the
+> > just-onlined CPU might needlessly send itself resched IPIs.  Adjust the
+> > online-CPU initialization to avoid this, and also to correctly cause
+> > the CPU to respond to the current grace period if needed.
+> > 
+> > This patch is believed to fix or otherwise suppress problems in
+> > https://bugzilla.redhat.com/show_bug.cgi?id=726877, however, the
+> > relationship is not apparent to this patch's author.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> This is what has been in rawhide for a while now.
+> 
+> Tested-by: Josh Boyer <jwboyer@redhat.com>
 
-Ok I think there is an important question here. Why is this being
-designed for a specific virtual interface. Unix has always had the notion
-that socket operations can be in part generic and that you can pass a
-properly designed program a socket without any notion of what it is for.
+Thank you, I have added your Tested-by.
 
-> Lastly, pushing socket processing back into the host allows for host-side
-> control of the network protocols used, which limits the potential congestion
-> problems that can arise when various guests are using their own congestion
-> control algorithms.
+							Thanx, Paul
 
-Does that not depend which side does the congestion and who parcels out
-buffers ?
-
-> Since we wish to allow these paravirtualized sockets to coexist peacefully with
-> the existing Linux socket system, we've chosen to introduce the idea that a
-> socket can at some point transition from being managed by the O/S socket system
-> to a more enlightened 'hardware assisted' socket. The transition is managed by
-> a 'socket coprocessor' component which intercepts and gets first right of
-> refusal on handling certain global socket calls (connect, sendto, bind, etc...).
-> In this initial design, the policy on whether to transition a socket or not is
-> made by the virtual hardware, although we understand that further measurement
-> into operation latency is warranted.
-
-Q: whay happens about in process socket syscalls in another thread ?
-Thats always been the ugly in these cases either by intercepting or by
-swapping file operations on an object.
-
->  * SOCK_HWASSIST
->     Indicates socket operations are handled by hardware
-
-This guest only view means you can't use the abstraction for local
-sockets too.
-
-> In order to support a variety of socket address families, addresses are
-> converted from their native socket family to an opaque string. Our initial
-> design formats these strings as URIs. The currently supported conversions are:
-
-That makes a lot of sense to me, because its a well understood
-abstraction and you can offload other stuff to this kind of generic
-socket including things like http protocol acceleration, SSL and so on.
-
-Plus its always been annoying that you can't open a socket, but a URI
-interface solves that...
-
->  * We don't handle SOCK_SEQPACKET, SOCK_RAW, SOCK_RDM, or SOCK_PACKET sockets.
-
-But there is no reason SEQPACKET and RDM couldn't be added I assume?
-
-Ok other questions
-
-Suppose instead you just add an abstracted socket interface of
-
-	AF_SOMETHING, PF_URI
-
-it would be easy to convert programs. It would be easier to write
-properly generic programs. It would be easy write some small helpers that
-are a good deal less insane than the existing inet ones. At that point
-you could turn the problem on its head. Instead of 'borrowing' sockets
-for a fairly specific concept of hw assist you ask the reverse question,
-who can accelerate this URI be it some kind of virtual machine interface,
-something funky like raw data over infiniband, or plain old 'use the
-TCP/IP stack'.
-
-Your decision making code is going to be interesting but it only has to
-make the decision once in simple cases.
-
-And yes there is still the complicated cases such as 'the routing table
-has changed from vitual host to via siberia now what' but I don't believe
-your proposal addresses that either.
-
-Alan
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index ba06207..6986d34 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1865,8 +1865,6 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+> >  
+> >  	/* Set up local state, ensuring consistent view of global state. */
+> >  	raw_spin_lock_irqsave(&rnp->lock, flags);
+> > -	rdp->passed_quiesc = 0;  /* We could be racing with new GP, */
+> > -	rdp->qs_pending = 1;	 /*  so set up to respond to current GP. */
+> >  	rdp->beenonline = 1;	 /* We have now been online. */
+> >  	rdp->preemptible = preemptible;
+> >  	rdp->qlen_last_fqs_check = 0;
+> > @@ -1891,8 +1889,15 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+> >  		rnp->qsmaskinit |= mask;
+> >  		mask = rnp->grpmask;
+> >  		if (rnp == rdp->mynode) {
+> > -			rdp->gpnum = rnp->completed; /* if GP in progress... */
+> > +			/*
+> > +			 * If there is a grace period in progress, we will
+> > +			 * set up to wait for it next time we run the
+> > +			 * RCU core code.
+> > +			 */
+> > +			rdp->gpnum = rnp->completed;
+> >  			rdp->completed = rnp->completed;
+> > +			rdp->passed_quiesc = 0;
+> > +			rdp->qs_pending = 1;
+> >  			rdp->passed_quiesc_completed = rnp->completed - 1;
+> >  		}
+> >  		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
