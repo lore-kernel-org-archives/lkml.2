@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab1HRRoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:44:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6746 "EHLO mx1.redhat.com"
+	id S1752446Ab1HRRuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:50:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31791 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab1HRRoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:44:32 -0400
-Date: Thu, 18 Aug 2011 13:44:25 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: aesni-intel - Add ivsize to ablk_ecb_alg
-Message-ID: <20110818174425.GN2227@zod.bos.redhat.com>
-References: <20110811164040.GB2167@zod.bos.redhat.com>
- <20110815071528.GA29656@gondor.apana.org.au>
- <20110815115038.GA2227@zod.bos.redhat.com>
- <20110816123227.GB9413@gondor.apana.org.au>
+	id S1751591Ab1HRRuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:50:54 -0400
+Date: Thu, 18 Aug 2011 19:47:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 18/41] OpenRISC: Don't reimplement force_sigsegv()
+Message-ID: <20110818174753.GC6910@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <1313071035-12047-19-git-send-email-matt@console-pimps.org> <20110816164928.GA29190@redhat.com> <1313523202.3436.180.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110816123227.GB9413@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1313523202.3436.180.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 08:32:27PM +0800, Herbert Xu wrote:
-> On Mon, Aug 15, 2011 at 07:50:39AM -0400, Josh Boyer wrote:
+On 08/16, Matt Fleming wrote:
+>
+> On Tue, 2011-08-16 at 18:49 +0200, Oleg Nesterov wrote:
 > >
-> > Well, yes, it does in this code:
-> > 
-> > 	if (!((alg->cra_flags & CRYPTO_ALG_TYPE_MASK) ==
-> > 	      CRYPTO_ALG_TYPE_BLKCIPHER ? alg->cra_blkcipher.ivsize :
-> > 					  alg->cra_ablkcipher.ivsize)) {
-> > 
-> > 		printk(KERN_ERR "%s: %d\n", __func__, __LINE__);
-> > 		return alg;
-> > 	}
-> > 
-> > But the lookup seems to fail after it returns (see traces below).
-> 
-> OK something's clearly screwed up.  I'll try to reproduce this
-> here.
+> > And since force_sigsegv() drops
+> > the lock after setting SIG_DFL we can "race" with the sub-thread anyway.
+>
+> I did notice that race in force_sigsegv() too, is it a real problem?
 
-Any luck on this?  If there's anything further I can try or if you need
-some data from me, just let me know.
+Oh, I don't really know. I mean, I do not know if this really needs
+the fix.
 
-josh
+OK, suppose that another thread does signal(SIGSEGV, SIG_IGN) in
+between. This probably means it asks for the problems anyway. and
+we can pretend this was done before this SIGSEGV was dequeued.
+
+If it does signal(SIGSEGV, my_handler), then most probably
+force_sigsegv() will be called again soon, after dequeueing SIGSEGV.
+
+Oleg.
+
