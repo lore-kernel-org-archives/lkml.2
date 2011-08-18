@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab1HRPb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 11:31:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44184 "EHLO comal.ext.ti.com"
+	id S1755872Ab1HRPdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 11:33:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057Ab1HRPby convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 11:31:54 -0400
-From: "Gadiyar, Anand" <gadiyar@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Date: Thu, 18 Aug 2011 21:00:55 +0530
-Subject: RE: [PATCH] MAINTAINERS: add myself as co-maintainer for OMAP USB
-Thread-Topic: [PATCH] MAINTAINERS: add myself as co-maintainer for OMAP USB
-Thread-Index: AcxduHdr3g0vJ5MRTCWoBjThxc3AmQAAksXQ
-Message-ID: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D3ADEE8@dbde03.ent.ti.com>
-References: <1313664504-956-1-git-send-email-gadiyar@ti.com>
- <20110818145507.GA7012@kroah.com>
-In-Reply-To: <20110818145507.GA7012@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755475Ab1HRPdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 11:33:39 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, achender@linux.vnet.ibm.com,
+        Jens Axboe <jaxboe@fusionio.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] loop: add discard support for loop devices
+References: <1313063143-14473-1-git-send-email-lczerner@redhat.com>
+	<alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 18 Aug 2011 11:33:22 -0400
+In-Reply-To: <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com>
+	(Lukas Czerner's message of "Wed, 17 Aug 2011 15:13:31 +0200 (CEST)")
+Message-ID: <x497h6aspj1.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> On Thu, Aug 18, 2011 at 04:18:24PM +0530, Anand Gadiyar wrote:
-> > I'd like to help co-maintain OMAP USB support. I've helped
-> > out in the past when Felipe was away and would like make
-> > it official.
-> 
-> Traditionally people are asked to be a maintainer, or they volunteer to
-> take over unmaintained projects.  The only time I've see co-maintainers,
-> is for larger projects, and then, it was a group decision.
-> 
+Lukas Czerner <lczerner@redhat.com> writes:
 
-I was asked, by Felipe among others, to help maintain OMAP USB
-support. The reason was to take some load off Felipe - I did not
-take this up at that time due to other product pressures. I do
-have more time on my hands now and would like to get back to
-being more active in the community - I felt helping maintain
-a driver was a good start.
+>> @@ -484,6 +485,29 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
+>>  			}
+>>  		}
+>>  
+>> +		/*
+>> +		 * We use punch hole to reclaim the free space used by the
+>> +		 * image a.k.a. discard. However we do support discard if
+>> +		 * encryption is enabled, because it may give an attacker
+>> +		 * useful information.
+>> +		 */
+>> +		if (bio->bi_rw & REQ_DISCARD) {
+>> +			struct file *file = lo->lo_backing_file;
+>> +			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
+>> +
+>> +			if ((!file->f_op->fallocate) ||
+>> +			    lo->lo_encrypt_key_size) {
+>> +				ret = -EOPNOTSUPP;
+>> +				goto out;
+>> +			}
+>> +			ret = file->f_op->fallocate(file, mode, pos,
+>> +						    bio->bi_size);
+>> +			if (unlikely(ret && ret != -EINVAL &&
+>> +				     ret != -EOPNOTSUPP))
+>> +				ret = -EIO;
+>> +			goto out;
+>> +		}
+>> +
 
-Within TI, I've worked on debugging the EHCI, OHCI and
-MUSB hardware for close to three years now and know more about
-the controllers on OMAP than anyone else. I've acquired boards which
-stress the several possible combinations of configurations possible
-and usually help out with testing those corner cases.
+Seems you missed the bizarre case of configuring a loop device over top
+of a block device.
 
-> For something as "small" as musb, what is the benefit to anyone to have
-> more than one maintainer?
->
-> It seems to me that things are finally settling down with the recent
-> musb mess, and I've been extremely happy with how Felipe has been
-> handling things, and I honestly don't want to see that change at the
-> moment.
-
-It's less of MUSB, and more of the EHCI/OHCI - I don't believe
-Felipe's familiar enough with the hardware to look after that.
-Most contributions to the wrappers for those controllers have come
-from Ajay Gupta, Keshava and me.
-
-
-> So I'd stick with what we have now, unless you feel there are issues
-> with how Felipe is handling things, and if so, you should take that up
-> directly with him and only if that doesn't work out, me.
-
-Nope - I'm happy with the way things are currently. So if Felipe no
-longer feels the need to offload some of his maintainership work,
-that's okay with me.
-
-- Anand
+Cheers,
+Jeff
