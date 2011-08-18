@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab1HRL37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:29:59 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:26720 "EHLO
+	id S1755756Ab1HRLaB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:30:01 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:26716 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab1HRL2S (ORCPT
+	with ESMTP id S1755547Ab1HRL2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Aug 2011 07:28:18 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -13,82 +13,134 @@ To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, chris@cnpbagwell.com,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 0/9 v4] Synaptics image sensor support
-Date: Thu, 18 Aug 2011 19:27:59 +0800
-Message-Id: <1313666888-18939-1-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 5/9 v4] Input: synaptics - decode AGM packet types
+Date: Thu, 18 Aug 2011 19:28:04 +0800
+Message-Id: <1313666888-18939-6-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1313666888-18939-1-git-send-email-djkurtz@chromium.org>
+References: <1313666888-18939-1-git-send-email-djkurtz@chromium.org>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+A Synaptics image sensor tracks 5 fingers, but can only report 2.
 
-----
-For v4:
-  Patch 4 & 7:
-     Per Henrik: Do not report synaptics 'w' as ABS_MT_TOUCH_MAJOR.  This has
-                 the nice side affect of cleaning up slot reporting.
+The algorithm for choosing which 2 fingers to report and in which packet:
+  Touchpad maintains 5 slots, numbered 0 to 4
+  Initially all slots are empty
+  As new fingers are detected, assign them to the lowest available slots
+  The touchpad always reports:
+    SGM: lowest numbered non-empty slot
+    AGM: highest numbered non-empty slot, if there is one
 
-  Patch 6 (new):
-     Per Chase: Document 'report more touches than slots' behavior.
-----
+In addition, these touchpads have a special AGM packet type which reports
+the number of fingers currently being tracked, and which finger is in
+each of the two slots.  Unfortunately, these "TYPE=2" packets are only used
+when more than 3 fingers are being tracked.  When less than 4 fingers
+are present, the 'w' value must be used to track how many fingers are
+present, and knowing which fingers are being reported is much more
+difficult, if not impossible.
 
-This patch set (against next) is intended to add support for synaptics
-"image sensor" touchpads.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ drivers/input/mouse/synaptics.c |   38 +++++++++++++++++++++++++++++++-------
+ drivers/input/mouse/synaptics.h |   14 +++++++++++++-
+ 2 files changed, 44 insertions(+), 8 deletions(-)
 
-Patches 1-3 clean up the current driver slightly and prepare for the image
-sensor patches which follow.
-
-Patches 4-7 add 3 finger support for image sensor touchpads.
-Image sensors do not suffer from the finger tracking issues that plagued
-the earlier "profile sensors", and which required the invention of "semi-mt"
-(Semi-mt reports a bounding box around two fingers instead of the fingers
-themselves).  Instead, the image sensors report the actual positions of two
-fingers using the same "Advanced Gesture Mode".  This driver uses two MT-B slots
-to report these two fingers to userspace.  In addition, it will also report
-the total number of fingers using BTN_TOOL_*TAP EV_KEY events.  This behavior
-is documented in the multi-touch-protocol document.
-
-Userspace drivers should be aware that the number of fingers reported via
-BTN_TOOL_*TAP can be greater than the total number MT-B slots with non-negative
-track_ids.  Upon opening the device node, userspace should query the maximum
-values supported ABS_MT_SLOT, and note the number of supported BTN_TOOL_*TAP
-events.
-
-Patches 7-8 add 4 and 5 finger support.
-In fact, the image sensor touchpads actually track 5 fingers while reporting
-just 2 finger positions.  These patches add support for properly tracking the
-reported slots through 4 and 5 finger transitions, while always reporting two of
-them via 2 MT-B slots.  In addition, a new event, EV_KEY/BTN_TOOL_QUINTTAP, is
-added to the event subsystem to allow reporting up to 5 fingers.
-
-These patches are similar to, and inspired by, a similar patchset recently
-submitted by Derek Foreman and Daniel Stone.  However, it is not directly built
-upon, nor is it compatible with, those patches.
-
-Thanks,
-Daniel
-
-
-Daniel Kurtz (9):
-  Input: synaptics - refactor y inversion
-  Input: synaptics - refactor agm packet parsing
-  Input: synaptics - refactor initialization of abs position axes
-  Input: synaptics - add image sensor support
-  Input: synaptics - decode AGM packet types
-  Input: mt - document devices reporting more touches than slots
-  Input: synaptics - process finger (<=3) transitions
-  Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers on touchpad
-  Input: synaptics - process finger (<=5) transitions
-
- Documentation/input/multi-touch-protocol.txt |   14 +
- drivers/input/input-mt.c                     |    1 +
- drivers/input/mouse/synaptics.c              |  489 ++++++++++++++++++++++++--
- drivers/input/mouse/synaptics.h              |   27 ++-
- include/linux/input.h                        |    1 +
- 5 files changed, 495 insertions(+), 37 deletions(-)
-
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index a49420f..ad0a5aa 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -420,15 +420,39 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+  *	Functions to interpret the absolute mode packets
+  ****************************************************************************/
+ 
++static void synaptics_mt_state_set(struct synaptics_mt_state *state, int count,
++				   int sgm, int agm)
++{
++	state->count = count;
++	state->sgm = sgm;
++	state->agm = agm;
++}
++
+ static void synaptics_parse_agm(const unsigned char buf[],
+-				struct synaptics_data *priv)
++				struct synaptics_data *priv,
++				struct synaptics_hw_state *hw)
+ {
+ 	struct synaptics_hw_state *agm = &priv->agm;
++	int agm_packet_type;
++
++	agm_packet_type = (buf[5] & 0x30) >> 4;
++	switch (agm_packet_type) {
++	case 1:
++		/* Gesture packet: (x, y, z) half resolution */
++		agm->w = hw->w;
++		agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
++		agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
++		agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++		break;
+ 
+-	/* Gesture packet: (x, y, z) at half resolution */
+-	agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+-	agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
+-	agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
++	case 2:
++		/* AGM-CONTACT packet: (count, sgm, agm) */
++		synaptics_mt_state_set(&agm->mt_state, buf[1], buf[2], buf[4]);
++		break;
++
++	default:
++		break;
++	}
+ }
+ 
+ static int synaptics_parse_hw_state(const unsigned char buf[],
+@@ -467,7 +491,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)
+ 				|| SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c))
+ 				&& hw->w == 2) {
+-			synaptics_parse_agm(buf, priv);
++			synaptics_parse_agm(buf, priv, hw);
+ 			return 1;
+ 		}
+ 
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index 0ea7616..20f57df 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -115,9 +115,18 @@
+ #define SYN_REDUCED_FILTER_FUZZ		8
+ 
+ /*
+- * A structure to describe the state of the touchpad hardware (buttons and pad)
++ * A structure to describe which internal touchpad finger slots are being
++ * reported in raw packets.
+  */
++struct synaptics_mt_state {
++	int count;			/* num fingers being tracked */
++	int sgm;			/* which slot is reported by sgm pkt */
++	int agm;			/* which slot is reported by agm pkt*/
++};
+ 
++/*
++ * A structure to describe the state of the touchpad hardware (buttons and pad)
++ */
+ struct synaptics_hw_state {
+ 	int x;
+ 	int y;
+@@ -130,6 +139,9 @@ struct synaptics_hw_state {
+ 	unsigned int down:1;
+ 	unsigned char ext_buttons;
+ 	signed char scroll;
++
++	/* As reported in last AGM-CONTACT packets */
++	struct synaptics_mt_state mt_state;
+ };
+ 
+ struct synaptics_data {
 -- 
 1.7.3.1
 
