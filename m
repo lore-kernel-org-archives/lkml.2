@@ -1,129 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1HRATA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 20:19:00 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:42129 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab1HRAS7 (ORCPT
+	id S1752091Ab1HRAZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:25:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39563 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1HRAZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 20:18:59 -0400
-Message-ID: <4E4C5A5F.2090709@micron.com>
-Date: Wed, 17 Aug 2011 18:18:39 -0600
-From: Asai Thambi S P <asamymuthupa@micron.com>
-Reply-To: <asamymuthupa@micron.com>
-Organization: Micron
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+	Wed, 17 Aug 2011 20:25:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Aug 2011 09:17:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, Christoph Hellwig <hch@infradead.org>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
-Subject: Re: [PATCH v3 2/3] drivers/block/mtip32xx: Adding source for hardware
-  related operations
-References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com>
-In-Reply-To: <4E44E782.7090309@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 4/6]  memg: calculate numa weight for vmscan
+Message-Id: <20110818091750.79eea4f5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110817143418.GC7482@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809191100.6c4c3285.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110817143418.GC7482@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.16.30.125]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
-X-TM-AS-Result: No--15.076600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/12/2011 2:42 AM, Jens Axboe wrote:
->> +/*
->> + * Obtain an empty command slot.
->> + *
->> + * This function needs to be reentrant since it could be called
->> + * at the same time on multiple CPUs. The allocation of the
->> + * command slot must be atomic.
->> + *
->> + * @port Pointer to the port data structure.
->> + *
->> + * return value
->> + *     >= 0    Index of command slot obtained.
->> + *     -1      No command slots available.
->> + */
->> +static int get_slot(struct mtip_port *port)
->> +{
->> +       int slot, i;
->> +       unsigned int num_command_slots = port->dd->slot_groups * 32;
->> +
->> +       /*
->> +        * Try 10 times, because there is a small race here.
->> +        *  that's ok, because it's still cheaper than a lock.
->> +        */
+On Wed, 17 Aug 2011 16:34:18 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> Sorry it took so long but I was quite busy recently.
 > 
-> Might want to expand on what that race is.
-
-find_next_zero_bit and test_and_set, in order, could be executed in
-different process contexts in different processor. So both(2 or more)
-contexts could land in choosing the same bit, but test_and_set will
-succeed only for one. The failing contexts will try to get the next bit
-in subsequent retries. This operation is cheaper than a lock.
-
-This procedure is protected under the counting semaphore, so there is a
-slot request for every context that calls this routine.
-
-Is there an equivalent of doing find_next_zero_bit and test_and_set_bit
-atomically?
-
-
->> +static irqreturn_t mtip_irq_handler(int irq, void *instance)
->> +{
->> +       struct driver_data *dd = instance;
->> +#ifdef MTIP_USE_TASKLET
->> +       tasklet_schedule(&dd->tasklet);
->> +       return IRQ_HANDLED;
->> +#else
->> +       return mtip_handle_irq(dd);
->> +#endif
->> +}
+> On Tue 09-08-11 19:11:00, KAMEZAWA Hiroyuki wrote:
+> > caclculate node scan weight.
+> > 
+> > Now, memory cgroup selects a scan target node in round-robin.
+> > It's not very good...there is not scheduling based on page usages.
+> > 
+> > This patch is for calculating each node's weight for scanning.
+> > If weight of a node is high, the node is worth to be scanned.
+> > 
+> > The weight is now calucauted on following concept.
+> > 
+> >    - make use of swappiness.
+> >    - If inactive-file is enough, ignore active-file
+> >    - If file is enough (w.r.t swappiness), ignore anon
+> >    - make use of recent_scan/rotated reclaim stats.
 > 
-> Have you experimented with blk-iopoll?
-
-Working on this. Believe this experiment could go in parallel to
-submission. Let us know.
-
->> +/*
->> + * Byte-swap ATA ID strings.
->> + *
->> + * ATA identify data contains strings in byte-swapped 16-bit words.
->> + * They must be swapped (on all architectures) to be usable as C
->> strings.
->> + * This function swaps bytes in-place.
->> + *
->> + * @buf The buffer location of the string
->> + * @len The number of bytes to swap
->> + *
->> + * return value
->> + *     None
->> + */
->> +static inline void ata_swap_string(u16 *buf, unsigned int len)
->> +{
->> +       int i;
->> +       for (i = 0; i < (len/2); i++)
->> +               be16_to_cpus(&buf[i]);
->> +}
+> The concept looks good (see the specific comments bellow). I would
+> appreciate if the description was more descriptive (especially in the
+> reclaim statistics part with the reasoning why it is better).
+>  
+> > Then, a node contains many inactive file pages will be a 1st victim.
+> > Node selection logic based on this weight will be in the next patch.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/memcontrol.c |  110 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+> >  1 file changed, 105 insertions(+), 5 deletions(-)
+> > 
+> > Index: mmotm-Aug3/mm/memcontrol.c
+> > ===================================================================
+> > --- mmotm-Aug3.orig/mm/memcontrol.c
+> > +++ mmotm-Aug3/mm/memcontrol.c
+> [...]
+> > @@ -1568,18 +1570,108 @@ static bool test_mem_cgroup_node_reclaim
+> >  }
+> >  #if MAX_NUMNODES > 1
+> >  
+> > +static unsigned long
+> > +__mem_cgroup_calc_numascan_weight(struct mem_cgroup * memcg,
+> > +				int nid,
+> > +				unsigned long anon_prio,
+> > +				unsigned long file_prio,
+> > +				int lru_mask)
+> > +{
+> > +	u64 file, anon;
+> > +	unsigned long weight, mask;
 > 
-> I'm pretty sure we have the exact same thing in IDE and libata, so lets
-> put this somewhere we they can all use it.
-
-Is ata.h an appropriate location? Would it be better to make this change
-after inclusion of this driver?
-
+> mask is not used anywhere.
 > 
-> Overall looks very clean. If you take care of the little things
-> mentioned by me and Christoph, I don't see anything stopping this from
-> being merged for 3.2.
+I'll remove this.
 
-Appreciate your valuable feedback.
 
--- 
-Regards,
-Asai Thambi
+> > +	unsigned long rotated[2], scanned[2];
+> > +	int zid;
+> > +
+> > +	scanned[0] = 0;
+> > +	scanned[1] = 0;
+> > +	rotated[0] = 0;
+> > +	rotated[1] = 0;
+> > +
+> > +	for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+> > +		struct mem_cgroup_per_zone *mz;
+> > +
+> > +		mz = mem_cgroup_zoneinfo(memcg, nid, zid);
+> > +		scanned[0] += mz->reclaim_stat.recent_scanned[0];
+> > +		scanned[1] += mz->reclaim_stat.recent_scanned[1];
+> > +		rotated[0] += mz->reclaim_stat.recent_rotated[0];
+> > +		rotated[1] += mz->reclaim_stat.recent_rotated[1];
+> > +	}
+> > +	file = mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask & LRU_ALL_FILE);
+> > +
+> > +	if (total_swap_pages)
+> 
+> What about ((lru_mask & LRU_ALL_ANON) && total_swap_pages)?
+
+Ok. will add that.
+
+> Why should we go down the mem_cgroup_node_nr_lru_pages if are not getting anything?
+> 
+
+
+
+> > +		anon = mem_cgroup_node_nr_lru_pages(memcg,
+> > +					nid, mask & LRU_ALL_ANON);
+> 
+> btw. s/mask/lru_mask/
+> 
+yes...
+
+> > +	else
+> > +		anon = 0;
+> 
+> Can be initialized during declaration (makes patch smaller).
+> 
+Sure.
+
+> > +	if (!(file + anon))
+> > +		node_clear(nid, memcg->scan_nodes);
+> 
+> In that case we can return with 0 right away.
+> 
+yes.
+
+
+
+> > +
+> > +	/* 'scanned - rotated/scanned' means ratio of finding not active. */
+> > +	anon = anon * (scanned[0] - rotated[0]) / (scanned[0] + 1);
+> > +	file = file * (scanned[1] - rotated[1]) / (scanned[1] + 1);
+> 
+> OK, makes sense. We should not reclaim from nodes that are known to be
+> hard to reclaim from. We, however, have to be careful to not exclude the
+> node from reclaiming completely.
+> 
+> > +
+> > +	weight = (anon * anon_prio + file * file_prio) / 200;
+> 
+> Shouldn't we rather normalize the weight to the node size? This way we
+> are punishing bigger nodes, aren't we.
+> 
+
+Here, the routine is for reclaiming memory in a memcg in smooth way.
+And not for balancing zone. It will be kswapd+memcg(softlimit) work.
+The size of node in this memcg is represented by file + anon.
+
+
+> > +	return weight;
+> > +}
+> > +
+> > +/*
+> > + * Calculate each NUMA node's scan weight. scan weight is determined by
+> > + * amount of pages and recent scan ratio, swappiness.
+> > + */
+> > +static unsigned long
+> > +mem_cgroup_calc_numascan_weight(struct mem_cgroup *memcg)
+> > +{
+> > +	unsigned long weight, total_weight;
+> > +	u64 anon_prio, file_prio, nr_anon, nr_file;
+> > +	int lru_mask;
+> > +	int nid;
+> > +
+> > +	anon_prio = mem_cgroup_swappiness(memcg) + 1;
+> > +	file_prio = 200 - anon_prio + 1;
+> 
+> What is +1 good for. I do not see that anon_prio would be used as a
+> denominator.
+> 
+
+weight = (anon * anon_prio + file * file_prio) / 200;
+
+Just for avoiding the influence of anon never be 0 (by wrong value
+set to swappiness by user.)
+
+
+> > +
+> > +	lru_mask = BIT(LRU_INACTIVE_FILE);
+> > +	if (mem_cgroup_inactive_file_is_low(memcg))
+> > +		lru_mask |= BIT(LRU_ACTIVE_FILE);
+> > +	/*
+> > +	 * In vmscan.c, we'll scan anonymous pages with regard to memcg/zone's
+> > +	 * amounts of file/anon pages and swappiness and reclaim_stat. Here,
+> > +	 * we try to find good node to be scanned. If the memcg contains enough
+> > +	 * file caches, we'll ignore anon's weight.
+> > +	 * (Note) scanning anon-only node tends to be waste of time.
+> > +	 */
+> > +
+> > +	nr_file = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
+> > +	nr_anon = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
+> > +
+> > +	/* If file cache is small w.r.t swappiness, check anon page's weight */
+> > +	if (nr_file * file_prio >= nr_anon * anon_prio)
+> > +		lru_mask |= BIT(LRU_INACTIVE_ANON);
+> 
+> Why we do not care about active anon (e.g. if inactive anon is low)?
+> 
+This condition is wrong...
+
+	if (nr_file * file_prio <= nr_anon * anon_prio)
+		lru_mask |= BIT(LRU_INACTIVE_ANON);
+
+I was worried about LRU_ACTIVE_ANON. I considered
+  - We can't handle ACTIVE_ANON and INACTIVE_ANON in the same weight.
+    But I don't want to add more magic numbers.
+  - vmscan.c:shrink_zone() scans ACTIVE_ANON whenever/only when
+    inactive_anon_is_low()==true. SWAP_CLUSTER_MAX per priority.
+    It's specially handled.
+
+So, I thought involing the number of ACTIVE_ANON to the weight is difficult
+and ignored ACTIVE_ANON, here. Do you have idea ?
+
+
+
+> > +
+> > +	total_weight = 0;
+> 
+> Can be initialized during declaration.
+> 
+
+will fix.
+
+Thanks,
+-Kame
+
