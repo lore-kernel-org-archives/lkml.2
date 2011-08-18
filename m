@@ -1,181 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1HRHpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 03:45:35 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49243 "EHLO ogre.sisk.pl"
+	id S1755301Ab1HRHqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 03:46:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40362 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab1HRHpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 03:45:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rick Warner <rick@microway.com>
-Subject: Re: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call trace included
-Date: Thu, 18 Aug 2011 09:47:14 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Richard Houghton <rhoughton@microway.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201108171751.51648.rick@microway.com>
-In-Reply-To: <201108171751.51648.rick@microway.com>
+	id S1755162Ab1HRHqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 03:46:07 -0400
+Date: Thu, 18 Aug 2011 09:46:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 2/6]  memcg: stop vmscan when enough done.
+Message-ID: <20110818074602.GD23056@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110810141425.GC15007@tiehlicka.suse.cz>
+ <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110811145055.GN8023@tiehlicka.suse.cz>
+ <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110817113550.GA7482@tiehlicka.suse.cz>
+ <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110818062722.GB23056@tiehlicka.suse.cz>
+ <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108180947.15064.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu 18-08-11 15:42:59, KAMEZAWA Hiroyuki wrote:
+> On Thu, 18 Aug 2011 08:27:22 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 18-08-11 08:52:33, KAMEZAWA Hiroyuki wrote:
+> > > On Wed, 17 Aug 2011 13:35:50 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > On Wed 17-08-11 09:54:05, KAMEZAWA Hiroyuki wrote:
+> > > > > On Thu, 11 Aug 2011 16:50:55 +0200
+> > > > > > - mem_cgroup_force_empty asks for reclaiming all pages. I guess it should be
+> > > > > >   OK but will have to think about it some more.
+> > > > > 
+> > > > > force_empty/rmdir() is allowed to be stopped by Ctrl-C. I think passing res->usage
+> > > > > is overkilling.
+> > > > 
+> > > > So, how many pages should be reclaimed then?
+> > > > 
+> > > 
+> > > How about (1 << (MAX_ORDER-1))/loop ?
+> > 
+> > Hmm, I am not sure I see any benefit. We want to reclaim all those
+> > pages why shouldn't we do it in one batch? If we use a value based on
+> > MAX_ORDER then we make a bigger chance that force_empty fails for big
+> > cgroups (e.g. with a lot of page cache).
+> 
+> Why bigger chance to fail ? retry counter is decreased only when we cannot
+> make any reclaim. The number passed here is not problem against the faiulre.
 
-It's better to report ACPI failues to linux-acpi.
+Yes, you are right. I have overlooked that.
 
-On Wednesday, August 17, 2011, Rick Warner wrote:
-> Hi all,
-> 
-> I am getting a kernel oops/panic on a dual xeon system that is the master of a 
-> 60 node HPC cluster.  This is happening while stress testing the system 
-> including significant network traffic.  The OS is openSuse 11.4. 
-> 
-> We are running a custom compiled 2.6.39.3 kernel on the systems due to a bug 
-> in the stock kernel 11.4 provided (igb driver related).  After 1-3 days of 
-> heavy testing, the master node locks up with the caps lock and scroll lock 
-> keys on the keyboard blinking with the following output captured via a serial 
-> console:
-> 
-> [381920.681113] BUG: unable to handle kernel NULL pointer dereference at           
-> (null)
-> [381920.689067] IP: [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
-> [381920.695187] PGD 30c27a067 PUD 16efe6067 PMD 0 
-> [381920.699782] Oops: 0000 [#1] PREEMPT SMP 
-> [381920.703866] last sysfs file: 
-> /sys/devices/system/cpu/cpu15/cache/index2/shared_cpu_map
-> [381920.711868] CPU 6 
-> [381920.713800] Modules linked in: md5 ipmi_devintf ipmi_si ipmi_msghandler 
-> nfsd lockd nfs_acl auth_rpcgss sunrpc ipt_MASQUERADE iptable_mangle 
-> iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter 
-> ip_tables x_tables af_packet edd cpufreq_conservative cpufreq_userspace 
-> cpufreq_powersave acpi_cpufreq mperf xfs dm_mod ioatdma i7core_edac edac_core 
-> sr_mod cdrom joydev igb i2c_i801 sg button ghes hed iTCO_wdt 
-> iTCO_vendor_support dca pcspkr ext4 jbd2 crc16 raid456 async_raid6_recov 
-> async_pq raid6_pq async_xor xor async_memcpy async_tx raid10 raid1 raid0 fan 
-> processor thermal thermal_sys ata_generic pata_atiixp arcmsr
-> [381920.771623] 
-> [381920.773210] Pid: 12701, comm: cluster Not tainted 2.6.39.3-microwaycustom 
-> #1 Supermicro X8DTH-i/6/iF/6F/X8DTH
-> [381920.783292] RIP: 0010:[<ffffffff812a7510>]  [<ffffffff812a7510>] 
-> acpi_atomic_read+0xe3/0x120
-> [381920.791853] RSP: 0000:ffff88063fc47d98  EFLAGS: 00010046
-> [381920.797260] RAX: 0000000000000000 RBX: 00000000bf7b5ff0 RCX: ffffffff81a3cdd0
-> [381920.804486] RDX: 00000000bf7b6010 RSI: 00000000bf7b6000 RDI: 
-> ffff88062d4b95c0
-> [381920.811712] RBP: ffff88063fc47dc8 R08: ffff88063fc47d98 R09: 0000000000000002
-> [381920.818940] R10: 0000000000000083 R11: 0000000000000010 R12: 
-> ffffc90003044c20
-> [381920.826168] R13: ffff88063fc47de0 R14: 0000000000000000 R15: 
-> 0000000000000000
-> [381920.833392] FS:  0000000000000000(0000) GS:ffff88063fc40000(0000) 
-> knlGS:0000000000000000
-> [381920.841571] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
-> [381920.847409] CR2: 0000000000000000 CR3: 00000001d2d0f000 CR4: 
-> 00000000000006e0
-> [381920.854635] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-> 0000000000000000
-> [381920.861861] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [381920.869088] Process cluster (pid: 12701, threadinfo ffff880028284000, task 
-> ffff880550184380)
-> [381920.877608] Stack:
-> [381920.879717]  ffffffff81a3cdd0 00000000bf7b5ff0 ffff88062b2cc140 ffffc90003044ca8
-> [381920.887288]  ffff88062b2cc140 0000000000000001 ffff88063fc47e08 ffffffffa002b21f
-> [381920.894862]  0000000000000000 0000000000000000 ffff88062b2cc140 
-> 0000000000000000
-> [381920.902435] Call Trace:
-> [381920.904969]  <NMI> 
-> [381920.907201]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
-> [381920.913726]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
-> [381920.920076]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
-> [381920.926080]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
-> [381920.932864]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
-> [381920.939473]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
-> [381920.944691]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
-> [381920.949649]  [<ffffffff81517550>] nmi+0x20/0x30
-> [381920.954269]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
-> [381920.960536]  <<EOE>> 
-> [381920.962725]  <IRQ> 
-> [381920.965132]  [<ffffffff8101131e>] intel_pmu_disable_all+0x3e/0x120
-> [381920.971399]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
-> [381920.977066]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
-> [381920.982817]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
-> [381920.989082]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
-> [381920.994740]  [<ffffffff81067097>] update_process_times+0x67/0x80
-> [381921.000832]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
-> [381921.006578]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
-> [381921.012758]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
-> [381921.018414]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
-> [381921.024343]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
-> [381921.030793]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
-> [381921.036891]  <EOI> 
-> [381921.038913] Code: fc 10 74 1f 77 08 41 80 fc 08 75 48 eb 0e 41 80 fc 20 74 
-> 17 41 80 fc 40 75 3a eb 15 8a 00 0f b6 c0 eb 11 66 8b 00 0f b7 c0 eb 09 <8b> 
-> 00 89 c0 eb 03 48 8b 00 49 89 45 00 e8 8e 2b e2 ff eb 1b 0f 
-> [381921.059462] RIP  [<ffffffff812a7510>] acpi_atomic_read+0xe3/0x120
-> [381921.065669]  RSP <ffff88063fc47d98>
-> [381921.069242] CR2: 0000000000000000
-> [381921.072645] ---[ end trace 52697bfc73a34a90 ]---
-> [381921.077343] Kernel panic - not syncing: Fatal exception in interrupt
-> [381921.083784] Pid: 12701, comm: cluster Tainted: G      D     2.6.39.3-
-> microwaycustom #1
-> [381921.091788] Call Trace:
-> [381921.094333]  <NMI>  [<ffffffff81513300>] panic+0x9f/0x1da
-> [381921.099881]  [<ffffffff81517f8c>] oops_end+0xdc/0xf0
-> [381921.104952]  [<ffffffff81032b91>] no_context+0xf1/0x260
-> [381921.110277]  [<ffffffff81032e55>] __bad_area_nosemaphore+0x155/0x200
-> [381921.116739]  [<ffffffff81032f0e>] bad_area_nosemaphore+0xe/0x10
-> [381921.122766]  [<ffffffff81519f46>] do_page_fault+0x366/0x530
-> [381921.128440]  [<ffffffff810ee929>] ? __perf_event_overflow+0xa9/0x220
-> [381921.134896]  [<ffffffff810ef99b>] ? perf_event_update_userpage+0x9b/0xe0
-> [381921.141698]  [<ffffffff81012249>] ? intel_pmu_enable_all+0xc9/0x1a0
-> [381921.148061]  [<ffffffff810123ff>] ? x86_perf_event_set_period+0xdf/0x170
-> [381921.154852]  [<ffffffff81517295>] page_fault+0x25/0x30
-> [381921.160081]  [<ffffffff812a7510>] ? acpi_atomic_read+0xe3/0x120
-> [381921.166094]  [<ffffffff812a7486>] ? acpi_atomic_read+0x59/0x120
-> [381921.172107]  [<ffffffffa002b21f>] ghes_read_estatus+0x2f/0x170 [ghes]
-> [381921.178639]  [<ffffffffa002b618>] ghes_notify_nmi+0xd8/0x1b0 [ghes]
-> [381921.185004]  [<ffffffff8151a14f>] notifier_call_chain+0x3f/0x80
-> [381921.191003]  [<ffffffff8151a1d8>] __atomic_notifier_call_chain+0x48/0x70
-> [381921.197789]  [<ffffffff8151a211>] atomic_notifier_call_chain+0x11/0x20
-> [381921.204399]  [<ffffffff8151a24e>] notify_die+0x2e/0x30
-> [381921.209624]  [<ffffffff81517bd2>] do_nmi+0xa2/0x270
-> [381921.214584]  [<ffffffff81517550>] nmi+0x20/0x30
-> [381921.219208]  [<ffffffff8102ae8a>] ? native_write_msr_safe+0xa/0x10
-> [381921.225470]  <<EOE>>  <IRQ>  [<ffffffff8101131e>] 
-> intel_pmu_disable_all+0x3e/0x120
-> [381921.233174]  [<ffffffff81010d5a>] x86_pmu_disable+0x4a/0x50
-> [381921.238836]  [<ffffffff810e7f2b>] perf_pmu_disable+0x2b/0x40
-> [381921.244582]  [<ffffffff810ee828>] perf_event_task_tick+0x218/0x270
-> [381921.250855]  [<ffffffff81046f4d>] scheduler_tick+0xdd/0x2c0
-> [381921.256520]  [<ffffffff81067097>] update_process_times+0x67/0x80
-> [381921.262618]  [<ffffffff81089eef>] tick_sched_timer+0x5f/0xc0
-> [381921.268363]  [<ffffffff81089e90>] ? tick_nohz_handler+0x100/0x100
-> [381921.274540]  [<ffffffff8107db3d>] __run_hrtimer+0x12d/0x280
-> [381921.280198]  [<ffffffff8107dea7>] hrtimer_interrupt+0xb7/0x1e0
-> [381921.286125]  [<ffffffff810206d7>] smp_apic_timer_interrupt+0x67/0xa0
-> [381921.292578]  [<ffffffff8151e3f3>] apic_timer_interrupt+0x13/0x20
-> [381921.298673]  <EOI>
-> 
-> 
-> I recompiled the kernel again, disabling the tickless feature as I saw "nohz" 
-> early in the call trace.  After that, it reproduced again but the call trace 
-> only changed slightly having tick_init_highres in there instead of 
-> tick_nohz_handler.  I have that call trace if it is desired as well.  It is 
-> nearly identical though.
-> 
-> I am currently trying a custom 2.6.36.4 on the system, but will need up to 3 
-> days before I know if the problem exists there as well.
-> 
-> Any ideas on this?
+ 
+> I don't like very long vmscan which cannot be stopped by Ctrl-C.
 
-It looks like a wrong address in ghes_read_estatus().  I'll have a look at it
-later today.
+Sure, now I see your point. Thanks for clarification.
 
-Thanks,
-Rafael
+> > Anyway, if we want to mimic the previous behavior then we should use
+> > something like nr_nodes * SWAP_CLUSTER_MAX (the above value would be
+> > sufficient for up to 32 nodes).
+> > 
+> 
+> agreed.
+
+Updated patch:
+Changes since v1:
+- reclaim nr_nodes * SWAP_CLUSTER_MAX in mem_cgroup_force_empty
+--- 
+From: Michal Hocko <mhocko@suse.cz>
+Subject: memcg: add nr_pages argument for hierarchical reclaim
+
+Now that we are doing memcg direct reclaim limited to nr_to_reclaim
+pages (introduced by "memcg: stop vmscan when enough done.") we have to
+be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
+most callers but it might cause failures for limit resize or force_empty
+code paths on big NUMA machines.
+
+Previously we might have reclaimed up to nr_nodes * SWAP_CLUSTER_MAX
+while now we have it at SWAP_CLUSTER_MAX. Both resize and force_empty rely
+on reclaiming a certain amount of pages and retrying if their condition is
+still not met.
+
+Let's add nr_pages argument to mem_cgroup_hierarchical_reclaim which will
+push it further to try_to_free_mem_cgroup_pages. We still fall back to
+SWAP_CLUSTER_MAX for small requests so the standard code (hot) paths are not
+affected by this.
+
+We have to be careful in mem_cgroup_do_charge and do not provide the
+given nr_pages because we would reclaim too much for THP which can
+safely fall back to single page allocations.
+
+mem_cgroup_force_empty could try to reclaim all pages at once but it is much
+better to limit the nr_pages to something reasonable so that we are able to
+terminate it by a signal. Let's mimic previous behavior by asking for
+MAX_NUMNODES * SWAP_CLUSTER_MAX.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+Index: linus_tree/include/linux/memcontrol.h
+===================================================================
+--- linus_tree.orig/include/linux/memcontrol.h	2011-08-18 09:30:24.000000000 +0200
++++ linus_tree/include/linux/memcontrol.h	2011-08-18 09:30:36.000000000 +0200
+@@ -130,7 +130,8 @@ extern void mem_cgroup_print_oom_info(st
+ 
+ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+ 						  gfp_t gfp_mask, bool noswap,
+-						  struct memcg_scanrecord *rec);
++						  struct memcg_scanrecord *rec,
++						  unsigned long nr_pages);
+ extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+ 						gfp_t gfp_mask, bool noswap,
+ 						struct zone *zone,
+Index: linus_tree/mm/memcontrol.c
+===================================================================
+--- linus_tree.orig/mm/memcontrol.c	2011-08-18 09:30:34.000000000 +0200
++++ linus_tree/mm/memcontrol.c	2011-08-18 09:36:41.000000000 +0200
+@@ -1729,12 +1729,15 @@ static void mem_cgroup_record_scanstat(s
+  * (other groups can be removed while we're walking....)
+  *
+  * If shrink==true, for avoiding to free too much, this returns immedieately.
++ * Given nr_pages tells how many pages are we over the soft limit or how many
++ * pages do we want to reclaim in the direct reclaim mode.
+  */
+ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+ 						struct zone *zone,
+ 						gfp_t gfp_mask,
+ 						unsigned long reclaim_options,
+-						unsigned long *total_scanned)
++						unsigned long *total_scanned,
++						unsigned long nr_pages)
+ {
+ 	struct mem_cgroup *victim;
+ 	int ret, total = 0;
+@@ -1743,11 +1746,8 @@ static int mem_cgroup_hierarchical_recla
+ 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
+ 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
+ 	struct memcg_scanrecord rec;
+-	unsigned long excess;
+ 	unsigned long scanned;
+ 
+-	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
+-
+ 	/* If memsw_is_minimum==1, swap-out is of-no-use. */
+ 	if (!check_soft && !shrink && root_mem->memsw_is_minimum)
+ 		noswap = true;
+@@ -1785,11 +1785,11 @@ static int mem_cgroup_hierarchical_recla
+ 				}
+ 				/*
+ 				 * We want to do more targeted reclaim.
+-				 * excess >> 2 is not to excessive so as to
++				 * nr_pages >> 2 is not to excessive so as to
+ 				 * reclaim too much, nor too less that we keep
+ 				 * coming back to reclaim from this cgroup
+ 				 */
+-				if (total >= (excess >> 2) ||
++				if (total >= (nr_pages >> 2) ||
+ 					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
+ 					css_put(&victim->css);
+ 					break;
+@@ -1816,7 +1816,7 @@ static int mem_cgroup_hierarchical_recla
+ 			*total_scanned += scanned;
+ 		} else
+ 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
+-						noswap, &rec);
++						noswap, &rec, nr_pages);
+ 		mem_cgroup_record_scanstat(&rec);
+ 		css_put(&victim->css);
+ 		/*
+@@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
+ 
++	/*
++	 * We are lying about nr_pages because we do not want to
++	 * reclaim too much for THP pages which should rather fallback
++	 * to small pages.
++	 */
+ 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+-					      gfp_mask, flags, NULL);
++					      gfp_mask, flags, NULL,
++					      1);
+ 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+ 		return CHARGE_RETRY;
+ 	/*
+@@ -3567,7 +3573,8 @@ static int mem_cgroup_resize_limit(struc
+ 
+ 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
+ 						MEM_CGROUP_RECLAIM_SHRINK,
+-						NULL);
++						NULL,
++						(val-memlimit) >> PAGE_SHIFT);
+ 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
+ 		/* Usage is reduced ? */
+   		if (curusage >= oldusage)
+@@ -3628,7 +3635,8 @@ static int mem_cgroup_resize_memsw_limit
+ 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
+ 						MEM_CGROUP_RECLAIM_NOSWAP |
+ 						MEM_CGROUP_RECLAIM_SHRINK,
+-						NULL);
++						NULL,
++						(val-memswlimit) >> PAGE_SHIFT);
+ 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
+ 		/* Usage is reduced ? */
+ 		if (curusage >= oldusage)
+@@ -3671,10 +3679,12 @@ unsigned long mem_cgroup_soft_limit_recl
+ 			break;
+ 
+ 		nr_scanned = 0;
++		excess = res_counter_soft_limit_excess(&mz->mem->res);
+ 		reclaimed = mem_cgroup_hierarchical_reclaim(mz->mem, zone,
+ 						gfp_mask,
+ 						MEM_CGROUP_RECLAIM_SOFT,
+-						&nr_scanned);
++						&nr_scanned,
++						excess >> PAGE_SHIFT);
+ 		nr_reclaimed += reclaimed;
+ 		*total_scanned += nr_scanned;
+ 		spin_lock(&mctz->lock);
+@@ -3870,8 +3880,10 @@ try_to_free:
+ 		rec.context = SCAN_BY_SHRINK;
+ 		rec.mem = mem;
+ 		rec.root = mem;
++		/* reclaim from every node at least something */
+ 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
+-						false, &rec);
++						false, &rec,
++						MAX_NUMNODES * SWAP_CLUSTER_MAX);
+ 		if (!progress) {
+ 			nr_retries--;
+ 			/* maybe some writeback is necessary */
+Index: linus_tree/mm/vmscan.c
+===================================================================
+--- linus_tree.orig/mm/vmscan.c	2011-08-18 09:30:24.000000000 +0200
++++ linus_tree/mm/vmscan.c	2011-08-18 09:30:36.000000000 +0200
+@@ -2340,7 +2340,8 @@ unsigned long mem_cgroup_shrink_node_zon
+ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
+ 					   gfp_t gfp_mask,
+ 					   bool noswap,
+-					   struct memcg_scanrecord *rec)
++					   struct memcg_scanrecord *rec,
++					   unsigned long nr_pages)
+ {
+ 	struct zonelist *zonelist;
+ 	unsigned long nr_reclaimed;
+@@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = !noswap,
+-		.nr_to_reclaim = SWAP_CLUSTER_MAX,
++		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
+ 		.order = 0,
+ 		.mem_cgroup = mem_cont,
+ 		.memcg_record = rec,
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
