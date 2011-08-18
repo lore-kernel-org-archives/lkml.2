@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1HRVYD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 17:24:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34779 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896Ab1HRVYA (ORCPT
+	id S1754128Ab1HRV0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 17:26:42 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65183 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab1HRV0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 17:24:00 -0400
+	Thu, 18 Aug 2011 17:26:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313691091.1107.9.camel@mop>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
- <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
- <20110817134516.GA14136@redhat.com> <20110818124353.GA2839@tango.0pointer.de>
- <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Aug 2011 14:23:38 -0700
-Message-ID: <CA+55aFxGDbNOhNQJe_LpUMcJCGcW8qFFWzC9H0_KW26Xzb0cXw@mail.gmail.com>
-Subject: Re: + prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
- .patch added to -mm tree
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Lennart Poettering <mzxreary@0pointer.de>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-man@vger.kernel.org, roland@hack.frob.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Thu, 18 Aug 2011 14:26:20 -0700
+Message-ID: <CAB=NE6UN4DEPNwt+TpOk6evr8_oz=ESqKWWGFh9KfROG1LJmiQ@mail.gmail.com>
+Subject: Re: [PATCH] ath9k: make driver usable standalone
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 11:11 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Tue, Aug 16, 2011 at 8:28 PM, Pavel Ivanov <paivanof@gmail.com> wrote:
+> When ath9k is the only wireless driver included in the build
+> WIRELESS_EXT configuration option becomes undefined. Because of that
+> driver becomes essentially unusable as you can't actually connect to
+> any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
+> that build with ath9k and without other drivers (having WIRELESS_EXT
+> selected in their Kconfig) is actually usable.
 >
-> How about this? It:
-> - uses task->real_parent to walk up the chain of parents.
+> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
 
-If I read this right, it does that for all the normal cases too.
-Disgusting. Slowing down the *usual* UNIX case for your new made-up
-case that nobody actually uses is not acceptable.
+Fuck no, NACK.
 
-So NAK. We're not slowing down normal code for some new feature that
-realistically will never be used by any normal applications.
-
-                   Linus
+  Luis
