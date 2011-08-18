@@ -1,117 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab1HRUNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:13:20 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:61756 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab1HRUNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:13:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:content-type:to:cc:subject:references:date:
-	mime-version:content-transfer-encoding:from:organization:message-id:
-	in-reply-to:user-agent:x-system-of-record;
-	b=wzEiAl4+pdziyxuDXnT1naFkJycrWdfC5y+YHYIe5tavB1QeoZgle1fRHVT+1rRJ9
-	0fmGMvfK2J0OGwLMbpiNA==
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Sergei Shtylyov" <sshtylyov@mvista.com>, "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-References: <Pine.LNX.4.44L0.1108181323360.1912-100000@iolanthe.rowland.org>
-Date: Thu, 18 Aug 2011 22:13:09 +0200
+	id S1753781Ab1HRUNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:13:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47018 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753706Ab1HRUN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:13:27 -0400
+Date: Thu, 18 Aug 2011 20:13:16 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Message-ID: <tip-3e6a2a7f3b9d0e521bb3284573b696d0cbe1952c@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110517153207.GA9834@quad>
+References: <20110517153207.GA9834@quad>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate: Make output more readable
+Git-Commit-ID: 3e6a2a7f3b9d0e521bb3284573b696d0cbe1952c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mnazarewicz@google.com>
-Organization: Google
-Message-ID: <op.v0fef7e2vgw7ix@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108181323360.1912-100000@iolanthe.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
-X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:13:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 19:27:21 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
+Commit-ID:  3e6a2a7f3b9d0e521bb3284573b696d0cbe1952c
+Gitweb:     http://git.kernel.org/tip/3e6a2a7f3b9d0e521bb3284573b696d0cbe1952c
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 17 May 2011 17:32:07 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 18 Aug 2011 07:38:21 -0300
 
-> On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
->
->> For the most part, usb_composite_probe() is called only once in module's
->> init function.  As far as I know, only g_ffs calls it several times.  So
->> in all cases expect for g_ffs, composite_driver.speed =
->> min(composite_driver.speed,
->> driver->max_speed) should have the same effect as composite_driver.speed
->> = driver->max_speed.
->>
->> > For example, if you have a composite gadget where one of the function
->> > drivers can handle SuperSpeed and the other can't go beyond high  
->> speed,
->> > the overall gadget must never run faster than high speed.
->>
->> Shouldn't that be dealt in usb_add_function()?  I cannot see any code  
->> that would do that here atm though.
+perf annotate: Make output more readable
 
-> Maybe you're right.  But isn't that too late?  The UDC driver has to
-> know the gadget driver's limitations before it can connect to the host.
+This patch adds two new options to perf annotate:
+	- --no-asm-raw : Do not display raw instruction encodings
+	- --no-source  : Do not interleave source code with assembly code
 
-usb_add_function() is called before usb_composite_probe() which only then
-calls usb_gadget_probe_driver().
+We believe those options make the output of annotate more readable.
 
-What's more, if I understand it correctly, comment in usb_add_function()
-says that we support all the speeds usb_composite_driver structure claims
-we do but then return different sets of functions depending on speed.  Ie.
-if a function is only full speed and host requests high speed,  
-configuration
-will lack that function.  The comment in question is:
+Systematically displaying source can make it hard to follow code and
+especially optimized code.
 
-	/* We allow configurations that don't work at both speeds.
-	 * If we run into a lowspeed Linux system, treat it the same
-	 * as full speed ... it's the function drivers that will need
-	 * to avoid bulk and ISO transfers. */
+Raw encodings are not useful in most cases.
 
-usb_add_function() then proceeds to set config->fullspeed,  
-config->highspeed
-and config->superspeed depending on what descriptors function provides.
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20110517153207.GA9834@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
+[committer note: Use the 'no-' option inverting logic]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-annotate.txt |    8 ++++++++
+ tools/perf/builtin-annotate.c              |    4 ++++
+ tools/perf/util/annotate.c                 |    5 ++++-
+ tools/perf/util/symbol.c                   |    2 ++
+ tools/perf/util/symbol.h                   |    4 +++-
+ 5 files changed, 21 insertions(+), 2 deletions(-)
 
-Those are later used in config_desc() where it iterates over all
-configurations checking which have functions supporting given speed:
-
-	list_for_each_entry(c, &cdev->configs, list) {
-		switch (speed) {
-		case USB_SPEED_SUPER: if (!c->superspeed) continue; break;
-		case USB_SPEED_HIGH: if (!c->highspeed) continue; break;
-		default: if (!c->fullspeed) continue;
-		}
-		if (w_value == 0)
-			return config_buf(c, speed, cdev->req->buf, type);
-		w_value--;
-	}
-
-config_buf() at the same time, iterates over all functions and skips the  
-ones
-that do not provide descriptors for given speed:
-
-	list_for_each_entry(f, &config->functions, list) {
-		switch (speed) {
-		case USB_SPEED_SUPER: descriptors = f->ss_descriptors; break;
-		case USB_SPEED_HIGH: descriptors = f->hs_descriptors; break;
-		default: descriptors = f->descriptors;
-		}
-		if (!descriptors)
-			continue;
-[...]
-	}
-
-So I think that your suggestion to use composite_driver.speed =
-driver->max_speed was by all means correct.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 85c5f02..5bc0600 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -72,6 +72,14 @@ OPTIONS
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+ 	CPUs.
+ 
++--asm-raw::
++	Show raw instruction encoding of assembly instructions. They
++	are displayed by default, disable with --no-asm-raw.
++
++--source::
++	Interleave source code with assembly code. Enabled by default,
++	disable with --no-source.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 555aefd..5015e04 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -267,6 +267,10 @@ static const struct option options[] = {
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_BOOLEAN('0', "source", &symbol_conf.annotate_src,
++		    "Interleave source code with assembly code (default)"),
++	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
++		    "Display raw encoding of assembly instructions (default)"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index e01af2b..01d36ba 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -324,9 +324,12 @@ fallback:
+ 
+ 	snprintf(command, sizeof(command),
+ 		 "objdump --start-address=0x%016" PRIx64
+-		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
++		 " --stop-address=0x%016" PRIx64
++		 " -d %s %s -C %s|grep -v %s|expand",
+ 		 map__rip_2objdump(map, sym->start),
+ 		 map__rip_2objdump(map, sym->end),
++		 symbol_conf.annotate_asm_raw ? "" : "--no-show-raw",
++		 symbol_conf.annotate_src ? "-S" : "",
+ 		 symfs_filename, filename);
+ 
+ 	pr_debug("Executing: %s\n", command);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 469c026..245e60d 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -46,6 +46,8 @@ struct symbol_conf symbol_conf = {
+ 	.exclude_other	  = true,
+ 	.use_modules	  = true,
+ 	.try_vmlinux_path = true,
++	.annotate_asm_raw = true,
++	.annotate_src	  = true,
+ 	.symfs            = "",
+ };
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 4f377d9..7733f0b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -76,7 +76,9 @@ struct symbol_conf {
+ 			exclude_other,
+ 			show_cpu_utilization,
+ 			initialized,
+-			kptr_restrict;
++			kptr_restrict,
++			annotate_asm_raw,
++			annotate_src;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
