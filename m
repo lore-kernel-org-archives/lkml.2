@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185Ab1HREOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 00:14:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35129 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750706Ab1HREOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 00:14:50 -0400
-Date: Thu, 18 Aug 2011 14:14:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the tip tree with the  tree
-Message-Id: <20110818141436.90346525d4d39314c7931357@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__18_Aug_2011_14_14_36_+1000_Rr0ehqou2Rc6CU2E"
+	id S1751494Ab1HREQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 00:16:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56936 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706Ab1HREQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 00:16:05 -0400
+Message-ID: <4E4C91C4.2080408@cn.fujitsu.com>
+Date: Thu, 18 Aug 2011 12:15:00 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Li Zefan <lizf@cn.fujitsu.com>
+CC: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4C8758.4020205@cn.fujitsu.com> <4E4C8B63.7030108@cn.fujitsu.com>
+In-Reply-To: <4E4C8B63.7030108@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-18 12:14:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-18 12:14:52,
+	Serialize complete at 2011-08-18 12:14:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Aug_2011_14_14_36_+1000_Rr0ehqou2Rc6CU2E
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/18/2011 11:47 AM, Li Zefan wrote:
+>>> +
+>>> +    case 3:
+>>> +        if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+>>> +            elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
+>>> +            elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+>>> +            elantech_ps2_command(psmouse, NULL, reg) ||
+>>> +            elantech_ps2_command(psmouse, param, PSMOUSE_CMD_GETINFO)) {
+>>> +            rc = -1;
+>>> +        }
+>> Prefer to remove these big brace ?
+>> also with "case 1, case 2 "?
+>
+> Just wondering What's wrong with this piece of code and what do you
+> sugguest to improve it?
 
-Hi all,
+I think no need to add a '{}' with the *if* ?
+and remove the '{}' in whole elantech_read_reg() and 
+elantech_write_reg(), right?
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/mm/fault.c between commit cedf03bd9aa5 ("x86: fix mm/fault.c
-build") from Linus' tree and commit fab1167c4698 ("x86, vsyscall: Add
-missing <asm/fixmap.h> to arch/x86/mm/fault.c") from the tip tree.
+-Wanlong Gao
 
-These are both fixing the same problem but differently.  Given the
-comments in the latter, I have used its version.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__18_Aug_2011_14_14_36_+1000_Rr0ehqou2Rc6CU2E
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOTJGsAAoJEDMEi1NhKgbs0OoH/jdgha19mYWuIOwX/h4snZpc
-Qp68/09ITg6tthyyRePGpflMzb4zArJLAoidGq0WH2pG9M7ftNiVOm7KiC/+xgP+
-ZO4eBsf7U6fkH9y5k6wgAmYICMf23hnxEsbsOojIsnQRsI0DrfjwG5WjhlzLRn70
-q5tx6a65E6xl7dV/eLnSw4w2GflGvZLASAlUCk4fHNDPvU5MQdwPhm/+TnNdYhKo
-/aavkIjAlEI+N8yM6SY9b2bYG+zt+4L0o48Qd8KSGFB71EoHmpY9W61w4saQJQU/
-/VSX37GAide0LcTxfJhnmeNN5lhpUtTyEDdtlKQ0ybkCSQrN+UQhW1EosbuQqg8=
-=PCC4
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Aug_2011_14_14_36_+1000_Rr0ehqou2Rc6CU2E--
