@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1HRJiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 05:38:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27467 "EHLO mx1.redhat.com"
+	id S1755429Ab1HRJpv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 05:45:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52865 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab1HRJiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 05:38:11 -0400
-Date: Thu, 18 Aug 2011 11:38:00 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
-Message-ID: <20110818093800.GA2268@redhat.com>
-References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+	id S1755215Ab1HRJpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 05:45:50 -0400
+Message-ID: <4E4CDF44.5080109@redhat.com>
+Date: Thu, 18 Aug 2011 11:45:40 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313650253-21794-1-git-send-email-gthelen@google.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: clone() with CLONE_NEWNET breaks kobject_uevent_env()
+X-Enigmail-Version: 1.2.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 11:50:53PM -0700, Greg Thelen wrote:
-> Both mem_cgroup_charge_statistics() and mem_cgroup_move_account() were
-> unnecessarily disabling preemption when adjusting per-cpu counters:
->     preempt_disable()
->     __this_cpu_xxx()
->     __this_cpu_yyy()
->     preempt_enable()
-> 
-> This change does not disable preemption and thus CPU switch is possible
-> within these routines.  This does not cause a problem because the total
-> of all cpu counters is summed when reporting stats.  Now both
-> mem_cgroup_charge_statistics() and mem_cgroup_move_account() look like:
->     this_cpu_xxx()
->     this_cpu_yyy()
+Hi,
 
-Note that on non-x86, these operations themselves actually disable and
-reenable preemption each time, so you trade a pair of add and sub on
-x86
+after analysing very strange report (with running chromium
+some device-mapper ioctl functions started to fail) I found
+interesting problem:
 
--	preempt_disable()
-	__this_cpu_xxx()
-	__this_cpu_yyy()
--	preempt_enable()
+If you run clone() with CLONE_NEWNET (which is chromium using
+for sanboxing), udev namespace is cloned too (newly registered
+in uevent_sock_list) and netlink send (except the first in list)
+fails with -ESRCH.
 
-with
+This causes that _every_ call of kobject_uevent_env() return failure.
 
-	preempt_disable()
-	__this_cpu_xxx()
-+	preempt_enable()
-+	preempt_disable()
-	__this_cpu_yyy()
-	preempt_enable()
+Most of users silently ignores  kobject_uevent() return value,
+so the problem was invisible for long time.
 
-everywhere else.
+Unfortunately dm checks return value and reports failure,
+taking the wrong error path.
+
+How is this supposed to work?
+
+Why cloning net namespace breaks the udev netlink subsystem?
+
+Is it bug or we need to do something differently?
+(I do not think ignoring return value is the proper way...)
+
+Thanks,
+Milan
