@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1HRO1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 10:27:19 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:63080 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab1HRO1R (ORCPT
+	id S1755775Ab1HRO1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 10:27:23 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44521 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755658Ab1HRO1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 10:27:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com>
-References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com>
- <CAK1hOcN7q=F=UV=aCAsVOYO=Ex34X0tbwLHv9BkYkA=ik7G13w@mail.gmail.com>
- <1313075625.50520.YahooMailNeo@web111715.mail.gq1.yahoo.com>
- <201108111938.25836.vda.linux@googlemail.com> <CAG1a4rsO7JDqmYiwyxPrAHdLNbJt+wqymSzU9i1dv5w5C2OFog@mail.gmail.com>
- <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com>
-From: Pavel Ivanov <paivanof@gmail.com>
-Date: Thu, 18 Aug 2011 10:26:47 -0400
-Message-ID: <CAG1a4rus+VVhhB3ayuDF2pCQDusLekGOAxf33+u_uzxC1yz1MA@mail.gmail.com>
-Subject: Re: running of out memory => kernel crash
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Mahmood Naderan <nt_mahmood@yahoo.com>,
-        David Rientjes <rientjes@google.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
-        "\"linux-mm@kvack.org\"" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Aug 2011 10:27:21 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+In-Reply-To: Your message of "Thu, 18 Aug 2011 11:38:00 +0200."
+             <20110818093800.GA2268@redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1313650253-21794-1-git-send-email-gthelen@google.com>
+            <20110818093800.GA2268@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1313677618_2646P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 18 Aug 2011 10:26:58 -0400
+Message-ID: <96939.1313677618@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020203.4E4D2138.00AE,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 8:44 AM, Denys Vlasenko
-<vda.linux@googlemail.com> wrote:
->> I have a little concern about this explanation of yours. Suppose we
->> have some amount of more or less actively executing processes in the
->> system. Suppose they started to use lots of resident memory. Amount of
->> memory they use is less than total available physical memory but when
->> we add total size of code for those processes it would be several
->> pages more than total size of physical memory. As I understood from
->> your explanation in such situation one process will execute its time
->> slice, kernel will switch to other one, find that its code was pushed
->> out of RAM, read it from disk, execute its time slice, switch to next
->> process, read its code from disk, execute and so on. So system will be
->> virtually unusable because of constantly reading from disk just to
->> execute next small piece of code. But oom will never be firing in such
->> situation. Is my understanding correct?
->
-> Yes.
->
->> Shouldn't it be considered as an unwanted behavior?
->
-> Yes. But all alternatives (such as killing some process) seem to be worse.
+--==_Exmh_1313677618_2646P
+Content-Type: text/plain; charset=us-ascii
 
-Could you elaborate on this? We have a completely unusable server
-which can be revived only by hard power cycling (administrators won't
-be able to log in because sshd and shell will fall victims of the same
-unending disk reading). And as an alternative we can kill some process
-and at least allow administrator to log in and check if something else
-can be done to make server feel better. Why is it worse?
+On Thu, 18 Aug 2011 11:38:00 +0200, Johannes Weiner said:
 
-I understand that it could be very hard to detect such situation but
-at least it's worth trying I think.
+> Note that on non-x86, these operations themselves actually disable and
+> reenable preemption each time, so you trade a pair of add and sub on
+> x86
+> 
+> -	preempt_disable()
+> 	__this_cpu_xxx()
+> 	__this_cpu_yyy()
+> -	preempt_enable()
+> 
+> with
+> 
+> 	preempt_disable()
+> 	__this_cpu_xxx()
+> +	preempt_enable()
+> +	preempt_disable()
+> 	__this_cpu_yyy()
+> 	preempt_enable()
+> 
+> everywhere else.
+
+That would be an unexpected race condition on non-x86, if you expected _xxx and
+_yyy to be done together without a preempt between them. Would take mere
+mortals forever to figure that one out. :)
 
 
-Pavel
+--==_Exmh_1313677618_2646P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOTSEycC3lWbTT17ARAu4ZAJwJY9zOTyoMHoaP1AEBeEbLV7ts/gCfdoVm
+jvD0MeR2VgZciqe/gYUOqxE=
+=TMnA
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1313677618_2646P--
+
