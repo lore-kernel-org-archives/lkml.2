@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab1HRTDc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:03:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44280 "EHLO
+	id S1753713Ab1HRTDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:03:42 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44283 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab1HRTDa (ORCPT
+	with ESMTP id S1753563Ab1HRTDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:03:30 -0400
-Date: Thu, 18 Aug 2011 20:03:29 +0100
+	Thu, 18 Aug 2011 15:03:40 -0400
+Date: Thu, 18 Aug 2011 20:03:39 +0100
 To: richard@nod.at
-Subject: Subject: [PATCH 27/91] um: kill dead code around uaccess
+Subject: Subject: [PATCH 28/91] um: merge hard_handler() instances, switch to use of SA_SIGINFO
 Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu7sH-0007cV-Cu@ZenIV.linux.org.uk>
+Message-Id: <E1Qu7sR-0007cn-D8@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,158 +24,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/um/include/shared/os.h         |    6 ------
- arch/um/include/shared/um_uaccess.h |    3 ---
- arch/um/kernel/Makefile             |    2 +-
- arch/um/kernel/uaccess.c            |   33 ---------------------------------
- arch/um/os-Linux/Makefile           |    4 ++--
- arch/um/os-Linux/uaccess.c          |   32 --------------------------------
- 6 files changed, 3 insertions(+), 77 deletions(-)
- delete mode 100644 arch/um/kernel/uaccess.c
- delete mode 100644 arch/um/os-Linux/uaccess.c
+ arch/um/os-Linux/signal.c            |   12 ++++++++----
+ arch/um/os-Linux/sys-i386/Makefile   |    2 +-
+ arch/um/os-Linux/sys-i386/signal.c   |   13 -------------
+ arch/um/os-Linux/sys-x86_64/Makefile |    2 +-
+ arch/um/os-Linux/sys-x86_64/signal.c |   16 ----------------
+ 5 files changed, 10 insertions(+), 35 deletions(-)
+ delete mode 100644 arch/um/os-Linux/sys-i386/signal.c
+ delete mode 100644 arch/um/os-Linux/sys-x86_64/signal.c
 
-diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
-index 83c7c2e..2e2663a 100644
---- a/arch/um/include/shared/os.h
-+++ b/arch/um/include/shared/os.h
-@@ -203,12 +203,6 @@ extern int os_drop_memory(void *addr, int length);
- extern int can_drop_memory(void);
- extern void os_flush_stdout(void);
+diff --git a/arch/um/os-Linux/signal.c b/arch/um/os-Linux/signal.c
+index 4fc3cd1..2dde9f6 100644
+--- a/arch/um/os-Linux/signal.c
++++ b/arch/um/os-Linux/signal.c
+@@ -127,7 +127,7 @@ void set_sigstack(void *sig_stack, int size)
  
--/* uaccess.c */
--extern unsigned long __do_user_copy(void *to, const void *from, int n,
--				    void **fault_addr, jmp_buf **fault_catcher,
--				    void (*op)(void *to, const void *from,
--					       int n), int *faulted_out);
--
- /* execvp.c */
- extern int execvp_noalloc(char *buf, const char *file, char *const argv[]);
- /* helper.c */
-diff --git a/arch/um/include/shared/um_uaccess.h b/arch/um/include/shared/um_uaccess.h
-index 45c0499..51e1cce 100644
---- a/arch/um/include/shared/um_uaccess.h
-+++ b/arch/um/include/shared/um_uaccess.h
-@@ -32,9 +32,6 @@
- extern int copy_from_user(void *to, const void __user *from, int n);
- extern int copy_to_user(void __user *to, const void *from, int n);
+ static void (*handlers[_NSIG])(int sig, struct sigcontext *sc);
  
--extern int __do_copy_to_user(void *to, const void *from, int n,
--			     void **fault_addr, jmp_buf **fault_catcher);
--
- /*
-  * strncpy_from_user: - Copy a NUL terminated string from userspace.
-  * @dst:   Destination address, in kernel space.  This buffer must be at
-diff --git a/arch/um/kernel/Makefile b/arch/um/kernel/Makefile
-index c4491c1..bc49474 100644
---- a/arch/um/kernel/Makefile
-+++ b/arch/um/kernel/Makefile
-@@ -11,7 +11,7 @@ clean-files :=
+-void handle_signal(int sig, struct sigcontext *sc)
++static void handle_signal(int sig, struct sigcontext *sc)
+ {
+ 	unsigned long pending = 1UL << sig;
  
- obj-y = config.o exec.o exitcode.o init_task.o irq.o ksyms.o mem.o \
- 	physmem.o process.o ptrace.o reboot.o sigio.o \
--	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o uaccess.o \
-+	signal.o smp.o syscall.o sysrq.o time.o tlb.o trap.o \
- 	um_arch.o umid.o skas/
+@@ -168,7 +168,11 @@ void handle_signal(int sig, struct sigcontext *sc)
+ 	} while (pending);
+ }
  
- obj-$(CONFIG_BLK_DEV_INITRD) += initrd.o
-diff --git a/arch/um/kernel/uaccess.c b/arch/um/kernel/uaccess.c
-deleted file mode 100644
-index dd33f04..0000000
---- a/arch/um/kernel/uaccess.c
-+++ /dev/null
-@@ -1,33 +0,0 @@
--/*
-- * Copyright (C) 2001 Chris Emerson (cemerson@chiark.greenend.org.uk)
-- * Copyright (C) 2001 - 2007 Jeff Dike (jdike@{addtoit,linux.intel}.com)
-- * Licensed under the GPL
-- */
--
--/*
-- * These are here rather than tt/uaccess.c because skas mode needs them in
-- * order to do SIGBUS recovery when a tmpfs mount runs out of room.
-- */
--
--#include <linux/string.h>
--#include "os.h"
--
--static void __do_copy(void *to, const void *from, int n)
--{
--	memcpy(to, from, n);
--}
--
--
--int __do_copy_to_user(void *to, const void *from, int n,
--		      void **fault_addr, jmp_buf **fault_catcher)
--{
--	unsigned long fault;
--	int faulted;
--
--	fault = __do_user_copy(to, from, n, fault_addr, fault_catcher,
--			       __do_copy, &faulted);
--	if (!faulted)
--		return 0;
--	else
--		return n - (fault - (unsigned long) to);
--}
-diff --git a/arch/um/os-Linux/Makefile b/arch/um/os-Linux/Makefile
-index b33f4df..7aec5bf 100644
---- a/arch/um/os-Linux/Makefile
-+++ b/arch/um/os-Linux/Makefile
-@@ -4,14 +4,14 @@
+-extern void hard_handler(int sig);
++static void hard_handler(int sig, siginfo_t *info, void *p)
++{
++	struct ucontext *uc = p;
++	handle_signal(sig, (struct sigcontext *) &uc->uc_mcontext);
++}
+ 
+ void set_handler(int sig, void (*handler)(int), int flags, ...)
+ {
+@@ -178,7 +182,7 @@ void set_handler(int sig, void (*handler)(int), int flags, ...)
+ 	int mask;
+ 
+ 	handlers[sig] = (void (*)(int, struct sigcontext *)) handler;
+-	action.sa_handler = hard_handler;
++	action.sa_sigaction = hard_handler;
+ 
+ 	sigemptyset(&action.sa_mask);
+ 
+@@ -190,7 +194,7 @@ void set_handler(int sig, void (*handler)(int), int flags, ...)
+ 	if (sig == SIGSEGV)
+ 		flags |= SA_NODEFER;
+ 
+-	action.sa_flags = flags;
++	action.sa_flags = flags | SA_SIGINFO;
+ 	action.sa_restorer = NULL;
+ 	if (sigaction(sig, &action, NULL) < 0)
+ 		panic("sigaction failed - errno = %d\n", errno);
+diff --git a/arch/um/os-Linux/sys-i386/Makefile b/arch/um/os-Linux/sys-i386/Makefile
+index b4bc6ac..d491754 100644
+--- a/arch/um/os-Linux/sys-i386/Makefile
++++ b/arch/um/os-Linux/sys-i386/Makefile
+@@ -3,7 +3,7 @@
+ # Licensed under the GPL
  #
  
- obj-y = aio.o execvp.o file.o helper.o irq.o main.o mem.o process.o \
--	registers.o sigio.o signal.o start_up.o time.o tty.o uaccess.o \
-+	registers.o sigio.o signal.o start_up.o time.o tty.o \
- 	umid.o tls.o user_syms.o util.o drivers/ sys-$(SUBARCH)/ skas/
+-obj-y = registers.o signal.o task_size.o tls.o
++obj-y = registers.o task_size.o tls.o
  
- obj-$(CONFIG_ARCH_REUSE_HOST_VSYSCALL_AREA) += elf_aux.o
+ USER_OBJS := $(obj-y)
  
- USER_OBJS := $(user-objs-y) aio.o elf_aux.o execvp.o file.o helper.o irq.o \
- 	main.o mem.o process.o registers.o sigio.o signal.o start_up.o time.o \
--	tty.o tls.o uaccess.o umid.o util.o
-+	tty.o tls.o umid.o util.o
- 
- CFLAGS_user_syms.o += -DSUBARCH_$(SUBARCH)
- 
-diff --git a/arch/um/os-Linux/uaccess.c b/arch/um/os-Linux/uaccess.c
+diff --git a/arch/um/os-Linux/sys-i386/signal.c b/arch/um/os-Linux/sys-i386/signal.c
 deleted file mode 100644
-index 087ed74..0000000
---- a/arch/um/os-Linux/uaccess.c
+index f311609..0000000
+--- a/arch/um/os-Linux/sys-i386/signal.c
 +++ /dev/null
-@@ -1,32 +0,0 @@
+@@ -1,13 +0,0 @@
 -/*
-- * Copyright (C) 2001 Chris Emerson (cemerson@chiark.greenend.org.uk)
-- * Copyright (C) 2001 - 2007 Jeff Dike (jdike@{addtoit,linux.intel}.com)
+- * Copyright (C) 2006 Jeff Dike (jdike@{addtoit,linux.intel}.com)
 - * Licensed under the GPL
 - */
 -
--#include <stddef.h>
--#include "longjmp.h"
+-#include <signal.h>
 -
--unsigned long __do_user_copy(void *to, const void *from, int n,
--			     void **fault_addr, jmp_buf **fault_catcher,
--			     void (*op)(void *to, const void *from,
--					int n), int *faulted_out)
+-extern void handle_signal(int sig, struct sigcontext *sc);
+-
+-void hard_handler(int sig)
 -{
--	unsigned long *faddrp = (unsigned long *) fault_addr, ret;
--
--	jmp_buf jbuf;
--	*fault_catcher = &jbuf;
--	if (UML_SETJMP(&jbuf) == 0) {
--		(*op)(to, from, n);
--		ret = 0;
--		*faulted_out = 0;
--	}
--	else {
--		ret = *faddrp;
--		*faulted_out = 1;
--	}
--	*fault_addr = NULL;
--	*fault_catcher = NULL;
--	return ret;
+-	handle_signal(sig, (struct sigcontext *) (&sig + 1));
 -}
+diff --git a/arch/um/os-Linux/sys-x86_64/Makefile b/arch/um/os-Linux/sys-x86_64/Makefile
+index a44a47f..58f6e0a 100644
+--- a/arch/um/os-Linux/sys-x86_64/Makefile
++++ b/arch/um/os-Linux/sys-x86_64/Makefile
+@@ -3,7 +3,7 @@
+ # Licensed under the GPL
+ #
+ 
+-obj-y = registers.o prctl.o signal.o task_size.o
++obj-y = registers.o prctl.o task_size.o
+ 
+ USER_OBJS := $(obj-y)
+ 
+diff --git a/arch/um/os-Linux/sys-x86_64/signal.c b/arch/um/os-Linux/sys-x86_64/signal.c
+deleted file mode 100644
+index 82a3888..0000000
+--- a/arch/um/os-Linux/sys-x86_64/signal.c
++++ /dev/null
+@@ -1,16 +0,0 @@
+-/*
+- * Copyright (C) 2006 Jeff Dike (jdike@{addtoit,linux.intel}.com)
+- * Licensed under the GPL
+- */
 -
+-#include <signal.h>
+-
+-extern void handle_signal(int sig, struct sigcontext *sc);
+-
+-void hard_handler(int sig)
+-{
+-	struct ucontext *uc;
+-	asm("movq %%rdx, %0" : "=r" (uc));
+-
+-	handle_signal(sig, (struct sigcontext *) &uc->uc_mcontext);
+-}
 -- 
 1.7.2.5
 
