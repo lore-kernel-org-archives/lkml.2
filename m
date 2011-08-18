@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab1HRQ7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:59:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59669 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab1HRQ7V (ORCPT
+	id S1751791Ab1HRRCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:02:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39880 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab1HRRCD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:59:21 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=6-3U9yaARtIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=padm9Ysyf1aMKPbWuSwA:9 a=sqX1MiIBQfUU3ogLKwoA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 1/8] perf: Separate out trace-cmd parse-events
- from perf files
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <4E4D3FE2.8000504@gmail.com>
-References: <20110805205921.909038487@goodmis.org>
-	 <20110805211300.324726820@goodmis.org> <4E4945F8.2080004@gmail.com>
-	 <1313425364.15704.9.camel@gandalf.stny.rr.com> <4E4B0667.8090107@gmail.com>
-	 <20110818135112.GB10441@somewhere>  <4E4D3FE2.8000504@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 18 Aug 2011 12:59:17 -0400
-Message-ID: <1313686757.15704.75.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Aug 2011 13:02:03 -0400
+Subject: Re: [PATCH] irq: always set IRQF_ONESHOT if no primary handler is specified
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <pantelis.antoniou@gmail.com>
+In-Reply-To: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
+Date: Thu, 18 Aug 2011 20:01:58 +0300
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        mporter@ti.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com>
+References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 10:37 -0600, David Ahern wrote:
-> On 08/18/2011 07:51 AM, Frederic Weisbecker wrote:
+Hi there,
 
-> I guess to be more specific about next steps:
-> - should trace-cmd be moved to the tools directory in the kernel repo?
+Let me report that with this change Beagle board fails to boot,
+hangs right on rootfs mount.
 
-Nah, I rather keep it out of the kernel for now.
+Users of BB should revert this until the offending driver(s) are fixed.
 
-> that would allow code movement to a lib directory and work to be done on
-> both trace-cmd and perf
-> - what's the conclusion about the name and path for the common parsing
-> code? seems like libtraceevent or libtraceparse had the fewest collisions
+Regards
 
-I guess libtraceparse is fine. Or maybe even libtraceparser.
+-- Pantelis
 
+On Jul 7, 2011, at 11:32 PM, Sebastian Andrzej Siewior wrote:
 
-> - should the plugin code be moved into its own directory - e.g.,
-> tools/lib/trace-plugins. I am working on plugin changes too (eg.,
-> resolving guest RIPs to symbols in the kvm plugin).
-
-I think it should have its own directory. Or maybe even have it within
-the kernel proper itself?  Have it install like modules:
-
-/lib/modules/v3.0-rc2/plugins/
-
-??
-
-
+> If no primary handler is specified then a default one is assigned which
+> always returns IRQ_WAKE_THREAD. This handler requires the IRQF_ONESHOT
+> flag on LEVEL / EIO typed irqs because the source of interrupt is not
+> disabled.
+> Since it is required for those users and there is no difference for others
+> it makes sense to add this flag unconditionally.
 > 
-> The current patch set from Steve needs some updates (in addition to what
-> is needed for perf to use the plugins) to handle trace-cmd and perf
-> differences, but this is getting far down the path.
-
-I'm currently working on other things, and I'm waiting for consensus
-before I waste more time on it.
-
-Don't worry about trace-cmd. If libtraceparser becomes an installed
-library, I'll have trace-cmd use it directly. As long as the library
-stays generic (which it should) this should not cause any issues. For
-now, trace-cmd will keep its original libparsevents, and I can update
-that until we have this library in distributions.
-
-Thanks!
-
--- Steve
-
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+> A quick grep shows that drivers/staging/iio/adc/ad7816.c is the only
+> driver in tree doing it wrong i.e. request_threaded_irq with
+> IRQF_TRIGGER_{LOW|HIGH} but without ONEHOST.
+> 
+> There are 59 users in tree which request an edge typed interrupt. 24 of
+> them specify the ONEHOST flag the others don't. Both variants are valid
+> and identical but a consistent behavior would be nice.
+> 
+> There is a total of 134 users and 87 specify the irq type directly. For
+> the remaining 47 the type depends on initial configuration of the irq chip
+> or it might be specified via the device tree, dunno. 
+> Should that patch be accepted I suggest to remove the ONESHOT flag from
+> every request_th.* which uses NULL as the primary handler so we have a
+> consistent behavior here.
+> 
+> kernel/irq/manage.c |    1 +
+> 1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 0a7840ae..3f9cd47 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -1322,6 +1322,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+> 		if (!thread_fn)
+> 			return -EINVAL;
+> 		handler = irq_default_primary_handler;
+> +		irqflags |= IRQF_ONESHOT;
+> 	}
+> 
+> 	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
+> -- 
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
