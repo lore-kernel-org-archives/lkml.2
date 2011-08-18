@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1HRTPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:15:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52192 "EHLO mx1.redhat.com"
+	id S1754921Ab1HRTMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:12:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab1HRTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:15:42 -0400
-Subject: Re: [PATCH] ath9k: make driver usable standalone
-From: Dan Williams <dcbw@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: =?ISO-8859-1?Q?G=E1bor?= Stefanik <netrolller.3d@gmail.com>,
-        Pavel Ivanov <paivanof@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-Date: Thu, 18 Aug 2011 14:18:09 -0500
-In-Reply-To: <24649.1313621503@turing-police.cc.vt.edu>
-References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
-	 <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
-	 <CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>
-	 <CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com>
-	 <24649.1313621503@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Message-ID: <1313695090.23920.2.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+	id S1754965Ab1HRTME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:12:04 -0400
+Date: Thu, 18 Aug 2011 15:11:16 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110818191115.GP2227@zod.bos.redhat.com>
+References: <20110810124528.GC2566@zod.bos.redhat.com>
+ <20110814230453.GP2650@linux.vnet.ibm.com>
+ <20110815140416.GB2227@zod.bos.redhat.com>
+ <20110815152052.GA2389@linux.vnet.ibm.com>
+ <20110817223735.GI2227@zod.bos.redhat.com>
+ <20110817224916.GO2419@linux.vnet.ibm.com>
+ <20110817230219.GJ2227@zod.bos.redhat.com>
+ <20110817230641.GA7837@somewhere.redhat.com>
+ <20110817231750.GK2227@zod.bos.redhat.com>
+ <20110818183523.GD2325@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818183523.GD2325@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-17 at 18:51 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 17 Aug 2011 18:25:49 +0200, Gábor Stefanik said:
+On Thu, Aug 18, 2011 at 11:35:23AM -0700, Paul E. McKenney wrote:
+> On Wed, Aug 17, 2011 at 07:17:50PM -0400, Josh Boyer wrote:
+> > On Thu, Aug 18, 2011 at 01:06:44AM +0200, Frederic Weisbecker wrote:
+> > > On Wed, Aug 17, 2011 at 07:02:19PM -0400, Josh Boyer wrote:
+> > > > On Wed, Aug 17, 2011 at 03:49:16PM -0700, Paul E. McKenney wrote:
+> > > > > On Wed, Aug 17, 2011 at 06:37:35PM -0400, Josh Boyer wrote:
+> > > > > > On Mon, Aug 15, 2011 at 08:20:52AM -0700, Paul E. McKenney wrote:
+> > > > > > > On Mon, Aug 15, 2011 at 10:04:17AM -0400, Josh Boyer wrote:
+> > > > > > > > > Please see the attached.
+> > > > > > > > 
+> > > > > > > > Fixed it up quickly to apply on top of -rc2 and it seems to solve the
+> > > > > > > > problem nicely.  Thanks for the patch.
+> > > > > > > 
+> > > > > > > Good to hear!  I guess I should keep it, then.  ;-)
+> > > > > > 
+> > > > > > Hey Paul, were you going to send this to Linus for -rc3?  I haven't seen
+> > > > > > it come across LKML yet.
+> > > > > 
+> > > > > I might...  But does it qualify as a regression?  That part of the
+> > > > > code hasn't changed for some time now.
+> > > > 
+> > > > It's a fix for a problem that is newly surfaced in 3.1.  A regression,
+> > > > likely not since it's been there forever, but new debugging options
+> > > > uncovered it.  I'm pretty sure the -rc stage takes fixes even if they
+> > > > aren't regressions.
+> > > 
+> > > Nope, after -rc1 only regressions fixes are taken (most of the time).
+> > 
+> > Sigh.
+> > 
+> > Look, either way I'm carrying this patch in Fedora because it fixes
+> > a bug that is actually being reported by users (and by abrtd as well).
+> > If you both want to wait until 3.2 to actually submit it to Linus,
+> > then OK.
+> > 
+> > Honestly, I'm just glad we actually run with the debug options enabled
+> > (which seems to be a rare thing) so bugs like this are actually found.
+> > Thanks for the fix.
 > 
-> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
-> > configuration tool.
-> 
-> Somebody better tell Fedora Rawhide - as of the version released on July 27,
-> their 'initscripts' RPM was still using iwconfig in /etc/sysconfig/network-scripts/ifup-wireless
-> 
-> So don't be quite so fast to be declaring WIRELESS_EXT dead just yet.
+> I am sorry, but I didn't make the rules!  And I must carry the fix
+> longer as well, if that makes you feel any better.
 
-Given that nobody has stepped up to write patches to convert them to use
-iw (or wpa_supplicant in the *correct* manner), and that for the most
-part wifi on Fedora goes through NetworkManager and/or wpa_supplicant,
-it's not surprising.  I don't have any particular interest in keeping
-the existing ifup-wireless iwconfig hackery around, instead if it's
-converted at all, it should be converted to use wpa_supplicant instead,
-in the manner in which I've described in the various bug reports that
-keep coming up.  That means not just pointing wpa_supplicant at a config
-file, but instead keeping the options in the ifcfg file and writing out
-a temporary wpa_supplicant config on-the-fly so that it integrates with
-existing administrator expectations and workflow.
+My thank you was meant to be sincere, not snarky.  It's a two-line
+addition to a spec file, so it's not as if the burden is unbearable.
+Especially when doing it prevents me from duping a large number of bugs
+for most of a release ;)
 
-Dan
-
+josh
