@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1HRTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:42:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15407 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab1HRTm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:42:56 -0400
-Date: Thu, 18 Aug 2011 15:42:45 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, Andi Kleen <ak@linux.intel.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH 10/11] VFS: Cache request_queue in struct block_device
-Message-ID: <20110818194245.GJ15413@redhat.com>
-References: <1312259893-4548-1-git-send-email-andi@firstfloor.org>
- <1312259893-4548-11-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312259893-4548-11-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752846Ab1HRUGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:06:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53175 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab1HRUGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:06:32 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=_E3Q4npPQ1wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=uOokNiSl2Gp-GhqbTokA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on
+ ftrace nops
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+In-Reply-To: <4E4BB041.1050004@hitachi.com>
+References: <20110810162222.017387055@goodmis.org>
+	 <4E43209D.7090104@hitachi.com>
+	 <1313022842.18583.282.camel@gandalf.stny.rr.com>
+	 <4E43769C.9000901@hitachi.com>
+	 <1313067691.18583.290.camel@gandalf.stny.rr.com>
+	 <4E44967C.1090101@hitachi.com>
+	 <1313154537.18583.319.camel@gandalf.stny.rr.com>
+	 <4E464D6C.9020807@hitachi.com>
+	 <1313290684.18583.362.camel@gandalf.stny.rr.com>
+	 <4E47A33E.5020202@hitachi.com>
+	 <1313413562.15704.5.camel@gandalf.stny.rr.com>
+	 <4E4BB041.1050004@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 18 Aug 2011 16:06:28 -0400
+Message-ID: <1313697988.15704.77.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 09:38:12PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> This makes it possible to get from the inode to the request_queue
-> with one less cache miss. Used in followon optimization.
-> 
-> The livetime of the pointer is the same as the gendisk.
-> 
-> This assumes that the queue will always stay the same in the
-> gendisk while it's visible to block_devices. I think that's safe correct?
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  fs/block_dev.c     |    3 +++
->  include/linux/fs.h |    2 ++
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index f55aad4..5e07536 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -1110,6 +1110,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
->  	mutex_lock_nested(&bdev->bd_mutex, for_part);
->  	if (!bdev->bd_openers) {
->  		bdev->bd_disk = disk;
-> +		bdev->bd_queue = disk->queue;
+On Wed, 2011-08-17 at 21:12 +0900, Masami Hiramatsu wrote:
 
-I am really not sure how good a idea it is to stash away another pointer
-in bdev (bdev->queue), just because we don't want to dereference a pointer
-(bdev->bd_disk->queue). 
+> I see. OK, I'm now looking forward to your work ;)
 
-Personally I think it is not a very good idea as if we start following
-everywhere in the code, it will make things more complicated.
+Hi Masami,
 
-Is the performance gain because of this one less dereference really 
-substantial.
+BTW, do you have any test suits that I could use to test the changes I
+make. Something that I may be able to catch regressions with?
 
-Thanks
-Vivek
+Thanks!
+
+-- Steve
+
+
