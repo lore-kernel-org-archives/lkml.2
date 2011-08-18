@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1HRTPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:15:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48420 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab1HRTMk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:12:40 -0400
-Date: Thu, 18 Aug 2011 20:12:39 +0100
-To: richard@nod.at
-Subject: Subject: [PATCH 82/91] um: kill useless argument of free_chan()
- and free_one_chan()
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu819-00085K-Vv@ZenIV.linux.org.uk>
-From: Al Viro <viro@ftp.linux.org.uk>
+	id S1755295Ab1HRTPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:15:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52192 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab1HRTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:15:42 -0400
+Subject: Re: [PATCH] ath9k: make driver usable standalone
+From: Dan Williams <dcbw@redhat.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: =?ISO-8859-1?Q?G=E1bor?= Stefanik <netrolller.3d@gmail.com>,
+        Pavel Ivanov <paivanof@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Aug 2011 14:18:09 -0500
+In-Reply-To: <24649.1313621503@turing-police.cc.vt.edu>
+References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+	 <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
+	 <CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>
+	 <CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com>
+	 <24649.1313621503@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Message-ID: <1313695090.23920.2.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-08-17 at 18:51 -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 17 Aug 2011 18:25:49 +0200, Gábor Stefanik said:
+> 
+> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
+> > configuration tool.
+> 
+> Somebody better tell Fedora Rawhide - as of the version released on July 27,
+> their 'initscripts' RPM was still using iwconfig in /etc/sysconfig/network-scripts/ifup-wireless
+> 
+> So don't be quite so fast to be declaring WIRELESS_EXT dead just yet.
 
-delay_free_irq is always 0 for those...
+Given that nobody has stepped up to write patches to convert them to use
+iw (or wpa_supplicant in the *correct* manner), and that for the most
+part wifi on Fedora goes through NetworkManager and/or wpa_supplicant,
+it's not surprising.  I don't have any particular interest in keeping
+the existing ifup-wireless iwconfig hackery around, instead if it's
+converted at all, it should be converted to use wpa_supplicant instead,
+in the manner in which I've described in the various bug reports that
+keep coming up.  That means not just pointing wpa_supplicant at a config
+file, but instead keeping the options in the ifcfg file and writing out
+a temporary wpa_supplicant config on-the-fly so that it integrates with
+existing administrator expectations and workflow.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
- arch/um/drivers/chan_kern.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/um/drivers/chan_kern.c b/arch/um/drivers/chan_kern.c
-index e040683..420e2c8 100644
---- a/arch/um/drivers/chan_kern.c
-+++ b/arch/um/drivers/chan_kern.c
-@@ -358,11 +358,11 @@ int chan_window_size(struct list_head *chans, unsigned short *rows_out,
- 	return 0;
- }
- 
--static void free_one_chan(struct chan *chan, int delay_free_irq)
-+static void free_one_chan(struct chan *chan)
- {
- 	list_del(&chan->list);
- 
--	close_one_chan(chan, delay_free_irq);
-+	close_one_chan(chan, 0);
- 
- 	if (chan->ops->free != NULL)
- 		(*chan->ops->free)(chan->data);
-@@ -372,14 +372,14 @@ static void free_one_chan(struct chan *chan, int delay_free_irq)
- 	kfree(chan);
- }
- 
--static void free_chan(struct list_head *chans, int delay_free_irq)
-+static void free_chan(struct list_head *chans)
- {
- 	struct list_head *ele, *next;
- 	struct chan *chan;
- 
- 	list_for_each_safe(ele, next, chans) {
- 		chan = list_entry(ele, struct chan, list);
--		free_one_chan(chan, delay_free_irq);
-+		free_one_chan(chan);
- 	}
- }
- 
-@@ -547,7 +547,7 @@ int parse_chan_pair(char *str, struct line *line, int device,
- 	char *in, *out;
- 
- 	if (!list_empty(chans)) {
--		free_chan(chans, 0);
-+		free_chan(chans);
- 		INIT_LIST_HEAD(chans);
- 	}
- 
--- 
-1.7.2.5
-
+Dan
 
