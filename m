@@ -1,170 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab1HRKNC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 06:13:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49758 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312Ab1HRKM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 06:12:59 -0400
-Date: Thu, 18 Aug 2011 12:12:48 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kara <jack@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Li Shaohua <shaohua.li@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [PATCH v9 12/13] memcg: create support routines for page
- writeback
-Message-ID: <20110818101248.GA12426@quack.suse.cz>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
- <1313597705-6093-13-git-send-email-gthelen@google.com>
- <20110818103803.c2617804.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818023610.GA12514@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818023610.GA12514@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755496Ab1HRKON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 06:14:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51368 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755449Ab1HRKOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 06:14:12 -0400
+Subject: [PATCH] Added #include of module.h to s3c_adc_battery.c
+From: Ian <ian@opensource.wolfsonmicro.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>, u.kleine-koenig@pengutronix.de,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Aug 2011 11:14:09 +0100
+Message-ID: <1313662449.18176.18.camel@Tapajos>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-08-11 10:36:10, Wu Fengguang wrote:
-> Subject: squeeze max-pause area and drop pass-good area
-> Date: Tue Aug 16 13:37:14 CST 2011
-> 
-> Remove the pass-good area introduced in ffd1f609ab10 ("writeback:
-> introduce max-pause and pass-good dirty limits") and make the
-> max-pause area smaller and safe.
-> 
-> This fixes ~30% performance regression in the ext3 data=writeback
-> fio_mmap_randwrite_64k/fio_mmap_randrw_64k test cases, where there are
-> 12 JBOD disks, on each disk runs 8 concurrent tasks doing reads+writes.
-> 
-> Using deadline scheduler also has a regression, but not that big as
-> CFQ, so this suggests we have some write starvation.
-> 
-> The test logs show that
-> 
-> - the disks are sometimes under utilized
-> 
-> - global dirty pages sometimes rush high to the pass-good area for
->   several hundred seconds, while in the mean time some bdi dirty pages
->   drop to very low value (bdi_dirty << bdi_thresh).
->   Then suddenly the global dirty pages dropped under global dirty
->   threshold and bdi_dirty rush very high (for example, 2 times higher
->   than bdi_thresh). During which time balance_dirty_pages() is not
->   called at all.
-> 
-> So the problems are
-> 
-> 1) The random writes progress so slow that they break the assumption of
-> the max-pause logic that "8 pages per 200ms is typically more than
-> enough to curb heavy dirtiers".
-> 
-> 2) The max-pause logic ignored task_bdi_thresh and thus opens the
->    possibility for some bdi's to over dirty pages, leading to
->    (bdi_dirty >> bdi_thresh) and then (bdi_thresh >> bdi_dirty) for others.
-> 
-> 3) The higher max-pause/pass-good thresholds somehow leads to some bad
->    swing of dirty pages.
-> 
-> The fix is to allow the task to slightly dirty over task_bdi_thresh, but
-> no way to exceed bdi_dirty and/or global dirty_thresh.
-> 
-> Tests show that it fixed the JBOD regression completely (both behavior
-> and performance), while still being able to cut down large pause times
-> in balance_dirty_pages() for single-disk cases.
-> 
-> Reported-by: Li Shaohua <shaohua.li@intel.com>
-> Tested-by: Li Shaohua <shaohua.li@intel.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  include/linux/writeback.h |   11 -----------
->  mm/page-writeback.c       |   15 ++-------------
->  2 files changed, 2 insertions(+), 24 deletions(-)
-> 
-> --- linux.orig/mm/page-writeback.c	2011-08-18 09:52:59.000000000 +0800
-> +++ linux/mm/page-writeback.c	2011-08-18 10:28:57.000000000 +0800
-> @@ -786,21 +786,10 @@ static void balance_dirty_pages(struct a
->  		 * 200ms is typically more than enough to curb heavy dirtiers;
->  		 * (b) the pause time limit makes the dirtiers more responsive.
->  		 */
-> -		if (nr_dirty < dirty_thresh +
-> -			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
-> +		if (nr_dirty < dirty_thresh &&
-> +		    bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2 &&
->  		    time_after(jiffies, start_time + MAX_PAUSE))
->  			break;
-  This looks definitely much safer than the original patch since we now
-always observe global dirty limit. I just wonder: We have throttled the
-task because bdi_nr_reclaimable > task_bdi_thresh. Now in practice there
-should be some pages under writeback and this task should have submitted
-even more just a while ago. So the condition
-  bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2
-looks still relatively weak. Shouldn't there be
-  bdi_nr_reclaimable < (task_bdi_thresh + bdi_thresh) / 2?
-Since bdi_nr_reclaimable is really the number we want to limit...
-Alternatively, I could see also a reason for
-  bdi_dirty < task_bdi_thresh
-which leaves the task pages under writeback as the pausing area. But since
-these are not really well limited, I'd prefer my first suggestion.
+s3c_adc_battery.c will not compile without moule.h as it contains the
+definitions of: MODULE_AUTHOR, MODULE_DESCRIPTION & MODULE_LICENSE.
 
-								Honza
-> -		/*
-> -		 * pass-good area. When some bdi gets blocked (eg. NFS server
-> -		 * not responding), or write bandwidth dropped dramatically due
-> -		 * to concurrent reads, or dirty threshold suddenly dropped and
-> -		 * the dirty pages cannot be brought down anytime soon (eg. on
-> -		 * slow USB stick), at least let go of the good bdi's.
-> -		 */
-> -		if (nr_dirty < dirty_thresh +
-> -			       dirty_thresh / DIRTY_PASSGOOD_AREA &&
-> -		    bdi_dirty < bdi_thresh)
-> -			break;
->  
->  		/*
->  		 * Increase the delay for each loop, up to our previous
-> --- linux.orig/include/linux/writeback.h	2011-08-16 23:34:27.000000000 +0800
-> +++ linux/include/linux/writeback.h	2011-08-18 09:53:03.000000000 +0800
-> @@ -12,15 +12,6 @@
->   *
->   *	(thresh - thresh/DIRTY_FULL_SCOPE, thresh)
->   *
-> - * The 1/16 region above the global dirty limit will be put to maximum pauses:
-> - *
-> - *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
-> - *
-> - * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
-> - * to loops:
-> - *
-> - *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
-> - *
->   * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
->   * time) for the dirty pages to drop, unless written enough pages.
->   *
-> @@ -31,8 +22,6 @@
->   */
->  #define DIRTY_SCOPE		8
->  #define DIRTY_FULL_SCOPE	(DIRTY_SCOPE / 2)
-> -#define DIRTY_MAXPAUSE_AREA		16
-> -#define DIRTY_PASSGOOD_AREA		8
->  
->  /*
->   * 4MB minimal write chunk size
+
+Signed-off-by: Ian Lartey <ian@opensource.wolfsonmicro.com>
+---
+ drivers/power/s3c_adc_battery.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/s3c_adc_battery.c b/drivers/power/s3c_adc_battery.c
+index a675e31..20770ba 100644
+--- a/drivers/power/s3c_adc_battery.c
++++ b/drivers/power/s3c_adc_battery.c
+@@ -9,6 +9,7 @@
+  *
+  */
+ 
++#include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.4.1
+
+
+
+
+
