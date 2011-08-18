@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab1HRJJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 05:09:31 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:42757 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab1HRJJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 05:09:30 -0400
-Date: Thu, 18 Aug 2011 11:09:06 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Konstantin Khlebnikov <khlebnikov@parallels.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
-Message-ID: <20110818090906.GA2045@cmpxchg.org>
-References: <20110808110658.31053.55013.stgit@localhost6>
- <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
- <4E3FD403.6000400@parallels.com>
+	id S1755407Ab1HRJMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 05:12:38 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47344 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1HRJMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 05:12:33 -0400
+X-Greylist: delayed 164037 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Aug 2011 05:12:32 EDT
+Message-ID: <4E4CD737.4020402@ce.jp.nec.com>
+Date: Thu, 18 Aug 2011 18:11:19 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E3FD403.6000400@parallels.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Tejun Heo <tj@kernel.org>
+CC: Alan Stern <stern@rowland.harvard.edu>, jaxboe@fusionio.com,
+        roland@purestorage.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Subject: Re: [BUG] Oops when SCSI device under multipath is removed
+References: <Pine.LNX.4.44L0.1108111112280.1958-100000@iolanthe.rowland.org> <4E4A53F0.9040104@ce.jp.nec.com>
+In-Reply-To: <4E4A53F0.9040104@ce.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 04:18:11PM +0400, Konstantin Khlebnikov wrote:
-> Pekka Enberg wrote:
-> >Hi Konstantin,
-> >
-> >On Mon, Aug 8, 2011 at 2:06 PM, Konstantin Khlebnikov
-> ><khlebnikov@openvz.org>  wrote:
-> >>Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only once)
-> >>greatly decreases lifetime of single-used mapped file pages.
-> >>Unfortunately it also decreases life time of all shared mapped file pages.
-> >>Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed in fault path)
-> >>page-fault handler does not mark page active or even referenced.
-> >>
-> >>Thus page_check_references() activates file page only if it was used twice while
-> >>it stays in inactive list, meanwhile it activates anon pages after first access.
-> >>Inactive list can be small enough, this way reclaimer can accidentally
-> >>throw away any widely used page if it wasn't used twice in short period.
-> >>
-> >>After this patch page_check_references() also activate file mapped page at first
-> >>inactive list scan if this page is already used multiple times via several ptes.
-> >>
-> >>Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
-> >
-> >Both patches seem reasonable but the changelogs don't really explain
-> >why you're doing the changes. How did you find out about the problem?
-> >Is there some workload that's affected? How did you test your changes?
-> >
+Hi James,
+
+On 08/16/11 20:26, Jun'ichi Nomura wrote:
+> The commit log of 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b
+> ("[SCSI] put stricter guards on queue dead checks") does not
+> explain about the move of scsi_free_queue().
 > 
-> I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5 (~2.6.18).
-> There a complete mess with >100 web/mail/spam/ftp containers,
-> they share all their files but there a lot of anonymous pages:
-> ~500mb shared file mapped memory and 15-20Gb non-shared anonymous memory.
-
-How much unmapped cache do you have around in this scenario?
-
-> In this situation major-pagefaults are very costly, because all containers share the same page.
-> In my load kernel created a disproportionate pressure on the file memory, compared with the anonymous,
-> they equaled only if I raise swappiness up to 150 =)
+> But according to the discussion below, it seems
+> the move was motivated to solve the following self-deadlock:
+> https://lkml.org/lkml/2011/4/12/9
 > 
-> These patches actually wasn't helped a lot in my problem,
-> but I saw noticable (10-20 times) reduce in count and average time of major-pagefault in file-mapped areas.
+>   [in the context of kblockd_workqueue]
+>   blk_delay_work
+>     __blk_run_queue
+>       scsi_request_fn
+>         put_device
+>           (puts final sdev refcount)
+>              scsi_device_dev_release
+>                execute_in_process_context(scsi_device_dev_release_usercontext)
+>                  [execute immediately because it's in process context]
+>                     scsi_device_dev_release_usercontext
+>                       scsi_free_queue
+>                         blk_cleanup_queue
+>                           blk_sync_queue
+>                             (wait for blk_delay_work to complete...)
+> 
+> James, is my understanding correct?
+> 
+> If so, isn't it possible to move the scsi_free_queue back to
+> the original place and solve the deadlock instead by
+> avoiding the wait in the same context?
 
-If disabling the used-once detection for shared executable pages does
-not help, then the real reason for the regression you observe seems to
-be a different one.
+Actually, Tejun has posted a patch to replace
+execute_in_process_context() with queue_work()
+and asking your review:
 
-Reduced major faults in file mapped areas without other context don't
-have to be a good sign per se.  Which memory was reclaimed instead?
-Did swapping increase?
+  [PATCH RESEND] scsi: don't use execute_in_process_context()
+  https://lkml.org/lkml/2011/4/30/87
 
-It would be good to find a fix that actually helps your workload.
+Do you think you can take the patch and revert the move
+of scsi_free_queue()?
+
+Thanks,
+-- 
+Jun'ichi Nomura, NEC Corporation
