@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab1HRTFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:05:41 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44340 "EHLO
+	id S1754010Ab1HRTFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:05:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44345 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab1HRTFk (ORCPT
+	with ESMTP id S1751777Ab1HRTFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:05:40 -0400
-Date: Thu, 18 Aug 2011 20:05:39 +0100
+	Thu, 18 Aug 2011 15:05:50 -0400
+Date: Thu, 18 Aug 2011 20:05:49 +0100
 To: richard@nod.at
-Subject: Subject: [PATCH 40/91] um: sysdep/barrier.h is not used for
- anything
+Subject: Subject: [PATCH 41/91] um: merge skas_ptrace.h 32/64bit variants
 Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu7uN-0007jc-JI@ZenIV.linux.org.uk>
+Message-Id: <E1Qu7uX-0007kB-JX@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,64 +24,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/um/os-Linux/signal.c                  |    1 -
- arch/um/sys-x86/shared/sysdep/barrier.h    |    5 -----
- arch/um/sys-x86/shared/sysdep/barrier_32.h |    9 ---------
- arch/um/sys-x86/shared/sysdep/barrier_64.h |    7 -------
- 4 files changed, 0 insertions(+), 22 deletions(-)
- delete mode 100644 arch/um/sys-x86/shared/sysdep/barrier.h
- delete mode 100644 arch/um/sys-x86/shared/sysdep/barrier_32.h
- delete mode 100644 arch/um/sys-x86/shared/sysdep/barrier_64.h
+ arch/um/sys-x86/shared/sysdep/skas_ptrace.h    |   25 ++++++++++++++++++++---
+ arch/um/sys-x86/shared/sysdep/skas_ptrace_32.h |   22 ---------------------
+ arch/um/sys-x86/shared/sysdep/skas_ptrace_64.h |   22 ---------------------
+ 3 files changed, 21 insertions(+), 48 deletions(-)
+ delete mode 100644 arch/um/sys-x86/shared/sysdep/skas_ptrace_32.h
+ delete mode 100644 arch/um/sys-x86/shared/sysdep/skas_ptrace_64.h
 
-diff --git a/arch/um/os-Linux/signal.c b/arch/um/os-Linux/signal.c
-index 4d31688..2d22f1f 100644
---- a/arch/um/os-Linux/signal.c
-+++ b/arch/um/os-Linux/signal.c
-@@ -12,7 +12,6 @@
- #include "as-layout.h"
- #include "kern_util.h"
- #include "os.h"
--#include "sysdep/barrier.h"
- #include "sysdep/mcontext.h"
- 
- void (*sig_info[NSIG])(int, struct uml_pt_regs *) = {
-diff --git a/arch/um/sys-x86/shared/sysdep/barrier.h b/arch/um/sys-x86/shared/sysdep/barrier.h
-deleted file mode 100644
-index 89ee23b..0000000
---- a/arch/um/sys-x86/shared/sysdep/barrier.h
-+++ /dev/null
-@@ -1,5 +0,0 @@
+diff --git a/arch/um/sys-x86/shared/sysdep/skas_ptrace.h b/arch/um/sys-x86/shared/sysdep/skas_ptrace.h
+index e63b575..453febe 100644
+--- a/arch/um/sys-x86/shared/sysdep/skas_ptrace.h
++++ b/arch/um/sys-x86/shared/sysdep/skas_ptrace.h
+@@ -1,5 +1,22 @@
 -#ifdef __i386__
--#include "barrier_32.h"
+-#include "skas_ptrace_32.h"
 -#else
--#include "barrier_64.h"
--#endif
-diff --git a/arch/um/sys-x86/shared/sysdep/barrier_32.h b/arch/um/sys-x86/shared/sysdep/barrier_32.h
+-#include "skas_ptrace_64.h"
++/*
++ * Copyright (C) 2000, 2001, 2002 Jeff Dike (jdike@karaya.com)
++ * Licensed under the GPL
++ */
++
++#ifndef __SYSDEP_X86_SKAS_PTRACE_H
++#define __SYSDEP_X86_SKAS_PTRACE_H
++
++struct ptrace_faultinfo {
++        int is_write;
++        unsigned long addr;
++};
++
++struct ptrace_ldt {
++        int func;
++        void *ptr;
++        unsigned long bytecount;
++};
++
++#define PTRACE_LDT 54
++
+ #endif
+diff --git a/arch/um/sys-x86/shared/sysdep/skas_ptrace_32.h b/arch/um/sys-x86/shared/sysdep/skas_ptrace_32.h
 deleted file mode 100644
-index b58d52c..0000000
---- a/arch/um/sys-x86/shared/sysdep/barrier_32.h
+index e27b8a7..0000000
+--- a/arch/um/sys-x86/shared/sysdep/skas_ptrace_32.h
 +++ /dev/null
-@@ -1,9 +0,0 @@
--#ifndef __SYSDEP_I386_BARRIER_H
--#define __SYSDEP_I386_BARRIER_H
--
--/* Copied from include/asm-i386 for use by userspace.  i386 has the option
-- * of using mfence, but I'm just using this, which works everywhere, for now.
+@@ -1,22 +0,0 @@
+-/*
+- * Copyright (C) 2000, 2001, 2002 Jeff Dike (jdike@karaya.com)
+- * Licensed under the GPL
 - */
--#define mb() asm volatile("lock; addl $0,0(%esp)")
+-
+-#ifndef __SYSDEP_I386_SKAS_PTRACE_H
+-#define __SYSDEP_I386_SKAS_PTRACE_H
+-
+-struct ptrace_faultinfo {
+-        int is_write;
+-        unsigned long addr;
+-};
+-
+-struct ptrace_ldt {
+-        int func;
+-        void *ptr;
+-        unsigned long bytecount;
+-};
+-
+-#define PTRACE_LDT 54
 -
 -#endif
-diff --git a/arch/um/sys-x86/shared/sysdep/barrier_64.h b/arch/um/sys-x86/shared/sysdep/barrier_64.h
+diff --git a/arch/um/sys-x86/shared/sysdep/skas_ptrace_64.h b/arch/um/sys-x86/shared/sysdep/skas_ptrace_64.h
 deleted file mode 100644
-index 7b610be..0000000
---- a/arch/um/sys-x86/shared/sysdep/barrier_64.h
+index 95db4be7..0000000
+--- a/arch/um/sys-x86/shared/sysdep/skas_ptrace_64.h
 +++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef __SYSDEP_X86_64_BARRIER_H
--#define __SYSDEP_X86_64_BARRIER_H
+@@ -1,22 +0,0 @@
+-/*
+- * Copyright (C) 2000, 2001, 2002 Jeff Dike (jdike@karaya.com)
+- * Licensed under the GPL
+- */
 -
--/* Copied from include/asm-x86_64 for use by userspace. */
--#define mb() 	asm volatile("mfence":::"memory")
+-#ifndef __SYSDEP_X86_64_SKAS_PTRACE_H
+-#define __SYSDEP_X86_64_SKAS_PTRACE_H
+-
+-struct ptrace_faultinfo {
+-        int is_write;
+-        unsigned long addr;
+-};
+-
+-struct ptrace_ldt {
+-        int func;
+-        void *ptr;
+-        unsigned long bytecount;
+-};
+-
+-#define PTRACE_LDT 54
 -
 -#endif
 -- 
