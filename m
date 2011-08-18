@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab1HRNPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:15:38 -0400
-Received: from lucidpixels.com ([72.73.18.11]:49050 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab1HRNPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 09:15:37 -0400
-Date: Thu, 18 Aug 2011 09:15:36 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jeff Layton <jlayton@samba.org>
-cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-In-Reply-To: <20110818091140.385a9455@barsoom.rdu.redhat.com>
-Message-ID: <alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
- <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
- <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan> <20110818091140.385a9455@barsoom.rdu.redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755987Ab1HRNTg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:19:36 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5550 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761Ab1HRNTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 09:19:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=elDhKg53SpqPxdXewGoSzlVwn6Q/YJcFqwr3vVWeNKrEQRtbqepPwaXQVFSd/dsER
+	giPLuuTNzRALLBMcVhj/A==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Sergei Shtylyov" <sshtylyov@mvista.com>, "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108171704280.2100-100000@iolanthe.rowland.org>
+Date: Thu, 18 Aug 2011 15:19:20 +0200
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Message-ID: <op.v0evaiyqvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1108171704280.2100-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 18 Aug 2011, Jeff Layton wrote:
-
-> On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
-> Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->
->> Justin.
+> On Wed, 17 Aug 2011, Michal Nazarewicz wrote:
+>> --- a/drivers/usb/gadget/composite.c
+>> +++ b/drivers/usb/gadget/composite.c
+>> @@ -1559,12 +1559,6 @@ composite_resume(struct usb_gadget *gadget)
+>>  /*-------------------------------------------------------------------------*/
 >>
+>>  static struct usb_gadget_driver composite_driver = {
+>> -#ifdef CONFIG_USB_GADGET_SUPERSPEED
+>> -	.speed		= USB_SPEED_SUPER,
+>> -#else
+>> -	.speed		= USB_SPEED_HIGH,
+>> -#endif
+>> -
+>>  	.unbind		= composite_unbind,
+>>
+>>  	.setup		= composite_setup,
+>> @@ -1609,8 +1603,7 @@ int usb_composite_probe(struct  
+>> usb_composite_driver *driver,
+>>  		driver->iProduct = driver->name;
+>>  	composite_driver.function =  (char *) driver->name;
+>>  	composite_driver.driver.name = driver->name;
+>> -	composite_driver.speed = min((u8)composite_driver.speed,
+>> -				     (u8)driver->max_speed);
+>> +	composite_driver.speed = driver->max_speed;
+>>  	composite = driver;
+>>  	composite_gadget_bind = bind;
+
+On Wed, 17 Aug 2011 23:09:37 +0200, Alan Stern <stern@rowland.harvard.edu>  
+wrote:
+> I see what's going on here.  Your original patch was wrong and then my
+> correction was wrong as well.
 >
-> To be clear -- incoming in this case is reads or writes?
-Reading from the CIFS share (Windows 7).
-
+> This line has to remain the way it was (although those (u8) typecasts
+> don't seem to be necessary).  Above, you have to initialize
+> composite_driver.speed to an appropriate value, probably
+> USB_SPEED_SUPER.
 >
-> Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
-> 3.0 I added a patchset to increase the allowable wsize and to allow the
-> kernel to issue writes in parallel.
-Ahh, good to know, have not tried writes yet.
+> What you didn't realize in your original patch is that
+> usb_composite_probe() gets called more than once.  Each time it is
+> called, it has to adjust composite_driver.speed.
 
->
-> Reads still suffer from the same problem however. I'm working on a
-> patchset that should do the same thing for them, but it requires a
-> fairly substantial overhaul of the receive codepaths.
-Ok, that explains it then, thanks.
+That's sneaky of composite.c...  But is it desired behaviour?  I cannot
+came up with a situation where that's what we want.  I would imagine that
+usb_composite_probe() should assume the same speed for given
+usb_composite_driver regardless if some other slower usb_composite_driver
+was loaded.
 
-One other item, the rsync is currently running, what does mean/what option
-would fix it/make the error go away?
-
-[ 3730.897554] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3755.727255] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3760.509489] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3760.786650] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3762.854706] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3763.052163] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3764.962962] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3765.460372] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3765.855425] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3767.677672] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3781.958450] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3800.493896] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3805.911191] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3806.121384] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3817.356127] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3825.148050] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3833.687886] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3834.199746] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3834.448342] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3866.848508] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3867.126729] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3868.428427] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3872.206396] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3872.812745] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3877.655580] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3880.718684] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3880.769545] CIFS VFS: did not end path lookup where expected namelen is 0
-[ 3882.026917] CIFS VFS: did not end path lookup where expected namelen is 0
-
-Justin.
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
