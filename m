@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1HRH7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 03:59:06 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:49155 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755228Ab1HRH7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 03:59:03 -0400
-Subject: Re: [PATCH] checkpatch: do not test/warn of leading whitespace
- before signature tags
-From: Joe Perches <joe@perches.com>
-To: jeffrey.t.kirsher@intel.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Anish Kumar <anish198519851985@gmail.com>,
-        Andy Whitcroft <apw@canonical.com>
-In-Reply-To: <1313653632.2128.88.camel@jtkirshe-mobl>
-References: <1313650112-17287-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	 <1313652390.32547.53.camel@Joe-Laptop>
-	 <1313653632.2128.88.camel@jtkirshe-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Aug 2011 00:59:01 -0700
-Message-ID: <1313654341.32547.62.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1755348Ab1HRH76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 03:59:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62592 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755264Ab1HRH75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 03:59:57 -0400
+Message-ID: <4E4CB291.5010102@cn.fujitsu.com>
+Date: Thu, 18 Aug 2011 14:34:57 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: JJ Ding <jj_ding@emc.com.tw>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 5/6] Input: elantech - clean up elantech_init
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw>
+In-Reply-To: <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-18 14:34:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-18 14:34:46,
+	Serialize complete at 2011-08-18 14:34:46
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 00:47 -0700, Jeff Kirsher wrote:
-> On Thu, 2011-08-18 at 00:26 -0700, Joe Perches wrote:
-> > On Wed, 2011-08-17 at 23:48 -0700, Jeff Kirsher wrote:
-> > > From: Bruce Allan <bruce.w.allan@intel.com>
-> > > 
-> > > Commit 2011247 introduced additional style checks for signature tags in
-> > > patches which is good.  Unfortunately, now whenever patches are checked
-> > > by piping the output of 'git show' or 'stg show' through checkpatch it
-> > > warns not to use whitespace before all signature tags since these (and the
-> > > rest of the patch description) are indented.  Remove this test/warning.
-> > 
-> > I think this is not a good idea.
-> > 
-> > checkpatch is meant for patches not git log output.
-> > indenting signatures can cause other problems later.
-> > 
-> > I think you can avoid this easily by using checkpatch
-> > option --ignore=BAD_SIGN_OFF when using git log output
-> > as input.
-> 
-> The problem I have with this is that the sign-off's are not bad, they
-> are by default indented by 'git show' or 'stg show' so checkpatch.pl
-> should handle the "default" formatting of git/stg and if there is
-> additional indenting not expected, then the sign-off's should be
-> considered bad.
+On 08/18/2011 09:57 AM, JJ Ding wrote:
+>   	if (elantech_set_absolute_mode(psmouse)) {
+>   		pr_err("failed to put touchpad into absolute mode.\n");
+>   		goto init_fail;
+Hi JJ,
+--
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index e13a719..675c236 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -1069,7 +1069,7 @@ int elantech_init(struct psmouse *psmouse)
 
-I disagree.
+         return 0;
 
-checkpatch should handle the default input of patches
-as best it can.
+- init_fail:
++init_fail:
+         kfree(etd);
+         return -1;
+  }
+--
 
-I suppose checkpatch could have a different "--input=git"
-or some such to avoid certain things that git might produce
-that a patch would not.
+also has space before *init_fail*, you may do this in your next version.
 
-Deleting useful checks for patches isn't a good idea.
-
-> If this option is added, then if there were "real"
-> problems with the sign-off, it would not be displayed.
-
-So what?
-
-It would also be too late to do anything about
-it anyway as it would already be committed.
-
-> > You could also use: 
-> > git log --format="commit %H%nAuthor: %an <%ae>%nDate:   %aD%n%n%s%n%n%b"
-> > so that you get the current default --format=medium
-> > output without indenting the commit log body.
-> Even doing this does not resolve the "false" warnings" that
-> checkpatch.pl produces regarding the sign-off's.
-
-I tried it.  It works for me.
-What about it doesn't work for you?
-
-
+Thanks
+-Wanlong Gao
