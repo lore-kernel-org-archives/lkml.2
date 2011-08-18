@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab1HRQuP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:50:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43942 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab1HRQuN (ORCPT
+	id S1751830Ab1HRQxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:53:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62001 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1HRQxf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:50:13 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/6] perf evlist: Fix missing event name init for default event
-Date: Thu, 18 Aug 2011 13:50:00 -0300
-Message-Id: <1313686204-30295-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1313686204-30295-1-git-send-email-acme@infradead.org>
-References: <1313686204-30295-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 18 Aug 2011 12:53:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313683211-sup-3134@shiny>
+References: <CAPL5yKdvMtCo8qqqJGM-FXk7CmhkY98QeDa8uH=ZDFLjus7Wng@mail.gmail.com>
+	<1313499055-sup-2296@shiny>
+	<CAPL5yKc7wztLatbk-4sVDnTLeiSeeXaXZd45r_rxDhdtR3mtPg@mail.gmail.com>
+	<4E4B181E.8000508@cn.fujitsu.com>
+	<CAKcLGm-c8zEi+=j2M_QjvS3GGJezvN_DTbUwb-tZtjPj9ZhNrQ@mail.gmail.com>
+	<1313683211-sup-3134@shiny>
+Date: Thu, 18 Aug 2011 11:53:33 -0500
+Message-ID: <CAKcLGm8rY+3TYpe=ivmNrsZgUcBcgk3-6RRe81vGComN2bqgMw@mail.gmail.com>
+Subject: Re: processes stuck in llseek
+From: Mitch Harder <mitch.harder@sabayonlinux.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Dan Merillat <dan.merillat@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        BTRFS Mailing list <linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+On Thu, Aug 18, 2011 at 11:00 AM, Chris Mason <chris.mason@oracle.com> wrote:
+> Excerpts from Mitch Harder's message of 2011-08-18 11:40:17 -0400:
+>> On Tue, Aug 16, 2011 at 8:23 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>> > Dan Merillat wrote:
+>> >> On Tue, Aug 16, 2011 at 8:51 AM, Chris Mason <chris.mason@oracle.com> wrote:
+>> >>> Excerpts from Dan Merillat's message of 2011-08-15 23:59:50 -0400:
+>> >>
+>> >>> Dan Carpenter sent a patch for this, I'll get it queued up for rc3.
+>> >>
+>> >> Can you send it?  I'd like to test it to see if it fixes my system.
+>> >
+>> > Here it is.
+>> >
+>> > http://marc.info/?l=linux-btrfs&m=131176036219732&w=2
+>> >
+>>
+>> Doesn't this patch rely on Josef's SEEK_HOLE/SEEK_DATA patch set which
+>> isn't in the kernel yet?
+>>
+>> http://marc.info/?l=linux-btrfs&m=130927580606177&w=2
+>
+> It does, but the hang was reported on 3.1-rc1, which does have Josef's
+> code.
+>
 
-When no event is given to perf record, perf top, a default event is
-initialized (cycles). However, perf_evlist__add_default() was not
-setting the symbolic name for the event. Perf top worked simply because
-it was reconstructing the name from the event code. But it should not
-have to do this. This patch initializes the evsel->name field properly.
+Thanks.
 
-This second version improves the code flow on the non error path.
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20110607161936.GA8163@quad
-Signed-off-by: Stephane Eranian <eranian@google.com>
-[committer note: Use perf_evsel__delete() instead of plain free()]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evlist.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index e03e7bc..c12bd47 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
- 
- 	if (evsel == NULL)
--		return -ENOMEM;
-+		goto error;
-+
-+	/* use strdup() because free(evsel) assumes name is allocated */
-+	evsel->name = strdup("cycles");
-+	if (!evsel->name)
-+		goto error_free;
- 
- 	perf_evlist__add(evlist, evsel);
- 	return 0;
-+error_free:
-+	perf_evsel__delete(evsel);
-+error:
-+	return -ENOMEM;
- }
- 
- void perf_evlist__disable(struct perf_evlist *evlist)
--- 
-1.6.2.5
-
+That gives me some insights regarding the differences between the
+'for-linus' and the 'for-linus-merged' branches.
