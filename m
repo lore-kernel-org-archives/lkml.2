@@ -1,52 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1HRIZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 04:25:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49408 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755119Ab1HRIZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 04:25:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build warning after merge of the moduleh tree
-Date: Thu, 18 Aug 2011 10:26:51 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20110818150945.b429ef302fd45a6a309b52d4@canb.auug.org.au>
-In-Reply-To: <20110818150945.b429ef302fd45a6a309b52d4@canb.auug.org.au>
+	id S1755317Ab1HRIZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 04:25:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48287 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755119Ab1HRIZQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 04:25:16 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108181026.51813.rjw@sisk.pl>
+In-Reply-To: <CANFwon2DrFordKntgdXF_JiAo4r=WqUsnbS0pBt7Jj9qeyC13A@mail.gmail.com>
+References: <CANFwon2DrFordKntgdXF_JiAo4r=WqUsnbS0pBt7Jj9qeyC13A@mail.gmail.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Thu, 18 Aug 2011 16:24:35 +0800
+Message-ID: <CANFwon042nY_0hZug=-CE9fuwNrsfC3+RwNWvu45wa81Bfd7Hg@mail.gmail.com>
+Subject: Re: A script that used by GDB to load the symbols from Linux kernel modules
+To: linux-kernel@vger.kernel.org, gdb@sourceware.org
+Content-Type: multipart/mixed; boundary=0015174414922c7ea704aac35ac1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--0015174414922c7ea704aac35ac1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday, August 18, 2011, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> After merging the moduleh tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
-> 
-> drivers/base/power/common.c:51:1: warning: data definition has no type or storage class
-> drivers/base/power/common.c:51:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> drivers/base/power/common.c:51:1: warning: parameter names (without types) in function declaration
-> drivers/base/power/common.c:85:1: warning: data definition has no type or storage class
-> drivers/base/power/common.c:85:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> drivers/base/power/common.c:85:1: warning: parameter names (without types) in function declaration
-> 
-> Caused by the interaction of the module.h split up with commit
-> 616d5814c605 ("PM: Reference counting of power.subsys_data") from the pm
-> tree.
-> 
-> I added this patch for today (Rafael, in your tree this needs to include
-> module.h) and will carry it as necessary:
+Add a menu for select directory and a check.
 
-Do you mean that drivers/base/power/common.c should include module.h
-or something else?
+Thanks,
+Hui
 
-Rafael
+On Wed, Aug 17, 2011 at 13:45, Hui Zhu <teawater@gmail.com> wrote:
+> Hi,
+>
+> When use GDB to debug or trace your kernel with KGDB, QEMU debug
+> interface or KGTP. =A0You must get some trouble with LKM symbols. =A0For
+> example:
+> (gdb) target remote localhost:12345
+> Remote debugging using localhost:12345
+> native_safe_halt () at
+> /home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
+> 50 =A0 =A0 =A0}
+> (gdb) b e100_poll
+> Function "e100_poll" not defined.
+> Make breakpoint pending on future shared library load? (y or [n])
+> This is because GDB didn't get the LKM symbols. =A0You can do it with
+> your hand. =A0But if you have a lot of LKMs, it will need some time.
+>
+> Now, GDB support python script. =A0The attachment is a script to load
+> all symbols from Linux kernel modules to GDB.
+> For example:
+> (gdb) target remote localhost:12345
+> Remote debugging using localhost:12345
+> native_safe_halt () at
+> /home/teawater/big/kernel/linux-2.6/arch/x86/include/asm/irqflags.h:50
+> 50 =A0 =A0 =A0}
+> (gdb) so ~/kernel/svn/branches/teawater/getmod.py
+> (gdb) b e100_poll
+> Breakpoint 1 at 0xc889db40: file
+> /home/teawater/big/kernel/linux-2.6/drivers/net/e100.c, line 2165.
+>
+> This script will include in KGTP(https://code.google.com/p/kgtp/) source.
+>
+> Thanks,
+> Hui
+>
+
+--0015174414922c7ea704aac35ac1
+Content-Type: text/x-python; charset=US-ASCII; name="getmod.py"
+Content-Disposition: attachment; filename="getmod.py"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_grhgrk2h1
+
+IyEvdXNyL2Jpbi9weXRob24KCiMgVGhpcyBzY3JpcHQgaXMgdXNlZCBieSBHREIgdG8gbG9hZCB0
+aGUgc3ltYm9scyBmcm9tIExpbnV4IGtlcm5lbCBtb2R1bGVzCiMgR1BMCiMgQ29weXJpZ2h0KEMp
+IEh1aSBaaHUgKHRlYXdhdGVyQGdtYWlsLmNvbSksIDIwMTEKCiNTZXQgc3BlY2lhbCBtb2Rfc2Vh
+cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0iZGlyIgojQ2xlYXIgc3BlY2lhbCBtb2Rfc2Vh
+cmNoX2Rpcgojc2V0ICRtb2Rfc2VhcmNoX2Rpcj0odm9pZCkxCgppbXBvcnQgZ2RiOwppbXBvcnQg
+b3M7CgpkZWYgZm9ybWF0X2ZpbGUobmFtZSk6Cgl0bXAgPSAiIjsKCWZvciBjIGluIG5hbWU6CgkJ
+aWYgYyA9PSAiXyI6CgkJCWMgPSAiLSI7CgkJdG1wICs9IGM7CglyZXR1cm4gdG1wOwoKI0NoZWNr
+IGlmIHRoZSB0YXJnZXQgaXMgYXZhaWxhYmxlCmlmIHN0cihnZGIuc2VsZWN0ZWRfdGhyZWFkKCkp
+ID09ICJOb25lIjoKCXJhaXNlIGdkYi5lcnJvcigiUGxlYXNlIGNvbm5lY3QgdG8gTGludXggS2Vy
+bmVsIGJlZm9yZSB1c2UgdGhlIHNjcmlwdC4iKTsKCiNPdXRwdXQgdGhlIGhlbHAKcHJpbnQgIlVz
+ZSBHREIgY29tbWFuZCBcInNldCAkbW9kX3NlYXJjaF9kaXI9ZGlyXCIgdG8gc2V0IGFuIGRpcmVj
+dG9yeSBmb3Igc2VhcmNoIHRoZSBtb2R1bGVzLiIKCiNHZXQgdGhlIG1vZF9zZWFyY2hfZGlyCm1v
+ZF9zZWFyY2hfZGlyX2xpc3QgPSBbXTsKI0dldCBkaXIgZnJvbSAkbW9kX3NlYXJjaF9kaXIKdG1w
+X2RpciA9IGdkYi5wYXJzZV9hbmRfZXZhbCgiJG1vZF9zZWFyY2hfZGlyIik7CmlmIHRtcF9kaXIu
+dHlwZS5jb2RlID09IGdkYi5UWVBFX0NPREVfQVJSQVk6Cgl0bXBfZGlyID0gc3RyKHRtcF9kaXIp
+OwoJdG1wX2RpciA9IHRtcF9kaXJbMTpsZW4odG1wX2RpcildOwoJdG1wX2RpciA9IHRtcF9kaXJb
+MDp0bXBfZGlyLmluZGV4KCJcIiIpXTsKCW1vZF9zZWFyY2hfZGlyX2xpc3QuYXBwZW5kKHRtcF9k
+aXIpOwojR2V0IGRpciB0aGF0IHNhbWUgd2l0aCBjdXJyZW50IHZtbGludXgKdG1wX2RpciA9IHN0
+cihnZGIuZXhlY3V0ZSgiaW5mbyBmaWxlcyIsIEZhbHNlLCBUcnVlKSk7CnRtcF9kaXIgPSB0bXBf
+ZGlyW3RtcF9kaXIuaW5kZXgoIlN5bWJvbHMgZnJvbSBcIiIpK2xlbigiU3ltYm9scyBmcm9tIFwi
+Iik6bGVuKHRtcF9kaXIpXTsKdG1wX2RpciA9IHRtcF9kaXJbMDp0bXBfZGlyLmluZGV4KCJcIiIp
+XTsKdG1wX2RpciA9IHRtcF9kaXJbMDp0bXBfZGlyLnJpbmRleCgiLyIpXTsKbW9kX3NlYXJjaF9k
+aXJfbGlzdC5hcHBlbmQodG1wX2Rpcik7CiNHZXQgdGhlIGRpciBvZiBjdXJyZW50IEtlcm5lbAp0
+bXBfZGlyID0gIi9saWIvbW9kdWxlcy8iICsgc3RyKG9zLnVuYW1lKClbMl0pOwppZiBvcy5wYXRo
+LmlzZGlyKHRtcF9kaXIpOgoJbW9kX3NlYXJjaF9kaXJfbGlzdC5hcHBlbmQodG1wX2Rpcik7CiNM
+ZXQgdXNlciBjaG9pY2UgZGlyCm1vZF9zZWFyY2hfZGlyID0gIiI7CndoaWxlIG1vZF9zZWFyY2hf
+ZGlyID09ICIiOgoJZm9yIGkgaW4gcmFuZ2UoMCwgbGVuKG1vZF9zZWFyY2hfZGlyX2xpc3QpKToK
+CQlwcmludCBzdHIoaSkrIi4gIittb2Rfc2VhcmNoX2Rpcl9saXN0W2ldOwoJdHJ5OgoJCXMgPSBp
+bnB1dCgnU2VsZWN0IGEgZGlyZWN0b3J5IGZvciBzZWFyY2ggdGhlIG1vZHVsZXMgWzBdOicpOwoJ
+ZXhjZXB0IFN5bnRheEVycm9yOgoJCXMgPSAwOwoJZXhjZXB0OgoJCWNvbnRpbnVlOwoJaWYgcyA8
+IDAgb3IgcyA+PSBsZW4obW9kX3NlYXJjaF9kaXJfbGlzdCk6CgkJY29udGludWU7Cgltb2Rfc2Vh
+cmNoX2RpciA9IG1vZF9zZWFyY2hfZGlyX2xpc3RbaV07Cgptb2RfbGlzdF9vZmZzZXQgPSBsb25n
+KGdkYi5wYXJzZV9hbmRfZXZhbCgiKChzaXplX3QpICYoKChzdHJ1Y3QgbW9kdWxlICopMCktPmxp
+c3QpKSIpKTsKbW9kX2xpc3QgPSBsb25nKGdkYi5wYXJzZV9hbmRfZXZhbCgiKCZtb2R1bGVzKSIp
+KTsKbW9kX2xpc3RfY3VycmVudCA9IG1vZF9saXN0OwoKd2hpbGUgMToKCW1vZF9saXN0X2N1cnJl
+bnQgPSBsb25nKGdkYi5wYXJzZV9hbmRfZXZhbCgiKChzdHJ1Y3QgbGlzdF9oZWFkICopICIrc3Ry
+KG1vZF9saXN0X2N1cnJlbnQpKyIpLT5uZXh0IikpOwoKCSNjaGVjayBpZiBuZWVkIGJyZWFrIHRo
+ZSBsb29wCglpZiBtb2RfbGlzdCA9PSBtb2RfbGlzdF9jdXJyZW50OgoJCWJyZWFrOwoKCW1vZCA9
+IG1vZF9saXN0X2N1cnJlbnQgLSBtb2RfbGlzdF9vZmZzZXQ7CgoJI2dldCBtb2RfbmFtZQoJbW9k
+X25hbWUgPSBzdHIoZ2RiLnBhcnNlX2FuZF9ldmFsKCIoKHN0cnVjdCBtb2R1bGUgKikiK3N0ciht
+b2QpKyIpLT5uYW1lIikpOwoJbW9kX25hbWUgPSBtb2RfbmFtZVttb2RfbmFtZS5pbmRleCgiXCIi
+KSsxOmxlbihtb2RfbmFtZSldOwoJbW9kX25hbWUgPSBtb2RfbmFtZVswOm1vZF9uYW1lLmluZGV4
+KCJcIiIpXTsKCW1vZF9uYW1lICs9ICIua28iCgltb2RfbmFtZSA9IGZvcm1hdF9maWxlKG1vZF9u
+YW1lKTsKCgkjZ2V0IG1vZF9kaXJfbmFtZQoJbW9kX2Rpcl9uYW1lID0gIiI7Cglmb3Igcm9vdCwg
+ZGlycywgZmlsZXMgaW4gb3Mud2Fsayhtb2Rfc2VhcmNoX2Rpcik6CgkJZm9yIGFmaWxlIGluIGZp
+bGVzOgoJCQl0bXBfZmlsZSA9IGZvcm1hdF9maWxlKGFmaWxlKTsKCQkJaWYgdG1wX2ZpbGUgPT0g
+bW9kX25hbWU6CgkJCQltb2RfZGlyX25hbWUgPSBvcy5wYXRoLmpvaW4ocm9vdCxhZmlsZSk7CgkJ
+CQlicmVhazsKCQlpZiBtb2RfZGlyX25hbWUgIT0gIiI6CgkJCWJyZWFrOwoKCWNvbW1hbmQgPSAi
+ICI7CgoJI0FkZCBtb2R1bGVfY29yZSB0byBjb21tYW5kCgljb21tYW5kICs9IHN0cihnZGIucGFy
+c2VfYW5kX2V2YWwoIigoc3RydWN0IG1vZHVsZSAqKSIrc3RyKG1vZCkrIiktPm1vZHVsZV9jb3Jl
+IikpOwoKCSNBZGQgZWFjaCBzZWN0X2F0dHJzLT5hdHRycyB0byBjb21tYW5kCgkjZ2V0IG5zZWN0
+aW9ucwoJbnNlY3Rpb25zID0gaW50KGdkYi5wYXJzZV9hbmRfZXZhbCgiKChzdHJ1Y3QgbW9kdWxl
+ICopIitzdHIobW9kKSsiKS0+c2VjdF9hdHRycy0+bnNlY3Rpb25zIikpOwoJc2VjdF9hdHRycyA9
+IGxvbmcoZ2RiLnBhcnNlX2FuZF9ldmFsKCIodTY0KSgoc3RydWN0IG1vZHVsZSAqKSIrc3RyKG1v
+ZCkrIiktPnNlY3RfYXR0cnMiKSk7Cglmb3IgaSBpbiByYW5nZSgwLCBuc2VjdGlvbnMpOgoJCWNv
+bW1hbmQgKz0gIiAtcyI7CgkJdG1wID0gc3RyKGdkYi5wYXJzZV9hbmRfZXZhbCgiKChzdHJ1Y3Qg
+bW9kdWxlX3NlY3RfYXR0cnMgKikiK3N0cihzZWN0X2F0dHJzKSsiKS0+YXR0cnNbIitzdHIoaSkr
+Il0ubmFtZSIpKTsKCQl0bXAgPSB0bXBbdG1wLmluZGV4KCJcIiIpKzE6bGVuKHRtcCldOwoJCXRt
+cCA9IHRtcFswOnRtcC5pbmRleCgiXCIiKV07CgkJY29tbWFuZCArPSAiICIrdG1wOwoJCXRtcCA9
+IHN0cihnZGIucGFyc2VfYW5kX2V2YWwoIigoc3RydWN0IG1vZHVsZV9zZWN0X2F0dHJzICopIitz
+dHIoc2VjdF9hdHRycykrIiktPmF0dHJzWyIrc3RyKGkpKyJdLmFkZHJlc3MiKSk7CgkJY29tbWFu
+ZCArPSAiICIrdG1wOwoKCWlmIG1vZF9kaXJfbmFtZSA9PSAiIjoKCQlwcmludCAiQ2FuIGZpbmQg
+b3V0Iixtb2RfbmFtZSwiZnJvbSBkaXJlY3RvcnkuIjsKCQlwcmludCAiUGxlYXNlIHVzZSBmb2xs
+b3dpbmcgY29tbWFuZCBsb2FkIHRoZSBzeW1ib2xzIGZyb20gaXQ6IgoJCXByaW50ICJhZGQtc3lt
+Ym9sLWZpbGUgc29tZV9kaXIvIittb2RfbmFtZStjb21tYW5kOwoJZWxzZToKCQkjcHJpbnQgImFk
+ZC1zeW1ib2wtZmlsZSAiK21vZF9kaXJfbmFtZStjb21tYW5kOwoJCWdkYi5leGVjdXRlKCJhZGQt
+c3ltYm9sLWZpbGUgIittb2RfZGlyX25hbWUrY29tbWFuZCwgRmFsc2UsIEZhbHNlKTsK
+--0015174414922c7ea704aac35ac1--
