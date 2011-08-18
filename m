@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab1HRKom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 06:44:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46381 "EHLO arroyo.ext.ti.com"
+	id S1755536Ab1HRKps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 06:45:48 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:54722 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1HRKok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 06:44:40 -0400
-From: Anand Gadiyar <gadiyar@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: Anand Gadiyar <gadiyar@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH] mfd: omap-usb-host: Make TLL mode work again
-Date: Thu, 18 Aug 2011 16:14:31 +0530
-Message-ID: <1313664271-694-1-git-send-email-gadiyar@ti.com>
-X-Mailer: git-send-email 1.5.6.6
+	id S1755166Ab1HRKpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 06:45:46 -0400
+Message-ID: <4E4CED56.1030100@nod.at>
+Date: Thu, 18 Aug 2011 12:45:42 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stanislav Meduna <stano@meduna.org>
+CC: linux-kernel@vger.kernel.org, gunnarlindroth@hotmail.com,
+        user-mode-linux-devel@lists.sourceforge.net, inguin@gmx.de
+Subject: Re: [uml-devel] Floating point problems on UML - help needed
+References: <4E4C2B6F.7000800@nod.at> <4E4CB13C.7010502@meduna.org>
+In-Reply-To: <4E4CB13C.7010502@meduna.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code section seems to have been accidentally copy pasted.
-It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
-register and prevents the TLL mode from working correctly.
+Am 18.08.2011 08:29, schrieb Stanislav Meduna:
+> On 17.08.2011 22:58, Richard Weinberger wrote:
+>
+>> It looks like FPU registers get sometimes lost after switching between
+>> two or more threads.
+>
+> This is probably a bug in UML I reported nearly three years ago.
+> For me mode=skas0 worked aruond the issue.
+>
+> http://thread.gmane.org/gmane.linux.uml.devel/11824/focus=11840
+>
+> You might try the patch posted in
+> http://thread.gmane.org/gmane.linux.uml.devel/12158
+> (I don't have the environment to test it anymore)
 
-Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
----
-Against v3.1-rc2; tested against linux-next as of 20110817 as well.
+Cool, saving the FP registers explicitly on each task switch solves the 
+issue.
+Do you know why Ingo's patch was never applied?
+Ingo?
 
-This probably needs to go to -stable as well. The original code
-by me worked fine but this was broken during the code reorganization
-Keshava did.
-
- drivers/mfd/omap-usb-host.c |    1 -
- 1 file changed, 1 deletion(-)
-
-Index: linux-2.6/drivers/mfd/omap-usb-host.c
-===================================================================
---- linux-2.6.orig/drivers/mfd/omap-usb-host.c
-+++ linux-2.6/drivers/mfd/omap-usb-host.c
-@@ -676,7 +676,6 @@ static void usbhs_omap_tll_init(struct d
- 				| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
- 				| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
- 
--			reg |= (1 << (i + 1));
- 		} else
- 			continue;
- 
+Thanks,
+//richard
