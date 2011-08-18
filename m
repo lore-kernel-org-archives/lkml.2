@@ -1,223 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab1HRWJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:09:00 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:43966 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab1HRWI6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:08:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=Di/QIpeUtSGFrfVzYy2ts7QHCzm9NTSQGtMiRZ7xQhm7oIF+ApB+tz06hzvQy2pDJ
-	Xv1OB69L38RvWvy4xY+qg==
+	id S1754812Ab1HRWT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:19:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754587Ab1HRWT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 18:19:28 -0400
+Date: Thu, 18 Aug 2011 18:19:20 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110818221920.GR2227@zod.bos.redhat.com>
+References: <20110815140416.GB2227@zod.bos.redhat.com>
+ <20110815152052.GA2389@linux.vnet.ibm.com>
+ <20110817223735.GI2227@zod.bos.redhat.com>
+ <20110817224916.GO2419@linux.vnet.ibm.com>
+ <20110817230219.GJ2227@zod.bos.redhat.com>
+ <20110817230641.GA7837@somewhere.redhat.com>
+ <20110817231750.GK2227@zod.bos.redhat.com>
+ <20110818183523.GD2325@linux.vnet.ibm.com>
+ <20110818140034.668e8dea.akpm@linux-foundation.org>
+ <20110818212334.GE2325@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110818220732.459185C80B@san.sea.corp.google.com>
-References: <20110818220732.459185C80B@san.sea.corp.google.com>
-Date: Thu, 18 Aug 2011 15:08:54 -0700
-Message-ID: <CAPi7mHp9zp1mspLGdmq_+ibcWbdOcOTL7-qMU+o6LCFQJ1xBOQ@mail.gmail.com>
-Subject: Re:
-From: San Mehat <san@google.com>
-To: davem@davemloft.net, mst@redhat.com, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, digitaleric@google.com, mikew@google.com,
-        miche@google.com, maccarro@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818212334.GE2325@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pls disregard in favor of the one with an actual subject line :P
+On Thu, Aug 18, 2011 at 02:23:34PM -0700, Paul E. McKenney wrote:
+> > > I am sorry, but I didn't make the rules!  And I must carry the fix
+> > > longer as well, if that makes you feel any better.
+> > 
+> > bah, we're not that anal.  The patch fixes a bug and prevents a nasty
+> > warning spew.  Please, send it to Linus.
+> 
+> Given your Acked-by and Josh's Tested-by I might consider it.  ;-)
+> 
+> Speaking of which, Josh, does this patch help Nicolas and Michal?
 
--san
+Yes, it did.  The bug is closed because I included the patch.  (I could
+recreate it myself as well.)
 
-On Thu, Aug 18, 2011 at 3:07 PM, San Mehat <san@google.com> wrote:
->
-> TL;DR
-> -----
-> In this RFC we propose the introduction of the concept of hardware socket
-> offload to the Linux kernel. Patches will accompany this RFC in a few days,
-> but we felt we had enough on the design to solicit constructive discussion
-> from the community at-large.
->
-> BACKGROUND
-> ----------
-> Many applications within enterprise organizations suitable for virtualization
-> neither require nor desire a connection to the full internal Ethernet+IP
-> network.  Rather, some specific socket connections -- for processing HTTP
-> requests, making database queries, or interacting with storage -- are needed,
-> and IP networking in the application may typically be discouraged for
-> applications that do not sit on the edge of the network. Furthermore, removing
-> the application's need to understand where its inputs come from / go to within
-> the networking fabric can make save/restore/migration of a virtualized
-> application substantially easier - especially in large clusters and on fabrics
-> which can't handle IP re-assignment.
->
-> REQUIREMENTS
-> ------------
->  * Allow VM connectivity to internal resources without requiring additional
->   network resources (IPs, VLANs, etc).
->  * Easy authentication of network streams from a trusted domain (vmm).
->  * Protect host-kernel & network-fabric from direct exposure to untrusted
->   packet data-structures.
->  * Support for multiple distributions of Linux.
->  * Minimal third-party software maintenance burden.
->  * To be able to co-exist with the existing network stack and ethernet virtual
->   devices in the event that an applications specific requirements cannot be
->   met by this design.
->
-> DESIGN
-> ------
-> The Berkeley sockets coprocessor is a virtual PCI device which has the ability
-> to offload socket activity from an unmodified application at the BSD sockets
-> layer (Layer 4).  Offloaded socket requests bypass the local operating systems
-> networking stack entirely via the card and are relayed into the VMM
-> (Virtual Machine Manager) for processing. The VMM then passes the request to a
-> socket backend for handling. The difference between a socket backend and a
-> traditional VM ethernet backend is that the socket backend receives layer 4
-> socket (STREAM/DGRAM) requests instead of a multiplexed stream of layer 2
-> packets (ethernet) that must be interpreted by the host. This technique also
-> improves security isolation as the guest is no longer constructing packets which
-> are evaluated by the host or underlying network fabric; packet construction
-> happens in the host.
->
-> Lastly, pushing socket processing back into the host allows for host-side
-> control of the network protocols used, which limits the potential congestion
-> problems that can arise when various guests are using their own congestion
-> control algorithms.
->
-> ================================================================================
->
->           +-----------------------------------------------------------------+
->           |                                                                 |
->  guest    |                      unmodified application                     |
-> userspace  +-----------------------------------------------------------------+
->           |                         unmodified libc                         |
->           +-----------------------------------------------------------------+
->                            |                             / \
->                            |                              |
-> =========================== | ============================ | ===================
->                            |                              |
->                           \ /                             |
->                 +------------------------------------------------------+
->                 |                       socket core                    |
->                 +----+============+------------------------------------+
->                      |    INET    |                   |         / \
->  guest               +-----+------+                   |          |
->  kernel              | TCP | UDP  |                   |          |
->                      +-----+------+                   | L4 reqs  |
->                      |   NETDEV   |                   |          |
->                      +------------+                   |          |
->                      | virtio_net |                  \ /         |
->                      +------------+               +------------------+
->                          |   / \                  |    hw_socket     |
->                          |    |                   +------------------+
->                          |    |                   |  virtio_socket   |
->                          |    |                   +------------------+
->                          |    |                        |       / \
-> ========================= | == | ====================== | ====== | =============
->                         \ /   |                       \ /       |
->  host           +---------------------+        +------------------------+
-> userspace        |  virito net device  |        |  virtio socket device  |
->  (vmm)          +---------------------+        +------------------------+
->                 |  ethernet backend   |        |     socket backend     |
->                 +---------------------+        +------------------------+
->                        |     / \                      |        / \
->                 L2     |      |                       |         |     L4
->               packets  |      |                      \ /        |  requests
->                        |      |                +-----------------------+
->                        |      |                |    Socket Handlers    |
->                        |      |                +-----------------------+
->                        |      |                       |        / \
-> ======================= | ==== | ===================== | ======= | =============
->                        |      |                       |         |
->   host                \ /     |                      \ /        |
->  kernel
->
-> ================================================================================
->
-> One of the most appealing aspects of this design (to application developers) is
-> that this approach can be completely transparent to the application, provided
-> we're able to intercept the application's socket requests in such a way that we
-> do not impact performance in a negative fashion, yet retain the API semantics
-> the application expects. In the event that this design is not suitable for an
-> application, the virtual machine may be also fitted with a normal virtual
-> ethernet device in addition to the co-processor (as shown in the diagram above).
->
-> Since we wish to allow these paravirtualized sockets to coexist peacefully with
-> the existing Linux socket system, we've chosen to introduce the idea that a
-> socket can at some point transition from being managed by the O/S socket system
-> to a more enlightened 'hardware assisted' socket. The transition is managed by
-> a 'socket coprocessor' component which intercepts and gets first right of
-> refusal on handling certain global socket calls (connect, sendto, bind, etc...).
-> In this initial design, the policy on whether to transition a socket or not is
-> made by the virtual hardware, although we understand that further measurement
-> into operation latency is warranted.
->
-> In the event the determination is made to transition a socket to hw-assisted
-> mode, the socket is marked as being assisted by hardware, and all socket
-> operations are offloaded to hardware.
->
-> The following flag values have been added to struct socket (only visible within
-> the guest kernel):
->
->  * SOCK_HWASSIST
->    Indicates socket operations are handled by hardware
->
-> In order to support a variety of socket address families, addresses are
-> converted from their native socket family to an opaque string. Our initial
-> design formats these strings as URIs. The currently supported conversions are:
->
-> +-----------------------------------------------------------------------------+
-> |   Domain   |      Type     |  URI example conversion                        |
-> |  AF_INET   |  SOCK_STREAM  |  tcp://x.x.x.x:yyyy                            |
-> |  AF_INET   |  SOCK_DGRAM   |  udp://x.x.x.x:yyyy                            |
-> |  AF_INET6  |  SOCK_STREAM  |  tcp6://aaaa:b:cccc:d:eeee:ffff:gggg:hhhh/ii   |
-> |  AF_INET6  |  SOCK_DGRAM   |  udp6://aaaa:b:cccc:d:eeee:ffff:gggg:hhhh/ii   |
-> |  AF_IPX    |  SOCK_DGRAM   |  ipx://xxxxxxxx.yyyyyyyyyy.zzzz                |
-> +-----------------------------------------------------------------------------+
->
-> In order for the socket coprocessor to take control of a socket, hooks must be
-> added to the socket core. Our initial implementation hooks a number of functions
-> in the socket-core (too many), and after consideration we feel we can reduce it
-> down considerably by managing the socket 'ops' pointers.
->
-> ALTERNATIVE STRATEGIES
-> ----------------------
->
-> An alternative strategy for providing similar functionality involves either
-> modifying glibc or using LD_PRELOAD tricks to intercept socket calls. We were
-> forced to rule this out due to the complexity (and fragility) involved with
-> attempting to maintain a general solution compatible accross various
-> distributions where platform-libraries differ.
->
-> CAVEATS
-> -------
->
->  * We're currently hooked into too many socket calls. We should be able to
->   reduce the number of hooks to 3 (__sock_create(), sys_connect(), sys_bind()).
->
->  * Our 'hw_socket' component should be folded into a netdev so we can leverage
->   NAPI.
->
->  * We don't handle SOCK_SEQPACKET, SOCK_RAW, SOCK_RDM, or SOCK_PACKET sockets.
->
->  * We don't currently have support for /proc/net. Our current plan is to
->   add '/proc/net/hwsock' (filename TBD) and add support for these sockets
->   to the net-tools packages (netstat & friends), rather than muck around with
->   plumbing hardware-assisted socket info into '/proc/net/tcp' and
->   '/proc/net/udp'.
->
->  * We don't currently have SOCK_DGRAM support implemented (work in progress)
->
->  * We have insufficient integration testing in place (work in progress)
->
+> > We appear to be referring to the patch "rcu: Avoid having just-onlined
+> > CPU resched itself when RCU is idle"?  If so, the changelog doesn't
+> > even mention that the patch fixes a scheduling-while-atomic warning and
+> > the changelog fails to refer to the redhat bug report.  These omissions
+> > should be repaired, please.
+> 
+> OK...  But I cannot bring myself to believe that my fix does more than
+> hide some other bug.  Which is OK, I will just say that in the changelog.
 
+I looked for this other bug myself for a while.  I couldn't find it.
 
-
--- 
-San Mehat | Staff Software Engineer | san@google.com | 415-366-6172
+josh
