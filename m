@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab1HRMTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:19:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59969 "EHLO mx1.redhat.com"
+	id S1755909Ab1HRMTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:19:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755858Ab1HRMT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:19:28 -0400
+	id S1755825Ab1HRMTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 08:19:46 -0400
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
-        Jan Kara <jack@suse.cz>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>
-Subject: [PATCH 2/5] ext3: use fs netlink interface for ENOSPC conditions
-Date: Thu, 18 Aug 2011 14:18:23 +0200
-Message-Id: <1313669906-14931-3-git-send-email-lczerner@redhat.com>
+        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+Subject: [PATCH 5/5] btrfs: use fs netlink interface for ENOSPC conditions
+Date: Thu, 18 Aug 2011 14:18:26 +0200
+Message-Id: <1313669906-14931-6-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1313669906-14931-1-git-send-email-lczerner@redhat.com>
 References: <1313669906-14931-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,185 +23,84 @@ Register fs netlink interface and send proper warning if ENOSPC is
 encountered. Note that we differentiate between enospc for metadata and
 enospc for data.
 
-Also fix ext3_should_retry_alloc() so we do not check for free blocks
-when we are actually allocating metadata
-
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-CC: Jan Kara <jack@suse.cz>
-CC: Ext4 Developers List <linux-ext4@vger.kernel.org>
+Cc: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs@vger.kernel.org
 ---
- fs/ext3/acl.c           |    5 +++--
- fs/ext3/balloc.c        |   10 ++++++++--
- fs/ext3/inode.c         |    4 ++--
- fs/ext3/namei.c         |   10 +++++-----
- fs/ext3/super.c         |    1 +
- fs/ext3/xattr.c         |    2 +-
- include/linux/ext3_fs.h |    3 ++-
- 7 files changed, 22 insertions(+), 13 deletions(-)
+ fs/btrfs/extent-tree.c |   13 ++++++++++---
+ fs/btrfs/super.c       |    1 +
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext3/acl.c b/fs/ext3/acl.c
-index 3091f62..b900123 100644
---- a/fs/ext3/acl.c
-+++ b/fs/ext3/acl.c
-@@ -322,7 +322,7 @@ retry:
- 	error = ext3_set_acl(handle, inode, ACL_TYPE_ACCESS, acl);
- 	ext3_journal_stop(handle);
- 	if (error == -ENOSPC &&
--	    ext3_should_retry_alloc(inode->i_sb, &retries))
-+	    ext3_should_retry_alloc(inode->i_sb, &retries, 0))
- 		goto retry;
- out:
- 	posix_acl_release(acl);
-@@ -415,7 +415,8 @@ retry:
- 		return PTR_ERR(handle);
- 	error = ext3_set_acl(handle, inode, type, acl);
- 	ext3_journal_stop(handle);
--	if (error == -ENOSPC && ext3_should_retry_alloc(inode->i_sb, &retries))
-+	if (error == -ENOSPC && ext3_should_retry_alloc(inode->i_sb,
-+							&retries, 0))
- 		goto retry;
- 
- release_and_out:
-diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
-index 6386d76..5f851ff 100644
---- a/fs/ext3/balloc.c
-+++ b/fs/ext3/balloc.c
-@@ -1458,6 +1458,7 @@ static int ext3_has_free_blocks(struct ext3_sb_info *sbi)
-  * ext3_should_retry_alloc()
-  * @sb:			super block
-  * @retries		number of attemps has been made
-+ * @data		allocating (data=1 or metadata=0)
-  *
-  * ext3_should_retry_alloc() is called when ENOSPC is returned, and if
-  * it is profitable to retry the operation, this function will wait
-@@ -1466,10 +1467,15 @@ static int ext3_has_free_blocks(struct ext3_sb_info *sbi)
-  *
-  * if the total number of retries exceed three times, return FALSE.
-  */
--int ext3_should_retry_alloc(struct super_block *sb, int *retries)
-+int ext3_should_retry_alloc(struct super_block *sb, int *retries, int data)
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 66bac22..a47d9b9 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3029,13 +3029,14 @@ int btrfs_check_data_free_space(struct inode *inode, u64 bytes)
  {
--	if (!ext3_has_free_blocks(EXT3_SB(sb)) || (*retries)++ > 3)
-+	if ((data && !ext3_has_free_blocks(EXT3_SB(sb))) || ++(*retries) >= 3) {
-+		if (data)
-+			fs_nl_send_warning(sb->s_dev, FS_NL_ENOSPC_WARN);
-+		else
-+			fs_nl_send_warning(sb->s_dev, FS_NL_META_ENOSPC_WARN);
- 		return 0;
+ 	struct btrfs_space_info *data_sinfo;
+ 	struct btrfs_root *root = BTRFS_I(inode)->root;
++	struct btrfs_fs_info *fs_info = root->fs_info;
+ 	u64 used;
+ 	int ret = 0, committed = 0, alloc_chunk = 1;
+ 
+ 	/* make sure bytes are sectorsize aligned */
+ 	bytes = (bytes + root->sectorsize - 1) & ~((u64)root->sectorsize - 1);
+ 
+-	if (root == root->fs_info->tree_root ||
++	if (root == fs_info->tree_root ||
+ 	    BTRFS_I(inode)->location.objectid == BTRFS_FREE_INO_OBJECTID) {
+ 		alloc_chunk = 0;
+ 		committed = 1;
+@@ -3070,7 +3071,7 @@ alloc:
+ 			if (IS_ERR(trans))
+ 				return PTR_ERR(trans);
+ 
+-			ret = do_chunk_alloc(trans, root->fs_info->extent_root,
++			ret = do_chunk_alloc(trans, fs_info->extent_root,
+ 					     bytes + 2 * 1024 * 1024,
+ 					     alloc_target,
+ 					     CHUNK_ALLOC_NO_FORCE);
+@@ -3100,7 +3101,7 @@ alloc:
+ 		/* commit the current transaction and try again */
+ commit_trans:
+ 		if (!committed &&
+-		    !atomic_read(&root->fs_info->open_ioctl_trans)) {
++		    !atomic_read(&fs_info->open_ioctl_trans)) {
+ 			committed = 1;
+ 			trans = btrfs_join_transaction(root);
+ 			if (IS_ERR(trans))
+@@ -3111,6 +3112,8 @@ commit_trans:
+ 			goto again;
+ 		}
+ 
++		fs_nl_send_warning(fs_info->fs_devices->latest_bdev->bd_dev,
++				   FS_NL_ENOSPC_WARN);
+ 		return -ENOSPC;
+ 	}
+ 	data_sinfo->bytes_may_use += bytes;
+@@ -3522,6 +3525,10 @@ again:
+ 	}
+ 
+ out:
++	if (unlikely(-ENOSPC == ret)) {
++		dev_t bdev = root->fs_info->fs_devices->latest_bdev->bd_dev;
++		fs_nl_send_warning(bdev, FS_NL_META_ENOSPC_WARN);
 +	}
- 
- 	jbd_debug(1, "%s: retrying operation after ENOSPC\n", sb->s_id);
- 
-diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 04da6ac..6c5f69d 100644
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -1305,7 +1305,7 @@ write_begin_failed:
- 		if (pos + len > inode->i_size)
- 			ext3_truncate_failed_write(inode);
- 	}
--	if (ret == -ENOSPC && ext3_should_retry_alloc(inode->i_sb, &retries))
-+	if (ret == -ENOSPC && ext3_should_retry_alloc(inode->i_sb, &retries, 1))
- 		goto retry;
- out:
- 	return ret;
-@@ -1889,7 +1889,7 @@ retry:
- 		if (end > isize)
- 			ext3_truncate_failed_direct_write(inode);
- 	}
--	if (ret == -ENOSPC && ext3_should_retry_alloc(inode->i_sb, &retries))
-+	if (ret == -ENOSPC && ext3_should_retry_alloc(inode->i_sb, &retries, 1))
- 		goto retry;
- 
- 	if (orphan) {
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index 5571708..9abaebf 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -1725,7 +1725,7 @@ retry:
- 		err = ext3_add_nondir(handle, dentry, inode);
- 	}
- 	ext3_journal_stop(handle);
--	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
-+	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries, 0))
- 		goto retry;
- 	return err;
- }
-@@ -1762,7 +1762,7 @@ retry:
- 		err = ext3_add_nondir(handle, dentry, inode);
- 	}
- 	ext3_journal_stop(handle);
--	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
-+	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries, 0))
- 		goto retry;
- 	return err;
- }
-@@ -1849,7 +1849,7 @@ out_clear_inode:
- out_stop:
- 	brelse(dir_block);
- 	ext3_journal_stop(handle);
--	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
-+	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries, 0))
- 		goto retry;
- 	return err;
- }
-@@ -2287,7 +2287,7 @@ retry:
- 	err = ext3_add_nondir(handle, dentry, inode);
- out_stop:
- 	ext3_journal_stop(handle);
--	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
-+	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries, 0))
- 		goto retry;
- 	return err;
- err_drop_inode:
-@@ -2330,7 +2330,7 @@ retry:
- 		iput(inode);
- 	}
- 	ext3_journal_stop(handle);
--	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
-+	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries, 0))
- 		goto retry;
- 	return err;
- }
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 7beb69a..d4d6124 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -3077,6 +3077,7 @@ static int __init init_ext3_fs(void)
-         err = register_filesystem(&ext3_fs_type);
+ 	if (flushing) {
+ 		spin_lock(&space_info->lock);
+ 		space_info->flush = 0;
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 15634d4..8ac9e01 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -1266,6 +1266,7 @@ static int __init init_btrfs_fs(void)
  	if (err)
- 		goto out;
+ 		goto unregister_ioctl;
+ 
 +	init_fs_nl_family();
+ 	printk(KERN_INFO "%s loaded\n", BTRFS_BUILD_VERSION);
  	return 0;
- out:
- 	destroy_inodecache();
-diff --git a/fs/ext3/xattr.c b/fs/ext3/xattr.c
-index d565759..431db28 100644
---- a/fs/ext3/xattr.c
-+++ b/fs/ext3/xattr.c
-@@ -1072,7 +1072,7 @@ retry:
- 					      value, value_len, flags);
- 		error2 = ext3_journal_stop(handle);
- 		if (error == -ENOSPC &&
--		    ext3_should_retry_alloc(inode->i_sb, &retries))
-+		    ext3_should_retry_alloc(inode->i_sb, &retries, 0))
- 			goto retry;
- 		if (error == 0)
- 			error = error2;
-diff --git a/include/linux/ext3_fs.h b/include/linux/ext3_fs.h
-index 67a803a..34daec8 100644
---- a/include/linux/ext3_fs.h
-+++ b/include/linux/ext3_fs.h
-@@ -861,7 +861,8 @@ extern void ext3_check_blocks_bitmap (struct super_block *);
- extern struct ext3_group_desc * ext3_get_group_desc(struct super_block * sb,
- 						    unsigned int block_group,
- 						    struct buffer_head ** bh);
--extern int ext3_should_retry_alloc(struct super_block *sb, int *retries);
-+extern int ext3_should_retry_alloc(struct super_block *sb, int *retries,
-+				   int data);
- extern void ext3_init_block_alloc_info(struct inode *);
- extern void ext3_rsv_window_add(struct super_block *sb, struct ext3_reserve_window_node *rsv);
- extern int ext3_trim_fs(struct super_block *sb, struct fstrim_range *range);
+ 
 -- 
 1.7.4.4
 
