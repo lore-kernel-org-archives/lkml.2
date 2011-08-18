@@ -1,75 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab1HRUbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:31:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47364 "EHLO hera.kernel.org"
+	id S1753829Ab1HRUdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:33:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45298 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507Ab1HRUbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:31:17 -0400
-Date: Thu, 18 Aug 2011 22:29:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Tracey Dent <tdent48227@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] misc/pti.c: Fix build error when PCI is not selected
-Message-ID: <20110818202938.GB28969@kernel.org>
-References: <20110811162306.GA30710@tj-desktop>
- <20110811094520.4ee7819f.rdunlap@xenotime.net>
- <20110811165911.GA6454@tj-desktop>
- <20110818162419.GA26627@kernel.org>
- <20110818183939.GD18881@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S1753450Ab1HRUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:33:07 -0400
+Subject: Re: [PATCH] ath9k: make driver usable standalone
+From: Dan Williams <dcbw@redhat.com>
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: =?ISO-8859-1?Q?G=E1bor?= Stefanik <netrolller.3d@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Jouni Malinen <jmalinen@atheros.com>,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Aug 2011 15:35:22 -0500
+In-Reply-To: <CAG1a4rvqdB8y9ARQ=FckArm3UVG7=LFqF25kqYUYL0Uw7QNV8g@mail.gmail.com>
+References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
+	 <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
+	 <CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>
+	 <CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com>
+	 <CAG1a4rvQTA7UgxLOxu_cC88grjHttyjPD_4kyDhb7Y9FcBBkLQ@mail.gmail.com>
+	 <1313695217.23920.4.camel@dcbw.foobar.com>
+	 <CAG1a4rvqdB8y9ARQ=FckArm3UVG7=LFqF25kqYUYL0Uw7QNV8g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110818183939.GD18881@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:30:38 +0000 (UTC)
+Message-ID: <1313699724.23920.18.camel@dcbw.foobar.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Greg KH <gregkh@suse.de> wrote:
-
-> On Thu, Aug 18, 2011 at 06:24:19PM +0200, Ingo Molnar wrote:
-> > 
-> > * Tracey Dent <tdent48227@gmail.com> wrote:
-> > 
-> > > On Thu, Aug 11, 2011 at 09:45:20AM -0700, Randy Dunlap wrote:
-> > > > On Thu, 11 Aug 2011 12:23:06 -0400 Tracey Dent wrote:
-> > > > 
-> > > > > When you try to build INTEL_MID_PTI without having PCI
-> > > > > enabled. It fails like this-
-> > > > > 
-> > > > >  CC [M]  drivers/misc/pti.o
-> > > > >  drivers/misc/pti.c: In function ‘pti_pci_remove’:
-> > > > >  drivers/misc/pti.c:410: error: implicit declaration of function ‘pci_release_region’
-> > > > >  drivers/misc/pti.c: In function ‘pti_pci_probe’:
-> > > > >  drivers/misc/pti.c:859: error: implicit declaration of function ‘pci_request_region’
-> > > > > 
-> > > > > So make INTEL_MID_PTI depend on PCI to fix build error.
-> > > > 
-> > > > I think (hope) that Greg already has a patch like this queued.
-> > > > Greg- are you planning to push some patches soon?
-> > > > 
-> > > >
-> > > 
-> > > Okay, sorry for the noise then.
-> > 
-> > FYI, The fix is still not upstream, as of today's -git 
-> > (72ed62bdc46d):
-> > 
-> > drivers/misc/pti.c:410:3: error: implicit declaration of function ‘pci_release_region’ [-Werror=implicit-function-declaration]
-> > drivers/misc/pti.c:859:2: error: implicit declaration of function ‘pci_request_region’ [-Werror=implicit-function-declaration]
+On Thu, 2011-08-18 at 15:30 -0400, Pavel Ivanov wrote:
+> > In the end, you probably want to be using wpa_supplicant instead of
+> > trying to configure stuff with iw directly.
 > 
-> Yes, sorry, stuck at LinuxCon this week, will get it to Linus next 
-> week. He's busy as well, so it's not like he could pull while 
-> underwater anyway :)
+> I see Ubuntu already have wpa_supplicant installed and running.
+> Although its command line is not what suggested in documentation and I
+> don't see configuration file /etc/wpa_supplicant.conf. Does that mean
+> it works somehow differently than stated in documentation? And also
+> does all this mean that even if I'll be able to make wpa_supplicant
+> work as I need I won't be able to control wireless connection using
+> the standard Ubuntu's icon and it won't show me its state correctly?
 
-No rush: the failures trigger pretty rately - just wanted to make 
-sure it's not lost.
+NetworkManager is installed by default, and NM sends configuration to
+wpa_supplicant using a different control interface, not the config file.
+If you want to take the wifi interface out from NM's control, I think
+you can add the interface to /etc/network/interfaces and NM will then
+ignore it, and you can run wpa_supplicant manually with the '-i wlan0'
+option to point it to the right interface, and when you've got a config
+file, use '-c /path/to/config/file' to give it your configuration.
 
-Thanks,
+Or, since I'm a NetworkManager developer, is there something that you're
+not sure how to make NM do, or are you just looking to experiment?
 
-	Ingo
+Dan
+
+> 
+> Pavel
+> 
+> 
+> On Thu, Aug 18, 2011 at 3:20 PM, Dan Williams <dcbw@redhat.com> wrote:
+> > On Thu, 2011-08-18 at 00:01 -0400, Pavel Ivanov wrote:
+> >> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
+> >> > configuration tool.
+> >>
+> >> I've just tried to use iw and it didn't quite work for me. Maybe it's
+> >> interfering with something installed in Ubuntu by default but
+> >
+> > Ubuntu installs NetworkManager by default, so if you want to manually
+> > control the wifi card you'll have to tell NM to ignore the wifi device,
+> > or turn NM off temporarily.
+> >
+> >> connect/disconnect commands didn't seem to do anything. And why these
+> >> commands can be executed only as root?
+> >
+> > Because poking and configuring hardware is a privileged operation; tools
+> > like NetworkManager selectively poke holes through that wall and often
+> > require administrator passwords to do it, but at the end of the day its
+> > an operation that can affect security and stability, and that means it
+> > needs to be privileged.
+> >
+> > In the end, you probably want to be using wpa_supplicant instead of
+> > trying to configure stuff with iw directly.
+> >
+> > Dan
+> >
+> >> Well, maybe in Ubuntu 11.10 it will work better.
+> >>
+> >>
+> >> Pavel
+> >>
+> >>
+> >> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
+> >> > 2011/8/17 Pavel Ivanov <paivanof@gmail.com>:
+> >> >>> WIRELESS_EXT is not required for configuring wireless on recent
+> >> >>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
+> >> >>
+> >> >> Since what version it's deprecated? Do user-space tools know about this new API?
+> >> >>
+> >> >> Neither iwconfig nor iwlist worked for me without WIRELESS_EXT.
+> >> >>
+> >> >>
+> >> >> Pavel
+> >> >>
+> >> >
+> >> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
+> >> > configuration tool.
+> >> >
+> >> >>
+> >> >> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
+> >> >>> On Wed, Aug 17, 2011 at 5:28 AM, Pavel Ivanov <paivanof@gmail.com> wrote:
+> >> >>>> When ath9k is the only wireless driver included in the build
+> >> >>>> WIRELESS_EXT configuration option becomes undefined. Because of that
+> >> >>>> driver becomes essentially unusable as you can't actually connect to
+> >> >>>> any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
+> >> >>>> that build with ath9k and without other drivers (having WIRELESS_EXT
+> >> >>>> selected in their Kconfig) is actually usable.
+> >> >>>
+> >> >>> WIRELESS_EXT is not required for configuring wireless on recent
+> >> >>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
+> >> >>>
+> >> >>>>
+> >> >>>> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
+> >> >>>> ---
+> >> >>>>
+> >> >>>> diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
+> >> >>>> b/drivers/net/wireless/ath/ath9k/Kconfig
+> >> >>>> index d9c08c6..2573f77 100644
+> >> >>>> --- a/drivers/net/wireless/ath/ath9k/Kconfig
+> >> >>>> +++ b/drivers/net/wireless/ath/ath9k/Kconfig
+> >> >>>> @@ -11,6 +11,7 @@ config ATH9K
+> >> >>>>        select LEDS_CLASS
+> >> >>>>        select NEW_LEDS
+> >> >>>>        select ATH9K_COMMON
+> >> >>>> +       select WIRELESS_EXT
+> >> >>>>        ---help---
+> >> >>>>          This module adds support for wireless adapters based on
+> >> >>>>          Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
