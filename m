@@ -1,92 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1HRTEX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:04:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44302 "EHLO
+	id S1753845Ab1HRTEd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:04:33 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44305 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab1HRTEU (ORCPT
+	with ESMTP id S1753595Ab1HRTEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:04:20 -0400
-Date: Thu, 18 Aug 2011 20:04:19 +0100
+	Thu, 18 Aug 2011 15:04:30 -0400
+Date: Thu, 18 Aug 2011 20:04:29 +0100
 To: richard@nod.at
-Subject: Subject: [PATCH 32/91] um: don't bother blocking SIGARLM and
- SIGUSR1
+Subject: Subject: [PATCH 33/91] um: simplify set_handler()
 Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <E1Qu7t5-0007fX-F1@ZenIV.linux.org.uk>
+Message-Id: <E1Qu7tF-0007fk-FG@ZenIV.linux.org.uk>
 From: Al Viro <viro@ftp.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-We used to generate those, but we hadn't done that for a long
-time.  No need to bother blocking them for signal handlers.
+For one thing, we always block the same signals (IRQ ones - IO, WINCH, VTALRM),
+so there's no need to pass sa_mask elements in arguments.  For another, the
+flags depend only on whether it's an IRQ signal or not (we add SA_RESTART
+for them).
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
- arch/um/os-Linux/process.c      |   13 ++++++-------
- arch/um/os-Linux/signal.c       |    2 +-
- arch/um/os-Linux/skas/process.c |    2 +-
- 3 files changed, 8 insertions(+), 9 deletions(-)
+ arch/um/include/shared/os.h     |    2 +-
+ arch/um/os-Linux/process.c      |   19 ++++++-------------
+ arch/um/os-Linux/signal.c       |   22 +++++++++++-----------
+ arch/um/os-Linux/skas/process.c |    3 +--
+ 4 files changed, 19 insertions(+), 27 deletions(-)
 
+diff --git a/arch/um/include/shared/os.h b/arch/um/include/shared/os.h
+index 2e2663a..598ca82 100644
+--- a/arch/um/include/shared/os.h
++++ b/arch/um/include/shared/os.h
+@@ -225,7 +225,7 @@ extern char *get_umid(void);
+ extern void timer_init(void);
+ extern void set_sigstack(void *sig_stack, int size);
+ extern void remove_sigstack(void);
+-extern void set_handler(int sig, void (*handler)(int), int flags, ...);
++extern void set_handler(int sig, void (*handler)(int));
+ extern int change_sig(int signal, int on);
+ extern void block_signals(void);
+ extern void unblock_signals(void);
 diff --git a/arch/um/os-Linux/process.c b/arch/um/os-Linux/process.c
-index 0ced30c..c1a8fa7 100644
+index c1a8fa7..075ae92 100644
 --- a/arch/um/os-Linux/process.c
 +++ b/arch/um/os-Linux/process.c
-@@ -236,20 +236,19 @@ out:
+@@ -235,20 +235,13 @@ out:
+ 
  void init_new_thread_signals(void)
  {
- 	set_handler(SIGSEGV, (__sighandler_t) sig_handler, SA_ONSTACK,
--		    SIGUSR1, SIGIO, SIGWINCH, SIGVTALRM, -1);
-+		    SIGIO, SIGWINCH, SIGVTALRM, -1);
- 	set_handler(SIGTRAP, (__sighandler_t) sig_handler, SA_ONSTACK,
--		    SIGUSR1, SIGIO, SIGWINCH, SIGVTALRM, -1);
-+		    SIGIO, SIGWINCH, SIGVTALRM, -1);
- 	set_handler(SIGFPE, (__sighandler_t) sig_handler, SA_ONSTACK,
--		    SIGUSR1, SIGIO, SIGWINCH, SIGVTALRM, -1);
-+		    SIGIO, SIGWINCH, SIGVTALRM, -1);
- 	set_handler(SIGILL, (__sighandler_t) sig_handler, SA_ONSTACK,
--		    SIGUSR1, SIGIO, SIGWINCH, SIGVTALRM, -1);
-+		    SIGIO, SIGWINCH, SIGVTALRM, -1);
- 	set_handler(SIGBUS, (__sighandler_t) sig_handler, SA_ONSTACK,
--		    SIGUSR1, SIGIO, SIGWINCH, SIGVTALRM, -1);
-+		    SIGIO, SIGWINCH, SIGVTALRM, -1);
+-	set_handler(SIGSEGV, (__sighandler_t) sig_handler, SA_ONSTACK,
+-		    SIGIO, SIGWINCH, SIGVTALRM, -1);
+-	set_handler(SIGTRAP, (__sighandler_t) sig_handler, SA_ONSTACK,
+-		    SIGIO, SIGWINCH, SIGVTALRM, -1);
+-	set_handler(SIGFPE, (__sighandler_t) sig_handler, SA_ONSTACK,
+-		    SIGIO, SIGWINCH, SIGVTALRM, -1);
+-	set_handler(SIGILL, (__sighandler_t) sig_handler, SA_ONSTACK,
+-		    SIGIO, SIGWINCH, SIGVTALRM, -1);
+-	set_handler(SIGBUS, (__sighandler_t) sig_handler, SA_ONSTACK,
+-		    SIGIO, SIGWINCH, SIGVTALRM, -1);
++	set_handler(SIGSEGV, (__sighandler_t) sig_handler);
++	set_handler(SIGTRAP, (__sighandler_t) sig_handler);
++	set_handler(SIGFPE, (__sighandler_t) sig_handler);
++	set_handler(SIGILL, (__sighandler_t) sig_handler);
++	set_handler(SIGBUS, (__sighandler_t) sig_handler);
  	signal(SIGHUP, SIG_IGN);
- 
- 	set_handler(SIGIO, (__sighandler_t) sig_handler,
--		    SA_ONSTACK | SA_RESTART, SIGUSR1, SIGIO, SIGWINCH, SIGALRM,
--		    SIGVTALRM, -1);
-+		    SA_ONSTACK | SA_RESTART, SIGIO, SIGWINCH, SIGVTALRM, -1);
+-
+-	set_handler(SIGIO, (__sighandler_t) sig_handler,
+-		    SA_ONSTACK | SA_RESTART, SIGIO, SIGWINCH, SIGVTALRM, -1);
++	set_handler(SIGIO, (__sighandler_t) sig_handler);
  	signal(SIGWINCH, SIG_IGN);
  	signal(SIGTERM, SIG_DFL);
  }
 diff --git a/arch/um/os-Linux/signal.c b/arch/um/os-Linux/signal.c
-index 2dde9f6..75c3e9c 100644
+index 75c3e9c..f248fb2 100644
 --- a/arch/um/os-Linux/signal.c
 +++ b/arch/um/os-Linux/signal.c
-@@ -112,7 +112,7 @@ void alarm_handler(int sig, struct sigcontext *sc)
+@@ -111,8 +111,7 @@ void alarm_handler(int sig, struct sigcontext *sc)
+ 
  void timer_init(void)
  {
- 	set_handler(SIGVTALRM, (__sighandler_t) alarm_handler,
--		    SA_ONSTACK | SA_RESTART, SIGUSR1, SIGIO, SIGWINCH, -1);
-+		    SA_ONSTACK | SA_RESTART, SIGIO, SIGWINCH, -1);
+-	set_handler(SIGVTALRM, (__sighandler_t) alarm_handler,
+-		    SA_ONSTACK | SA_RESTART, SIGIO, SIGWINCH, -1);
++	set_handler(SIGVTALRM, (__sighandler_t) alarm_handler);
  }
  
  void set_sigstack(void *sig_stack, int size)
+@@ -174,27 +173,28 @@ static void hard_handler(int sig, siginfo_t *info, void *p)
+ 	handle_signal(sig, (struct sigcontext *) &uc->uc_mcontext);
+ }
+ 
+-void set_handler(int sig, void (*handler)(int), int flags, ...)
++void set_handler(int sig, void (*handler)(int))
+ {
+ 	struct sigaction action;
+-	va_list ap;
++	int flags = SA_SIGINFO | SA_ONSTACK;
+ 	sigset_t sig_mask;
+-	int mask;
+ 
+ 	handlers[sig] = (void (*)(int, struct sigcontext *)) handler;
+ 	action.sa_sigaction = hard_handler;
+ 
++	/* block irq ones */
+ 	sigemptyset(&action.sa_mask);
+-
+-	va_start(ap, flags);
+-	while ((mask = va_arg(ap, int)) != -1)
+-		sigaddset(&action.sa_mask, mask);
+-	va_end(ap);
++	sigaddset(&action.sa_mask, SIGVTALRM);
++	sigaddset(&action.sa_mask, SIGIO);
++	sigaddset(&action.sa_mask, SIGWINCH);
+ 
+ 	if (sig == SIGSEGV)
+ 		flags |= SA_NODEFER;
+ 
+-	action.sa_flags = flags | SA_SIGINFO;
++	if (sigismember(&action.sa_mask, sig))
++		flags |= SA_RESTART; /* if it's an irq signal */
++
++	action.sa_flags = flags;
+ 	action.sa_restorer = NULL;
+ 	if (sigaction(sig, &action, NULL) < 0)
+ 		panic("sigaction failed - errno = %d\n", errno);
 diff --git a/arch/um/os-Linux/skas/process.c b/arch/um/os-Linux/skas/process.c
-index 896312d..6f9fc0d 100644
+index 6f9fc0d..8515fdd 100644
 --- a/arch/um/os-Linux/skas/process.c
 +++ b/arch/um/os-Linux/skas/process.c
-@@ -643,7 +643,7 @@ int start_idle_thread(void *stack, jmp_buf *switch_buf)
+@@ -642,8 +642,7 @@ int start_idle_thread(void *stack, jmp_buf *switch_buf)
+ {
  	int n;
  
- 	set_handler(SIGWINCH, (__sighandler_t) sig_handler,
--		    SA_ONSTACK | SA_RESTART, SIGUSR1, SIGIO, SIGVTALRM, -1);
-+		    SA_ONSTACK | SA_RESTART, SIGIO, SIGVTALRM, -1);
+-	set_handler(SIGWINCH, (__sighandler_t) sig_handler,
+-		    SA_ONSTACK | SA_RESTART, SIGIO, SIGVTALRM, -1);
++	set_handler(SIGWINCH, (__sighandler_t) sig_handler);
  
  	/*
  	 * Can't use UML_SETJMP or UML_LONGJMP here because they save
