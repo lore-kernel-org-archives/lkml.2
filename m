@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1HRArh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 20:47:37 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60699 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab1HRArg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 20:47:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 09:39:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v9 03/13] memcg: add dirty page accounting
- infrastructure
-Message-Id: <20110818093959.cdf501ae.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313597705-6093-4-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
-	<1313597705-6093-4-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753866Ab1HRAyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:54:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab1HRAyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 20:54:07 -0400
+Message-ID: <4E4C62A7.5020802@redhat.com>
+Date: Wed, 17 Aug 2011 17:53:59 -0700
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        mtosatti@redhat.com, kvm@vger.kernel.org
+Subject: Re: RCU treating guest mode just like it does user-mode execution
+References: <20110817204327.GA10633@linux.vnet.ibm.com> <20110817215015.GA6423@redhat.com> <20110817220520.GN2419@linux.vnet.ibm.com> <20110817235529.GA8163@redhat.com> <20110818002513.GP2419@linux.vnet.ibm.com> <4E4C5CBE.5040102@redhat.com> <20110818004459.GQ2419@linux.vnet.ibm.com>
+In-Reply-To: <20110818004459.GQ2419@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 09:14:55 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On 08/17/2011 05:44 PM, Paul E. McKenney wrote:
+> >
+> >  The result can only be one of
+> >
+> >    reenter guest (and rcu_virt_note_context_switch)
+> >    schedule()
+> >    exit to userspace
+>
+> Very good, thank you both for bearing with me on this!
+>
 
-> Add memcg routines to count dirty, writeback, and unstable_NFS pages.
-> These routines are not yet used by the kernel to count such pages.  A
-> later change adds kernel calls to these new routines.
-> 
-> As inode pages are marked dirty, if the dirtied page's cgroup differs
-> from the inode's cgroup, then mark the inode shared across several
-> cgroup.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+Hey, it's our pleasure.  Pester us as often as you'll like and we'll 
+happily "bear with you".
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-A nitpick..
-
-
-
-> +static inline
-> +void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-> +				       struct mem_cgroup *to,
-> +				       enum mem_cgroup_stat_index idx)
-> +{
-> +	preempt_disable();
-> +	__this_cpu_dec(from->stat->count[idx]);
-> +	__this_cpu_inc(to->stat->count[idx]);
-> +	preempt_enable();
-> +}
-> +
-
-this_cpu_dec()
-this_cpu_inc()
-
-without preempt_disable/enable will work. CPU change between dec/inc will
-not be problem.
-
-Thanks,
--Kame
-
-
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
