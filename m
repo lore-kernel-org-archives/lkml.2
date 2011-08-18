@@ -1,52 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab1HRNFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:05:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605Ab1HRNFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 09:05:12 -0400
-Date: Thu, 18 Aug 2011 09:04:47 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: pstore: change mutex locking to spin_locks
-Message-ID: <20110818130447.GA1972@redhat.com>
-References: <4e4568eb10165cbab6@agluck-desktop.sc.intel.com>
- <20110817142225.8645fff7.akpm@linux-foundation.org>
- <1313617679.2212.4.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313617679.2212.4.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755817Ab1HRNKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:10:20 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44995 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755588Ab1HRNKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 09:10:18 -0400
+Date: Thu, 18 Aug 2011 09:11:40 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
+ crashes with linux-3.1-rc2
+Message-ID: <20110818091140.385a9455@barsoom.rdu.redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<3300.1313637592@jrobl>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 11:47:59PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-08-17 at 14:22 -0700, Andrew Morton wrote:
-> > It's still bad if lockdep is enabled.  See
-> > kernel/lockdep.c:lock_acquire() and lock_release().  They aren't
-> > NMI-safe. 
+On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
+Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+
 > 
-> Good thing nmi_enter() does lockdep_disable() and makes lock_acquire()
-> bail on if (current->lockdep_recursion).
 > 
-> Still the fact that pstore needs locks from NMI context (let alone tried
-> to use a mutex) makes one think one should avoid it like the plague.
+> On Thu, 18 Aug 2011, Justin Piszcz wrote:
+> 
+> >
+> >
+> > On Thu, 18 Aug 2011, Justin Piszcz wrote:
+> >
+> >> 
+> >> 
+> >> On Thu, 18 Aug 2011, J. R. Okajima wrote:
+> >> 
+> >>> 
+> >>> Justin Piszcz:
+> >>>> Does anyone know if any kernel supports CIFS w/out crashing? I'd like to
+> >>>> backup some CIFS shares, thanks.
+> >>>> 
+> >>>> 
+> >>>> mount -t cifs //w2/x /mnt -o user=user,pass=pass
+> >>>> 
+> >>>> [  881.388836] CIFS VFS: cifs_mount failed w/return code = -22
+> >>> 	:::
+> >>> 
+> >>> Since it failed mounting, this patch will help you. Although the patch
+> >>> will fix one bug, there still may exist another problem.
+> >>> 
+> >>> http://marc.info/?l=linux-cifs&m=131345112022031&w=2
+> >> 
+> >> Hi,
+> >> 
+> >> Latest patch (this one) applied to linux-3.1-rc2 works, at least it mounted
+> >> this time and did not instantly crash the kernel!
+> >> 
+> >> I also tried the hostname again (and it did not crash the kernel, but it 
+> >> failed to mount).
+> >> 
+> >> Used the IP and it mounted successfully:
+> >> //10.0.0.11/x          28T  5.0T   23T  19% /mnt
+> >> //10.0.0.11/y          19T  1.2T   18T   7% /mnt2
+> >> 
+> >> It has not crashed yet (which is good), I'll apply this patch to my
+> >> production machine and test taking backups of this data and let you know
+> >> if it crashes again, thanks!
+> >> 
+> >> Justin.
+> >
+> >
+> > Hello,
+> >
+> > It is working but very slowly:
+> >
+> > Device eth6 [10.0.1.2] (1/1):
+> > ================================================================================
+> > Incoming:                               Outgoing:
+> > Curr: 37.60 MByte/s                     Curr: 0.44 MByte/s
+> > Avg: 4.98 MByte/s                       Avg: 0.09 MByte/s
+> > Min: 0.00 MByte/s                       Min: 0.00 MByte/s
+> > Max: 40.79 MByte/s                      Max: 0.48 MByte/s
+> > Ttl: 1.45 GByte                         Ttl: 26.77 MByte
+> >
+> > Over 10GbE the other direction (Linux -> Windows (via Samba)) I get 500MiB/s, 
+> > is CIFS slow?
+> >
+> > I'll look into options to tweak the speed but this is very poor speed when 
+> > you have to transfer 5-10TB.  However, it is not crashing anymore, so any 
+> > speed is better than that :)
+> >
+> > Justin.
+> 
+> Hi,
+> 
+> Mounting with:
+> rw,uid=1000,gid=100,mode=0644,rsize=130048,wsize=1048576,credentials=/root/.cifs 
+> Same speed:
+> Device eth6 [10.0.1.2] (1/1):
+> ================================================================================
+> Incoming:                               Outgoing:
+> Curr: 32.42 MByte/s                     Curr: 0.38 MByte/s
+> Avg: 30.72 MByte/s                      Avg: 0.39 MByte/s
+> Min: 0.00 MByte/s                       Min: 0.00 MByte/s
+> Max: 43.64 MByte/s                      Max: 0.59 MByte/s
+> Ttl: 20.15 GByte                        Ttl: 261.03 MByte
+> 
+> Thoughts?
+> 
+> Has anyone achieved > 30-40MB/s with CIFS?
+> This is a 10GbE link (and yes JUMBO frames are enabled on both sides, and 
+> again, samba from Linux->Windows = 500MB/s)
+> 
+> Justin.
+> 
 
-Unfortunately, this plague is called ACPI4 (well APEI).  It's an attempt
-to provide a coherent strategy for platform errors.  It needs a lot of
-love to make it work, so we can't just avoid it (well us distro folks have
-customers who want this). :-(
+To be clear -- incoming in this case is reads or writes?
 
-I have been having conversations with Matthew and Vivek Goyal about how to
-simplify kmsg_dump, which might allow us to make some of the pstore paths
-lockless, simplifying the solution.  We'll see how that goes.
+Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
+3.0 I added a patchset to increase the allowable wsize and to allow the
+kernel to issue writes in parallel.
 
-Cheers,
-Don
+Reads still suffer from the same problem however. I'm working on a
+patchset that should do the same thing for them, but it requires a
+fairly substantial overhaul of the receive codepaths.
+
+-- 
+Jeff Layton <jlayton@samba.org>
