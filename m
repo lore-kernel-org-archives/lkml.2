@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab1HRWHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:07:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:44477 "EHLO
+	id S1754781Ab1HRWIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:08:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:43830 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab1HRWHu (ORCPT
+	with ESMTP id S1754351Ab1HRWIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:07:50 -0400
+	Thu, 18 Aug 2011 18:08:37 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=to:cc:message-id:date:from:x-system-of-record;
-	b=u/pYMC8BgT6jWMMxnb9FKTmRGAt3jvx9IvK5X3Ybc1eFbmiSiXWy/JIdGvIeCDv2O
-	7Xt/zEg1yMcvJ+NL1NBXA==
+	h=to:subject:cc:message-id:date:from:x-system-of-record;
+	b=Nbb1IahAJlL0f9YR9qwzqrRBctfdFvlAfMgpljCVM1VHXn4A7dx/XQzTiz7RyXGM0
+	60BCxyZMzlcbWgMvKpHOQ==
 To: davem@davemloft.net, mst@redhat.com, rusty@rustcorp.com.au
+Subject: [RFC 0/0] Introducing a generic socket offload framework
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         netdev@vger.kernel.org, digitaleric@google.com, mikew@google.com,
         miche@google.com, maccarro@google.com
-Message-Id: <20110818220732.459185C80B@san.sea.corp.google.com>
-Date: Thu, 18 Aug 2011 15:07:32 -0700 (PDT)
+Message-Id: <20110818220756.5C93E5C80B@san.sea.corp.google.com>
+Date: Thu, 18 Aug 2011 15:07:56 -0700 (PDT)
 From: san@google.com (San Mehat)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
