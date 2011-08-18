@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab1HRFT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:19:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49106 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab1HRFT1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:19:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAG1a4rvQTA7UgxLOxu_cC88grjHttyjPD_4kyDhb7Y9FcBBkLQ@mail.gmail.com>
-References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
-	<CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
-	<CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>
-	<CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com>
-	<CAG1a4rvQTA7UgxLOxu_cC88grjHttyjPD_4kyDhb7Y9FcBBkLQ@mail.gmail.com>
-Date: Thu, 18 Aug 2011 13:19:26 +0800
-X-Google-Sender-Auth: tYEbnP73eVP0pnLVJqnyktcCAaY
-Message-ID: <CAJ-VmomF_NNEwhNw2o_H2=efm2ZR3LaiF7rim616-SQyo-5CFA@mail.gmail.com>
-Subject: Re: [PATCH] ath9k: make driver usable standalone
-From: Adrian Chadd <adrian@freebsd.org>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753091Ab1HRFVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:21:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163Ab1HRFU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 01:20:58 -0400
+From: WANG Cong <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, WANG Cong <amwang@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@xenotime.net>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [Patch] x86: remove i386/x86_64 bzImage symlinks
+Date: Thu, 18 Aug 2011 13:19:55 +0800
+Message-Id: <1313644795-27628-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Distributions? Using deprecated APIs?
+These symlinks are unnecessary and scheduled to be removed
+for a long time.
 
-That's unpossible! :-)
+I test this patch on Fedora, nothing breaks, but I am not
+sure about other distros.
 
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 
-
-Adrian
-
-2011/8/18 Pavel Ivanov <paivanof@gmail.com>:
->> Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
->> configuration tool.
->
-> I've just tried to use iw and it didn't quite work for me. Maybe it's
-> interfering with something installed in Ubuntu by default but
-> connect/disconnect commands didn't seem to do anything. And why these
-> commands can be executed only as root?
-> Well, maybe in Ubuntu 11.10 it will work better.
->
->
-> Pavel
->
->
-> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
->> 2011/8/17 Pavel Ivanov <paivanof@gmail.com>:
->>>> WIRELESS_EXT is not required for configuring wireless on recent
->>>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
->>>
->>> Since what version it's deprecated? Do user-space tools know about this new API?
->>>
->>> Neither iwconfig nor iwlist worked for me without WIRELESS_EXT.
->>>
->>>
->>> Pavel
->>>
->>
->> Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
->> configuration tool.
->>
->>>
->>> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
->>>> On Wed, Aug 17, 2011 at 5:28 AM, Pavel Ivanov <paivanof@gmail.com> wrote:
->>>>> When ath9k is the only wireless driver included in the build
->>>>> WIRELESS_EXT configuration option becomes undefined. Because of that
->>>>> driver becomes essentially unusable as you can't actually connect to
->>>>> any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
->>>>> that build with ath9k and without other drivers (having WIRELESS_EXT
->>>>> selected in their Kconfig) is actually usable.
->>>>
->>>> WIRELESS_EXT is not required for configuring wireless on recent
->>>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
->>>>
->>>>>
->>>>> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
->>>>> ---
->>>>>
->>>>> diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
->>>>> b/drivers/net/wireless/ath/ath9k/Kconfig
->>>>> index d9c08c6..2573f77 100644
->>>>> --- a/drivers/net/wireless/ath/ath9k/Kconfig
->>>>> +++ b/drivers/net/wireless/ath/ath9k/Kconfig
->>>>> @@ -11,6 +11,7 @@ config ATH9K
->>>>>        select LEDS_CLASS
->>>>>        select NEW_LEDS
->>>>>        select ATH9K_COMMON
->>>>> +       select WIRELESS_EXT
->>>>>        ---help---
->>>>>          This module adds support for wireless adapters based on
->>>>>          Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+---
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index c4a6e14..cf59e83 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -253,16 +253,6 @@ Who:	Len Brown <len.brown@intel.com>
+ 
+ ---------------------------
+ 
+-What:	i386/x86_64 bzImage symlinks
+-When:	April 2010
+-
+-Why:	The i386/x86_64 merge provides a symlink to the old bzImage
+-	location so not yet updated user space tools, e.g. package
+-	scripts, do not break.
+-Who:	Thomas Gleixner <tglx@linutronix.de>
+-
+----------------------------
+-
+ What:	GPIO autorequest on gpio_direction_{input,output}() in gpiolib
+ When:	February 2010
+ Why:	All callers should use explicit gpio_request()/gpio_free().
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index b02e509..5401a3c 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -162,8 +162,6 @@ ifeq ($(CONFIG_X86_DECODER_SELFTEST),y)
+ 	$(Q)$(MAKE) $(build)=arch/x86/tools posttest
+ endif
+ 	$(Q)$(MAKE) $(build)=$(boot) $(KBUILD_IMAGE)
+-	$(Q)mkdir -p $(objtree)/arch/$(UTS_MACHINE)/boot
+-	$(Q)ln -fsn ../../x86/boot/bzImage $(objtree)/arch/$(UTS_MACHINE)/boot/$@
+ 
+ $(BOOT_TARGETS): vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot) $@
