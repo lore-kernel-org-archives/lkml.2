@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1HRVzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 17:55:07 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:41623 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754337Ab1HRVzF (ORCPT
+	id S1754600Ab1HRVzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 17:55:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44467 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab1HRVzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 17:55:05 -0400
-Date: Fri, 19 Aug 2011 00:55:02 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        James Nuss <jamesnuss@nanometrics.ca>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] ARM: davinci: da850, omapl138: introduce shared
- da850 reference components
-Message-ID: <20110818215501.GB21064@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1313702401.git.bengardiner@nanometrics.ca>
- <6650d6c73c2f5a8c4825c91cd8940fe88e46ba03.1313702401.git.bengardiner@nanometrics.ca>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
-Content-Disposition: inline
-In-Reply-To: <6650d6c73c2f5a8c4825c91cd8940fe88e46ba03.1313702401.git.bengardiner@nanometrics.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Aug 2011 17:55:19 -0400
+Subject: Re: +
+ prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision .patch
+ added to -mm tree
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-man@vger.kernel.org, roland@hack.frob.com
+Date: Thu, 18 Aug 2011 23:55:15 +0200
+In-Reply-To: <CA+55aFxGDbNOhNQJe_LpUMcJCGcW8qFFWzC9H0_KW26Xzb0cXw@mail.gmail.com>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
+	 <20110817115543.GA8745@redhat.com>
+	 <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
+	 <20110817134516.GA14136@redhat.com>
+	 <20110818124353.GA2839@tango.0pointer.de>
+	 <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop>
+	 <CA+55aFxGDbNOhNQJe_LpUMcJCGcW8qFFWzC9H0_KW26Xzb0cXw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1313704516.15082.5.camel@mop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 18, 2011 at 23:23, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Thu, Aug 18, 2011 at 11:11 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>>
+>> How about this? It:
+>> - uses task->real_parent to walk up the chain of parents.
+>
+> If I read this right, it does that for all the normal cases too.
+> Disgusting. Slowing down the *usual* UNIX case for your new made-up
+> case that nobody actually uses is not acceptable.
 
---pvezYHf7grwyp3Bc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Re-parenting is not a *usual* operation, usual exit()s have a parent and
+do not trigger that code. And in most cases of double-forking it is a
+one step, which is almost the same than it was before. Only if we skip
+multiple parents it will get the check, which is cheap anyway.
 
-Hi,
+> So NAK. We're not slowing down normal code for some new feature that
+> realistically will never be used by any normal applications.
 
-On Thu, Aug 18, 2011 at 05:50:47PM -0400, Ben Gardiner wrote:
-> @@ -0,0 +1,15 @@
-> +/*
-> + * TI DA850/OMAP-L138 reusable elements of the da850 reference design.
-> + *
-> + * Copyright (C) 2011 Nanometrics Inc. This file is licensed under
-> + * the terms of the GNU General Public License version 2. This program
-> + * is licensed "as is" without any warranty of any kind, whether express
-> + * or implied.
-> + */
-> +
-> +#include <mach/da8xx.h>
-> +
-> +void __init da850_reference_map_io(void)
-> +{
-> +	da850_init();
-> +}
+It will be used for all new service managers. UNIX is a pain if you want
+to watch your children regarding double-forking, if you are not init.
 
-if it's for this oneliner... just initialize .map_io with da850_init.
+And it will clean up the mess the desktop stuff is putting in 'ps afx'.
+Here is the before/after output:
 
-not sure it's worth to add another file.
+  253 ?        Ss     0:00 /bin/dbus-daemon --system --address=systemd: --nofork --systemd-activation
+  294 ?        Sl     0:00 /usr/libexec/polkit-1/polkitd
+  328 ?        S      0:00 /usr/sbin/modem-manager
+  608 ?        Sl     0:00 /usr/libexec/colord
+  658 ?        Sl     0:00 /usr/libexec/upowerd
+  819 ?        Sl     0:00 /usr/libexec/imsettings-daemon
+  916 ?        Sl     0:00 /usr/libexec/udisks-daemon
+  917 ?        S      0:00  \_ udisks-daemon: not polling any devices
 
---=20
-balbi
 
---pvezYHf7grwyp3Bc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  294 ?        Ss     0:00 /bin/dbus-daemon --system --address=systemd: --nofork --systemd-activation
+  426 ?        Sl     0:00  \_ /usr/libexec/polkit-1/polkitd
+  449 ?        S      0:00  \_ /usr/sbin/modem-manager
+  635 ?        Sl     0:00  \_ /usr/libexec/colord
+  705 ?        Sl     0:00  \_ /usr/libexec/upowerd
+  959 ?        Sl     0:00  \_ /usr/libexec/udisks-daemon
+  960 ?        S      0:00  |   \_ udisks-daemon: not polling any devices
+  977 ?        Sl     0:00  \_ /usr/libexec/packagekitd
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+It's a pretty nice way for an admin too see what's going on on that box,
+even with good old 'ps'.
 
-iQEcBAEBAgAGBQJOTYo1AAoJEAv8Txj19kN1rqQH/jp/BM7nqjht05w3K8H4UGcI
-DlYs7TphdXfopHK1VYC7bMaBMDd6xuPrCfFkqdLesSFyHFjM7zOSm85Kx0g9p2jU
-r5l4Mw8UCSIlZssUv9U7c+ofwtRgGyHGUvntkpEMVvegWAjW5/awt8w8EiufEKUK
-zEt524Mthrbbovruq0cuZLjlp36MMP3Ioa7701gA5w7P8+wi40kbi5uJGn0VzNMM
-8ZqCey7TdJpHzQeNrKnNe7nz1A2hFSnW8EWme0x6tqVkme8NbZ674Sj46JDO7kFW
-lN/FIOz/r3mNpeD/kjT8Yg1ff/yozUY8NO/qyCqknSkQYTu2crE901rr8+2MXH0=
-=gH1T
------END PGP SIGNATURE-----
+It will also dramatically simplify the handling of started services from
+a service manager which double-fork for only historic reasons and make
+proper service supervision a nightmare if you are not PID 1.
 
---pvezYHf7grwyp3Bc--
+Upstart ptraces all started services to accomplish something similar. I
+doubt we want to go that road, but if you prefer ... :)
+
+If you want, we can make the forked processes inherit a flag if the
+'subreaper' should be looked up at all. Then we have almost zero
+overhead if the feature isn't used. You think that's needed?
+
+Thanks,
+Kay
+
+
