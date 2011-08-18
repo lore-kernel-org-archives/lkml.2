@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab1HRTUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:20:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62521 "EHLO mx1.redhat.com"
+	id S1753950Ab1HRTVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:21:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61275 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658Ab1HRTEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:04:01 -0400
-Date: Thu, 18 Aug 2011 21:03:25 +0200 (CEST)
+	id S1753630Ab1HRTVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:21:15 -0400
+Date: Thu, 18 Aug 2011 21:20:58 +0200 (CEST)
 From: Lukas Czerner <lczerner@redhat.com>
 X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: David Sterba <dsterba@suse.cz>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 5/5] btrfs: use fs netlink interface for ENOSPC
- conditions
-In-Reply-To: <20110818182200.GE16820@ds.suse.cz>
-Message-ID: <alpine.LFD.2.00.1108182049420.22042@dhcp-27-109.brq.redhat.com>
-References: <1313669906-14931-1-git-send-email-lczerner@redhat.com> <1313669906-14931-6-git-send-email-lczerner@redhat.com> <20110818182200.GE16820@ds.suse.cz>
+To: Jens Axboe <jaxboe@fusionio.com>
+cc: Lukas Czerner <lczerner@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "achender@linux.vnet.ibm.com" <achender@linux.vnet.ibm.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] loop: add discard support for loop devices
+In-Reply-To: <4E4D641E.5030100@fusionio.com>
+Message-ID: <alpine.LFD.2.00.1108182119270.22042@dhcp-27-109.brq.redhat.com>
+References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
+ <4E4D610D.9010701@redhat.com> <alpine.LFD.2.00.1108182104390.22042@dhcp-27-109.brq.redhat.com> <4E4D641E.5030100@fusionio.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,145 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011, David Sterba wrote:
+On Thu, 18 Aug 2011, Jens Axboe wrote:
 
-> Hi,
-> 
-> I see you are mixing a cleanup while adding a new feature.
-> 
-> On Thu, Aug 18, 2011 at 02:18:26PM +0200, Lukas Czerner wrote:
-> > Register fs netlink interface and send proper warning if ENOSPC is
-> > encountered. Note that we differentiate between enospc for metadata and
-> > enospc for data.
+> On 2011-08-18 21:08, Lukas Czerner wrote:
+> > On Thu, 18 Aug 2011, Milan Broz wrote:
 > > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Cc: Chris Mason <chris.mason@oracle.com>
-> > Cc: linux-btrfs@vger.kernel.org
-> > ---
-> >  fs/btrfs/extent-tree.c |   13 ++++++++++---
-> >  fs/btrfs/super.c       |    1 +
-> >  2 files changed, 11 insertions(+), 3 deletions(-)
+> >> On 08/18/2011 05:49 PM, Lukas Czerner wrote:
+> >>> On Thu, 18 Aug 2011, Jeff Moyer wrote:
+> >>>> Seems you missed the bizarre case of configuring a loop device over top
+> >>>> of a block device.
+> >>>
+> >>> Wow, that is a bizarre case I did not think about at all. But since it
+> >>> is so bizarre, do we even care ? The thing is that the only case where
+> >>> it would make a difference is if the loop device is put on top of block
+> >>> device which actually supports discard.
+> >>>
+> >>> In order to fix that I would need to dig out the actual limits for that
+> >>> device and set that appropriately for the loop device. Is that worth it
+> >>> ? It is not like someone will ever do that (or should) :).
+> >>
+> >> It is bizarre (and being device-mapper developer I surely know better way :-)
+> >> but people are still using that.
+> >>
+> >> Historically one of the use of underlying block device was cryptoloop, but here
+> >> I think it should be completely deprecated (cryptsetup can handle all old loop
+> >> modes as well and default modes for cryptoloop are not safe).
+> >> [Can we finally remove crypto loop option it from kernel? ... ok, just tried:)]
+> >>
+> >> There is also out of tree loop-aes based on heavily patched loop device
+> >> which usually uses block device underneath
+> >> (cryptsetup already can handle all loop-aes modes as well).
+> >>
+> >> Sometimes it is used with --offset parameter for some reason
+> >> (like linear device-mapper mapping).
+> >>
+> >> So I do not care if you do not support discard here but please do not break
+> >> support for block device mapped through loop.
 > > 
-> > diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> > index 66bac22..a47d9b9 100644
-> > --- a/fs/btrfs/extent-tree.c
-> > +++ b/fs/btrfs/extent-tree.c
-> > @@ -3029,13 +3029,14 @@ int btrfs_check_data_free_space(struct inode *inode, u64 bytes)
+> > I do not think that this is the case with my patch. Also, as you know using
+> > discard on encrypted device is not a good idea.
 > 
-> hm, if diff is correct with the context, you are changing function
-> btrfs_check_data_free_space and reporting it as metadata ENOSPC later.
-> Although it's called for metadata (or I should say non-user file blocks,
-> like space cache, ino cache) block allocation, it's called from
-> btrfs_fallocate too. Seems that there has to be additional flag to say
-> if it's really metadata or data.
+> It's not a bizarre use case at all, so would be nice to support like we
+> support anything else over a bdev as well. Your patch should not break
+> it, so looks fine.
+> 
+> Shall we queue it up for 3.2? It's a good way to beat on fs discard
+> support, fio could be easily configured for that.
+> 
 
-Actually diff got the context wrong. Sometimes it has some difficulties
-if there are labels involved.
+That would be great, thanks!
 
-> 
-> >  {
-> >  	struct btrfs_space_info *data_sinfo;
-> >  	struct btrfs_root *root = BTRFS_I(inode)->root;
-> > +	struct btrfs_fs_info *fs_info = root->fs_info;
-> 
-> change unrealated to ENOSPC-netlink
+Btw I am not sure what do you mean by "beat on fs discard support" :).
 
-Not really. I am using fs_info to get reference to the last_bdev and
-it is useful for other places as well.
-
-> 
-> >  	u64 used;
-> >  	int ret = 0, committed = 0, alloc_chunk = 1;
-> >  
-> >  	/* make sure bytes are sectorsize aligned */
-> >  	bytes = (bytes + root->sectorsize - 1) & ~((u64)root->sectorsize - 1);
-> >  
-> > -	if (root == root->fs_info->tree_root ||
-> > +	if (root == fs_info->tree_root ||
-> 
-> here
-> 
-> >  	    BTRFS_I(inode)->location.objectid == BTRFS_FREE_INO_OBJECTID) {
-> >  		alloc_chunk = 0;
-> >  		committed = 1;
-> > @@ -3070,7 +3071,7 @@ alloc:
-> >  			if (IS_ERR(trans))
-> >  				return PTR_ERR(trans);
-> >  
-> > -			ret = do_chunk_alloc(trans, root->fs_info->extent_root,
-> > +			ret = do_chunk_alloc(trans, fs_info->extent_root,
-> 
-> here
-> 
-> >  					     bytes + 2 * 1024 * 1024,
-> >  					     alloc_target,
-> >  					     CHUNK_ALLOC_NO_FORCE);
-> > @@ -3100,7 +3101,7 @@ alloc:
-> >  		/* commit the current transaction and try again */
-> >  commit_trans:
-> >  		if (!committed &&
-> > -		    !atomic_read(&root->fs_info->open_ioctl_trans)) {
-> > +		    !atomic_read(&fs_info->open_ioctl_trans)) {
-> 
-> here
-> 
-> >  			committed = 1;
-> >  			trans = btrfs_join_transaction(root);
-> >  			if (IS_ERR(trans))
-> > @@ -3111,6 +3112,8 @@ commit_trans:
-> >  			goto again;
-> >  		}
-> >  
-> > +		fs_nl_send_warning(fs_info->fs_devices->latest_bdev->bd_dev,
-> > +				   FS_NL_ENOSPC_WARN);
-> 
-> or is it due to this line being too long with root-> ? :)
-
-exactly :) But as I said fs_info is referenced on other paces as well so
-it is useful anyway.
-
-> 
-> >  		return -ENOSPC;
-> >  	}
-> >  	data_sinfo->bytes_may_use += bytes;
-> > @@ -3522,6 +3525,10 @@ again:
-> >  	}
-> >  
-> >  out:
-> > +	if (unlikely(-ENOSPC == ret)) {
-> 
-> 'unlikely' is not needed here, it does not bring anything compiler
-> wouldn't know, static branch prediction will give low probabiliy to this
-> check anyway
-
-Ok, but I would like to know why do you think that. It is not only in
-the error path and there are actually several paths to this condition so
-maybe I am being dense, could you explain it a bit for me ?
-
-Thanks!
 -Lukas
-
-> 
-> > +		dev_t bdev = root->fs_info->fs_devices->latest_bdev->bd_dev;
-> > +		fs_nl_send_warning(bdev, FS_NL_META_ENOSPC_WARN);
-> > +	}
-> >  	if (flushing) {
-> >  		spin_lock(&space_info->lock);
-> >  		space_info->flush = 0;
-> > diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-> > index 15634d4..8ac9e01 100644
-> > --- a/fs/btrfs/super.c
-> > +++ b/fs/btrfs/super.c
-> > @@ -1266,6 +1266,7 @@ static int __init init_btrfs_fs(void)
-> >  	if (err)
-> >  		goto unregister_ioctl;
-> >  
-> > +	init_fs_nl_family();
-> >  	printk(KERN_INFO "%s loaded\n", BTRFS_BUILD_VERSION);
-> >  	return 0;
-> 
-> 
-> david
-> 
-
--- 
