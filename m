@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1HRMwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:52:42 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:51385 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab1HRMwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:52:41 -0400
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Aug 2011 08:52:41 EDT
-Date: Thu, 18 Aug 2011 14:43:53 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        roland@hack.frob.com, torvalds@linux-foundation.org
-Subject: Re: +
- 	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
- 	.patch added to -mm tree
-Message-ID: <20110818124353.GA2839@tango.0pointer.de>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
- <20110817115543.GA8745@redhat.com>
- <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
- <20110817134516.GA14136@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755983Ab1HRMxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:53:51 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:32240 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417Ab1HRMxu convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:4:1>);
+	Thu, 18 Aug 2011 08:53:50 -0400
+Message-Id: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 18 Aug 2011 13:54:44 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <stable@kernel.org>, <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i386/bigsmp: eliminate false warnings regarding
+	 logical APIC ID mismatches
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110817134516.GA14136@redhat.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17.08.11 15:45, Oleg Nesterov (oleg@redhat.com) wrote:
+These warnings (generally one per CPU) are a result of initializing
+x86_cpu_to_logical_apicid while apic_default is still in use, but the
+check in setup_local_APIC() being done when apic_bigsmp was already
+used as an override in default_setup_apic_routing():
 
-> You should mark the whole process as sub-reaper, not a single thread
-> which does prctl(). The parent/child relationship is process-wide.
+Overriding APIC driver with bigsmp
+Enabling APIC mode:  Physflat.  Using 5 I/O APICs
+------------[ cut here ]------------
+WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
+Hardware name: ...
+CPU0 logical APIC ID: 1 != 0
+Pid: 1, comm: swapper Not tainted 3.0.1-2011-08-09-jb #2
+Call Trace:
+ [<c1005f91>] try_stack_unwind+0x1b1/0x1f0
+ [<c1004cc7>] dump_trace+0x47/0x110
+ [<c1005b0b>] show_trace_log_lvl+0x4b/0x60
+ [<c1005b38>] show_trace+0x18/0x20
+ [<c1261435>] dump_stack+0x6d/0x72
+ [<c10355f7>] warn_slowpath_common+0x77/0xb0
+ [<c10356c3>] warn_slowpath_fmt+0x33/0x40
+ [<c13fda81>] setup_local_APIC+0x137/0x46b
+ [<c13d1733>] native_smp_prepare_cpus+0x108/0x1cd
+ [<c13c61ff>] kernel_init+0x37/0x12c
+ [<c1264826>] kernel_thread_helper+0x6/0xd
+---[ end trace 4eaa2a86a8e2da22 ]---
+...
+CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
+Booting Node   0, Processors  #1
+smpboot cpu 1: start_ip = 9e000
+Initializing CPU#1
+------------[ cut here ]------------
+WARNING: at .../arch/x86/kernel/apic/apic.c:1239 setup_local_APIC+0x137/0x46b()
+Hardware name: ...
+CPU1 logical APIC ID: 2 != 8
+...
 
-Hmm, how would we implement this best? Would it be sufficient to follow
-group_leader pointer to set/get the flag, and to follow real_parent
-instead of parent when looking for the reaper task (i.e. the one with
-the flag set)?
+Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
+will get removed again, as Tehun says ought to be possible) by
+overriding the previously stored values at the point where the APIC
+driver gets overridden.
 
-Lennart
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: stable@kernel.org (2.6.39 and onwards)
 
--- 
-Lennart Poettering - Red Hat, Inc.
+---
+ arch/x86/kernel/apic/probe_32.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+--- 3.1-rc2/arch/x86/kernel/apic/probe_32.c
++++ 3.1-rc2-i386-bigsmp-early-lapicid-override/arch/x86/kernel/apic/probe_32.c
+@@ -203,7 +203,18 @@ void __init default_setup_apic_routing(v
+ 	if (!cmdline_apic && apic == &apic_default) {
+ 		struct apic *bigsmp = generic_bigsmp_probe();
+ 		if (bigsmp) {
++			unsigned int cpu;
++
+ 			apic = bigsmp;
++			for_each_possible_cpu(cpu) {
++				if (early_per_cpu(x86_cpu_to_logical_apicid,
++						  cpu) == BAD_APICID)
++					continue;
++				early_per_cpu(x86_cpu_to_logical_apicid,
++					      cpu) =
++					bigsmp->x86_32_early_logical_apicid
++						(cpu);
++			}
+ 			printk(KERN_INFO "Overriding APIC driver with %s\n",
+ 			       apic->name);
+ 		}
+
+
+
