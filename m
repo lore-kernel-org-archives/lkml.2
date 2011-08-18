@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1HRAbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 20:31:44 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42758 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab1HRAbn (ORCPT
+	id S1753486Ab1HRAdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:33:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47830 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751513Ab1HRAdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 20:31:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 09:24:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: pin execution to current cpu while draining
- stock
-Message-Id: <20110818092421.856b74fe.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110817194927.GA10982@redhat.com>
-References: <cover.1311338634.git.mhocko@suse.cz>
-	<2f17df54db6661c39a05669d08a9e6257435b898.1311338634.git.mhocko@suse.cz>
-	<20110725101657.21f85bf0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110817194927.GA10982@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 17 Aug 2011 20:33:41 -0400
+Subject: Re: [Stable-review] Future of the -longterm kernel releases (i.e.
+ how we pick them).
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Tim Bird <tbird20d@gmail.com>, linux-kernel@vger.kernel.org,
+        stable-review@kernel.org, tim.bird@am.sony.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable@kernel.org, alan@lxorguk.ukuu.org.uk
+In-Reply-To: <20110817045856.GB4936@kroah.com>
+References: <20110815041524.GA7578@kroah.com>
+	 <CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
+	 <20110817045856.GB4936@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-DWrGbNGI8BtaoP51zaPI"
+Date: Thu, 18 Aug 2011 01:33:34 +0100
+Message-ID: <1313627614.2799.61.camel@deadeye>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.3 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 21:49:27 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
 
-> Commit d1a05b6 'memcg: do not try to drain per-cpu caches without
-> pages' added a drain_local_stock() call to a preemptible section.
-> 
-> The draining task looks up the cpu-local stock twice to set the
-> draining-flag, then to drain the stock and clear the flag again.  If
-> the task is migrated to a different CPU in between, noone will clear
-> the flag on the first stock and it will be forever undrainable.  Its
-> charge can not be recovered and the cgroup can not be deleted anymore.
-> 
-> Properly pin the task to the executing CPU while draining stocks.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com
-> Cc: Michal Hocko <mhocko@suse.cz>
+--=-DWrGbNGI8BtaoP51zaPI
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks. I think Shaoha Li reported this.
+On Tue, 2011-08-16 at 21:58 -0700, Greg KH wrote:
+> On Tue, Aug 16, 2011 at 04:01:57PM -0700, Tim Bird wrote:
+[...]
+> > One specific issue I have is support for PREEMPT_RT, so that's a big
+> > factor in selecting Sony kernel versions.  Thus, coordinating with the
+> > RT patchset kernel versions is important to me.  Currently
+> > that would mean 3.0 is a good candidate.
+>=20
+> 3.0 is looking like a good candidate, but we haven't seen 3.1 yet :)
+[...]
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com
-==
+I'm quite happy with 3.0 in terms of stability and features, though it's
+early days yet.  It's not so good for Debian in terms of timing.  We're
+not going to freeze for another 10 months, then the release will likely
+be at least 6 months after that.  The earlier a kernel release we pick
+with, the more hardware support needs to be backported later.  So,
+extrapolating the likely kernel release dates, I think I would prefer to
+use something between 3.2 and 3.4.
 
-http://www.spinics.net/lists/linux-mm/msg22635.html
+As for the RT patchset, I haven't seen any announcement that it will
+continue to be developed against 3.0 after the release of 3.1.  Of
+course, the fact that there *is* a working RT patchset for 3.0 is an
+advancement over recent upstream releases.
 
-I get below warning:
-BUG: using smp_processor_id() in preemptible [00000000] code: bash/739
-caller is drain_local_stock+0x1a/0x55
-Pid: 739, comm: bash Tainted: G        W   3.0.0+ #255
-Call Trace:
- [<ffffffff813435c6>] debug_smp_processor_id+0xc2/0xdc
- [<ffffffff8114ae9b>] drain_local_stock+0x1a/0x55
- [<ffffffff8114b076>] drain_all_stock+0x98/0x13a
- [<ffffffff8114f04c>] mem_cgroup_force_empty+0xa3/0x27a
- [<ffffffff8114ff1d>] ? sys_close+0x38/0x138
- [<ffffffff811a7631>] ? environ_read+0x1d/0x159
- [<ffffffff8114f253>] mem_cgroup_force_empty_write+0x17/0x19
- [<ffffffff810c72fb>] cgroup_file_write+0xa8/0xba
- [<ffffffff811522ce>] vfs_write+0xb3/0x138
- [<ffffffff81152416>] sys_write+0x4a/0x71
- [<ffffffff8114ffd5>] ? sys_close+0xf0/0x138
- [<ffffffff8176deab>] system_call_fastpath+0x16/0x1b
+Ben.
 
-drain_local_stock() should be run with preempt disabled.
-==
 
-Andrew, could you pull this one , too ?
-http://www.spinics.net/lists/linux-mm/msg22636.html
+--=-DWrGbNGI8BtaoP51zaPI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Thanks,
--Kame
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> ---
->  mm/memcontrol.c |    9 ++-------
->  1 files changed, 2 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 697a1d5..e9b1206 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2085,13 +2085,7 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
->  
->  	/* Notify other cpus that system-wide "drain" is running */
->  	get_online_cpus();
-> -	/*
-> -	 * Get a hint for avoiding draining charges on the current cpu,
-> -	 * which must be exhausted by our charging.  It is not required that
-> -	 * this be a precise check, so we use raw_smp_processor_id() instead of
-> -	 * getcpu()/putcpu().
-> -	 */
-> -	curcpu = raw_smp_processor_id();
-> +	curcpu = get_cpu();
->  	for_each_online_cpu(cpu) {
->  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
->  		struct mem_cgroup *mem;
-> @@ -2108,6 +2102,7 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
->  				schedule_work_on(cpu, &stock->work);
->  		}
->  	}
-> +	put_cpu();
->  
->  	if (!sync)
->  		goto out;
-> -- 
-> 1.7.6
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+iQIVAwUATkxd2Oe/yOyVhhEJAQoYVBAArxT7f5tOzYm0ZDxQutSGn4U0bHeRS3St
+rhl9z0pgafyhJENVyQXr+qwbHssHDUjuD0ccHjgoQR6ovwIqHQLFDzxQbXpVVFyM
+nR+3X5YpccBfyUFDgbCyCOBjKxKSPVOqYct0s2CA72EeO1mA7WxrFEQRFcCJneQX
+0lYCWtUiU34Iwuf9/pchmKBXvQx71juZA8sxl+nASECA0fWCSwYZYH39Rhtt4prE
+c7Qw7eIS74j4RI0jeFQR22Sivxh88tLo2bpv+ikq7FfyGXdcEhqdh7SFlAObsETE
+Jz6XByTdfRgJIgnAjC7nXGQmVyEOHKwCFcRu612Qn2V4PuJYGuNJlQ+DhYTRviyd
+h1sBW28qljoppIvgJxLEx1V+8coYESPrQvl5T9RUK4aFsH7pLnHzuny5lp4oNPwB
+MNtl3R7Rg3FIKXSazh3yhQ7xU5jjYpU2E+uvY9HXauYSllwmp0Gi6mbRRlv+lhJ0
+eFp53dMgQGT8CseVQDIg+8K0uYYTxQX5Vz9SGgogulES+326H0G3unv04fxE0I2C
+RHNGRSuIrkbxpalzZM0+fAdfZF86j0unI1FOLHZTHQcgxvDcJ2u8BJzaZEHg6IdY
+UjoE/C96nar9KJA7RE2O0MVZ5oVFJwaRTnihkIzouf4RZo0p9j41hs+HeGJZLqvo
+aeVPCQJFkko=
+=52Vw
+-----END PGP SIGNATURE-----
 
+--=-DWrGbNGI8BtaoP51zaPI--
