@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1HRULW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:11:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46770 "EHLO hera.kernel.org"
+	id S1753417Ab1HRULf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:11:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46778 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088Ab1HRULV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:11:21 -0400
-Date: Thu, 18 Aug 2011 20:10:41 GMT
+	id S1753363Ab1HRULd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:11:33 -0400
+Date: Thu, 18 Aug 2011 20:11:17 GMT
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0@git.kernel.org>
+Message-ID: <tip-777d1d71db622a5e1ff703495741c3d257b532e5@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
         tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110607161936.GA8163@quad>
-References: <20110607161936.GA8163@quad>
+In-Reply-To: <20110723021043.GA20178@quad>
+References: <20110723021043.GA20178@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Fix missing event name init for default event
-Git-Commit-ID: cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
+Subject: [tip:perf/core] perf tools: Fix error handling of unknown events
+Git-Commit-ID: 777d1d71db622a5e1ff703495741c3d257b532e5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:10:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:11:17 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
-Gitweb:     http://git.kernel.org/tip/cc2d86b04d9ac28a6be6cb05da6ea8f014fd5aa0
+Commit-ID:  777d1d71db622a5e1ff703495741c3d257b532e5
+Gitweb:     http://git.kernel.org/tip/777d1d71db622a5e1ff703495741c3d257b532e5
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 7 Jun 2011 18:19:36 +0200
+AuthorDate: Sat, 23 Jul 2011 04:10:43 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 18 Aug 2011 07:20:31 -0300
+CommitDate: Thu, 18 Aug 2011 07:21:13 -0300
 
-perf evlist: Fix missing event name init for default event
+perf tools: Fix error handling of unknown events
 
-When no event is given to perf record, perf top, a default event is
-initialized (cycles). However, perf_evlist__add_default() was not
-setting the symbolic name for the event. Perf top worked simply because
-it was reconstructing the name from the event code. But it should not
-have to do this. This patch initializes the evsel->name field properly.
+There was a problem with the parse_events() code not printing the
+correct event name when an event was unknown and starting with an 'r'.
+The source of the problem was the way raw notation was parsed.
 
-This second version improves the code flow on the non error path.
+Without the patch:
+	$ perf stat -e retired_foo
+	invalid event modifier: 'tired_foo'
+
+With the patch:
+	$ perf stat -e retired_foo
+	invalid or unsupported event: 'retired_foo'
+
+This also covers the case where the name of the event was not printed at
+all when perf was linked with libpfm4.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20110607161936.GA8163@quad
+Link: http://lkml.kernel.org/r/20110723021043.GA20178@quad
 Signed-off-by: Stephane Eranian <eranian@google.com>
-[committer note: Use perf_evsel__delete() instead of plain free()]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ tools/perf/util/parse-events.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index e03e7bc..c12bd47 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
- 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
- 
- 	if (evsel == NULL)
--		return -ENOMEM;
-+		goto error;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d93f3ce..928918b 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -697,7 +697,11 @@ parse_raw_event(const char **strp, struct perf_event_attr *attr)
+ 		return EVT_FAILED;
+ 	n = hex2u64(str + 1, &config);
+ 	if (n > 0) {
+-		*strp = str + n + 1;
++		const char *end = str + n + 1;
++		if (*end != '\0' && *end != ',' && *end != ':')
++			return EVT_FAILED;
 +
-+	/* use strdup() because free(evsel) assumes name is allocated */
-+	evsel->name = strdup("cycles");
-+	if (!evsel->name)
-+		goto error_free;
- 
- 	perf_evlist__add(evlist, evsel);
- 	return 0;
-+error_free:
-+	perf_evsel__delete(evsel);
-+error:
-+	return -ENOMEM;
- }
- 
- void perf_evlist__disable(struct perf_evlist *evlist)
++		*strp = end;
+ 		attr->type = PERF_TYPE_RAW;
+ 		attr->config = config;
+ 		return EVT_HANDLED;
