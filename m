@@ -1,89 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab1HRIjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 04:39:01 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:54192 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754840Ab1HRIi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 04:38:59 -0400
-Message-ID: <4E4CCF7B.8060704@st.com>
-Date: Thu, 18 Aug 2011 14:08:19 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Cc: Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+	id S1755343Ab1HRIlK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 04:41:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43894 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755119Ab1HRIlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 04:41:05 -0400
+Date: Thu, 18 Aug 2011 10:41:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 16/18] dmaengine/amba-pl08x: Add support for sg len greater
- than one for slave transfers
-References: <cover.1311936523.git.viresh.kumar@st.com> <5d691ab0c4f447c9f324213d8d740ac61d1739a1.1311936524.git.viresh.kumar@st.com> <20110814083618.GE4986@n2100.arm.linux.org.uk>
-In-Reply-To: <20110814083618.GE4986@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 4/6]  memg: calculate numa weight for vmscan
+Message-ID: <20110818084103.GE23056@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809191100.6c4c3285.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110817143418.GC7482@tiehlicka.suse.cz>
+ <20110818091750.79eea4f5.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818091750.79eea4f5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Russell & Linus,
-
-Sorry for being late to reply.
-
-On 8/14/2011 2:06 PM, Russell King - ARM Linux wrote:
-> On Fri, Jul 29, 2011 at 04:19:26PM +0530, Viresh Kumar wrote:
->> Untill now, sg_len greater than one is not supported. This patch adds support to
->> do that.
+On Thu 18-08-11 09:17:50, KAMEZAWA Hiroyuki wrote:
+> On Wed, 17 Aug 2011 16:34:18 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> I'm not sure that this is the correct approach.  memcpy()s can only be
-> used with one single buffer, so the sg stuff for that (and the unmapping
-> support) doesn't make sense at all.
+> > Sorry it took so long but I was quite busy recently.
+> > 
+> > On Tue 09-08-11 19:11:00, KAMEZAWA Hiroyuki wrote:
+[...]
+> > > Index: mmotm-Aug3/mm/memcontrol.c
+> > > ===================================================================
+> > > --- mmotm-Aug3.orig/mm/memcontrol.c
+> > > +++ mmotm-Aug3/mm/memcontrol.c
+[...]
+> > > +
+> > > +	/* 'scanned - rotated/scanned' means ratio of finding not active. */
+> > > +	anon = anon * (scanned[0] - rotated[0]) / (scanned[0] + 1);
+> > > +	file = file * (scanned[1] - rotated[1]) / (scanned[1] + 1);
+> > 
+> > OK, makes sense. We should not reclaim from nodes that are known to be
+> > hard to reclaim from. We, however, have to be careful to not exclude the
+> > node from reclaiming completely.
+> > 
+> > > +
+> > > +	weight = (anon * anon_prio + file * file_prio) / 200;
+> > 
+> > Shouldn't we rather normalize the weight to the node size? This way we
+> > are punishing bigger nodes, aren't we.
+> > 
 > 
+> Here, the routine is for reclaiming memory in a memcg in smooth way.
+> And not for balancing zone. It will be kswapd+memcg(softlimit) work.
+> The size of node in this memcg is represented by file + anon.
 
-I am not sure if i get this completely. In memcpy, we still don't support
-more than one sg. We have created a new member in txd, which keeps track of
-data (addresses, len).
+I am not sure I understand what you mean by that but consider two nodes.
+swappiness = 0
+anon_prio = 1
+file_prio = 200
+A 1000 pages, 100 anon, 300 file: weight 300, node is 40% full
+B 15000 pages 2500 anon, 3500 file: weight ~3500, node is 40% full
 
-While unmapping, we are unmapping only single dsg. I think i don't need to
-use list_for_each_entry() there, as there is only one element present in list.
-But can still keep that.
+I think that both nodes should be equal.
 
-> The only place where this makes sense is the slave sg stuff.  I wonder
-> whether we can better deal with that by having the LLI setup code deal
-> with one SG list entry at a time, and chain each together.
+> > > +	return weight;
+> > > +}
+> > > +
+> > > +/*
+> > > + * Calculate each NUMA node's scan weight. scan weight is determined by
+> > > + * amount of pages and recent scan ratio, swappiness.
+> > > + */
+> > > +static unsigned long
+> > > +mem_cgroup_calc_numascan_weight(struct mem_cgroup *memcg)
+> > > +{
+> > > +	unsigned long weight, total_weight;
+> > > +	u64 anon_prio, file_prio, nr_anon, nr_file;
+> > > +	int lru_mask;
+> > > +	int nid;
+> > > +
+> > > +	anon_prio = mem_cgroup_swappiness(memcg) + 1;
+> > > +	file_prio = 200 - anon_prio + 1;
+> > 
+> > What is +1 good for. I do not see that anon_prio would be used as a
+> > denominator.
+> > 
 > 
-> Something I've also been pondering which is related to this is linking
-> together DMA operations using the LLI chaining when interrupts and
-> callbacks aren't required.  It's a very similar problem.  Other DMA
-> engine drivers do this.
+> weight = (anon * anon_prio + file * file_prio) / 200;
 > 
+> Just for avoiding the influence of anon never be 0 (by wrong value
+> set to swappiness by user.)
 
-Are you talking about linking all sg's together or linking multiple calls to
-prep_dma_memcpy? I am handling the first.
+OK, so you want to prevent from situation where we have swappiness 0
+and there are no file pages so the node would have 0 weight?
+Why do you consider 0 swappiness a wrong value?
 
-> Finally, note that some of the PL08x code assumes that for any TXD,
-> the LLI list is a contiguous array.  See the first part of
-> pl08x_getbytes_chan(). That needs fixing as soon as we start going to
-> more than one SG list entry.
+[...]
+> > > +	nr_file = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
+> > > +	nr_anon = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
+> > > +
+> > > +	/* If file cache is small w.r.t swappiness, check anon page's weight */
+> > > +	if (nr_file * file_prio >= nr_anon * anon_prio)
+> > > +		lru_mask |= BIT(LRU_INACTIVE_ANON);
+> > 
+> > Why we do not care about active anon (e.g. if inactive anon is low)?
+> > 
+> This condition is wrong...
+> 
+> 	if (nr_file * file_prio <= nr_anon * anon_prio)
+> 		lru_mask |= BIT(LRU_INACTIVE_ANON);
 
-We still have one contiguous array for LLI list. In pl08x_fill_llis_for_desc()
-i am using same txd->llis_va for all sg's.
+True. Haven't noticed it before...
 
-Sorry if i misunderstood your concerns.
+> 
+> I was worried about LRU_ACTIVE_ANON. I considered
+>   - We can't handle ACTIVE_ANON and INACTIVE_ANON in the same weight.
+>     But I don't want to add more magic numbers.
 
+Yes I agree, weight shouldn't involve active pages because we do not
+want to reclaim nodes according to their active working set.
+
+>   - vmscan.c:shrink_zone() scans ACTIVE_ANON whenever/only when
+>     inactive_anon_is_low()==true. SWAP_CLUSTER_MAX per priority.
+>     It's specially handled.
+> 
+> So, I thought involing the number of ACTIVE_ANON to the weight is difficult
+> and ignored ACTIVE_ANON, here. Do you have idea ?
+
+I am not sure whether nr_anon should include also active pages, though.
+We are comparing all file to all anon pages which looks consistent, on
+the other hand we are not including active pages into weight. This way
+we make bigger pressure on nodes with a big anon working set.
 -- 
-viresh
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
