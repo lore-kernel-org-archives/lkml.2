@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1HRRFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:05:32 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:39746 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab1HRRF2 (ORCPT
+	id S1752193Ab1HRRFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:05:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34417 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab1HRRF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Aug 2011 13:05:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:content-type:to:cc:subject:references:date:
-	mime-version:content-transfer-encoding:from:organization:message-id:
-	in-reply-to:user-agent:x-system-of-record;
-	b=NC2HfOiot8lvMHEfM9aEXi7ve5iJRCXU4EG+JGCemlKKi9dIjW/TqlDHsEphFIKp9
-	97uQ05meXRQcxUwr1uvzQ==
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Sergei Shtylyov" <sshtylyov@mvista.com>, "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-References: <Pine.LNX.4.44L0.1108181055240.1912-100000@iolanthe.rowland.org>
-Date: Thu, 18 Aug 2011 19:05:20 +0200
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mnazarewicz@google.com>
-Organization: Google
-Message-ID: <op.v0e5q6pyvgw7ix@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108181055240.1912-100000@iolanthe.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
-X-System-Of-Record: true
+From: David Ahern <dsahern@gmail.com>
+To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf script: add option to display time change between events
+Date: Thu, 18 Aug 2011 11:05:21 -0600
+Message-Id: <1313687121-25689-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 16:59:28 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
+Add a 'dt' field option to show time change between events dumped to user:
 
-> On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
->
->> On Wed, 17 Aug 2011 23:09:37 +0200, Alan Stern  
->> <stern@rowland.harvard.edu>
->> wrote:
->> > I see what's going on here.  Your original patch was wrong and then my
->> > correction was wrong as well.
->> >
->> > This line has to remain the way it was (although those (u8) typecasts
->> > don't seem to be necessary).  Above, you have to initialize
->> > composite_driver.speed to an appropriate value, probably
->> > USB_SPEED_SUPER.
->> >
->> > What you didn't realize in your original patch is that
->> > usb_composite_probe() gets called more than once.  Each time it is
->> > called, it has to adjust composite_driver.speed.
->>
->> That's sneaky of composite.c...  But is it desired behaviour?
->
-> Yes, it is.
->
->>  I cannot
->> came up with a situation where that's what we want.  I would imagine  
->> that
->> usb_composite_probe() should assume the same speed for given
->> usb_composite_driver regardless if some other slower  
->> usb_composite_driver
->> was loaded.
->
-> The speed being calculated isn't the speed of the usb_composite_driver;
-> it's the speed of the usb_gadget_driver.  The gadget itself cannot be
-> allowed to run faster than its internal drivers can handle.
+         swapper     0 [000] 0.003780: netif_receive_skb: dev=wlan0 skbaddr=...
+            vpnc 23605 [000] 0.000347: netif_rx: dev=tun0 skbaddr=...
+            vpnc 23605 [000] 0.000007: netif_receive_skb: dev=tun0 skbaddr=...
+ thunderbird-bin 22435 [000] 0.001043: net_dev_queue: dev=tun0 skbaddr=...
+ thunderbird-bin 22435 [000] 0.000012: net_dev_xmit: dev=tun0 skbaddr=...
 
-Yeah, that's why you set usb_gadget_driver's speed to the speed declared
-in usb_composite_driver.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/Documentation/perf-script.txt |    2 +-
+ tools/perf/builtin-script.c              |   20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-For the most part, usb_composite_probe() is called only once in module's
-init function.  As far as I know, only g_ffs calls it several times.  So
-in all cases expect for g_ffs, composite_driver.speed =  
-min(composite_driver.speed,
-driver->max_speed) should have the same effect as composite_driver.speed
-= driver->max_speed.
-
-> For example, if you have a composite gadget where one of the function
-> drivers can handle SuperSpeed and the other can't go beyond high speed,
-> the overall gadget must never run faster than high speed.
-
-Shouldn't that be dealt in usb_add_function()?  I cannot see any code that
-would do that here atm though.
-
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index db01786..4f996ab 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -115,7 +115,7 @@ OPTIONS
+ -f::
+ --fields::
+         Comma separated list of fields to print. Options are:
+-        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr.
++        comm, tid, pid, time, dt, cpu, event, trace, ip, sym, dso, addr.
+         Field list can be prepended with the type, trace, sw or hw,
+         to indicate to which event type the field list applies.
+         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 09024ec..541b30a 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -37,6 +37,7 @@ enum perf_output_field {
+ 	PERF_OUTPUT_SYM             = 1U << 8,
+ 	PERF_OUTPUT_DSO             = 1U << 9,
+ 	PERF_OUTPUT_ADDR            = 1U << 10,
++	PERF_OUTPUT_DT              = 1U << 11,
+ };
+ 
+ struct output_option {
+@@ -54,6 +55,7 @@ struct output_option {
+ 	{.str = "sym",   .field = PERF_OUTPUT_SYM},
+ 	{.str = "dso",   .field = PERF_OUTPUT_DSO},
+ 	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
++	{.str = "dt",    .field = PERF_OUTPUT_DT},
+ };
+ 
+ /* default set to maintain compatibility with current format */
+@@ -207,6 +209,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 				       PERF_OUTPUT_TIME))
+ 		return -EINVAL;
+ 
++	if (PRINT_FIELD(DT) &&
++		perf_event_attr__check_stype(attr, PERF_SAMPLE_TIME, "DT",
++				       PERF_OUTPUT_DT))
++		return -EINVAL;
++
+ 	if (PRINT_FIELD(CPU) &&
+ 		perf_event_attr__check_stype(attr, PERF_SAMPLE_CPU, "CPU",
+ 				       PERF_OUTPUT_CPU))
+@@ -288,6 +295,17 @@ static void print_sample_start(struct perf_sample *sample,
+ 		printf("%5lu.%06lu: ", secs, usecs);
+ 	}
+ 
++	if (PRINT_FIELD(DT)) {
++		static u64 prev_sample_time;
++
++		nsecs =  prev_sample_time ? sample->time - prev_sample_time : 0;
++		prev_sample_time = sample->time;
++		secs = nsecs / NSECS_PER_SEC;
++		nsecs -= secs * NSECS_PER_SEC;
++		usecs = nsecs / NSECS_PER_USEC;
++		printf("%lu.%06lu: ", secs, usecs);
++	}
++
+ 	if (PRINT_FIELD(EVNAME)) {
+ 		if (attr->type == PERF_TYPE_TRACEPOINT) {
+ 			type = trace_parse_common_type(sample->raw_data);
+@@ -1080,7 +1098,7 @@ static const struct option options[] = {
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+-		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
++		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,dt,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+1.7.6
+
