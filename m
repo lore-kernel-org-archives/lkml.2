@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab1HRQvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:51:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38376 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab1HRQvB (ORCPT
+	id S1755217Ab1HRQuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:50:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43942 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab1HRQuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:51:01 -0400
+	Thu, 18 Aug 2011 12:50:13 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geunsik Lim <geunsik.lim@samsung.com>, Ingo Molnar <mingo@elte.hu>,
-        Joe Perches <joe@perches.com>, Josh Boyer <jwboyer@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 0/6] perf/urgent fixes
-Date: Thu, 18 Aug 2011 13:49:58 -0300
-Message-Id: <1313686204-30295-1-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/6] perf evlist: Fix missing event name init for default event
+Date: Thu, 18 Aug 2011 13:50:00 -0300
+Message-Id: <1313686204-30295-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1313686204-30295-1-git-send-email-acme@infradead.org>
+References: <1313686204-30295-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Stephane Eranian <eranian@google.com>
 
-        Please consider pulling from:
+When no event is given to perf record, perf top, a default event is
+initialized (cycles). However, perf_evlist__add_default() was not
+setting the symbolic name for the event. Perf top worked simply because
+it was reconstructing the name from the event code. But it should not
+have to do this. This patch initializes the evsel->name field properly.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
+This second version improves the code flow on the non error path.
 
-	The group event stuff is a fix, as all that was missing was to expose
-the "group" bool variable thru a command line option.
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20110607161936.GA8163@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
+[committer note: Use perf_evsel__delete() instead of plain free()]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evlist.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-Regards,
-
-- Arnaldo
-
-Geunsik Lim (1):
-  MAINTAINERS: Fix list of perf events source files
-
-Josh Boyer (1):
-  perf tools: Fix build against newer glibc
-
-Lin Ming (1):
-  perf tools: Add group event scheduling option to perf record/stat
-
-Stephane Eranian (3):
-  perf list: Fix exit value
-  perf evlist: Fix missing event name init for default event
-  perf tools: Fix error handling of unknown events
-
- MAINTAINERS                              |    2 +-
- tools/perf/builtin-record.c              |    4 +++-
- tools/perf/builtin-stat.c                |    7 +++++--
- tools/perf/util/evlist.c                 |   11 ++++++++++-
- tools/perf/util/include/linux/compiler.h |    2 ++
- tools/perf/util/parse-events.c           |    8 +++++---
- 6 files changed, 26 insertions(+), 8 deletions(-)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index e03e7bc..c12bd47 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -85,10 +85,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	struct perf_evsel *evsel = perf_evsel__new(&attr, 0);
+ 
+ 	if (evsel == NULL)
+-		return -ENOMEM;
++		goto error;
++
++	/* use strdup() because free(evsel) assumes name is allocated */
++	evsel->name = strdup("cycles");
++	if (!evsel->name)
++		goto error_free;
+ 
+ 	perf_evlist__add(evlist, evsel);
+ 	return 0;
++error_free:
++	perf_evsel__delete(evsel);
++error:
++	return -ENOMEM;
+ }
+ 
+ void perf_evlist__disable(struct perf_evlist *evlist)
+-- 
+1.6.2.5
 
