@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab1HRLEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:04:36 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:43283 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755213Ab1HRLEf (ORCPT
+	id S1755560Ab1HRLJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:09:24 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:47866 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752123Ab1HRLJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 07:04:35 -0400
-Date: Thu, 18 Aug 2011 14:04:31 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Gadiyar, Anand" <gadiyar@ti.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] MAINTAINERS: add myself as co-maintainer for OMAP USB
-Message-ID: <20110818110430.GP14514@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1313664504-956-1-git-send-email-gadiyar@ti.com>
- <20110818105511.GN14514@legolas.emea.dhcp.ti.com>
- <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D3ADE2B@dbde03.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5/6IVfYouxg+lu1D"
-Content-Disposition: inline
-In-Reply-To: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D3ADE2B@dbde03.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Aug 2011 07:09:22 -0400
+Subject: Re: [PATCH 00/41] signal: Use set_current_blocked()
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1313619446.2311.52.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org>
+	 <20110811160358.GA7989@redhat.com>
+	 <1313523659.3436.184.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20110817170152.GA22499@redhat.com>
+	 <1313619446.2311.52.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Aug 2011 12:09:15 +0100
+Message-ID: <1313665755.2311.57.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-08-17 at 23:17 +0100, Matt Fleming wrote:
+> 
+> This does look like a decent clean up, especially because so many
+> architectures got this sequence wrong in the past. But yeah, it will
+> require me to rewrite half my series ;-)
+> 
+> Is it worth rewriting the series? Dunno. I'm not convinced that the
+> wrapper buys us enough for that, plus it'd increase the number of
+> patches.
+> 
+> Maybe it'd be better to do it as a separate set of patches?
 
---5/6IVfYouxg+lu1D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK so, I went ahead and rewrote the series using your clean up. It's in
+the 'oleg/set-current-blocked-v2' branch at, 
 
-Hi,
+git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/linux-2.6.git
 
-On Thu, Aug 18, 2011 at 04:31:34PM +0530, Gadiyar, Anand wrote:
-> Balbi, Felipe wrote:
-> > Hi,
-> >=20
-> > On Thu, Aug 18, 2011 at 04:18:24PM +0530, Anand Gadiyar wrote:
-> > > I'd like to help co-maintain OMAP USB support. I've helped
-> > > out in the past when Felipe was away and would like make
-> > > it official.
->=20
-> ...
->=20
-> > I'm concerned you will just vanish again. Last time we tried, I even
-> > dropped a mail to Greg explaining how we would work and you just
-> > vanished.
-> >=20
-> > I'm not confortable accepting this patch now. Let's first see how this
-> > will play off, so start helping reviewing the patches that=20
-> > are pending.
->=20
-> It's happened with you too - and I've had to step in for you when
-> you disappeared due to product pressures.
->=20
-> I'm back now and for sure I'll help with reviews. But it would be
-> nice if you'd ack this one. Okay with me if you'd like to wait
-> and see some actual work, but I think I've been active enough in
-> the past - that ought to count for something.
+Would you mind taking a quick look and see which series you prefer? I'll
+wait for your reply before I resend any patches.
 
-you sure have been active in the past, but the fact that when we
-discussed with Greg you just vanished with no reason was a bit worrying
-to me.
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-So, let's clean up the pending patches and by the merge window we'll
-decide. This patch will probably be there.
-
---=20
-balbi
-
---5/6IVfYouxg+lu1D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOTPG+AAoJEAv8Txj19kN1floH/0L6gVNKbdQoAav90YBRPWzu
-xzuNinUb3j+lsoKGEKzhTmel0pknyE8HqtvOrbeS8oK/zoZCyFP3PtcfPIHgEQZD
-vouDoQpo7GjryYOWi220E04YMRs5qDmCOyfTitQdMWIQXLvLVAWLoaLBgX3eYDeQ
-E4e1bZ34qlVR48PK8O4SBTKbIdvkZELDbaEGQ4IYmRUYLBYI0ljYxxarL25R3XwV
-rWgpyXb0Up9J8izKRciy/hT0PSABJyLSRaLPjsKyDVrBgb3qAhHqH5z92lVL/gqI
-TI8q9DnAL5bNE7MbfZSzVOchAhXaeoIoth/I92+KKr6NKMIpxsSVWFLU7yQKkr8=
-=DYI3
------END PGP SIGNATURE-----
-
---5/6IVfYouxg+lu1D--
