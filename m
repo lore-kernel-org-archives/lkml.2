@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab1HRQiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:38:01 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39483 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab1HRQh6 (ORCPT
+	id S1756070Ab1HRQsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:48:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47963 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1HRQr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:37:58 -0400
-Message-ID: <4E4D3FE2.8000504@gmail.com>
-Date: Thu, 18 Aug 2011 10:37:54 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Thu, 18 Aug 2011 12:47:59 -0400
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC][PATCH 1/8] perf: Separate out trace-cmd parse-events from
- perf files
-References: <20110805205921.909038487@goodmis.org> <20110805211300.324726820@goodmis.org> <4E4945F8.2080004@gmail.com> <1313425364.15704.9.camel@gandalf.stny.rr.com> <4E4B0667.8090107@gmail.com> <20110818135112.GB10441@somewhere>
-In-Reply-To: <20110818135112.GB10441@somewhere>
+From: Amirali Shambayati <amirali.shambayati@gmail.com>
+Date: Thu, 18 Aug 2011 21:17:38 +0430
+Message-ID: <CAC-yRPShbCYgBiruVQATv8+yqJzaaMGS3skFQe6Gv-KrXKsHXA@mail.gmail.com>
+Subject: Is it needed to reinstall custom kernel every time, after rebuilding?
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 07:51 AM, Frederic Weisbecker wrote:
-> On Tue, Aug 16, 2011 at 06:08:07PM -0600, David Ahern wrote:
->> On 08/15/2011 10:22 AM, Steven Rostedt wrote:
->>> On Mon, 2011-08-15 at 10:14 -0600, David Ahern wrote:
->>>> Hi Steve:
->>>>
->>>> On 08/05/2011 02:59 PM, Steven Rostedt wrote:
->>>>> From: Steven Rostedt <srostedt@redhat.com>
->>>>>
->>>>> Move the trace-event-parse.c code that originally came from trace-cmd into
->>>>> their own files. The new file will be called trace-parse-events.c, as
->>>>> the name of trace-cmd's file was parse-events.c too, but it conflicted
->>>>> with the parse-events.c file in perf that parses the command line.
->>>>>
->>>>> This tries to update the code with mimimal changes.
->>>>>
->>>>> Perf specific code stays in the trace-event-parse.[ch] files and
->>>>> the common parsing code is now in trace-parse-events.c and
->>>>> trace-parse-events.h.
->>>>
->>>> What branch should these apply cleanly to?
->>>
->>> They are based off of v3.0. You can get these patches from my repo as
->>> described in the 0/8 announce email.
->>
->> Unfortunately I hastily deleted the 0/8 thread while on vacation last
->> week (gmail on Android thing), so I apologize for shifting the discussion.
->>
->> With a little bit of hacking on top of your patches I was able to get
->> the trace-cmd plugins working with perf. e.g.,
->>         qemu-kvm 11971 [001] 30401.777391: kvm_apic_accept_irq: apicid 0
->> vec 239 (Fixed|edge)
->>         qemu-kvm 11971 [001] 30401.777405: kvm_inj_virq: irq 239
->>         qemu-kvm 11971 [001] 30401.777415: kvm_entry: vcpu 0
->>         qemu-kvm 11971 [001] 30401.777430: kvm_exit: reason APIC_ACCESS
->> rip 0xffffffff8101dbe4 info 10b0 0
->>
->> So, what is the next step for making this a reality -- i.e., getting the
->> common code into a lib in tools?
-> 
-> I hope. Otherwise we'll simply get stuck with a buggy format parsing in perf.
+Hi all,
 
-I guess to be more specific about next steps:
-- should trace-cmd be moved to the tools directory in the kernel repo?
-that would allow code movement to a lib directory and work to be done on
-both trace-cmd and perf
-- what's the conclusion about the name and path for the common parsing
-code? seems like libtraceevent or libtraceparse had the fewest collisions
-- should the plugin code be moved into its own directory - e.g.,
-tools/lib/trace-plugins. I am working on plugin changes too (eg.,
-resolving guest RIPs to symbols in the kvm plugin).
+Last time, I emailed to linux-kernel and kernenewbies mailing-lists
+about how to speed up kernel compilation. I received very useful peace
+of advice about using "ccache". Now I want to modify and compile a
+unique custom kernel several times.
+I used https://help.ubuntu.com/community/Kernel/Compile to compile
+custom kernel. This tutorial uses "kpkg" command to build kernel and
+it produces two .deb files: "linux-image" and "linux-header" as
+result.
+So for the first time I followed this tutorial.
+For next times, according to to experts' advice, I use "make all" in
+custom kernel root directory to rebuild kernel. I am not sure that it
+would be enough to use changed kernel after rebooting. As I asked from
+some experts, It is also required to install kernel again, but they
+were not familiar with "kpkg" and "dbkg",... commands for kernel
+installation.
+Should I use "dbkg" command after every time I rebuild kernel, for
+re-installation?
+If anybody is familiar with these method of kernel installation,
+please help me. It is very urgent, because it is related to my B.S.
+thesis :P
 
-The current patch set from Steve needs some updates (in addition to what
-is needed for perf to use the plugins) to handle trace-cmd and perf
-differences, but this is getting far down the path.
+Regards,
 
-David
+
+
+--
+Amirali Shambayati
+Bachelor Student
+Computer Engineering Department
+Sharif University of Technology
+Tehran, Iran
