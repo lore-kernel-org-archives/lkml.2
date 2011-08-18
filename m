@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab1HRMpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:45:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64080 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab1HRMpR (ORCPT
+	id S1755972Ab1HRMrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:47:49 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:40868 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab1HRMrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:45:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAG1a4rsO7JDqmYiwyxPrAHdLNbJt+wqymSzU9i1dv5w5C2OFog@mail.gmail.com>
-References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com>
- <CAK1hOcN7q=F=UV=aCAsVOYO=Ex34X0tbwLHv9BkYkA=ik7G13w@mail.gmail.com>
- <1313075625.50520.YahooMailNeo@web111715.mail.gq1.yahoo.com>
- <201108111938.25836.vda.linux@googlemail.com> <CAG1a4rsO7JDqmYiwyxPrAHdLNbJt+wqymSzU9i1dv5w5C2OFog@mail.gmail.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Thu, 18 Aug 2011 14:44:56 +0200
-Message-ID: <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com>
-Subject: Re: running of out memory => kernel crash
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: Mahmood Naderan <nt_mahmood@yahoo.com>,
-        David Rientjes <rientjes@google.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
-        "\"linux-mm@kvack.org\"" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Aug 2011 08:47:47 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 18 Aug 2011 14:47:02 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: scameron@beardog.cce.hp.com, stephenmcameron@gmail.com,
+        akpm@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Document generic scsi device attributes
+Message-ID: <20110818144702.1b2e4616@stein>
+In-Reply-To: <1313613307.6345.8.camel@mulgrave>
+References: <20110817182055.8848.75862.stgit@beardog.cce.hp.com>
+	<1313610306.6345.4.camel@mulgrave>
+	<20110817200028.GB8422@beardog.cce.hp.com>
+	<1313613307.6345.8.camel@mulgrave>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 4:18 AM, Pavel Ivanov <paivanof@gmail.com> wrote:
->>> Why "killing" does not appear here? Why it try to "find some
->>> recently used page"?
->>
->> Because killing is the last resort. As long as kernel can free
->> a page by dropping an unmodified file-backed page, it will do that.
->> When there is nothing more to drop, and still more free pages
->> are needed, _then_ kernel will start oom killing.
->
-> I have a little concern about this explanation of yours. Suppose we
-> have some amount of more or less actively executing processes in the
-> system. Suppose they started to use lots of resident memory. Amount of
-> memory they use is less than total available physical memory but when
-> we add total size of code for those processes it would be several
-> pages more than total size of physical memory. As I understood from
-> your explanation in such situation one process will execute its time
-> slice, kernel will switch to other one, find that its code was pushed
-> out of RAM, read it from disk, execute its time slice, switch to next
-> process, read its code from disk, execute and so on. So system will be
-> virtually unusable because of constantly reading from disk just to
-> execute next small piece of code. But oom will never be firing in such
-> situation. Is my understanding correct?
+On Aug 17 James Bottomley wrote:
+> On Wed, 2011-08-17 at 15:00 -0500, scameron@beardog.cce.hp.com wrote:
+> > On Wed, Aug 17, 2011 at 12:45:06PM -0700, James Bottomley wrote:
+> > > On Wed, 2011-08-17 at 13:20 -0500, Stephen M. Cameron wrote:
+> > > > +++ b/Documentation/ABI/testing/sysfs-class-scsi_devices
+> > > > @@ -0,0 +1,123 @@
+> > > > +What:           /sys/class/scsi_device/..../device/device_blocked
+> > > > +Date:           December, 2002
+> > > > +KernelVersion:  Unknown
+> > > > +Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
+> > > 
+> > > Hmm, so I get fingered for every screw up in our sysfs ABI? nice wide
+> > > receiver buck pass move.
+> > 
+> > Uh, sorry if that wasn't the right thing to do, which it sounds
+> > like it wasn't.  I just put your name there because you're the SCSI
+> > maintainer.  I can dig through all the commits and see who added what
+> > if that's preferable.  Or leave the names out?  or something else?
+> 
+> No, don't worry, the patch is the right thing to do ... I was just
+> slightly amused to see my name down for all of it.
 
-Yes.
-
-> Shouldn't it be considered as an unwanted behavior?
-
-Yes. But all alternatives (such as killing some process) seem to be worse.
-
+Isn't linux-scsi@vger.kernel.org acceptable if not even preferable
+as contact?
 -- 
-vda
+Stefan Richter
+-=====-==-== =--- =--=-
+http://arcgraph.de/sr/
