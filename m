@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab1HRGXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 02:23:18 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10981 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab1HRGXP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 02:23:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 17 Aug 2011 23:22:19 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1754905Ab1HRG10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 02:27:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35295 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680Ab1HRG1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 02:27:25 -0400
+Date: Thu, 18 Aug 2011 08:27:22 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Date: Wed, 17 Aug 2011 23:22:16 -0700
-Subject: RE: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-Thread-Topic: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from
- DT
-Thread-Index: Acxc0CITA8qn+5rqS065qJKkqs2QRgAnX6qA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04AF6F3062@HQMAIL01.nvidia.com>
-References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
- <201108161637.16620.arnd@arndb.de>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA25368@HQMAIL01.nvidia.com>
- <201108171323.38441.arnd@arndb.de>
-In-Reply-To: <201108171323.38441.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v5 2/6]  memcg: stop vmscan when enough done.
+Message-ID: <20110818062722.GB23056@tiehlicka.suse.cz>
+References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110810141425.GC15007@tiehlicka.suse.cz>
+ <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110811145055.GN8023@tiehlicka.suse.cz>
+ <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110817113550.GA7482@tiehlicka.suse.cz>
+ <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote at Wednesday, August 17, 2011 5:24 AM:
-> On Tuesday 16 August 2011, Stephen Warren wrote:
-> > One issue here: There isn't always a single gpio/pinmux parent; as a
-> > concrete example, the ALSA/ASoC driver for Tegra+WM8903 uses GPIOs both
-> > from Tegra itself, and from the WM8903 audio codec.
-> >
-> > I could imagine the same being true in basically any case where one
-> > device uses N GPIOs (e.g. SD controller with power, change-detect,
-> > and read-only GPIOs; some could easily come from the SoC and some
-> > from a GPIO expander).
-> >
-> > I'm not quite so sure that multiple parents would be useful for pinmux,
-> > but I wouldn't say that it was impossible...
+On Thu 18-08-11 08:52:33, KAMEZAWA Hiroyuki wrote:
+> On Wed, 17 Aug 2011 13:35:50 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
 > 
-> Hmm, how common do you think the example is?
+> > On Wed 17-08-11 09:54:05, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 11 Aug 2011 16:50:55 +0200
+> > > > - mem_cgroup_force_empty asks for reclaiming all pages. I guess it should be
+> > > >   OK but will have to think about it some more.
+> > > 
+> > > force_empty/rmdir() is allowed to be stopped by Ctrl-C. I think passing res->usage
+> > > is overkilling.
+> > 
+> > So, how many pages should be reclaimed then?
+> > 
 > 
-> It it's just a very rare case, we can still special-case it by
-> introducing fake subdevices for the Tegra+WM8903 driver, each of
-> which has only one gpio-parent. This is ugly but keeps the special
-> case to the rare devices.
+> How about (1 << (MAX_ORDER-1))/loop ?
+
+Hmm, I am not sure I see any benefit. We want to reclaim all those
+pages why shouldn't we do it in one batch? If we use a value based on
+MAX_ORDER then we make a bigger chance that force_empty fails for big
+cgroups (e.g. with a lot of page cache).
+Anyway, if we want to mimic the previous behavior then we should use
+something like nr_nodes * SWAP_CLUSTER_MAX (the above value would be
+sufficient for up to 32 nodes).
+
 > 
-> If we can expect more than a handful of these, we probably need
-> a better design for the binding, which will cause a burden for
-> all drivers.
-
-It looks like DT already supports the generic case for GPIO; each GPIO
-reference is of the form:
-
-<&gpio 69 0>
-
-and so each GPIO has a "parent" specified, and hence can come from a
-different controller.
-
-For drivers, this is all completely hidden by of_get_gpio().
-
-I imagine we'd just use the same pattern for pinmux. This would both
-support the general case, and end up being consistent with how GPIOs
-already work, so this seems like a win both ways.
+> Thanks,
+> -Kame
 
 -- 
-nvpublic
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
