@@ -1,119 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1HRUND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:13:03 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46991 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843Ab1HRUNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:13:00 -0400
-Date: Thu, 18 Aug 2011 20:12:45 GMT
-From: tip-bot for Lin Ming <ming.m.lin@intel.com>
-Message-ID: <tip-43bece79796c2a39ec98998fd3f1071f04f3d8c3@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, andi@firstfloor.org, peterz@infradead.org,
-        ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, andi@firstfloor.org, peterz@infradead.org,
-        ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1313577727.2754.5.camel@hp6530s>
-References: <1313577727.2754.5.camel@hp6530s>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add group event scheduling option to perf record/stat
-Git-Commit-ID: 43bece79796c2a39ec98998fd3f1071f04f3d8c3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753662Ab1HRUNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:13:20 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:61756 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575Ab1HRUNS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:13:18 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=wzEiAl4+pdziyxuDXnT1naFkJycrWdfC5y+YHYIe5tavB1QeoZgle1fRHVT+1rRJ9
+	0fmGMvfK2J0OGwLMbpiNA==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Sergei Shtylyov" <sshtylyov@mvista.com>, "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181323360.1912-100000@iolanthe.rowland.org>
+Date: Thu, 18 Aug 2011 22:13:09 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 20:12:46 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Message-ID: <op.v0fef7e2vgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1108181323360.1912-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  43bece79796c2a39ec98998fd3f1071f04f3d8c3
-Gitweb:     http://git.kernel.org/tip/43bece79796c2a39ec98998fd3f1071f04f3d8c3
-Author:     Lin Ming <ming.m.lin@intel.com>
-AuthorDate: Wed, 17 Aug 2011 18:42:07 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 18 Aug 2011 07:35:46 -0300
+On Thu, 18 Aug 2011 19:27:21 +0200, Alan Stern <stern@rowland.harvard.edu>  
+wrote:
 
-perf tools: Add group event scheduling option to perf record/stat
+> On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
+>
+>> For the most part, usb_composite_probe() is called only once in module's
+>> init function.  As far as I know, only g_ffs calls it several times.  So
+>> in all cases expect for g_ffs, composite_driver.speed =
+>> min(composite_driver.speed,
+>> driver->max_speed) should have the same effect as composite_driver.speed
+>> = driver->max_speed.
+>>
+>> > For example, if you have a composite gadget where one of the function
+>> > drivers can handle SuperSpeed and the other can't go beyond high  
+>> speed,
+>> > the overall gadget must never run faster than high speed.
+>>
+>> Shouldn't that be dealt in usb_add_function()?  I cannot see any code  
+>> that would do that here atm though.
 
-Group event scheduling command line option is missing in perf
-record/stat.
+> Maybe you're right.  But isn't that too late?  The UDC driver has to
+> know the gadget driver's limitations before it can connect to the host.
 
-Add it to perf record/stat, which is same as in perf top.
+usb_add_function() is called before usb_composite_probe() which only then
+calls usb_gadget_probe_driver().
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1313577727.2754.5.camel@hp6530s
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-record.c |    4 +++-
- tools/perf/builtin-stat.c   |    7 +++++--
- 2 files changed, 8 insertions(+), 3 deletions(-)
+What's more, if I understand it correctly, comment in usb_add_function()
+says that we support all the speeds usb_composite_driver structure claims
+we do but then return different sets of functions depending on speed.  Ie.
+if a function is only full speed and host requests high speed,  
+configuration
+will lack that function.  The comment in question is:
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index f6426b4..6b0519f 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -45,7 +45,7 @@ static int			freq				=   1000;
- static int			output;
- static int			pipe_output			=      0;
- static const char		*output_name			= NULL;
--static int			group				=      0;
-+static bool			group				=  false;
- static int			realtime_prio			=      0;
- static bool			nodelay				=  false;
- static bool			raw_samples			=  false;
-@@ -753,6 +753,8 @@ const struct option record_options[] = {
- 		    "child tasks do not inherit counters"),
- 	OPT_UINTEGER('F', "freq", &user_freq, "profile at this frequency"),
- 	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
-+	OPT_BOOLEAN(0, "group", &group,
-+		    "put the counters into a counter group"),
- 	OPT_BOOLEAN('g', "call-graph", &call_graph,
- 		    "do call-graph (stack chain/backtrace) recording"),
- 	OPT_INCR('v', "verbose", &verbose,
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 1ad04ce..5deb17d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -193,6 +193,7 @@ static int			big_num_opt			=  -1;
- static const char		*cpu_list;
- static const char		*csv_sep			= NULL;
- static bool			csv_output			= false;
-+static bool			group				= false;
- 
- static volatile int done = 0;
- 
-@@ -280,14 +281,14 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
- 	attr->inherit = !no_inherit;
- 
- 	if (system_wide)
--		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, false);
-+		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus, group);
- 
- 	if (target_pid == -1 && target_tid == -1) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
- 
--	return perf_evsel__open_per_thread(evsel, evsel_list->threads, false);
-+	return perf_evsel__open_per_thread(evsel, evsel_list->threads, group);
- }
- 
- /*
-@@ -1043,6 +1044,8 @@ static const struct option options[] = {
- 		    "stat events on existing thread id"),
- 	OPT_BOOLEAN('a', "all-cpus", &system_wide,
- 		    "system-wide collection from all CPUs"),
-+	OPT_BOOLEAN('g', "group", &group,
-+		    "put the counters into a counter group"),
- 	OPT_BOOLEAN('c', "scale", &scale,
- 		    "scale/normalize counters"),
- 	OPT_INCR('v', "verbose", &verbose,
+	/* We allow configurations that don't work at both speeds.
+	 * If we run into a lowspeed Linux system, treat it the same
+	 * as full speed ... it's the function drivers that will need
+	 * to avoid bulk and ISO transfers. */
+
+usb_add_function() then proceeds to set config->fullspeed,  
+config->highspeed
+and config->superspeed depending on what descriptors function provides.
+
+Those are later used in config_desc() where it iterates over all
+configurations checking which have functions supporting given speed:
+
+	list_for_each_entry(c, &cdev->configs, list) {
+		switch (speed) {
+		case USB_SPEED_SUPER: if (!c->superspeed) continue; break;
+		case USB_SPEED_HIGH: if (!c->highspeed) continue; break;
+		default: if (!c->fullspeed) continue;
+		}
+		if (w_value == 0)
+			return config_buf(c, speed, cdev->req->buf, type);
+		w_value--;
+	}
+
+config_buf() at the same time, iterates over all functions and skips the  
+ones
+that do not provide descriptors for given speed:
+
+	list_for_each_entry(f, &config->functions, list) {
+		switch (speed) {
+		case USB_SPEED_SUPER: descriptors = f->ss_descriptors; break;
+		case USB_SPEED_HIGH: descriptors = f->hs_descriptors; break;
+		default: descriptors = f->descriptors;
+		}
+		if (!descriptors)
+			continue;
+[...]
+	}
+
+So I think that your suggestion to use composite_driver.speed =
+driver->max_speed was by all means correct.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
