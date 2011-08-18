@@ -1,141 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab1HRQC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:02:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54747 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755332Ab1HRQC0 convert rfc822-to-8bit (ORCPT
+	id S1756054Ab1HRQCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:02:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33405 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab1HRQCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:02:26 -0400
+	Thu, 18 Aug 2011 12:02:48 -0400
+Message-ID: <4E4D37A4.7010106@canonical.com>
+Date: Thu, 18 Aug 2011 09:02:44 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CAH2r5mv9cdP_05dzmGZ_mVOswgNGVViU8Y3Z2Su+JT2Jv2TbSA@mail.gmail.com>
-References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
-	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
-	<20110815064734.403b630f@corrin.poochiereds.net>
-	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
-	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
-	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
-	<3300.1313637592@jrobl>
-	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
-	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
-	<CAH2r5mv9cdP_05dzmGZ_mVOswgNGVViU8Y3Z2Su+JT2Jv2TbSA@mail.gmail.com>
-Date: Thu, 18 Aug 2011 11:02:25 -0500
-Message-ID: <CAH2r5msfoDdw_twwuh96AznoY6V7kg1xgk9ZvwZfODgEb6s2VA@mail.gmail.com>
-Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
- with linux-3.1-rc2
-From: Steve French <smfrench@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Jeff Layton <jlayton@samba.org>,
-        Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Subject: Re: [PATCH 7/9 v4] Input: synaptics - process finger (<=3) transitions
+References: <1313666888-18939-1-git-send-email-djkurtz@chromium.org> <1313666888-18939-8-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1313666888-18939-8-git-send-email-djkurtz@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did some testing with 3.0 kernel (cifs client) and was getting 90%
-wire speeds writing
-cifs files to the server (Windows or Samba)
+On 08/18/2011 04:28 AM, Daniel Kurtz wrote:
+> Synaptics image sensor touchpads track 5 fingers, but only report 2.
+> This patch attempts to deal with some idiosyncrasies of these touchpads:
+> 
+>  * When there are 3 or more fingers, only two are reported.
+>  * The touchpad tracks the 5 fingers in slot[0] through slot[4].
+>  * It always reports the lowest and highest valid slots in SGM and AGM
+>    packets, respectively.
+>  * The number of fingers is only reported in the SGM packet.  However,
+>    the number of fingers can change either before or after an AGM
+>    packet.
+>  * Thus, if an SGM reports a different number of fingers than the last
+>    SGM, it is impossible to tell whether the intervening AGM corresponds
+>    to the old number of fingers or the new number of fingers.
+>  * For example, when going from 2->3 fingers, it is not possible to tell
+>    whether tell AGM contains slot[1] (old 2nd finger) or slot[2] (new
+>    3rd finger).
+>  * When fingers are added one at at time, from 1->2->3, it is possible to
+>    track which slots are contained in the SGM and AGM packets:
+>      1 finger:  SGM = slot[0], no AGM
+>      2 fingers: SGM = slot[0], AGM = slot[1]
+>      3 fingers: SGM = slot[0], AGM = slot[2]
+>  * It is also possible to track which slot is contained in the SGM when 1
+>    of 2 fingers is removed.  This is because the touchpad sends a special
+>    (0,0,0) AGM packet whenever all fingers are removed except slot[0]:
+>      Last AGM == (0,0,0): SGM contains slot[1]
+>      Else: SGM contains slot[0]
+>  * However, once there are 3 fingers, if exactly 1 finger is removed, it
+>    is impossible to tell which 2 slots are contained in SGM and AGM.
+>    The (SGM,AGM) could be (0,1), (0,2), or (1,2). There is no way to know.
+>  * Similarly, if two fingers are simultaneously removed (3->1), then it
+>    is only possible to know if SGM still contains slot[0].
+>  * Since it is not possible to reliably track which slot is being
+>    reported, we invalidate the tracking_id every time the number of
+>    fingers changes until this ambiguity is resolved when:
+>      a) All fingers are removed.
+>      b) 4 or 5 fingers are touched, generates an AGM-CONTACT packet.
+>      c) All fingers are removed except slot[0].  In this special case, the
+>         ambiguity is resolved since by the (0,0,0) AGM packet.
+> 
+> Behavior of the driver:
+> 
+> When 2 or more fingers are present on the touchpad, the kernel reports
+> up to two MT-B slots containing the position data for two of the fingers
+> reported by the touchpad.  If the identity of a finger cannot be tracked
+> when the number-of-fingers changes, the corresponding MT-B slot will be
+> invalidated (track_id set to -1), and a new track_id will be assigned in
+> a subsequent input event report.
+> 
+> The driver always reports the total number of fingers using one of the
+> EV_KEY/BTN_TOOL_*TAP events. This could differ from the number of valid
+> MT-B slots for two reasons:
+>  a) There are more than 2 fingers on the pad.
+>  b) During ambiguous number-of-fingers transitions, the correct track_id
+>     for one or both of the slots cannot be determined, so the slots are
+>     invalidated.
+> 
+> Thus, this is a hybrid singletouch/MT-B scheme. Userspace can detect
+> this behavior by noting that the driver supports more EV_KEY/BTN_TOOL_*TAP
+> events than its maximum EV_ABS/ABS_MT_SLOT.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-On Thu, Aug 18, 2011 at 11:01 AM, Steve French <smfrench@gmail.com> wrote:
-> Writing from cifs kernel client to WIndows or Samba server should be much faster
-> than the reverse (ie large file sequential file copy to server is
-> faster than copying
-> a file from the server)  cifs kernel client serializes reads from the same file
-> (unless mounting forcedirectio, in which case caching is disabled) and uses
-> a relatively smaller read size (16K) - while for writes they are sent
-> in parallel
-> even if to the same file (and the write size is much larger e.g. 126976 bytes,
-> and can be set even larger to Samba).  There may be a few cases (such
-> as copying to WIndowsXP or Windows7) where timeouts on the
-> server slow things down (writing from linux client to Windows XP
-> or Windows 7) but what is the server type?
->
->
-> On Thu, Aug 18, 2011 at 7:14 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->>
->>
->> On Thu, 18 Aug 2011, Justin Piszcz wrote:
->>
->>>
->>>
->>> On Thu, 18 Aug 2011, J. R. Okajima wrote:
->>>
->>>>
->>>> Justin Piszcz:
->>>>>
->>>>> Does anyone know if any kernel supports CIFS w/out crashing? I'd like to
->>>>> backup some CIFS shares, thanks.
->>>>>
->>>>>
->>>>> mount -t cifs //w2/x /mnt -o user=user,pass=pass
->>>>>
->>>>> [  881.388836] CIFS VFS: cifs_mount failed w/return code = -22
->>>>
->>>>        :::
->>>>
->>>> Since it failed mounting, this patch will help you. Although the patch
->>>> will fix one bug, there still may exist another problem.
->>>>
->>>> http://marc.info/?l=linux-cifs&m=131345112022031&w=2
->>>
->>> Hi,
->>>
->>> Latest patch (this one) applied to linux-3.1-rc2 works, at least it
->>> mounted
->>> this time and did not instantly crash the kernel!
->>>
->>> I also tried the hostname again (and it did not crash the kernel, but it
->>> failed to mount).
->>>
->>> Used the IP and it mounted successfully:
->>> //10.0.0.11/x          28T  5.0T   23T  19% /mnt
->>> //10.0.0.11/y          19T  1.2T   18T   7% /mnt2
->>>
->>> It has not crashed yet (which is good), I'll apply this patch to my
->>> production machine and test taking backups of this data and let you know
->>> if it crashes again, thanks!
->>>
->>> Justin.
->>
->>
->> Hello,
->>
->> It is working but very slowly:
->>
->> Device eth6 [10.0.1.2] (1/1):
->> ================================================================================
->> Incoming:                               Outgoing:
->> Curr: 37.60 MByte/s                     Curr: 0.44 MByte/s
->> Avg: 4.98 MByte/s                       Avg: 0.09 MByte/s
->> Min: 0.00 MByte/s                       Min: 0.00 MByte/s
->> Max: 40.79 MByte/s                      Max: 0.48 MByte/s
->> Ttl: 1.45 GByte                         Ttl: 26.77 MByte
->>
->> Over 10GbE the other direction (Linux -> Windows (via Samba)) I get
->> 500MiB/s, is CIFS slow?
->>
->> I'll look into options to tweak the speed but this is very poor speed when
->> you have to transfer 5-10TB.  However, it is not crashing anymore, so any
->> speed is better than that :)
->>
->> Justin.
->>
->>
->
->
->
-> --
-> Thanks,
->
-> Steve
->
-
-
-
--- 
-Thanks,
-
-Steve
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
