@@ -1,155 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab1HRV2H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 17:28:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39873 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab1HRV2G (ORCPT
+	id S1754174Ab1HRVdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 17:33:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42547 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400Ab1HRVdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 17:28:06 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=ZGE7i9NbjMkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=BfH3A-dIJrfGY89PYqwA:9 a=PUjeQqilurYA:10 a=Fk1TE4jC9N6hrb79:21 a=Lvzs15R4VIr0HioA:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 04/10 v2] ktest: Introduce CONSOLE_RESET_TIME
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1313166353-3664-1-git-send-email-drjones@redhat.com>
-References: <1313155932-20092-5-git-send-email-drjones@redhat.com>
-	 <1313166353-3664-1-git-send-email-drjones@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 18 Aug 2011 17:28:03 -0400
-Message-ID: <1313702883.15704.78.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Aug 2011 17:33:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+Date: Thu, 18 Aug 2011 22:33:10 +0100
+Message-ID: <CAPweEDwQH-pM120CQhaNy3+aQO8pUiTzFuEaPx5kbJPF6yyDLA@mail.gmail.com>
+Subject: Re: ARM promising platform, needs to learn from PC.
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 18:25 +0200, Andrew Jones wrote:
-> When rebooting, some targets may lose their console connection. This
-> certainly happens with 'virsh console' when used with my xen guests.
-> Setting CONSOLE_RESET_TIME will tell ktest to reconnect the console
-> after reboot.
+in http://thread.gmane.org/gmane.linux.kernel/1114495/focus=112007,
+with subject "[GIT PULL] omap changes for v2.6.39 merge window" in
+which the topic discussed has nothing to do with the subject (so glad
+to see i'm not the only one who does that...), Thomas Gleixner said:
 
-Oops, you forgot to add your SOB to this version of the patch. Could you
-just reply to this with your signed-off-by tag.
+> I'm sure that device tree is part of the solution, but that only helps
+> if we find a way to prevent duplicate drivers in the first place.
 
-Thanks!
+well if you apply the proposed "selfish patches are automatically
+rejected in favour of collaboration patches" rule, there won't *be*
+any duplicate drivers, only shared (i.e. collaborative) ones.
 
--- Steve
+problem's solved, yes?
 
-> ---
->  tools/testing/ktest/ktest.pl    |   28 +++++++++++++++++++++++-----
->  tools/testing/ktest/sample.conf |    8 ++++++++
->  2 files changed, 31 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index 12c392e..8bc6dd8 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -108,6 +108,7 @@ my $monitor_cnt = 0;
->  my $sleep_time;
->  my $bisect_sleep_time;
->  my $patchcheck_sleep_time;
-> +my $console_reset_time;
->  my $ignore_warnings;
->  my $store_failures;
->  my $test_name;
-> @@ -606,6 +607,7 @@ sub run_command;
->  sub start_monitor;
->  sub end_monitor;
->  sub wait_for_monitor;
-> +sub reset_monitor;
->  
->  sub reboot {
->      my ($time) = @_;
-> @@ -626,6 +628,7 @@ sub reboot {
->  	wait_for_monitor $time;
->  	end_monitor;
->      }
-> +    reset_monitor;
->  }
->  
->  sub do_not_reboot {
-> @@ -685,7 +688,9 @@ sub close_console {
->  }
->  
->  sub start_monitor {
-> -    if ($monitor_cnt++) {
-> +    my ($force) = @_;
-> +
-> +    if ($monitor_cnt++ && !defined($force)) {
->  	return;
->      }
->      $monitor_fp = \*MONFD;
-> @@ -697,12 +702,23 @@ sub start_monitor {
->  }
->  
->  sub end_monitor {
-> -    if (--$monitor_cnt) {
-> +    my ($force) = @_;
-> +
-> +    if (--$monitor_cnt && !defined($force)) {
->  	return;
->      }
->      close_console($monitor_fp, $monitor_pid);
->  }
->  
-> +sub reset_monitor {
-> +    if ($monitor_cnt <= 0 || !defined($console_reset_time)) {
-> +	return;
-> +    }
-> +    end_monitor 'force';
-> +    sleep $console_reset_time;
-> +    start_monitor 'force';
-> +}
-> +
->  sub wait_for_monitor {
->      my ($time) = @_;
->      my $line;
-> @@ -911,10 +927,11 @@ sub wait_for_input
->  sub reboot_to {
->      if ($reboot_type eq "grub") {
->  	run_ssh "'(echo \"savedefault --default=$grub_number --once\" | grub --batch && reboot)'";
-> -	return;
-> +    } else {
-> +	run_command "$reboot_script";
->      }
-> -
-> -    run_command "$reboot_script";
-> +    wait_for_monitor $sleep_time;
-> +    reset_monitor;
->  }
->  
->  sub get_sha1 {
-> @@ -2817,6 +2834,7 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
->      $sleep_time = set_test_option("SLEEP_TIME", $i);
->      $bisect_sleep_time = set_test_option("BISECT_SLEEP_TIME", $i);
->      $patchcheck_sleep_time = set_test_option("PATCHCHECK_SLEEP_TIME", $i);
-> +    $console_reset_time = set_test_option("CONSOLE_RESET_TIME", $i);
->      $ignore_warnings = set_test_option("IGNORE_WARNINGS", $i);
->      $bisect_manual = set_test_option("BISECT_MANUAL", $i);
->      $bisect_skip = set_test_option("BISECT_SKIP", $i);
-> diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.conf
-> index b8bcd14..ba430a7 100644
-> --- a/tools/testing/ktest/sample.conf
-> +++ b/tools/testing/ktest/sample.conf
-> @@ -491,6 +491,14 @@
->  # (default 60)
->  #PATCHCHECK_SLEEP_TIME = 60
->  
-> +# If the console needs to be reset during a reboot cycle in
-> +# order to reestablish it's connection, then set this option
-> +# to the number of seconds ktest should wait between disconnect
-> +# and reconnect. This is needed when using 'virsh console' to
-> +# connect to guests.
-> +# (default undefined)
-> +#CONSOLE_RESET_TIME = 5
-> +
->  # Reboot the target box on error (default 0)
->  #REBOOT_ON_ERROR = 0
->  
+in the case of peripheral "cores" (e.g. a USB-3 Hardware Macro Block
+which multiple SoC vendors license from e.g. Synopsys and lay down as
+part of the CPU) i bet you that enough "Hell On Earth" for SoC vendors
+whose kernel patches get rejected (because they're classified as
+"selfish") would ultimately result in the actual designers of those
+"cores" (e.g. Synopsys) writing the actual linux driver code
+themselves.
 
+under such circumstances, if the actual designer of the Hardware Macro
+Block actually wrote the bloody linux driver, it would a) fit the
+"collaborative patches rule", b) save the SoC vendors a job
+reimplementing driver code c) stop the SoC vendors from submitting
+duplicate drivers.
 
+it might happen.  pigs might fly, but it might happen.
+
+l.
