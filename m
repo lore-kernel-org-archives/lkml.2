@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab1HRN6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:58:36 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43479 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823Ab1HRN6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 09:58:35 -0400
-Date: Thu, 18 Aug 2011 15:58:21 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v3] memcg: add nr_pages argument for hierarchical reclaim
-Message-ID: <20110818135821.GA16958@cmpxchg.org>
-References: <20110810141425.GC15007@tiehlicka.suse.cz>
- <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
- <20110811145055.GN8023@tiehlicka.suse.cz>
- <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
- <20110817113550.GA7482@tiehlicka.suse.cz>
- <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818062722.GB23056@tiehlicka.suse.cz>
- <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818074602.GD23056@tiehlicka.suse.cz>
- <20110818125754.GA14015@tiehlicka.suse.cz>
+	id S1755995Ab1HRN7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:59:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53845 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab1HRN66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 09:58:58 -0400
+Date: Thu, 18 Aug 2011 08:58:53 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+Message-ID: <20110818135853.GA28313@thinkpad-t410>
+Mail-Followup-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+	Eric Piel <E.A.B.Piel@tudelft.nl>,
+	Daniel Kurtz <djkurtz@chromium.org>,
+	Chase Douglas <chase.douglas@canonical.com>,
+	Henrik Rydberg <rydberg@euromail.se>,
+	Alessandro Rubini <rubini@cvml.unipv.it>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110818125754.GA14015@tiehlicka.suse.cz>
+In-Reply-To: <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 02:57:54PM +0200, Michal Hocko wrote:
-> I have just realized that num_online_nodes should be much better than
-> MAX_NUMNODES. 
-> Just for reference, the patch is based on top of
-> https://lkml.org/lkml/2011/8/9/82 (it doesn't depend on it but it also
-> doesn't make much sense without it)
-> 
-> Changes since v2:
-> - use num_online_nodes rather than MAX_NUMNODES
-> Changes since v1:
-> - reclaim nr_nodes * SWAP_CLUSTER_MAX in mem_cgroup_force_empty
-> ---
-> From: Michal Hocko <mhocko@suse.cz>
-> Subject: memcg: add nr_pages argument for hierarchical reclaim
-> 
-> Now that we are doing memcg direct reclaim limited to nr_to_reclaim
-> pages (introduced by "memcg: stop vmscan when enough done.") we have to
-> be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
-> most callers but it might cause failures for limit resize or force_empty
-> code paths on big NUMA machines.
+On Thu, Aug 18, 2011 at 09:57:09AM +0800, JJ Ding wrote:
+> v3 hardware's packet format is almost identical to v2 (one/three finger touch),
+> except when sensing two finger touch, the hardware sends 12 bytes of data.
 
-The limit resizing path retries as long as reclaim makes progress, so
-this is just handwaving.
+This looks mostly similar in substance to the patch I sent, although
+with some good improvements resulting from your better knowledge of the
+hardware :)
 
-After Kame's patch, the force-empty path has an increased risk of
-failing to move huge pages to the parent, because it tries reclaim
-only once.  This could need further evaluation, and possibly a fix.
-But instead:
+One suggestion below. I'll test as soon as my build finishes.
 
-> @@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
->  	if (!(gfp_mask & __GFP_WAIT))
->  		return CHARGE_WOULDBLOCK;
->  
-> +	/*
-> +	 * We are lying about nr_pages because we do not want to
-> +	 * reclaim too much for THP pages which should rather fallback
-> +	 * to small pages.
-> +	 */
->  	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
-> -					      gfp_mask, flags, NULL);
-> +					      gfp_mask, flags, NULL,
-> +					      1);
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		return CHARGE_RETRY;
->  	/*
+> @@ -582,10 +739,26 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+>  		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+>  		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+>  		break;
+> +
+> +	case 3:
+> +		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+> +		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+> +		/* range of pressure and width is the same as v2 */
+> +		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+> +				     ETP_PMAX_V2, 0, 0);
+> +		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+> +				     ETP_WMAX_V2, 0, 0);
+> +		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> +		input_mt_init_slots(dev, 2);
+> +		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> +		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> +		break;
 
-You tell it to reclaim _less_ than before, further increasing the risk
-of failure...
+The case 3 code is nearly identical to case 2. How about this?
 
-> @@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
-> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> +		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
+	case 2:
+		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+		/* fall through */
 
-...but wait, this transparently fixes it up and ignores the caller's
-request.
-
-Sorry, but this is just horrible!
-
-For the past weeks I have been chasing memcg bugs that came in with
-sloppy and untested code, that was merged for handwavy reasons.
-
-Changes to algorithms need to be tested and optimizations need to be
-quantified in other parts of the VM and the kernel, too.  I have no
-idea why this doesn't seem to apply to the memory cgroup subsystem.
+	case 3:
+		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+		/* range of pressure and width is the same as v2 */
+		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+				     ETP_PMAX_V2, 0, 0);
+		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+				     ETP_WMAX_V2, 0, 0);
+		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+		input_mt_init_slots(dev, 2);
+		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+		break;
