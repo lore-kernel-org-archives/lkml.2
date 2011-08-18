@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1HRKps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 06:45:48 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:54722 "EHLO radon.swed.at"
+	id S1755533Ab1HRKsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 06:48:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46519 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab1HRKpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 06:45:46 -0400
-Message-ID: <4E4CED56.1030100@nod.at>
-Date: Thu, 18 Aug 2011 12:45:42 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1755213Ab1HRKsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 06:48:35 -0400
+From: Anand Gadiyar <gadiyar@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: Anand Gadiyar <gadiyar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] MAINTAINERS: add myself as co-maintainer for OMAP USB
+Date: Thu, 18 Aug 2011 16:18:24 +0530
+Message-ID: <1313664504-956-1-git-send-email-gadiyar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
 MIME-Version: 1.0
-To: Stanislav Meduna <stano@meduna.org>
-CC: linux-kernel@vger.kernel.org, gunnarlindroth@hotmail.com,
-        user-mode-linux-devel@lists.sourceforge.net, inguin@gmx.de
-Subject: Re: [uml-devel] Floating point problems on UML - help needed
-References: <4E4C2B6F.7000800@nod.at> <4E4CB13C.7010502@meduna.org>
-In-Reply-To: <4E4CB13C.7010502@meduna.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.08.2011 08:29, schrieb Stanislav Meduna:
-> On 17.08.2011 22:58, Richard Weinberger wrote:
->
->> It looks like FPU registers get sometimes lost after switching between
->> two or more threads.
->
-> This is probably a bug in UML I reported nearly three years ago.
-> For me mode=skas0 worked aruond the issue.
->
-> http://thread.gmane.org/gmane.linux.uml.devel/11824/focus=11840
->
-> You might try the patch posted in
-> http://thread.gmane.org/gmane.linux.uml.devel/12158
-> (I don't have the environment to test it anymore)
+I'd like to help co-maintain OMAP USB support. I've helped
+out in the past when Felipe was away and would like make
+it official.
 
-Cool, saving the FP registers explicitly on each task switch solves the 
-issue.
-Do you know why Ingo's patch was never applied?
-Ingo?
+Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ MAINTAINERS |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks,
-//richard
+Index: linux-2.6/MAINTAINERS
+===================================================================
+--- linux-2.6.orig/MAINTAINERS
++++ linux-2.6/MAINTAINERS
+@@ -4326,6 +4326,7 @@ F:	include/linux/isicom.h
+ 
+ MUSB MULTIPOINT HIGH SPEED DUAL-ROLE CONTROLLER
+ M:	Felipe Balbi <balbi@ti.com>
++M:	Anand Gadiyar <gadiyar@ti.com>
+ L:	linux-usb@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+ S:	Maintained
+@@ -4656,6 +4657,7 @@ F:	drivers/media/video/omap3isp/*
+ 
+ OMAP USB SUPPORT
+ M:	Felipe Balbi <balbi@ti.com>
++M:	Anand Gadiyar <gadiyar@ti.com>
+ L:	linux-usb@vger.kernel.org
+ L:	linux-omap@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
