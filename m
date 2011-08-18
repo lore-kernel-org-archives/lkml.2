@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab1HRL5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:57:52 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:52797 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab1HRL5u (ORCPT
+	id S1755780Ab1HRL6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:58:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47778 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab1HRL54 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 07:57:50 -0400
-X-IronPort-AV: E=Sophos;i="4.68,245,1312156800"; 
-   d="scan'208";a="7334449"
-Subject: Re: how to handle tracing .h loops
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+	Thu, 18 Aug 2011 07:57:56 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Yang Rui Rui" <ruirui.r.yang@tieto.com>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sergei Shtylyov" <sshtylyov@mvista.com>,
+        "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Ruirui R" <ruirui.r.yang@tietoenator.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1313668307.5010.300.camel@zakaz.uk.xensource.com>
-References: <1313668307.5010.300.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 18 Aug 2011 12:57:42 +0100
-Message-ID: <1313668662.5010.303.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <4E4B9D9C.2010607@linutronix.de>
+ <fb37566fc5a85ea4e8711221253e5db98d919251.1313594405.git.mina86@mina86.com>
+ <4E4C8077.9070809@tieto.com>
+Date: Thu, 18 Aug 2011 13:57:51 +0200
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v0ergn0d3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4E4C8077.9070809@tieto.com>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 12:51 +0100, Ian Campbell wrote:
-> Clearly other places are including interrupt.h and highmem.h without
-> issue so what am I doing wrong here?
+On Thu, 18 Aug 2011 05:01:11 +0200, Yang Rui Rui <ruirui.r.yang@tieto.com>  
+wrote:
+> I did not see the include/linux/usb/gadget.h changes, did you have  
+> another patch?
+> There's  CONFIG_USB_GADGET_DUALSPEED ifdefs in gadget_is_dualspeed  
+> function of the gadget.h
+> If so, I will get oops as before.
 
-I guess I should have look at the .c file instead of concentrating on
-the .h's because this works:
+Thanks, fixed.  I did “git add -u” while I was in drivers/usb/gadget so
+gadget.h did not get added and I've overlooked it.  Sorry about that.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 7b996ed..3f5ee74 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -29,6 +29,7 @@
- #include <linux/rcupdate.h>
- #include <linux/dmaengine.h>
- #include <linux/hrtimer.h>
-+#include <linux/highmem.h>
- 
- /* Don't change this without changing skb_csum_unnecessary! */
- #define CHECKSUM_NONE 0
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 291c970..ff432ec 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -30,6 +30,7 @@
- #include <linux/nsproxy.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/signal.h>
-+#undef CREATE_TRACE_POINTS
- 
- #include <asm/param.h>
- #include <asm/uaccess.h>
+> On 08/17/2011 11:33 PM, Michal Nazarewicz wrote:
+>> --- a/drivers/usb/gadget/composite.c
+>> +++ b/drivers/usb/gadget/composite.c
+>> @@ -1559,12 +1559,6 @@ composite_resume(struct usb_gadget *gadget)
+>>   /*-------------------------------------------------------------------------*/
+>>
+>>   static struct usb_gadget_driver composite_driver = {
+>> -#ifdef CONFIG_USB_GADGET_SUPERSPEED
+>> -       .speed          = USB_SPEED_SUPER,
+>> -#else
+>> -       .speed          = USB_SPEED_HIGH,
+>> -#endif
+>> -
+>>          .unbind         = composite_unbind,
+>>
+>>          .setup          = composite_setup,
+>> @@ -1609,8 +1603,7 @@ int usb_composite_probe(struct  
+>> usb_composite_driver *driver,
+>>                  driver->iProduct = driver->name;
+>>          composite_driver.function =  (char *) driver->name;
+>>          composite_driver.driver.name = driver->name;
+>> -       composite_driver.speed = min((u8)composite_driver.speed,
+>> -                                    (u8)driver->max_speed);
+>> +       composite_driver.speed = driver->max_speed;
 
+> This does not works, many drivers will check the driver->speed, ie in  
+> musg_gadget.c
 
-But that seems odd (noone else does it). Perhaps I should instead move
-that include to last in the file? i.e.:
+Uh?  Not sure what you mean here.  Note that driver above is not the same
+structure as driver below.  composite_driver is what musb_gadget_start()
+will get.
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 291c970..d3cd4e7 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -28,8 +28,6 @@
- #include <linux/freezer.h>
- #include <linux/pid_namespace.h>
- #include <linux/nsproxy.h>
--#define CREATE_TRACE_POINTS
--#include <trace/events/signal.h>
- 
- #include <asm/param.h>
- #include <asm/uaccess.h>
-@@ -37,6 +35,9 @@
- #include <asm/siginfo.h>
- #include "audit.h"	/* audit_signal_info() */
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/signal.h>
-+
- /*
-  * SLAB caches for signal bits.
-  */
+> static int musb_gadget_start(struct usb_gadget *g,
+>                  struct usb_gadget_driver *driver)
+> {
+>          struct musb             *musb = gadget_to_musb(g);
+>          unsigned long           flags;
+>          int                     retval = -EINVAL;
+>
+>          if (driver->speed != USB_SPEED_HIGH)
+>                  goto err0;
+> [snip]
+>
+>>          composite = driver;
+>>          composite_gadget_bind = bind;
 
-Ian.
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
