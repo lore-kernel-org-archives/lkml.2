@@ -1,181 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1HRAny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 20:43:54 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33583 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab1HRAnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 20:43:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 09:35:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v9 00/13] memcg: per cgroup dirty page limiting
-Message-Id: <20110818093557.7994e309.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754492Ab1HRAou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:44:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab1HRAot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Aug 2011 20:44:49 -0400
+Date: Thu, 18 Aug 2011 03:44:41 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Subject: Re: RCU treating guest mode just like it does user-mode execution
+Message-ID: <20110818004441.GB8163@redhat.com>
+References: <20110817204327.GA10633@linux.vnet.ibm.com>
+ <20110817215015.GA6423@redhat.com>
+ <20110817220520.GN2419@linux.vnet.ibm.com>
+ <20110817235529.GA8163@redhat.com>
+ <20110818002513.GP2419@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818002513.GP2419@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 09:14:52 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Wed, Aug 17, 2011 at 05:25:13PM -0700, Paul E. McKenney wrote:
+> On Thu, Aug 18, 2011 at 02:55:29AM +0300, Gleb Natapov wrote:
+> > On Wed, Aug 17, 2011 at 03:05:20PM -0700, Paul E. McKenney wrote:
+> > > On Thu, Aug 18, 2011 at 12:50:15AM +0300, Gleb Natapov wrote:
+> > > > On Wed, Aug 17, 2011 at 01:43:27PM -0700, Paul E. McKenney wrote:
+> > > > > Hello, Gleb,
+> > > > > 
+> > > > > I was looking at KVM's call to rcu_virt_note_context_switch()
+> > > > > in kvm_guest_enter(), and noting the comment talking about treating
+> > > > > guest mode like user-mode execution is.  One difference between RCU's
+> > > > > treatment of KVM guest execution and user-mode execution is that RCU
+> > > > > notes a context switch only at the beginning of KVM guest execution,
+> > > > > but notes user-mode execution at every scheduling-clock interrupt.
+> > > > > 
+> > > > > Does it make sense to also note KVM guest execution on each
+> > > > > scheduling-clock interrupt?  One reason it might not make sense is
+> > > > > if interrupts from KVM guest execution appear to rcu_check_callbacks()
+> > > > > as interrupts from user-mode execution.  (Do they?  Given that people
+> > > > > are reporting RCU CPU stall warnings in virtualized environments, I
+> > > > > am beginning to suspect that the answer is "no".)
+> > > > > 
+> > > > The answer is "no" because any interrupt kicks cpu out of a guest mode, so
+> > > > it appears to be in the kernel for RCU. Do people still reporting RCU
+> > > > stalls even with the my patch?
+> > > > 
+> > > > > If KVM guest execution does not appear as user-mode execution to
+> > > > > rcu_check_callback(), I would consider doing the following:
+> > > > > 
+> > > > > 1.	Rename rcu_virt_note_context_switch() to something like
+> > > > > 	rcu_guest_execution_start().
+> > > > > 
+> > > > > 2.	Place a call to a new rcu_guest_execution_end() in
+> > > > > 	kvm_guest_exit().
+> > > > > 
+> > > > > 3.	Make rcu_guest_execution_start() and rcu_guest_execution_end()
+> > > > > 	set and clear a new per-CPU variable.
+> > > > There is such variable already: current->flags & PF_VCPU.
+> > > 
+> > > Good to know, thank you!
+> > > 
+> > > > > 4.	Make rcu_check_callbacks() check this per-CPU variable in
+> > > > > 	much the same way that it currently checks its "user"
+> > > > > 	argument, aside from needing to check that the CPU is
+> > > > > 	not in an interrupt handler or some such.
+> > > > > 
+> > > > > Of course, some thought is required to make sure that the checks for
+> > > > > executing in an interrupt handler actually cover all of the needed
+> > > > > situations, but so it goes!
+> > > > > 
+> > > > > Thoughts?
+> > > > 
+> > > > I wonder why it will be better than current situation. After cpu leaves
+> > > > a guest mode there are only three options. It will either go to
+> > > > userspace, execute schedule or go back to guest mode. At all those cases
+> > > > RCU should note quiescent state.
+> > > 
+> > > Might be that the current state is optimal.  That would be a good thing.
+> > > 
+> > > But if a CPU stays in guest mode for (say) 30 seconds, it will have
+> > > called schedule() every jiffy in the meantime?  In other words, if
+> > > a CPU stays in guest mode for a long time, how does RCU know that
+> > > this CPU is in an extended quiescent state?
+> > > 
+> > Wouldn't scheduling-clock interrupt kick vcpu out of a guest mode much
+> > earlier then 30 seconds?
+> 
+> The scheduling-clock interrupt would happen, but I do not know whether
+> or not it would kick the vcpu out of guest mode in such a way that
+> would result in RCU thinking that the CPU has passed through a quiescent
+> state.
+Then I think we are OK. Any interrupt will kick cpu out of guest mode.
+After that vcpu thread will be either rescheduled or it will get back to
+guest mode calling rcu_virt_note_context_switch() on the way there.
 
-> This patch series provides the ability for each cgroup to have independent dirty
-> page usage limits.  Limiting dirty memory fixes the max amount of dirty (hard to
-> reclaim) page cache used by a cgroup.  This allows for better per cgroup memory
-> isolation and fewer memcg OOMs.
-> 
-
-Thank you for your patient work!. I really want this feature.
-(Hopefully before we tune vmscan)
-
-I hope this patch will not have heavy HUNKs..
-
-Thanks,
--Kame
-
-
-> Three features are included in this patch series:
->   1. memcg dirty page accounting
->   2. memcg writeback
->   3. memcg dirty page limiting
-> 
-> 
-> 1. memcg dirty page accounting
-> 
-> Each memcg maintains a dirty page count and dirty page limit.  Previous
-> iterations of this patch series have refined this logic.  The interface is
-> similar to the procfs interface: /proc/sys/vm/dirty_*.  It is possible to
-> configure a limit to trigger throttling of a dirtier or queue background
-> writeback.  The root cgroup memory.dirty_* control files are read-only and match
-> the contents of the /proc/sys/vm/dirty_* files.
-> 
-> 
-> 2. memcg writeback
-> 
-> Having per cgroup dirty memory limits is not very interesting unless writeback
-> is also cgroup aware.  There is not much isolation if cgroups have to writeback data
-> from outside the affected cgroup to get below the cgroup dirty memory threshold.
-> 
-> Per-memcg dirty limits are provided to support isolation and thus cross cgroup
-> inode sharing is not a priority.  This allows the code be simpler.
-> 
-> To add cgroup awareness to writeback, this series adds an i_memcg field to
-> struct address_space to allow writeback to isolate inodes for a particular
-> cgroup.  When an inode is marked dirty, i_memcg is set to the current cgroup.
-> When inode pages are marked dirty the i_memcg field is compared against the
-> page's cgroup.  If they differ, then the inode is marked as shared by setting
-> i_memcg to a special shared value (zero).
-> 
-> When performing per-memcg writeback, move_expired_inodes() scans the per bdi
-> b_dirty list using each inode's i_memcg and the global over-limit memcg bitmap
-> to determine if the inode should be written.  This inode scan may involve
-> skipping many unrelated inodes from other cgroup.  To test the scanning
-> overhead, I created two cgroups (cgroup_A with 100,000 dirty inodes under A's
-> dirty limit, cgroup_B with 1 inode over B's dirty limit).  The writeback code
-> then had to skip 100,000 inodes when balancing cgroup_B to find the one inode
-> that needed writing.  This scanning took 58 msec to skip 100,000 foreign inodes.
-> 
-> 
-> 3. memcg dirty page limiting
-> 
-> balance_dirty_pages() calls mem_cgroup_balance_dirty_pages(), which checks the
-> dirty usage vs dirty thresholds for the current cgroup and its parents.  As
-> cgroups exceed their background limit, they are marked in a global over-limit
-> bitmap (indexed by cgroup id) and the bdi flusher is awoke.  As a cgroup hits is
-> foreground limit, the task is throttled while performing foreground writeback on
-> inodes owned by the over-limit cgroup.  If mem_cgroup_balance_dirty_pages() is
-> unable to get below the dirty page threshold writing per-memcg inodes, then
-> downshifts to also writing shared inodes (i_memcg=0).
-> 
-> I know that there is some significant IO-less balance_dirty_pages() changes.  I
-> am not trying to derail that effort.  I have done moderate functional testing of
-> the newly proposed features.
-> 
-> The memcg aspects of this patch are pretty mature.  The writeback aspects are
-> still fairly new and need feedback from the writeback community.  These features
-> are linked, so it's not clear which branch to send the changes to (the writeback
-> development branch or mmotm).
-> 
-> Here is an example of the memcg OOM that is avoided with this patch series:
-> 	# mkdir /dev/cgroup/memory/x
-> 	# echo 100M > /dev/cgroup/memory/x/memory.limit_in_bytes
-> 	# echo $$ > /dev/cgroup/memory/x/tasks
-> 	# dd if=/dev/zero of=/data/f1 bs=1k count=1M &
->         # dd if=/dev/zero of=/data/f2 bs=1k count=1M &
->         # wait
-> 	[1]-  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
-> 	[2]+  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
-> 
-> Changes since -v8:
-> - Reordered patches for better more readability.
-> 
-> - No longer passing struct writeback_control into memcontrol functions.  Instead
->   the needed attributes (memcg_id, etc.) are explicitly passed in.  Therefore no
->   more field additions to struct writeback_control.
-> 
-> - Replaced 'Andrea Righi <arighi@develer.com>' with 
->   'Andrea Righi <andrea@betterlinux.com>' in commit descriptions.
-> 
-> - Rebased to mmotm-2011-08-02-16-19
-> 
-> Greg Thelen (13):
->   memcg: document cgroup dirty memory interfaces
->   memcg: add page_cgroup flags for dirty page tracking
->   memcg: add dirty page accounting infrastructure
->   memcg: add kernel calls for memcg dirty page stats
->   memcg: add mem_cgroup_mark_inode_dirty()
->   memcg: add dirty limits to mem_cgroup
->   memcg: add cgroupfs interface to memcg dirty limits
->   memcg: dirty page accounting support routines
->   memcg: create support routines for writeback
->   writeback: pass wb_writeback_work into move_expired_inodes()
->   writeback: make background writeback cgroup aware
->   memcg: create support routines for page writeback
->   memcg: check memcg dirty limits in page writeback
-> 
->  Documentation/cgroups/memory.txt  |   70 ++++
->  fs/buffer.c                       |    2 +-
->  fs/fs-writeback.c                 |  113 ++++--
->  fs/inode.c                        |    3 +
->  fs/nfs/write.c                    |    4 +
->  fs/sync.c                         |    2 +-
->  include/linux/cgroup.h            |    1 +
->  include/linux/fs.h                |    9 +
->  include/linux/memcontrol.h        |   64 +++-
->  include/linux/page_cgroup.h       |   23 ++
->  include/linux/writeback.h         |    9 +-
->  include/trace/events/memcontrol.h |  207 ++++++++++
->  kernel/cgroup.c                   |    1 -
->  mm/backing-dev.c                  |    3 +-
->  mm/filemap.c                      |    1 +
->  mm/memcontrol.c                   |  760 ++++++++++++++++++++++++++++++++++++-
->  mm/page-writeback.c               |   44 ++-
->  mm/truncate.c                     |    1 +
->  mm/vmscan.c                       |    5 +-
->  19 files changed, 1265 insertions(+), 57 deletions(-)
->  create mode 100644 include/trace/events/memcontrol.h
-> 
-> -- 
-> 1.7.3.1
-> 
-> 
-
+--
+			Gleb.
