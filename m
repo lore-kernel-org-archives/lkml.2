@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1HRNlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:41:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41003 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab1HRNll (ORCPT
+	id S1755421Ab1HRNqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:46:44 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:64776 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab1HRNqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 09:41:41 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Dave Young" <hidave.darkstar@gmail.com>
-Cc: "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Sergei Shtylyov" <sshtylyov@mvista.com>,
-        "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Ruirui R" <ruirui.r.yang@tietoenator.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-References: <4E4B9D9C.2010607@linutronix.de>
- <fb37566fc5a85ea4e8711221253e5db98d919251.1313594405.git.mina86@mina86.com>
- <4E4C8077.9070809@tieto.com> <op.v0ergn0d3l0zgt@mnazarewicz-glaptop>
- <CABqxG0cyZf4nz323MwGAAUVLd_ME50vO0Jq0ik91=D_Vkxn3fA@mail.gmail.com>
-Date: Thu, 18 Aug 2011 15:41:37 +0200
+	Thu, 18 Aug 2011 09:46:43 -0400
+X-IronPort-AV: E=Sophos;i="4.68,245,1312171200"; 
+   d="scan'208";a="159496802"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Ian Campbell <ian.campbell@citrix.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] signals: move trace header #include to after all others.
+Date: Thu, 18 Aug 2011 14:46:38 +0100
+Message-ID: <1313675198-7413-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0ewbnms3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <CABqxG0cyZf4nz323MwGAAUVLd_ME50vO0Jq0ik91=D_Vkxn3fA@mail.gmail.com>
-User-Agent: Opera Mail/11.50 (Linux)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 08/17/2011 11:33 PM, Michal Nazarewicz wrote:
->>>> --- a/drivers/usb/gadget/composite.c
->>>> +++ b/drivers/usb/gadget/composite.c
->>>> @@ -1559,12 +1559,6 @@ composite_resume(struct usb_gadget *gadget)
->>>>
->>>>  /*-------------------------------------------------------------------------*/
->>>>
->>>>  static struct usb_gadget_driver composite_driver = {
->>>> -#ifdef CONFIG_USB_GADGET_SUPERSPEED
->>>> -       .speed          = USB_SPEED_SUPER,
->>>> -#else
->>>> -       .speed          = USB_SPEED_HIGH,
->>>> -#endif
->>>> -
->>>>         .unbind         = composite_unbind,
->>>>
->>>>         .setup          = composite_setup,
->>>> @@ -1609,8 +1603,7 @@ int usb_composite_probe(struct  
->>>> usb_composite_driver
->>>> *driver,
->>>>                 driver->iProduct = driver->name;
->>>>         composite_driver.function =  (char *) driver->name;
->>>>         composite_driver.driver.name = driver->name;
->>>> -       composite_driver.speed = min((u8)composite_driver.speed,
->>>> -                                    (u8)driver->max_speed);
->>>> +       composite_driver.speed = driver->max_speed;
+Steven Rostedt says:
+    The trace events headers are suppose to be the last headers
+    included.
+and this fixes a build error when another header already includes trace stuff,
+which I saw when adding a highmem.h include to skbuff.h e.g.:
+In file included from include/trace/ftrace.h:296:0,
+                 from include/trace/define_trace.h:96,
+                 from include/trace/events/irq.h:150,
+                 from include/linux/interrupt.h:23,
+                 from arch/x86/include/asm/highmem.h:23,
+                 from include/linux/highmem.h:33,
+                 from include/linux/skbuff.h:32,
+                 from kernel/audit.h:24,
+                 from kernel/signal.c:38:
+include/trace/events/irq.h: In function 'ftrace_raw_output_softirq':
+include/trace/events/irq.h:87:1: error: 'HI_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: note: each undeclared identifier is reported only once for each function it appears in
+include/trace/events/irq.h:87:1: error: 'TIMER_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'NET_TX_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'NET_RX_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'BLOCK_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'BLOCK_IOPOLL_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'TASKLET_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'SCHED_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'HRTIMER_SOFTIRQ' undeclared (first use in this function)
+include/trace/events/irq.h:87:1: error: 'RCU_SOFTIRQ' undeclared (first use in this function)
 
->> On Thu, 18 Aug 2011 05:01:11 +0200, Yang Rui Rui wrote:
->>> This does not works, many drivers will check the driver->speed, ie in
->>> musg_gadget.c
+See http://lkml.kernel.org/r/1313668307.5010.300.camel@zakaz.uk.xensource.com
 
-> On Thu, Aug 18, 2011 at 7:57 PM, Michal Nazarewicz wrote:
->> Uh?  Not sure what you mean here.  Note that driver above is not the  
->> same
->> structure as driver below.  composite_driver is what musb_gadget_start()
->> will get.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/signal.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-On Thu, 18 Aug 2011 15:24:07 +0200, Dave Young wrote:
-> For example I  got -EINVAL in musb_gadget_start in case
-> composite_driver.speed = USB_SPEED_SUPER
-
-For anything other then g_ether and g_zero, the speed should be set to
-USB_SPEED_HIGH.  Unless this is somehow related to what Alan said about
-this code.
-
-> the driver param is the composite_driver in composite.c, isn't it?
-
-Yes.
-
->>> static int musb_gadget_start(struct usb_gadget *g,
->>>                 struct usb_gadget_driver *driver)
->>> {
->>>         struct musb             *musb = gadget_to_musb(g);
->>>         unsigned long           flags;
->>>         int                     retval = -EINVAL;
->>>
->>>         if (driver->speed != USB_SPEED_HIGH)
->>>                 goto err0;
->>> [snip]
->>>
->>>>         composite = driver;
->>>>         composite_gadget_bind = bind;
-
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 291c970..d3cd4e7 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -28,8 +28,6 @@
+ #include <linux/freezer.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/nsproxy.h>
+-#define CREATE_TRACE_POINTS
+-#include <trace/events/signal.h>
+ 
+ #include <asm/param.h>
+ #include <asm/uaccess.h>
+@@ -37,6 +35,9 @@
+ #include <asm/siginfo.h>
+ #include "audit.h"	/* audit_signal_info() */
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/signal.h>
++
+ /*
+  * SLAB caches for signal bits.
+  */
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+1.7.2.5
+
