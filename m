@@ -1,136 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1HRTb1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:31:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53078 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab1HRTbU (ORCPT
+	id S1753568Ab1HRTb7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:31:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34896 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752296Ab1HRTb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:31:20 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/3] perf annotate: Make output more readable
-Date: Thu, 18 Aug 2011 16:31:08 -0300
-Message-Id: <1313695870-31028-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1313695870-31028-1-git-send-email-acme@infradead.org>
-References: <1313695870-31028-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 18 Aug 2011 15:31:57 -0400
+Date: Thu, 18 Aug 2011 20:31:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Sam Ravnborg <sam@ravnborg.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
+Message-ID: <20110818193132.GA28546@n2100.arm.linux.org.uk>
+References: <4E457682.5020107@codeaurora.org> <1313175602-21834-1-git-send-email-sboyd@codeaurora.org> <CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com> <CACqU3MXtcg_8si9WiuZngMB2C977PS4zen8_cQ9oyNtwTbt75Q@mail.gmail.com> <alpine.LFD.2.00.1108172339270.20358@xanadu.home> <CACqU3MUV=-hQ_y3wLPBYRh+DhLcFqneWbURNQ66UyArb5UJcxw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACqU3MUV=-hQ_y3wLPBYRh+DhLcFqneWbURNQ66UyArb5UJcxw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+On Thu, Aug 18, 2011 at 02:03:43PM -0400, Arnaud Lacombe wrote:
+> Hi,
+> 
+> On Wed, Aug 17, 2011 at 11:44 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > On Fri, 12 Aug 2011, Arnaud Lacombe wrote:
+> >> On Fri, Aug 12, 2011 at 4:48 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> >> > On Fri, Aug 12, 2011 at 3:00 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> >> >> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
+> >> >> index 0c74a6f..937fd26 100644
+> >> >> --- a/arch/arm/boot/compressed/Makefile
+> >> >> +++ b/arch/arm/boot/compressed/Makefile
+> >> >> @@ -91,7 +91,7 @@ suffix_$(CONFIG_KERNEL_LZMA) = lzma
+> >> >>
+> >> >>  targets       := vmlinux vmlinux.lds \
+> >> >>                 piggy.$(suffix_y) piggy.$(suffix_y).o \
+> >> >> -                font.o font.c head.o misc.o $(OBJS)
+> >> >> +                font.o font.c head.o misc.o lib1funcs.o lib1funcs.S $(OBJS)
+> >> >>
+> >> >>  # Make sure files are removed during clean
+> >> >>  extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
+> >> >> @@ -121,9 +121,7 @@ LDFLAGS_vmlinux += -X
+> >> >>  LDFLAGS_vmlinux += -T
+> >> >>
+> >> >>  # For __aeabi_uidivmod
+> >> >> -lib1funcs = $(obj)/lib1funcs.o
+> >> >> -
+> >> >> -$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S FORCE
+> >> >> +$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S
+> >> >>        $(call cmd,shipped)
+> >> >>
+> >> > You should be able to avoid the extra copy altogether by doing something ala:
+> >> >
+> >> > $(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
+> >> >        $(call cmd,as_o_S)
+> >> >
+> >> > note that I also remove the $(SRCARCH), as there is no other
+> >> > `arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
+> >> >
+> >> I withdraw this proposal and will hack around this to find a proper
+> >> solution from within kbuild, and eventually come back on these uses
+> >> :-)
+> >
+> > Any progress on this?
+> >
+> > I have a patch doing multiple similar $(call cmd,shipped) at the moment
+> > and this is far from looking nice.
+>
+> What is your use-case ? Is it re-use of code in a different
+> subdirectory (use-case presented in this thread), or aliasing of the
+> same source under different object name in the same directory (as used
+> in the alpha tree) ?
 
-This patch adds two new options to perf annotate:
-	- --no-asm-raw : Do not display raw instruction encodings
-	- --no-source  : Do not interleave source code with assembly code
+It is to be able to reuse the same file source file in both the main
+kernel and the decompressor, sometimes rebuilding it with differing
+options from the main kernel build.
 
-We believe those options make the output of annotate more readable.
+As the two environments are entirely separate, it is not always
+appropriate to clone the previously built object file.
 
-Systematically displaying source can make it hard to follow code and
-especially optimized code.
+Hence, we copy the source file and re-build it.
 
-Raw encodings are not useful in most cases.
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20110517153207.GA9834@quad
-Signed-off-by: Stephane Eranian <eranian@google.com>
-[committer note: Use the 'no-' option inverting logic]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-annotate.txt |    8 ++++++++
- tools/perf/builtin-annotate.c              |    4 ++++
- tools/perf/util/annotate.c                 |    5 ++++-
- tools/perf/util/symbol.c                   |    2 ++
- tools/perf/util/symbol.h                   |    4 +++-
- 5 files changed, 21 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-index 85c5f02..5bc0600 100644
---- a/tools/perf/Documentation/perf-annotate.txt
-+++ b/tools/perf/Documentation/perf-annotate.txt
-@@ -72,6 +72,14 @@ OPTIONS
- 	CPUs are specified with -: 0-2. Default is to report samples on all
- 	CPUs.
- 
-+--asm-raw::
-+	Show raw instruction encoding of assembly instructions. They
-+	are displayed by default, disable with --no-asm-raw.
-+
-+--source::
-+	Interleave source code with assembly code. Enabled by default,
-+	disable with --no-source.
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 555aefd..5015e04 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -267,6 +267,10 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('P', "full-paths", &full_paths,
- 		    "Don't shorten the displayed pathnames"),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-+	OPT_BOOLEAN('0', "source", &symbol_conf.annotate_src,
-+		    "Interleave source code with assembly code (default)"),
-+	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
-+		    "Display raw encoding of assembly instructions (default)"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index e01af2b..01d36ba 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -324,9 +324,12 @@ fallback:
- 
- 	snprintf(command, sizeof(command),
- 		 "objdump --start-address=0x%016" PRIx64
--		 " --stop-address=0x%016" PRIx64 " -dS -C %s|grep -v %s|expand",
-+		 " --stop-address=0x%016" PRIx64
-+		 " -d %s %s -C %s|grep -v %s|expand",
- 		 map__rip_2objdump(map, sym->start),
- 		 map__rip_2objdump(map, sym->end),
-+		 symbol_conf.annotate_asm_raw ? "" : "--no-show-raw",
-+		 symbol_conf.annotate_src ? "-S" : "",
- 		 symfs_filename, filename);
- 
- 	pr_debug("Executing: %s\n", command);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 469c026..245e60d 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -46,6 +46,8 @@ struct symbol_conf symbol_conf = {
- 	.exclude_other	  = true,
- 	.use_modules	  = true,
- 	.try_vmlinux_path = true,
-+	.annotate_asm_raw = true,
-+	.annotate_src	  = true,
- 	.symfs            = "",
- };
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 4f377d9..7733f0b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -76,7 +76,9 @@ struct symbol_conf {
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
--			kptr_restrict;
-+			kptr_restrict,
-+			annotate_asm_raw,
-+			annotate_src;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
--- 
-1.6.2.5
-
+The alternative is that we could keep two copies of the same source
+in two different locations, but that's just plain idiotic just to
+satisfy some silly kbuild restriction.
