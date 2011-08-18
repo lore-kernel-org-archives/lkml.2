@@ -1,248 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab1HRM57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:57:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57804 "EHLO mx2.suse.de"
+	id S1755743Ab1HRM7r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:59:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15945 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab1HRM56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:57:58 -0400
-Date: Thu, 18 Aug 2011 14:57:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH v3] memcg: add nr_pages argument for hierarchical reclaim
-Message-ID: <20110818125754.GA14015@tiehlicka.suse.cz>
-References: <20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110810141425.GC15007@tiehlicka.suse.cz>
- <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
- <20110811145055.GN8023@tiehlicka.suse.cz>
- <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
- <20110817113550.GA7482@tiehlicka.suse.cz>
- <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818062722.GB23056@tiehlicka.suse.cz>
- <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818074602.GD23056@tiehlicka.suse.cz>
+	id S1755495Ab1HRM7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 08:59:46 -0400
+Date: Thu, 18 Aug 2011 08:58:49 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: pstore: change mutex locking to spin_locks
+Message-ID: <20110818125849.GZ1972@redhat.com>
+References: <4e4568eb10165cbab6@agluck-desktop.sc.intel.com>
+ <20110817142225.8645fff7.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110818074602.GD23056@tiehlicka.suse.cz>
+In-Reply-To: <20110817142225.8645fff7.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have just realized that num_online_nodes should be much better than
-MAX_NUMNODES. 
-Just for reference, the patch is based on top of
-https://lkml.org/lkml/2011/8/9/82 (it doesn't depend on it but it also
-doesn't make much sense without it)
+On Wed, Aug 17, 2011 at 02:22:25PM -0700, Andrew Morton wrote:
+> On Fri, 12 Aug 2011 10:54:51 -0700
+> "Luck, Tony" <tony.luck@intel.com> wrote:
+> 
+> > From: Don Zickus <dzickus@redhat.com>
+> > 
+> > pstore was using mutex locking to protect read/write access to the
+> > backend plug-ins.  This causes problems when pstore is executed in
+> > an NMI context through panic() -> kmsg_dump().
+> > 
+> > This patch changes the mutex to a spin_lock_irqsave then also checks to
+> > see if we are in an NMI context.  If we are in an NMI and can't get the
+> > lock, just print a message stating that and blow by the locking.
+> > 
+> > All this is probably a hack around the bigger locking problem but it
+> > solves my current situation of trying to sleep in an NMI context.
+> > 
+> > Tested by loading the lkdtm module and executing a HARDLOCKUP which
+> > will cause the machine to panic inside the nmi handler.
+> > 
+> > ...
+> >
+> > +	if (in_nmi()) {
+> > +		is_locked = spin_trylock(&psinfo->buf_lock);
+> > +		if (!is_locked)
+> > +			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
+> > +	} else
+> > +		spin_lock_irqsave(&psinfo->buf_lock, flags);
+> >  	oopscount++;
+> >  	while (total < kmsg_bytes) {
+> >  		dst = psinfo->buf;
+> > @@ -123,7 +131,11 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+> >  		total += l1_cpy + l2_cpy;
+> >  		part++;
+> >  	}
+> > -	mutex_unlock(&psinfo->buf_mutex);
+> > +	if (in_nmi()) {
+> > +		if (is_locked)
+> > +			spin_unlock(&psinfo->buf_lock);
+> > +	} else
+> > +		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+> >  }
+> 
+> It's still bad if lockdep is enabled.  See
+> kernel/lockdep.c:lock_acquire() and lock_release().  They aren't
+> NMI-safe.
+> 
+> One approach would be to switch to bit_spin_lock().  Which will break
+> if/when bit spinlocks get lockdep-enabled, so don't do that.
+> 
+> A better approach would be to use the underlying spinlock functions
+> which bypass lockdep, but I cannot immediately locate those amongst
+> the misama of spinlock interface mess.
 
-Changes since v2:
-- use num_online_nodes rather than MAX_NUMNODES
-Changes since v1:
-- reclaim nr_nodes * SWAP_CLUSTER_MAX in mem_cgroup_force_empty
----
-From: Michal Hocko <mhocko@suse.cz>
-Subject: memcg: add nr_pages argument for hierarchical reclaim
+Probably the raw_spin_* stuff.  I think those purposely avoid the lockdep
+mechanisms.
 
-Now that we are doing memcg direct reclaim limited to nr_to_reclaim
-pages (introduced by "memcg: stop vmscan when enough done.") we have to
-be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
-most callers but it might cause failures for limit resize or force_empty
-code paths on big NUMA machines.
+> 
+> This problem of locking-vs-NMIs has been "solved" several times before
+> but I don't recall any standardized approach being developed.  Does
+> anyone have a favorite implementation to look at?
 
-Previously we might have reclaimed up to nr_nodes * SWAP_CLUSTER_MAX
-while now we have it at SWAP_CLUSTER_MAX. Both resize and force_empty rely
-on reclaiming a certain amount of pages and retrying if their condition is
-still not met.
+The ones I have looked at perf and apei/ghes, had issues of receiving data
+in an NMI context and trying to pass it to userspace.  This was solved
+with irq_work_queue.  Sometimes one can sprinkle some cmpxchg commands in
+there to quickly write to registers from a normal context which seems to
+play nicely with a process in an NMI context wants to write to the same
+register.
 
-Let's add nr_pages argument to mem_cgroup_hierarchical_reclaim which will
-push it further to try_to_free_mem_cgroup_pages. We still fall back to
-SWAP_CLUSTER_MAX for small requests so the standard code (hot) paths are not
-affected by this.
+But in this case we have a filesystem that can be read/written to from a
+normal context and also written to from an NMI context.  irq_work_queue
+doesn't apply here and I don't think you can just cmpxchg a PAGE full of
+data into a firmware storage area.  This doesn't even get into the state
+machine the kernel needs to walk through to store the data (which can
+easily be interrupted by an NMI).
 
-We have to be careful in mem_cgroup_do_charge and do not provide the
-given nr_pages because we would reclaim too much for THP which can
-safely fall back to single page allocations.
+I would be excited in there was a solution that we can copy, but I didn't
+see any nor would I really expect one in this unusual case.
 
-mem_cgroup_force_empty could try to reclaim all pages at once but it is much
-better to limit the nr_pages to something reasonable so that we are able to
-terminate it by a signal. Let's mimic previous behavior by asking for
-num_online_nodes * SWAP_CLUSTER_MAX.
+The patch that I provided that Tony reposted is just a lesser of two evils
+approach.  It is still flawed, just not as much as before.  The idea was
+to buy time until we could think of a better approach to solving this.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Index: linus_tree/include/linux/memcontrol.h
-===================================================================
---- linus_tree.orig/include/linux/memcontrol.h	2011-08-18 09:30:24.000000000 +0200
-+++ linus_tree/include/linux/memcontrol.h	2011-08-18 09:30:36.000000000 +0200
-@@ -130,7 +130,8 @@ extern void mem_cgroup_print_oom_info(st
- 
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
- 						  gfp_t gfp_mask, bool noswap,
--						  struct memcg_scanrecord *rec);
-+						  struct memcg_scanrecord *rec,
-+						  unsigned long nr_pages);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
-Index: linus_tree/mm/memcontrol.c
-===================================================================
---- linus_tree.orig/mm/memcontrol.c	2011-08-18 09:30:34.000000000 +0200
-+++ linus_tree/mm/memcontrol.c	2011-08-18 14:50:26.000000000 +0200
-@@ -1729,12 +1729,15 @@ static void mem_cgroup_record_scanstat(s
-  * (other groups can be removed while we're walking....)
-  *
-  * If shrink==true, for avoiding to free too much, this returns immedieately.
-+ * Given nr_pages tells how many pages are we over the soft limit or how many
-+ * pages do we want to reclaim in the direct reclaim mode.
-  */
- static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 						struct zone *zone,
- 						gfp_t gfp_mask,
- 						unsigned long reclaim_options,
--						unsigned long *total_scanned)
-+						unsigned long *total_scanned,
-+						unsigned long nr_pages)
- {
- 	struct mem_cgroup *victim;
- 	int ret, total = 0;
-@@ -1743,11 +1746,8 @@ static int mem_cgroup_hierarchical_recla
- 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
- 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
- 	struct memcg_scanrecord rec;
--	unsigned long excess;
- 	unsigned long scanned;
- 
--	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
--
- 	/* If memsw_is_minimum==1, swap-out is of-no-use. */
- 	if (!check_soft && !shrink && root_mem->memsw_is_minimum)
- 		noswap = true;
-@@ -1785,11 +1785,11 @@ static int mem_cgroup_hierarchical_recla
- 				}
- 				/*
- 				 * We want to do more targeted reclaim.
--				 * excess >> 2 is not to excessive so as to
-+				 * nr_pages >> 2 is not to excessive so as to
- 				 * reclaim too much, nor too less that we keep
- 				 * coming back to reclaim from this cgroup
- 				 */
--				if (total >= (excess >> 2) ||
-+				if (total >= (nr_pages >> 2) ||
- 					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
- 					css_put(&victim->css);
- 					break;
-@@ -1816,7 +1816,7 @@ static int mem_cgroup_hierarchical_recla
- 			*total_scanned += scanned;
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, &rec);
-+						noswap, &rec, nr_pages);
- 		mem_cgroup_record_scanstat(&rec);
- 		css_put(&victim->css);
- 		/*
-@@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
- 	if (!(gfp_mask & __GFP_WAIT))
- 		return CHARGE_WOULDBLOCK;
- 
-+	/*
-+	 * We are lying about nr_pages because we do not want to
-+	 * reclaim too much for THP pages which should rather fallback
-+	 * to small pages.
-+	 */
- 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
--					      gfp_mask, flags, NULL);
-+					      gfp_mask, flags, NULL,
-+					      1);
- 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		return CHARGE_RETRY;
- 	/*
-@@ -3567,7 +3573,8 @@ static int mem_cgroup_resize_limit(struc
- 
- 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
- 						MEM_CGROUP_RECLAIM_SHRINK,
--						NULL);
-+						NULL,
-+						(val-memlimit) >> PAGE_SHIFT);
- 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
- 		/* Usage is reduced ? */
-   		if (curusage >= oldusage)
-@@ -3628,7 +3635,8 @@ static int mem_cgroup_resize_memsw_limit
- 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
- 						MEM_CGROUP_RECLAIM_NOSWAP |
- 						MEM_CGROUP_RECLAIM_SHRINK,
--						NULL);
-+						NULL,
-+						(val-memswlimit) >> PAGE_SHIFT);
- 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -3671,10 +3679,12 @@ unsigned long mem_cgroup_soft_limit_recl
- 			break;
- 
- 		nr_scanned = 0;
-+		excess = res_counter_soft_limit_excess(&mz->mem->res);
- 		reclaimed = mem_cgroup_hierarchical_reclaim(mz->mem, zone,
- 						gfp_mask,
- 						MEM_CGROUP_RECLAIM_SOFT,
--						&nr_scanned);
-+						&nr_scanned,
-+						excess >> PAGE_SHIFT);
- 		nr_reclaimed += reclaimed;
- 		*total_scanned += nr_scanned;
- 		spin_lock(&mctz->lock);
-@@ -3861,6 +3871,7 @@ try_to_free:
- 	shrink = 1;
- 	while (nr_retries && mem->res.usage > 0) {
- 		struct memcg_scanrecord rec;
-+		unsigned long nr_to_reclaim;
- 		int progress;
- 
- 		if (signal_pending(current)) {
-@@ -3870,8 +3881,10 @@ try_to_free:
- 		rec.context = SCAN_BY_SHRINK;
- 		rec.mem = mem;
- 		rec.root = mem;
-+		/* reclaim from every node at least something */
-+		nr_to_reclaim = num_online_nodes() * SWAP_CLUSTER_MAX;
- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, &rec);
-+						false, &rec, nr_to_reclaim);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-Index: linus_tree/mm/vmscan.c
-===================================================================
---- linus_tree.orig/mm/vmscan.c	2011-08-18 09:30:24.000000000 +0200
-+++ linus_tree/mm/vmscan.c	2011-08-18 09:30:36.000000000 +0200
-@@ -2340,7 +2340,8 @@ unsigned long mem_cgroup_shrink_node_zon
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
- 					   bool noswap,
--					   struct memcg_scanrecord *rec)
-+					   struct memcg_scanrecord *rec,
-+					   unsigned long nr_pages)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-@@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
--		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-+		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
- 		.order = 0,
- 		.mem_cgroup = mem_cont,
- 		.memcg_record = rec,
+Cheers,
+Don
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
