@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab1HRWVZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:21:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab1HRWVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:21:22 -0400
-Date: Thu, 18 Aug 2011 18:21:08 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110818222108.GS2227@zod.bos.redhat.com>
-References: <20110815152052.GA2389@linux.vnet.ibm.com>
- <20110817223735.GI2227@zod.bos.redhat.com>
- <20110817224916.GO2419@linux.vnet.ibm.com>
- <20110817230219.GJ2227@zod.bos.redhat.com>
- <20110817230641.GA7837@somewhere.redhat.com>
- <20110817231750.GK2227@zod.bos.redhat.com>
- <20110818183523.GD2325@linux.vnet.ibm.com>
- <20110818140034.668e8dea.akpm@linux-foundation.org>
- <20110818212334.GE2325@linux.vnet.ibm.com>
- <20110818215540.GA14098@linux.vnet.ibm.com>
+	id S1754911Ab1HRWXB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:23:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39591 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754598Ab1HRWW7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 18:22:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818215540.GA14098@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1313704516.15082.5.camel@mop>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
+ <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
+ <20110817134516.GA14136@redhat.com> <20110818124353.GA2839@tango.0pointer.de>
+ <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop>
+ <CA+55aFxGDbNOhNQJe_LpUMcJCGcW8qFFWzC9H0_KW26Xzb0cXw@mail.gmail.com> <1313704516.15082.5.camel@mop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 18 Aug 2011 15:22:06 -0700
+Message-ID: <CA+55aFyFnMRMuWSSpytwvpk9u5YysMRfTRELyhGX9grWbGyi6Q@mail.gmail.com>
+Subject: Re: + prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+ .patch added to -mm tree
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-man@vger.kernel.org, roland@hack.frob.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 02:55:40PM -0700, Paul E. McKenney wrote:
-> And here is this patch ported to v3.1-rc2, FYI.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Avoid having just-onlined CPU resched itself when RCU is idle
-> 
-> CPUs set rdp->qs_pending when coming online to resolve races with
-> grace-period start.  However, this means that if RCU is idle, the
-> just-onlined CPU might needlessly send itself resched IPIs.  Adjust the
-> online-CPU initialization to avoid this, and also to correctly cause
-> the CPU to respond to the current grace period if needed.
-> 
-> This patch is believed to fix or otherwise suppress problems in
-> https://bugzilla.redhat.com/show_bug.cgi?id=726877, however, the
-> relationship is not apparent to this patch's author.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Thu, Aug 18, 2011 at 2:55 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>
+>> So NAK. We're not slowing down normal code for some new feature that
+>> realistically will never be used by any normal applications.
+>
+> It will be used for all new service managers. UNIX is a pain if you want
+> to watch your children regarding double-forking, if you are not init.
 
-This is what has been in rawhide for a while now.
+I'll believe that "all new service managers" when I see it. Until
+then, a new feature is just that - a new feature. Which nobody uses.
 
-Tested-by: Josh Boyer <jwboyer@redhat.com>
+> And it will clean up the mess the desktop stuff is putting in 'ps afx'.
+> Here is the before/after output:
+>
+>  253 ?        Ss     0:00 /bin/dbus-daemon --system --address=systemd: --nofork --systemd-activation
+>  294 ?        Sl     0:00 /usr/libexec/polkit-1/polkitd
+>  328 ?        S      0:00 /usr/sbin/modem-manager
+>  608 ?        Sl     0:00 /usr/libexec/colord
+>  658 ?        Sl     0:00 /usr/libexec/upowerd
+>  819 ?        Sl     0:00 /usr/libexec/imsettings-daemon
+>  916 ?        Sl     0:00 /usr/libexec/udisks-daemon
+>  917 ?        S      0:00  \_ udisks-daemon: not polling any devices
+>
+>
+>  294 ?        Ss     0:00 /bin/dbus-daemon --system --address=systemd: --nofork --systemd-activation
+>  426 ?        Sl     0:00  \_ /usr/libexec/polkit-1/polkitd
+>  449 ?        S      0:00  \_ /usr/sbin/modem-manager
+>  635 ?        Sl     0:00  \_ /usr/libexec/colord
+>  705 ?        Sl     0:00  \_ /usr/libexec/upowerd
+>  959 ?        Sl     0:00  \_ /usr/libexec/udisks-daemon
+>  960 ?        S      0:00  |   \_ udisks-daemon: not polling any devices
+>  977 ?        Sl     0:00  \_ /usr/libexec/packagekitd
 
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index ba06207..6986d34 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1865,8 +1865,6 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
->  
->  	/* Set up local state, ensuring consistent view of global state. */
->  	raw_spin_lock_irqsave(&rnp->lock, flags);
-> -	rdp->passed_quiesc = 0;  /* We could be racing with new GP, */
-> -	rdp->qs_pending = 1;	 /*  so set up to respond to current GP. */
->  	rdp->beenonline = 1;	 /* We have now been online. */
->  	rdp->preemptible = preemptible;
->  	rdp->qlen_last_fqs_check = 0;
-> @@ -1891,8 +1889,15 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
->  		rnp->qsmaskinit |= mask;
->  		mask = rnp->grpmask;
->  		if (rnp == rdp->mynode) {
-> -			rdp->gpnum = rnp->completed; /* if GP in progress... */
-> +			/*
-> +			 * If there is a grace period in progress, we will
-> +			 * set up to wait for it next time we run the
-> +			 * RCU core code.
-> +			 */
-> +			rdp->gpnum = rnp->completed;
->  			rdp->completed = rnp->completed;
-> +			rdp->passed_quiesc = 0;
-> +			rdp->qs_pending = 1;
->  			rdp->passed_quiesc_completed = rnp->completed - 1;
->  		}
->  		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
+Yeah, that looks like a nice feature.
+
+> If you want, we can make the forked processes inherit a flag if the
+> 'subreaper' should be looked up at all. Then we have almost zero
+> overhead if the feature isn't used. You think that's needed?
+
+Yes, I do. Because with any current system, that "almost zero
+overhead" is just totally wasted effort entirely for zero gain. Which
+just makes me go "Eww".
+
+             Linus
