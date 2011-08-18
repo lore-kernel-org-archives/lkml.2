@@ -1,97 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab1HRL6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 07:58:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47778 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab1HRL54 convert rfc822-to-8bit (ORCPT
+	id S1755726Ab1HRL71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 07:59:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59459 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab1HRL70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 07:57:56 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Yang Rui Rui" <ruirui.r.yang@tieto.com>
-Cc: "Alan Stern" <stern@rowland.harvard.edu>,
-        "Sergei Shtylyov" <sshtylyov@mvista.com>,
-        "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Ruirui R" <ruirui.r.yang@tietoenator.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
- USB_GADGET_SUPERSPEED
-References: <4E4B9D9C.2010607@linutronix.de>
- <fb37566fc5a85ea4e8711221253e5db98d919251.1313594405.git.mina86@mina86.com>
- <4E4C8077.9070809@tieto.com>
-Date: Thu, 18 Aug 2011 13:57:51 +0200
+	Thu, 18 Aug 2011 07:59:26 -0400
+Date: Thu, 18 Aug 2011 13:59:21 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: x86_32_early_logical_apicid() -> one warning per CPU on
+ late-determined BIGSMP systems
+Message-ID: <20110818115921.GA20085@htj.dyndns.org>
+References: <4E43EBDF0200007800050CA7@nat28.tlf.novell.com>
+ <20110812101556.GM23842@htj.dyndns.org>
+ <4E4D19820200007800051D19@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0ergn0d3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <4E4C8077.9070809@tieto.com>
-User-Agent: Opera Mail/11.50 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4D19820200007800051D19@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 05:01:11 +0200, Yang Rui Rui <ruirui.r.yang@tieto.com>  
-wrote:
-> I did not see the include/linux/usb/gadget.h changes, did you have  
-> another patch?
-> There's  CONFIG_USB_GADGET_DUALSPEED ifdefs in gadget_is_dualspeed  
-> function of the gadget.h
-> If so, I will get oops as before.
+Hello,
 
-Thanks, fixed.  I did “git add -u” while I was in drivers/usb/gadget so
-gadget.h did not get added and I've overlooked it.  Sorry about that.
+On Thu, Aug 18, 2011 at 12:54:10PM +0100, Jan Beulich wrote:
+> >>> On 12.08.11 at 12:15, Tejun Heo <tj@kernel.org> wrote:
+> > Ooh, okay, bigsmp switches apic pretty late in the init.  Wouldn't it
+> > be better to move that to right after dmi init regardless of this
+> > problem?
+> 
+> No, because this depends on knowing num_possible_cpus(), which
+> in turn can't be done until after the firmware tables got parsed (and
+> that's where the ->x86_32_early_logical_apicid() call happens).
 
-> On 08/17/2011 11:33 PM, Michal Nazarewicz wrote:
->> --- a/drivers/usb/gadget/composite.c
->> +++ b/drivers/usb/gadget/composite.c
->> @@ -1559,12 +1559,6 @@ composite_resume(struct usb_gadget *gadget)
->>   /*-------------------------------------------------------------------------*/
->>
->>   static struct usb_gadget_driver composite_driver = {
->> -#ifdef CONFIG_USB_GADGET_SUPERSPEED
->> -       .speed          = USB_SPEED_SUPER,
->> -#else
->> -       .speed          = USB_SPEED_HIGH,
->> -#endif
->> -
->>          .unbind         = composite_unbind,
->>
->>          .setup          = composite_setup,
->> @@ -1609,8 +1603,7 @@ int usb_composite_probe(struct  
->> usb_composite_driver *driver,
->>                  driver->iProduct = driver->name;
->>          composite_driver.function =  (char *) driver->name;
->>          composite_driver.driver.name = driver->name;
->> -       composite_driver.speed = min((u8)composite_driver.speed,
->> -                                    (u8)driver->max_speed);
->> +       composite_driver.speed = driver->max_speed;
+OIC, switching apic that late seems rather nasty.  Eh well...  :(
 
-> This does not works, many drivers will check the driver->speed, ie in  
-> musg_gadget.c
+> > So, yeah, please go ahead and remove it.
+> 
+> There are quite a few references to this, and some from code that
+> if I change it I would have no way of testing (Summit, ES7000, NUMAQ).
+> So no, I don't think I'm in the position to do this cleanup (if it really is
+> just that).
+> 
+> So for the time being I'll put together a patch re-writing
+> early_per_cpu(x86_cpu_to_logical_apicid, ...) right after overriding
+> apic_default with apic_bigsmp.
 
-Uh?  Not sure what you mean here.  Note that driver above is not the same
-structure as driver below.  composite_driver is what musb_gadget_start()
-will get.
+Yeap, sure.  We'll need less invasive for -stable anyway.  I'll kill
+the method afterwards.
 
-> static int musb_gadget_start(struct usb_gadget *g,
->                  struct usb_gadget_driver *driver)
-> {
->          struct musb             *musb = gadget_to_musb(g);
->          unsigned long           flags;
->          int                     retval = -EINVAL;
->
->          if (driver->speed != USB_SPEED_HIGH)
->                  goto err0;
-> [snip]
->
->>          composite = driver;
->>          composite_gadget_bind = bind;
+Thanks.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+tejun
