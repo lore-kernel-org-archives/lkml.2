@@ -1,277 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab1HRHqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 03:46:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40362 "EHLO mx2.suse.de"
+	id S1755325Ab1HRHrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 03:47:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31370 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755162Ab1HRHqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 03:46:07 -0400
-Date: Thu, 18 Aug 2011 09:46:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v5 2/6]  memcg: stop vmscan when enough done.
-Message-ID: <20110818074602.GD23056@tiehlicka.suse.cz>
-References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
- <20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110810141425.GC15007@tiehlicka.suse.cz>
- <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
- <20110811145055.GN8023@tiehlicka.suse.cz>
- <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
- <20110817113550.GA7482@tiehlicka.suse.cz>
- <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818062722.GB23056@tiehlicka.suse.cz>
- <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755162Ab1HRHrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 03:47:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="asc'?scan'208";a="38957402"
+Subject: Re: [PATCH] checkpatch: do not test/warn of leading whitespace
+ before signature tags
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Joe Perches <joe@perches.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        Anish Kumar <anish198519851985@gmail.com>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Thu, 18 Aug 2011 00:47:11 -0700
+In-Reply-To: <1313652390.32547.53.camel@Joe-Laptop>
+References: <1313650112-17287-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	 <1313652390.32547.53.camel@Joe-Laptop>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Q/jX7Zy5m2fn+QlC0gyX"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1313653632.2128.88.camel@jtkirshe-mobl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-08-11 15:42:59, KAMEZAWA Hiroyuki wrote:
-> On Thu, 18 Aug 2011 08:27:22 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 18-08-11 08:52:33, KAMEZAWA Hiroyuki wrote:
-> > > On Wed, 17 Aug 2011 13:35:50 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > 
-> > > > On Wed 17-08-11 09:54:05, KAMEZAWA Hiroyuki wrote:
-> > > > > On Thu, 11 Aug 2011 16:50:55 +0200
-> > > > > > - mem_cgroup_force_empty asks for reclaiming all pages. I guess it should be
-> > > > > >   OK but will have to think about it some more.
-> > > > > 
-> > > > > force_empty/rmdir() is allowed to be stopped by Ctrl-C. I think passing res->usage
-> > > > > is overkilling.
-> > > > 
-> > > > So, how many pages should be reclaimed then?
-> > > > 
-> > > 
-> > > How about (1 << (MAX_ORDER-1))/loop ?
-> > 
-> > Hmm, I am not sure I see any benefit. We want to reclaim all those
-> > pages why shouldn't we do it in one batch? If we use a value based on
-> > MAX_ORDER then we make a bigger chance that force_empty fails for big
-> > cgroups (e.g. with a lot of page cache).
-> 
-> Why bigger chance to fail ? retry counter is decreased only when we cannot
-> make any reclaim. The number passed here is not problem against the faiulre.
 
-Yes, you are right. I have overlooked that.
+--=-Q/jX7Zy5m2fn+QlC0gyX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
- 
-> I don't like very long vmscan which cannot be stopped by Ctrl-C.
+On Thu, 2011-08-18 at 00:26 -0700, Joe Perches wrote:
+> On Wed, 2011-08-17 at 23:48 -0700, Jeff Kirsher wrote:
+> > From: Bruce Allan <bruce.w.allan@intel.com>
+> >=20
+> > Commit 2011247 introduced additional style checks for signature tags in
+> > patches which is good.  Unfortunately, now whenever patches are checked
+> > by piping the output of 'git show' or 'stg show' through checkpatch it
+> > warns not to use whitespace before all signature tags since these (and =
+the
+> > rest of the patch description) are indented.  Remove this test/warning.
+>=20
+> I think this is not a good idea.
+>=20
+> checkpatch is meant for patches not git log output.
+> indenting signatures can cause other problems later.
+>=20
+> I think you can avoid this easily by using checkpatch
+> option --ignore=3DBAD_SIGN_OFF when using git log output
+> as input.
 
-Sure, now I see your point. Thanks for clarification.
+The problem I have with this is that the sign-off's are not bad, they
+are by default indented by 'git show' or 'stg show' so checkpatch.pl
+should handle the "default" formatting of git/stg and if there is
+additional indenting not expected, then the sign-off's should be
+considered bad.  If this option is added, then if there were "real"
+problems with the sign-off, it would not be displayed.
 
-> > Anyway, if we want to mimic the previous behavior then we should use
-> > something like nr_nodes * SWAP_CLUSTER_MAX (the above value would be
-> > sufficient for up to 32 nodes).
-> > 
-> 
-> agreed.
+>=20
+> You could also use:
+>=20
+> git log --format=3D"commit %H%nAuthor: %an <%ae>%nDate:   %aD%n%n%s%n%n%b=
+"
+>=20
+> so that you get the current default --format=3Dmedium
+> output without indenting the commit log body.
+>=20
+>=20
 
-Updated patch:
-Changes since v1:
-- reclaim nr_nodes * SWAP_CLUSTER_MAX in mem_cgroup_force_empty
---- 
-From: Michal Hocko <mhocko@suse.cz>
-Subject: memcg: add nr_pages argument for hierarchical reclaim
+Even doing this does not resolve the "false" warnings" that
+checkpatch.pl produces regarding the sign-off's.
 
-Now that we are doing memcg direct reclaim limited to nr_to_reclaim
-pages (introduced by "memcg: stop vmscan when enough done.") we have to
-be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
-most callers but it might cause failures for limit resize or force_empty
-code paths on big NUMA machines.
+--=-Q/jX7Zy5m2fn+QlC0gyX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Previously we might have reclaimed up to nr_nodes * SWAP_CLUSTER_MAX
-while now we have it at SWAP_CLUSTER_MAX. Both resize and force_empty rely
-on reclaiming a certain amount of pages and retrying if their condition is
-still not met.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Let's add nr_pages argument to mem_cgroup_hierarchical_reclaim which will
-push it further to try_to_free_mem_cgroup_pages. We still fall back to
-SWAP_CLUSTER_MAX for small requests so the standard code (hot) paths are not
-affected by this.
+iQEcBAABAgAGBQJOTMN/AAoJECTsCADr/EWUrDwIALCqzTZyWMc53GjcK/8Oz1XO
+aZe/YW4epImcP90LbbXKIjLJXD5YOWknzeLHpvADdSDW2DfgNhelee4aswkmZjUl
+sAfgW6CE8841SM1YRF9Ij3/PBQzqi9MSIhUR7Ybx1yFL5FeCtEOxBHzwXF00ZLvP
+noGP57FEVHy1wlvutcanuE3CgEYNJpSa5jyxusX4B8OTcD/mvucTXCo+llmi7J9k
+TntmPVhcswHmKeqY5/GNQAoCHC81e//A1JiCJnX+GZYypByXTBFaAXS3mYz9LlI4
+8g3Qqkwq7UiDzm30t4xSa5iUJOdAF/iiZaNjTy5KuhX2UOg1Qvm2vEch1h6goGU=
+=s/eQ
+-----END PGP SIGNATURE-----
 
-We have to be careful in mem_cgroup_do_charge and do not provide the
-given nr_pages because we would reclaim too much for THP which can
-safely fall back to single page allocations.
+--=-Q/jX7Zy5m2fn+QlC0gyX--
 
-mem_cgroup_force_empty could try to reclaim all pages at once but it is much
-better to limit the nr_pages to something reasonable so that we are able to
-terminate it by a signal. Let's mimic previous behavior by asking for
-MAX_NUMNODES * SWAP_CLUSTER_MAX.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-
-Index: linus_tree/include/linux/memcontrol.h
-===================================================================
---- linus_tree.orig/include/linux/memcontrol.h	2011-08-18 09:30:24.000000000 +0200
-+++ linus_tree/include/linux/memcontrol.h	2011-08-18 09:30:36.000000000 +0200
-@@ -130,7 +130,8 @@ extern void mem_cgroup_print_oom_info(st
- 
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
- 						  gfp_t gfp_mask, bool noswap,
--						  struct memcg_scanrecord *rec);
-+						  struct memcg_scanrecord *rec,
-+						  unsigned long nr_pages);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
- 						struct zone *zone,
-Index: linus_tree/mm/memcontrol.c
-===================================================================
---- linus_tree.orig/mm/memcontrol.c	2011-08-18 09:30:34.000000000 +0200
-+++ linus_tree/mm/memcontrol.c	2011-08-18 09:36:41.000000000 +0200
-@@ -1729,12 +1729,15 @@ static void mem_cgroup_record_scanstat(s
-  * (other groups can be removed while we're walking....)
-  *
-  * If shrink==true, for avoiding to free too much, this returns immedieately.
-+ * Given nr_pages tells how many pages are we over the soft limit or how many
-+ * pages do we want to reclaim in the direct reclaim mode.
-  */
- static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 						struct zone *zone,
- 						gfp_t gfp_mask,
- 						unsigned long reclaim_options,
--						unsigned long *total_scanned)
-+						unsigned long *total_scanned,
-+						unsigned long nr_pages)
- {
- 	struct mem_cgroup *victim;
- 	int ret, total = 0;
-@@ -1743,11 +1746,8 @@ static int mem_cgroup_hierarchical_recla
- 	bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
- 	bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
- 	struct memcg_scanrecord rec;
--	unsigned long excess;
- 	unsigned long scanned;
- 
--	excess = res_counter_soft_limit_excess(&root_mem->res) >> PAGE_SHIFT;
--
- 	/* If memsw_is_minimum==1, swap-out is of-no-use. */
- 	if (!check_soft && !shrink && root_mem->memsw_is_minimum)
- 		noswap = true;
-@@ -1785,11 +1785,11 @@ static int mem_cgroup_hierarchical_recla
- 				}
- 				/*
- 				 * We want to do more targeted reclaim.
--				 * excess >> 2 is not to excessive so as to
-+				 * nr_pages >> 2 is not to excessive so as to
- 				 * reclaim too much, nor too less that we keep
- 				 * coming back to reclaim from this cgroup
- 				 */
--				if (total >= (excess >> 2) ||
-+				if (total >= (nr_pages >> 2) ||
- 					(loop > MEM_CGROUP_MAX_RECLAIM_LOOPS)) {
- 					css_put(&victim->css);
- 					break;
-@@ -1816,7 +1816,7 @@ static int mem_cgroup_hierarchical_recla
- 			*total_scanned += scanned;
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, &rec);
-+						noswap, &rec, nr_pages);
- 		mem_cgroup_record_scanstat(&rec);
- 		css_put(&victim->css);
- 		/*
-@@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
- 	if (!(gfp_mask & __GFP_WAIT))
- 		return CHARGE_WOULDBLOCK;
- 
-+	/*
-+	 * We are lying about nr_pages because we do not want to
-+	 * reclaim too much for THP pages which should rather fallback
-+	 * to small pages.
-+	 */
- 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
--					      gfp_mask, flags, NULL);
-+					      gfp_mask, flags, NULL,
-+					      1);
- 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
- 		return CHARGE_RETRY;
- 	/*
-@@ -3567,7 +3573,8 @@ static int mem_cgroup_resize_limit(struc
- 
- 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
- 						MEM_CGROUP_RECLAIM_SHRINK,
--						NULL);
-+						NULL,
-+						(val-memlimit) >> PAGE_SHIFT);
- 		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
- 		/* Usage is reduced ? */
-   		if (curusage >= oldusage)
-@@ -3628,7 +3635,8 @@ static int mem_cgroup_resize_memsw_limit
- 		mem_cgroup_hierarchical_reclaim(memcg, NULL, GFP_KERNEL,
- 						MEM_CGROUP_RECLAIM_NOSWAP |
- 						MEM_CGROUP_RECLAIM_SHRINK,
--						NULL);
-+						NULL,
-+						(val-memswlimit) >> PAGE_SHIFT);
- 		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
- 		/* Usage is reduced ? */
- 		if (curusage >= oldusage)
-@@ -3671,10 +3679,12 @@ unsigned long mem_cgroup_soft_limit_recl
- 			break;
- 
- 		nr_scanned = 0;
-+		excess = res_counter_soft_limit_excess(&mz->mem->res);
- 		reclaimed = mem_cgroup_hierarchical_reclaim(mz->mem, zone,
- 						gfp_mask,
- 						MEM_CGROUP_RECLAIM_SOFT,
--						&nr_scanned);
-+						&nr_scanned,
-+						excess >> PAGE_SHIFT);
- 		nr_reclaimed += reclaimed;
- 		*total_scanned += nr_scanned;
- 		spin_lock(&mctz->lock);
-@@ -3870,8 +3880,10 @@ try_to_free:
- 		rec.context = SCAN_BY_SHRINK;
- 		rec.mem = mem;
- 		rec.root = mem;
-+		/* reclaim from every node at least something */
- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, &rec);
-+						false, &rec,
-+						MAX_NUMNODES * SWAP_CLUSTER_MAX);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-Index: linus_tree/mm/vmscan.c
-===================================================================
---- linus_tree.orig/mm/vmscan.c	2011-08-18 09:30:24.000000000 +0200
-+++ linus_tree/mm/vmscan.c	2011-08-18 09:30:36.000000000 +0200
-@@ -2340,7 +2340,8 @@ unsigned long mem_cgroup_shrink_node_zon
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
- 					   bool noswap,
--					   struct memcg_scanrecord *rec)
-+					   struct memcg_scanrecord *rec,
-+					   unsigned long nr_pages)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-@@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
--		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-+		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
- 		.order = 0,
- 		.mem_cgroup = mem_cont,
- 		.memcg_record = rec,
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
