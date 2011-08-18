@@ -1,106 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab1HRFp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:45:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64557 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565Ab1HRFp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:45:26 -0400
-Message-ID: <4E4CA6B4.5060807@cn.fujitsu.com>
-Date: Thu, 18 Aug 2011 13:44:20 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4C80A0.8090708@cn.fujitsu.com> <87d3g347ey.fsf@emc.com.tw> <4E4CA3A9.2010900@cn.fujitsu.com> <CAGS+omB0Ys-vEVq64W85Jmsz=TkgvNqn_iJkxynZJr8wvqifGQ@mail.gmail.com>
-In-Reply-To: <CAGS+omB0Ys-vEVq64W85Jmsz=TkgvNqn_iJkxynZJr8wvqifGQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-18 13:44:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-18 13:44:13,
-	Serialize complete at 2011-08-18 13:44:13
+	id S1755089Ab1HRFve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:51:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56288 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1HRFvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 01:51:32 -0400
+Subject: RE: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
+ directly
+From: Sasha Levin <levinsasha928@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E04808194C66@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1313446210-10611-1-git-send-email-kys@microsoft.com>
+	 <1313446327-10650-1-git-send-email-kys@microsoft.com>
+	 <1313446327-10650-2-git-send-email-kys@microsoft.com>
+	 <1313585267.15004.3.camel@lappy>
+	 <6E21E5352C11B742B20C142EB499E04808194C66@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 18 Aug 2011 08:50:20 +0300
+Message-ID: <1313646620.22532.16.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 01:34 PM, Daniel Kurtz wrote:
-> On Thu, Aug 18, 2011 at 1:31 PM, Wanlong Gao<gaowanlong@cn.fujitsu.com>  wrote:
->> On 08/18/2011 01:26 PM, JJ Ding wrote:
->>>
->>> Hi Wanlong Gao,
->>>
->>> On Thu, 18 Aug 2011 11:01:52 +0800, Wanlong Gao<gaowanlong@cn.fujitsu.com>
->>>   wrote:
->>>>
->>>> On 08/18/2011 09:57 AM, JJ Ding wrote:
->>>>>
->>>>> v3 hardware's packet format is almost identical to v2 (one/three finger
->>>>> touch),
->>>>> except when sensing two finger touch, the hardware sends 12 bytes of
->>>>> data.
->>>>>
->>>>> Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
->>>>> ---
->>>>>    Documentation/input/elantech.txt |  104 ++++++++++++++++--
->>>>>    drivers/input/mouse/elantech.c   |  218
->>>>> ++++++++++++++++++++++++++++++++++---
->>>>>    drivers/input/mouse/elantech.h   |   11 ++
->>>>>    3 files changed, 303 insertions(+), 30 deletions(-)
->>>>>
->>>>> +static int determine_packet_v3(struct psmouse *psmouse)
->>>>
->>>> elantech_check_parity_v1
->>>> packet_simple_check_v2
->>>> determine_packet_v3
->>>>
->>>> Why not consistent them?
->>>
->>> OK, how do these names sound to you?
->>>
->>> elantech_check_parity_v1
->>> elantech_packet_check_v2
->>> elantech_packet_check_v3
->>>
->>> Thanks,
->>> jj
->>
->> Yeah, sounds perfectly.
->
-> Or just:
->
-> elantech_packet_check_v1
-> elantech_packet_check_v2
-> elantech_packet_check_v3
->
-> :)
+On Wed, 2011-08-17 at 18:43 +0000, KY Srinivasan wrote:
+> 
+> > -----Original Message-----
+> > From: Sasha Levin [mailto:levinsasha928@gmail.com]
+> > Sent: Wednesday, August 17, 2011 8:48 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > Subject: Re: [PATCH 2/8] Staging: hv: vmbus: Invoke vmbus_on_msg_dpc()
+> > directly
+> > 
+> > On Mon, 2011-08-15 at 15:12 -0700, K. Y. Srinivasan wrote:
+> > > The message processing function needs to execute on the same CPU where
+> > > the interrupt was taken. tasklets cannot gurantee this; so, invoke the
+> > > function directly.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > ---
+> > 
+> > tasklets are guaranteed to run on the same CPU as the function that
+> > scheduled them.
+> > 
+> > Unless I'm missing something?
+> 
+> I too was under this impression until I stumbled upon this comment in
+> include/Linux/interrupt.h where I see that there is no guarantee that
+> tasklet would run on the same CPU that it was scheduled on
+> (look at the first listed property):
+> 
+> /* Tasklets --- multithreaded analogue of BHs.
+> 
+>    Main feature differing them of generic softirqs: tasklet
+>    is running only on one CPU simultaneously.
+> 
+>    Main feature differing them of BHs: different tasklets
+>    may be run simultaneously on different CPUs.
+> 
+>    Properties:
+>    * If tasklet_schedule() is called, then tasklet is guaranteed
+>      to be executed on some cpu at least once after this.
+> .
+> .
+> */
+> 
+> Given this comment here, I felt that safest thing to do would be to just
+> not use the tasklet in this scenario.
 
-Hmm... maybe they can go into an elantech_packet_check()?
-like:
-case 1:
-	...
-case 2:
-	...
-What do you think? ;)
+Hm..
 
-Thanks
--Wanlong Gao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Looking at __tasklet_schedule() it should be guaranteed to run on the
+same CPU, but as you said - the comment above is actually saying the
+opposite.
+
+The relevant documentation in the 'Linux Device Drivers' book also
+states that it is guaranteed, so maybe we can get a confirmation from
+Greg that this is still true and update the comment instead?
+
+Not using bottom halves and just calling the dpc handler would mean that
+you block interrupts for much longer than you need to.
+
+-- 
+
+Sasha.
 
