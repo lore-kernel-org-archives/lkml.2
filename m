@@ -1,50 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1HRRZX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:25:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab1HRRZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:25:22 -0400
-Date: Thu, 18 Aug 2011 13:25:02 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: pstore: change mutex locking to spin_locks
-Message-ID: <20110818172502.GF1972@redhat.com>
-References: <4e4568eb10165cbab6@agluck-desktop.sc.intel.com>
- <20110817142225.8645fff7.akpm@linux-foundation.org>
- <20110818125849.GZ1972@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301EA4D7C88@orsmsx505.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301EA4D7C88@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753004Ab1HRRZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:25:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:54632 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab1HRRZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 13:25:52 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6441"; a="111095108"
+From: David Brown <davidb@codeaurora.org>
+To: Randy Dunlap <rdunlap@xenotime.net>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-serial@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 2/4] msm_serial: Add devicetree support
+Date: Thu, 18 Aug 2011 10:25:43 -0700
+Message-Id: <1313688345-17699-3-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1313688345-17699-1-git-send-email-davidb@codeaurora.org>
+References: <1313688345-17699-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 09:33:17AM -0700, Luck, Tony wrote:
-> > But in this case we have a filesystem that can be read/written to from a
-> > normal context and also written to from an NMI context
-> 
-> I fixed (avoided) the problem of writing to the pstore filesystem in NMI
-> context in my other pstore patch in linux-next ("defer inserting OOPS entries in pstore").
+Add devicetree support to the msm_serial driver.  Clocks are still
+queried by direct name from the driver until device tree clock support
+is implemented.
 
-Ok, just found that patch.  That fixes one of the issues.  :-)
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ .../devicetree/bindings/tty/serial/msm_serial.txt  |   27 ++++++++++++++++++++
+ drivers/tty/serial/msm_serial.c                    |   14 ++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/tty/serial/msm_serial.txt
 
-> 
-> So the remaining locking requirement in pstore is just to protect
-> the non-volatile backing store from simultaneous access.
+diff --git a/Documentation/devicetree/bindings/tty/serial/msm_serial.txt b/Documentation/devicetree/bindings/tty/serial/msm_serial.txt
+new file mode 100644
+index 0000000..aef383e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/tty/serial/msm_serial.txt
+@@ -0,0 +1,27 @@
++* Qualcomm MSM UART
++
++Required properties:
++- compatible :
++	- "qcom,msm-uart", and one of "qcom,msm-hsuart" or
++	  "qcom,msm-lsuart".
++- reg : offset and length of the register set for the device
++	for the hsuart operating in compatible mode, there should be a
++	second pair describing the gsbi registers.
++- interrupts : should contain the uart interrupt.
++
++There are two different UART blocks used in MSM devices,
++"qcom,msm-hsuart" and "qcom,msm-lsuart".  The msm-serial driver is
++able to handle both of these, and matches against the "qcom,msm-uart"
++as the compatibility.
++
++The registers for the "qcom,msm-hsuart" device need to specify both
++register blocks, even for the common driver.
++
++Example:
++
++	uart@19c400000 {
++		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
++		reg = <0x19c40000 0x1000>,
++		      <0x19c00000 0x1000>;
++		interrupts = <195>;
++	};
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index d9863b2..7767902 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -19,6 +19,7 @@
+ # define SUPPORT_SYSRQ
+ #endif
+ 
++#include <linux/atomic.h>
+ #include <linux/hrtimer.h>
+ #include <linux/module.h>
+ #include <linux/io.h>
+@@ -33,6 +34,8 @@
+ #include <linux/clk.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ #include "msm_serial.h"
+ 
+@@ -856,6 +859,8 @@ static struct uart_driver msm_uart_driver = {
+ 	.cons = MSM_CONSOLE,
+ };
+ 
++static atomic_t msm_uart_next_id = ATOMIC_INIT(0);
++
+ static int __init msm_serial_probe(struct platform_device *pdev)
+ {
+ 	struct msm_port *msm_port;
+@@ -863,6 +868,9 @@ static int __init msm_serial_probe(struct platform_device *pdev)
+ 	struct uart_port *port;
+ 	int irq;
+ 
++	if (pdev->id == -1)
++		pdev->id = atomic_inc_return(&msm_uart_next_id) - 1;
++
+ 	if (unlikely(pdev->id < 0 || pdev->id >= UART_NR))
+ 		return -ENXIO;
+ 
+@@ -920,11 +928,17 @@ static int __devexit msm_serial_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static struct of_device_id msm_match_table[] = {
++	{ .compatible = "qcom,msm-uart" },
++	{}
++};
++
+ static struct platform_driver msm_platform_driver = {
+ 	.remove = msm_serial_remove,
+ 	.driver = {
+ 		.name = "msm_serial",
+ 		.owner = THIS_MODULE,
++		.of_match_table = msm_match_table,
+ 	},
+ };
+ 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Right.  It is still awkward to have userspace write to the pstore and then
-be interrupted by an NMI who wants to write to the pstore without causing
-deadlocks.  But I think we will get there.
-
-Cheers,
-Don
