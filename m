@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1HRQhy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:37:54 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52010 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab1HRQhx convert rfc822-to-8bit (ORCPT
+	id S1756106Ab1HRQiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:38:01 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39483 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455Ab1HRQh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:37:53 -0400
+	Thu, 18 Aug 2011 12:37:58 -0400
+Message-ID: <4E4D3FE2.8000504@gmail.com>
+Date: Thu, 18 Aug 2011 10:37:54 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <1313654457.2905.10.camel@epip-laptop>
-References: <1313384834-24433-1-git-send-email-lacombar@gmail.com>
-	<1313384834-24433-4-git-send-email-lacombar@gmail.com>
-	<CACqU3MWTEFy+XV7WH=FEP2hTvBu8VCgcYj-HCcVnSjKxZBQeeA@mail.gmail.com>
-	<1313654457.2905.10.camel@epip-laptop>
-Date: Thu, 18 Aug 2011 12:37:52 -0400
-Message-ID: <CACqU3MUVBQ67vKP-41jAy7JGrW1-m+HR8mrt18Yke6ZrjYLx-w@mail.gmail.com>
-Subject: Re: [PATCH 03/11] arch/unicore32: do not use EXTRA_AFLAGS or EXTRA_CFLAGS
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: gxt@mprc.pku.edu.cn
-Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC][PATCH 1/8] perf: Separate out trace-cmd parse-events from
+ perf files
+References: <20110805205921.909038487@goodmis.org> <20110805211300.324726820@goodmis.org> <4E4945F8.2080004@gmail.com> <1313425364.15704.9.camel@gandalf.stny.rr.com> <4E4B0667.8090107@gmail.com> <20110818135112.GB10441@somewhere>
+In-Reply-To: <20110818135112.GB10441@somewhere>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Aug 18, 2011 at 4:00 AM, Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
-> It looks good for me.
->
-> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
->
-> Do I need to push the patch into unicore32 repo?
->
-All patches in the series are fully independent from one another, so
-yes, you can just pick it in the unicore32 tree.
-
-Thanks,
- - Arnaud
-
-> Thanks & Regards
->
-> Guan Xuetao
->
->
-> On Mon, 2011-08-15 at 01:13 -0400, Arnaud Lacombe wrote:
->> Hi,
+On 08/18/2011 07:51 AM, Frederic Weisbecker wrote:
+> On Tue, Aug 16, 2011 at 06:08:07PM -0600, David Ahern wrote:
+>> On 08/15/2011 10:22 AM, Steven Rostedt wrote:
+>>> On Mon, 2011-08-15 at 10:14 -0600, David Ahern wrote:
+>>>> Hi Steve:
+>>>>
+>>>> On 08/05/2011 02:59 PM, Steven Rostedt wrote:
+>>>>> From: Steven Rostedt <srostedt@redhat.com>
+>>>>>
+>>>>> Move the trace-event-parse.c code that originally came from trace-cmd into
+>>>>> their own files. The new file will be called trace-parse-events.c, as
+>>>>> the name of trace-cmd's file was parse-events.c too, but it conflicted
+>>>>> with the parse-events.c file in perf that parses the command line.
+>>>>>
+>>>>> This tries to update the code with mimimal changes.
+>>>>>
+>>>>> Perf specific code stays in the trace-event-parse.[ch] files and
+>>>>> the common parsing code is now in trace-parse-events.c and
+>>>>> trace-parse-events.h.
+>>>>
+>>>> What branch should these apply cleanly to?
+>>>
+>>> They are based off of v3.0. You can get these patches from my repo as
+>>> described in the 0/8 announce email.
 >>
->> On Mon, Aug 15, 2011 at 1:07 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> > Usage of these flags has been deprecated for nearly 4 years by:
->> >
->> >    commit f77bf01425b11947eeb3b5b54685212c302741b8
->> >    Author: Sam Ravnborg <sam@neptun.(none)>
->> >    Date:   Mon Oct 15 22:25:06 2007 +0200
->> >
->> >        kbuild: introduce ccflags-y, asflags-y and ldflags-y
->> >
->> > Moreover, these flags (at least EXTRA_CFLAGS) have been documented for command
->> > line use. By default, gmake(1) do not override command line setting, so this is
->> > likely to result in build failure or unexpected behavior.
->> >
->> > Replace their usage by Kbuild's `{as,cc,ld}flags-y'.
->> >
->> > Cc: Sam Ravnborg <sam@ravnborg.org>
->> > Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
->> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+>> Unfortunately I hastily deleted the 0/8 thread while on vacation last
+>> week (gmail on Android thing), so I apologize for shifting the discussion.
 >>
->>  - Arnaud
->> > ---
->> >  arch/unicore32/boot/compressed/Makefile |    4 ++--
->> >  1 files changed, 2 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/arch/unicore32/boot/compressed/Makefile b/arch/unicore32/boot/compressed/Makefile
->> > index b0954a2..950a9af 100644
->> > --- a/arch/unicore32/boot/compressed/Makefile
->> > +++ b/arch/unicore32/boot/compressed/Makefile
->> > @@ -10,8 +10,8 @@
->> >  # Copyright (C) 2001~2010 GUAN Xue-tao
->> >  #
->> >
->> > -EXTRA_CFLAGS   := -fpic -fno-builtin
->> > -EXTRA_AFLAGS   := -Wa,-march=all
->> > +ccflags-y      := -fpic -fno-builtin
->> > +asflags-y      := -Wa,-march=all
->> >
->> >  OBJS           := misc.o
->> >
->> > --
->> > 1.7.6.153.g78432
->> >
->> >
->
->
->
+>> With a little bit of hacking on top of your patches I was able to get
+>> the trace-cmd plugins working with perf. e.g.,
+>>         qemu-kvm 11971 [001] 30401.777391: kvm_apic_accept_irq: apicid 0
+>> vec 239 (Fixed|edge)
+>>         qemu-kvm 11971 [001] 30401.777405: kvm_inj_virq: irq 239
+>>         qemu-kvm 11971 [001] 30401.777415: kvm_entry: vcpu 0
+>>         qemu-kvm 11971 [001] 30401.777430: kvm_exit: reason APIC_ACCESS
+>> rip 0xffffffff8101dbe4 info 10b0 0
+>>
+>> So, what is the next step for making this a reality -- i.e., getting the
+>> common code into a lib in tools?
+> 
+> I hope. Otherwise we'll simply get stuck with a buggy format parsing in perf.
+
+I guess to be more specific about next steps:
+- should trace-cmd be moved to the tools directory in the kernel repo?
+that would allow code movement to a lib directory and work to be done on
+both trace-cmd and perf
+- what's the conclusion about the name and path for the common parsing
+code? seems like libtraceevent or libtraceparse had the fewest collisions
+- should the plugin code be moved into its own directory - e.g.,
+tools/lib/trace-plugins. I am working on plugin changes too (eg.,
+resolving guest RIPs to symbols in the kvm plugin).
+
+The current patch set from Steve needs some updates (in addition to what
+is needed for perf to use the plugins) to handle trace-cmd and perf
+differences, but this is getting far down the path.
+
+David
