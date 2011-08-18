@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1HRBAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 21:00:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52071 "EHLO
+	id S1754598Ab1HRBDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 21:03:13 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52145 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab1HRBAo (ORCPT
+	with ESMTP id S1751890Ab1HRBDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 21:00:44 -0400
+	Wed, 17 Aug 2011 21:03:10 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 09:53:14 +0900
+Date: Thu, 18 Aug 2011 09:55:41 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -21,12 +21,14 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
         Andrea Righi <andrea@betterlinux.com>,
         Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v9 06/13] memcg: add dirty limits to mem_cgroup
-Message-Id: <20110818095314.57fce43f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1313597705-6093-7-git-send-email-gthelen@google.com>
+        David Rientjes <rientjes@google.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH v9 07/13] memcg: add cgroupfs interface to memcg dirty
+ limits
+Message-Id: <20110818095541.c4744324.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1313597705-6093-8-git-send-email-gthelen@google.com>
 References: <1313597705-6093-1-git-send-email-gthelen@google.com>
-	<1313597705-6093-7-git-send-email-gthelen@google.com>
+	<1313597705-6093-8-git-send-email-gthelen@google.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -36,14 +38,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 09:14:58 -0700
+On Wed, 17 Aug 2011 09:14:59 -0700
 Greg Thelen <gthelen@google.com> wrote:
 
-> Extend mem_cgroup to contain dirty page limits.
+> Add cgroupfs interface to memcg dirty page limits:
+>   Direct write-out is controlled with:
+>   - memory.dirty_ratio
+>   - memory.dirty_limit_in_bytes
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+>   Background write-out is controlled with:
+>   - memory.dirty_background_ratio
+>   - memory.dirty_background_limit_bytes
+> 
+> Other memcg cgroupfs files support 'M', 'm', 'k', 'K', 'g'
+> and 'G' suffixes for byte counts.  This patch provides the
+> same functionality for memory.dirty_limit_in_bytes and
+> memory.dirty_background_limit_bytes.
+> 
 > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
