@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab1HRGCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 02:02:09 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31345 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab1HRGCG convert rfc822-to-8bit (ORCPT
+	id S1754921Ab1HRGCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 02:02:43 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56420 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab1HRGCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 02:02:06 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=cawBkBsmHM9/+hfGqKwcuiTpEGCUwvpaNCSh3EUIFGTDb2kw60q/Wphdj5KB9Gj0s
-	yGww4ycP36LtubWfV+KLQ==
-MIME-Version: 1.0
-In-Reply-To: <4E4CA6B4.5060807@cn.fujitsu.com>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4C80A0.8090708@cn.fujitsu.com>
- <87d3g347ey.fsf@emc.com.tw> <4E4CA3A9.2010900@cn.fujitsu.com>
- <CAGS+omB0Ys-vEVq64W85Jmsz=TkgvNqn_iJkxynZJr8wvqifGQ@mail.gmail.com> <4E4CA6B4.5060807@cn.fujitsu.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 18 Aug 2011 14:01:42 +0800
-X-Google-Sender-Auth: 9wFlLHlTWHU7Ovdpy7t_AX7Vm-k
-Message-ID: <CAGS+omDT1WNBoC-T4zmKx1SnVofLwUdt-pfQDWGicO87xUBqxw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-To: gaowanlong@cn.fujitsu.com
-Cc: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+	Thu, 18 Aug 2011 02:02:39 -0400
+Date: Wed, 17 Aug 2011 23:02:33 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, JJ Ding <jj_ding@emc.com.tw>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+Message-ID: <20110818060233.GB10093@core.coreip.homeip.net>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+ <4E4C8758.4020205@cn.fujitsu.com>
+ <4E4C8B63.7030108@cn.fujitsu.com>
+ <4E4C91C4.2080408@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4C91C4.2080408@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 1:44 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-> On 08/18/2011 01:34 PM, Daniel Kurtz wrote:
->>
->> On Thu, Aug 18, 2011 at 1:31 PM, Wanlong Gao<gaowanlong@cn.fujitsu.com>
->>  wrote:
->>>
->>> On 08/18/2011 01:26 PM, JJ Ding wrote:
->>>>
->>>> Hi Wanlong Gao,
->>>>
->>>> On Thu, 18 Aug 2011 11:01:52 +0800, Wanlong
->>>> Gao<gaowanlong@cn.fujitsu.com>
->>>>  wrote:
->>>>>
->>>>> On 08/18/2011 09:57 AM, JJ Ding wrote:
->>>>>>
->>>>>> v3 hardware's packet format is almost identical to v2 (one/three
->>>>>> finger
->>>>>> touch),
->>>>>> except when sensing two finger touch, the hardware sends 12 bytes of
->>>>>> data.
->>>>>>
->>>>>> Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
->>>>>> ---
->>>>>>   Documentation/input/elantech.txt |  104 ++++++++++++++++--
->>>>>>   drivers/input/mouse/elantech.c   |  218
->>>>>> ++++++++++++++++++++++++++++++++++---
->>>>>>   drivers/input/mouse/elantech.h   |   11 ++
->>>>>>   3 files changed, 303 insertions(+), 30 deletions(-)
->>>>>>
->>>>>> +static int determine_packet_v3(struct psmouse *psmouse)
->>>>>
->>>>> elantech_check_parity_v1
->>>>> packet_simple_check_v2
->>>>> determine_packet_v3
->>>>>
->>>>> Why not consistent them?
->>>>
->>>> OK, how do these names sound to you?
->>>>
->>>> elantech_check_parity_v1
->>>> elantech_packet_check_v2
->>>> elantech_packet_check_v3
->>>>
->>>> Thanks,
->>>> jj
->>>
->>> Yeah, sounds perfectly.
->>
->> Or just:
->>
->> elantech_packet_check_v1
->> elantech_packet_check_v2
->> elantech_packet_check_v3
->>
->> :)
->
-> Hmm... maybe they can go into an elantech_packet_check()?
-> like:
-> case 1:
->        ...
-> case 2:
->        ...
-> What do you think? ;)
->
-> Thanks
-> -Wanlong Gao
+On Thu, Aug 18, 2011 at 12:15:00PM +0800, Wanlong Gao wrote:
+> On 08/18/2011 11:47 AM, Li Zefan wrote:
+> >>>+
+> >>>+    case 3:
+> >>>+        if (elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> >>>+            elantech_ps2_command(psmouse, NULL, ETP_REGISTER_READWRITE) ||
+> >>>+            elantech_ps2_command(psmouse, NULL, ETP_PS2_CUSTOM_COMMAND) ||
+> >>>+            elantech_ps2_command(psmouse, NULL, reg) ||
+> >>>+            elantech_ps2_command(psmouse, param, PSMOUSE_CMD_GETINFO)) {
+> >>>+            rc = -1;
+> >>>+        }
+> >>Prefer to remove these big brace ?
+> >>also with "case 1, case 2 "?
+> >
+> >Just wondering What's wrong with this piece of code and what do you
+> >sugguest to improve it?
+> 
+> I think no need to add a '{}' with the *if* ?
+> and remove the '{}' in whole elantech_read_reg() and
+> elantech_write_reg(), right?
+> 
 
-Since we've already parsed the hardware type at this point, it seems
-inefficient to parse it again inside another function.
-I would prefer individual functions.
+In case when conditon "overpowers" the body (i.e. multi-line condition)
+I prefer having braces so the body stands out.
 
-Thanks,
--Daniel
+Thanks.
+
+-- 
+Dmitry
