@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1HRMUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:20:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30603 "EHLO mx1.redhat.com"
+	id S1755867Ab1HRMWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 08:22:47 -0400
+Received: from lucidpixels.com ([72.73.18.11]:59709 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755878Ab1HRMT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:19:29 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, xfs@oss.sgi.com
-Subject: [PATCH 4/5] xfs: use fs netlink interface for ENOSPC conditions
-Date: Thu, 18 Aug 2011 14:18:25 +0200
-Message-Id: <1313669906-14931-5-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1313669906-14931-1-git-send-email-lczerner@redhat.com>
-References: <1313669906-14931-1-git-send-email-lczerner@redhat.com>
+	id S1755786Ab1HRMWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 08:22:45 -0400
+Date: Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+cc: Jeff Layton <jlayton@samba.org>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also crashes
+ with linux-3.1-rc2
+In-Reply-To: <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan> <alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net> <20110815064734.403b630f@corrin.poochiereds.net> <alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+ <alpine.DEB.2.02.1108151357200.32349@p34.internal.lan> <alpine.DEB.2.02.1108171515050.5877@p34.internal.lan> <3300.1313637592@jrobl> <alpine.DEB.2.02.1108180632000.10458@p34.internal.lan> <alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register fs netlink interface and send proper warning if ENOSPC is
-encountered. Note that we differentiate between enospc for metadata and
-enospc for data.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-CC: Christoph Hellwig <hch@lst.de>
-CC: xfs@oss.sgi.com
----
- fs/xfs/linux-2.6/xfs_file.c  |    2 ++
- fs/xfs/linux-2.6/xfs_super.c |    1 +
- fs/xfs/xfs_vnodeops.c        |   10 ++++++++--
- 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
-index 7f7b424..ab41603 100644
---- a/fs/xfs/linux-2.6/xfs_file.c
-+++ b/fs/xfs/linux-2.6/xfs_file.c
-@@ -896,6 +896,8 @@ xfs_file_aio_write(
- out_unlock:
- 	xfs_aio_write_newsize_update(ip);
- 	xfs_rw_iunlock(ip, iolock);
-+	if (unlikely(-ENOSPC == ret))
-+		fs_nl_send_warning(inode->i_sb->s_dev, FS_NL_ENOSPC_WARN);
- 	return ret;
- }
- 
-diff --git a/fs/xfs/linux-2.6/xfs_super.c b/fs/xfs/linux-2.6/xfs_super.c
-index 9a72dda..dd167a0 100644
---- a/fs/xfs/linux-2.6/xfs_super.c
-+++ b/fs/xfs/linux-2.6/xfs_super.c
-@@ -1731,6 +1731,7 @@ init_xfs_fs(void)
- 	error = register_filesystem(&xfs_fs_type);
- 	if (error)
- 		goto out_sysctl_unregister;
-+	init_fs_nl_family();
- 	return 0;
- 
-  out_sysctl_unregister:
-diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
-index 51fc429..1a95115 100644
---- a/fs/xfs/xfs_vnodeops.c
-+++ b/fs/xfs/xfs_vnodeops.c
-@@ -996,6 +996,8 @@ xfs_create(
-  out_trans_abort:
- 	cancel_flags |= XFS_TRANS_ABORT;
-  out_trans_cancel:
-+	if (ENOSPC == error)
-+		fs_nl_send_warning(mp->m_super->s_dev, FS_NL_META_ENOSPC_WARN);
- 	xfs_trans_cancel(tp, cancel_flags);
-  out_release_inode:
- 	/*
-@@ -2302,7 +2304,7 @@ xfs_change_file_space(
- 		error = xfs_alloc_file_space(ip, startoffset, bf->l_len,
- 						prealloc_type, attr_flags);
- 		if (error)
--			return error;
-+			goto alloc_failed;
- 		setprealloc = 1;
- 		break;
- 
-@@ -2321,7 +2323,7 @@ xfs_change_file_space(
- 			error = xfs_alloc_file_space(ip, fsize,
- 					startoffset - fsize, 0, attr_flags);
- 			if (error)
--				break;
-+				goto alloc_failed;
- 		}
- 
- 		iattr.ia_valid = ATTR_SIZE;
-@@ -2384,5 +2386,9 @@ xfs_change_file_space(
- 
- 	xfs_iunlock(ip, XFS_ILOCK_EXCL);
- 
-+alloc_failed:
-+	if (unlikely(ENOSPC == error))
-+		fs_nl_send_warning(mp->m_super->s_dev, FS_NL_ENOSPC_WARN);
-+
- 	return error;
- }
--- 
-1.7.4.4
+On Thu, 18 Aug 2011, Justin Piszcz wrote:
+
+>
+>
+> On Thu, 18 Aug 2011, Justin Piszcz wrote:
+>
+>> 
+>> 
+>> On Thu, 18 Aug 2011, J. R. Okajima wrote:
+>> 
+>>> 
+>>> Justin Piszcz:
+>>>> Does anyone know if any kernel supports CIFS w/out crashing? I'd like to
+>>>> backup some CIFS shares, thanks.
+>>>> 
+>>>> 
+>>>> mount -t cifs //w2/x /mnt -o user=user,pass=pass
+>>>> 
+>>>> [  881.388836] CIFS VFS: cifs_mount failed w/return code = -22
+>>> 	:::
+>>> 
+>>> Since it failed mounting, this patch will help you. Although the patch
+>>> will fix one bug, there still may exist another problem.
+>>> 
+>>> http://marc.info/?l=linux-cifs&m=131345112022031&w=2
+>> 
+>> Hi,
+>> 
+>> Latest patch (this one) applied to linux-3.1-rc2 works, at least it mounted
+>> this time and did not instantly crash the kernel!
+>> 
+>> I also tried the hostname again (and it did not crash the kernel, but it 
+>> failed to mount).
+>> 
+>> Used the IP and it mounted successfully:
+>> //10.0.0.11/x          28T  5.0T   23T  19% /mnt
+>> //10.0.0.11/y          19T  1.2T   18T   7% /mnt2
+>> 
+>> It has not crashed yet (which is good), I'll apply this patch to my
+>> production machine and test taking backups of this data and let you know
+>> if it crashes again, thanks!
+>> 
+>> Justin.
+>
+>
+> Hello,
+>
+> It is working but very slowly:
+>
+> Device eth6 [10.0.1.2] (1/1):
+> ================================================================================
+> Incoming:                               Outgoing:
+> Curr: 37.60 MByte/s                     Curr: 0.44 MByte/s
+> Avg: 4.98 MByte/s                       Avg: 0.09 MByte/s
+> Min: 0.00 MByte/s                       Min: 0.00 MByte/s
+> Max: 40.79 MByte/s                      Max: 0.48 MByte/s
+> Ttl: 1.45 GByte                         Ttl: 26.77 MByte
+>
+> Over 10GbE the other direction (Linux -> Windows (via Samba)) I get 500MiB/s, 
+> is CIFS slow?
+>
+> I'll look into options to tweak the speed but this is very poor speed when 
+> you have to transfer 5-10TB.  However, it is not crashing anymore, so any 
+> speed is better than that :)
+>
+> Justin.
+
+Hi,
+
+Mounting with:
+rw,uid=1000,gid=100,mode=0644,rsize=130048,wsize=1048576,credentials=/root/.cifs 
+Same speed:
+Device eth6 [10.0.1.2] (1/1):
+================================================================================
+Incoming:                               Outgoing:
+Curr: 32.42 MByte/s                     Curr: 0.38 MByte/s
+Avg: 30.72 MByte/s                      Avg: 0.39 MByte/s
+Min: 0.00 MByte/s                       Min: 0.00 MByte/s
+Max: 43.64 MByte/s                      Max: 0.59 MByte/s
+Ttl: 20.15 GByte                        Ttl: 261.03 MByte
+
+Thoughts?
+
+Has anyone achieved > 30-40MB/s with CIFS?
+This is a 10GbE link (and yes JUMBO frames are enabled on both sides, and 
+again, samba from Linux->Windows = 500MB/s)
+
+Justin.
 
