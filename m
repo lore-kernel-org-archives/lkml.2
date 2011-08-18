@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab1HRRFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:05:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34417 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab1HRRF2 (ORCPT
+	id S1752152Ab1HRRIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:08:16 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:44908 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751491Ab1HRRIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:05:28 -0400
-From: David Ahern <dsahern@gmail.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf script: add option to display time change between events
-Date: Thu, 18 Aug 2011 11:05:21 -0600
-Message-Id: <1313687121-25689-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 18 Aug 2011 13:08:15 -0400
+Subject: Re: [PATCH 5/6] MAINTAINERS: Fix list of perf events source files
+From: Joe Perches <joe@perches.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Geunsik Lim <geunsik.lim@samsung.com>,
+        Jiri Kosina <trivial@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1313686204-30295-6-git-send-email-acme@infradead.org>
+References: <1313686204-30295-1-git-send-email-acme@infradead.org>
+	 <1313686204-30295-6-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Aug 2011 10:08:12 -0700
+Message-ID: <1313687292.32547.90.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a 'dt' field option to show time change between events dumped to user:
+On Thu, 2011-08-18 at 13:50 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Geunsik Lim <geunsik.lim@samsung.com>
+> Recent changes made kernel/perf_event.c be split and moved to
+> kernel/events/.
+[]
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> @@ -4971,7 +4971,7 @@ M:	Paul Mackerras <paulus@samba.org>
+[]
+> -F:	kernel/perf_event*.c
+> +F:	kernel/events/*
 
-         swapper     0 [000] 0.003780: netif_receive_skb: dev=wlan0 skbaddr=...
-            vpnc 23605 [000] 0.000347: netif_rx: dev=tun0 skbaddr=...
-            vpnc 23605 [000] 0.000007: netif_receive_skb: dev=tun0 skbaddr=...
- thunderbird-bin 22435 [000] 0.001043: net_dev_queue: dev=tun0 skbaddr=...
- thunderbird-bin 22435 [000] 0.000012: net_dev_xmit: dev=tun0 skbaddr=...
+Trivia...
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/Documentation/perf-script.txt |    2 +-
- tools/perf/builtin-script.c              |   20 +++++++++++++++++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
+MAINTAINERS pattern matching in get_maintainer uses
 
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index db01786..4f996ab 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -115,7 +115,7 @@ OPTIONS
- -f::
- --fields::
-         Comma separated list of fields to print. Options are:
--        comm, tid, pid, time, cpu, event, trace, ip, sym, dso, addr.
-+        comm, tid, pid, time, dt, cpu, event, trace, ip, sym, dso, addr.
-         Field list can be prepended with the type, trace, sw or hw,
-         to indicate to which event type the field list applies.
-         e.g., -f sw:comm,tid,time,ip,sym  and -f trace:time,cpu,trace
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 09024ec..541b30a 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -37,6 +37,7 @@ enum perf_output_field {
- 	PERF_OUTPUT_SYM             = 1U << 8,
- 	PERF_OUTPUT_DSO             = 1U << 9,
- 	PERF_OUTPUT_ADDR            = 1U << 10,
-+	PERF_OUTPUT_DT              = 1U << 11,
- };
- 
- struct output_option {
-@@ -54,6 +55,7 @@ struct output_option {
- 	{.str = "sym",   .field = PERF_OUTPUT_SYM},
- 	{.str = "dso",   .field = PERF_OUTPUT_DSO},
- 	{.str = "addr",  .field = PERF_OUTPUT_ADDR},
-+	{.str = "dt",    .field = PERF_OUTPUT_DT},
- };
- 
- /* default set to maintain compatibility with current format */
-@@ -207,6 +209,11 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
- 				       PERF_OUTPUT_TIME))
- 		return -EINVAL;
- 
-+	if (PRINT_FIELD(DT) &&
-+		perf_event_attr__check_stype(attr, PERF_SAMPLE_TIME, "DT",
-+				       PERF_OUTPUT_DT))
-+		return -EINVAL;
-+
- 	if (PRINT_FIELD(CPU) &&
- 		perf_event_attr__check_stype(attr, PERF_SAMPLE_CPU, "CPU",
- 				       PERF_OUTPUT_CPU))
-@@ -288,6 +295,17 @@ static void print_sample_start(struct perf_sample *sample,
- 		printf("%5lu.%06lu: ", secs, usecs);
- 	}
- 
-+	if (PRINT_FIELD(DT)) {
-+		static u64 prev_sample_time;
-+
-+		nsecs =  prev_sample_time ? sample->time - prev_sample_time : 0;
-+		prev_sample_time = sample->time;
-+		secs = nsecs / NSECS_PER_SEC;
-+		nsecs -= secs * NSECS_PER_SEC;
-+		usecs = nsecs / NSECS_PER_USEC;
-+		printf("%lu.%06lu: ", secs, usecs);
-+	}
-+
- 	if (PRINT_FIELD(EVNAME)) {
- 		if (attr->type == PERF_TYPE_TRACEPOINT) {
- 			type = trace_parse_common_type(sample->raw_data);
-@@ -1080,7 +1098,7 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_CALLBACK('f', "fields", NULL, "str",
--		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
-+		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,dt,cpu,event,trace,ip,sym,dso,addr",
- 		     parse_output_fields),
- 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
- 
--- 
-1.7.6
+directory/	to match all files and files in subdirectories
+directory/*	to match only the files in the directory
+		but no files in any subdirectory
+
+This should probably be kernel/events/ so any
+future subdirectory files are also included.
+
+There is no effective difference today because
+no subdirectories of kernel/event/ exist.
+
 
