@@ -1,268 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1HRJaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 05:30:20 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:42226 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755199Ab1HRJaP (ORCPT
+	id S1755433Ab1HRJf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 05:35:59 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61013 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab1HRJf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 05:30:15 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v4] usb: gadget: storage_common: make FSG_NUM_BUFFERS variable size
-Date: Thu, 18 Aug 2011 11:28:46 +0200
-Message-ID: <1313659726-9406-1-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Thu, 18 Aug 2011 05:35:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 18 Aug 2011 11:35:56 +0200
+Message-ID: <CA+icZUXs0cdCna8ogKubpg_SgZo0K3GmHDkBk2gDuJkg7CX0Zw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 18 (GNU patch and "git diffs: Support symlinks")
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        git@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
+        Christoph Berg <myon@debian.org>
+Content-Type: multipart/mixed; boundary=bcaec51a8c62fdce7c04aac4568f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+--bcaec51a8c62fdce7c04aac4568f
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-FSG_NUM_BUFFERS is set to 2 as default.
-Usually 2 buffers are enough to establish a good buffering pipeline.
-The number may be increased in order to compensate a for bursty VFS
-behaviour.
-
-Here follows a description of system that may require more than
-2 buffers.
- * CPU ondemand governor active
- * latency cost for wake up and/or frequency change
- * DMA for IO
-
-Use case description.
- * Data transfer from MMC via VFS to USB.
- * DMA shuffles data from MMC and to USB.
- * The CPU wakes up every now and then to pass data in and out from VFS,
-   which cause the bursty VFS behaviour.
-
-Test set up
- * Running dd on the host reading from the mass storage device
- * cmdline: dd if=/dev/sdb of=/dev/null bs=4k count=$((256*100))
- * Caches are dropped on the host and on the device before each run
-
-Measurements on a Snowball board with ondemand_govenor active.
-
-FSG_NUM_BUFFERS 2
-104857600 bytes (105 MB) copied, 5.62173 s, 18.7 MB/s
-104857600 bytes (105 MB) copied, 5.61811 s, 18.7 MB/s
-104857600 bytes (105 MB) copied, 5.57817 s, 18.8 MB/s
-
-FSG_NUM_BUFFERS 4
-104857600 bytes (105 MB) copied, 5.26839 s, 19.9 MB/s
-104857600 bytes (105 MB) copied, 5.2691 s, 19.9 MB/s
-104857600 bytes (105 MB) copied, 5.2711 s, 19.9 MB/s
-
-There may not be one optimal number for all boards. This is why
-the number is added to Kconfig. If selecting USB_DEBUG this value may be
-set by a module parameter as well.
-
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
+On Thu, Aug 18, 2011 at 8:00 AM, Stephen Rothwell <sfr@canb.auug.org.au> wr=
+ote:
+> Hi all,
+>
+> The powerpc allyesconfig build still fails today.
+>
+> Changes since 20110817:
+>
+> The sound-asoc tree lost its build failure.
+>
+> The tip tree gained a conflict against Linus' tree.
+>
+> The moduleh tree lost 2 of its merge fixups, but I added another.
+>
+> -------------------------------------------------------------------------=
 ---
-Change log.
-v2: Update after proofreading comments from Michal Nazarewicz
-v3: Clarify the description of this patch based on input from Alan Stern
-v4: - Introduce a module_param to set number of pipeline buffers
-    if USB_DEBUG is set. In order to add this support fsg_common is
-    allocated at runtime. The fsg_buffhd list size is appended to fsg_dev
-    and fsg_common at runtime allocation.
-    - The previous acks from Michal and Alan on v3 are not applicable
-    for this version since it's a new implementation.
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ). =C2=A0If=
+ you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one. =C2=A0You should use "git fetch" as mentioned in the FAQ on the =
+wiki
+> (see below).
+>
 
- drivers/usb/gadget/Kconfig          |   16 ++++++++++++++++
- drivers/usb/gadget/f_mass_storage.c |   10 +++++++---
- drivers/usb/gadget/file_storage.c   |   10 ++++++++--
- drivers/usb/gadget/mass_storage.c   |   16 +++++++++-------
- drivers/usb/gadget/storage_common.c |   20 ++++++++++++++++++--
- 5 files changed, 58 insertions(+), 14 deletions(-)
+Just FYI:
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 44b6b40..37ec2ce 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -96,6 +96,22 @@ config USB_GADGET_VBUS_DRAW
- 	   This value will be used except for system-specific gadget
- 	   drivers that have more specific information.
- 
-+config USB_GADGET_STORAGE_NUM_BUFFERS
-+	int "Number of storage pipeline buffers"
-+	range 2 4
-+	default 2
-+	help
-+	   Usually 2 buffers are enough to establish a good buffering
-+	   pipeline. The number may be increased in order to compensate
-+	   for a bursty VFS behaviour. For instance there may be cpu wake up
-+	   latencies that makes the VFS to appear bursty in a system with
-+	   an cpu on-demand governor. Especially if DMA is doing IO to
-+	   offload the CPU. In this case the CPU will go into power
-+	   save often and spin up occasionally to move data within VFS.
-+	   If selecting USB_DEBUG this value may be set by a module
-+	   parameter as well.
-+	   If unsure, say 2.
-+
- #
- # USB Peripheral Controller Support
- #
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 5b93395..3e546d9 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -363,7 +363,6 @@ struct fsg_common {
- 
- 	struct fsg_buffhd	*next_buffhd_to_fill;
- 	struct fsg_buffhd	*next_buffhd_to_drain;
--	struct fsg_buffhd	buffhds[FSG_NUM_BUFFERS];
- 
- 	int			cmnd_size;
- 	u8			cmnd[MAX_COMMAND_SIZE];
-@@ -407,6 +406,8 @@ struct fsg_common {
- 	char inquiry_string[8 + 16 + 4 + 1];
- 
- 	struct kref		ref;
-+	/* Must be the last entry */
-+	struct fsg_buffhd	buffhds[0];
- };
- 
- struct fsg_config {
-@@ -2728,12 +2729,15 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 
- 	/* Allocate? */
- 	if (!common) {
--		common = kzalloc(sizeof *common, GFP_KERNEL);
-+		common = kzalloc(sizeof(struct fsg_common) +
-+				 sizeof(struct fsg_buffhd) * FSG_NUM_BUFFERS,
-+				 GFP_KERNEL);
- 		if (!common)
- 			return ERR_PTR(-ENOMEM);
- 		common->free_storage_on_release = 1;
- 	} else {
--		memset(common, 0, sizeof *common);
-+		memset(common, 0, sizeof(struct fsg_common) +
-+		       sizeof(struct fsg_buffhd) * FSG_NUM_BUFFERS);
- 		common->free_storage_on_release = 0;
- 	}
- 
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index 639e14a..21d366d 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -461,7 +461,6 @@ struct fsg_dev {
- 
- 	struct fsg_buffhd	*next_buffhd_to_fill;
- 	struct fsg_buffhd	*next_buffhd_to_drain;
--	struct fsg_buffhd	buffhds[FSG_NUM_BUFFERS];
- 
- 	int			thread_wakeup_needed;
- 	struct completion	thread_notifier;
-@@ -488,6 +487,8 @@ struct fsg_dev {
- 	unsigned int		nluns;
- 	struct fsg_lun		*luns;
- 	struct fsg_lun		*curlun;
-+	/* Must be the last entry */
-+	struct fsg_buffhd	buffhds[0];
- };
- 
- typedef void (*fsg_routine_t)(struct fsg_dev *);
-@@ -3587,7 +3588,9 @@ static int __init fsg_alloc(void)
- {
- 	struct fsg_dev		*fsg;
- 
--	fsg = kzalloc(sizeof *fsg, GFP_KERNEL);
-+	fsg = kzalloc(sizeof(struct fsg_dev) +
-+		      sizeof(struct fsg_buffhd) * FSG_NUM_BUFFERS, GFP_KERNEL);
-+
- 	if (!fsg)
- 		return -ENOMEM;
- 	spin_lock_init(&fsg->lock);
-@@ -3605,6 +3608,9 @@ static int __init fsg_init(void)
- 	int		rc;
- 	struct fsg_dev	*fsg;
- 
-+	if (!FSG_NUM_BUFFERS_IS_VALID(FSG_NUM_BUFFERS))
-+		return -EINVAL;
-+
- 	if ((rc = fsg_alloc()) != 0)
- 		return rc;
- 	fsg = the_fsg;
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index d3eb274..67c58d0 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -116,9 +116,8 @@ static int __init msg_do_config(struct usb_configuration *c)
- 	static const struct fsg_operations ops = {
- 		.thread_exits = msg_thread_exits,
- 	};
--	static struct fsg_common common;
-+	struct fsg_common *common = NULL;
- 
--	struct fsg_common *retp;
- 	struct fsg_config config;
- 	int ret;
- 
-@@ -130,12 +129,12 @@ static int __init msg_do_config(struct usb_configuration *c)
- 	fsg_config_from_params(&config, &mod_data);
- 	config.ops = &ops;
- 
--	retp = fsg_common_init(&common, c->cdev, &config);
--	if (IS_ERR(retp))
--		return PTR_ERR(retp);
-+	common = fsg_common_init(common, c->cdev, &config);
-+	if (IS_ERR(common))
-+		return PTR_ERR(common);
- 
--	ret = fsg_bind_config(c->cdev, c, &common);
--	fsg_common_put(&common);
-+	ret = fsg_bind_config(c->cdev, c, common);
-+	fsg_common_put(common);
- 	return ret;
- }
- 
-@@ -179,6 +178,9 @@ MODULE_LICENSE("GPL");
- 
- static int __init msg_init(void)
- {
-+	if (!FSG_NUM_BUFFERS_IS_VALID(FSG_NUM_BUFFERS))
-+		return -EINVAL;
-+
- 	return usb_composite_probe(&msg_driver, msg_bind);
- }
- module_init(msg_init);
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index d3dd227..197eace 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -262,8 +262,24 @@ static struct fsg_lun *fsg_lun_from_dev(struct device *dev)
- #define EP0_BUFSIZE	256
- #define DELAYED_STATUS	(EP0_BUFSIZE + 999)	/* An impossibly large value */
- 
--/* Number of buffers we will use.  2 is enough for double-buffering */
--#define FSG_NUM_BUFFERS	2
-+#ifdef CONFIG_USB_DEBUG
-+
-+static unsigned int fsg_num_buffers = CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS;
-+module_param(fsg_num_buffers, uint, S_IRUGO);
-+MODULE_PARM_DESC(fsg_num_buffers, "Number of pipeline buffers");
-+#define FSG_NUM_BUFFERS	fsg_num_buffers
-+
-+#else
-+
-+/*
-+ * Number of buffers we will use.
-+ * 2 is usually enough for good buffering pipeline
-+ */
-+#define FSG_NUM_BUFFERS	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
-+
-+#endif /* CONFIG_USB_DEBUG */
-+
-+#define FSG_NUM_BUFFERS_IS_VALID(num) (num >= 2 && num <= 4 ? true : false)
- 
- /* Default size of buffer length. */
- #define FSG_BUFLEN	((u32)16384)
--- 
-1.7.4.1
+Yesterday and today, I had the same problem when applying the
+linux-next single patch (see attached ErrMsg text file).
 
+I am using a slightly modified kernel-buildsystem from Debian Kernel
+Team (so not building out of a GIT repository).
+
+The GNU/patch I have installed from Debian/sid does not include
+symlink-support for git-diff [1].
+Jonathan gave me the pointer to install patch package from Debian/experimen=
+tal.
+After reading its Changelog [2] and Debian-bug #243309 [3] I installed
+the recommended version.
+Indeed, it fixes the issue.
+
+Cristoph, can we have a backport of [1] to patch/sid?
+
+Thanks Jonathan!
+
+- Sedat -
+
+[1] http://git.savannah.gnu.org/cgit/patch.git/commit/?id=3Df9db7450fa27883=
+77c4567b5d0565b0ddfc1015c
+[2] http://packages.debian.org/changelogs/pool/main/p/patch/patch_2.6.1.85-=
+423d-3/changelog
+[3] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=3D243309
+
+--bcaec51a8c62fdce7c04aac4568f
+Content-Type: text/plain; charset=US-ASCII; 
+	name="ErrMsg_linux-next-patch-did-not-apply.txt"
+Content-Disposition: attachment; 
+	filename="ErrMsg_linux-next-patch-did-not-apply.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_grhivbv61
+
+WyBwYXRjaC12My4xLXJjMi1uZXh0LTIwMTEwODE4IF0KLi4uCmRpZmYgLS1naXQgYS90b29scy9w
+b3dlci9jcHVwb3dlci9kZWJ1Zy94ODZfNjQvTWFrZWZpbGUgYi90b29scy9wb3dlci9jcHVwb3dl
+ci9kZWJ1Zy94ODZfNjQvTWFrZWZpbGUKaW5kZXggZGJmMTM5OS4uMzMyNjIxNyAxMDA2NDQKLS0t
+IGEvdG9vbHMvcG93ZXIvY3B1cG93ZXIvZGVidWcveDg2XzY0L01ha2VmaWxlCisrKyBiL3Rvb2xz
+L3Bvd2VyL2NwdXBvd2VyL2RlYnVnL3g4Nl82NC9NYWtlZmlsZQpAQCAtMSwxMCArMSwxMCBAQAog
+ZGVmYXVsdDogYWxsCgotY2VudHJpbm8tZGVjb2RlOiBjZW50cmluby1kZWNvZGUuYwotICAgICAg
+ICQoQ0MpICQoQ0ZMQUdTKSAtbyBjZW50cmluby1kZWNvZGUgY2VudHJpbm8tZGVjb2RlLmMKK2Nl
+bnRyaW5vLWRlY29kZTogLi4vaTM4Ni9jZW50cmluby1kZWNvZGUuYworICAgICAgICQoQ0MpICQo
+Q0ZMQUdTKSAtbyAkQCAkPAoKLXBvd2Vybm93LWs4LWRlY29kZTogcG93ZXJub3ctazgtZGVjb2Rl
+LmMKLSAgICAgICAkKENDKSAkKENGTEFHUykgLW8gcG93ZXJub3ctazgtZGVjb2RlIHBvd2Vybm93
+LWs4LWRlY29kZS5jCitwb3dlcm5vdy1rOC1kZWNvZGU6IC4uL2kzODYvcG93ZXJub3ctazgtZGVj
+b2RlLmMKKyAgICAgICAkKENDKSAkKENGTEFHUykgLW8gJEAgJDwKCiBhbGw6IGNlbnRyaW5vLWRl
+Y29kZSBwb3dlcm5vdy1rOC1kZWNvZGUKCmRpZmYgLS1naXQgYS90b29scy9wb3dlci9jcHVwb3dl
+ci9kZWJ1Zy94ODZfNjQvY2VudHJpbm8tZGVjb2RlLmMgYi90b29scy9wb3dlci9jcHVwb3dlci9k
+ZWJ1Zy94ODZfNjQvY2VudHJpbm8tZGVjb2RlLmMKZGVsZXRlZCBmaWxlIG1vZGUgMTIwMDAwCmlu
+ZGV4IDI2ZmIzZjEuLjAwMDAwMDAKLS0tIGEvdG9vbHMvcG93ZXIvY3B1cG93ZXIvZGVidWcveDg2
+XzY0L2NlbnRyaW5vLWRlY29kZS5jCisrKyAvZGV2L251bGwKQEAgLTEgKzAsMCBAQAotLi4vaTM4
+Ni9jZW50cmluby1kZWNvZGUuYwpcIE5vIG5ld2xpbmUgYXQgZW5kIG9mIGZpbGUKZGlmZiAtLWdp
+dCBhL3Rvb2xzL3Bvd2VyL2NwdXBvd2VyL2RlYnVnL3g4Nl82NC9wb3dlcm5vdy1rOC1kZWNvZGUu
+YyBiL3Rvb2xzL3Bvd2VyL2NwdXBvd2VyL2RlYnVnL3g4Nl82NC9wb3dlcm5vdy1rOC1kZWNvZGUu
+YwpkZWxldGVkIGZpbGUgbW9kZSAxMjAwMDAKaW5kZXggZWIzMGM3OS4uMDAwMDAwMAotLS0gYS90
+b29scy9wb3dlci9jcHVwb3dlci9kZWJ1Zy94ODZfNjQvcG93ZXJub3ctazgtZGVjb2RlLmMKKysr
+IC9kZXYvbnVsbApAQCAtMSArMCwwIEBACi0uLi9pMzg2L3Bvd2Vybm93LWs4LWRlY29kZS5jClwg
+Tm8gbmV3bGluZSBhdCBlbmQgb2YgZmlsZQouLi4KCgokIExDX0FMTD1DIGZha2Vyb290IG1ha2Ug
+LWYgZGViaWFuL3J1bGVzLmdlbiBzZXR1cF9pMzg2X25vbmVfNjg2LXNtYWxsIDI+JjEgfCB0ZWUg
+Li4vc2V0dXAubG9nICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAKbWFrZSAtZiBkZWJpYW4vcnVsZXMucmVhbCBzZXR1cC1mbGF2b3VyIEFC
+SU5BTUU9Jy1uZXh0MjAxMTA4MTguMycgQVJDSD0naTM4NicgQ09NUElMRVI9J2djYy00LjYnIEZF
+QVRVUkVTRVQ9J25vbmUnIEZMQVZPVVI9JzY4Ni1zbWFsbCcgS0NPTkZJRz0nZGViaWFuL2NvbmZp
+Zy9jb25maWcgZGViaWFuL2NvbmZpZy9rZXJuZWxhcmNoLXg4Ni9jb25maWcgZGViaWFuL2NvbmZp
+Zy9rZXJuZWxhcmNoLXg4Ni9jb25maWctYXJjaC0zMiBkZWJpYW4vY29uZmlnL2kzODYvbm9uZS9j
+b25maWcuNjg2LWluaXphIGRlYmlhbi9jb25maWcvY3VzdG9tLXg4Ni9jb25maWctZGVidWcgZGVi
+aWFuL2NvbmZpZy9jdXN0b20teDg2L2NvbmZpZy1mcyBkZWJpYW4vY29uZmlnL2N1c3RvbS14ODYv
+Y29uZmlnLWluZmluaWJhbmQgZGViaWFuL2NvbmZpZy9jdXN0b20teDg2L2NvbmZpZy1pc2EgZGVi
+aWFuL2NvbmZpZy9jdXN0b20teDg2L2NvbmZpZy1pc2RuIGRlYmlhbi9jb25maWcvY3VzdG9tLXg4
+Ni9jb25maWctbXVsdGltZWRpYSBkZWJpYW4vY29uZmlnL2N1c3RvbS14ODYvY29uZmlnLXBzZXVk
+b2ZzIGRlYmlhbi9jb25maWcvY3VzdG9tLXg4Ni9jb25maWctc3RhZ2luZyBkZWJpYW4vY29uZmln
+L2kzODYvbm9uZS9jb25maWcuNjg2LXNtYWxsJyBLRVJORUxfQVJDSD0neDg2JyBMT0NBTFZFUlNJ
+T049Jy02ODYtc21hbGwnIExPQ0FMVkVSU0lPTl9IRUFERVJTPScnIExPQ0FMVkVSU0lPTl9JTUFH
+RT0nLTY4Ni1zbWFsbCcgTU9EVUxFUz0nVHJ1ZScgU09VUkNFVkVSU0lPTj0nMy4xLjB+cmMyLTF+
+bmV4dDIwMTEwODE4LmRpbGVrczMnIFRZUEU9J3BsYWluJyBVUFNUUkVBTVZFUlNJT049JzMuMS4w
+LXJjMicgVkVSU0lPTj0nMy4xLjAnICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAptYWtlWzFdOiBFbnRlcmluZyBkaXJlY3Rv
+cnkgYC9tbnQvc2RiMy9saW51eC1rZXJuZWwvbGludXgtMy4xLXJjMicgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+IApybSAtcmYgJ2RlYmlhbi9idWlsZC9zb3VyY2UnICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgIApta2RpciAtcCAnZGViaWFuL2J1aWxkL3NvdXJj
+ZScgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIApj
+cCAtYWwgQ09QWUlORyBDUkVESVRTIERvY3VtZW50YXRpb24gS2J1aWxkIEtjb25maWcgTUFJTlRB
+SU5FUlMgTWFrZWZpbGUgUkVBRE1FIFJFUE9SVElORy1CVUdTIGFyY2ggYmxvY2sgY3J5cHRvIGRy
+aXZlcnMgZmlybXdhcmUgZnMgaW5jbHVkZSBpbml0IGlwYyBrZXJuZWwgbGliIG1tIG5ldCBzYW1w
+bGVzIHNjcmlwdHMgc2VjdXJpdHkgc291bmQgdG9vbHMgdXNyIHZpcnQgLmdpdGlnbm9yZSAubWFp
+bG1hcCAnZGViaWFuL2J1aWxkL3NvdXJjZScgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCmNkICdk
+ZWJpYW4vYnVpbGQvc291cmNlJzsgcHl0aG9uICcvbW50L3NkYjMvbGludXgta2VybmVsL2xpbnV4
+LTMuMS1yYzIvZGViaWFuL2Jpbi9wYXRjaC5hcHBseScgLS1vdmVyd3JpdGUtaG9tZT0nL21udC9z
+ZGIzL2xpbnV4LWtlcm5lbC9saW51eC0zLjEtcmMyL2RlYmlhbi9wYXRjaGVzJyAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgCldhcm5pbmc6IE5vIHZlcnNpb24uRGViaWFuIGZpbGUsIGFz
+c3VtaW5nIERlYmlhbiBMaW51eCAzLjEuMH5yYzIgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCjEgb3V0IG9m
+IDEgaHVuayBGQUlMRUQgLS0gc2F2aW5nIHJlamVjdHMgdG8gZmlsZSB0b29scy9wb3dlci9jcHVw
+b3dlci9kZWJ1Zy94ODZfNjQvY2VudHJpbm8tZGVjb2RlLmMucmVqICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgCjEgb3V0IG9mIDEgaHVuayBGQUlMRUQgLS0gc2F2aW5nIHJlamVj
+dHMgdG8gZmlsZSB0b29scy9wb3dlci9jcHVwb3dlci9kZWJ1Zy94ODZfNjQvcG93ZXJub3ctazgt
+ZGVjb2RlLmMucmVqCkVycm9yOiBQYXRjaCBmYWlsZWQKLS0+IFRyeSB0byBhcHBseSBiYXNlLgog
+ICgrKSBGQUlMIGxpbnV4LW5leHQvcGF0Y2gtdjMuMS1yYzItbmV4dC0yMDExMDgxOAptYWtlWzFd
+OiAqKiogW2RlYmlhbi9zdGFtcHMvc291cmNlXSBFcnJvciAxCm1ha2VbMV06IExlYXZpbmcgZGly
+ZWN0b3J5IGAvbW50L3NkYjMvbGludXgta2VybmVsL2xpbnV4LTMuMS1yYzInCm1ha2U6ICoqKiBb
+c2V0dXBfaTM4Nl9ub25lXzY4Ni1zbWFsbF9yZWFsXSBFcnJvciAyCgoKLWRpbGVrcyAvLyAxOC1B
+dWctMjAxMQoK
+--bcaec51a8c62fdce7c04aac4568f--
