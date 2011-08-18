@@ -1,47 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1HRN5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 09:57:31 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58744 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204Ab1HRN5V convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:1>);
-	Thu, 18 Aug 2011 09:57:21 -0400
-Message-Id: <4E4D36980200007800051D6E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Thu, 18 Aug 2011 14:58:16 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Tejun Heo" <tj@kernel.org>
-Cc: <mingo@elte.hu>, <stable@kernel.org>, <tglx@linutronix.de>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] i386/bigsmp: eliminate false warnings regarding
-	 logical APIC ID mismatches
-References: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
- <20110818130424.GC20085@htj.dyndns.org>
-In-Reply-To: <20110818130424.GC20085@htj.dyndns.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755629Ab1HRN6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:58:36 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:43479 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752823Ab1HRN6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 09:58:35 -0400
+Date: Thu, 18 Aug 2011 15:58:21 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v3] memcg: add nr_pages argument for hierarchical reclaim
+Message-ID: <20110818135821.GA16958@cmpxchg.org>
+References: <20110810141425.GC15007@tiehlicka.suse.cz>
+ <20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110811145055.GN8023@tiehlicka.suse.cz>
+ <20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110817113550.GA7482@tiehlicka.suse.cz>
+ <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110818062722.GB23056@tiehlicka.suse.cz>
+ <20110818154259.6b4adf09.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110818074602.GD23056@tiehlicka.suse.cz>
+ <20110818125754.GA14015@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110818125754.GA14015@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 18.08.11 at 15:04, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Aug 18, 2011 at 01:54:44PM +0100, Jan Beulich wrote:
->> Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
->> will get removed again, as Tehun says ought to be possible) by
->> overriding the previously stored values at the point where the APIC
->> driver gets overridden.
+On Thu, Aug 18, 2011 at 02:57:54PM +0200, Michal Hocko wrote:
+> I have just realized that num_online_nodes should be much better than
+> MAX_NUMNODES. 
+> Just for reference, the patch is based on top of
+> https://lkml.org/lkml/2011/8/9/82 (it doesn't depend on it but it also
+> doesn't make much sense without it)
 > 
-> Hmmm... how about just removing the WARN_ON() in setup_local_APIC()?
-> We already don't depend on the value so just overriding it isn't
-> dangerous at all.
+> Changes since v2:
+> - use num_online_nodes rather than MAX_NUMNODES
+> Changes since v1:
+> - reclaim nr_nodes * SWAP_CLUSTER_MAX in mem_cgroup_force_empty
+> ---
+> From: Michal Hocko <mhocko@suse.cz>
+> Subject: memcg: add nr_pages argument for hierarchical reclaim
+> 
+> Now that we are doing memcg direct reclaim limited to nr_to_reclaim
+> pages (introduced by "memcg: stop vmscan when enough done.") we have to
+> be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
+> most callers but it might cause failures for limit resize or force_empty
+> code paths on big NUMA machines.
 
-I was not able to prove for myself that all of the uses of
-early_per_cpu(x86_cpu_to_logical_apicid, ...) are actually only
-possible to be hit after setup_local_APIC(), so I can't really
-propose a patch like this.
+The limit resizing path retries as long as reclaim makes progress, so
+this is just handwaving.
 
-Jan
+After Kame's patch, the force-empty path has an increased risk of
+failing to move huge pages to the parent, because it tries reclaim
+only once.  This could need further evaluation, and possibly a fix.
+But instead:
 
+> @@ -2331,8 +2331,14 @@ static int mem_cgroup_do_charge(struct m
+>  	if (!(gfp_mask & __GFP_WAIT))
+>  		return CHARGE_WOULDBLOCK;
+>  
+> +	/*
+> +	 * We are lying about nr_pages because we do not want to
+> +	 * reclaim too much for THP pages which should rather fallback
+> +	 * to small pages.
+> +	 */
+>  	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+> -					      gfp_mask, flags, NULL);
+> +					      gfp_mask, flags, NULL,
+> +					      1);
+>  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+>  		return CHARGE_RETRY;
+>  	/*
+
+You tell it to reclaim _less_ than before, further increasing the risk
+of failure...
+
+> @@ -2350,7 +2351,7 @@ unsigned long try_to_free_mem_cgroup_pag
+>  		.may_writepage = !laptop_mode,
+>  		.may_unmap = 1,
+>  		.may_swap = !noswap,
+> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> +		.nr_to_reclaim = max_t(unsigned long, nr_pages, SWAP_CLUSTER_MAX),
+
+...but wait, this transparently fixes it up and ignores the caller's
+request.
+
+Sorry, but this is just horrible!
+
+For the past weeks I have been chasing memcg bugs that came in with
+sloppy and untested code, that was merged for handwavy reasons.
+
+Changes to algorithms need to be tested and optimizations need to be
+quantified in other parts of the VM and the kernel, too.  I have no
+idea why this doesn't seem to apply to the memory cgroup subsystem.
