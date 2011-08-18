@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab1HRRCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 13:02:05 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39880 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab1HRRCD convert rfc822-to-8bit (ORCPT
+	id S1752167Ab1HRRCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 13:02:46 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41975 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab1HRRCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 13:02:03 -0400
-Subject: Re: [PATCH] irq: always set IRQF_ONESHOT if no primary handler is specified
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-In-Reply-To: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
-Date: Thu, 18 Aug 2011 20:01:58 +0300
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        mporter@ti.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com>
-References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 18 Aug 2011 13:02:44 -0400
+Date: Thu, 18 Aug 2011 13:04:08 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: "J. R. Okajima" <hooanon05@yahoo.co.jp>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org
+Subject: Re: Kernel 3.0: Instant kernel crash when mounting CIFS (also
+ crashes with linux-3.1-rc2
+Message-ID: <20110818130408.71c55b96@barsoom.rdu.redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+References: <alpine.DEB.2.02.1108150506310.7571@p34.internal.lan>
+	<alpine.LNX.2.00.1108151117480.19668@swampdragon.chaosbits.net>
+	<20110815064734.403b630f@corrin.poochiereds.net>
+	<alpine.DEB.2.02.1108150653200.7571@p34.internal.lan>
+	<alpine.DEB.2.02.1108151357200.32349@p34.internal.lan>
+	<alpine.DEB.2.02.1108171515050.5877@p34.internal.lan>
+	<3300.1313637592@jrobl>
+	<alpine.DEB.2.02.1108180632000.10458@p34.internal.lan>
+	<alpine.DEB.2.02.1108180807070.7903@p34.internal.lan>
+	<alpine.DEB.2.02.1108180821440.7903@p34.internal.lan>
+	<20110818091140.385a9455@barsoom.rdu.redhat.com>
+	<alpine.DEB.2.02.1108180914180.7903@p34.internal.lan>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Thu, 18 Aug 2011 09:15:36 -0400 (EDT)
+Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
 
-Let me report that with this change Beagle board fails to boot,
-hangs right on rootfs mount.
+> 
+> 
+> On Thu, 18 Aug 2011, Jeff Layton wrote:
+> 
+> > On Thu, 18 Aug 2011 08:22:44 -0400 (EDT)
+> > Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+> >
+> >> Justin.
+> >>
+> >
+> > To be clear -- incoming in this case is reads or writes?
+> Reading from the CIFS share (Windows 7).
+> 
+> >
+> > Up until 3.0 cifs.ko didn't parallelize writes from a single thread. In
+> > 3.0 I added a patchset to increase the allowable wsize and to allow the
+> > kernel to issue writes in parallel.
+> Ahh, good to know, have not tried writes yet.
+> 
+> >
+> > Reads still suffer from the same problem however. I'm working on a
+> > patchset that should do the same thing for them, but it requires a
+> > fairly substantial overhaul of the receive codepaths.
+> Ok, that explains it then, thanks.
+> 
+> One other item, the rsync is currently running, what does mean/what option
+> would fix it/make the error go away?
+> 
+> [ 3730.897554] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3755.727255] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3760.509489] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3760.786650] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3762.854706] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3763.052163] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3764.962962] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3765.460372] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3765.855425] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3767.677672] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3781.958450] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3800.493896] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3805.911191] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3806.121384] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3817.356127] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3825.148050] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3833.687886] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3834.199746] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3834.448342] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3866.848508] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3867.126729] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3868.428427] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3872.206396] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3872.812745] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3877.655580] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3880.718684] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3880.769545] CIFS VFS: did not end path lookup where expected namelen is 0
+> [ 3882.026917] CIFS VFS: did not end path lookup where expected namelen is 0
+> 
+> Justin.
+> 
 
-Users of BB should revert this until the offending driver(s) are fixed.
+I've sent a patch to Steve to turn those printk's into debug messages
+for 3.1 and it should make its way there soon. It should be safe to
+ignore them in the meantime.
 
-Regards
+In fact, that patch should probably go to 3.0-stable as well. Steve can
+you add the 'Cc: stable@kernel.org' line to that patch?
 
--- Pantelis
-
-On Jul 7, 2011, at 11:32 PM, Sebastian Andrzej Siewior wrote:
-
-> If no primary handler is specified then a default one is assigned which
-> always returns IRQ_WAKE_THREAD. This handler requires the IRQF_ONESHOT
-> flag on LEVEL / EIO typed irqs because the source of interrupt is not
-> disabled.
-> Since it is required for those users and there is no difference for others
-> it makes sense to add this flag unconditionally.
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
-> A quick grep shows that drivers/staging/iio/adc/ad7816.c is the only
-> driver in tree doing it wrong i.e. request_threaded_irq with
-> IRQF_TRIGGER_{LOW|HIGH} but without ONEHOST.
-> 
-> There are 59 users in tree which request an edge typed interrupt. 24 of
-> them specify the ONEHOST flag the others don't. Both variants are valid
-> and identical but a consistent behavior would be nice.
-> 
-> There is a total of 134 users and 87 specify the irq type directly. For
-> the remaining 47 the type depends on initial configuration of the irq chip
-> or it might be specified via the device tree, dunno. 
-> Should that patch be accepted I suggest to remove the ONESHOT flag from
-> every request_th.* which uses NULL as the primary handler so we have a
-> consistent behavior here.
-> 
-> kernel/irq/manage.c |    1 +
-> 1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 0a7840ae..3f9cd47 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -1322,6 +1322,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
-> 		if (!thread_fn)
-> 			return -EINVAL;
-> 		handler = irq_default_primary_handler;
-> +		irqflags |= IRQF_ONESHOT;
-> 	}
-> 
-> 	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
-> -- 
-> 1.7.4.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Jeff Layton <jlayton@samba.org>
