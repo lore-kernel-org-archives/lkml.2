@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab1HROZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 10:25:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56110 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755231Ab1HROZD (ORCPT
+	id S1755611Ab1HRO1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 10:27:19 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:63080 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab1HRO1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 10:25:03 -0400
-Date: Thu, 18 Aug 2011 09:25:00 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-Message-ID: <20110818142500.GC28313@thinkpad-t410>
-Mail-Followup-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-	Eric Piel <E.A.B.Piel@tudelft.nl>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	Chase Douglas <chase.douglas@canonical.com>,
-	Henrik Rydberg <rydberg@euromail.se>,
-	Alessandro Rubini <rubini@cvml.unipv.it>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
- <20110818135853.GA28313@thinkpad-t410>
+	Thu, 18 Aug 2011 10:27:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818135853.GA28313@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com>
+References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com>
+ <CAK1hOcN7q=F=UV=aCAsVOYO=Ex34X0tbwLHv9BkYkA=ik7G13w@mail.gmail.com>
+ <1313075625.50520.YahooMailNeo@web111715.mail.gq1.yahoo.com>
+ <201108111938.25836.vda.linux@googlemail.com> <CAG1a4rsO7JDqmYiwyxPrAHdLNbJt+wqymSzU9i1dv5w5C2OFog@mail.gmail.com>
+ <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com>
+From: Pavel Ivanov <paivanof@gmail.com>
+Date: Thu, 18 Aug 2011 10:26:47 -0400
+Message-ID: <CAG1a4rus+VVhhB3ayuDF2pCQDusLekGOAxf33+u_uzxC1yz1MA@mail.gmail.com>
+Subject: Re: running of out memory => kernel crash
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Mahmood Naderan <nt_mahmood@yahoo.com>,
+        David Rientjes <rientjes@google.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
+        "\"linux-mm@kvack.org\"" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 08:58:53AM -0500, Seth Forshee wrote:
-> The case 3 code is nearly identical to case 2. How about this?
-> 
-> 	case 2:
-> 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-> 		/* fall through */
-> 
-> 	case 3:
-> 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-> 		/* range of pressure and width is the same as v2 */
-> 		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
-> 				     ETP_PMAX_V2, 0, 0);
-> 		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
-> 				     ETP_WMAX_V2, 0, 0);
-> 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> 		input_mt_init_slots(dev, 2);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-> 		break;
+On Thu, Aug 18, 2011 at 8:44 AM, Denys Vlasenko
+<vda.linux@googlemail.com> wrote:
+>> I have a little concern about this explanation of yours. Suppose we
+>> have some amount of more or less actively executing processes in the
+>> system. Suppose they started to use lots of resident memory. Amount of
+>> memory they use is less than total available physical memory but when
+>> we add total size of code for those processes it would be several
+>> pages more than total size of physical memory. As I understood from
+>> your explanation in such situation one process will execute its time
+>> slice, kernel will switch to other one, find that its code was pushed
+>> out of RAM, read it from disk, execute its time slice, switch to next
+>> process, read its code from disk, execute and so on. So system will be
+>> virtually unusable because of constantly reading from disk just to
+>> execute next small piece of code. But oom will never be firing in such
+>> situation. Is my understanding correct?
+>
+> Yes.
+>
+>> Shouldn't it be considered as an unwanted behavior?
+>
+> Yes. But all alternatives (such as killing some process) seem to be worse.
 
-Sorry, that should have been:
+Could you elaborate on this? We have a completely unusable server
+which can be revived only by hard power cycling (administrators won't
+be able to log in because sshd and shell will fall victims of the same
+unending disk reading). And as an alternative we can kill some process
+and at least allow administrator to log in and check if something else
+can be done to make server feel better. Why is it worse?
 
-	case 2:
-		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-		/* fall through */
+I understand that it could be very hard to detect such situation but
+at least it's worth trying I think.
 
-	case 3:
-		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-		if (etd->reports_pressure) {
-			input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
-					     ETP_PMAX_V2, 0, 0);
-			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
-					     ETP_WMAX_V2, 0, 0);
-		}
-		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-		input_mt_init_slots(dev, 2);
-		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-		break;
+
+Pavel
