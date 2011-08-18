@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab1HQX76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 19:59:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38936 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab1HQX7z (ORCPT
+	id S1752853Ab1HRATA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:19:00 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:42129 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab1HRAS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 19:59:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Aug 2011 08:52:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Wed, 17 Aug 2011 20:18:59 -0400
+Message-ID: <4E4C5A5F.2090709@micron.com>
+Date: Wed, 17 Aug 2011 18:18:39 -0600
+From: Asai Thambi S P <asamymuthupa@micron.com>
+Reply-To: <asamymuthupa@micron.com>
+Organization: Micron
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Moyer <jmoyer@redhat.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v5 2/6]  memcg: stop vmscan when enough done.
-Message-Id: <20110818085233.69dbf23b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110817113550.GA7482@tiehlicka.suse.cz>
-References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110809190933.d965888b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110810141425.GC15007@tiehlicka.suse.cz>
-	<20110811085252.b29081f1.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110811145055.GN8023@tiehlicka.suse.cz>
-	<20110817095405.ee3dcd74.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110817113550.GA7482@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        Jeff Garzik <jgarzik@pobox.com>, Christoph Hellwig <hch@infradead.org>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>
+Subject: Re: [PATCH v3 2/3] drivers/block/mtip32xx: Adding source for hardware
+  related operations
+References: <22A973199D2C2F46933448F6E7990A3002C80026@ntxboimbx31.micron.com> <4E44E782.7090309@fusionio.com>
+In-Reply-To: <4E44E782.7090309@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.30.125]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.500.1024-18254.002
+X-TM-AS-Result: No--15.076600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Aug 2011 13:35:50 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Wed 17-08-11 09:54:05, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 11 Aug 2011 16:50:55 +0200
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > What about this (just compile tested)?
-> > > --- 
-> > > From: Michal Hocko <mhocko@suse.cz>
-> > > Subject: memcg: add nr_pages argument for hierarchical reclaim
-> > > 
-> > > Now that we are doing memcg direct reclaim limited to nr_to_reclaim
-> > > pages (introduced by "memcg: stop vmscan when enough done.") we have to
-> > > be more careful. Currently we are using SWAP_CLUSTER_MAX which is OK for
-> > > most callers but it might cause failures for limit resize or force_empty
-> > > code paths on big NUMA machines.
-> > > 
-> > > Previously we might have reclaimed up to nr_nodes * SWAP_CLUSTER_MAX
-> > > while now we have it at SWAP_CLUSTER_MAX. Both resize and force_empty rely
-> > > on reclaiming a certain amount of pages and retrying if their condition is
-> > > still not met.
-> > > 
-> > > Let's add nr_pages argument to mem_cgroup_hierarchical_reclaim which will
-> > > push it further to try_to_free_mem_cgroup_pages. We still fall back to
-> > > SWAP_CLUSTER_MAX for small requests so the standard code (hot) paths are not
-> > > affected by this.
-> > > 
-> > > Open questions:
-> > > - Should we care about soft limit as well? Currently I am using excess
-> > >   number of pages for the parameter so it can replace direct query for
-> > >   the value in mem_cgroup_hierarchical_reclaim but should we push it to
-> > >   mem_cgroup_shrink_node_zone?
-> > >   I do not think so because we should try to reclaim from more groups in the
-> > >   hierarchy and also it doesn't get to shrink_zones which has been modified
-> > >   by the previous patch.
-> > 
-> > 
-> > 
-> > > - mem_cgroup_force_empty asks for reclaiming all pages. I guess it should be
-> > >   OK but will have to think about it some more.
-> > 
-> > force_empty/rmdir() is allowed to be stopped by Ctrl-C. I think passing res->usage
-> > is overkilling.
+On 8/12/2011 2:42 AM, Jens Axboe wrote:
+>> +/*
+>> + * Obtain an empty command slot.
+>> + *
+>> + * This function needs to be reentrant since it could be called
+>> + * at the same time on multiple CPUs. The allocation of the
+>> + * command slot must be atomic.
+>> + *
+>> + * @port Pointer to the port data structure.
+>> + *
+>> + * return value
+>> + *     >= 0    Index of command slot obtained.
+>> + *     -1      No command slots available.
+>> + */
+>> +static int get_slot(struct mtip_port *port)
+>> +{
+>> +       int slot, i;
+>> +       unsigned int num_command_slots = port->dd->slot_groups * 32;
+>> +
+>> +       /*
+>> +        * Try 10 times, because there is a small race here.
+>> +        *  that's ok, because it's still cheaper than a lock.
+>> +        */
 > 
-> So, how many pages should be reclaimed then?
+> Might want to expand on what that race is.
+
+find_next_zero_bit and test_and_set, in order, could be executed in
+different process contexts in different processor. So both(2 or more)
+contexts could land in choosing the same bit, but test_and_set will
+succeed only for one. The failing contexts will try to get the next bit
+in subsequent retries. This operation is cheaper than a lock.
+
+This procedure is protected under the counting semaphore, so there is a
+slot request for every context that calls this routine.
+
+Is there an equivalent of doing find_next_zero_bit and test_and_set_bit
+atomically?
+
+
+>> +static irqreturn_t mtip_irq_handler(int irq, void *instance)
+>> +{
+>> +       struct driver_data *dd = instance;
+>> +#ifdef MTIP_USE_TASKLET
+>> +       tasklet_schedule(&dd->tasklet);
+>> +       return IRQ_HANDLED;
+>> +#else
+>> +       return mtip_handle_irq(dd);
+>> +#endif
+>> +}
 > 
+> Have you experimented with blk-iopoll?
 
-How about (1 << (MAX_ORDER-1))/loop ?
+Working on this. Believe this experiment could go in parallel to
+submission. Let us know.
 
-Thanks,
--Kame
+>> +/*
+>> + * Byte-swap ATA ID strings.
+>> + *
+>> + * ATA identify data contains strings in byte-swapped 16-bit words.
+>> + * They must be swapped (on all architectures) to be usable as C
+>> strings.
+>> + * This function swaps bytes in-place.
+>> + *
+>> + * @buf The buffer location of the string
+>> + * @len The number of bytes to swap
+>> + *
+>> + * return value
+>> + *     None
+>> + */
+>> +static inline void ata_swap_string(u16 *buf, unsigned int len)
+>> +{
+>> +       int i;
+>> +       for (i = 0; i < (len/2); i++)
+>> +               be16_to_cpus(&buf[i]);
+>> +}
+> 
+> I'm pretty sure we have the exact same thing in IDE and libata, so lets
+> put this somewhere we they can all use it.
 
+Is ata.h an appropriate location? Would it be better to make this change
+after inclusion of this driver?
+
+> 
+> Overall looks very clean. If you take care of the little things
+> mentioned by me and Christoph, I don't see anything stopping this from
+> being merged for 3.2.
+
+Appreciate your valuable feedback.
+
+-- 
+Regards,
+Asai Thambi
