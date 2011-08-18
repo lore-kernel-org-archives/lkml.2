@@ -1,88 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab1HRAdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 20:33:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47830 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751513Ab1HRAdl (ORCPT
+	id S1753143Ab1HRAny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 20:43:54 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33583 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1HRAnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 20:33:41 -0400
-Subject: Re: [Stable-review] Future of the -longterm kernel releases (i.e.
- how we pick them).
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Tim Bird <tbird20d@gmail.com>, linux-kernel@vger.kernel.org,
-        stable-review@kernel.org, tim.bird@am.sony.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable@kernel.org, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20110817045856.GB4936@kroah.com>
-References: <20110815041524.GA7578@kroah.com>
-	 <CA+bK7J7_EKdQACnoJGWkd4asH+096SJ-gjEvsnjmRX6Dmc6dpA@mail.gmail.com>
-	 <20110817045856.GB4936@kroah.com>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-DWrGbNGI8BtaoP51zaPI"
-Date: Thu, 18 Aug 2011 01:33:34 +0100
-Message-ID: <1313627614.2799.61.camel@deadeye>
+	Wed, 17 Aug 2011 20:43:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Aug 2011 09:35:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v9 00/13] memcg: per cgroup dirty page limiting
+Message-Id: <20110818093557.7994e309.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1313597705-6093-1-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Aug 2011 09:14:52 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
---=-DWrGbNGI8BtaoP51zaPI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> This patch series provides the ability for each cgroup to have independent dirty
+> page usage limits.  Limiting dirty memory fixes the max amount of dirty (hard to
+> reclaim) page cache used by a cgroup.  This allows for better per cgroup memory
+> isolation and fewer memcg OOMs.
+> 
 
-On Tue, 2011-08-16 at 21:58 -0700, Greg KH wrote:
-> On Tue, Aug 16, 2011 at 04:01:57PM -0700, Tim Bird wrote:
-[...]
-> > One specific issue I have is support for PREEMPT_RT, so that's a big
-> > factor in selecting Sony kernel versions.  Thus, coordinating with the
-> > RT patchset kernel versions is important to me.  Currently
-> > that would mean 3.0 is a good candidate.
->=20
-> 3.0 is looking like a good candidate, but we haven't seen 3.1 yet :)
-[...]
+Thank you for your patient work!. I really want this feature.
+(Hopefully before we tune vmscan)
 
-I'm quite happy with 3.0 in terms of stability and features, though it's
-early days yet.  It's not so good for Debian in terms of timing.  We're
-not going to freeze for another 10 months, then the release will likely
-be at least 6 months after that.  The earlier a kernel release we pick
-with, the more hardware support needs to be backported later.  So,
-extrapolating the likely kernel release dates, I think I would prefer to
-use something between 3.2 and 3.4.
+I hope this patch will not have heavy HUNKs..
 
-As for the RT patchset, I haven't seen any announcement that it will
-continue to be developed against 3.0 after the release of 3.1.  Of
-course, the fact that there *is* a working RT patchset for 3.0 is an
-advancement over recent upstream releases.
-
-Ben.
+Thanks,
+-Kame
 
 
---=-DWrGbNGI8BtaoP51zaPI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> Three features are included in this patch series:
+>   1. memcg dirty page accounting
+>   2. memcg writeback
+>   3. memcg dirty page limiting
+> 
+> 
+> 1. memcg dirty page accounting
+> 
+> Each memcg maintains a dirty page count and dirty page limit.  Previous
+> iterations of this patch series have refined this logic.  The interface is
+> similar to the procfs interface: /proc/sys/vm/dirty_*.  It is possible to
+> configure a limit to trigger throttling of a dirtier or queue background
+> writeback.  The root cgroup memory.dirty_* control files are read-only and match
+> the contents of the /proc/sys/vm/dirty_* files.
+> 
+> 
+> 2. memcg writeback
+> 
+> Having per cgroup dirty memory limits is not very interesting unless writeback
+> is also cgroup aware.  There is not much isolation if cgroups have to writeback data
+> from outside the affected cgroup to get below the cgroup dirty memory threshold.
+> 
+> Per-memcg dirty limits are provided to support isolation and thus cross cgroup
+> inode sharing is not a priority.  This allows the code be simpler.
+> 
+> To add cgroup awareness to writeback, this series adds an i_memcg field to
+> struct address_space to allow writeback to isolate inodes for a particular
+> cgroup.  When an inode is marked dirty, i_memcg is set to the current cgroup.
+> When inode pages are marked dirty the i_memcg field is compared against the
+> page's cgroup.  If they differ, then the inode is marked as shared by setting
+> i_memcg to a special shared value (zero).
+> 
+> When performing per-memcg writeback, move_expired_inodes() scans the per bdi
+> b_dirty list using each inode's i_memcg and the global over-limit memcg bitmap
+> to determine if the inode should be written.  This inode scan may involve
+> skipping many unrelated inodes from other cgroup.  To test the scanning
+> overhead, I created two cgroups (cgroup_A with 100,000 dirty inodes under A's
+> dirty limit, cgroup_B with 1 inode over B's dirty limit).  The writeback code
+> then had to skip 100,000 inodes when balancing cgroup_B to find the one inode
+> that needed writing.  This scanning took 58 msec to skip 100,000 foreign inodes.
+> 
+> 
+> 3. memcg dirty page limiting
+> 
+> balance_dirty_pages() calls mem_cgroup_balance_dirty_pages(), which checks the
+> dirty usage vs dirty thresholds for the current cgroup and its parents.  As
+> cgroups exceed their background limit, they are marked in a global over-limit
+> bitmap (indexed by cgroup id) and the bdi flusher is awoke.  As a cgroup hits is
+> foreground limit, the task is throttled while performing foreground writeback on
+> inodes owned by the over-limit cgroup.  If mem_cgroup_balance_dirty_pages() is
+> unable to get below the dirty page threshold writing per-memcg inodes, then
+> downshifts to also writing shared inodes (i_memcg=0).
+> 
+> I know that there is some significant IO-less balance_dirty_pages() changes.  I
+> am not trying to derail that effort.  I have done moderate functional testing of
+> the newly proposed features.
+> 
+> The memcg aspects of this patch are pretty mature.  The writeback aspects are
+> still fairly new and need feedback from the writeback community.  These features
+> are linked, so it's not clear which branch to send the changes to (the writeback
+> development branch or mmotm).
+> 
+> Here is an example of the memcg OOM that is avoided with this patch series:
+> 	# mkdir /dev/cgroup/memory/x
+> 	# echo 100M > /dev/cgroup/memory/x/memory.limit_in_bytes
+> 	# echo $$ > /dev/cgroup/memory/x/tasks
+> 	# dd if=/dev/zero of=/data/f1 bs=1k count=1M &
+>         # dd if=/dev/zero of=/data/f2 bs=1k count=1M &
+>         # wait
+> 	[1]-  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
+> 	[2]+  Killed                  dd if=/dev/zero of=/data/f1 bs=1M count=1k
+> 
+> Changes since -v8:
+> - Reordered patches for better more readability.
+> 
+> - No longer passing struct writeback_control into memcontrol functions.  Instead
+>   the needed attributes (memcg_id, etc.) are explicitly passed in.  Therefore no
+>   more field additions to struct writeback_control.
+> 
+> - Replaced 'Andrea Righi <arighi@develer.com>' with 
+>   'Andrea Righi <andrea@betterlinux.com>' in commit descriptions.
+> 
+> - Rebased to mmotm-2011-08-02-16-19
+> 
+> Greg Thelen (13):
+>   memcg: document cgroup dirty memory interfaces
+>   memcg: add page_cgroup flags for dirty page tracking
+>   memcg: add dirty page accounting infrastructure
+>   memcg: add kernel calls for memcg dirty page stats
+>   memcg: add mem_cgroup_mark_inode_dirty()
+>   memcg: add dirty limits to mem_cgroup
+>   memcg: add cgroupfs interface to memcg dirty limits
+>   memcg: dirty page accounting support routines
+>   memcg: create support routines for writeback
+>   writeback: pass wb_writeback_work into move_expired_inodes()
+>   writeback: make background writeback cgroup aware
+>   memcg: create support routines for page writeback
+>   memcg: check memcg dirty limits in page writeback
+> 
+>  Documentation/cgroups/memory.txt  |   70 ++++
+>  fs/buffer.c                       |    2 +-
+>  fs/fs-writeback.c                 |  113 ++++--
+>  fs/inode.c                        |    3 +
+>  fs/nfs/write.c                    |    4 +
+>  fs/sync.c                         |    2 +-
+>  include/linux/cgroup.h            |    1 +
+>  include/linux/fs.h                |    9 +
+>  include/linux/memcontrol.h        |   64 +++-
+>  include/linux/page_cgroup.h       |   23 ++
+>  include/linux/writeback.h         |    9 +-
+>  include/trace/events/memcontrol.h |  207 ++++++++++
+>  kernel/cgroup.c                   |    1 -
+>  mm/backing-dev.c                  |    3 +-
+>  mm/filemap.c                      |    1 +
+>  mm/memcontrol.c                   |  760 ++++++++++++++++++++++++++++++++++++-
+>  mm/page-writeback.c               |   44 ++-
+>  mm/truncate.c                     |    1 +
+>  mm/vmscan.c                       |    5 +-
+>  19 files changed, 1265 insertions(+), 57 deletions(-)
+>  create mode 100644 include/trace/events/memcontrol.h
+> 
+> -- 
+> 1.7.3.1
+> 
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATkxd2Oe/yOyVhhEJAQoYVBAArxT7f5tOzYm0ZDxQutSGn4U0bHeRS3St
-rhl9z0pgafyhJENVyQXr+qwbHssHDUjuD0ccHjgoQR6ovwIqHQLFDzxQbXpVVFyM
-nR+3X5YpccBfyUFDgbCyCOBjKxKSPVOqYct0s2CA72EeO1mA7WxrFEQRFcCJneQX
-0lYCWtUiU34Iwuf9/pchmKBXvQx71juZA8sxl+nASECA0fWCSwYZYH39Rhtt4prE
-c7Qw7eIS74j4RI0jeFQR22Sivxh88tLo2bpv+ikq7FfyGXdcEhqdh7SFlAObsETE
-Jz6XByTdfRgJIgnAjC7nXGQmVyEOHKwCFcRu612Qn2V4PuJYGuNJlQ+DhYTRviyd
-h1sBW28qljoppIvgJxLEx1V+8coYESPrQvl5T9RUK4aFsH7pLnHzuny5lp4oNPwB
-MNtl3R7Rg3FIKXSazh3yhQ7xU5jjYpU2E+uvY9HXauYSllwmp0Gi6mbRRlv+lhJ0
-eFp53dMgQGT8CseVQDIg+8K0uYYTxQX5Vz9SGgogulES+326H0G3unv04fxE0I2C
-RHNGRSuIrkbxpalzZM0+fAdfZF86j0unI1FOLHZTHQcgxvDcJ2u8BJzaZEHg6IdY
-UjoE/C96nar9KJA7RE2O0MVZ5oVFJwaRTnihkIzouf4RZo0p9j41hs+HeGJZLqvo
-aeVPCQJFkko=
-=52Vw
------END PGP SIGNATURE-----
-
---=-DWrGbNGI8BtaoP51zaPI--
