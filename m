@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab1HRQZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 12:25:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33477 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295Ab1HRQZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 12:25:29 -0400
-Date: Thu, 18 Aug 2011 18:24:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, gregkh@suse.de
-Subject: Re: [PATCH 1/1] misc/pti.c: Fix build error when PCI is not selected
-Message-ID: <20110818162419.GA26627@kernel.org>
-References: <20110811162306.GA30710@tj-desktop>
- <20110811094520.4ee7819f.rdunlap@xenotime.net>
- <20110811165911.GA6454@tj-desktop>
+	id S1756077Ab1HRQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 12:26:01 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55943 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab1HRQZ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 12:25:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110811165911.GA6454@tj-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Thu, 18 Aug 2011 16:25:23 +0000 (UTC)
+In-Reply-To: <20110818131343.GA17473@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+	<20110818094824.GA25752@localhost>
+	<1313669702.6607.24.camel@sauron>
+	<20110818131343.GA17473@localhost>
+Date: Thu, 18 Aug 2011 21:55:58 +0530
+Message-ID: <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
+Subject: Re: [PATCH] writeback: Per-block device bdi->dirty_writeback_interval
+ and bdi->dirty_expire_interval.
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wu,
 
-* Tracey Dent <tdent48227@gmail.com> wrote:
+On Thu, Aug 18, 2011 at 6:43 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> Hi Artem,
+>
+>> Here is a real use-case we had when developing the N900 phone. We had
+>> internal flash and external microSD slot. Internal flash is soldered in
+>> and cannot be removed by the user. MicroSD, in contrast, can be removed
+>> by the user.
+>>
+>> For the internal flash we wanted long intervals and relaxed limits to
+>> gain better performance.
+>>
+>> For MicroSD we wanted very short intervals and tough limits to make sure
+>> that if the user suddenly removes his microSD (users do this all the
+>> time) - we do not lose data.
+>
+> Thinking twice about it, I find that the different requirements for
+> interval flash/external microSD can also be solved by this scheme.
+>
+> Introduce a per-bdi dirty_background_time (and optionally dirty_time)
+> as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
+> however with unit "milliseconds worth of data".
+>
+> The per-bdi dirty_background_time will be set low for external microSD
+> and high for internal flash. Then you get timely writeouts for microSD
+> and reasonably delayed writes for internal flash (controllable by the
+> global dirty_expire_centisecs).
+>
+> The dirty_background_time will actually work more reliable than
+> dirty_expire_centisecs because it will checked immediately after the
+> application dirties more pages. And the dirty_time could provide
+> strong data integrity guarantee -- much stronger than
+> dirty_expire_centisecs -- if used.
+>
+> Does that sound reasonable?
+>
+> Thanks,
+> Fengguang
+>
 
-> On Thu, Aug 11, 2011 at 09:45:20AM -0700, Randy Dunlap wrote:
-> > On Thu, 11 Aug 2011 12:23:06 -0400 Tracey Dent wrote:
-> > 
-> > > When you try to build INTEL_MID_PTI without having PCI
-> > > enabled. It fails like this-
-> > > 
-> > >  CC [M]  drivers/misc/pti.o
-> > >  drivers/misc/pti.c: In function ‘pti_pci_remove’:
-> > >  drivers/misc/pti.c:410: error: implicit declaration of function ‘pci_release_region’
-> > >  drivers/misc/pti.c: In function ‘pti_pci_probe’:
-> > >  drivers/misc/pti.c:859: error: implicit declaration of function ‘pci_request_region’
-> > > 
-> > > So make INTEL_MID_PTI depend on PCI to fix build error.
-> > 
-> > I think (hope) that Greg already has a patch like this queued.
-> > Greg- are you planning to push some patches soon?
-> > 
-> >
-> 
-> Okay, sorry for the noise then.
+My understanding of your email appears that you are agreeing in
+principle that the temporal
+aspect of this problem needs to be addressed along with your spatial
+pattern analysis technique.
 
-FYI, The fix is still not upstream, as of today's -git 
-(72ed62bdc46d):
+I feel a more generic solution to the problem is required because the
+problem faced by Artem can appear
+in a different situation for a different application.
 
-drivers/misc/pti.c:410:3: error: implicit declaration of function ‘pci_release_region’ [-Werror=implicit-function-declaration]
-drivers/misc/pti.c:859:2: error: implicit declaration of function ‘pci_request_region’ [-Werror=implicit-function-declaration]
+I can re-implement my original patch in either centiseconds or
+milliseconds as suggested by you.
+
+Kindly advise if my understanding is correct.
 
 Thanks,
-
-	Ingo
+Kautuk Consul.
