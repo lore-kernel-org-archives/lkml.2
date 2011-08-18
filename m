@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1HRFcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 01:32:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60038 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab1HRFcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 01:32:42 -0400
-Message-ID: <4E4CA3A9.2010900@cn.fujitsu.com>
-Date: Thu, 18 Aug 2011 13:31:21 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: JJ Ding <jj_ding@emc.com.tw>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S1752931Ab1HRFdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 01:33:35 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:50151 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab1HRFdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 01:33:33 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: gaowanlong@cn.fujitsu.com, Daniel Kurtz <djkurtz@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>,
         Chase Douglas <chase.douglas@canonical.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4C80A0.8090708@cn.fujitsu.com> <87d3g347ey.fsf@emc.com.tw>
-In-Reply-To: <87d3g347ey.fsf@emc.com.tw>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-18 13:31:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-18 13:31:08,
-	Serialize complete at 2011-08-18 13:31:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Subject: Re: [PATCH 5/6] Input: elantech - clean up elantech_init
+In-Reply-To: <4E4C8218.8040100@cn.fujitsu.com>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw> <CAGS+omDVn1uoU85pPN+jeHMTMp83EA13b3E8Sca0QOqDBZHQFg@mail.gmail.com> <4E4C8218.8040100@cn.fujitsu.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Thu, 18 Aug 2011 13:35:55 +0800
+Message-ID: <87aab746ys.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 01:26 PM, JJ Ding wrote:
-> Hi Wanlong Gao,
->
-> On Thu, 18 Aug 2011 11:01:52 +0800, Wanlong Gao<gaowanlong@cn.fujitsu.com>  wrote:
->> On 08/18/2011 09:57 AM, JJ Ding wrote:
->>> v3 hardware's packet format is almost identical to v2 (one/three finger touch),
->>> except when sensing two finger touch, the hardware sends 12 bytes of data.
->>>
->>> Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
->>> ---
->>>    Documentation/input/elantech.txt |  104 ++++++++++++++++--
->>>    drivers/input/mouse/elantech.c   |  218 ++++++++++++++++++++++++++++++++++---
->>>    drivers/input/mouse/elantech.h   |   11 ++
->>>    3 files changed, 303 insertions(+), 30 deletions(-)
->>>
->>> +static int determine_packet_v3(struct psmouse *psmouse)
->> elantech_check_parity_v1
->> packet_simple_check_v2
->> determine_packet_v3
->>
->> Why not consistent them?
-> OK, how do these names sound to you?
->
-> elantech_check_parity_v1
-> elantech_packet_check_v2
-> elantech_packet_check_v3
->
-> Thanks,
-> jj
+Hi Wanlong Gao, Daniel,
 
-Yeah, sounds perfectly.
+On Thu, 18 Aug 2011 11:08:08 +0800, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> On 08/18/2011 11:04 AM, Daniel Kurtz wrote:
+> > On Thu, Aug 18, 2011 at 9:57 AM, JJ Ding<jj_ding@emc.com.tw>  wrote:
+> >>   /*
+> >> + * determine hardware version and set some properties according to it.
+> >> + */
+> >> +static void elantech_set_properties(struct elantech_data *etd)
+> >> +{
+> >> +       /*
+> >> +        * Assume every version greater than 0x020030 is new EeePC style
+> >> +        * hardware with 6 byte packets, except 0x020600
+> >> +        */
+> >> +       if (etd->fw_version<  0x020030 || etd->fw_version == 0x020600)
+> >> +               etd->hw_version = 1;
+> >> +       else
+> >> +               etd->hw_version = 2;
+> >> +
+> >> +       /*
+> >> +        * Turn on packet checking by default.
+> >> +        */
+> >> +       etd->paritycheck = 1;
+> >
+> > Assuming paritycheck goes away:
+> Agree.
+I thought about removing it, too. But it occured to me that v1 and v2
+hardware can still have the sysfs entry to turn off parity check.
 
-Thanks
--Wanlong Gao
+And since it's exposed in sysfs, I suppose there might be some init
+scripts relying on it.
 
+What do you think, Dmitry?
+Shall I remove it?
+
+Thanks,
+jj
+
+> >
+> > Reviewed-by: Daniel Kurtz<djkurtz@chromium.org>
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> 
+> 
+> -- 
+> Thanks
+> Wanlong Gao
