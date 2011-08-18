@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab1HRSfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 14:35:31 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39748 "EHLO e2.ny.us.ibm.com"
+	id S1751528Ab1HRSjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 14:39:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42559 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950Ab1HRSfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 14:35:30 -0400
-Date: Thu, 18 Aug 2011 11:35:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110818183523.GD2325@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110809113514.GA27301@somewhere.redhat.com>
- <20110810124528.GC2566@zod.bos.redhat.com>
- <20110814230453.GP2650@linux.vnet.ibm.com>
- <20110815140416.GB2227@zod.bos.redhat.com>
- <20110815152052.GA2389@linux.vnet.ibm.com>
- <20110817223735.GI2227@zod.bos.redhat.com>
- <20110817224916.GO2419@linux.vnet.ibm.com>
- <20110817230219.GJ2227@zod.bos.redhat.com>
- <20110817230641.GA7837@somewhere.redhat.com>
- <20110817231750.GK2227@zod.bos.redhat.com>
+	id S1750764Ab1HRSju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 14:39:50 -0400
+Date: Thu, 18 Aug 2011 20:36:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/41] signal: Use set_current_blocked()
+Message-ID: <20110818183659.GA10353@redhat.com>
+References: <1313071035-12047-1-git-send-email-matt@console-pimps.org> <20110811160358.GA7989@redhat.com> <1313523659.3436.184.camel@mfleming-mobl1.ger.corp.intel.com> <20110817170152.GA22499@redhat.com> <1313619446.2311.52.camel@mfleming-mobl1.ger.corp.intel.com> <1313665755.2311.57.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110817231750.GK2227@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1313665755.2311.57.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 07:17:50PM -0400, Josh Boyer wrote:
-> On Thu, Aug 18, 2011 at 01:06:44AM +0200, Frederic Weisbecker wrote:
-> > On Wed, Aug 17, 2011 at 07:02:19PM -0400, Josh Boyer wrote:
-> > > On Wed, Aug 17, 2011 at 03:49:16PM -0700, Paul E. McKenney wrote:
-> > > > On Wed, Aug 17, 2011 at 06:37:35PM -0400, Josh Boyer wrote:
-> > > > > On Mon, Aug 15, 2011 at 08:20:52AM -0700, Paul E. McKenney wrote:
-> > > > > > On Mon, Aug 15, 2011 at 10:04:17AM -0400, Josh Boyer wrote:
-> > > > > > > > Please see the attached.
-> > > > > > > 
-> > > > > > > Fixed it up quickly to apply on top of -rc2 and it seems to solve the
-> > > > > > > problem nicely.  Thanks for the patch.
-> > > > > > 
-> > > > > > Good to hear!  I guess I should keep it, then.  ;-)
-> > > > > 
-> > > > > Hey Paul, were you going to send this to Linus for -rc3?  I haven't seen
-> > > > > it come across LKML yet.
-> > > > 
-> > > > I might...  But does it qualify as a regression?  That part of the
-> > > > code hasn't changed for some time now.
-> > > 
-> > > It's a fix for a problem that is newly surfaced in 3.1.  A regression,
-> > > likely not since it's been there forever, but new debugging options
-> > > uncovered it.  I'm pretty sure the -rc stage takes fixes even if they
-> > > aren't regressions.
-> > 
-> > Nope, after -rc1 only regressions fixes are taken (most of the time).
-> 
-> Sigh.
-> 
-> Look, either way I'm carrying this patch in Fedora because it fixes
-> a bug that is actually being reported by users (and by abrtd as well).
-> If you both want to wait until 3.2 to actually submit it to Linus,
-> then OK.
-> 
-> Honestly, I'm just glad we actually run with the debug options enabled
-> (which seems to be a rare thing) so bugs like this are actually found.
-> Thanks for the fix.
+On 08/18, Matt Fleming wrote:
+>
+> On Wed, 2011-08-17 at 23:17 +0100, Matt Fleming wrote:
+> >
+> > This does look like a decent clean up, especially because so many
+> > architectures got this sequence wrong in the past. But yeah, it will
+> > require me to rewrite half my series ;-)
+> >
+> > Is it worth rewriting the series? Dunno. I'm not convinced that the
+> > wrapper buys us enough for that,
 
-I am sorry, but I didn't make the rules!  And I must carry the fix
-longer as well, if that makes you feel any better.
+Oh, I am not sure too. I almost regret I mentioned this cleanup. Just
+I was a bit suprised by how many arches do this wrong. See also below.
 
-							Thanx, Paul
+> plus it'd increase the number of
+> patches.
+
+By 1. A single patch can convert the code to use set_current_blocked()
+and block_sigmask().
+
+And probably the patch which adds block_sigmask() should change arch/x86
+as well, this makes its purpose immediately clear. IOW, I'd prefer the
+patch I sent (with rename). But once again, I won't persist.
+
+> > Maybe it'd be better to do it as a separate set of patches?
+
+I don't think so... this means another series touching arch/* to
+make the very minor cleanup.
+
+> OK so, I went ahead and rewrote the series using your clean up. It's in
+> the 'oleg/set-current-blocked-v2' branch at,
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/linux-2.6.git
+>
+> Would you mind taking a quick look and see which series you prefer?
+
+No, no, no. Matt, please choose the series which _you_ prefer. You
+are the author. I am fine either way.
+
+> I resend any patches.
+
+Yes. I think you should resend the whole series in any case. Because
+I think our discussion could confuse the maintainers.
+
+
+Can I ask you to CC them all in 00/XX ? In this case I can reply
+to 00 saying that I am going to take the whole series, unless the
+maintainer want to do this. Otherwise I should reply per-arch, this
+will certainly cause the confusion.
+
+And, Matt, if I take the patch and then we have any sort of conflict,
+you will have to help me with the git problems ;) My understanding
+of git magic is quite limited.
+
+Oleg.
+
