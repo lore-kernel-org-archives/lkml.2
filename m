@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab1HRWid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 18:38:33 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39720 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754955Ab1HRWib convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 18:38:31 -0400
+	id S1755200Ab1HRWra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 18:47:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:20019 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754993Ab1HRWr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 18:47:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,247,1312182000"; 
+   d="scan'208";a="40014299"
+Date: Thu, 18 Aug 2011 15:47:13 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Amit Blay <ablay@codeaurora.org>, Hans Petter Selasky <hselasky@c2i.net>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        Amit Blay <ablay@qualcomm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to
+ devio.c
+Message-ID: <20110818224713.GA6738@xanatos>
 MIME-Version: 1.0
-In-Reply-To: <4E4D916A.2090308@boundarydevices.com>
-References: <4E457682.5020107@codeaurora.org>
-	<1313175602-21834-1-git-send-email-sboyd@codeaurora.org>
-	<CACqU3MUq5M-XPOxV=8GKyEzjEzpmdeaF+mGrXJrK+ZZxa4SdeQ@mail.gmail.com>
-	<CACqU3MXtcg_8si9WiuZngMB2C977PS4zen8_cQ9oyNtwTbt75Q@mail.gmail.com>
-	<alpine.LFD.2.00.1108172339270.20358@xanadu.home>
-	<CACqU3MUV=-hQ_y3wLPBYRh+DhLcFqneWbURNQ66UyArb5UJcxw@mail.gmail.com>
-	<20110818193132.GA28546@n2100.arm.linux.org.uk>
-	<4E4D916A.2090308@boundarydevices.com>
-Date: Thu, 18 Aug 2011 18:38:31 -0400
-Message-ID: <CACqU3MWDZueFMkruFi5M7YL4Dtd4sEye-Gc4fDhxJybN70zygg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: zImage: Skip relinking if nothing changes
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Troy Kisky <troy.kisky@boundarydevices.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kbuild@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108170906.03901.hselasky@c2i.net>
+ <a9d8b0f164cdb51e88125d8432644213.squirrel@www.codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jul 26, 2011 at 11:21:35PM -0700, Amit Blay wrote:
+> On Tue, July 19, 2011 2:12 am, Amit Blay wrote:
+> > What I have in mind is user space passing a structure holding:
+> >
+> > 1. Interface number [IN]
+> > 2. Bitmap indicating which EP to allocate streams for [IN]
+> > 3. Number of streams to allocate, one number [IN}
+> > 4. Number of streams actually allocated, one number  [OUT]
+> >
+> > The devio alloc function will double check if all EPs belong to the
+> > interface passed by the user space.
+> > Then it will call the HCI alloc function with the required number of
+> > streams. It will return the number of streams actually allocated by the
+> > HCD. Items 3 & 4 can be merged to one IN/OUT parameter.
+> >
+> > No error checking will be done in devio for number of required streams
+> > (i.e, comparing it with the reported max streams). This kind of error
+> > checking is already done by the xHCI driver.
+> >
+> > Please let me know if the solution is acceptable.
 
-On Thu, Aug 18, 2011 at 6:25 PM, Troy Kisky
-<troy.kisky@boundarydevices.com> wrote:
-> On 8/18/2011 12:31 PM, Russell King - ARM Linux wrote:
->>
->> On Thu, Aug 18, 2011 at 02:03:43PM -0400, Arnaud Lacombe wrote:
->>>
->>> Hi,
->>>
->>> On Wed, Aug 17, 2011 at 11:44 PM, Nicolas Pitre<nico@fluxnic.net>  wrote:
->>>>
->>>> On Fri, 12 Aug 2011, Arnaud Lacombe wrote:
->>>>>
->>>>> On Fri, Aug 12, 2011 at 4:48 PM, Arnaud Lacombe<lacombar@gmail.com>
->>>>>  wrote:
->>>>>>
->>>>>> On Fri, Aug 12, 2011 at 3:00 PM, Stephen Boyd<sboyd@codeaurora.org>
->>>>>>  wrote:
->>>>>>>
->>>>>>> diff --git a/arch/arm/boot/compressed/Makefile
->>>>>>> b/arch/arm/boot/compressed/Makefile
->>>>>>> index 0c74a6f..937fd26 100644
->>>>>>> --- a/arch/arm/boot/compressed/Makefile
->>>>>>> +++ b/arch/arm/boot/compressed/Makefile
->>>>>>> @@ -91,7 +91,7 @@ suffix_$(CONFIG_KERNEL_LZMA) = lzma
->>>>>>>
->>>>>>>  targets       := vmlinux vmlinux.lds \
->>>>>>>                 piggy.$(suffix_y) piggy.$(suffix_y).o \
->>>>>>> -                font.o font.c head.o misc.o $(OBJS)
->>>>>>> +                font.o font.c head.o misc.o lib1funcs.o lib1funcs.S
->>>>>>> $(OBJS)
->>>>>>>
->>>>>>>  # Make sure files are removed during clean
->>>>>>>  extra-y       += piggy.gzip piggy.lzo piggy.lzma lib1funcs.S
->>>>>>> @@ -121,9 +121,7 @@ LDFLAGS_vmlinux += -X
->>>>>>>  LDFLAGS_vmlinux += -T
->>>>>>>
->>>>>>>  # For __aeabi_uidivmod
->>>>>>> -lib1funcs = $(obj)/lib1funcs.o
->>>>>>> -
->>>>>>> -$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S FORCE
->>>>>>> +$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S
->>>>>>>        $(call cmd,shipped)
->>>>>>>
->>>>>> You should be able to avoid the extra copy altogether by doing
->>>>>> something ala:
->>>>>>
->>>>>> $(obj)/lib1funcs.o: $(srctree)/arch/arm/lib/lib1funcs.S
->>>>>>        $(call cmd,as_o_S)
->>>>>>
->>>>>> note that I also remove the $(SRCARCH), as there is no other
->>>>>> `arch/*/lib/lib1funcs.S' than `arch/arm/lib/lib1funcs.S'
->>>>>>
->>>>> I withdraw this proposal and will hack around this to find a proper
->>>>> solution from within kbuild, and eventually come back on these uses
->>>>> :-)
->>>>
->>>> Any progress on this?
->>>>
->>>> I have a patch doing multiple similar $(call cmd,shipped) at the moment
->>>> and this is far from looking nice.
->>>
->>> What is your use-case ? Is it re-use of code in a different
->>> subdirectory (use-case presented in this thread), or aliasing of the
->>> same source under different object name in the same directory (as used
->>> in the alpha tree) ?
->>
->> It is to be able to reuse the same file source file in both the main
->> kernel and the decompressor, sometimes rebuilding it with differing
->> options from the main kernel build.
->>
->> As the two environments are entirely separate, it is not always
->> appropriate to clone the previously built object file.
->>
->> Hence, we copy the source file and re-build it.
->>
->> The alternative is that we could keep two copies of the same source
->> in two different locations, but that's just plain idiotic just to
->> satisfy some silly kbuild restriction.
->>
-> Can the second file just contain a "#include " of the 1st?
->
-<personal opinion>
-Sorry, but it'd taste awfully disgusting, and broken.
-<personal opinion/>
+Yes, I think this is the correct solution.  Sorry for taking so long to
+get back to you.
 
- - Arnaud
+
+On Wed, Aug 17, 2011 at 09:06:03AM +0200, Hans Petter Selasky wrote:
+> I'm looking into implementing USB 3.0 streams support for FreeBSD and would 
+> like to have a solution in Linux which is not too far apart, also regarding 
+> API's for userspace.
+> 
+> I would suggest overloading the "unsigned int pipe", instead of breaking 
+> existing API's by adding a new stream ID value. Also for LibUSB.
+> 
+> ./linux/usb.h:  unsigned int pipe;              /* (in) pipe information */
+
+I think this gets very close to breaking current API for usbfs.  What
+happens if some application is putting garbage in the upper bits of the
+pipe?  A libusb application that worked before will break because the
+USB core will reject the endpoint as not having streams enabled.  So I
+think it's better to have a new IOCTL for submitting URBs to endpoints
+with streams enabled, as Alan suggested:
+
+http://marc.info/?l=linux-kernel&m=130832352124932&w=2
+
+> As per definition there are 15 bits available for "pipe". I think it is not 
+> important to support more than 255 streams in the first go, hence I see no 
+> real applications that would benefit from that many streams yet.
+
+I don't see this as a strong argument why we should arbitrarily limit a
+new API.  It's very hard to deprecate kernel to userspace API, so I
+think we should do it right the first time.  There are current
+applications (like an SSD behind a UAS device) that need as many
+concurrent streams in flight as possible, so I don't buy the argument
+that there aren't current applications that need that many streams.
+
+I don't want to limit future applications of streams without a very good
+reason.  I would like to see the new API allow userspace to submit URBs
+for stream IDs up to the maximum limit specified by the USB 3.0 spec
+(65,533 streams).
+
+Why do you think reusing the pipe variable would be a better solution?
+You're going to need a new IOCTL to enable streams anyway, so why not
+also have a new IOCTL for submitting an URB to an endpoint with streams
+enabled?
+
+> #define usb_pipeendpoint(pipe)  (((pipe) >> 15) & 0xf)
+> 
+> Then I suggest a new function/IOCTL in libusb which can be used to switch 
+> on/off streams on a given endpoint. This is something which would need to be 
+> done before submitting any URB's on that endpoint. And would be similar to the 
+> clear-stall case.
+
+Amit was discussing such an IOCTL.  The problem is you just can't turn
+streams "on and off".  The xHCI driver has to have an indication of how
+many streams your application will need.  That's why Amit's proposal
+included a way for the application to pass in the number of streams to
+allocate.
+
+> If an URB is submitted on a stream when streams are disabled then it should 
+> just fail and vice versa.
+
+That code is already included in the xHCI driver, and usbfs shouldn't do
+any checking of the stream ID for the URB, since it's already in the
+lower level driver.
+
+Sarah Sharp
