@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1HRTYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:24:43 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:33589 "EHLO mx1.fusionio.com"
+	id S1752732Ab1HRT0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:26:31 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:33823 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab1HRTYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:24:42 -0400
-X-ASG-Debug-ID: 1313695481-03d6a510a62edac0001-xx1T2L
+	id S1751986Ab1HRT03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 15:26:29 -0400
+X-ASG-Debug-ID: 1313695588-03d6a5412c11640001-xx1T2L
 X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E4D66F3.60402@fusionio.com>
-Date: Thu, 18 Aug 2011 21:24:35 +0200
+Message-ID: <4E4D675D.50803@fusionio.com>
+Date: Thu, 18 Aug 2011 21:26:21 +0200
 From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Lukas Czerner <lczerner@redhat.com>
-CC: Milan Broz <mbroz@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Lukas Czerner <lczerner@redhat.com>, Milan Broz <mbroz@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "achender@linux.vnet.ibm.com" <achender@linux.vnet.ibm.com>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>
 Subject: Re: [PATCH] loop: add discard support for loop devices
-References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com> <4E4D610D.9010701@redhat.com> <alpine.LFD.2.00.1108182104390.22042@dhcp-27-109.brq.redhat.com> <4E4D641E.5030100@fusionio.com> <alpine.LFD.2.00.1108182119270.22042@dhcp-27-109.brq.redhat.com>
+References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com> <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com> <4E4D610D.9010701@redhat.com> <alpine.LFD.2.00.1108182104390.22042@dhcp-27-109.brq.redhat.com> <4E4D641E.5030100@fusionio.com> <x49r54ir0a9.fsf@segfault.boston.devel.redhat.com>
 X-ASG-Orig-Subj: Re: [PATCH] loop: add discard support for loop devices
-In-Reply-To: <alpine.LFD.2.00.1108182119270.22042@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <x49r54ir0a9.fsf@segfault.boston.devel.redhat.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1313695481
+X-Barracuda-Start-Time: 1313695588
 X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
 X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
 X-Barracuda-Spam-Score: -2.02
@@ -37,8 +37,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-18 21:20, Lukas Czerner wrote:
-> On Thu, 18 Aug 2011, Jens Axboe wrote:
+On 2011-08-18 21:23, Jeff Moyer wrote:
+> Jens Axboe <jaxboe@fusionio.com> writes:
 > 
 >> On 2011-08-18 21:08, Lukas Czerner wrote:
 >>> On Thu, 18 Aug 2011, Milan Broz wrote:
@@ -81,19 +81,23 @@ On 2011-08-18 21:20, Lukas Czerner wrote:
 >> It's not a bizarre use case at all, so would be nice to support like we
 >> support anything else over a bdev as well. Your patch should not break
 >> it, so looks fine.
->>
+> 
+> C'mon... it's bizarre!  Loopback mounting a block device, to make it
+> look like a block device?  Anyway...
+
+I take it you've never done that, I have :-). The --offset thing is kind
+of handy. Besides, loop on bdev has been in existance since forever. So
+I'd consider it core functionality of the driver, even if it's usually
+used on a file.
+
 >> Shall we queue it up for 3.2? It's a good way to beat on fs discard
 >> support, fio could be easily configured for that.
->>
 > 
-> That would be great, thanks!
+> Fine by me.
+> 
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-Alright, lets do that.
-
-> Btw I am not sure what do you mean by "beat on fs discard support" :).
-
-Perhaps worded a bit weird, what I mean was "thoroughly exercise and
-test file system discard support" :-)
+Added, thanks.
 
 -- 
 Jens Axboe
