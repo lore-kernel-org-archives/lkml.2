@@ -1,71 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241Ab1HRHmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 03:42:36 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:47551 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab1HRHmf (ORCPT
+	id S1755275Ab1HRHna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 03:43:30 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43105 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab1HRHn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 03:42:35 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: gaowanlong@cn.fujitsu.com, Daniel Kurtz <djkurtz@chromium.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 5/6] Input: elantech - clean up elantech_init
-In-Reply-To: <20110818060038.GA10093@core.coreip.homeip.net>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw> <CAGS+omDVn1uoU85pPN+jeHMTMp83EA13b3E8Sca0QOqDBZHQFg@mail.gmail.com> <4E4C8218.8040100@cn.fujitsu.com> <87aab746ys.fsf@emc.com.tw> <20110818060038.GA10093@core.coreip.homeip.net>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Thu, 18 Aug 2011 15:44:46 +0800
-Message-ID: <87ty9f2mfl.fsf@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 18 Aug 2011 03:43:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Aug 2011 16:35:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v9 11/13] writeback: make background writeback cgroup
+ aware
+Message-Id: <20110818163552.f525225c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr93hb5ftbhy.fsf@gthelen.mtv.corp.google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+	<1313597705-6093-12-git-send-email-gthelen@google.com>
+	<20110818102344.110829ce.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93r54jtcsf.fsf@gthelen.mtv.corp.google.com>
+	<20110818161751.9be5f1f9.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93hb5ftbhy.fsf@gthelen.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Thu, 18 Aug 2011 00:38:49 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-On Wed, 17 Aug 2011 23:00:38 -0700, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Thu, Aug 18, 2011 at 01:35:55PM +0800, JJ Ding wrote:
-> > Hi Wanlong Gao, Daniel,
-> > 
-> > On Thu, 18 Aug 2011 11:08:08 +0800, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-> > > On 08/18/2011 11:04 AM, Daniel Kurtz wrote:
-> > > >
-> > > > Assuming paritycheck goes away:
-> > > Agree.
-> > I thought about removing it, too. But it occured to me that v1 and v2
-> > hardware can still have the sysfs entry to turn off parity check.
-> > 
-> > And since it's exposed in sysfs, I suppose there might be some init
-> > scripts relying on it.
-> > 
-> > What do you think, Dmitry?
-> > Shall I remove it?
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 > 
-> No, we should not remove it, since it is useful for V1 hardware which we
-> still support.
+> > On Thu, 18 Aug 2011 00:10:56 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
+> >
+> >> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> >> 
+> >> > On Wed, 17 Aug 2011 09:15:03 -0700
+> >> > Greg Thelen <gthelen@google.com> wrote:
+> >> >
+> >> >> When the system is under background dirty memory threshold but some
+> >> >> cgroups are over their background dirty memory thresholds, then only
+> >> >> writeback inodes associated with the over-limit cgroups.
+> >> >> 
+> >> >> In addition to checking if the system dirty memory usage is over the
+> >> >> system background threshold, over_bground_thresh() now checks if any
+> >> >> cgroups are over their respective background dirty memory thresholds.
+> >> >> 
+> >> >> If over-limit cgroups are found, then the new
+> >> >> wb_writeback_work.for_cgroup field is set to distinguish between system
+> >> >> and memcg overages.  The new wb_writeback_work.shared_inodes field is
+> >> >> also set.  Inodes written by multiple cgroup are marked owned by
+> >> >> I_MEMCG_SHARED rather than a particular cgroup.  Such shared inodes
+> >> >> cannot easily be attributed to a cgroup, so per-cgroup writeback
+> >> >> (futures version of wakeup_flusher_threads and balance_dirty_pages)
+> >> >> performs suboptimally in the presence of shared inodes.  Therefore,
+> >> >> write shared inodes when performing cgroup background writeback.
+> >> >> 
+> >> >> If performing cgroup writeback, move_expired_inodes() skips inodes that
+> >> >> do not contribute dirty pages to the cgroup being written back.
+> >> >> 
+> >> >> After writing some pages, wb_writeback() will call
+> >> >> mem_cgroup_writeback_done() to update the set of over-bg-limits memcg.
+> >> >> 
+> >> >> This change also makes wakeup_flusher_threads() memcg aware so that
+> >> >> per-cgroup try_to_free_pages() is able to operate more efficiently
+> >> >> without having to write pages of foreign containers.  This change adds a
+> >> >> mem_cgroup parameter to wakeup_flusher_threads() to allow callers,
+> >> >> especially try_to_free_pages() and foreground writeback from
+> >> >> balance_dirty_pages(), to specify a particular cgroup to write inodes
+> >> >> from.
+> >> >> 
+> >> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> >> ---
+> >> >> Changelog since v8:
+> >> >> 
+> >> >> - Added optional memcg parameter to __bdi_start_writeback(),
+> >> >>   bdi_start_writeback(), wakeup_flusher_threads(), writeback_inodes_wb().
+> >> >> 
+> >> >> - move_expired_inodes() now uses pass in struct wb_writeback_work instead of
+> >> >>   struct writeback_control.
+> >> >> 
+> >> >> - Added comments to over_bground_thresh().
+> >> >> 
+> >> >>  fs/buffer.c               |    2 +-
+> >> >>  fs/fs-writeback.c         |   96 +++++++++++++++++++++++++++++++++-----------
+> >> >>  fs/sync.c                 |    2 +-
+> >> >>  include/linux/writeback.h |    6 ++-
+> >> >>  mm/backing-dev.c          |    3 +-
+> >> >>  mm/page-writeback.c       |    3 +-
+> >> >>  mm/vmscan.c               |    3 +-
+> >> >>  7 files changed, 84 insertions(+), 31 deletions(-)
+> >> >> 
+> >> >> diff --git a/fs/buffer.c b/fs/buffer.c
+> >> >> index dd0220b..da1fb23 100644
+> >> >> --- a/fs/buffer.c
+> >> >> +++ b/fs/buffer.c
+> >> >> @@ -293,7 +293,7 @@ static void free_more_memory(void)
+> >> >>  	struct zone *zone;
+> >> >>  	int nid;
+> >> >>  
+> >> >> -	wakeup_flusher_threads(1024);
+> >> >> +	wakeup_flusher_threads(1024, NULL);
+> >> >>  	yield();
+> >> >>  
+> >> >>  	for_each_online_node(nid) {
+> >> >> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> >> >> index e91fb82..ba55336 100644
+> >> >> --- a/fs/fs-writeback.c
+> >> >> +++ b/fs/fs-writeback.c
+> >> >> @@ -38,10 +38,14 @@ struct wb_writeback_work {
+> >> >>  	struct super_block *sb;
+> >> >>  	unsigned long *older_than_this;
+> >> >>  	enum writeback_sync_modes sync_mode;
+> >> >> +	unsigned short memcg_id;	/* If non-zero, then writeback specified
+> >> >> +					 * cgroup. */
+> >> >>  	unsigned int tagged_writepages:1;
+> >> >>  	unsigned int for_kupdate:1;
+> >> >>  	unsigned int range_cyclic:1;
+> >> >>  	unsigned int for_background:1;
+> >> >> +	unsigned int for_cgroup:1;	/* cgroup writeback */
+> >> >> +	unsigned int shared_inodes:1;	/* write inodes spanning cgroups */
+> >> >>  
+> >> >>  	struct list_head list;		/* pending work list */
+> >> >>  	struct completion *done;	/* set if the caller waits */
+> >> >> @@ -114,9 +118,12 @@ static void bdi_queue_work(struct backing_dev_info *bdi,
+> >> >>  	spin_unlock_bh(&bdi->wb_lock);
+> >> >>  }
+> >> >>  
+> >> >> +/*
+> >> >> + * @memcg is optional.  If set, then limit writeback to the specified cgroup.
+> >> >> + */
+> >> >>  static void
+> >> >>  __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+> >> >> -		      bool range_cyclic)
+> >> >> +		      bool range_cyclic, struct mem_cgroup *memcg)
+> >> >>  {
+> >> >>  	struct wb_writeback_work *work;
+> >> >>  
+> >> >> @@ -136,6 +143,8 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+> >> >>  	work->sync_mode	= WB_SYNC_NONE;
+> >> >>  	work->nr_pages	= nr_pages;
+> >> >>  	work->range_cyclic = range_cyclic;
+> >> >> +	work->memcg_id = memcg ? css_id(mem_cgroup_css(memcg)) : 0;
+> >> >> +	work->for_cgroup = memcg != NULL;
+> >> >>  
+> >> >
+> >> >
+> >> > I couldn't find a patch for mem_cgroup_css(NULL). Is it in patch 1-10 ?
+> >> > Other parts seems ok to me.
+> >> >
+> >> >
+> >> > Thanks,
+> >> > -Kame
+> >> 
+> >> Mainline commit d324236b3333e87c8825b35f2104184734020d35 adds
+> >> mem_cgroup_css() to memcontrol.c.  The above code does not call
+> >> mem_cgroup_css() with a NULL parameter due to the 'memcg ? ...' check.
+> >> So I do not think any additional changes to mem_cgroup_css() are needed.
+> >> Am I missing your point?
+> >> 
+> >
+> > I thought you need
+> > ==
+> > struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem)
+> > {
+> > +	if (!mem)
+> > +		return NULL;
+> >        return &mem->css;
+> > }
+> > ==
+> > And
+> > ==
+> > unsigned short css_id(struct cgroup_subsys_state *css)
+> > {
+> >         struct css_id *cssid;
+> >
+> > +	if (!css)
+> > 		return 0;
+> > }
+> > ==
+> >
+> > Thanks,
+> > -Kame
 > 
-> How confident are we in the V2/V3 checking not tripping on valid packets?
+> I think that your changes to mem_cgroup_css() and css_id() are
+> unnecessary for my patches because my patches do not call
+> mem_cgroup_css(NULL).  The "?" check below prevents NULL from being
+> passed into mem_cgroup_css():
 > 
-> Thanks.
-With V2 it should work reasonbaly well. Although I don't have test data,
-I didn't encounter any problem turning paritycheck off when testing V2.
+> +	work->memcg_id = memcg ? css_id(mem_cgroup_css(memcg)) : 0;
+> 
 
-With V3 we use the check to distinguish first 2-finger packet and the
-second one. So it's mandatory with V3.
+Ah, I see. Thank you for clarification.
 
-Thanks
-jj
-> -- 
-> Dmitry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+Thanks,
+-Kame
+
