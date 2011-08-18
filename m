@@ -1,155 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab1HRUdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 16:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753450Ab1HRUdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 16:33:07 -0400
-Subject: Re: [PATCH] ath9k: make driver usable standalone
-From: Dan Williams <dcbw@redhat.com>
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: =?ISO-8859-1?Q?G=E1bor?= Stefanik <netrolller.3d@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+	id S1753452Ab1HRUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 16:45:09 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12956 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab1HRUpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 16:45:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=XBwX32uRAxsq8EblTFaAw34LcLeTHQclIrVAK8+Qv6V8j3hCAHN90g0blVPrhmx24
+	y0foY8/b/Ea/g5ydfsyhg==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Sergei Shtylyov" <sshtylyov@mvista.com>, "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 18 Aug 2011 15:35:22 -0500
-In-Reply-To: <CAG1a4rvqdB8y9ARQ=FckArm3UVG7=LFqF25kqYUYL0Uw7QNV8g@mail.gmail.com>
-References: <CAG1a4rt_NML2Q_Mkd+RuvLvft4D6inG7c9=s6kpAXqtAvatOBg@mail.gmail.com>
-	 <CA+XFjipM1Qup3bcJos_ikwzoaWoa3GdYqK0WBUqEHBNR6V6LfQ@mail.gmail.com>
-	 <CAG1a4rsyfPrrrf-mzt3HAM6YHHjaHTcd2rbtYiwqLkUCP=j8pQ@mail.gmail.com>
-	 <CA+XFjipsVukKYchfmDv48PAKsD2PUxT+7E8epRuKFynGwk=Bag@mail.gmail.com>
-	 <CAG1a4rvQTA7UgxLOxu_cC88grjHttyjPD_4kyDhb7Y9FcBBkLQ@mail.gmail.com>
-	 <1313695217.23920.4.camel@dcbw.foobar.com>
-	 <CAG1a4rvqdB8y9ARQ=FckArm3UVG7=LFqF25kqYUYL0Uw7QNV8g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Message-ID: <1313699724.23920.18.camel@dcbw.foobar.com>
-Mime-Version: 1.0
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181623390.1628-100000@iolanthe.rowland.org>
+Date: Thu, 18 Aug 2011 22:44:59 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Message-ID: <op.v0ffw9bzvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1108181623390.1628-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 15:30 -0400, Pavel Ivanov wrote:
-> > In the end, you probably want to be using wpa_supplicant instead of
-> > trying to configure stuff with iw directly.
-> 
-> I see Ubuntu already have wpa_supplicant installed and running.
-> Although its command line is not what suggested in documentation and I
-> don't see configuration file /etc/wpa_supplicant.conf. Does that mean
-> it works somehow differently than stated in documentation? And also
-> does all this mean that even if I'll be able to make wpa_supplicant
-> work as I need I won't be able to control wireless connection using
-> the standard Ubuntu's icon and it won't show me its state correctly?
+> On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
+>> usb_add_function() is called before usb_composite_probe() which only  
+>> then calls usb_gadget_probe_driver().
+>>
+>> What's more, if I understand it correctly, comment in usb_add_function()
+>> says that we support all the speeds usb_composite_driver structure  
+>> claims we do but then return different sets of functions depending
+>> on speed.   Ie. if a function is only full speed and host requests
+>> high speed, configuration will lack that function.  The comment in
+>> question is:
+>>
+>> 	/* We allow configurations that don't work at both speeds.
+>> 	 * If we run into a lowspeed Linux system, treat it the same
+>> 	 * as full speed ... it's the function drivers that will need
+>> 	 * to avoid bulk and ISO transfers. */
+>>
+>> usb_add_function() then proceeds to set config->fullspeed,
+>> config->highspeed and config->superspeed depending on what
+>> descriptors function provides.
 
-NetworkManager is installed by default, and NM sends configuration to
-wpa_supplicant using a different control interface, not the config file.
-If you want to take the wifi interface out from NM's control, I think
-you can add the interface to /etc/network/interfaces and NM will then
-ignore it, and you can run wpa_supplicant manually with the '-i wlan0'
-option to point it to the right interface, and when you've got a config
-file, use '-c /path/to/config/file' to give it your configuration.
+On Thu, 18 Aug 2011 22:30:14 +0200, Alan Stern wrote:
+> Have you misinterpreted that comment?
 
-Or, since I'm a NetworkManager developer, is there something that you're
-not sure how to make NM do, or are you just looking to experiment?
+Might be. ;)
 
-Dan
+[...]
 
-> 
-> Pavel
-> 
-> 
-> On Thu, Aug 18, 2011 at 3:20 PM, Dan Williams <dcbw@redhat.com> wrote:
-> > On Thu, 2011-08-18 at 00:01 -0400, Pavel Ivanov wrote:
-> >> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
-> >> > configuration tool.
-> >>
-> >> I've just tried to use iw and it didn't quite work for me. Maybe it's
-> >> interfering with something installed in Ubuntu by default but
-> >
-> > Ubuntu installs NetworkManager by default, so if you want to manually
-> > control the wifi card you'll have to tell NM to ignore the wifi device,
-> > or turn NM off temporarily.
-> >
-> >> connect/disconnect commands didn't seem to do anything. And why these
-> >> commands can be executed only as root?
-> >
-> > Because poking and configuring hardware is a privileged operation; tools
-> > like NetworkManager selectively poke holes through that wall and often
-> > require administrator passwords to do it, but at the end of the day its
-> > an operation that can affect security and stability, and that means it
-> > needs to be privileged.
-> >
-> > In the end, you probably want to be using wpa_supplicant instead of
-> > trying to configure stuff with iw directly.
-> >
-> > Dan
-> >
-> >> Well, maybe in Ubuntu 11.10 it will work better.
-> >>
-> >>
-> >> Pavel
-> >>
-> >>
-> >> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
-> >> > 2011/8/17 Pavel Ivanov <paivanof@gmail.com>:
-> >> >>> WIRELESS_EXT is not required for configuring wireless on recent
-> >> >>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
-> >> >>
-> >> >> Since what version it's deprecated? Do user-space tools know about this new API?
-> >> >>
-> >> >> Neither iwconfig nor iwlist worked for me without WIRELESS_EXT.
-> >> >>
-> >> >>
-> >> >> Pavel
-> >> >>
-> >> >
-> >> > Iwconfig and iwlist are themselves deprecated. Iw is the new wireless
-> >> > configuration tool.
-> >> >
-> >> >>
-> >> >> 2011/8/17 Gábor Stefanik <netrolller.3d@gmail.com>:
-> >> >>> On Wed, Aug 17, 2011 at 5:28 AM, Pavel Ivanov <paivanof@gmail.com> wrote:
-> >> >>>> When ath9k is the only wireless driver included in the build
-> >> >>>> WIRELESS_EXT configuration option becomes undefined. Because of that
-> >> >>>> driver becomes essentially unusable as you can't actually connect to
-> >> >>>> any WiFi network. By including WIRELESS_EXT into Kconfig we ensure
-> >> >>>> that build with ath9k and without other drivers (having WIRELESS_EXT
-> >> >>>> selected in their Kconfig) is actually usable.
-> >> >>>
-> >> >>> WIRELESS_EXT is not required for configuring wireless on recent
-> >> >>> kernels - in fact, the WEXT API is deprecated in favor of nl80211 now.
-> >> >>>
-> >> >>>>
-> >> >>>> Signed-off-by: Pavel Ivanov <paivanof@gmail.com>
-> >> >>>> ---
-> >> >>>>
-> >> >>>> diff --git a/drivers/net/wireless/ath/ath9k/Kconfig
-> >> >>>> b/drivers/net/wireless/ath/ath9k/Kconfig
-> >> >>>> index d9c08c6..2573f77 100644
-> >> >>>> --- a/drivers/net/wireless/ath/ath9k/Kconfig
-> >> >>>> +++ b/drivers/net/wireless/ath/ath9k/Kconfig
-> >> >>>> @@ -11,6 +11,7 @@ config ATH9K
-> >> >>>>        select LEDS_CLASS
-> >> >>>>        select NEW_LEDS
-> >> >>>>        select ATH9K_COMMON
-> >> >>>> +       select WIRELESS_EXT
-> >> >>>>        ---help---
-> >> >>>>          This module adds support for wireless adapters based on
-> >> >>>>          Atheros IEEE 802.11n AR5008, AR9001 and AR9002 family
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> So I think that your suggestion to use composite_driver.speed =
+>> driver->max_speed was by all means correct.
 
+> Okay, that line was probably all right, but it seems that something
+> else needs to be changed.  In a composite gadget, if none of the
+> function drivers support SuperSpeed then we don't want
+> composite_driver.speed to be set to USB_SPEED_SUPER.  It would be
+> foolish to allow the UDC to connect at a speed which would make the
+> gadget useless.
 
+My understanding is that that's the purpose of driver->max_speed.
+Composite gadget's author is supposed to set it to the maximum speed
+he intends his gadget to run with.
+
+This have some consequences of course: driver->max_speed may be set
+to super speed where no function actually supports super speed so
+if host chooses this speed we will return no configuration (which
+I don't know if it's even legal).
+
+At the same time, author may consciously decide to set
+driver->max_speed to some value that not all functions support
+aware that depending on speed host chooses, different functions
+will be available.
+
+The best composite layer can do, is try to check whether there
+is at least one configuration supporting the speed
+driver->max_speed declares and if not, decrease it or return
+with error.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
