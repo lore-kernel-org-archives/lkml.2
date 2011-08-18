@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab1HRM76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 08:59:58 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40918 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab1HRM74 (ORCPT
+	id S1755711Ab1HRNEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 09:04:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56508 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab1HRNE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 08:59:56 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 18 Aug 2011 14:58:53 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: james.bottomley@hansenpartnership.com, stephenmcameron@gmail.com,
-        akpm@linux-foundation.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: Document generic scsi device attributes
-Message-ID: <20110818145853.7bf4ae3e@stein>
-In-Reply-To: <20110817182055.8848.75862.stgit@beardog.cce.hp.com>
-References: <20110817182055.8848.75862.stgit@beardog.cce.hp.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Aug 2011 09:04:29 -0400
+Date: Thu, 18 Aug 2011 15:04:24 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i386/bigsmp: eliminate false warnings regarding logical
+ APIC ID mismatches
+Message-ID: <20110818130424.GC20085@htj.dyndns.org>
+References: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4D27B40200007800051D40@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 17 Stephen M. Cameron wrote:
-> +What:           /sys/class/scsi_device/..../device/type
-> +Date:           December, 2002
-> +KernelVersion:  Unknown
-> +Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-> +Description:
-> +		This read only decimal integer value indicates the
-> +		SCSI device type.
-> +
-> +What:           /sys/class/scsi_device/..../device/scsi_level
-> +Date:           January, 2003
-> +KernelVersion:  Unknown
-> +Contact:        James Bottomley <James.Bottomley@HansenPartnership.com>
-> +Description:
-> +		This read only decimal integer value indicates the
-> +		SCSI revision level the device claims to support.
+Hello, Jan.
 
-Perhaps a reference to the pertaining SCSI specifications would be good
-to have at these two attribute descriptions.  (I am too lazy to look those
-up right now though.)
+On Thu, Aug 18, 2011 at 01:54:44PM +0100, Jan Beulich wrote:
+> Fix this (for the time being, i.e. until x86_32_early_logical_apicid()
+> will get removed again, as Tehun says ought to be possible) by
+> overriding the previously stored values at the point where the APIC
+> driver gets overridden.
+
+Hmmm... how about just removing the WARN_ON() in setup_local_APIC()?
+We already don't depend on the value so just overriding it isn't
+dangerous at all.
+
+Thanks.
+
 -- 
-Stefan Richter
--=====-==-== =--- =--=-
-http://arcgraph.de/sr/
+tejun
