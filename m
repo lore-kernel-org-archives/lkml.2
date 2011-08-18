@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1HRTb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 15:31:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53076 "EHLO
+	id S1753048Ab1HRTb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 15:31:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53077 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab1HRTbT (ORCPT
+	with ESMTP id S1752717Ab1HRTbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 15:31:19 -0400
+	Thu, 18 Aug 2011 15:31:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <daahern@cisco.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 0/3] perf/core improvements
-Date: Thu, 18 Aug 2011 16:31:07 -0300
-Message-Id: <1313695870-31028-1-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <daahern@cisco.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/3] perf annotate: Add --symfs option
+Date: Thu, 18 Aug 2011 16:31:09 -0300
+Message-Id: <1313695870-31028-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1313695870-31028-1-git-send-email-acme@infradead.org>
+References: <1313695870-31028-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Stephane Eranian <eranian@google.com>
 
-        Please consider pulling from:
+If you have --symfs in perf report, then you also need it for perf
+annotate.  This allows off-box assembly level analysis of perf.data
+samples.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+This patch complements:
 
-Regards,
+commit ec5761eab318e50e69fcf8e63e9edaef5949c067
+Author: David Ahern <daahern@cisco.com>
+Date:   Thu Dec 9 13:27:07 2010 -0700
 
-- Arnaldo
+    perf symbols: Add symfs option for off-box analysis using specified tree
 
-Stephane Eranian (3):
-  perf annotate: Make output more readable
-  perf annotate: Add --symfs option
-  perf stat: Add -o and --append options
+Acked-by: David Ahern <daahern@cisco.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <daahern@cisco.com>
+Link: http://lkml.kernel.org/r/20110729232040.GA21838@quad
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-annotate.txt |    3 +++
+ tools/perf/builtin-annotate.c              |    2 ++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
- tools/perf/Documentation/perf-annotate.txt |   11 ++
- tools/perf/Documentation/perf-stat.txt     |    7 ++
- tools/perf/builtin-annotate.c              |    6 +
- tools/perf/builtin-stat.c                  |  155 ++++++++++++++++-----------
- tools/perf/util/annotate.c                 |    5 +-
- tools/perf/util/color.c                    |    2 +-
- tools/perf/util/symbol.c                   |    2 +
- tools/perf/util/symbol.h                   |    4 +-
- 8 files changed, 126 insertions(+), 66 deletions(-)
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 5bc0600..98a31e3 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -80,6 +80,9 @@ OPTIONS
+ 	Interleave source code with assembly code. Enabled by default,
+ 	disable with --no-source.
+ 
++--symfs=<directory>::
++        Look for files with symbols relative to this directory.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 5015e04..c5be288 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -267,6 +267,8 @@ static const struct option options[] = {
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
+ 	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
++		   "Look for files with symbols relative to this directory"),
+ 	OPT_BOOLEAN('0', "source", &symbol_conf.annotate_src,
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN('0', "asm-raw", &symbol_conf.annotate_asm_raw,
+-- 
+1.6.2.5
 
