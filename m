@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1HRPtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 11:49:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755278Ab1HRPtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 11:49:23 -0400
-Date: Thu, 18 Aug 2011 17:49:12 +0200 (CEST)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Jeff Moyer <jmoyer@redhat.com>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        achender@linux.vnet.ibm.com, Jens Axboe <jaxboe@fusionio.com>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] loop: add discard support for loop devices
-In-Reply-To: <x497h6aspj1.fsf@segfault.boston.devel.redhat.com>
-Message-ID: <alpine.LFD.2.00.1108181743440.3957@dhcp-27-109.brq.redhat.com>
-References: <1313063143-14473-1-git-send-email-lczerner@redhat.com> <alpine.LFD.2.00.1108171511070.3699@dhcp-27-109.brq.redhat.com> <x497h6aspj1.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756001Ab1HRPy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 11:54:58 -0400
+Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:60234 "HELO
+	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755278Ab1HRPy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 11:54:57 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Thu, 18 Aug 2011 08:54:48 -0700
+Message-Id: <1313682888-5108-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011, Jeff Moyer wrote:
+Hi Linus,
 
-> Lukas Czerner <lczerner@redhat.com> writes:
-> 
-> >> @@ -484,6 +485,29 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
-> >>  			}
-> >>  		}
-> >>  
-> >> +		/*
-> >> +		 * We use punch hole to reclaim the free space used by the
-> >> +		 * image a.k.a. discard. However we do support discard if
-> >> +		 * encryption is enabled, because it may give an attacker
-> >> +		 * useful information.
-> >> +		 */
-> >> +		if (bio->bi_rw & REQ_DISCARD) {
-> >> +			struct file *file = lo->lo_backing_file;
-> >> +			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-> >> +
-> >> +			if ((!file->f_op->fallocate) ||
-> >> +			    lo->lo_encrypt_key_size) {
-> >> +				ret = -EOPNOTSUPP;
-> >> +				goto out;
-> >> +			}
-> >> +			ret = file->f_op->fallocate(file, mode, pos,
-> >> +						    bio->bi_size);
-> >> +			if (unlikely(ret && ret != -EINVAL &&
-> >> +				     ret != -EOPNOTSUPP))
-> >> +				ret = -EIO;
-> >> +			goto out;
-> >> +		}
-> >> +
-> 
-> Seems you missed the bizarre case of configuring a loop device over top
-> of a block device.
+Please pull from
 
-Wow, that is a bizarre case I did not think about at all. But since it
-is so bizarre, do we even care ? The thing is that the only case where
-it would make a difference is if the loop device is put on top of block
-device which actually supports discard.
+    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-In order to fix that I would need to dig out the actual limits for that
-device and set that appropriately for the loop device. Is that worth it
-? It is not like someone will ever do that (or should) :).
+This tree is also available from kernel.org mirrors at:
 
-Thanks!
--Lukas
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
 
-> 
-> Cheers,
-> Jeff
-> 
+This will get a few fixes:
+ - Fix for crash on boot in IPoIB from Bernd Schubert
+ - Two iSER bugs from Or Gerlitz
+
+Bernd Schubert (1):
+      IPoIB: Fix possible NULL dereference in ipoib_start_xmit()
+
+Or Gerlitz (2):
+      IBiser: Fix wrong mask when sizeof (dma_addr_t) > sizeof (unsigned long)
+      IB/iser: Support iSCSI PDU padding
+
+Roland Dreier (1):
+      Merge branches 'ipoib' and 'iser' into for-next
+
+ drivers/infiniband/ulp/ipoib/ipoib_main.c    |    8 +++++---
+ drivers/infiniband/ulp/iser/iscsi_iser.c     |   10 +++++++---
+ drivers/infiniband/ulp/iser/iscsi_iser.h     |    2 +-
+ drivers/infiniband/ulp/iser/iser_initiator.c |    2 +-
+ 4 files changed, 14 insertions(+), 8 deletions(-)
