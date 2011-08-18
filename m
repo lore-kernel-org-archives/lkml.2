@@ -1,21 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab1HRBJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Aug 2011 21:09:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45968 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751503Ab1HRBJN (ORCPT
+	id S1754647Ab1HRBNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Aug 2011 21:13:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49275 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1HRBNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Aug 2011 21:09:13 -0400
-Date: Wed, 17 Aug 2011 18:12:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, menage@gmail.com
-Subject: Re: [PATCH] MAINTAINERS:change the mail addr of Paul Menage
-Message-Id: <20110817181202.d9f161d1.akpm@linux-foundation.org>
-In-Reply-To: <1313629364-8878-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1313629364-8878-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Wed, 17 Aug 2011 21:13:05 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Aug 2011 10:05:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        linux-fsdevel@vger.kernel.org, Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v9 08/13] memcg: dirty page accounting support routines
+Message-Id: <20110818100535.ecdb4a12.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1313597705-6093-9-git-send-email-gthelen@google.com>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+	<1313597705-6093-9-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,38 +36,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011 09:02:44 +0800 Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+On Wed, 17 Aug 2011 09:15:00 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> Paul said: I left Google at the end of last week - if it's not bouncing
-> already, menage@google.com isn't going to work for much longer.
+> Added memcg dirty page accounting support routines.  These routines are
+> used by later changes to provide memcg aware writeback and dirty page
+> limiting.  A mem_cgroup_dirty_info() tracepoint is is also included to
+> allow for easier understanding of memcg writeback operation.
 > 
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+
+I have small comments.
+
 > ---
->  MAINTAINERS |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> Changelog since v8:
+> - Use 'memcg' rather than 'mem' for local variables and parameters.
+>   This is consistent with other memory controller code.
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 1d445f5..49b2ec7 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1883,7 +1883,7 @@ S:	Maintained
->  F:	drivers/connector/
+>  include/linux/memcontrol.h        |    9 ++
+>  include/trace/events/memcontrol.h |   34 +++++++++
+>  mm/memcontrol.c                   |  147 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 190 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 630d3fa..9cc8841 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -36,6 +36,15 @@ enum mem_cgroup_page_stat_item {
+>  	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
+>  	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
+>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+> +	MEMCG_NR_DIRTYABLE_PAGES, /* # of pages that could be dirty */
+> +};
+> +
+> +struct dirty_info {
+> +	unsigned long dirty_thresh;
+> +	unsigned long background_thresh;
+> +	unsigned long nr_file_dirty;
+> +	unsigned long nr_writeback;
+> +	unsigned long nr_unstable_nfs;
+>  };
 >  
->  CONTROL GROUPS (CGROUPS)
-> -M:	Paul Menage <menage@google.com>
-> +M:	Paul Menage <paul@paulmenage.org>
->  M:	Li Zefan <lizf@cn.fujitsu.com>
->  L:	containers@lists.linux-foundation.org
->  S:	Maintained
-> @@ -1932,7 +1932,7 @@ S:	Maintained
->  F:	tools/power/cpupower
+>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> diff --git a/include/trace/events/memcontrol.h b/include/trace/events/memcontrol.h
+> index 781ef9fc..abf1306 100644
+> --- a/include/trace/events/memcontrol.h
+> +++ b/include/trace/events/memcontrol.h
+> @@ -26,6 +26,40 @@ TRACE_EVENT(mem_cgroup_mark_inode_dirty,
+>  	TP_printk("ino=%ld css_id=%d", __entry->ino, __entry->css_id)
+>  )
 >  
->  CPUSETS
-> -M:	Paul Menage <menage@google.com>
-> +M:	Paul Menage <paul@paulmenage.org>
->  W:	http://www.bullopensource.org/cpuset/
->  W:	http://oss.sgi.com/projects/cpusets/
->  S:	Supported
+> +TRACE_EVENT(mem_cgroup_dirty_info,
+> +	TP_PROTO(unsigned short css_id,
+> +		 struct dirty_info *dirty_info),
+> +
+> +	TP_ARGS(css_id, dirty_info),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned short, css_id)
+> +		__field(unsigned long, dirty_thresh)
+> +		__field(unsigned long, background_thresh)
+> +		__field(unsigned long, nr_file_dirty)
+> +		__field(unsigned long, nr_writeback)
+> +		__field(unsigned long, nr_unstable_nfs)
+> +		),
+> +
+> +	TP_fast_assign(
+> +		__entry->css_id = css_id;
+> +		__entry->dirty_thresh = dirty_info->dirty_thresh;
+> +		__entry->background_thresh = dirty_info->background_thresh;
+> +		__entry->nr_file_dirty = dirty_info->nr_file_dirty;
+> +		__entry->nr_writeback = dirty_info->nr_writeback;
+> +		__entry->nr_unstable_nfs = dirty_info->nr_unstable_nfs;
+> +		),
+> +
+> +	TP_printk("css_id=%d thresh=%ld bg_thresh=%ld dirty=%ld wb=%ld "
+> +		  "unstable_nfs=%ld",
+> +		  __entry->css_id,
+> +		  __entry->dirty_thresh,
+> +		  __entry->background_thresh,
+> +		  __entry->nr_file_dirty,
+> +		  __entry->nr_writeback,
+> +		  __entry->nr_unstable_nfs)
+> +)
+> +
+>  #endif /* _TRACE_MEMCONTROL_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4e01699..d54adf4 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1366,6 +1366,11 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+>  	return memcg->swappiness;
+>  }
+>  
+> +static unsigned long dirty_info_reclaimable(struct dirty_info *info)
+> +{
+> +	return info->nr_file_dirty + info->nr_unstable_nfs;
+> +}
+> +
+>  /*
+>   * Return true if the current memory cgroup has local dirty memory settings.
+>   * There is an allowed race between the current task migrating in-to/out-of the
+> @@ -1396,6 +1401,148 @@ static void mem_cgroup_dirty_param(struct vm_dirty_param *param,
+>  	}
+>  }
+>  
+> +static inline bool mem_cgroup_can_swap(struct mem_cgroup *memcg)
+> +{
+> +	if (!do_swap_account)
+> +		return nr_swap_pages > 0;
+> +	return !memcg->memsw_is_minimum &&
+> +		(res_counter_read_u64(&memcg->memsw, RES_LIMIT) > 0);
+> +}
 
-yup, I already pinged Paul.  I don't know whether he'd prefer
-paul@paulmenage.org or menage@gmail.com.
+I think
+
+	if (nr_swap_pages == 0)
+		return false;
+	if (!do_swap_account)
+		return true;
+	if (memcg->memsw_is_mininum)
+		return false;
+        if (res_counter_margin(&memcg->memsw) == 0)
+		return false;
+
+is a correct check.
+
+> +
+> +static s64 mem_cgroup_local_page_stat(struct mem_cgroup *memcg,
+> +				      enum mem_cgroup_page_stat_item item)
+> +{
+> +	s64 ret;
+> +
+> +	switch (item) {
+> +	case MEMCG_NR_FILE_DIRTY:
+> +		ret = mem_cgroup_read_stat(memcg, MEM_CGROUP_STAT_FILE_DIRTY);
+> +		break;
+> +	case MEMCG_NR_FILE_WRITEBACK:
+> +		ret = mem_cgroup_read_stat(memcg,
+> +					   MEM_CGROUP_STAT_FILE_WRITEBACK);
+> +		break;
+> +	case MEMCG_NR_FILE_UNSTABLE_NFS:
+> +		ret = mem_cgroup_read_stat(memcg,
+> +					   MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
+> +		break;
+> +	case MEMCG_NR_DIRTYABLE_PAGES:
+> +		ret = mem_cgroup_read_stat(memcg, LRU_ACTIVE_FILE) +
+> +			mem_cgroup_read_stat(memcg, LRU_INACTIVE_FILE);
+> +		if (mem_cgroup_can_swap(memcg))
+> +			ret += mem_cgroup_read_stat(memcg, LRU_ACTIVE_ANON) +
+> +				mem_cgroup_read_stat(memcg, LRU_INACTIVE_ANON);
+> +		break;
+> +	default:
+> +		BUG();
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Return the number of additional pages that the @memcg cgroup could allocate.
+> + * If use_hierarchy is set, then this involves checking parent mem cgroups to
+> + * find the cgroup with the smallest free space.
+> + */
+> +static unsigned long
+> +mem_cgroup_hierarchical_free_pages(struct mem_cgroup *memcg)
+> +{
+> +	u64 free;
+> +	unsigned long min_free;
+> +
+> +	min_free = global_page_state(NR_FREE_PAGES);
+> +
+> +	while (memcg) {
+> +		free = (res_counter_read_u64(&memcg->res, RES_LIMIT) -
+> +			res_counter_read_u64(&memcg->res, RES_USAGE)) >>
+> +			PAGE_SHIFT;
+
+How about
+		free = mem_cgroup_margin(&mem->res);
+?
+
+Thanks,
+-Kame
+
