@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab1HSUva (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 16:51:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33666 "EHLO
+	id S1753293Ab1HSUym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 16:54:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63445 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab1HSUv1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751297Ab1HSUyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 16:51:27 -0400
+	Fri, 19 Aug 2011 16:54:41 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        "Alan Stern" <stern@rowland.harvard.edu>,
+        "Per Forlin" <per.forlin@linaro.org>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
+Subject: Re: [PATCH v6] usb: gadget: storage: make FSG_NUM_BUFFERS variable
+ size
+References: <1313781687-13955-1-git-send-email-per.forlin@linaro.org>
+Date: Fri, 19 Aug 2011 22:54:38 +0200
 MIME-Version: 1.0
-In-Reply-To: <1313778007.15704.106.camel@gandalf.stny.rr.com>
-References: <1313539478-30303-1-git-send-email-kjwinchester@gmail.com>
-	<1313778007.15704.106.camel@gandalf.stny.rr.com>
-Date: Fri, 19 Aug 2011 17:51:26 -0300
-Message-ID: <CAELBVzBBBc7HCPbE+orLD-tE1nBvGM2BBv+ietzoJJi-ubPdCQ@mail.gmail.com>
-Subject: Re: [PATCH] x86: jump_label: arch_jump_label_text_poke_early: add
- missing __init
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: jbaron@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v0ha1cbg3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1313781687-13955-1-git-send-email-per.forlin@linaro.org>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 August 2011 15:20, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-08-16 at 21:04 -0300, Kevin Winchester wrote:
->> arch_jump_label_text_poke_early calls text_poke_early, which is
->> an __init function.  Thus arch_jump_label_text_poke_early should
->> be the same.
+On Fri, 19 Aug 2011 21:21:27 +0200, Per Forlin <per.forlin@linaro.org>  
+wrote:
+> FSG_NUM_BUFFERS is set to 2 as default.
+> Usually 2 buffers are enough to establish a good buffering pipeline.
+> The number may be increased in order to compensate a for bursty VFS
+> behaviour.
 >
-> but text_poke_early is not __init but instead __init_or_module. Your
-> patch just caused this bug:
+> Here follows a description of system that may require more than
+> 2 buffers.
+>  * CPU ondemand governor active
+>  * latency cost for wake up and/or frequency change
+>  * DMA for IO
 >
+> Use case description.
+>  * Data transfer from MMC via VFS to USB.
+>  * DMA shuffles data from MMC and to USB.
+>  * The CPU wakes up every now and then to pass data in and out from VFS,
+>    which cause the bursty VFS behaviour.
 
-Sorry about that.  I have:
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
 
-# CONFIG_MODULES is not set
-
-which makes __init_or_module equivalent to __init for me.  Thus the
-patch was fine for my case, but I expect your modification is the
-right thing to do overall.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
 -- 
-Kevin Winchester
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
