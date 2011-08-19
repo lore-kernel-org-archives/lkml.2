@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab1HSPyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 11:54:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45542 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab1HSPyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 11:54:11 -0400
-Subject: Re: [PATCH] ubifs: Do not build debug messages with
- CONFIG_UBIFS_FS_DEBUG disabled
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Michal Marek <mmarek@suse.cz>
-Cc: adrian.hunter@intel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 19 Aug 2011 18:55:56 +0300
-In-Reply-To: <1313058586-24239-1-git-send-email-mmarek@suse.cz>
-References: <1313058586-24239-1-git-send-email-mmarek@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313769360.6607.70.camel@sauron>
-Mime-Version: 1.0
+	id S1756199Ab1HSPzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 11:55:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753144Ab1HSPzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 11:55:21 -0400
+Date: Fri, 19 Aug 2011 17:52:22 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 01/16] freezer: fix current->state restoration race in
+	refrigerator()
+Message-ID: <20110819155222.GA17879@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-2-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313763382-12341-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-11 at 12:29 +0200, Michal Marek wrote:
-> With
->   $ grep -e UBIFS_FS_DEBUG -e DYNAMIC_DEBUG .config
->   # CONFIG_UBIFS_FS_DEBUG is not set
->   CONFIG_DYNAMIC_DEBUG=y
-> 
-> Debug messages are kept in the object files due to the
-> dynamic_pr_debug() macro, even if they are never going to be printed:
->   $ make fs/ubifs/super.o
->   $ strings fs/ubifs/super.o | grep 'compiled on'
->   compiled on:         Aug 11 2011 at 12:21:38
-> 
-> Use plain printk to fix this.
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+I'll try to read this series later.
 
-Good catch, thanks! Pushed to ubifs-2.6.git, thanks!
+Probably this doesn't matter since I didn't read the next patches, but
 
--- 
-Best Regards,
-Artem Bityutskiy
+On 08/19, Tejun Heo wrote:
+>
+> refrigerator() saves current->state before entering frozen state and
+> restores it before returning using __set_current_state(); however,
+> this is racy,
+
+Oh, yes. I even tried to ask for the explanation.
+
+> 	set_current_state(TASK_INTERRUPTIBLE);
+> 	try_to_sleep();
+> 	if (kthread_should_stop())
+> 		break;
+> 	schedule();
+
+Indeed, we can miss kthread->should_stop, and the patch fixes this
+case.
+
+But please look at, say, kauditd_thread(), it does
+
+		DECLARE_WAITQUEUE(wait, current);
+		set_current_state(TASK_INTERRUPTIBLE);
+		add_wait_queue(&kauditd_wait, &wait);
+
+		if (!skb_queue_len(&audit_skb_queue)) {
+			try_to_freeze();
+			schedule();
+		}
+
+Now suppose that wake_up_interruptible(&kauditd_wait) happens, and
+after that refrigerator() restores TASK_INTERRUPTIBLE.
+
+Any reason refrigerator() should try to restore? Shouldn't we simply
+change the rules? Yes, probably we will have to fix some users.
+
+But it seems to me it is simply not possible to make this ->state
+restoration correct.
+
+Oleg.
 
