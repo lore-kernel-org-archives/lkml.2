@@ -1,163 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab1HSBgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 21:36:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28571 "EHLO mga02.intel.com"
+	id S1753275Ab1HSBrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 21:47:03 -0400
+Received: from ebb05.tieto.com ([131.207.168.36]:58881 "EHLO ebb05.tieto.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab1HSBgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 21:36:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="39877208"
-Date: Fri, 19 Aug 2011 09:36:28 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [PATCH v9 12/13] memcg: create support routines for page
- writeback
-Message-ID: <20110819013628.GA7925@localhost>
-References: <1313597705-6093-1-git-send-email-gthelen@google.com>
- <1313597705-6093-13-git-send-email-gthelen@google.com>
- <20110818103803.c2617804.kamezawa.hiroyu@jp.fujitsu.com>
- <20110818023610.GA12514@localhost>
- <20110818101248.GA12426@quack.suse.cz>
- <20110818121714.GA1883@localhost>
- <20110818200856.GD12426@quack.suse.cz>
+	id S1751136Ab1HSBrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 21:47:01 -0400
+X-AuditID: 83cfa824-b7be9ae000000a40-00-4e4dc093f59e
+Message-ID: <4E4DC418.8050009@tieto.com>
+Date: Fri, 19 Aug 2011 10:02:00 +0800
+From: Yang Rui Rui <ruirui.r.yang@tieto.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818200856.GD12426@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michal Nazarewicz <mnazarewicz@google.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Sergei Shtylyov <sshtylyov@mvista.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Ruirui R <ruirui.r.yang@tietoenator.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181055240.1912-100000@iolanthe.rowland.org> <op.v0e5q6pyvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <op.v0e5q6pyvgw7ix@mnazarewicz-glaptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 04:08:56AM +0800, Jan Kara wrote:
-> On Thu 18-08-11 20:17:14, Wu Fengguang wrote:
-> > On Thu, Aug 18, 2011 at 06:12:48PM +0800, Jan Kara wrote:
-> > > On Thu 18-08-11 10:36:10, Wu Fengguang wrote:
-> > > > Subject: squeeze max-pause area and drop pass-good area
-> > > > Date: Tue Aug 16 13:37:14 CST 2011
-> > > > 
-> > > > Remove the pass-good area introduced in ffd1f609ab10 ("writeback:
-> > > > introduce max-pause and pass-good dirty limits") and make the
-> > > > max-pause area smaller and safe.
-> > > > 
-> > > > This fixes ~30% performance regression in the ext3 data=writeback
-> > > > fio_mmap_randwrite_64k/fio_mmap_randrw_64k test cases, where there are
-> > > > 12 JBOD disks, on each disk runs 8 concurrent tasks doing reads+writes.
-> > > > 
-> > > > Using deadline scheduler also has a regression, but not that big as
-> > > > CFQ, so this suggests we have some write starvation.
-> > > > 
-> > > > The test logs show that
-> > > > 
-> > > > - the disks are sometimes under utilized
-> > > > 
-> > > > - global dirty pages sometimes rush high to the pass-good area for
-> > > >   several hundred seconds, while in the mean time some bdi dirty pages
-> > > >   drop to very low value (bdi_dirty << bdi_thresh).
-> > > >   Then suddenly the global dirty pages dropped under global dirty
-> > > >   threshold and bdi_dirty rush very high (for example, 2 times higher
-> > > >   than bdi_thresh). During which time balance_dirty_pages() is not
-> > > >   called at all.
-> > > > 
-> > > > So the problems are
-> > > > 
-> > > > 1) The random writes progress so slow that they break the assumption of
-> > > > the max-pause logic that "8 pages per 200ms is typically more than
-> > > > enough to curb heavy dirtiers".
-> > > > 
-> > > > 2) The max-pause logic ignored task_bdi_thresh and thus opens the
-> > > >    possibility for some bdi's to over dirty pages, leading to
-> > > >    (bdi_dirty >> bdi_thresh) and then (bdi_thresh >> bdi_dirty) for others.
-> > > > 
-> > > > 3) The higher max-pause/pass-good thresholds somehow leads to some bad
-> > > >    swing of dirty pages.
-> > > > 
-> > > > The fix is to allow the task to slightly dirty over task_bdi_thresh, but
-> > > > no way to exceed bdi_dirty and/or global dirty_thresh.
-> > > > 
-> > > > Tests show that it fixed the JBOD regression completely (both behavior
-> > > > and performance), while still being able to cut down large pause times
-> > > > in balance_dirty_pages() for single-disk cases.
-> > > > 
-> > > > Reported-by: Li Shaohua <shaohua.li@intel.com>
-> > > > Tested-by: Li Shaohua <shaohua.li@intel.com>
-> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > ---
-> > > >  include/linux/writeback.h |   11 -----------
-> > > >  mm/page-writeback.c       |   15 ++-------------
-> > > >  2 files changed, 2 insertions(+), 24 deletions(-)
-> > > > 
-> > > > --- linux.orig/mm/page-writeback.c	2011-08-18 09:52:59.000000000 +0800
-> > > > +++ linux/mm/page-writeback.c	2011-08-18 10:28:57.000000000 +0800
-> > > > @@ -786,21 +786,10 @@ static void balance_dirty_pages(struct a
-> > > >  		 * 200ms is typically more than enough to curb heavy dirtiers;
-> > > >  		 * (b) the pause time limit makes the dirtiers more responsive.
-> > > >  		 */
-> > > > -		if (nr_dirty < dirty_thresh +
-> > > > -			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
-> > > > +		if (nr_dirty < dirty_thresh &&
-> > > > +		    bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2 &&
-> > > >  		    time_after(jiffies, start_time + MAX_PAUSE))
-> > > >  			break;
-> > >   This looks definitely much safer than the original patch since we now
-> > > always observe global dirty limit.
-> > 
-> > Yeah.
-> > 
-> > > I just wonder: We have throttled the
-> > > task because bdi_nr_reclaimable > task_bdi_thresh.
-> > 
-> > Not necessarily. It's possible (bdi_nr_reclaimable < task_bdi_thresh)
-> > for the whole loop. And the 200ms pause that trigger the above test
-> > may totally come from the io_schedule_timeout() calls.
-> > 
-> > > Now in practice there
-> > > should be some pages under writeback and this task should have submitted
-> > > even more just a while ago. So the condition
-> > >   bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2
-> > 
-> > I guess the writeback_inodes_wb() call is irrelevant for the above
-> > test, because writeback_inodes_wb() transfers reclaimable pages to
-> > writeback pages, with the total bdi_dirty value staying the same.
-> > Not to mention the fact that both the bdi_dirty and bdi_nr_reclaimable
-> > variables have not been updated between writeback_inodes_wb() and the
-> > max-pause test.
->   Right, that comment was a bit off.
-> 
-> > > looks still relatively weak. Shouldn't there be
-> > >   bdi_nr_reclaimable < (task_bdi_thresh + bdi_thresh) / 2?
-> > 
-> > That's much easier condition to satisfy..
->   Argh, sorry. I was mistaken by the name of the variable - I though it
-> contains only dirty pages on the bdi but it also contains pages under
-> writeback and bdi_nr_reclaimable is the one that contains only dirty pages.
+On 08/19/2011 01:05 AM, Michal Nazarewicz wrote:
+> On Thu, 18 Aug 2011 16:59:28 +0200, Alan Stern<stern@rowland.harvard.edu>
+> wrote:
+>
+>> On Thu, 18 Aug 2011, Michal Nazarewicz wrote:
+>>
+>>> On Wed, 17 Aug 2011 23:09:37 +0200, Alan Stern
+>>> <stern@rowland.harvard.edu>
+>>> wrote:
+>>>> I see what's going on here.  Your original patch was wrong and then my
+>>>> correction was wrong as well.
+>>>>
+>>>> This line has to remain the way it was (although those (u8) typecasts
+>>>> don't seem to be necessary).  Above, you have to initialize
+>>>> composite_driver.speed to an appropriate value, probably
+>>>> USB_SPEED_SUPER.
+>>>>
+>>>> What you didn't realize in your original patch is that
+>>>> usb_composite_probe() gets called more than once.  Each time it is
+>>>> called, it has to adjust composite_driver.speed.
+>>>
+>>> That's sneaky of composite.c...  But is it desired behaviour?
+>>
+>> Yes, it is.
+>>
+>>>   I cannot
+>>> came up with a situation where that's what we want.  I would imagine
+>>> that
+>>> usb_composite_probe() should assume the same speed for given
+>>> usb_composite_driver regardless if some other slower
+>>> usb_composite_driver
+>>> was loaded.
+>>
+>> The speed being calculated isn't the speed of the usb_composite_driver;
+>> it's the speed of the usb_gadget_driver.  The gadget itself cannot be
+>> allowed to run faster than its internal drivers can handle.
+>
+> Yeah, that's why you set usb_gadget_driver's speed to the speed declared
+> in usb_composite_driver.
 
-Yeah the name may be a bit confusing.. but we'll soon get rid of bdi_nr_reclaimable :)
+This is what I means in before reply, musb_gadget_start will check the speed set here.
+if it != USB_SPEED_HIGH it will return -EINVAL.
 
-> So your patch does exactly what I had in mind. You can add:
->   Acked-by: Jan Kara <jack@suse.cz>
+>
+> For the most part, usb_composite_probe() is called only once in module's
+> init function.  As far as I know, only g_ffs calls it several times.  So
+> in all cases expect for g_ffs, composite_driver.speed =
+> min(composite_driver.speed,
+> driver->max_speed) should have the same effect as composite_driver.speed
+> = driver->max_speed.
 
-Thanks! I'll test it in linux-next for a week and then send to Linus.
+For original code, ifndef CONFIG_USB_GADGET_SUPERSPEED and max_speed = USB_SPEED_SUPER
+then the result will be:
 
-Thanks,
-Fengguang
+composite_driver.speed = min(USB_SPEED_HIGH, USB_SPEED_SUPER)
 
+For patched code, composite_driver.speed = USB_SPEED_SUPER
+
+>
+>> For example, if you have a composite gadget where one of the function
+>> drivers can handle SuperSpeed and the other can't go beyond high speed,
+>> the overall gadget must never run faster than high speed.
+>
+> Shouldn't that be dealt in usb_add_function()?  I cannot see any code that
+> would do that here atm though.
+>
+
+
+-- 
+Thanks
+Yang Ruirui
