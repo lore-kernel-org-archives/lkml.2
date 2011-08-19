@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab1HSMzm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:55:42 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:48223 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751305Ab1HSMzf (ORCPT
+	id S1753563Ab1HSM4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:56:12 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:47235 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751421Ab1HSMzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:55:35 -0400
+	Fri, 19 Aug 2011 08:55:36 -0400
 From: Per Forlin <per.forlin@stericsson.com>
 To: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linaro-dev@lists.linaro.org>,
@@ -14,12 +14,13 @@ To: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Akinobu Mita <akinobu.mita@gmail.com>
 Cc: Chris Ball <cjb@laptop.org>, <linux-doc@vger.kernel.org>,
         Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 1/3] fault-inject: export fault injection functions
-Date: Fri, 19 Aug 2011 14:52:36 +0200
-Message-ID: <1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
+Subject: [PATCH v9 2/3] mmc: core: add random fault injection
+Date: Fri, 19 Aug 2011 14:52:37 +0200
+Message-ID: <1313758358-27536-3-git-send-email-per.forlin@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1313758358-27536-1-git-send-email-per.forlin@stericsson.com>
+In-Reply-To: <1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
 References: <1313758358-27536-1-git-send-email-per.forlin@stericsson.com>
+ <1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,34 +29,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Per Forlin <per.forlin@linaro.org>
 
-export symbols should_fail() and fault_create_debugfs_attr() in order
-to let modules utilize the fault injection
+This adds support to inject data errors after a completed host transfer.
+The mmc core will return error even though the host transfer is successful.
+This simple fault injection proved to be very useful to test the
+non-blocking error handling in the mmc_blk_issue_rw_rq().
+Random faults can also test how the host driver handles pre_req()
+and post_req() in case of errors.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
 ---
- lib/fault-inject.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/mmc/core/core.c    |   41 +++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/debugfs.c |   25 +++++++++++++++++++++++++
+ include/linux/mmc/host.h   |    5 +++++
+ lib/Kconfig.debug          |   11 +++++++++++
+ 4 files changed, 82 insertions(+), 0 deletions(-)
 
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index f193b77..328d433 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -130,6 +130,7 @@ bool should_fail(struct fault_attr *attr, ssize_t size)
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 91a0a74..d704dfa 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -24,6 +24,8 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/suspend.h>
++#include <linux/fault-inject.h>
++#include <linux/random.h>
  
- 	return true;
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+@@ -83,6 +85,43 @@ static void mmc_flush_scheduled_work(void)
+ 	flush_workqueue(workqueue);
  }
-+EXPORT_SYMBOL_GPL(should_fail);
  
- #ifdef CONFIG_FAULT_INJECTION_DEBUG_FS
++#ifdef CONFIG_FAIL_MMC_REQUEST
++
++/*
++ * Internal function. Inject random data errors.
++ * If mmc_data is NULL no errors are injected.
++ */
++static void mmc_should_fail_request(struct mmc_host *host,
++				    struct mmc_request *mrq)
++{
++	struct mmc_command *cmd = mrq->cmd;
++	struct mmc_data *data = mrq->data;
++	static const int data_errors[] = {
++		-ETIMEDOUT,
++		-EILSEQ,
++		-EIO,
++	};
++
++	if (!data)
++		return;
++
++	if (cmd->error || data->error ||
++	    !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
++		return;
++
++	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
++	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
++}
++
++#else /* CONFIG_FAIL_MMC_REQUEST */
++
++static inline void mmc_should_fail_request(struct mmc_host *host,
++					   struct mmc_request *mrq)
++{
++}
++
++#endif /* CONFIG_FAIL_MMC_REQUEST */
++
+ /**
+  *	mmc_request_done - finish processing an MMC request
+  *	@host: MMC host which completed request
+@@ -109,6 +148,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
+ 		cmd->error = 0;
+ 		host->ops->request(host, mrq);
+ 	} else {
++		mmc_should_fail_request(host, mrq);
++
+ 		led_trigger_event(host->led, LED_OFF);
  
-@@ -243,5 +244,6 @@ fail:
+ 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 998797e..5acd707 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -12,6 +12,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+ #include <linux/stat.h>
++#include <linux/fault-inject.h>
  
- 	return ERR_PTR(-ENOMEM);
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+@@ -158,6 +159,23 @@ static int mmc_clock_opt_set(void *data, u64 val)
+ 	return 0;
  }
-+EXPORT_SYMBOL_GPL(fault_create_debugfs_attr);
  
- #endif /* CONFIG_FAULT_INJECTION_DEBUG_FS */
++#ifdef CONFIG_FAIL_MMC_REQUEST
++
++static DECLARE_FAULT_ATTR(fail_mmc_request);
++
++#ifdef KERNEL
++/*
++ * Internal function. Pass the boot param fail_mmc_request to
++ * the setup fault injection attributes routine.
++ */
++static int __init setup_fail_mmc_request(char *str)
++{
++	return setup_fault_attr(&fail_mmc_request, str);
++}
++__setup("fail_mmc_request=", setup_fail_mmc_request);
++#endif /* KERNEL */
++#endif /* CONFIG_FAIL_MMC_REQUEST */
++
+ DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
+ 	"%llu\n");
+ 
+@@ -188,6 +206,13 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+ 				root, &host->clk_delay))
+ 		goto err_node;
+ #endif
++#ifdef CONFIG_FAIL_MMC_REQUEST
++	host->fail_mmc_request = fail_mmc_request;
++	if (IS_ERR(fault_create_debugfs_attr("fail_mmc_request",
++					     root,
++					     &host->fail_mmc_request)))
++		goto err_node;
++#endif
+ 	return;
+ 
+ err_node:
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 1d09562..4c4bddf 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -12,6 +12,7 @@
+ 
+ #include <linux/leds.h>
+ #include <linux/sched.h>
++#include <linux/fault-inject.h>
+ 
+ #include <linux/mmc/core.h>
+ #include <linux/mmc/pm.h>
+@@ -302,6 +303,10 @@ struct mmc_host {
+ 
+ 	struct mmc_async_req	*areq;		/* active async req */
+ 
++#ifdef CONFIG_FAIL_MMC_REQUEST
++	struct fault_attr	fail_mmc_request;
++#endif
++
+ 	unsigned long		private[0] ____cacheline_aligned;
+ };
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index c0cb9c4..1c7dbbf 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1070,6 +1070,17 @@ config FAIL_IO_TIMEOUT
+ 	  Only works with drivers that use the generic timeout handling,
+ 	  for others it wont do anything.
+ 
++config FAIL_MMC_REQUEST
++	bool "Fault-injection capability for MMC IO"
++	select DEBUG_FS
++	depends on FAULT_INJECTION && MMC
++	help
++	  Provide fault-injection capability for MMC IO.
++	  This will make the mmc core return data errors. This is
++	  useful to test the error handling in the mmc block device
++	  and to test how the mmc host driver handles retries from
++	  the block device.
++
+ config FAULT_INJECTION_DEBUG_FS
+ 	bool "Debugfs entries for fault-injection capabilities"
+ 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
 -- 
 1.6.3.3
 
