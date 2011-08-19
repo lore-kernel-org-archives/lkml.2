@@ -1,146 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab1HSXK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 19:10:27 -0400
-Received: from atreides.gradator.net ([212.85.155.42]:45297 "EHLO
-	atreides.gradator.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab1HSXKZ (ORCPT
+	id S1756538Ab1HSXPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 19:15:07 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:43684 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756244Ab1HSXPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 19:10:25 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Aug 2011 19:10:25 EDT
-Date: Sat, 20 Aug 2011 01:03:44 +0200
-From: Sylvain Rochet <gradator@gradator.net>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Cc: Sylvain Rochet <gradator@gradator.net>
-Message-ID: <20110819230344.GA24784@gradator.net>
-References: <20101018223540.GA20730@gradator.net>
+	Fri, 19 Aug 2011 19:15:05 -0400
+Date: Sat, 20 Aug 2011 02:15:00 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Nazarewicz <mnazarewicz@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/4] usb: Provide usb_device_speed_name() function
+Message-ID: <20110819231459.GB13317@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <cover.1313791722.git.mina86@mina86.com>
+ <7e9435f5e8c2e9d6363d79de79f81b4f259e230c.1313791722.git.mina86@mina86.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
 Content-Disposition: inline
-In-Reply-To: <20101018223540.GA20730@gradator.net>
+In-Reply-To: <7e9435f5e8c2e9d6363d79de79f81b4f259e230c.1313791722.git.mina86@mina86.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: gradator@atreides.gradator.net
-Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
-X-SA-Exim-Scanned: Yes (on atreides.gradator.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---4Ckj6UjgE2iN1+kY
-Content-Type: text/plain; charset=iso-8859-1
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Tue, Oct 19, 2010 at 12:35:40AM +0200, Sylvain Rochet wrote:
+On Sat, Aug 20, 2011 at 12:32:59AM +0200, Michal Nazarewicz wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
 >=20
-> ... upgraded to 2.6.33.5, then 2.6.33.7, finally to 2.6.35.7, and I=20
-> always end up with the same ending, it seems inotify can miss some VFS=20
-> events from time to time.
+> In a few places kernel wants to print a human-readable USB
+> device speed name (eg. "high") instead of a raw number
+> (eg. 3).  Usually a switch is introduced in those places
+> leading to code repetition.  To mitigate this issue, this
+> commit introduces usb_device_speed_name() function, which
+> returns a human-readable name of provided speed.
+>=20
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  drivers/usb/Makefile          |    3 +++
+>  drivers/usb/common.c          |   24 ++++++++++++++++++++++++
+>  drivers/usb/gadget/udc-core.c |   19 ++-----------------
+>  include/linux/usb/ch9.h       |    8 ++++++++
+>  4 files changed, 37 insertions(+), 17 deletions(-)
+>  create mode 100644 drivers/usb/common.c
+>=20
+> diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
+> index 30ddf8d..a3167cc 100644
+> --- a/drivers/usb/Makefile
+> +++ b/drivers/usb/Makefile
+> @@ -51,3 +51,6 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+=3D musb/
+>  obj-$(CONFIG_USB_RENESAS_USBHS)	+=3D renesas_usbhs/
+>  obj-$(CONFIG_USB_OTG_UTILS)	+=3D otg/
+>  obj-$(CONFIG_USB_GADGET)	+=3D gadget/
+> +
+> +obj-$(CONFIG_USB)		+=3D common.o
+> +obj-$(CONFIG_USB_GADGET)	+=3D common.o
+> diff --git a/drivers/usb/common.c b/drivers/usb/common.c
+> new file mode 100644
+> index 0000000..e9d7141
+> --- /dev/null
+> +++ b/drivers/usb/common.c
+> @@ -0,0 +1,24 @@
+> +/*
+> + * Provides code common for host and device side USB.
+> + */
+> +
+> +#include <linux/kernel.h>  /* for ARRAY_SIZE() */
+> +#include <linux/module.h>  /* for EXPORT_SYMBOL_GPL() */
+> +#include <linux/usb/ch9.h>
+> +
+> +const char *usb_device_speed_name(enum usb_device_speed speed)
 
-I finally find out why.
+somehow usb_speed_string() sounds better to me.
 
-The NFS server does not always know the name of the modified file, if=20
-the modified inode was cleared from the VFS cache fsnotify does not know=20
-as well the filename then inotify child events on directories are=20
-silently tossed.
+> +{
+> +	static const char *const names[] =3D {
+> +		"UNKNOWN",
+> +		"low-speed",
+> +		"full-speed",
+> +		"high-speed",
+> +		"wireless",
+> +		"super-speed",
+> +	};
+> +
+> +	if (speed < 0 || speed >=3D ARRAY_SIZE(names))
+> +		speed =3D USB_SPEED_UNKNOWN;
 
-Easy way to reproduce:
+I generally dislike depending on a particular ordering of enumerations.
+While's it's highly unlikely that anyone will change that, if someone
+does change, then it'll take a long time to actually find the bug on the
+print here :-)
 
-Add a few printk debug (here it only works if /data is the NFS export):
+I woud rather use a switch in this case.
 
---- begin//fs/nfsd/vfs.c        2011-07-22 04:17:23.000000000 +0200
-+++ linux-3.0/fs/nfsd/vfs.c     2011-07-30 03:18:17.837560809 +0200
-@@ -975,6 +975,8 @@
-        inode =3D dentry->d_inode;
-        exp   =3D fhp->fh_export;
-=20
-+       printk("nfsd write inode=3D%ld name=3D%s\n", inode->i_ino, dentry->=
-d_name.name);
-+
-        /*
-         * Request sync writes if
-         *  -   the sync export option has been set, or
+> diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
+> index 05ba472..e1ecdbc 100644
+> --- a/drivers/usb/gadget/udc-core.c
+> +++ b/drivers/usb/gadget/udc-core.c
+> @@ -375,23 +375,8 @@ static ssize_t usb_udc_speed_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+>  	struct usb_udc		*udc =3D container_of(dev, struct usb_udc, dev);
+> -	struct usb_gadget	*gadget =3D udc->gadget;
+> -
+> -	switch (gadget->speed) {
+> -	case USB_SPEED_LOW:
+> -		return snprintf(buf, PAGE_SIZE, "low-speed\n");
+> -	case USB_SPEED_FULL:
+> -		return snprintf(buf, PAGE_SIZE, "full-speed\n");
+> -	case USB_SPEED_HIGH:
+> -		return snprintf(buf, PAGE_SIZE, "high-speed\n");
+> -	case USB_SPEED_WIRELESS:
+> -		return snprintf(buf, PAGE_SIZE, "wireless\n");
+> -	case USB_SPEED_SUPER:
+> -		return snprintf(buf, PAGE_SIZE, "super-speed\n");
+> -	case USB_SPEED_UNKNOWN:	/* FALLTHROUGH */
+> -	default:
+> -		return snprintf(buf, PAGE_SIZE, "UNKNOWN\n");
+> -	}
+> +	return snprintf(buf, PAGE_SIZE, "%s\n",
+> +			usb_device_speed_name(udc->gadget->speed));
+>  }
+>  static DEVICE_ATTR(speed, S_IRUSR, usb_udc_speed_show, NULL);
 
-diff -Nru begin//include/linux/fsnotify.h linux-3.0/include/linux/fsnotify.h
---- begin//include/linux/fsnotify.h     2011-07-22 04:17:23.000000000 +0200
-+++ linux-3.0/include/linux/fsnotify.h  2011-07-30 03:07:00.330239062 +0200
-@@ -216,8 +232,15 @@
-                mask |=3D FS_ISDIR;
-=20
-        if (!(file->f_mode & FMODE_NONOTIFY)) {
-+               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data")=
- )
-+                       printk("fsnotify modify inode=3D%ld name=3D%s\n", i=
-node->i_ino, file->f_dentry->d_name.name);
-                fsnotify_parent(path, NULL, mask);
-                fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
-+       } else {
-+               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data")=
- )
-+                       printk("fsnotify modify-nonotify inode=3D%ld name=
-=3D%s\n", inode->i_ino, file->f_dentry->d_name.name);
-        }
- }
+you said 'several locations', but there's only one ? No other driver is
+using something similar ?
 
+--=20
+balbi
 
-On the NFS client, open a fd and send some data:
-
-# exec 1> test
-# ls -la
-#=20
-
-On the NFS server, check the kern log:
-
-Aug 20 00:57:44 inotifydebug kernel: nfsd write inode=3D13 name=3Dtest
-Aug 20 00:57:44 inotifydebug kernel: fsnotify modify inode=3D13 name=3Dtest
-
-Everything goes well.
-
-Now, clear the VFS cache on the NFS server:
-
-# echo 3 > /proc/sys/vm/drop_caches=20
-
-On the NFS client, send some data to the fd:
-
-# ls -la
-#=20
-
-On the NFS server, check the kern log:
-
-Aug 20 00:58:56 inotifydebug kernel: nfsd write inode=3D13 name=3D
-Aug 20 00:58:56 inotifydebug kernel: fsnotify modify inode=3D13 name=3D
-
-The filename is lost, fsnotify does not know the filename anymore,=20
-therefore inotify cannot send event about a modified file in a watched=20
-directory.
-
-End of the story.
-
-I guess this is almost impossible to fix this fsnotify bug, this is due=20
-by the fact that NFS use inode as file identifiers, so in some case this=20
-is impossible to know the modified filepath, and therefore impossible to=20
-match the file event to the directory watch.
-
-Kind regards,
-Sylvain
-
---4Ckj6UjgE2iN1+kY
+--MfFXiAuoTsnnDAfZ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEARECAAYFAk5O69AACgkQDFub3qtEsS8zPgCfe5WwDzEh1Vxi3omGs8i6qx9J
-UB0AoIUPMsJ9f/vsK/kEwHLqcoVr978l
-=XDSa
+iQEcBAEBAgAGBQJOTu5zAAoJEAv8Txj19kN17WcH/AiddtWjlc18DOmjeSE03i+W
+a0PteZf7DlFW+d/J/jo/I0vGAjzgPFJrZDiDmLFrR8bBIgbUBPr3dttfjOwxddKp
+/zOr72yZFLYf4wMttPcIVOaI3Tw06oLJ4NfGfhpNIcfxUSlJVJ9zjLxN+fDOKiGm
+XrjhlbX8G7WSC8ddR+ZH4egug8vH3htxOG1jad+IbfXBVVQqk/kMZSLluW7u7UVH
+ogOis+YBykPddh3gFw7abLDXYDPNzn6aISS4do4bP8jtMZh/ziDUlPcuLRuHvREe
+3tKmgF4UTlWqJDd6C4UoxPZulGaCFRDe/yBW/eqrrUl7oK6pW72oajJXDgNXkJE=
+=x3cs
 -----END PGP SIGNATURE-----
 
---4Ckj6UjgE2iN1+kY--
+--MfFXiAuoTsnnDAfZ--
