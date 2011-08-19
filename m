@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab1HSV3j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 17:29:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53695 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1HSV3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 17:29:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Fri, 19 Aug 2011 23:31:20 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110819234756.ef70fa07dccb6adc17d2f516@canb.auug.org.au>
-In-Reply-To: <20110819234756.ef70fa07dccb6adc17d2f516@canb.auug.org.au>
+	id S1753749Ab1HSVa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 17:30:26 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11568 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab1HSVaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 17:30:24 -0400
+Date: Fri, 19 Aug 2011 23:30:57 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-ntfs-dev@lists.sourceforge.net,
+        Anton Altaparmakov <anton@tuxera.com>
+Subject: [PATCH 0/3] make ntfs_free() NULL safe
+Message-ID: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108192331.20553.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi
 
-On Friday, August 19, 2011, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (most of the arm and
-> avr32 builds at least) failed like this:
-> 
-> In file included from drivers/base/power/clock_ops.c:14:
-> include/linux/pm_clock.h:15: error: field 'nb' has incomplete type
+Here's a small series of patches that make it safe to call ntfs_free() 
+with a NULL pointer and reaps some bennefits from that.
 
-Sorry about that.
+The first patch in the series simply makes ntfs_free() safe to call with a 
+NULL pointer. This fits with many other kernel freeing functions, that are 
+generally safe to call with NULL pointers.
 
-> You need to include something that defines "struct notifier_block".
+The second patch adds some documentation to ntfs_free() similar to what's 
+already provided for the allocation functions.  ntfs_free() is fairly 
+simple so you could argue that such documentation is not really needed, 
+but I say it's still nice to have if for no other reason than 
+completeness.
 
-Right, should be fixed now.
+The third patch removes a number of tests for NULL pointers before calls 
+to ntfs_free() that patch 1 make redundant.
 
-Thanks,
-Rafael
+This whole things came about because Coverity Prevent spotted that in 
+fs/ntfs/runlist.c on line 967 we call ntfs_runlists_merge() which frees 
+its second argument and we then explicitly free that argument via 
+ntfs_free() again on line 970. This patch series also makes that a non 
+issue.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
