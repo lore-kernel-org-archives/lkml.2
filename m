@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1HSLmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:42:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53360 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab1HSLmJ convert rfc822-to-8bit (ORCPT
+	id S1753341Ab1HSLnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:43:50 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:48789 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab1HSLnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:42:09 -0400
+	Fri, 19 Aug 2011 07:43:47 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Milan Broz <mbroz@redhat.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "David S. Miller" <davem@davemloft.net>, containers@lists.osdl.org
+References: <4E4CDF44.5080109@redhat.com> <m17h69sr03.fsf@fess.ebiederm.org>
+	<4E4E395B.7070106@redhat.com>
+Date: Fri, 19 Aug 2011 04:43:39 -0700
+In-Reply-To: <4E4E395B.7070106@redhat.com> (Milan Broz's message of "Fri, 19
+	Aug 2011 12:22:19 +0200")
+Message-ID: <m1liup4oes.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <op.v0gitehx3l0zgt@mnazarewicz-glaptop>
-References: <1313659726-9406-1-git-send-email-per.forlin@stericsson.com>
-	<op.v0esx9lx3l0zgt@mnazarewicz-glaptop>
-	<CAJ0pr18LYtsPXghNeL_z4qvpd9Td3KtGR4R-x2dfu8s_S+dfYg@mail.gmail.com>
-	<op.v0gitehx3l0zgt@mnazarewicz-glaptop>
-Date: Fri, 19 Aug 2011 13:42:08 +0200
-Message-ID: <CAJ0pr1_3xdm3qB=AkcuriMpV6RP-47pg+YLNB7YwPuagA0vnEg@mail.gmail.com>
-Subject: Re: [PATCH v4] usb: gadget: storage_common: make FSG_NUM_BUFFERS
- variable size
-From: Per Forlin <per.forlin@linaro.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Per Forlin <per.forlin@stericsson.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/VoB2XNYXpfiuGM4UtuQljpsWtgTClBGQ=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Milan Broz <mbroz@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [dm-devel] clone() with CLONE_NEWNET breaks kobject_uevent_env()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/19 Michal Nazarewicz <mina86@mina86.com>:
-> On Fri, 19 Aug 2011 10:39:24 +0200, Per Forlin <per.forlin@linaro.org>
-> wrote:
->
->> 2011/8/18 Michal Nazarewicz <mina86@mina86.com>:
->>>
->>> On Thu, 18 Aug 2011 11:28:46 +0200, Per Forlin wrote:
->>>>
->>>> diff --git a/drivers/usb/gadget/f_mass_storage.c
->>>> b/drivers/usb/gadget/f_mass_storage.c
->>>> index 5b93395..3e546d9 100644
->>>> --- a/drivers/usb/gadget/f_mass_storage.c
->>>> +++ b/drivers/usb/gadget/f_mass_storage.c
->>>> @@ -363,7 +363,6 @@ struct fsg_common {
->>>>       struct fsg_buffhd       *next_buffhd_to_fill;
->>>>       struct fsg_buffhd       *next_buffhd_to_drain;
->>>> -       struct fsg_buffhd       buffhds[FSG_NUM_BUFFERS];
->>>>       int                     cmnd_size;
->>>>       u8                      cmnd[MAX_COMMAND_SIZE];
->>>> @@ -407,6 +406,8 @@ struct fsg_common {
->>>>       char inquiry_string[8 + 16 + 4 + 1];
->>>>       struct kref             ref;
->>>> +       /* Must be the last entry */
->>>> +       struct fsg_buffhd       buffhds[0];
->>>
->>> I would rather see it as “struct fsg_buffhd *buffhds;” since this change
->>> requires both mass_storage.c and multi.c to be changed.
->>>
->> If the allocation of buffhds is done separately in fsg_common_init().
->> mass_storage.c and multi.c doesn't need to be changed. But it's little
->> tricky to know whether buffhds should be allocated or not.
->
-> They should be always allocated.  If the code allocate fsg_common itself,
-> the
-> case is obvious.  If caller passes a pointer to fsg_common structure, it is
-> assumed that the structure is not initialised, thus the function need to
-> allocate buffers.
->
-Is it true that fsg_common_init() will never be called twice to
-initialise the same fsg_common structure. It is always called once
-followed by release.
-If this is the case it is safe to only:
-if (common->buffhds)
-  common->buffhds = kzalloc()
+Milan Broz <mbroz@redhat.com> writes:
 
-Thanks,
-Per
+> On 08/19/2011 11:13 AM, Eric W. Biederman wrote:
+>> Milan Broz <mbroz@redhat.com> writes:
+>> 
+>> I think the proper fix is to remove the error return from
+>> kobject_uevent_env and kobject_uevent, and make it harder to get calling
+>> of this function wrong.  Possibly in conjunction with that tag all of
+>> the memory allocations of kobject_uevent_env with GFP_NOFAIL or
+>> something so the memory allocator knows that this path is totally
+>> not able to deal with failure.
+>> 
+>> Is kobject_uevent_env anything except an asynchronous best effort
+>> notification to user-space that a device has come or gone?
+>
+> Unfortunately it is for device-mapper. libdevmapper
+> depends on information that uevent was sent because udev rules uses
+> semaphore to inform that some action was taken.
+> So if dm-ioctl returns flag that uevent was not sent, it fallback
+> to different error path (otherwise it waits for completion forever).
+> (TBH I am more and more convinced this was not quite clever concept.)
+
+If I understand your description and the code right the guarantee that
+you need is that kobject_uevent will return success only if it has
+queued a packet in every listening netlink socket.
+
+We already ignore ENOBUFS so the guarantee you appear to need in
+libdevmapper does not appear to be present in kobject_uevent.
+
+Does the libdevmapper code work despite getting a spurious failure?
+
+If libdevmapper does not work despite a spurious failure I don't see how
+we could possibly fix kobject_uevent when there is more than one netlink
+listener.
+
+Eric
