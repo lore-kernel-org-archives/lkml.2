@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab1HSCV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 22:21:29 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:36922 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab1HSCV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 22:21:27 -0400
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Seth Forshee <seth.forshee@canonical.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-In-Reply-To: <20110818142500.GC28313@thinkpad-t410>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <20110818135853.GA28313@thinkpad-t410> <20110818142500.GC28313@thinkpad-t410>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Fri, 19 Aug 2011 10:23:46 +0800
-Message-ID: <87liuq3zrh.fsf@emc.com.tw>
+	id S1753488Ab1HSCeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 22:34:12 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22134 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab1HSCeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 22:34:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,248,1312182000"; 
+   d="scan'208";a="40081912"
+Date: Fri, 19 Aug 2011 10:34:06 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH] writeback: Per-block device
+ bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
+Message-ID: <20110819023406.GA12732@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+ <20110818094824.GA25752@localhost>
+ <1313669702.6607.24.camel@sauron>
+ <20110818131343.GA17473@localhost>
+ <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
+Hi Kautuk,
 
-On Thu, 18 Aug 2011 09:25:00 -0500, Seth Forshee <seth.forshee@canonical.com> wrote:
-> On Thu, Aug 18, 2011 at 08:58:53AM -0500, Seth Forshee wrote:
+On Fri, Aug 19, 2011 at 12:25:58AM +0800, Kautuk Consul wrote:
 > 
-> Sorry, that should have been:
+> Lines: 59
 > 
-> 	case 2:
-> 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-> 		/* fall through */
+> Hi Wu,
 > 
-> 	case 3:
-> 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-> 		if (etd->reports_pressure) {
-> 			input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
-> 					     ETP_PMAX_V2, 0, 0);
-> 			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
-> 					     ETP_WMAX_V2, 0, 0);
-> 		}
-> 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> 		input_mt_init_slots(dev, 2);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-> 		break;
-Looks nice, thank you, I will change it.
+> On Thu, Aug 18, 2011 at 6:43 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > Hi Artem,
+> >
+> >> Here is a real use-case we had when developing the N900 phone. We had
+> >> internal flash and external microSD slot. Internal flash is soldered in
+> >> and cannot be removed by the user. MicroSD, in contrast, can be removed
+> >> by the user.
+> >>
+> >> For the internal flash we wanted long intervals and relaxed limits to
+> >> gain better performance.
+> >>
+> >> For MicroSD we wanted very short intervals and tough limits to make sure
+> >> that if the user suddenly removes his microSD (users do this all the
+> >> time) - we do not lose data.
+> >
+> > Thinking twice about it, I find that the different requirements for
+> > interval flash/external microSD can also be solved by this scheme.
+> >
+> > Introduce a per-bdi dirty_background_time (and optionally dirty_time)
+> > as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
+> > however with unit "milliseconds worth of data".
+> >
+> > The per-bdi dirty_background_time will be set low for external microSD
+> > and high for internal flash. Then you get timely writeouts for microSD
+> > and reasonably delayed writes for internal flash (controllable by the
+> > global dirty_expire_centisecs).
+> >
+> > The dirty_background_time will actually work more reliable than
+> > dirty_expire_centisecs because it will checked immediately after the
+> > application dirties more pages. And the dirty_time could provide
+> > strong data integrity guarantee -- much stronger than
+> > dirty_expire_centisecs -- if used.
+> >
+> > Does that sound reasonable?
+> >
+> > Thanks,
+> > Fengguang
+> >
+> 
+> My understanding of your email appears that you are agreeing in
+> principle that the temporal
+> aspect of this problem needs to be addressed along with your spatial
+> pattern analysis technique.
 
-jj
+Yup.
+
+> I feel a more generic solution to the problem is required because the
+> problem faced by Artem can appear
+> in a different situation for a different application.
+> 
+> I can re-implement my original patch in either centiseconds or
+> milliseconds as suggested by you.
+
+My concern on your patch is the possible conflicts and confusions
+between the global and the per-bdi dirty_expire_centisecs. To maintain
+compatibility you need to keep the global one. Then there is the hard
+question of "what to do with the per-bdi values when the global value
+is changed". Whatever policy you choose, there will be user unexpected
+behaviors.
+
+I don't like such conflicting/inconsistent interfaces.
+
+Given that we'll need to introduce the dirty_background_time interface
+anyway, and it happen to can address the N900 internal/removable storage
+problem (mostly), I'm more than glad to cancel the dirty_expire_centisecs
+problem.
+
+Or, do you have better way out of the dirty_expire_centisecs dilemma?
+
+Thanks,
+Fengguang
