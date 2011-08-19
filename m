@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab1HST0N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:26:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60744 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755684Ab1HST0L convert rfc822-to-8bit (ORCPT
+	id S1756066Ab1HST0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:26:47 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:35967 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755684Ab1HST0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 15:26:11 -0400
+	Fri, 19 Aug 2011 15:26:46 -0400
+Date: Fri, 19 Aug 2011 15:26:38 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH RFC] ARM: vexpress: Use assembler mnemonic for WFI in
+ platform_do_lowpower.
+Message-ID: <20110819192638.GA21043@elliptictech.com>
+References: <1313777004-4716-1-git-send-email-nbowler@elliptictech.com>
+ <20110819181514.GA12654@gallagher>
 MIME-Version: 1.0
-In-Reply-To: <4E4E2B2A.40100@odi.ch>
-References: <4E4E2B2A.40100@odi.ch>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Fri, 19 Aug 2011 15:25:30 -0400
-Message-ID: <CAF_S4t_5qfx1H+nm+fvYd24k4ezF__JDFLvg6gv_so8SeVqKvA@mail.gmail.com>
-Subject: Re: contention on long-held spinlock
-To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org, Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        linux-driver@qlogic.com, linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819181514.GA12654@gallagher>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/19 Ortwin Glück <odi@odi.ch>:
-> Hi,
->
-> I have observed a bad behaviour that is likely caused by spinlocks in the
-> qla2xxx driver. This is a QLogic Fibre Channel storage driver.
+On 2011-08-19 19:15 +0100, Jamie Iles wrote:
+> On Fri, Aug 19, 2011 at 02:03:24PM -0400, Nick Bowler wrote:
+[...]
+> > -		/*
+> > -		 * here's the WFI
+> > -		 */
+> > -		asm(".word	0xe320f003\n"
+> > +		asm("wfi\n"
+> >  		    :
+> >  		    :
+> >  		    : "memory", "cc");
+> 
+> There's a wfi() macro defined in arch/arm/include/asm/system.h that 
+> could be used here.
 
-Please CC the relevant maintainers when reporting driver bugs (I'm
-adding them in this reply); it will help make sure the right people
-notice. Maintainer addresses can be found in the MAINTAINERS file at
-the root of the linux source tree.
+Indeed, thanks for pointing that out.
 
-What version of the kernel are you using? It would also help to
-provide dmesg output from when the problem is occurring, if anything
-out of the ordinary can be found there (if you've already rebooted,
-check /var/log/kern.log - or wherever your distribution puts the
-kernel log)
+I'm a little wary, however: the wfi macro does not include the "cc"
+clobber that this code has currently, and I don't know what the
+implications of removing it are.  There appears to be no current
+users of the wfi macro.
 
-> Somehow the attached SAN had a problem and became unresponsive. Many
-> processes queued up waiting to write to the device. The processes were doing
-> nothing but wait, but system load increased to insane values (40 and above
-> on a 4 core machine). The system was very sluggish and unresponsive, making
-> it very hard and slow to see what actually was the problem.
->
-> I didn't run an indepth analysis, but this is my guess: I see that qla2xxx
-> uses spinlocks to guard the HW against concurrent access. So if the HW
-> becomes unresponsive all waiters would busy spin and burn resources, right?
-> Those spinlocks are superfast as long as the HW responds well, but become a
-> CPU burner once the HW becomes slow.
->
-> I wonder if spinlocks could be made aware of such a situation and relax.
-> Something like if spinning for more than 1000 times, perform a simple
-> backoff and sleep. A spinlock should never spin busy for several seconds,
-> right?
+Taking a closer look, there appear to be five platforms that have a
+hardcoded WFI just like the above (including the "cc" clobber):
+exynos4, realview, shmobile, tegra and vexpress.  omap defines its
+own do_wfi macro, *without* the "cc" clobber.
 
-That's what mutexes are for. Note, however, that interrupt handlers
-cannot use mutexes as they cannot sleep, nor can they wait for lock
-holders which may themselves sleep.
+Nevertheless, using the macro seems to work just fine, so I can
+certainly re-spin the patch with that instead.
 
-Also note that holding spinlocks for a long time is more likely to
-result in lockups than a slowdown - a CPU attempting to grab a
-spinlock disables migration and preemption, so on your four CPU
-system, four processes waiting on spinlocks is enough to completely
-lock up the system (unless you're using the real-time branch's kernel,
-which converts most spinlocks to mutexes).
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
