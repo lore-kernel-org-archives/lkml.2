@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1HSLLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:11:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33849 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752343Ab1HSLLT (ORCPT
+	id S1753286Ab1HSLNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:13:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49564 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab1HSLNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:11:19 -0400
-Date: Fri, 19 Aug 2011 12:10:54 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "tim@xen.org" <tim@xen.org>
-Subject: Re: [PATCH v7 09/16] ARM: LPAE: MMU setup for the 3-level page
- table format
-Message-ID: <20110819111054.GC6558@e102109-lin.cambridge.arm.com>
-References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
- <1312988619-16804-10-git-send-email-catalin.marinas@arm.com>
- <1313749557.5010.345.camel@zakaz.uk.xensource.com>
+	Fri, 19 Aug 2011 07:13:49 -0400
+Message-ID: <4E4E4565.70902@linutronix.de>
+Date: Fri, 19 Aug 2011 13:13:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313749557.5010.345.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Sergei Shtylyov <sshtylyov@mvista.com>, Felipe Balbi <balbi@ti.com>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181623390.1628-100000@iolanthe.rowland.org> <op.v0gi7koy3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <op.v0gi7koy3l0zgt@mnazarewicz-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 11:25:57AM +0100, Ian Campbell wrote:
-> On Wed, 2011-08-10 at 16:03 +0100, Catalin Marinas wrote:
-> > +/*
-> > + *     cpu_v7_set_pte_ext(ptep, pte)
-> > + *
-> > + *     Set a level 2 translation table entry.
-> > + *
-> > + *     - ptep  - pointer to level 2 translation table entry
-> > + *               (hardware version is stored at +2048 bytes)
+Michal Nazarewicz wrote:
+> On Thu, 18 Aug 2011 22:30:14 +0200, Alan Stern 
+> <stern@rowland.harvard.edu> wrote:
+>> Okay, that line was probably all right, but it seems that something
+>> else needs to be changed.  In a composite gadget, if none of the
+>> function drivers support SuperSpeed then we don't want
+>> composite_driver.speed to be set to USB_SPEED_SUPER.  It would be
+>> foolish to allow the UDC to connect at a speed which would make the
+>> gadget useless.
 > 
-> +2048 thing not true for LPAE?
+> OK, so it seems I was misunderstanding your comment all along, but
+> that was nothing a good night sleep couldn't fix. :P
 > 
-> > + *     - pte   - PTE value to store
-> > + *     - ext   - value for extended PTE bits
+> So, what you are saying is that when passed to the UDC driver (ie.
+> by calling usb_gadget_probe_driver()) the usb_gadget_driver structure
+> must have speed no higher then what the UDC supports, right?  And in
+> that case, it's not composite specific but affects all the gadgets.
 > 
-> "ext" is not actually present/used in this variant, rather pte is split
-> between r1 and r2?
-
-Yes, you are right, the comments have just been copied from proc-v7.S.
-I'll go through them again make sure they are still valid.
-
-> > + */
-> > +ENTRY(cpu_v7_set_pte_ext)
-> > +#ifdef CONFIG_MMU
-> > +       tst     r2, #L_PTE_PRESENT
-> > +       beq     1f
-> > +       tst     r3, #1 << (55 - 32)             @ L_PTE_DIRTY
-> > +       orreq   r2, #L_PTE_RDONLY
-> > +1:     strd    r2, r3, [r0]
+> In that case, I think that usb_gadget_probe_driver() itself needs to be
+> changed since prior to this function we don't know which gadget the
+> gadget driver will be bound to.  Ie. something as follows could be added
+> somewhere there:
 > 
-> AIUI this 64-bit store is not atomic. Is there something about the ARM
-> architecture which would prevent the MMU prefetching the half written
-> entry and caching it in the TLB?
+>   driver->speed = min(driver->speed, udc->gadget->speed)
+> 
+> Does that sound like it makes sense?
+> 
+> At this point though, gadget drivers need to be aware that
+> usb_gadget_probe_driver() may change the speed field.  It should not
+> be a problem since, as far as I can tell, all gadgets expect for g_ffs
+> call usb_gadget_probe_driver() only once and in case of g_ffs this can
+> be solved at composite level.
 
-CPU implementations that include LPAE guarantee the atomicity of a
-double-word store (STRD) if the alignment is correct.
+There are three speeds:
+- the max speed the UDC supports i.e. HS (no field for that?)
+- the max speed the gadget / function driver support i.e. SS
+   (driver->max_speed ?)
+- the speed the UDC is connected at the moment i.e. FS. (gadget->speed)
 
-Thanks.
+So in this case you have to go down and use FS descriptors. The FS speed
+is represented by gadget->speed right? So for now we do FS. On the next
+re-plug the user places OHCI controller with XHCI so you can use HS
+descriptors now. So changing dirver->speed wouldn't allow you go beyond FS
+once you to FS right?
 
--- 
-Catalin
+Sebastian
