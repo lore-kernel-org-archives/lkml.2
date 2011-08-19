@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab1HSQfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:35:50 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:34282 "EHLO mx01.d-labs.de"
+	id S1756384Ab1HSQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:35:58 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41458 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab1HSQft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:35:49 -0400
-Date: Fri, 19 Aug 2011 18:35:21 +0200
-From: Florian Mickler <florian@mickler.org>
-To: mchehab@infradead.org
-Cc: Florian Mickler <florian@mickler.org>, tino.keitel@tikei.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "v3.0.y" <stable@kernel.org>
-Subject: Re: [PATCH] [media] vp7045: fix buffer setup
-Message-ID: <20110819183521.1b5f7efe@schatten.dmk.lab>
-In-Reply-To: <1312970720-25694-1-git-send-email-florian@mickler.org>
-References: <20110809200842.GA29662@mac.home>
-	<1312970720-25694-1-git-send-email-florian@mickler.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756354Ab1HSQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 12:35:55 -0400
+Date: Fri, 19 Aug 2011 09:35:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, stable@kernel.org
+Subject: [PATCH RFC tip/core/urgent] rcu: Avoid having just-onlined CPU
+ resched itself when RCU is idle
+Message-ID: <20110819163547.GA5182@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011 12:05:20 +0200
-Florian Mickler <florian@mickler.org> wrote:
+CPUs set rdp->qs_pending when coming online to resolve races with
+grace-period start.  However, this means that if RCU is idle, the
+just-onlined CPU might needlessly send itself resched IPIs.  Adjust the
+online-CPU initialization to avoid this, and also to correctly cause
+the CPU to respond to the current grace period if needed.
 
-> dvb_usb_device_init calls the frontend_attach method of this driver which
-> uses vp7045_usb_ob. In order to have a buffer ready in vp7045_usb_op, it has to
-> be allocated before that happens.
-> 
-> Luckily we can use the whole private data as the buffer as it gets separately
-> allocated on the heap via kzalloc in dvb_usb_device_init and is thus apt for
-> use via usb_control_msg.
-> 
-> This fixes a
-> 	BUG: unable to handle kernel paging request at 0000000000001e78
-> 
-> reported by Tino Keitel and diagnosed by Dan Carpenter.
-> 
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=40062
-> Cc: v3.0.y <stable@kernel.org>
-> Tested-by: Tino Keitel <tino.keitel@tikei.de>
-> Signed-off-by: Florian Mickler <florian@mickler.org>
+This patch is believed to fix or otherwise suppress problems in
+https://bugzilla.redhat.com/show_bug.cgi?id=726877, however, the
+relationship is not apparent to this patch's author.  That said, it is
+hard to argue with test results.
 
-...ping...
+This will be available from -rcu as soon as kernel.org's mirrors update:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+
+Reported-by: Nicolas Mailhot <nicolas.mailhot@laposte.net>
+Reported-by: Michal Jaegermann <michal@harddata.com>
+Reported-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+
+ rcutree.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ba06207..39cc360 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1865,8 +1865,6 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 
+ 	/* Set up local state, ensuring consistent view of global state. */
+ 	raw_spin_lock_irqsave(&rnp->lock, flags);
+-	rdp->passed_quiesc = 0;  /* We could be racing with new GP, */
+-	rdp->qs_pending = 1;	 /*  so set up to respond to current GP. */
+ 	rdp->beenonline = 1;	 /* We have now been online. */
+ 	rdp->preemptible = preemptible;
+ 	rdp->qlen_last_fqs_check = 0;
+@@ -1891,8 +1889,15 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 		rnp->qsmaskinit |= mask;
+ 		mask = rnp->grpmask;
+ 		if (rnp == rdp->mynode) {
+-			rdp->gpnum = rnp->completed; /* if GP in progress... */
++			/*
++			 * If there is a grace period in progress, we will
++			 * set up to wait for it next time we run the
++			 * RCU core code.
++			 */
++			rdp->gpnum = rnp->completed;
+ 			rdp->completed = rnp->completed;
++			rdp->passed_quiesc = 0;
++			rdp->qs_pending = 0;
+ 			rdp->passed_quiesc_completed = rnp->completed - 1;
+ 		}
+ 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
