@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1HSR5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 13:57:48 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:60612 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab1HSR5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 13:57:47 -0400
-X-ASG-Debug-ID: 1313776666-01de281ca62f390001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E4EA416.4060006@fusionio.com>
-Date: Fri, 19 Aug 2011 19:57:42 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1754634Ab1HSR7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 13:59:55 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61769 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab1HSR7y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 13:59:54 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] block bits for 3.1-rc
-References: <4E4E6238.3080808@fusionio.com> <CA+55aFySzxMhfBDVjJ+8i8jMmS7w+pDEZ-f39Ox97cdm3x7Wgw@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [GIT PULL] block bits for 3.1-rc
-In-Reply-To: <CA+55aFySzxMhfBDVjJ+8i8jMmS7w+pDEZ-f39Ox97cdm3x7Wgw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1313776666
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.72234
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <1313760467-8598-67-git-send-email-ian.campbell@citrix.com>
+References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+	<1313760467-8598-67-git-send-email-ian.campbell@citrix.com>
+Date: Fri, 19 Aug 2011 18:59:53 +0100
+Message-ID: <CANK3SE2zOO2TwiF=vSrGRB=D6=MZdwMywe2mTkUBn56XJdPXfg@mail.gmail.com>
+Subject: Re: [PATCH 67/75] et131x: convert to SKB paged frag API.
+From: Mark Einon <mark.einon@gmail.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-19 19:50, Linus Torvalds wrote:
-> On Fri, Aug 19, 2011 at 6:16 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>
->> This is a lot larger than it usually would be at this time.
-> 
-> Grr, grr, grr.
-> 
-> I took it, but I want you to *jump* if we have any problems..
+On 19 August 2011 14:27, Ian Campbell <ian.campbell@citrix.com> wrote:
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Mark Einon <mark.einon@gmail.com>
+> Cc: Alan Cox <alan@linux.intel.com>
+> Cc: devel@driverdev.osuosl.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/staging/et131x/et1310_tx.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
 
-Sir, yes sir.
+Just a heads up - This patch is going to create some merge issues
+if/when the outstanding changes I've sent for inclusion in the staging
+tree get merged back.
+Should be fairly trivial to fix though.
 
-I realize it's way too large, and that's exactly why I let it simmer for
-a lot longer than usual post -rc1 pull requests. Next time please
-coordinate the merge window with my vacation, thanks!
+Cheers,
+Mark
 
--- 
-Jens Axboe
-
+>
+> diff --git a/drivers/staging/et131x/et1310_tx.c b/drivers/staging/et131x/et1310_tx.c
+> index 8fb3051..03e7a4e 100644
+> --- a/drivers/staging/et131x/et1310_tx.c
+> +++ b/drivers/staging/et131x/et1310_tx.c
+> @@ -519,12 +519,12 @@ static int nic_send_packet(struct et131x_adapter *etdev, struct tcb *tcb)
+>                         * returned by pci_map_page() is always 32-bit
+>                         * addressable (as defined by the pci/dma subsystem)
+>                         */
+> -                       desc[frag++].addr_lo =
+> -                           pci_map_page(etdev->pdev,
+> -                                        frags[i - 1].page,
+> -                                        frags[i - 1].page_offset,
+> -                                        frags[i - 1].size,
+> -                                        PCI_DMA_TODEVICE);
+> +                       desc[frag++].addr_lo = skb_frag_dma_map(
+> +                                                       &etdev->pdev->dev,
+> +                                                       &frags[i - 1],
+> +                                                       0,
+> +                                                       frags[i - 1].size,
+> +                                                       PCI_DMA_TODEVICE);
+>                }
+>        }
+>
+> --
+> 1.7.2.5
+>
+>
