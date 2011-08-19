@@ -1,40 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab1HSQXQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:23:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54981 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab1HSQXN (ORCPT
+	id S1756285Ab1HSQZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:25:08 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:30417 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217Ab1HSQZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:23:13 -0400
-Date: Fri, 19 Aug 2011 18:23:12 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH 10/11] VFS: Cache request_queue in struct block_device
-Message-ID: <20110819162312.GE25996@one.firstfloor.org>
-References: <1312259893-4548-1-git-send-email-andi@firstfloor.org> <1312259893-4548-11-git-send-email-andi@firstfloor.org> <20110818194245.GJ15413@redhat.com> <4E4D7E3C.8060104@linux.intel.com> <20110819141409.GD18656@redhat.com> <20110819153622.GD25996@one.firstfloor.org> <20110819155534.GA13464@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819155534.GA13464@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 19 Aug 2011 12:25:06 -0400
+X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
+   d="scan'208";a="159762136"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
+Subject: [PATCH] net: add APIs for manipulating skb page fragments.
+Date: Fri, 19 Aug 2011 17:25:00 +0100
+Message-ID: <1313771100-22993-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Primarily because of code complexity. We are stashing away a pointer and
-> not taking any reference anywhere. So I am not even sure who is making
-> sure that request queue is not gone and there are no comments in the code
-> about why we are stashing a pointer and how are we making sure that
-> request queue is around for the lifetime of bdev.
+The primary aim is to add skb_frag_(ref|unref) in order to remove the use of
+bare get/put_page on SKB pages fragments and to isolate users from subsequent
+changes to the skb_frag_t data structure.
 
-Can you point out a concrete problem in my approach?  This seems
-rather vague.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
+Cc: netdev@vger.kernel.org
+---
+ include/linux/skbuff.h |  170 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 168 insertions(+), 2 deletions(-)
 
-If you have an alternative way to get the 0.3% I would be also
-interested.
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index f902c33..a4b3647 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -29,6 +29,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/dmaengine.h>
+ #include <linux/hrtimer.h>
++#include <linux/dma-mapping.h>
+ 
+ /* Don't change this without changing skb_csum_unnecessary! */
+ #define CHECKSUM_NONE 0
+@@ -1127,14 +1128,47 @@ static inline int skb_pagelen(const struct sk_buff *skb)
+ 	return len + skb_headlen(skb);
+ }
+ 
+-static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
+-				      struct page *page, int off, int size)
++/**
++ * __skb_fill_page_desc - initialise a paged fragment in an skb
++ * @skb: buffer containing fragment to be initialised
++ * @i: paged fragment index to initialise
++ * @page: the page to use for this fragment
++ * @off: the offset to the data with @page
++ * @size: the length of the data
++ *
++ * Initialises the @i'th fragment of @skb to point to &size bytes at
++ * offset @off within @page.
++ *
++ * Does not take any additional reference on the fragment.
++ */
++static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
++					struct page *page, int off, int size)
+ {
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
+ 	frag->page		  = page;
+ 	frag->page_offset	  = off;
+ 	frag->size		  = size;
++}
++
++/**
++ * skb_fill_page_desc - initialise a paged fragment in an skb
++ * @skb: buffer containing fragment to be initialised
++ * @i: paged fragment index to initialise
++ * @page: the page to use for this fragment
++ * @off: the offset to the data with @page
++ * @size: the length of the data
++ *
++ * As per __skb_fill_page_desc() -- initialises the @i'th fragment of
++ * @skb to point to &size bytes at offset @off within @page. In
++ * addition updates @skb such that @i is the last fragment.
++ *
++ * Does not take any additional reference on the fragment.
++ */
++static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
++				      struct page *page, int off, int size)
++{
++	__skb_fill_page_desc(skb, i, page, off, size);
+ 	skb_shinfo(skb)->nr_frags = i + 1;
+ }
+ 
+@@ -1629,6 +1663,138 @@ static inline void netdev_free_page(struct net_device *dev, struct page *page)
+ }
+ 
+ /**
++ * skb_frag_page - retrieve the page refered to by a paged fragment
++ * @frag: the paged fragment
++ *
++ * Returns the &struct page associated with @frag.
++ */
++static inline struct page *skb_frag_page(const skb_frag_t *frag)
++{
++	return frag->page;
++}
++
++/**
++ * __skb_frag_ref - take an addition reference on a paged fragment.
++ * @frag: the paged fragment
++ *
++ * Takes an additional reference on the paged fragment @frag.
++ */
++static inline void __skb_frag_ref(skb_frag_t *frag)
++{
++	get_page(skb_frag_page(frag));
++}
++
++/**
++ * skb_frag_ref - take an addition reference on a paged fragment of an skb.
++ * @skb: the buffer
++ * @f: the fragment offset.
++ *
++ * Takes an additional reference on the @f'th paged fragment of @skb.
++ */
++static inline void skb_frag_ref(struct sk_buff *skb, int f)
++{
++	__skb_frag_ref(&skb_shinfo(skb)->frags[f]);
++}
++
++/**
++ * __skb_frag_unref - release a reference on a paged fragment.
++ * @frag: the paged fragment
++ *
++ * Releases a reference on the paged fragment @frag.
++ */
++static inline void __skb_frag_unref(skb_frag_t *frag)
++{
++	put_page(skb_frag_page(frag));
++}
++
++/**
++ * skb_frag_unref - release a reference on a paged fragment of an skb.
++ * @skb: the buffer
++ * @f: the fragment offset
++ *
++ * Releases a reference on the @f'th paged fragment of @skb.
++ */
++static inline void skb_frag_unref(struct sk_buff *skb, int f)
++{
++	__skb_frag_unref(&skb_shinfo(skb)->frags[f]);
++}
++
++/**
++ * skb_frag_address - gets the address of the data contained in a paged fragment
++ * @frag: the paged fragment buffer
++ *
++ * Returns the address of the data within @frag. The page must already
++ * be mapped.
++ */
++static inline void *skb_frag_address(const skb_frag_t *frag)
++{
++	return page_address(skb_frag_page(frag)) + frag->page_offset;
++}
++
++/**
++ * skb_frag_address_safe - gets the address of the data contained in a paged fragment
++ * @frag: the paged fragment buffer
++ *
++ * Returns the address of the data within @frag. Checks that the page
++ * is mapped and returns %NULL otherwise.
++ */
++static inline void *skb_frag_address_safe(const skb_frag_t *frag)
++{
++	void *ptr = page_address(skb_frag_page(frag));
++	if (unlikely(!ptr))
++		return NULL;
++
++	return ptr + frag->page_offset;
++}
++
++/**
++ * __skb_frag_set_page - sets the page contained in a paged fragment
++ * @frag: the paged fragment
++ * @page: the page to set
++ *
++ * Sets the fragment @frag to contain @page.
++ */
++static inline void __skb_frag_set_page(skb_frag_t *frag, struct page *page)
++{
++	frag->page = page;
++	__skb_frag_ref(frag);
++}
++
++/**
++ * skb_frag_set_page - sets the page contained in a paged fragment of an skb
++ * @skb: the buffer
++ * @f: the fragment offset
++ * @page: the page to set
++ *
++ * Sets the @f'th fragment of @skb to contain @page.
++ */
++static inline void skb_frag_set_page(struct sk_buff *skb, int f,
++				     struct page *page)
++{
++	__skb_frag_set_page(&skb_shinfo(skb)->frags[f], page);
++}
++
++/**
++ * skb_frag_dma_map - maps a paged fragment via the DMA API
++ * @device: the device to map the fragment to
++ * @frag: the paged fragment to map
++ * @offset: the offset within the fragment (starting at the
++ *          fragment's own offset)
++ * @size: the number of bytes to map
++ * @direction: the direction of the mapping (%PCI_DMA_*)
++ *
++ * Maps the page associated with @frag to @device.
++ */
++static inline dma_addr_t skb_frag_dma_map(struct device *dev,
++					  const skb_frag_t *frag,
++					  size_t offset, size_t size,
++					  enum dma_data_direction dir)
++{
++	return dma_map_page(dev, skb_frag_page(frag),
++			    frag->page_offset + offset, size, dir);
++}
++
++/**
+  *	skb_clone_writable - is the header of a clone writable
+  *	@skb: buffer to check
+  *	@len: length up to which to write
+-- 
+1.7.2.5
 
--Andi
