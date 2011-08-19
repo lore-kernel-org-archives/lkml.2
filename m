@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1HSJyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 05:54:52 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49956 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752570Ab1HSJym (ORCPT
+	id S1753322Ab1HSJzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 05:55:31 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:60546 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752534Ab1HSJyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 05:54:42 -0400
+	Fri, 19 Aug 2011 05:54:45 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Grant Likely <grant.likely@secretlab.ca>
@@ -14,9 +14,9 @@ Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
         Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
         Linaro Dev <linaro-dev@lists.linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/4 v4] pinmux: add a driver for the U300 pinmux
-Date: Fri, 19 Aug 2011 11:54:06 +0200
-Message-ID: <1313747646-32294-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 4/4 v4] mach-u300: activate pinmux driver, delete old padmux driver
+Date: Fri, 19 Aug 2011 11:54:22 +0200
+Message-ID: <1313747662-32362-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -26,666 +26,835 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This adds a driver for the U300 pinmux portions of the system
-controller "SYSCON". It also serves as an example of how to use
-the pinmux subsystem. This driver also houses the platform data
-for the only supported platform.
+This hooks the pinmux driver into the U300 platform and deletes
+the old machine-specific driver.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-u300/core.c     |   19 ++
- drivers/pinctrl/Kconfig       |    7 +
- drivers/pinctrl/Makefile      |    1 +
- drivers/pinctrl/pinmux-u300.c |  422 +++++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/pinmux-u300.h |  141 ++++++++++++++
- 5 files changed, 590 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pinctrl/pinmux-u300.c
- create mode 100644 drivers/pinctrl/pinmux-u300.h
+ arch/arm/mach-u300/Kconfig               |    2 +
+ arch/arm/mach-u300/Makefile              |    2 +-
+ arch/arm/mach-u300/core.c                |   12 +-
+ arch/arm/mach-u300/include/mach/syscon.h |  136 -----------
+ arch/arm/mach-u300/mmc.c                 |   16 --
+ arch/arm/mach-u300/padmux.c              |  367 ------------------------------
+ arch/arm/mach-u300/padmux.h              |   39 ----
+ arch/arm/mach-u300/spi.c                 |   20 --
+ drivers/pinctrl/pinmux-u300.c            |   25 +-
+ 9 files changed, 25 insertions(+), 594 deletions(-)
+ delete mode 100644 arch/arm/mach-u300/padmux.c
+ delete mode 100644 arch/arm/mach-u300/padmux.h
 
+diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
+index 32a7b0f..449fd6a 100644
+--- a/arch/arm/mach-u300/Kconfig
++++ b/arch/arm/mach-u300/Kconfig
+@@ -6,6 +6,8 @@ comment "ST-Ericsson Mobile Platform Products"
+ 
+ config MACH_U300
+ 	bool "U300"
++	select PINCTRL
++	select PINMUX_U300
+ 
+ comment "ST-Ericsson U300/U330/U335/U365 Feature Selections"
+ 
+diff --git a/arch/arm/mach-u300/Makefile b/arch/arm/mach-u300/Makefile
+index 8fd354a..2855381 100644
+--- a/arch/arm/mach-u300/Makefile
++++ b/arch/arm/mach-u300/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel, U300 machine.
+ #
+ 
+-obj-y		:= core.o clock.o timer.o padmux.o
++obj-y		:= core.o clock.o timer.o
+ obj-m		:=
+ obj-n		:=
+ obj-		:=
 diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index 399c89f..b0c45c3 100644
+index b0c45c3..c916575 100644
 --- a/arch/arm/mach-u300/core.c
 +++ b/arch/arm/mach-u300/core.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
- #include <linux/mtd/nand.h>
- #include <linux/mtd/fsmc.h>
-+#include <linux/pinctrl/machine.h>
- 
- #include <asm/types.h>
- #include <asm/setup.h>
-@@ -1630,6 +1631,20 @@ static struct platform_device dma_device = {
- 	},
+@@ -1536,6 +1536,14 @@ static struct coh901318_platform coh901318_platform = {
+ 	.max_channels = U300_DMA_CHANNELS,
  };
  
-+static struct platform_device pinmux_device = {
-+	.name = "pinmux-u300",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(pinmux_resources),
-+	.resource = pinmux_resources,
++static struct resource pinmux_resources[] = {
++	{
++		.start = U300_SYSCON_BASE,
++		.end   = U300_SYSCON_BASE + SZ_4K - 1,
++		.flags = IORESOURCE_MEM,
++	},
 +};
 +
-+/* Padmux settings */
-+static struct pinmux_map u300_padmux_map[] = {
-+	PINMUX_MAP_PRIMARY("mmc0", "mmci"),
-+	PINMUX_MAP_PRIMARY("spi0", "pl022"),
-+	PINMUX_MAP_PRIMARY("uart0", "uart0"),
-+};
-+
+ static struct platform_device wdog_device = {
+ 	.name = "coh901327_wdog",
+ 	.id = -1,
+@@ -1658,10 +1666,10 @@ static struct platform_device *platform_devs[] __initdata = {
+ 	&gpio_device,
+ 	&nand_device,
+ 	&wdog_device,
+-	&ave_device
++	&ave_device,
++	&pinmux_device,
+ };
+ 
+-
  /*
-  * Notice that AMBA devices are initialized before platform devices.
-  *
-@@ -1828,6 +1843,10 @@ void __init u300_init_devices(void)
+  * Interrupts: the U300 platforms have two pl190 ARM PrimeCells connected
+  * together so some interrupts are connected to the first one and some
+diff --git a/arch/arm/mach-u300/include/mach/syscon.h b/arch/arm/mach-u300/include/mach/syscon.h
+index 7444f5c..6e84f07 100644
+--- a/arch/arm/mach-u300/include/mach/syscon.h
++++ b/arch/arm/mach-u300/include/mach/syscon.h
+@@ -234,91 +234,6 @@
+ #define U300_SYSCON_ECCR_EMIF_1_RET_OUT_CLK_EN_N_DISABLE	(0x0004)
+ #define U300_SYSCON_ECCR_EMIF_MEMCLK_RET_EN_N_DISABLE		(0x0002)
+ #define U300_SYSCON_ECCR_EMIF_SDRCLK_RET_EN_N_DISABLE		(0x0001)
+-/* PAD MUX Control register 1 (LOW) 16bit (R/W) */
+-#define U300_SYSCON_PMC1LR					(0x007C)
+-#define U300_SYSCON_PMC1LR_MASK					(0xFFFF)
+-#define U300_SYSCON_PMC1LR_CDI_MASK				(0xC000)
+-#define U300_SYSCON_PMC1LR_CDI_CDI				(0x0000)
+-#define U300_SYSCON_PMC1LR_CDI_EMIF				(0x4000)
+-#ifdef CONFIG_MACH_U300_BS335
+-#define U300_SYSCON_PMC1LR_CDI_CDI2				(0x8000)
+-#define U300_SYSCON_PMC1LR_CDI_WCDMA_APP_GPIO			(0xC000)
+-#elif CONFIG_MACH_U300_BS365
+-#define U300_SYSCON_PMC1LR_CDI_GPIO				(0x8000)
+-#define U300_SYSCON_PMC1LR_CDI_WCDMA				(0xC000)
+-#endif
+-#define U300_SYSCON_PMC1LR_PDI_MASK				(0x3000)
+-#define U300_SYSCON_PMC1LR_PDI_PDI				(0x0000)
+-#define U300_SYSCON_PMC1LR_PDI_EGG				(0x1000)
+-#define U300_SYSCON_PMC1LR_PDI_WCDMA				(0x3000)
+-#define U300_SYSCON_PMC1LR_MMCSD_MASK				(0x0C00)
+-#define U300_SYSCON_PMC1LR_MMCSD_MMCSD				(0x0000)
+-#define U300_SYSCON_PMC1LR_MMCSD_MSPRO				(0x0400)
+-#define U300_SYSCON_PMC1LR_MMCSD_DSP				(0x0800)
+-#define U300_SYSCON_PMC1LR_MMCSD_WCDMA				(0x0C00)
+-#define U300_SYSCON_PMC1LR_ETM_MASK				(0x0300)
+-#define U300_SYSCON_PMC1LR_ETM_ACC				(0x0000)
+-#define U300_SYSCON_PMC1LR_ETM_APP				(0x0100)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK			(0x00C0)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_NFIF			(0x0040)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM			(0x0080)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC_2GB		(0x00C0)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK			(0x0030)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_NFIF			(0x0010)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SDRAM			(0x0020)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SEMI			(0x0030)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK			(0x000C)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF			(0x0004)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SDRAM			(0x0008)
+-#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SEMI			(0x000C)
+-#define U300_SYSCON_PMC1LR_EMIF_1_MASK				(0x0003)
+-#define U300_SYSCON_PMC1LR_EMIF_1_STATIC			(0x0000)
+-#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM0			(0x0001)
+-#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM1			(0x0002)
+-#define U300_SYSCON_PMC1LR_EMIF_1				(0x0003)
+-/* PAD MUX Control register 2 (HIGH) 16bit (R/W) */
+-#define U300_SYSCON_PMC1HR					(0x007E)
+-#define U300_SYSCON_PMC1HR_MASK					(0xFFFF)
+-#define U300_SYSCON_PMC1HR_MISC_2_MASK				(0xC000)
+-#define U300_SYSCON_PMC1HR_MISC_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_MISC_2_MSPRO				(0x4000)
+-#define U300_SYSCON_PMC1HR_MISC_2_DSP				(0x8000)
+-#define U300_SYSCON_PMC1HR_MISC_2_AAIF				(0xC000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_MASK			(0x3000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_NFIF			(0x1000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_DSP			(0x2000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_2_AAIF			(0x3000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_MASK			(0x0C00)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_MMC			(0x0400)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_DSP			(0x0800)
+-#define U300_SYSCON_PMC1HR_APP_GPIO_1_AAIF			(0x0C00)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK			(0x0300)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_APP_GPIO		(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI			(0x0100)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_AAIF			(0x0300)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK			(0x00C0)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_APP_GPIO		(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI			(0x0040)
+-#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_AAIF			(0x00C0)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_MASK			(0x0030)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_SPI			(0x0010)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_DSP			(0x0020)
+-#define U300_SYSCON_PMC1HR_APP_SPI_2_AAIF			(0x0030)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_MASK			(0x000C)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_UART0			(0x0004)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_NFIF_CS			(0x0008)
+-#define U300_SYSCON_PMC1HR_APP_UART0_2_AAIF			(0x000C)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_MASK			(0x0003)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_UART0			(0x0001)
+-#define U300_SYSCON_PMC1HR_APP_UART0_1_AAIF			(0x0003)
+ /* Step one for killing the applications system 16bit (-/W) */
+ #define U300_SYSCON_KA1R					(0x0080)
+ #define U300_SYSCON_KA1R_MASK					(0xFFFF)
+@@ -357,57 +272,6 @@
+ #define U300_SYSCON_PUCR_EMIF_1_16BIT_PU_ENABLE			(0x0080)
+ #define U300_SYSCON_PUCR_EMIF_1_8BIT_PU_ENABLE			(0x0040)
+ #define U300_SYSCON_PUCR_KEY_IN_PU_EN_MASK			(0x003F)
+-/* Padmux 2 control */
+-#define U300_SYSCON_PMC2R					(0x100)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_MASK			(0x00C0)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_EMIF_SDRAM			(0x0040)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_MMC			(0x0080)
+-#define U300_SYSCON_PMC2R_APP_MISC_0_CDI2			(0x00C0)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_MASK			(0x0300)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_EMIF_SDRAM			(0x0100)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_MMC			(0x0200)
+-#define U300_SYSCON_PMC2R_APP_MISC_1_CDI2			(0x0300)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_MASK			(0x0C00)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_EMIF_SDRAM			(0x0400)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_MMC			(0x0800)
+-#define U300_SYSCON_PMC2R_APP_MISC_2_CDI2			(0x0C00)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_MASK			(0x3000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_EMIF_SDRAM			(0x1000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_MMC			(0x2000)
+-#define U300_SYSCON_PMC2R_APP_MISC_3_CDI2			(0x3000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_MASK			(0xC000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_EMIF_SDRAM			(0x4000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_MMC			(0x8000)
+-#define U300_SYSCON_PMC2R_APP_MISC_4_ACC_GPIO			(0xC000)
+-/* TODO: More SYSCON registers missing */
+-#define U300_SYSCON_PMC3R					(0x10c)
+-#define U300_SYSCON_PMC3R_APP_MISC_11_MASK			(0xc000)
+-#define U300_SYSCON_PMC3R_APP_MISC_11_SPI			(0x4000)
+-#define U300_SYSCON_PMC3R_APP_MISC_10_MASK			(0x3000)
+-#define U300_SYSCON_PMC3R_APP_MISC_10_SPI			(0x1000)
+-/* TODO: Missing other configs */
+-#define U300_SYSCON_PMC4R					(0x168)
+-#define U300_SYSCON_PMC4R_APP_MISC_12_MASK			(0x0003)
+-#define U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_MASK			(0x000C)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_CDI			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA			(0x0004)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA2			(0x0008)
+-#define U300_SYSCON_PMC4R_APP_MISC_13_APP_GPIO			(0x000C)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_MASK			(0x0030)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_CDI			(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_SMIA			(0x0010)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_CDI2			(0x0020)
+-#define U300_SYSCON_PMC4R_APP_MISC_14_APP_GPIO			(0x0030)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_MASK			(0x0300)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_APP_GPIO_13		(0x0000)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_APP_UART1_CTS		(0x0100)
+-#define U300_SYSCON_PMC4R_APP_MISC_16_EMIF_1_STATIC_CS5_N	(0x0200)
+ /* SYS_0_CLK_CONTROL first clock control 16bit (R/W) */
+ #define U300_SYSCON_S0CCR					(0x120)
+ #define U300_SYSCON_S0CCR_FIELD_MASK				(0x43FF)
+diff --git a/arch/arm/mach-u300/mmc.c b/arch/arm/mach-u300/mmc.c
+index 677ccef..d5e4a98 100644
+--- a/arch/arm/mach-u300/mmc.c
++++ b/arch/arm/mach-u300/mmc.c
+@@ -21,7 +21,6 @@
+ #include <mach/dma_channels.h>
  
- 	u300_assign_physmem();
+ #include "mmc.h"
+-#include "padmux.h"
  
-+	/* Initialize pinmuxing */
-+	pinmux_register_mappings(u300_padmux_map,
-+				 ARRAY_SIZE(u300_padmux_map));
-+
- 	/* Register subdevices on the I2C buses */
- 	u300_i2c_register_board_devices();
+ static struct mmci_platform_data mmc0_plat_data = {
+ 	/*
+@@ -45,24 +44,9 @@ static struct mmci_platform_data mmc0_plat_data = {
+ int __devinit mmc_init(struct amba_device *adev)
+ {
+ 	struct device *mmcsd_device = &adev->dev;
+-	struct pmx *pmx;
+ 	int ret = 0;
  
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index adb0be0..fdeca2f 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -26,4 +26,11 @@ config DEBUG_PINCTRL
- 	help
- 	  Say Y here to add some extra checks and diagnostics to PINCTRL calls.
+ 	mmcsd_device->platform_data = &mmc0_plat_data;
  
-+config PINMUX_U300
-+	bool "U300 pinmux driver"
-+	depends on ARCH_U300
-+	select PINMUX
-+	help
-+	  Say Y here to enable the U300 pinmux driver
-+
- endif
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 596ce9f..63d4241 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -4,3 +4,4 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
+-	/*
+-	 * Setup padmuxing for MMC. Since this must always be
+-	 * compiled into the kernel, pmx is never released.
+-	 */
+-	pmx = pmx_get(mmcsd_device, U300_APP_PMX_MMC_SETTING);
+-
+-	if (IS_ERR(pmx))
+-		pr_warning("Could not get padmux handle\n");
+-	else {
+-		ret = pmx_activate(mmcsd_device, pmx);
+-		if (IS_ERR_VALUE(ret))
+-			pr_warning("Could not activate padmuxing\n");
+-	}
+-
+ 	return ret;
+ }
+diff --git a/arch/arm/mach-u300/padmux.c b/arch/arm/mach-u300/padmux.c
+deleted file mode 100644
+index 4c93c6c..0000000
+--- a/arch/arm/mach-u300/padmux.c
++++ /dev/null
+@@ -1,367 +0,0 @@
+-/*
+- *
+- * arch/arm/mach-u300/padmux.c
+- *
+- *
+- * Copyright (C) 2009 ST-Ericsson AB
+- * License terms: GNU General Public License (GPL) version 2
+- * U300 PADMUX functions
+- * Author: Martin Persson <martin.persson@stericsson.com>
+- */
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/device.h>
+-#include <linux/err.h>
+-#include <linux/errno.h>
+-#include <linux/io.h>
+-#include <linux/mutex.h>
+-#include <linux/string.h>
+-#include <linux/bug.h>
+-#include <linux/debugfs.h>
+-#include <linux/seq_file.h>
+-#include <mach/u300-regs.h>
+-#include <mach/syscon.h>
+-#include "padmux.h"
+-
+-static DEFINE_MUTEX(pmx_mutex);
+-
+-const u32 pmx_registers[] = {
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC1LR),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC1HR),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC2R),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC3R),
+-	(U300_SYSCON_VBASE + U300_SYSCON_PMC4R)
+-};
+-
+-/* High level functionality */
+-
+-/* Lazy dog:
+- * onmask = {
+- *   {"PMC1LR" mask, "PMC1LR" value},
+- *   {"PMC1HR" mask, "PMC1HR" value},
+- *   {"PMC2R"  mask, "PMC2R"  value},
+- *   {"PMC3R"  mask, "PMC3R"  value},
+- *   {"PMC4R"  mask, "PMC4R"  value}
+- * }
+- */
+-static struct pmx mmc_setting = {
+-	.setting = U300_APP_PMX_MMC_SETTING,
+-	.default_on = false,
+-	.activated = false,
+-	.name = "MMC",
+-	.onmask = {
+-		   {U300_SYSCON_PMC1LR_MMCSD_MASK,
+-		    U300_SYSCON_PMC1LR_MMCSD_MMCSD},
+-		   {0, 0},
+-		   {0, 0},
+-		   {0, 0},
+-		   {U300_SYSCON_PMC4R_APP_MISC_12_MASK,
+-		    U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO}
+-		   },
+-};
+-
+-static struct pmx spi_setting = {
+-	.setting = U300_APP_PMX_SPI_SETTING,
+-	.default_on = false,
+-	.activated = false,
+-	.name = "SPI",
+-	.onmask = {{0, 0},
+-		   {U300_SYSCON_PMC1HR_APP_SPI_2_MASK |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK,
+-		    U300_SYSCON_PMC1HR_APP_SPI_2_SPI |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI |
+-		    U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI},
+-		   {0, 0},
+-		   {0, 0},
+-		   {0, 0}
+-		   },
+-};
+-
+-/* Available padmux settings */
+-static struct pmx *pmx_settings[] = {
+-	&mmc_setting,
+-	&spi_setting,
+-};
+-
+-static void update_registers(struct pmx *pmx, bool activate)
+-{
+-	u16 regval, val, mask;
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(pmx_registers); i++) {
+-		if (activate)
+-			val = pmx->onmask[i].val;
+-		else
+-			val = 0;
+-
+-		mask = pmx->onmask[i].mask;
+-		if (mask != 0) {
+-			regval = readw(pmx_registers[i]);
+-			regval &= ~mask;
+-			regval |= val;
+-			writew(regval, pmx_registers[i]);
+-		}
+-	}
+-}
+-
+-struct pmx *pmx_get(struct device *dev, enum pmx_settings setting)
+-{
+-	int i;
+-	struct pmx *pmx = ERR_PTR(-ENOENT);
+-
+-	if (dev == NULL)
+-		return ERR_PTR(-EINVAL);
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (setting == pmx_settings[i]->setting) {
+-
+-			if (pmx_settings[i]->dev != NULL) {
+-				WARN(1, "padmux: required setting "
+-				     "in use by another consumer\n");
+-			} else {
+-				pmx = pmx_settings[i];
+-				pmx->dev = dev;
+-				dev_dbg(dev, "padmux: setting nr %d is now "
+-					"bound to %s and ready to use\n",
+-					setting, dev_name(dev));
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return pmx;
+-}
+-EXPORT_SYMBOL(pmx_get);
+-
+-int pmx_put(struct device *dev, struct pmx *pmx)
+-{
+-	int i;
+-	int ret = -ENOENT;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx->setting == pmx_settings[i]->setting) {
+-
+-			if (dev != pmx->dev) {
+-				WARN(1, "padmux: cannot release handle as "
+-					"it is bound to another consumer\n");
+-				ret = -EINVAL;
+-				break;
+-			} else {
+-				pmx_settings[i]->dev = NULL;
+-				ret = 0;
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_put);
+-
+-int pmx_activate(struct device *dev, struct pmx *pmx)
+-{
+-	int i, j, ret;
+-	ret = 0;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-
+-	/* Make sure the required bits are not used */
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx_settings[i]->dev == NULL || pmx_settings[i] == pmx)
+-			continue;
+-
+-		for (j = 0; j < ARRAY_SIZE(pmx_registers); j++) {
+-
+-			if (pmx_settings[i]->onmask[j].mask & pmx->
+-				onmask[j].mask) {
+-				/* More than one entry on the same bits */
+-				WARN(1, "padmux: cannot activate "
+-					"setting. Bit conflict with "
+-					"an active setting\n");
+-
+-				ret = -EUSERS;
+-				goto exit;
+-			}
+-		}
+-	}
+-	update_registers(pmx, true);
+-	pmx->activated = true;
+-	dev_dbg(dev, "padmux: setting nr %d is activated\n",
+-		pmx->setting);
+-
+-exit:
+-	mutex_unlock(&pmx_mutex);
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_activate);
+-
+-int pmx_deactivate(struct device *dev, struct pmx *pmx)
+-{
+-	int i;
+-	int ret = -ENOENT;
+-
+-	if (pmx == NULL || dev == NULL)
+-		return -EINVAL;
+-
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (pmx_settings[i]->dev == NULL)
+-			continue;
+-
+-		if (pmx->setting == pmx_settings[i]->setting) {
+-
+-			if (dev != pmx->dev) {
+-				WARN(1, "padmux: cannot deactivate "
+-				     "pmx setting as it was activated "
+-				     "by another consumer\n");
+-
+-				ret = -EBUSY;
+-				continue;
+-			} else {
+-				update_registers(pmx, false);
+-				pmx_settings[i]->dev = NULL;
+-				pmx->activated = false;
+-				ret = 0;
+-				dev_dbg(dev, "padmux: setting nr %d is deactivated",
+-					pmx->setting);
+-				break;
+-			}
+-		}
+-	}
+-	mutex_unlock(&pmx_mutex);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(pmx_deactivate);
+-
+-/*
+- * For internal use only. If it is to be exported,
+- * it should be reentrant. Notice that pmx_activate
+- * (i.e. runtime settings) always override default settings.
+- */
+-static int pmx_set_default(void)
+-{
+-	/* Used to identify several entries on the same bits */
+-	u16 modbits[ARRAY_SIZE(pmx_registers)];
+-
+-	int i, j;
+-
+-	memset(modbits, 0, ARRAY_SIZE(pmx_registers) * sizeof(u16));
+-
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-
+-		if (!pmx_settings[i]->default_on)
+-			continue;
+-
+-		for (j = 0; j < ARRAY_SIZE(pmx_registers); j++) {
+-
+-			/* Make sure there is only one entry on the same bits */
+-			if (modbits[j] & pmx_settings[i]->onmask[j].mask) {
+-				BUG();
+-				return -EUSERS;
+-			}
+-			modbits[j] |= pmx_settings[i]->onmask[j].mask;
+-		}
+-		update_registers(pmx_settings[i], true);
+-	}
+-	return 0;
+-}
+-
+-#if (defined(CONFIG_DEBUG_FS) && defined(CONFIG_U300_DEBUG))
+-static int pmx_show(struct seq_file *s, void *data)
+-{
+-	int i;
+-	seq_printf(s, "-------------------------------------------------\n");
+-	seq_printf(s, "SETTING     BOUND TO DEVICE               STATE\n");
+-	seq_printf(s, "-------------------------------------------------\n");
+-	mutex_lock(&pmx_mutex);
+-	for (i = 0; i < ARRAY_SIZE(pmx_settings); i++) {
+-		/* Format pmx and device name nicely */
+-		char cdp[33];
+-		int chars;
+-
+-		chars = snprintf(&cdp[0], 17, "%s", pmx_settings[i]->name);
+-		while (chars < 16) {
+-			cdp[chars] = ' ';
+-			chars++;
+-		}
+-		chars = snprintf(&cdp[16], 17, "%s", pmx_settings[i]->dev ?
+-				dev_name(pmx_settings[i]->dev) : "N/A");
+-		while (chars < 16) {
+-			cdp[chars+16] = ' ';
+-			chars++;
+-		}
+-		cdp[32] = '\0';
+-
+-		seq_printf(s,
+-			"%s\t%s\n",
+-			&cdp[0],
+-			pmx_settings[i]->activated ?
+-			"ACTIVATED" : "DEACTIVATED"
+-			);
+-
+-	}
+-	mutex_unlock(&pmx_mutex);
+-	return 0;
+-}
+-
+-static int pmx_open(struct inode *inode, struct file *file)
+-{
+-	return single_open(file, pmx_show, NULL);
+-}
+-
+-static const struct file_operations pmx_operations = {
+-	.owner		= THIS_MODULE,
+-	.open		= pmx_open,
+-	.read		= seq_read,
+-	.llseek		= seq_lseek,
+-	.release	= single_release,
+-};
+-
+-static int __init init_pmx_read_debugfs(void)
+-{
+-	/* Expose a simple debugfs interface to view pmx settings */
+-	(void) debugfs_create_file("padmux", S_IFREG | S_IRUGO,
+-				   NULL, NULL,
+-				   &pmx_operations);
+-	return 0;
+-}
+-
+-/*
+- * This needs to come in after the core_initcall(),
+- * because debugfs is not available until
+- * the subsystems come up.
+- */
+-module_init(init_pmx_read_debugfs);
+-#endif
+-
+-static int __init pmx_init(void)
+-{
+-	int ret;
+-
+-	ret = pmx_set_default();
+-
+-	if (IS_ERR_VALUE(ret))
+-		pr_crit("padmux: default settings could not be set\n");
+-
+-	return 0;
+-}
+-
+-/* Should be initialized before consumers */
+-core_initcall(pmx_init);
+diff --git a/arch/arm/mach-u300/padmux.h b/arch/arm/mach-u300/padmux.h
+deleted file mode 100644
+index 6e8b860..0000000
+--- a/arch/arm/mach-u300/padmux.h
++++ /dev/null
+@@ -1,39 +0,0 @@
+-/*
+- *
+- * arch/arm/mach-u300/padmux.h
+- *
+- *
+- * Copyright (C) 2009 ST-Ericsson AB
+- * License terms: GNU General Public License (GPL) version 2
+- * U300 PADMUX API
+- * Author: Martin Persson <martin.persson@stericsson.com>
+- */
+-
+-#ifndef __MACH_U300_PADMUX_H
+-#define __MACH_U300_PADMUX_H
+-
+-enum pmx_settings {
+-	U300_APP_PMX_MMC_SETTING,
+-	U300_APP_PMX_SPI_SETTING
+-};
+-
+-struct pmx_onmask {
+-	u16 mask;		/* Mask bits */
+-	u16 val;		/* Value when active */
+-};
+-
+-struct pmx {
+-	struct device *dev;
+-	enum pmx_settings setting;
+-	char *name;
+-	bool activated;
+-	bool default_on;
+-	struct pmx_onmask onmask[];
+-};
+-
+-struct pmx *pmx_get(struct device *dev, enum pmx_settings setting);
+-int pmx_put(struct device *dev, struct pmx *pmx);
+-int pmx_activate(struct device *dev, struct pmx *pmx);
+-int pmx_deactivate(struct device *dev, struct pmx *pmx);
+-
+-#endif
+diff --git a/arch/arm/mach-u300/spi.c b/arch/arm/mach-u300/spi.c
+index 7b597e2..a1affac 100644
+--- a/arch/arm/mach-u300/spi.c
++++ b/arch/arm/mach-u300/spi.c
+@@ -14,8 +14,6 @@
+ #include <mach/coh901318.h>
+ #include <mach/dma_channels.h>
  
- obj-$(CONFIG_PINCTRL)		+= core.o
- obj-$(CONFIG_PINMUX)		+= pinmux.o
-+obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
+-#include "padmux.h"
+-
+ /*
+  * The following is for the actual devices on the SSP/SPI bus
+  */
+@@ -95,25 +93,7 @@ static struct pl022_ssp_controller ssp_platform_data = {
+ 
+ void __init u300_spi_init(struct amba_device *adev)
+ {
+-	struct pmx *pmx;
+-
+ 	adev->dev.platform_data = &ssp_platform_data;
+-	/*
+-	 * Setup padmuxing for SPI. Since this must always be
+-	 * compiled into the kernel, pmx is never released.
+-	 */
+-	pmx = pmx_get(&adev->dev, U300_APP_PMX_SPI_SETTING);
+-
+-	if (IS_ERR(pmx))
+-		dev_warn(&adev->dev, "Could not get padmux handle\n");
+-	else {
+-		int ret;
+-
+-		ret = pmx_activate(&adev->dev, pmx);
+-		if (IS_ERR_VALUE(ret))
+-			dev_warn(&adev->dev, "Could not activate padmuxing\n");
+-	}
+-
+ }
+ 
+ void __init u300_spi_register_board_devices(void)
 diff --git a/drivers/pinctrl/pinmux-u300.c b/drivers/pinctrl/pinmux-u300.c
-new file mode 100644
-index 0000000..c0cefb6
---- /dev/null
+index c0cefb6..524f7c3 100644
+--- a/drivers/pinctrl/pinmux-u300.c
 +++ b/drivers/pinctrl/pinmux-u300.c
-@@ -0,0 +1,422 @@
-+/*
-+ * Driver for the U300 pin controller
-+ *
-+ * Based on the original U300 padmux functions
-+ * Copyright (C) 2009-2011 ST-Ericsson AB
-+ * Author: Martin Persson <martin.persson@stericsson.com>
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * The DB3350 design and control registers are oriented around pads rather than
-+ * pins, so we enumerate the pads we can mux rather than actual pins. The pads
-+ * are connected to different pins in different packaging types, so it would
-+ * be confusing.
-+ */
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+
-+#include "pinmux-u300.h"
-+
-+#define DRIVER_NAME "pinmux-u300"
-+
-+/*
-+ * The DB3350 has 467 pads, I have enumerated the pads clockwise around the
-+ * edges of the silicon, finger by finger. LTCORNER upper left is pad 0.
-+ * Data taken from the PadRing chart, arranged like this:
-+ *
-+ *   0 ..... 104
-+ * 466        105
-+ *   .        .
-+ *   .        .
-+ * 358        224
-+ *  357 .... 225
-+ */
-+#define U300_NUM_PADS 467
-+
-+/* Pad names for the pinmux subsystem */
-+const struct pinctrl_pin_desc __refdata u300_pads[] = {
-+	PINCTRL_PIN(0, "P PAD VDD 28"),
-+	PINCTRL_PIN(1, "P PAD GND 28"),
-+	PINCTRL_PIN(2, "PO SIM RST N"),
-+	PINCTRL_PIN(3, "VSSIO 25"),
-+	PINCTRL_PIN(4, "VSSA ADDA ESDSUB"),
-+	PINCTRL_PIN(5, "PWR VSSCOMMON"),
-+	PINCTRL_PIN(6, "PI ADC I1 POS"),
-+	PINCTRL_PIN(7, "PI ADC I1 NEG"),
-+	PINCTRL_PIN(8, "PWR VSSAD0"),
-+	PINCTRL_PIN(9, "PWR VCCAD0"),
-+	PINCTRL_PIN(10, "PI ADC Q1 NEG"),
-+	PINCTRL_PIN(11, "PI ADC Q1 POS"),
-+	PINCTRL_PIN(12, "PWR VDDAD"),
-+	PINCTRL_PIN(13, "PWR GNDAD"),
-+	PINCTRL_PIN(14, "PI ADC I2 POS"),
-+	PINCTRL_PIN(15, "PI ADC I2 NEG"),
-+	PINCTRL_PIN(16, "PWR VSSAD1"),
-+	PINCTRL_PIN(17, "PWR VCCAD1"),
-+	PINCTRL_PIN(18, "PI ADC Q2 NEG"),
-+	PINCTRL_PIN(19, "PI ADC Q2 POS"),
-+	PINCTRL_PIN(20, "VSSA ADDA ESDSUB"),
-+	PINCTRL_PIN(21, "PWR VCCGPAD"),
-+	PINCTRL_PIN(22, "PI TX POW"),
-+	PINCTRL_PIN(23, "PWR VSSGPAD"),
-+	PINCTRL_PIN(24, "PO DAC I POS"),
-+	PINCTRL_PIN(25, "PO DAC I NEG"),
-+	PINCTRL_PIN(26, "PO DAC Q POS"),
-+	PINCTRL_PIN(27, "PO DAC Q NEG"),
-+	PINCTRL_PIN(28, "PWR VSSDA"),
-+	PINCTRL_PIN(29, "PWR VCCDA"),
-+	PINCTRL_PIN(30, "VSSA ADDA ESDSUB"),
-+	PINCTRL_PIN(31, "P PAD VDDIO 11"),
-+	PINCTRL_PIN(32, "PI PLL 26 FILTVDD"),
-+	PINCTRL_PIN(33, "PI PLL 26 VCONT"),
-+	PINCTRL_PIN(34, "PWR AGNDPLL2V5 32 13"),
-+	PINCTRL_PIN(35, "PWR AVDDPLL2V5 32 13"),
-+	PINCTRL_PIN(36, "VDDA PLL ESD"),
-+	PINCTRL_PIN(37, "VSSA PLL ESD"),
-+	PINCTRL_PIN(38, "VSS PLL"),
-+	PINCTRL_PIN(39, "VDDC PLL"),
-+	PINCTRL_PIN(40, "PWR AGNDPLL2V5 26 60"),
-+	PINCTRL_PIN(41, "PWR AVDDPLL2V5 26 60"),
-+	PINCTRL_PIN(42, "PWR AVDDPLL2V5 26 208"),
-+	PINCTRL_PIN(43, "PWR AGNDPLL2V5 26 208"),
-+	PINCTRL_PIN(44, "PWR AVDDPLL2V5 13 208"),
-+	PINCTRL_PIN(45, "PWR AGNDPLL2V5 13 208"),
-+	PINCTRL_PIN(46, "P PAD VSSIO 11"),
-+	PINCTRL_PIN(47, "P PAD VSSIO 12"),
-+	PINCTRL_PIN(48, "PI POW RST N"),
-+	PINCTRL_PIN(49, "VDDC IO"),
-+	PINCTRL_PIN(50, "P PAD VDDIO 16"),
-+	PINCTRL_PIN(134, "UART0 RTS"),
-+	PINCTRL_PIN(135, "UART0 CTS"),
-+	PINCTRL_PIN(136, "UART0 TX"),
-+	PINCTRL_PIN(137, "UART0 RX"),
-+	PINCTRL_PIN(166, "MMC DATA DIR LS"),
-+	PINCTRL_PIN(167, "MMC DATA 3"),
-+	PINCTRL_PIN(168, "MMC DATA 2"),
-+	PINCTRL_PIN(169, "MMC DATA 1"),
-+	PINCTRL_PIN(170, "MMC DATA 0"),
-+	PINCTRL_PIN(171, "MMC CMD DIR LS"),
-+	PINCTRL_PIN(176, "MMC CMD"),
-+	PINCTRL_PIN(177, "MMC CLK"),
-+	PINCTRL_PIN(420, "SPI CLK"),
-+	PINCTRL_PIN(421, "SPI DO"),
-+	PINCTRL_PIN(422, "SPI DI"),
-+	PINCTRL_PIN(423, "SPI CS0"),
-+	PINCTRL_PIN(424, "SPI CS1"),
-+	PINCTRL_PIN(425, "SPI CS2"),
-+};
-+
-+/**
-+ * @dev: a pointer back to containing device
-+ * @virtbase: the offset to the controller in virtual memory
-+ */
-+struct u300_pmx {
-+	struct device *dev;
-+	struct pinmux_dev *pmx;
-+	u32 phybase;
-+	u32 physize;
-+	void __iomem *virtbase;
-+};
-+
-+/**
-+ * u300_pmx_registers - the array of registers read/written for each pinmux
-+ * shunt setting
-+ */
-+const u32 u300_pmx_registers[] = {
-+	U300_SYSCON_PMC1LR,
-+	U300_SYSCON_PMC1HR,
-+	U300_SYSCON_PMC2R,
-+	U300_SYSCON_PMC3R,
-+	U300_SYSCON_PMC4R,
-+};
-+
-+/**
-+ * struct pmx_onmask - mask bits to enable/disable padmux
-+ * @mask: mask bits to disable
-+ * @val: mask bits to enable
-+ *
-+ * onmask lazy dog:
-+ * onmask = {
-+ *   {"PMC1LR" mask, "PMC1LR" value},
-+ *   {"PMC1HR" mask, "PMC1HR" value},
-+ *   {"PMC2R"  mask, "PMC2R"  value},
-+ *   {"PMC3R"  mask, "PMC3R"  value},
-+ *   {"PMC4R"  mask, "PMC4R"  value}
-+ * }
-+ */
-+struct u300_pmx_mask {
-+	u16 mask;
-+	u16 bits;
-+};
-+
-+/**
-+ * struct u300_pmx_func - describes a U300 pinmux function
-+ * @name: the name of this specific function
-+ * @pins: an array of discrete physical pins used in this mapping, taken
-+ *	from the global pin enumeration space
-+ * @num_pins: the number of pins in this mapping array, i.e. the number of
-+ *	elements in .pins so we can iterate over that array
-+ * @onmask: bits to set to enable this muxing
-+ */
-+struct u300_pmx_func {
-+	const char *name;
-+	const unsigned int *pins;
-+	const unsigned num_pins;
-+	const struct u300_pmx_mask *mask;
-+};
-+
-+static const unsigned uart0_pins[] = { 134, 135, 136, 137 };
-+static const unsigned mmc0_pins[] = { 166, 167, 168, 169, 170, 171, 176, 177 };
-+static const unsigned spi0_pins[] = { 420, 421, 422, 423, 424, 425 };
-+
-+static const struct u300_pmx_mask uart0_mask[] = {
-+	{0, 0},
-+	{
-+		U300_SYSCON_PMC1HR_APP_UART0_1_MASK |
-+		U300_SYSCON_PMC1HR_APP_UART0_2_MASK,
-+		U300_SYSCON_PMC1HR_APP_UART0_1_UART0 |
-+		U300_SYSCON_PMC1HR_APP_UART0_2_UART0
-+	},
-+	{0, 0},
-+	{0, 0},
-+	{0, 0},
-+};
-+
-+static const struct u300_pmx_mask mmc0_mask[] = {
-+	{ U300_SYSCON_PMC1LR_MMCSD_MASK, U300_SYSCON_PMC1LR_MMCSD_MMCSD},
-+	{0, 0},
-+	{0, 0},
-+	{0, 0},
-+	{ U300_SYSCON_PMC4R_APP_MISC_12_MASK,
-+	  U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO }
-+};
-+
-+static const struct u300_pmx_mask spi0_mask[] = {
-+	{0, 0},
-+	{
-+		U300_SYSCON_PMC1HR_APP_SPI_2_MASK |
-+		U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK |
-+		U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK,
-+		U300_SYSCON_PMC1HR_APP_SPI_2_SPI |
-+		U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI |
-+		U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI
-+	},
-+	{0, 0},
-+	{0, 0},
-+	{0, 0}
-+};
-+
-+static const struct u300_pmx_func u300_pmx_funcs[] = {
-+	{
-+		.name = "uart0",
-+		.pins = uart0_pins,
-+		.num_pins = ARRAY_SIZE(uart0_pins),
-+		.mask = uart0_mask,
-+	},
-+	{
-+		.name = "mmc0",
-+		.pins = mmc0_pins,
-+		.num_pins = ARRAY_SIZE(mmc0_pins),
-+		.mask = mmc0_mask,
-+	},
-+	{
-+		.name = "spi0",
-+		.pins = spi0_pins,
-+		.num_pins = ARRAY_SIZE(spi0_pins),
-+		.mask = spi0_mask,
-+	},
-+};
-+
-+static void u300_pmx_endisable(struct u300_pmx *upmx, unsigned selector,
-+			       bool enable)
-+{
-+	u16 regval, val, mask;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(u300_pmx_registers); i++) {
-+		if (enable)
-+			val = u300_pmx_funcs[selector].mask->bits;
-+		else
-+			val = 0;
-+
-+		mask = u300_pmx_funcs[selector].mask->mask;
-+		if (mask != 0) {
-+			regval = readw(upmx->virtbase + u300_pmx_registers[i]);
-+			regval &= ~mask;
-+			regval |= val;
-+			writew(regval, upmx->virtbase + u300_pmx_registers[i]);
-+		}
-+	}
-+}
-+
-+static int u300_pmx_enable(struct pinmux_dev *pmxdev, unsigned selector)
-+{
-+	struct u300_pmx *upmx;
-+
-+	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-+		return -EINVAL;
-+	upmx = pmxdev_get_drvdata(pmxdev);
-+	u300_pmx_endisable(upmx, selector, true);
-+
-+	return 0;
-+}
-+
-+static void u300_pmx_disable(struct pinmux_dev *pmxdev, unsigned selector)
-+{
-+	struct u300_pmx *upmx;
-+
-+	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-+		return;
-+	upmx = pmxdev_get_drvdata(pmxdev);
-+	u300_pmx_endisable(upmx, selector, false);
-+}
-+
-+static int u300_pmx_list(struct pinmux_dev *pmxdev, unsigned selector)
-+{
-+	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-+		return -EINVAL;
-+	return 0;
-+}
-+
-+static const char *u300_pmx_get_fname(struct pinmux_dev *pmxdev,
-+				      unsigned selector)
-+{
-+	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-+		return NULL;
-+	return u300_pmx_funcs[selector].name;
-+}
-+
-+static int u300_pmx_get_pins(struct pinmux_dev *pmxdev, unsigned selector,
-+			     unsigned ** const pins, unsigned * const num_pins)
-+{
-+	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
-+		return -EINVAL;
-+	*pins = (unsigned *) u300_pmx_funcs[selector].pins;
-+	*num_pins = u300_pmx_funcs[selector].num_pins;
-+	return 0;
-+}
-+
-+static void u300_dbg_show(struct pinmux_dev *pmxdev, struct seq_file *s,
-+		   unsigned offset)
-+{
-+	seq_printf(s, " " DRIVER_NAME);
-+}
-+
-+static struct pinmux_ops u300_pmx_ops = {
-+	.list_functions = u300_pmx_list,
-+	.get_function_name = u300_pmx_get_fname,
-+	.get_function_pins = u300_pmx_get_pins,
-+	.enable = u300_pmx_enable,
-+	.disable = u300_pmx_disable,
-+	.dbg_show = u300_dbg_show,
-+};
-+
-+static struct pinmux_desc u300_pmx_desc = {
-+	.name = DRIVER_NAME,
-+	.pins = u300_pads,
-+	.npins = ARRAY_SIZE(u300_pads),
-+	.maxpin = U300_NUM_PADS-1,
-+	.pmxops = &u300_pmx_ops,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int __init u300_pmx_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct u300_pmx *upmx;
-+	struct resource *res;
-+
-+	/* Create state holders etc for this driver */
-+	upmx = kzalloc(sizeof(struct u300_pmx), GFP_KERNEL);
-+	if (!upmx)
-+		return -ENOMEM;
-+
-+	upmx->dev = &pdev->dev;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		ret = -ENOENT;
-+		goto out_no_resource;
-+	}
-+	upmx->phybase = res->start;
-+	upmx->physize = resource_size(res);
-+
-+	if (request_mem_region(upmx->phybase, upmx->physize,
-+			       DRIVER_NAME) == NULL) {
-+		ret = -EBUSY;
-+		goto out_no_memregion;
-+	}
-+
-+	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
-+	if (!upmx->virtbase) {
-+		ret = -ENOMEM;
-+		goto out_no_remap;
-+	}
-+
-+	/* Now register the pin controller and all pins it handles */
-+	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
-+	if (IS_ERR(upmx->pctl)) {
-+		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
-+		ret = PTR_ERR(upmx->pmx);
-+		goto out_no_pmx;
-+	}
-+	platform_set_drvdata(pdev, upmx);
-+
-+	dev_info(&pdev->dev, "initialized U300 pinmux driver\n");
-+
-+	return 0;
-+
-+out_no_pmx:
-+	iounmap(upmx->virtbase);
-+out_no_remap:
-+	platform_set_drvdata(pdev, NULL);
-+out_no_memregion:
-+	release_mem_region(upmx->phybase, upmx->physize);
-+out_no_resource:
-+	kfree(upmx);
-+	return ret;
-+}
-+
-+static int __exit u300_pmx_remove(struct platform_device *pdev)
-+{
-+	struct u300_pmx *upmx = platform_get_drvdata(pdev);
-+
-+	if (upmx) {
-+		pinmux_unregister(upmx->pmx);
-+		iounmap(upmx->virtbase);
-+		release_mem_region(upmx->phybase, upmx->physize);
-+		platform_set_drvdata(pdev, NULL);
-+		kfree(upmx);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver u300_pmx_driver = {
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.remove = __exit_p(u300_pmx_remove),
-+};
-+
-+static int __init u300_pmx_init(void)
-+{
-+	return platform_driver_probe(&u300_pmx_driver, u300_pmx_probe);
-+}
-+arch_initcall(u300_pmx_init);
-+
-+static void __exit u300_pmx_exit(void)
-+{
-+	platform_driver_unregister(&u300_pmx_driver);
-+}
-+module_exit(u300_pmx_exit);
-+
-+MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
-+MODULE_DESCRIPTION("U300 pin control driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/pinctrl/pinmux-u300.h b/drivers/pinctrl/pinmux-u300.h
-new file mode 100644
-index 0000000..c2ec260
---- /dev/null
-+++ b/drivers/pinctrl/pinmux-u300.h
-@@ -0,0 +1,141 @@
-+/*
-+ * Register definitions for the U300 Padmux control registers in the
-+ * system controller
-+ */
-+
-+/* PAD MUX Control register 1 (LOW) 16bit (R/W) */
-+#define U300_SYSCON_PMC1LR					(0x007C)
-+#define U300_SYSCON_PMC1LR_MASK					(0xFFFF)
-+#define U300_SYSCON_PMC1LR_CDI_MASK				(0xC000)
-+#define U300_SYSCON_PMC1LR_CDI_CDI				(0x0000)
-+#define U300_SYSCON_PMC1LR_CDI_EMIF				(0x4000)
-+/* For BS335 */
-+#define U300_SYSCON_PMC1LR_CDI_CDI2				(0x8000)
-+#define U300_SYSCON_PMC1LR_CDI_WCDMA_APP_GPIO			(0xC000)
-+/* For BS365 */
-+#define U300_SYSCON_PMC1LR_CDI_GPIO				(0x8000)
-+#define U300_SYSCON_PMC1LR_CDI_WCDMA				(0xC000)
-+/* Common defs */
-+#define U300_SYSCON_PMC1LR_PDI_MASK				(0x3000)
-+#define U300_SYSCON_PMC1LR_PDI_PDI				(0x0000)
-+#define U300_SYSCON_PMC1LR_PDI_EGG				(0x1000)
-+#define U300_SYSCON_PMC1LR_PDI_WCDMA				(0x3000)
-+#define U300_SYSCON_PMC1LR_MMCSD_MASK				(0x0C00)
-+#define U300_SYSCON_PMC1LR_MMCSD_MMCSD				(0x0000)
-+#define U300_SYSCON_PMC1LR_MMCSD_MSPRO				(0x0400)
-+#define U300_SYSCON_PMC1LR_MMCSD_DSP				(0x0800)
-+#define U300_SYSCON_PMC1LR_MMCSD_WCDMA				(0x0C00)
-+#define U300_SYSCON_PMC1LR_ETM_MASK				(0x0300)
-+#define U300_SYSCON_PMC1LR_ETM_ACC				(0x0000)
-+#define U300_SYSCON_PMC1LR_ETM_APP				(0x0100)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS2_MASK			(0x00C0)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC			(0x0000)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS2_NFIF			(0x0040)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS2_SDRAM			(0x0080)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS2_STATIC_2GB		(0x00C0)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS1_MASK			(0x0030)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS1_STATIC			(0x0000)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS1_NFIF			(0x0010)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SDRAM			(0x0020)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS1_SEMI			(0x0030)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS0_MASK			(0x000C)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS0_STATIC			(0x0000)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS0_NFIF			(0x0004)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SDRAM			(0x0008)
-+#define U300_SYSCON_PMC1LR_EMIF_1_CS0_SEMI			(0x000C)
-+#define U300_SYSCON_PMC1LR_EMIF_1_MASK				(0x0003)
-+#define U300_SYSCON_PMC1LR_EMIF_1_STATIC			(0x0000)
-+#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM0			(0x0001)
-+#define U300_SYSCON_PMC1LR_EMIF_1_SDRAM1			(0x0002)
-+#define U300_SYSCON_PMC1LR_EMIF_1				(0x0003)
-+/* PAD MUX Control register 2 (HIGH) 16bit (R/W) */
-+#define U300_SYSCON_PMC1HR					(0x007E)
-+#define U300_SYSCON_PMC1HR_MASK					(0xFFFF)
-+#define U300_SYSCON_PMC1HR_MISC_2_MASK				(0xC000)
-+#define U300_SYSCON_PMC1HR_MISC_2_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_MISC_2_MSPRO				(0x4000)
-+#define U300_SYSCON_PMC1HR_MISC_2_DSP				(0x8000)
-+#define U300_SYSCON_PMC1HR_MISC_2_AAIF				(0xC000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_2_MASK			(0x3000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_2_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_2_NFIF			(0x1000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_2_DSP			(0x2000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_2_AAIF			(0x3000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_1_MASK			(0x0C00)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_1_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_1_MMC			(0x0400)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_1_DSP			(0x0800)
-+#define U300_SYSCON_PMC1HR_APP_GPIO_1_AAIF			(0x0C00)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_MASK			(0x0300)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_APP_GPIO		(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_SPI			(0x0100)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_2_AAIF			(0x0300)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_MASK			(0x00C0)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_APP_GPIO		(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_SPI			(0x0040)
-+#define U300_SYSCON_PMC1HR_APP_SPI_CS_1_AAIF			(0x00C0)
-+#define U300_SYSCON_PMC1HR_APP_SPI_2_MASK			(0x0030)
-+#define U300_SYSCON_PMC1HR_APP_SPI_2_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_SPI_2_SPI			(0x0010)
-+#define U300_SYSCON_PMC1HR_APP_SPI_2_DSP			(0x0020)
-+#define U300_SYSCON_PMC1HR_APP_SPI_2_AAIF			(0x0030)
-+#define U300_SYSCON_PMC1HR_APP_UART0_2_MASK			(0x000C)
-+#define U300_SYSCON_PMC1HR_APP_UART0_2_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_UART0_2_UART0			(0x0004)
-+#define U300_SYSCON_PMC1HR_APP_UART0_2_NFIF_CS			(0x0008)
-+#define U300_SYSCON_PMC1HR_APP_UART0_2_AAIF			(0x000C)
-+#define U300_SYSCON_PMC1HR_APP_UART0_1_MASK			(0x0003)
-+#define U300_SYSCON_PMC1HR_APP_UART0_1_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC1HR_APP_UART0_1_UART0			(0x0001)
-+#define U300_SYSCON_PMC1HR_APP_UART0_1_AAIF			(0x0003)
-+/* Padmux 2 control */
-+#define U300_SYSCON_PMC2R					(0x100)
-+#define U300_SYSCON_PMC2R_APP_MISC_0_MASK			(0x00C0)
-+#define U300_SYSCON_PMC2R_APP_MISC_0_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC2R_APP_MISC_0_EMIF_SDRAM			(0x0040)
-+#define U300_SYSCON_PMC2R_APP_MISC_0_MMC			(0x0080)
-+#define U300_SYSCON_PMC2R_APP_MISC_0_CDI2			(0x00C0)
-+#define U300_SYSCON_PMC2R_APP_MISC_1_MASK			(0x0300)
-+#define U300_SYSCON_PMC2R_APP_MISC_1_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC2R_APP_MISC_1_EMIF_SDRAM			(0x0100)
-+#define U300_SYSCON_PMC2R_APP_MISC_1_MMC			(0x0200)
-+#define U300_SYSCON_PMC2R_APP_MISC_1_CDI2			(0x0300)
-+#define U300_SYSCON_PMC2R_APP_MISC_2_MASK			(0x0C00)
-+#define U300_SYSCON_PMC2R_APP_MISC_2_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC2R_APP_MISC_2_EMIF_SDRAM			(0x0400)
-+#define U300_SYSCON_PMC2R_APP_MISC_2_MMC			(0x0800)
-+#define U300_SYSCON_PMC2R_APP_MISC_2_CDI2			(0x0C00)
-+#define U300_SYSCON_PMC2R_APP_MISC_3_MASK			(0x3000)
-+#define U300_SYSCON_PMC2R_APP_MISC_3_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC2R_APP_MISC_3_EMIF_SDRAM			(0x1000)
-+#define U300_SYSCON_PMC2R_APP_MISC_3_MMC			(0x2000)
-+#define U300_SYSCON_PMC2R_APP_MISC_3_CDI2			(0x3000)
-+#define U300_SYSCON_PMC2R_APP_MISC_4_MASK			(0xC000)
-+#define U300_SYSCON_PMC2R_APP_MISC_4_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC2R_APP_MISC_4_EMIF_SDRAM			(0x4000)
-+#define U300_SYSCON_PMC2R_APP_MISC_4_MMC			(0x8000)
-+#define U300_SYSCON_PMC2R_APP_MISC_4_ACC_GPIO			(0xC000)
-+/* TODO: More SYSCON registers missing */
-+#define U300_SYSCON_PMC3R					(0x10c)
-+#define U300_SYSCON_PMC3R_APP_MISC_11_MASK			(0xc000)
-+#define U300_SYSCON_PMC3R_APP_MISC_11_SPI			(0x4000)
-+#define U300_SYSCON_PMC3R_APP_MISC_10_MASK			(0x3000)
-+#define U300_SYSCON_PMC3R_APP_MISC_10_SPI			(0x1000)
-+/* TODO: Missing other configs */
-+#define U300_SYSCON_PMC4R					(0x168)
-+#define U300_SYSCON_PMC4R_APP_MISC_12_MASK			(0x0003)
-+#define U300_SYSCON_PMC4R_APP_MISC_12_APP_GPIO			(0x0000)
-+#define U300_SYSCON_PMC4R_APP_MISC_13_MASK			(0x000C)
-+#define U300_SYSCON_PMC4R_APP_MISC_13_CDI			(0x0000)
-+#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA			(0x0004)
-+#define U300_SYSCON_PMC4R_APP_MISC_13_SMIA2			(0x0008)
-+#define U300_SYSCON_PMC4R_APP_MISC_13_APP_GPIO			(0x000C)
-+#define U300_SYSCON_PMC4R_APP_MISC_14_MASK			(0x0030)
-+#define U300_SYSCON_PMC4R_APP_MISC_14_CDI			(0x0000)
-+#define U300_SYSCON_PMC4R_APP_MISC_14_SMIA			(0x0010)
-+#define U300_SYSCON_PMC4R_APP_MISC_14_CDI2			(0x0020)
-+#define U300_SYSCON_PMC4R_APP_MISC_14_APP_GPIO			(0x0030)
-+#define U300_SYSCON_PMC4R_APP_MISC_16_MASK			(0x0300)
-+#define U300_SYSCON_PMC4R_APP_MISC_16_APP_GPIO_13		(0x0000)
-+#define U300_SYSCON_PMC4R_APP_MISC_16_APP_UART1_CTS		(0x0100)
-+#define U300_SYSCON_PMC4R_APP_MISC_16_EMIF_1_STATIC_CS5_N	(0x0200)
+@@ -117,7 +117,7 @@ const struct pinctrl_pin_desc __refdata u300_pads[] = {
+  */
+ struct u300_pmx {
+ 	struct device *dev;
+-	struct pinmux_dev *pmx;
++	struct pinctrl_dev *pctl;
+ 	u32 phybase;
+ 	u32 physize;
+ 	void __iomem *virtbase;
+@@ -254,36 +254,36 @@ static void u300_pmx_endisable(struct u300_pmx *upmx, unsigned selector,
+ 	}
+ }
+ 
+-static int u300_pmx_enable(struct pinmux_dev *pmxdev, unsigned selector)
++static int u300_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector)
+ {
+ 	struct u300_pmx *upmx;
+ 
+ 	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
+ 		return -EINVAL;
+-	upmx = pmxdev_get_drvdata(pmxdev);
++	upmx = pctldev_get_drvdata(pctldev);
+ 	u300_pmx_endisable(upmx, selector, true);
+ 
+ 	return 0;
+ }
+ 
+-static void u300_pmx_disable(struct pinmux_dev *pmxdev, unsigned selector)
++static void u300_pmx_disable(struct pinctrl_dev *pctldev, unsigned selector)
+ {
+ 	struct u300_pmx *upmx;
+ 
+ 	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
+ 		return;
+-	upmx = pmxdev_get_drvdata(pmxdev);
++	upmx = pctldev_get_drvdata(pctldev);
+ 	u300_pmx_endisable(upmx, selector, false);
+ }
+ 
+-static int u300_pmx_list(struct pinmux_dev *pmxdev, unsigned selector)
++static int u300_pmx_list(struct pinctrl_dev *pctldev, unsigned selector)
+ {
+ 	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
+ 		return -EINVAL;
+ 	return 0;
+ }
+ 
+-static const char *u300_pmx_get_fname(struct pinmux_dev *pmxdev,
++static const char *u300_pmx_get_fname(struct pinctrl_dev *pctldev,
+ 				      unsigned selector)
+ {
+ 	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
+@@ -291,7 +291,7 @@ static const char *u300_pmx_get_fname(struct pinmux_dev *pmxdev,
+ 	return u300_pmx_funcs[selector].name;
+ }
+ 
+-static int u300_pmx_get_pins(struct pinmux_dev *pmxdev, unsigned selector,
++static int u300_pmx_get_pins(struct pinctrl_dev *pctldev, unsigned selector,
+ 			     unsigned ** const pins, unsigned * const num_pins)
+ {
+ 	if (selector >= ARRAY_SIZE(u300_pmx_funcs))
+@@ -301,7 +301,7 @@ static int u300_pmx_get_pins(struct pinmux_dev *pmxdev, unsigned selector,
+ 	return 0;
+ }
+ 
+-static void u300_dbg_show(struct pinmux_dev *pmxdev, struct seq_file *s,
++static void u300_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
+ 		   unsigned offset)
+ {
+ 	seq_printf(s, " " DRIVER_NAME);
+@@ -316,7 +316,7 @@ static struct pinmux_ops u300_pmx_ops = {
+ 	.dbg_show = u300_dbg_show,
+ };
+ 
+-static struct pinmux_desc u300_pmx_desc = {
++static struct pinctrl_desc u300_pmx_desc = {
+ 	.name = DRIVER_NAME,
+ 	.pins = u300_pads,
+ 	.npins = ARRAY_SIZE(u300_pads),
+@@ -358,11 +358,10 @@ static int __init u300_pmx_probe(struct platform_device *pdev)
+ 		goto out_no_remap;
+ 	}
+ 
+-	/* Now register the pin controller and all pins it handles */
+ 	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
+ 	if (IS_ERR(upmx->pctl)) {
+ 		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
+-		ret = PTR_ERR(upmx->pmx);
++		ret = PTR_ERR(upmx->pctl);
+ 		goto out_no_pmx;
+ 	}
+ 	platform_set_drvdata(pdev, upmx);
+@@ -387,7 +386,7 @@ static int __exit u300_pmx_remove(struct platform_device *pdev)
+ 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
+ 
+ 	if (upmx) {
+-		pinmux_unregister(upmx->pmx);
++		pinctrl_unregister(upmx->pctl);
+ 		iounmap(upmx->virtbase);
+ 		release_mem_region(upmx->phybase, upmx->physize);
+ 		platform_set_drvdata(pdev, NULL);
 -- 
 1.7.3.2
 
