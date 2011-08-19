@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab1HSOSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:18:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39818 "EHLO
+	id S1755033Ab1HSOSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:18:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63671 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754462Ab1HSOQv (ORCPT
+	with ESMTP id S1754631Ab1HSOQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:16:51 -0400
+	Fri, 19 Aug 2011 10:16:53 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/16] freezer: clean up freeze_processes() failure path
-Date: Fri, 19 Aug 2011 16:16:18 +0200
-Message-Id: <1313763382-12341-13-git-send-email-tj@kernel.org>
+Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 13/16] cgroup_freezer: prepare for removal of TIF_FREEZE
+Date: Fri, 19 Aug 2011 16:16:19 +0200
+Message-Id: <1313763382-12341-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
 References: <1313763382-12341-1-git-send-email-tj@kernel.org>
@@ -20,181 +21,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-freeze_processes() failure path is rather messy.  Freezing is canceled
-for workqueues and tasks which aren't frozen yet but frozen tasks are
-left alone and should be thawed by the caller and of course some
-callers (xen and kexec) didn't do it.
+TIF_FREEZE will be removed soon and freezing() will directly test
+whether any freezing condition is in effect.  Make the following
+changes in preparation.
 
-This patch updates __thaw_task() to handle cancelation correctly and
-makes thaw_processes() call thaw_processes() on failure instead so
-that the system is fully thawed on failure.  Unnecessary
-thaw_processes() calls are removed from kernel/power/hibernate.c and
-user.c.
+* Rename cgroup_freezing_or_frozen() to cgroup_freezing() and make it
+  return bool.
+
+* Make cgroup_freezing() access task_freezer() under rcu read lock
+  instead of task_lock().  This makes the state dereferencing racy
+  against task moving to another cgroup; however, it was already racy
+  without this change as ->state dereference wasn't synchronized.
+  This will be later dealt with using attach hooks.
+
+* freezer->state is now set before trying to push tasks into the
+  target state.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
 ---
- include/linux/freezer.h  |    1 -
- kernel/freezer.c         |   25 +++++++++----------------
- kernel/power/hibernate.c |   15 ++-------------
- kernel/power/process.c   |   10 ++--------
- kernel/power/user.c      |    4 +---
- 5 files changed, 14 insertions(+), 41 deletions(-)
+ include/linux/freezer.h |    6 +++---
+ kernel/cgroup_freezer.c |   36 ++++++++++++------------------------
+ kernel/power/process.c  |    2 +-
+ 3 files changed, 16 insertions(+), 28 deletions(-)
 
 diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 59a6e97..13559a8 100644
+index 13559a8..bcc0637 100644
 --- a/include/linux/freezer.h
 +++ b/include/linux/freezer.h
-@@ -60,7 +60,6 @@ static inline bool try_to_freeze(void)
- }
- 
- extern bool freeze_task(struct task_struct *p, bool sig_only);
--extern void cancel_freezing(struct task_struct *p);
+@@ -63,11 +63,11 @@ extern bool freeze_task(struct task_struct *p, bool sig_only);
  extern bool __set_freezable(bool with_signal);
  
  #ifdef CONFIG_CGROUP_FREEZER
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 82332bb..7506ef3 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -126,21 +126,6 @@ out_unlock:
- 	return ret;
- }
- 
--void cancel_freezing(struct task_struct *p)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&freezer_lock, flags);
--	if (freezing(p)) {
--		pr_debug("  clean up: %s\n", p->comm);
--		clear_freeze_flag(p);
--		spin_lock(&p->sighand->siglock);
--		recalc_sigpending_and_wake(p);
--		spin_unlock(&p->sighand->siglock);
--	}
--	spin_unlock_irqrestore(&freezer_lock, flags);
--}
--
- void __thaw_task(struct task_struct *p)
+-extern int cgroup_freezing_or_frozen(struct task_struct *task);
++extern bool cgroup_freezing(struct task_struct *task);
+ #else /* !CONFIG_CGROUP_FREEZER */
+-static inline int cgroup_freezing_or_frozen(struct task_struct *task)
++static inline bool cgroup_freezing(struct task_struct *task)
  {
- 	unsigned long flags;
-@@ -150,11 +135,19 @@ void __thaw_task(struct task_struct *p)
- 	 * be visible to @p as waking up implies wmb.  Waking up inside
- 	 * freezer_lock also prevents wakeups from leaking outside
- 	 * refrigerator.
-+	 *
-+	 * If !FROZEN, @p hasn't reached refrigerator, recalc sigpending to
-+	 * avoid leaving dangling TIF_SIGPENDING behind.
- 	 */
- 	spin_lock_irqsave(&freezer_lock, flags);
- 	clear_freeze_flag(p);
--	if (frozen(p))
-+	if (frozen(p)) {
- 		wake_up_process(p);
-+	} else {
-+		spin_lock(&p->sighand->siglock);
-+		recalc_sigpending_and_wake(p);
-+		spin_unlock(&p->sighand->siglock);
-+	}
- 	spin_unlock_irqrestore(&freezer_lock, flags);
+-	return 0;
++	return false;
+ }
+ #endif /* !CONFIG_CGROUP_FREEZER */
+ 
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index e7fa0ec..0478c35 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -48,19 +48,17 @@ static inline struct freezer *task_freezer(struct task_struct *task)
+ 			    struct freezer, css);
  }
  
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 8f7b1db..5fed34d 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -586,17 +586,6 @@ static void power_down(void)
- 	while(1);
- }
- 
--static int prepare_processes(void)
--{
--	int error = 0;
--
--	if (freeze_processes()) {
--		error = -EBUSY;
--		thaw_processes();
--	}
--	return error;
+-static inline int __cgroup_freezing_or_frozen(struct task_struct *task)
++bool cgroup_freezing(struct task_struct *task)
+ {
+-	enum freezer_state state = task_freezer(task)->state;
+-	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
 -}
++	enum freezer_state state;
++	bool ret;
+ 
+-int cgroup_freezing_or_frozen(struct task_struct *task)
+-{
+-	int result;
+-	task_lock(task);
+-	result = __cgroup_freezing_or_frozen(task);
+-	task_unlock(task);
+-	return result;
++	rcu_read_lock();
++	state = task_freezer(task)->state;
++	ret = state == CGROUP_FREEZING || state == CGROUP_FROZEN;
++	rcu_read_unlock();
++
++	return ret;
+ }
+ 
+ /*
+@@ -102,9 +100,6 @@ struct cgroup_subsys freezer_subsys;
+  * freezer_can_attach():
+  * cgroup_mutex (held by caller of can_attach)
+  *
+- * cgroup_freezing_or_frozen():
+- * task->alloc_lock (to get task's cgroup)
+- *
+  * freezer_fork() (preserving fork() performance means can't take cgroup_mutex):
+  * freezer->lock
+  *  sighand->siglock (if the cgroup is freezing)
+@@ -177,13 +172,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+ 
+ static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ {
+-	rcu_read_lock();
+-	if (__cgroup_freezing_or_frozen(tsk)) {
+-		rcu_read_unlock();
+-		return -EBUSY;
+-	}
+-	rcu_read_unlock();
+-	return 0;
++	return cgroup_freezing(tsk) ? -EBUSY : 0;
+ }
+ 
+ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
+@@ -279,7 +268,6 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ 	struct task_struct *task;
+ 	unsigned int num_cant_freeze_now = 0;
+ 
+-	freezer->state = CGROUP_FREEZING;
+ 	cgroup_iter_start(cgroup, &it);
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		if (!freeze_task(task, true))
+@@ -303,8 +291,6 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ 	while ((task = cgroup_iter_next(cgroup, &it)))
+ 		__thaw_task(task);
+ 	cgroup_iter_end(cgroup, &it);
 -
- /**
-  * hibernate - Carry out system hibernation, including saving the image.
-  */
-@@ -629,7 +618,7 @@ int hibernate(void)
- 	sys_sync();
- 	printk("done.\n");
+-	freezer->state = CGROUP_THAWED;
+ }
  
--	error = prepare_processes();
-+	error = freeze_processes();
- 	if (error)
- 		goto Finish;
+ static int freezer_change_state(struct cgroup *cgroup,
+@@ -321,6 +307,8 @@ static int freezer_change_state(struct cgroup *cgroup,
+ 	if (goal_state == freezer->state)
+ 		goto out;
  
-@@ -776,7 +765,7 @@ static int software_resume(void)
- 		goto close_finish;
- 
- 	pr_debug("PM: Preparing processes for restore.\n");
--	error = prepare_processes();
-+	error = freeze_processes();
- 	if (error) {
- 		swsusp_close(FMODE_READ);
- 		goto Done;
++	freezer->state = goal_state;
++
+ 	switch (goal_state) {
+ 	case CGROUP_THAWED:
+ 		unfreeze_cgroup(cgroup, freezer);
 diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 7618909..f8012f2 100644
+index f8012f2..1bbc363 100644
 --- a/kernel/power/process.c
 +++ b/kernel/power/process.c
-@@ -91,11 +91,6 @@ static int try_to_freeze_tasks(bool sig_only)
- 	elapsed_csecs = elapsed_csecs64;
+@@ -154,7 +154,7 @@ void thaw_processes(void)
  
- 	if (todo) {
--		/* This does not unfreeze processes that are already frozen
--		 * (we have slightly ugly calling convention in that respect,
--		 * and caller must call thaw_processes() if something fails),
--		 * but it cleans up leftover PF_FREEZE requests.
--		 */
- 		printk("\n");
- 		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
- 		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
-@@ -103,14 +98,11 @@ static int try_to_freeze_tasks(bool sig_only)
- 		       elapsed_csecs / 100, elapsed_csecs % 100,
- 		       todo - wq_busy, wq_busy);
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		if (cgroup_freezing_or_frozen(p))
++		if (cgroup_freezing(p))
+ 			continue;
  
--		thaw_workqueues();
--
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, p) {
- 			if (!wakeup && !freezer_should_skip(p) &&
- 			    freezing(p) && !frozen(p))
- 				sched_show_task(p);
--			cancel_freezing(p);
- 		} while_each_thread(g, p);
- 		read_unlock(&tasklist_lock);
- 	} else {
-@@ -142,6 +134,8 @@ int freeze_processes(void)
- 
- 	oom_killer_disable();
-  Exit:
-+	if (error)
-+		thaw_processes();
- 	BUG_ON(in_atomic());
- 	printk("\n");
- 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 42ddbc6..afe7737 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -256,10 +256,8 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 			break;
- 
- 		error = freeze_processes();
--		if (error) {
--			thaw_processes();
-+		if (error)
- 			usermodehelper_enable();
--		}
- 		if (!error)
- 			data->frozen = 1;
- 		break;
+ 		__thaw_task(p);
 -- 
 1.7.6
 
