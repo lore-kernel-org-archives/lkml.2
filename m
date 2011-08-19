@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128Ab1HSQzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:55:11 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57290 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756404Ab1HSQrf (ORCPT
+	id S1756445Ab1HSQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:55:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51449 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab1HSQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:35 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 16/43] microblaze: Fix signal masking
-Date: Fri, 19 Aug 2011 17:46:32 +0100
-Message-Id: <1313772419-21951-17-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+	Fri, 19 Aug 2011 12:55:23 -0400
+Date: Fri, 19 Aug 2011 20:55:18 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ian <ian@opensource.wolfsonmicro.com>,
+        Vasily Khoruzhick <anarsoul@gmail.com>, u.kleine-koenig@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Added #include of module.h to s3c_adc_battery.c
+Message-ID: <20110819165518.GK22761@oksana.dev.rtsoft.ru>
+References: <1313662449.18176.18.camel@Tapajos>
+ <201108181321.11293.anarsoul@gmail.com>
+ <1313663688.18176.23.camel@Tapajos>
+ <20110818160612.GB20208@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110818160612.GB20208@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Fri, Aug 19, 2011 at 01:06:13AM +0900, Mark Brown wrote:
+> On Thu, Aug 18, 2011 at 11:34:48AM +0100, Ian wrote:
+> > On Thu, 2011-08-18 at 13:21 +0300, Vasily Khoruzhick wrote:
+> > > On Thursday 18 August 2011 13:14:09 Ian wrote:
+> > > > s3c_adc_battery.c will not compile without moule.h as it contains the
+> > > > definitions of: MODULE_AUTHOR, MODULE_DESCRIPTION & MODULE_LICENSE.
+> > > 
+> > > I've already sent pretty same patch a ~week ago, here it is:
+> > > https://patchwork.kernel.org/patch/1061302/
+> > 
+> > Ah, apologies - please disregard this patch then.
+> 
+> Hrm, Anton's been pretty quiet recently - might be an idea to start
+> CCing akpm on this stuff?
 
-There are a couple of problems with the current signal code,
+Don't panic. :-) I'm still here, been on a vacation (and was trying to
+not read emails :-), then was catching up with my other duties.
 
-1. If we failed to setup the signal stack frame then we
-should not be masking any signals.
+Ian, I added your Signed-off-by line to the Vasily's patch, for
+the credits.
 
-2. ka->sa.sa_mask is only added to the current blocked signals list if
-SA_NODEFER is set in ka->sa.sa_flags. If we successfully setup the
-signal frame and are going to run the handler then we must honour
-sa_mask.
+Thank you!
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Michal Simek <monstr@monstr.eu>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/microblaze/kernel/signal.c |   31 ++++++++++++++++++-------------
- 1 files changed, 18 insertions(+), 13 deletions(-)
-
-diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
-index 9e749c0..f2c13d5 100644
---- a/arch/microblaze/kernel/signal.c
-+++ b/arch/microblaze/kernel/signal.c
-@@ -169,7 +169,7 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
- 	return (void __user *)((sp - frame_size) & -8UL);
- }
- 
--static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-+static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 			sigset_t *set, struct pt_regs *regs)
- {
- 	struct rt_sigframe __user *frame;
-@@ -267,10 +267,11 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 		current->comm, current->pid, frame, regs->pc);
- #endif
- 
--	return;
-+	return 0;
- 
- give_sigsegv:
- 	force_sigsegv(sig, current);
-+	return -EFAULT;
- }
- 
- /* Handle restarting system calls */
-@@ -314,21 +315,25 @@ static int
- handle_signal(unsigned long sig, struct k_sigaction *ka,
- 		siginfo_t *info, sigset_t *oldset, struct pt_regs *regs)
- {
-+	int ret;
-+
- 	/* Set up the stack frame */
- 	if (ka->sa.sa_flags & SA_SIGINFO)
--		setup_rt_frame(sig, ka, info, oldset, regs);
-+		ret = setup_rt_frame(sig, ka, info, oldset, regs);
- 	else
--		setup_rt_frame(sig, ka, NULL, oldset, regs);
-+		ret = setup_rt_frame(sig, ka, NULL, oldset, regs);
-+
-+	if (ret)
-+		return ret;
- 
--	if (!(ka->sa.sa_flags & SA_NODEFER)) {
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked,
--				&current->blocked, &ka->sa.sa_mask);
-+	spin_lock_irq(&current->sighand->siglock);
-+	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
- 		sigaddset(&current->blocked, sig);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
--	}
--	return 1;
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
-+
-+	return 0;
- }
- 
- /*
-@@ -369,7 +374,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset, int in_syscall)
- 		/* Whee! Actually deliver the signal. */
- 		if (in_syscall)
- 			handle_restart(regs, &ka, 1);
--		if (handle_signal(signr, &ka, &info, oldset, regs)) {
-+		if (!handle_signal(signr, &ka, &info, oldset, regs)) {
- 			/*
- 			 * A signal was successfully delivered; the saved
- 			 * sigmask will have been stored in the signal frame,
 -- 
-1.7.4.4
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
