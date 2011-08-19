@@ -1,83 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1HSDDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 23:03:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51951 "EHLO smtps.tip.net.au"
+	id S1751972Ab1HSDZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 23:25:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3719 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1HSDDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 23:03:39 -0400
-Date: Fri, 19 Aug 2011 13:03:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Pihet <j-pihet@ti.com>
-Subject: linux-next: build failure after merge of the final tree (pm tree
- related)
-Message-Id: <20110819130328.ee5c4b7191db0ce2c8a02e39@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__19_Aug_2011_13_03_28_+1000_wI76sgvF=9z/1+Fx"
+	id S1751148Ab1HSDZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 23:25:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="39286262"
+Date: Fri, 19 Aug 2011 11:25:14 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110819032514.GA16719@localhost>
+References: <20110816022006.348714319@intel.com>
+ <20110816022328.811348370@intel.com>
+ <20110819025321.GB13597@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819025321.GB13597@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__19_Aug_2011_13_03_28_+1000_wI76sgvF=9z/1+Fx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Aug 19, 2011 at 10:53:21AM +0800, Vivek Goyal wrote:
+> On Tue, Aug 16, 2011 at 10:20:08AM +0800, Wu Fengguang wrote:
+> 
+> [..]
+> > +/*
+> > + * Dirty position control.
+> > + *
+> > + * (o) global/bdi setpoints
+> > + *
+> > + * We want the dirty pages be balanced around the global/bdi setpoints.
+> > + * When the number of dirty pages is higher/lower than the setpoint, the
+> > + * dirty position control ratio (and hence task dirty ratelimit) will be
+> > + * decreased/increased to bring the dirty pages back to the setpoint.
+> > + *
+> > + *     pos_ratio = 1 << RATELIMIT_CALC_SHIFT
+> > + *
+> > + *     if (dirty < setpoint) scale up   pos_ratio
+> > + *     if (dirty > setpoint) scale down pos_ratio
+> > + *
+> > + *     if (bdi_dirty < bdi_setpoint) scale up   pos_ratio
+> > + *     if (bdi_dirty > bdi_setpoint) scale down pos_ratio
+> > + *
+> > + *     task_ratelimit = balanced_rate * pos_ratio >> RATELIMIT_CALC_SHIFT
+> > + *
+> > + * (o) global control line
+> > + *
+> > + *     ^ pos_ratio
+> > + *     |
+> > + *     |            |<===== global dirty control scope ======>|
+> > + * 2.0 .............*
+> > + *     |            .*
+> > + *     |            . *
+> > + *     |            .   *
+> > + *     |            .     *
+> > + *     |            .        *
+> > + *     |            .            *
+> > + * 1.0 ................................*
+> > + *     |            .                  .     *
+> > + *     |            .                  .          *
+> > + *     |            .                  .              *
+> > + *     |            .                  .                 *
+> > + *     |            .                  .                    *
+> > + *   0 +------------.------------------.----------------------*------------->
+> > + *           freerun^          setpoint^                 limit^   dirty pages
+> > + *
+> > + * (o) bdi control lines
+> > + *
+> > + * The control lines for the global/bdi setpoints both stretch up to @limit.
+> > + * The below figure illustrates the main bdi control line with an auxiliary
+> > + * line extending it to @limit.
+> > + *
+> > + *   o
+> > + *     o
+> > + *       o                                      [o] main control line
+> > + *         o                                    [*] auxiliary control line
+> > + *           o
+> > + *             o
+> > + *               o
+> > + *                 o
+> > + *                   o
+> > + *                     o
+> > + *                       o--------------------- balance point, rate scale = 1
+> > + *                       | o
+> > + *                       |   o
+> > + *                       |     o
+> > + *                       |       o
+> > + *                       |         o
+> > + *                       |           o
+> > + *                       |             o------- connect point, rate scale = 1/2
+> > + *                       |               .*
+> > + *                       |                 .   *
+> > + *                       |                   .      *
+> > + *                       |                     .         *
+> > + *                       |                       .           *
+> > + *                       |                         .              *
+> > + *                       |                           .                 *
+> > + *  [--------------------+-----------------------------.--------------------*]
+> > + *  0                 setpoint                     x_intercept           limit
+> > + *
+> > + * The auxiliary control line allows smoothly throttling bdi_dirty down to
+> > + * normal if it starts high in situations like
+> > + * - start writing to a slow SD card and a fast disk at the same time. The SD
+> > + *   card's bdi_dirty may rush to many times higher than bdi setpoint.
+> > + * - the bdi dirty thresh drops quickly due to change of JBOD workload
+> > + */
+> > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> > +					unsigned long thresh,
+> > +					unsigned long bg_thresh,
+> > +					unsigned long dirty,
+> > +					unsigned long bdi_thresh,
+> > +					unsigned long bdi_dirty)
+> > +{
+> > +	unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
+> > +	unsigned long limit = hard_dirty_limit(thresh);
+> > +	unsigned long x_intercept;
+> > +	unsigned long setpoint;		/* the target balance point */
+> > +	unsigned long span;
+> > +	long long pos_ratio;		/* for scaling up/down the rate limit */
+> > +	long x;
+> > +
+> > +	if (unlikely(dirty >= limit))
+> > +		return 0;
+> > +
+> > +	/*
+> > +	 * global setpoint
+> > +	 *
+> > +	 *                         setpoint - dirty 3
+> > +	 *        f(dirty) := 1 + (----------------)
+> > +	 *                         limit - setpoint
+> > +	 *
+> > +	 * it's a 3rd order polynomial that subjects to
+> > +	 *
+> > +	 * (1) f(freerun)  = 2.0 => rampup base_rate reasonably fast
+> > +	 * (2) f(setpoint) = 1.0 => the balance point
+> > +	 * (3) f(limit)    = 0   => the hard limit
+> > +	 * (4) df/dx       < 0	 => negative feedback control
+> > +	 * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
+> > +	 *     => fast response on large errors; small oscillation near setpoint
+> > +	 */
+> > +	setpoint = (freerun + limit) / 2;
+> > +	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
+> > +		    limit - setpoint + 1);
+> > +	pos_ratio = x;
+> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> > +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> > +	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+> > +
+> > +	/*
+> > +	 * bdi setpoint
+> > +	 *
+> > +	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
+> > +	 *
+> > +	 * The main bdi control line is a linear function that subjects to
+> > +	 *
+> > +	 * (1) f(setpoint) = 1.0
+> > +	 * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
+> > +	 *     or equally: x_intercept = setpoint + 8 * write_bw
+> > +	 *
+> > +	 * For single bdi case, the dirty pages are observed to fluctuate
+> > +	 * regularly within range
+> > +	 *        [setpoint - write_bw/2, setpoint + write_bw/2]
+> > +	 * for various filesystems, where (2) can yield in a reasonable 12.5%
+> > +	 * fluctuation range for pos_ratio.
+> > +	 *
+> > +	 * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
+> > +	 * own size, so move the slope over accordingly.
+> > +	 */
+> > +	if (unlikely(bdi_thresh > thresh))
+> > +		bdi_thresh = thresh;
+> > +	/*
+> > +	 * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
+> > +	 */
+> > +	x = div_u64((u64)bdi_thresh << 16, thresh | 1);
+> > +	setpoint = setpoint * (u64)x >> 16;
+> > +	/*
+> > +	 * Use span=(4*write_bw) in single bdi case as indicated by
+> > +	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
+> > +	 */
+> > +	span = div_u64((u64)bdi_thresh * (thresh - bdi_thresh) +
+> > +		       (u64)(4 * bdi->avg_write_bandwidth) * bdi_thresh,
+> > +		       thresh + 1);
+> > +	x_intercept = setpoint + 2 * span;
+> > +
+> 
+> Hi Fengguang,
+> 
+> Few very basic queries.
+> 
+> - Why can't we use the same formula for bdi position ratio as gloabl
+>   position ratio. Are you not looking for similar proporties. Near the
+>   set point variation is less and away from setup poing throttling is
+>   faster.
 
-Hi all,
+The changelog has more details, however I hope the rephrased summary
+can answer this question better.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+Firstly, for single bdi case, the different bdi/global formula is
+complementing each other, where the bdi's slope is proportional to the
+writeout bandwidth, while the global one is scaling to memory size.
+In huge memory system, the global position feedback becomes very weak
+(even far away from the setpoint).  This is where the bdi control line
+can help pull the dirty pages to the setpoint.
 
-In file included from include/linux/netdevice.h:34:0,
-                 from include/linux/icmpv6.h:173,
-                 from include/linux/ipv6.h:220,
-                 from include/net/ipv6.h:16,
-                 from include/linux/sunrpc/clnt.h:25,
-                 from include/linux/nfs_fs.h:50,
-                 from init/do_mounts.c:20:
-include/linux/pm_qos.h: In function 'dev_pm_qos_add_request':
-include/linux/pm_qos.h:123:6: warning: 'return' with no value, in function =
-returning non-void
-include/linux/pm_qos.h: In function 'dev_pm_qos_update_request':
-include/linux/pm_qos.h:126:6: warning: 'return' with no value, in function =
-returning non-void
-include/linux/pm_qos.h: In function 'dev_pm_qos_remove_request':
-include/linux/pm_qos.h:128:6: warning: 'return' with no value, in function =
-returning non-void
+Secondly, for JBOD case, the global/bdi dirty thresholds are
+fundamentally different. The global one is stable and strong limit,
+while the bdi one is fluctuating and hence only suitable be taken as a
+weak limit. The other reason to make it a weak limit is, there are
+valid situations that (bdi_dirty >> bdi_thresh) and it's desirable to
+throttle the dirtier in reasonable small rate rather than to hard
+throttle it.
 
-Caused by commit b6d5b88750dc ("PM QoS: Implement per-device PM QoS
-constraints").
+> - In the bdi calculation, setpoint seems to be in number of pages and 
+>   limit (x_intercept) seems to be a combination of nr pages + pages/sec.
+>   Why it is different from gloabl setpoint and limit. I mean could this
+>   not have been like global calculation where we try to keep bdi_dirty
+>   close to bdi_thresh and calculate pos_ratio. 
 
-Please, please compile test with CONFIG options that your patch depends
-on switched on and switched off - in this case CONFIG_PM.
+Because the bdi dirty pages are observed to typically fluctuate up to
+1-second worth of data. So the write_bw used here is really (1s * write_bw).
 
-I have reverted that commit (and the followinf commit 57afcf09649c ("PM
-QoS: Add global notification mechanism for device constraints")) for
-today.
+> - In global pos_ratio calculation terminology used is "limit" while
+>   the same thing seems be being meintioned as x_intercept in bdi position
+>   ratio calculation.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Yes. Because the bdi control lines don't intent to do hard limit at all.
 
---Signature=_Fri__19_Aug_2011_13_03_28_+1000_wI76sgvF=9z/1+Fx
-Content-Type: application/pgp-signature
+It's actually possible for x_intercept to become larger than the global limit.
+This means the it's a memory tight system (or the storage is super fast)
+where the bdi dirty pages will inevitably fluctuate a lot (up to write_bw).
+We just let go of them and let the global formula take the control.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOTdKAAAoJEDMEi1NhKgbsgOIIAJ6QdpmDvXiotA/0VDIBVjG6
-S3CtNqBJlmuGce213iXkrwEAMslD34byrKJecpv48yYWpBNmVUsYbTxl4YMjUWm2
-It/iQ5eP0oQIiWL6YHyPI7Ow6P/Tr7KOnWFbP6yV/7l3khOXYlgHfsVCg3ixC5ZX
-v0eIxZhKFfhWklf9JMnq1v3gc3NeCj3V+Kgate36mjg0Mkfdrb3Go9y+hW7v6Egw
-7CI8yhffdl5QUZB9wdsFZqPNsATrE6wqWiqJtko1NzWTqF3oh/Mb2LCen7ld+4HO
-C15ZOp9rrXh5myHpU94D6O8RUobB+cNz7O4gs+cfwbRwZw2psGroVqqZWtQmU0g=
-=tSbO
------END PGP SIGNATURE-----
-
---Signature=_Fri__19_Aug_2011_13_03_28_+1000_wI76sgvF=9z/1+Fx--
+Thanks,
+Fengguang
