@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab1HSONP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:13:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39149 "EHLO mx2.suse.de"
+	id S1753805Ab1HSOOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:14:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62155 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab1HSONN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:13:13 -0400
-Message-ID: <4E4E6F76.8070508@suse.cz>
-Date: Fri, 19 Aug 2011 16:13:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1753368Ab1HSOOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 10:14:21 -0400
+Date: Fri, 19 Aug 2011 10:14:09 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 10/11] VFS: Cache request_queue in struct block_device
+Message-ID: <20110819141409.GD18656@redhat.com>
+References: <1312259893-4548-1-git-send-email-andi@firstfloor.org>
+ <1312259893-4548-11-git-send-email-andi@firstfloor.org>
+ <20110818194245.GJ15413@redhat.com>
+ <4E4D7E3C.8060104@linux.intel.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: jeffrey.t.kirsher@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Anish Kumar <anish198519851985@gmail.com>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: Re: [PATCH] checkpatch: do not test/warn of leading whitespace before
- signature tags
-References: <1313650112-17287-1-git-send-email-jeffrey.t.kirsher@intel.com>  <1313652390.32547.53.camel@Joe-Laptop>  <1313653632.2128.88.camel@jtkirshe-mobl> <1313654341.32547.62.camel@Joe-Laptop>
-In-Reply-To: <1313654341.32547.62.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4D7E3C.8060104@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.8.2011 09:59, Joe Perches wrote:
->>>> From: Bruce Allan <bruce.w.allan@intel.com>
->>>> Unfortunately, now whenever patches are checked
->>>> by piping the output of 'git show' or 'stg show' through checkpatch it
->>>> warns not to use whitespace before all signature tags since these (and the
->>>> rest of the patch description) are indented.  Remove this test/warning.
-...
+On Thu, Aug 18, 2011 at 02:03:56PM -0700, Andi Kleen wrote:
 > 
-> I suppose checkpatch could have a different "--input=git"
-> or some such to avoid certain things that git might produce
-> that a patch would not.
+> >Is the performance gain because of this one less dereference really
+> >substantial.
+> Yes it is measurable on a large macro benchmark.
+> 
+> The gain is from doing the prefetch early enough, and that needs the
+> additional pointer.
 
-One can also use 'git show --pretty=email', which does not do the
-indentation.
+So it gives you extra .3% (as mentioned in your first mail). IMHO, for
+.3% we should not cache extra request queue pointer.
 
-Michal
+Thanks
+Vivek
