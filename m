@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1HSImW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 04:42:22 -0400
-Received: from exprod5og117.obsmtp.com ([64.18.0.149]:49616 "EHLO
-	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab1HSImU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 04:42:20 -0400
-Message-ID: <4E4E21E6.3050400@ge.com>
-Date: Fri, 19 Aug 2011 09:42:14 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752123Ab1HSIv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 04:51:59 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:57255 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751513Ab1HSIv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 04:51:58 -0400
+Message-ID: <4E4E2427.9080602@nod.at>
+Date: Fri, 19 Aug 2011 10:51:51 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: devel@driverdev.osuosl.org, Manohar Vanga <manohar.vanga@cern.ch>,
-        gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] staging: vme: add functions for bridge	module	refcounting
-References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch>	<1313145051-13397-4-git-send-email-manohar.vanga@cern.ch>	<20110813085454.GA3409@flamenco.cs.columbia.edu> <4E4E1F89.4070702@ge.com>
-In-Reply-To: <4E4E1F89.4070702@ge.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: Subject: [PATCH 00/91] pending uml patches
+References: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk> <4E4D642F.3010909@nod.at> <20110818191946.GW2203@ZenIV.linux.org.uk> <20110819043120.GY2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110819043120.GY2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Aug 2011 08:38:45.0726 (UTC) FILETIME=[68981FE0:01CC5E4B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/11 09:32, Martyn Welch wrote:
-> On 13/08/11 09:54, Emilio G. Cota wrote:
->> On Fri, Aug 12, 2011 at 12:30:49 +0200, Manohar Vanga wrote:
->>> This patch adds functions that allow for reference counting
->>> bridge modules. The patch introduces the functions
->>> 'vme_bridge_get()' and 'vme_bridge_put()'.
->> (snip)
->>> +int vme_bridge_get(unsigned int bus_id)
->> (snip)
->>> +void vme_bridge_put(struct vme_bridge *bridge)
+Am 19.08.2011 06:31, schrieb Al Viro:
+> On Thu, Aug 18, 2011 at 08:19:46PM +0100, Al Viro wrote:
+>> On Thu, Aug 18, 2011 at 09:12:47PM +0200, Richard Weinberger wrote:
+>>> Have you touched your patches since yesterday?
+>>> I've already pulled and uploaded them to my shiny new git repo at:
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/rw/linux-um.git unstable
 >>
->> Note the input parameter imbalance; in fact this is serious
->> (see my email on patch 5) because _get() needs to acquire
->> vme_buses_lock, whereas _put() doesn't. Since a caller with
->> bridge has bridge->num, but the opposite doesn't hold (num
->> doesn't give you the bridge without acquiring vme_buses_lock),
->> it seems reasonable to me to take the bus_id as the input for
->> both functions, because the requirements on the caller are lower.
->>
-> 
-> Patch 4 makes changes the struct vme_bridge to struct vme_dev. Looking at the
-> callers we are then effectively doing:
-> 
+>> Reordered and added missing S-o-b on a couple, split one commit.
+>
+> Umm...  One comment after looking at your tree: you probably want to rebase
+> for-3.2 on top of fixes (and presumably feed it to sfr for inclusion into
+> linux-next).
 
-Patch 5 even.
+Please slow down a bit. :-)
+All these branches are just for testing purposes.
+That's why I have not announced them nor sent a pull request to Linus.
 
-Martyn
+Anyway, thanks for the hints!
 
-> vme_bridge_get(vme_dev.id)
-> 
-> Then in vme_bridge_get(), looping through all the buses to find the one with
-> the correct id...
-> 
-> We could just pass in the struct vme_dev to both functions.
-> 
-> Martyn
-> 
->> But the locking needs to be handled with care, see my reply
->> to patch 5.
->>
->> 		Emilio
->>
->> _______________________________________________
->> devel mailing list
->> devel@linuxdriverproject.org
->> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
-> 
-> 
-
-
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+Thanks,
+//richard
