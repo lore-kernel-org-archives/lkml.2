@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab1HSJxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 05:53:48 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64855 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab1HSJxp convert rfc822-to-8bit (ORCPT
+	id S1752904Ab1HSJyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 05:54:21 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:52082 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752488Ab1HSJyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 05:53:45 -0400
+	Fri, 19 Aug 2011 05:54:18 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/4 v4] pin controller subsystem v4
+Date: Fri, 19 Aug 2011 11:53:39 +0200
+Message-ID: <1313747619-32222-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-In-Reply-To: <1312891671-28680-1-git-send-email-per.forlin@linaro.org>
-References: <1312891671-28680-1-git-send-email-per.forlin@linaro.org>
-Date: Fri, 19 Aug 2011 11:53:44 +0200
-Message-ID: <CAJ0pr1-8Jnk1CKakWcS6T4Q3bAe7sF=5p8+9ou1+SbxsZM_Svw@mail.gmail.com>
-Subject: Re: [PATCH --mmotm v8 0/3] Make fault injection available for MMC IO
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linaro-dev@lists.linaro.org, linux-mm@kvack.org,
-        Per Forlin <per.forlin@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+From: Linus Walleij <linus.walleij@linaro.org>
 
-It's no longer necessary to merge this through the mm-tree since
-Akinobu's patch "fault-injection: add ability to export fault_attr in
-arbitrary directory" is in mainline.
-Chris, would you mind merging the fault-injection patches in this
-patchset to mmc-next once the mmc part of this patchset is acked and
-accepted?
+This is the fourth iteration of the pin controller subsystem, most
+changes are described in the first patch, copied here for reference:
 
-Regards,
-Per
+ChangeLog v3->v4:
+- Define a number space per controller instead of globally,
+  Stephen and Grant requested the same thing so now maps need to
+  define target controller, and the radix tree of pin descriptors
+  is a property on each pin controller device.
 
-On 9 August 2011 14:07, Per Forlin <per.forlin@linaro.org> wrote:
-> change log:
->  v2 - Resolve build issue in mmc core.c due to multiple init_module by
->      removing the fault inject module.
->    - Export fault injection functions to make them available for modules
->    - Update fault injection documentation on MMC IO
->  v3 - add function descriptions in core.c
->    - use export GPL for fault injection functions
->  v4 - make the fault_attr per host. This prepares for upcoming patch from
->      Akinobu that adds support for creating debugfs entries in
->      arbitrary directory.
->  v5 - Make use of fault_create_debugfs_attr() in Akinobu's
->      patch "fault-injection: add ability to export fault_attr in...".
->  v6 - Fix typo in commit message in patch "export fault injection functions"
->  v7 - Don't compile in boot param setup function if mmc-core is
->      built as module.
->  v8 - Update fault injection documentation.
->      Add fail_mmc_request to boot option section.
->
-> Per Forlin (3):
->  fault-inject: export fault injection functions
->  mmc: core: add random fault injection
->  fault injection: add documentation on MMC IO fault injection
->
->  Documentation/fault-injection/fault-injection.txt |    8 +++-
->  drivers/mmc/core/core.c                           |   44 +++++++++++++++++++++
->  drivers/mmc/core/debugfs.c                        |   27 +++++++++++++
->  include/linux/mmc/host.h                          |    7 +++
->  lib/Kconfig.debug                                 |   11 +++++
->  lib/fault-inject.c                                |    2 +
->  6 files changed, 98 insertions(+), 1 deletions(-)
->
-> --
-> 1.7.4.1
->
->
+- Add a compulsory pinctrl device entry to the pinctrl mapping
+  table. This must match the pinctrl device, like "pinctrl.0"
+
+- Split the file core.c in two: core.c and pinmux.c where the
+  latter carry all pinmux stuff, the core is for generic pin
+  control, and use local headers to access functionality between
+  files. It is now possible to implement a "blank" pin controller
+  without pinmux capabilities. This split will make new additions
+  like pindrive.c, pinbias.c etc possible for combined drivers
+  and chunks of functionality which is a GoodThing(TM).
+
+- Rewrite the interaction with the GPIO subsystem - the pin
+  controller descriptor now handles this by defining an offset
+  into the GPIO numberspace for its handled pin range. This is
+  used to look up the apropriate pin controller for a GPIO pin.
+  Then that specific GPIO range is matched 1-1 for the target
+  controller instance.
+
+- Fixed a number of review comments from Joe Perches.
+
+- Broke out a header file pinctrl.h for the core pin handling
+  stuff that will be reused by other stuff than pinmux.
+
+- Fixed some erroneous EXPORT() stuff.
+
+- Remove mispatched U300 Kconfig and Makefile entries
+
+- Fixed a number of review comments from Stephen Warren, not all
+  of them - still WIP. But I think the new mapping that will
+  specify which function goes to which pin mux controller address
+  50% of your concerns (else beat me up).
+
+Linus Walleij (4):
+  drivers: create a pinmux subsystem v4
+  pinmux: add a driver for the U300 pinmux
+  amba: request muxing for PrimeCell devices
+  mach-u300: activate pinmux driver, delete old padmux driver
+
+ Documentation/ABI/testing/sysfs-class-pinmux |   11 +
+ Documentation/pinctrl.txt                    |  512 +++++++++++++++++++
+ MAINTAINERS                                  |    5 +
+ arch/arm/mach-u300/Kconfig                   |    2 +
+ arch/arm/mach-u300/Makefile                  |    2 +-
+ arch/arm/mach-u300/core.c                    |   31 ++-
+ arch/arm/mach-u300/include/mach/syscon.h     |  136 -----
+ arch/arm/mach-u300/mmc.c                     |   16 -
+ arch/arm/mach-u300/padmux.c                  |  367 --------------
+ arch/arm/mach-u300/padmux.h                  |   39 --
+ arch/arm/mach-u300/spi.c                     |   20 -
+ drivers/Kconfig                              |    4 +
+ drivers/Makefile                             |    2 +
+ drivers/amba/bus.c                           |   49 ++-
+ drivers/pinctrl/Kconfig                      |   36 ++
+ drivers/pinctrl/Makefile                     |    7 +
+ drivers/pinctrl/core.c                       |  437 ++++++++++++++++
+ drivers/pinctrl/core.h                       |   22 +
+ drivers/pinctrl/pinmux-u300.c                |  421 ++++++++++++++++
+ drivers/pinctrl/pinmux-u300.h                |  141 ++++++
+ drivers/pinctrl/pinmux.c                     |  700 ++++++++++++++++++++++++++
+ drivers/pinctrl/pinmux.h                     |    4 +
+ include/linux/amba/bus.h                     |    2 +
+ include/linux/pinctrl/machine.h              |   62 +++
+ include/linux/pinctrl/pinctrl.h              |  120 +++++
+ include/linux/pinctrl/pinmux.h               |  122 +++++
+ 26 files changed, 2687 insertions(+), 583 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-pinmux
+ create mode 100644 Documentation/pinctrl.txt
+ delete mode 100644 arch/arm/mach-u300/padmux.c
+ delete mode 100644 arch/arm/mach-u300/padmux.h
+ create mode 100644 drivers/pinctrl/Kconfig
+ create mode 100644 drivers/pinctrl/Makefile
+ create mode 100644 drivers/pinctrl/core.c
+ create mode 100644 drivers/pinctrl/core.h
+ create mode 100644 drivers/pinctrl/pinmux-u300.c
+ create mode 100644 drivers/pinctrl/pinmux-u300.h
+ create mode 100644 drivers/pinctrl/pinmux.c
+ create mode 100644 drivers/pinctrl/pinmux.h
+ create mode 100644 include/linux/pinctrl/machine.h
+ create mode 100644 include/linux/pinctrl/pinctrl.h
+ create mode 100644 include/linux/pinctrl/pinmux.h
+
+-- 
+1.7.3.2
+
