@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1HSM3M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:29:12 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:44788 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab1HSM3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:29:10 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -22.91
-Message-ID: <4E4E5714.2040802@tudelft.nl>
-Date: Fri, 19 Aug 2011 14:29:08 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <E.A.B.Piel@tudelft.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110814 Thunderbird/5.0
+	id S1753758Ab1HSMb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:31:58 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:37663 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751378Ab1HSMbz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:31:55 -0400
 MIME-Version: 1.0
-To: JJ Ding <jj_ding@emc.com.tw>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 5/6] Input: elantech - clean up elantech_init
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw>
-In-Reply-To: <1313632629-23603-6-git-send-email-jj_ding@emc.com.tw>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110819113953.GM23101@legolas.emea.dhcp.ti.com>
+References: <1313753646-29089-1-git-send-email-keshava_mgowda@ti.com>
+	<20110819113953.GM23101@legolas.emea.dhcp.ti.com>
+Date: Fri, 19 Aug 2011 18:01:53 +0530
+Message-ID: <CAP05o4KFJ984KTxKu=aNd4OdSkTdCvT_RgFQ6pw8yRDFyprB_A@mail.gmail.com>
+Subject: Re: [PATCH 0/5 v6] mfd: omap: usb: Runtime PM support for EHCI and
+ OHCI drivers
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gadiyar@ti.com, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, khilman@ti.com,
+        b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
+        vishwanath.bs@ti.com, tom.leiming@gmail.com, toddpoynor@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 18-08-11 03:57, JJ Ding schreef:
-> Group property setting code into elantech_set_properties.
+On Fri, Aug 19, 2011 at 5:10 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
-Looks good.
+> On Fri, Aug 19, 2011 at 05:04:01PM +0530, Keshava Munegowda wrote:
+>> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+>>
+>> The Hwmod structures and Runtime PM features are implemented
+>> For EHCI and OHCI drivers of OMAP3 and OMAP4.
+>> The global suspend/resume of EHCI and OHCI
+>> is validated on OMAP3430 sdp board with these patches.
+>>
+>> these patches are rebased to kevin's pm branch and
+>> usbhs latest mainline kernel patches
+>>
+>> TODO:
+>>      - Aggressive clock cutting in usb bus suspends
+>>      - Remote Wakeup implementation using irq-chaining
+>
+> what happened with V5 ? I didn't see any comments to that one. Please
+> start adding your changes here too.
 
-Signed-off-by: Ã‰ric Piel <eric.piel@tremplin-utc.net>
+I rebased (trival) on anand gadiyar's TLL patch, covered typos and re tested on
+omap3 and omap4 again.
+I know its simple thing to do, but I don't want to see any merge
+conflicts by sameo or anybody.
+I request, if you have any comments please let me know so that we can
+freeze this patch series
+before I complete the development of  aggressive clock cutting/remote
+wakeup other wise
+I am requesting you ack-by :-)
 
-Ã‰ric
-> ---
->   drivers/input/mouse/elantech.c |   69 ++++++++++++++++++++++-----------------
->   1 files changed, 39 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-> index 7b9b6e5..ddd40eb 100644
-> --- a/drivers/input/mouse/elantech.c
-> +++ b/drivers/input/mouse/elantech.c
-> @@ -791,6 +791,42 @@ static int elantech_reconnect(struct psmouse *psmouse)
->   }
->
->   /*
-> + * determine hardware version and set some properties according to it.
-> + */
-> +static void elantech_set_properties(struct elantech_data *etd)
-> +{
-> +	/*
-> +	 * Assume every version greater than 0x020030 is new EeePC style
-> +	 * hardware with 6 byte packets, except 0x020600
-> +	 */
-> +	if (etd->fw_version<  0x020030 || etd->fw_version == 0x020600)
-> +		etd->hw_version = 1;
-> +	else
-> +		etd->hw_version = 2;
-> +
-> +	/*
-> +	 * Turn on packet checking by default.
-> +	 */
-> +	etd->paritycheck = 1;
-> +
-> +	/*
-> +	 * This firmware suffers from misreporting coordinates when
-> +	 * a touch action starts causing the mouse cursor or scrolled page
-> +	 * to jump. Enable a workaround.
-> +	 */
-> +	etd->jumpy_cursor =
-> +		(etd->fw_version == 0x020022 || etd->fw_version == 0x020600);
-> +
-> +	if (etd->hw_version == 2) {
-> +		/* For now show extra debug information */
-> +		etd->debug = 1;
-> +
-> +		if (etd->fw_version>= 0x020800)
-> +			etd->reports_pressure = true;
-> +	}
-> +}
-> +
-> +/*
->    * Initialize the touchpad and create sysfs entries
->    */
->   int elantech_init(struct psmouse *psmouse)
-> @@ -816,26 +852,9 @@ int elantech_init(struct psmouse *psmouse)
->   	}
->
->   	etd->fw_version = (param[0]<<  16) | (param[1]<<  8) | param[2];
-> -
-> -	/*
-> -	 * Assume every version greater than this is new EeePC style
-> -	 * hardware with 6 byte packets
-> -	 */
-> -	if (etd->fw_version>= 0x020030) {
-> -		etd->hw_version = 2;
-> -		/* For now show extra debug information */
-> -		etd->debug = 1;
-> -		etd->paritycheck = 1;
-> -
-> -		if (etd->fw_version>= 0x020800)
-> -			etd->reports_pressure = true;
-> -
-> -	} else {
-> -		etd->hw_version = 1;
-> -		etd->paritycheck = 1;
-> -	}
-> -
-> -	pr_info("assuming hardware version %d, firmware version %d.%d.%d\n",
-> +	elantech_set_properties(etd);
-> +	pr_info("assuming hardware version %d "
-> +		"(with firmware version 0x%02x%02x%02x)\n",
->   		etd->hw_version, param[0], param[1], param[2]);
->
->   	if (synaptics_send_cmd(psmouse, ETP_CAPABILITIES_QUERY,
-> @@ -847,16 +866,6 @@ int elantech_init(struct psmouse *psmouse)
->   		etd->capabilities[0], etd->capabilities[1],
->   		etd->capabilities[2]);
->
-> -	/*
-> -	 * This firmware suffers from misreporting coordinates when
-> -	 * a touch action starts causing the mouse cursor or scrolled page
-> -	 * to jump. Enable a workaround.
-> -	 */
-> -	if (etd->fw_version == 0x020022 || etd->fw_version == 0x020600) {
-> -		pr_info("firmware version 2.0.34/2.6.0 detected, enabling jumpy cursor workaround\n");
-> -		etd->jumpy_cursor = true;
-> -	}
-> -
->   	if (elantech_set_absolute_mode(psmouse)) {
->   		pr_err("failed to put touchpad into absolute mode.\n");
->   		goto init_fail;
-
+keshava
