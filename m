@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1HSKpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 06:45:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48351 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1HSKpI convert rfc822-to-8bit (ORCPT
+	id S1753311Ab1HSKpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 06:45:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62626 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab1HSKpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 06:45:08 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Per Forlin" <per.forlin@linaro.org>
-Cc: "Felipe Balbi" <balbi@ti.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Per Forlin" <per.forlin@stericsson.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Subject: Re: [PATCH v4] usb: gadget: storage_common: make FSG_NUM_BUFFERS
- variable size
-References: <1313659726-9406-1-git-send-email-per.forlin@stericsson.com>
- <op.v0esx9lx3l0zgt@mnazarewicz-glaptop>
- <CAJ0pr18LYtsPXghNeL_z4qvpd9Td3KtGR4R-x2dfu8s_S+dfYg@mail.gmail.com>
-Date: Fri, 19 Aug 2011 12:45:04 +0200
+	Fri, 19 Aug 2011 06:45:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0gitehx3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <CAJ0pr18LYtsPXghNeL_z4qvpd9Td3KtGR4R-x2dfu8s_S+dfYg@mail.gmail.com>
-User-Agent: Opera Mail/11.50 (Linux)
+In-Reply-To: <201108190823.06638.oliver@neukum.org>
+References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
+	<201108171914.52257.oliver@neukum.org>
+	<CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
+	<201108190823.06638.oliver@neukum.org>
+Date: Fri, 19 Aug 2011 12:45:42 +0200
+Message-ID: <CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
+Subject: Re: [PATCH] Increase usbfs bulk buffer size
+From: Markus Rechberger <mrechberger@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011 10:39:24 +0200, Per Forlin <per.forlin@linaro.org>  
-wrote:
+On Fri, Aug 19, 2011 at 8:23 AM, Oliver Neukum <oliver@neukum.org> wrote:
+> Am Mittwoch, 17. August 2011, 19:44:16 schrieb Markus Rechberger:
+>> I understand that USBFS is not 100% optimized, although we are already
+>> using 3-4 times that much buffer with isochronous and it was working
+>> fine for years so far as long as the system doesn't run out of memory
+>> .. but even kerneldrivers would have issues with it in such a
+>> situation.
+>
+> The problem is not what happens on your test system dedicated to this use.
+> There it'll work. But you allowed everybody else to make the kernel request
+> the second largest chunk of memory there is. On a otherwise busy system
+> with fragmented memory this is not good.
+>
+> As I said, you want scatter/gather if you need this.
+> There still would be the problem with the API, but if this is really a problem,
+> you could define a new ioctl()
+>
 
-> 2011/8/18 Michal Nazarewicz <mina86@mina86.com>:
->> On Thu, 18 Aug 2011 11:28:46 +0200, Per Forlin wrote:
->>>
->>> diff --git a/drivers/usb/gadget/f_mass_storage.c
->>> b/drivers/usb/gadget/f_mass_storage.c
->>> index 5b93395..3e546d9 100644
->>> --- a/drivers/usb/gadget/f_mass_storage.c
->>> +++ b/drivers/usb/gadget/f_mass_storage.c
->>> @@ -363,7 +363,6 @@ struct fsg_common {
->>>        struct fsg_buffhd       *next_buffhd_to_fill;
->>>        struct fsg_buffhd       *next_buffhd_to_drain;
->>> -       struct fsg_buffhd       buffhds[FSG_NUM_BUFFERS];
->>>        int                     cmnd_size;
->>>        u8                      cmnd[MAX_COMMAND_SIZE];
->>> @@ -407,6 +406,8 @@ struct fsg_common {
->>>        char inquiry_string[8 + 16 + 4 + 1];
->>>        struct kref             ref;
->>> +       /* Must be the last entry */
->>> +       struct fsg_buffhd       buffhds[0];
->>
->> I would rather see it as “struct fsg_buffhd *buffhds;” since this change
->> requires both mass_storage.c and multi.c to be changed.
->>
-> If the allocation of buffhds is done separately in fsg_common_init().
-> mass_storage.c and multi.c doesn't need to be changed. But it's little
-> tricky to know whether buffhds should be allocated or not.
+let's say there are a few thousand users of the 190k isochronous implementation.
+I don't want to add more complex code to the kernel, if it's not
+accepted I'm okay with it,
+since I know the performance impact I can recommend it to those who
+are interested in it.
+Our software works without it anyway, and Bulk is just for special use
+in our case.
 
-They should be always allocated.  If the code allocate fsg_common itself,  
-the
-case is obvious.  If caller passes a pointer to fsg_common structure, it is
-assumed that the structure is not initialised, thus the function need to
-allocate buffers.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Best Regards,
+Markus
