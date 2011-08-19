@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab1HSWdl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 18:33:41 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:27142 "EHLO
+	id S1756542Ab1HSWdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 18:33:47 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:27137 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756420Ab1HSWdX (ORCPT
+	with ESMTP id S1756407Ab1HSWdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 18:33:23 -0400
+	Fri, 19 Aug 2011 18:33:22 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
-	in-reply-to:references:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ZXLzZO4XTsipbe0gPtaSPp0osjShnU3Q6uGEG09Txz4uDb2gm4mV52rWmYPAEUkPH
-	kHPEAGuTjfFnhnkWgQPNw==
+	in-reply-to:references:x-system-of-record;
+	b=YnaKzJ+/K6peRjRvUDoyaIOnvIDCNAxSZ9l7PQeiIDYbzfsK8Yjoyw1l+/FT5vGmj
+	vO1iwE1rFjdxefIrZmXGw==
 From: Michal Nazarewicz <mnazarewicz@google.com>
 To: Alan Stern <stern@rowland.harvard.edu>,
         "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
@@ -20,15 +19,12 @@ To: Alan Stern <stern@rowland.harvard.edu>,
         "Dave Young" <hidave.darkstar@gmail.com>
 Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 3/4] usb: gadget: rename usb_gadget_driver::speed to max_speed
-Date: Sat, 20 Aug 2011 00:33:01 +0200
-Message-Id: <70e4e8e289439688e5abbd8b0bb15fcc94415bd9.1313791722.git.mina86@mina86.com>
+Subject: [PATCHv3 4/4] usb: gadget: get rid of USB_GADGET_{DUAL,SUPER}SPEED
+Date: Sat, 20 Aug 2011 00:33:02 +0200
+Message-Id: <a96af7281232576b790fa8913012bb7c1a8e6c8b.1313791722.git.mina86@mina86.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <cover.1313791722.git.mina86@mina86.com>
 References: <cover.1313791722.git.mina86@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,315 +32,491 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit renames the “speed”	field of the usb_gadget_driver
-structure to “max_speed”.  This is so that to make it more
-apparent that the field represents the maximum speed gadget
-driver can support.
+This commit removes USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED
+Kconfig options.  Since now kernel allows many UDC drivers to be
+compiled, those options may turn to no longer be valid.  For
+instance, if someone decides to build UDC that supports super
+speed and UDC that supports high speed only, the latter will be
+"assumed" to support super speed since USB_GADGET_SUPERSPEED will
+be selected by the former.
 
-This also make the field look more like fields with the same
-name in usb_gadget and usb_composite_driver structures.  All
-of those represent the *maximal* speed given entity supports.
-
-After this commit, there are the following fields in various
-structures:
-* usb_gadget::speed - the current connection speed,
-* usb_gadget::max_speed - maximal speed UDC supports,
-* usb_gadget_driver::max_speed - maximal speed gadget driver
-  supports, and
-* usb_composite_driver::max_speed - maximal speed composite
-  gadget supports.
+The test of whether CONFIG_USB_GADGET_*SPEED was defined was just
+an optimisation which removed otherwise dead code (ie. if UDC is
+not dual speed, there is no need to handle cases that can happen
+if speed is high).  This commit removes those checks.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
- drivers/usb/gadget/amd5536udc.c   |    2 +-
- drivers/usb/gadget/ci13xxx_udc.c  |    2 +-
- drivers/usb/gadget/composite.c    |    8 ++++----
- drivers/usb/gadget/dbgp.c         |    2 +-
- drivers/usb/gadget/dummy_hcd.c    |   13 ++++++-------
- drivers/usb/gadget/file_storage.c |    4 ++--
- drivers/usb/gadget/gmidi.c        |    2 +-
- drivers/usb/gadget/goku_udc.c     |    2 +-
- drivers/usb/gadget/inode.c        |    6 +++---
- drivers/usb/gadget/m66592-udc.c   |    2 +-
- drivers/usb/gadget/net2272.c      |    2 +-
- drivers/usb/gadget/net2280.c      |    2 +-
- drivers/usb/gadget/pch_udc.c      |    2 +-
- drivers/usb/gadget/printer.c      |    2 +-
- drivers/usb/gadget/r8a66597-udc.c |    2 +-
- include/linux/usb/gadget.h        |    4 ++--
- 16 files changed, 28 insertions(+), 29 deletions(-)
+ drivers/usb/gadget/Kconfig        |   30 ----------------------------
+ drivers/usb/gadget/composite.c    |    9 +-------
+ drivers/usb/gadget/dummy_hcd.c    |    2 +-
+ drivers/usb/gadget/file_storage.c |    4 ---
+ drivers/usb/gadget/inode.c        |   10 ---------
+ drivers/usb/gadget/printer.c      |   39 ++++--------------------------------
+ drivers/usb/gadget/u_ether.c      |    7 ------
+ include/linux/usb/gadget.h        |   19 +----------------
+ 8 files changed, 9 insertions(+), 111 deletions(-)
 
-diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
-index 80ae808..7b48ed2 100644
---- a/drivers/usb/gadget/amd5536udc.c
-+++ b/drivers/usb/gadget/amd5536udc.c
-@@ -1968,7 +1968,7 @@ static int amd5536_start(struct usb_gadget_driver *driver,
- 	u32 tmp;
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 5a084b9..c60c167 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -133,7 +133,6 @@ config USB_AT91
  
- 	if (!driver || !bind || !driver->setup
--			|| driver->speed != USB_SPEED_HIGH)
-+			|| driver->max_speed != USB_SPEED_HIGH)
- 		return -EINVAL;
- 	if (!dev)
- 		return -ENODEV;
-diff --git a/drivers/usb/gadget/ci13xxx_udc.c b/drivers/usb/gadget/ci13xxx_udc.c
-index b877464..6c13174 100644
---- a/drivers/usb/gadget/ci13xxx_udc.c
-+++ b/drivers/usb/gadget/ci13xxx_udc.c
-@@ -798,7 +798,7 @@ static ssize_t show_driver(struct device *dev, struct device_attribute *attr,
- 	n += scnprintf(buf + n, PAGE_SIZE - n, "function  = %s\n",
- 		       (driver->function ? driver->function : ""));
- 	n += scnprintf(buf + n, PAGE_SIZE - n, "max speed = %d\n",
--		       driver->speed);
-+		       driver->max_speed);
+ config USB_ATMEL_USBA
+ 	tristate "Atmel USBA"
+-	select USB_GADGET_DUALSPEED
+ 	depends on AVR32 || ARCH_AT91CAP9 || ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+ 	help
+ 	  USBA is the integrated high-speed USB Device controller on
+@@ -142,7 +141,6 @@ config USB_ATMEL_USBA
+ config USB_FSL_USB2
+ 	tristate "Freescale Highspeed USB DR Peripheral Controller"
+ 	depends on FSL_SOC || ARCH_MXC
+-	select USB_GADGET_DUALSPEED
+ 	select USB_FSL_MPH_DR_OF if OF
+ 	help
+ 	   Some of Freescale PowerPC processors have a High Speed
+@@ -158,7 +156,6 @@ config USB_FSL_USB2
+ config USB_FUSB300
+ 	tristate "Faraday FUSB300 USB Peripheral Controller"
+ 	depends on !PHYS_ADDR_T_64BIT
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   Faraday usb device controller FUSB300 driver
  
- 	return n;
- }
+@@ -206,7 +203,6 @@ config USB_PXA25X_SMALL
+ 
+ config USB_R8A66597
+ 	tristate "Renesas R8A66597 USB Peripheral Controller"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   R8A66597 is a discrete USB host and peripheral controller chip that
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -220,7 +216,6 @@ config USB_RENESAS_USBHS_UDC
+ 	tristate 'Renesas USBHS controller'
+ 	depends on SUPERH || ARCH_SHMOBILE
+ 	depends on USB_RENESAS_USBHS
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   Renesas USBHS is a discrete USB host and peripheral controller chip
+ 	   that supports both full and high speed USB 2.0 data transfers.
+@@ -249,7 +244,6 @@ config USB_S3C_HSOTG
+ 	tristate "S3C HS/OtG USB Device controller"
+ 	depends on S3C_DEV_USB_HSOTG
+ 	select USB_GADGET_S3C_HSOTG_PIO
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+ 	  integrated into the S3C64XX series SoC.
+@@ -287,7 +281,6 @@ config USB_S3C2410_DEBUG
+ config USB_S3C_HSUDC
+ 	tristate "S3C2416, S3C2443 and S3C2450 USB Device Controller"
+ 	depends on ARCH_S3C2410
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  Samsung's S3C2416, S3C2443 and S3C2450 is an ARM9 based SoC
+ 	  integrated with dual speed USB 2.0 device controller. It has
+@@ -298,7 +291,6 @@ config USB_S3C_HSUDC
+ config USB_PXA_U2O
+ 	tristate "PXA9xx Processor USB2.0 controller"
+ 	depends on ARCH_MMP
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  PXA9xx Processor series include a high speed USB2.0 device
+ 	  controller, which support high speed and full speed USB peripheral.
+@@ -311,14 +303,12 @@ config USB_PXA_U2O
+ config USB_GADGET_MUSB_HDRC
+ 	tristate "Inventra HDRC USB Peripheral (TI, ADI, ...)"
+ 	depends on USB_MUSB_HDRC
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  This OTG-capable silicon IP is used in dual designs including
+ 	  the TI DaVinci, OMAP 243x, OMAP 343x, TUSB 6010, and ADI Blackfin
+ 
+ config USB_M66592
+ 	tristate "Renesas M66592 USB Peripheral Controller"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   M66592 is a discrete USB peripheral controller chip that
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -335,7 +325,6 @@ config USB_M66592
+ config USB_AMD5536UDC
+ 	tristate "AMD5536 UDC"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   The AMD5536 UDC is part of the AMD Geode CS5536, an x86 southbridge.
+ 	   It is a USB Highspeed DMA capable USB device controller. Beside ep0
+@@ -363,7 +352,6 @@ config USB_FSL_QE
+ config USB_CI13XXX_PCI
+ 	tristate "MIPS USB CI13xxx PCI UDC"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  MIPS USB IP core family device controller
+ 	  Currently it only supports IP part number CI13412
+@@ -374,7 +362,6 @@ config USB_CI13XXX_PCI
+ 
+ config USB_NET2272
+ 	tristate "PLX NET2272"
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  PLX NET2272 is a USB peripheral controller which supports
+ 	  both full and high speed USB 2.0 data transfers.
+@@ -398,7 +385,6 @@ config USB_NET2272_DMA
+ config USB_NET2280
+ 	tristate "NetChip 228x"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   NetChip 2280 / 2282 is a PCI based USB peripheral controller which
+ 	   supports both full and high speed USB 2.0 data transfers.
+@@ -429,7 +415,6 @@ config USB_LANGWELL
+ 	tristate "Intel Langwell USB Device Controller"
+ 	depends on PCI
+ 	depends on !PHYS_ADDR_T_64BIT
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	   Intel Langwell USB Device Controller is a High-Speed USB
+ 	   On-The-Go device controller.
+@@ -444,7 +429,6 @@ config USB_LANGWELL
+ config USB_EG20T
+ 	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH UDC"
+ 	depends on PCI
+-	select USB_GADGET_DUALSPEED
+ 	help
+ 	  This is a USB device driver for EG20T PCH.
+ 	  EG20T PCH is the platform controller hub that is used in Intel's
+@@ -466,7 +450,6 @@ config USB_EG20T
+ config USB_CI13XXX_MSM
+ 	tristate "MIPS USB CI13xxx for MSM"
+ 	depends on ARCH_MSM
+-	select USB_GADGET_DUALSPEED
+ 	select USB_MSM_OTG
+ 	help
+ 	  MSM SoC has chipidea USB controller.  This driver uses
+@@ -487,8 +470,6 @@ config USB_CI13XXX_MSM
+ config USB_DUMMY_HCD
+ 	tristate "Dummy HCD (DEVELOPMENT)"
+ 	depends on USB=y || (USB=m && USB_GADGET=m)
+-	select USB_GADGET_DUALSPEED
+-	select USB_GADGET_SUPERSPEED
+ 	help
+ 	  This host controller driver emulates USB, looping all data transfer
+ 	  requests back to a USB "gadget driver" in the same host.  The host
+@@ -513,17 +494,6 @@ config USB_DUMMY_HCD
+ 
+ endchoice
+ 
+-# Selected by UDC drivers that support high-speed operation.
+-config USB_GADGET_DUALSPEED
+-	bool
+-	depends on USB_GADGET
+-
+-# Selected by UDC drivers that support super-speed opperation
+-config USB_GADGET_SUPERSPEED
+-	bool
+-	depends on USB_GADGET
+-	depends on USB_GADGET_DUALSPEED
+-
+ #
+ # USB Gadget Drivers
+ #
 diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 5a3461e..851b5da 100644
+index 851b5da..c08edd9 100644
 --- a/drivers/usb/gadget/composite.c
 +++ b/drivers/usb/gadget/composite.c
-@@ -1560,9 +1560,9 @@ composite_resume(struct usb_gadget *gadget)
+@@ -1559,12 +1559,6 @@ composite_resume(struct usb_gadget *gadget)
+ /*-------------------------------------------------------------------------*/
  
  static struct usb_gadget_driver composite_driver = {
- #ifdef CONFIG_USB_GADGET_SUPERSPEED
--	.speed		= USB_SPEED_SUPER,
-+	.max_speed	= USB_SPEED_SUPER,
- #else
--	.speed		= USB_SPEED_HIGH,
-+	.max_speed	= USB_SPEED_HIGH,
- #endif
- 
+-#ifdef CONFIG_USB_GADGET_SUPERSPEED
+-	.max_speed	= USB_SPEED_SUPER,
+-#else
+-	.max_speed	= USB_SPEED_HIGH,
+-#endif
+-
  	.unbind		= composite_unbind,
-@@ -1609,8 +1609,8 @@ int usb_composite_probe(struct usb_composite_driver *driver,
+ 
+ 	.setup		= composite_setup,
+@@ -1609,8 +1603,7 @@ int usb_composite_probe(struct usb_composite_driver *driver,
  		driver->iProduct = driver->name;
  	composite_driver.function =  (char *) driver->name;
  	composite_driver.driver.name = driver->name;
--	composite_driver.speed = min((u8)composite_driver.speed,
--				     (u8)driver->max_speed);
-+	composite_driver.max_speed = min((u8)composite_driver.max_speed,
-+					 (u8)driver->max_speed);
+-	composite_driver.max_speed = min((u8)composite_driver.max_speed,
+-					 (u8)driver->max_speed);
++	composite_driver.max_speed = driver->max_speed;
  	composite = driver;
  	composite_gadget_bind = bind;
  
-diff --git a/drivers/usb/gadget/dbgp.c b/drivers/usb/gadget/dbgp.c
-index e8737b5..4e6f8a2 100644
---- a/drivers/usb/gadget/dbgp.c
-+++ b/drivers/usb/gadget/dbgp.c
-@@ -405,7 +405,7 @@ fail:
- 
- static struct usb_gadget_driver dbgp_driver = {
- 	.function = "dbgp",
--	.speed = USB_SPEED_HIGH,
-+	.max_speed = USB_SPEED_HIGH,
- 	.unbind = dbgp_unbind,
- 	.setup = dbgp_setup,
- 	.disconnect = dbgp_disconnect,
 diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-index fa60e9b..ccbe5ef 100644
+index ccbe5ef..d3ce66c 100644
 --- a/drivers/usb/gadget/dummy_hcd.c
 +++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -832,19 +832,18 @@ static int dummy_pullup (struct usb_gadget *_gadget, int value)
+@@ -985,7 +985,7 @@ static int dummy_udc_probe (struct platform_device *pdev)
  
- 	if (value && dum->driver) {
- 		if (mod_data.is_super_speed)
--			dum->gadget.speed = dum->driver->speed;
-+			dum->gadget.speed = dum->driver->max_speed;
- 		else if (mod_data.is_high_speed)
- 			dum->gadget.speed = min_t(u8, USB_SPEED_HIGH,
--					dum->driver->speed);
-+					dum->driver->max_speed);
- 		else
- 			dum->gadget.speed = USB_SPEED_FULL;
- 		dummy_udc_udpate_ep0(dum);
+ 	dum->gadget.name = gadget_name;
+ 	dum->gadget.ops = &dummy_ops;
+-	dum->gadget.max_speed = USB_SPEED_SUPER;;
++	dum->gadget.max_speed = USB_SPEED_SUPER;
  
--		if (dum->gadget.speed < dum->driver->speed)
-+		if (dum->gadget.speed < dum->driver->max_speed)
- 			dev_dbg(udc_dev(dum), "This device can perform faster"
--					" if you connect it to a %s port...\n",
--					(dum->driver->speed == USB_SPEED_SUPER ?
--					 "SuperSpeed" : "HighSpeed"));
-+				" if you connect it to a %s port...\n",
-+				usb_device_speed_name(dum->driver->max_speed));
- 	}
- 	dum_hcd = gadget_to_dummy_hcd(_gadget);
- 
-@@ -907,7 +906,7 @@ static int dummy_udc_start(struct usb_gadget *g,
- 	struct dummy_hcd	*dum_hcd = gadget_to_dummy_hcd(g);
- 	struct dummy		*dum = dum_hcd->dum;
- 
--	if (driver->speed == USB_SPEED_UNKNOWN)
-+	if (driver->max_speed == USB_SPEED_UNKNOWN)
- 		return -EINVAL;
- 
- 	/*
+ 	dev_set_name(&dum->gadget.dev, "gadget");
+ 	dum->gadget.dev.parent = &pdev->dev;
 diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index cf875be..3cb083b 100644
+index 3cb083b..0b94981 100644
 --- a/drivers/usb/gadget/file_storage.c
 +++ b/drivers/usb/gadget/file_storage.c
-@@ -3563,9 +3563,9 @@ static void fsg_resume(struct usb_gadget *gadget)
+@@ -3562,11 +3562,7 @@ static void fsg_resume(struct usb_gadget *gadget)
+ /*-------------------------------------------------------------------------*/
  
  static struct usb_gadget_driver		fsg_driver = {
- #ifdef CONFIG_USB_GADGET_DUALSPEED
--	.speed		= USB_SPEED_HIGH,
-+	.max_speed	= USB_SPEED_HIGH,
- #else
--	.speed		= USB_SPEED_FULL,
-+	.max_speed	= USB_SPEED_FULL,
- #endif
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+ 	.max_speed	= USB_SPEED_HIGH,
+-#else
+-	.max_speed	= USB_SPEED_FULL,
+-#endif
  	.function	= (char *) fsg_string_product,
  	.unbind		= fsg_unbind,
-diff --git a/drivers/usb/gadget/gmidi.c b/drivers/usb/gadget/gmidi.c
-index 305a8a8..23cab05 100644
---- a/drivers/usb/gadget/gmidi.c
-+++ b/drivers/usb/gadget/gmidi.c
-@@ -1292,7 +1292,7 @@ static void gmidi_resume(struct usb_gadget *gadget)
- 
- 
- static struct usb_gadget_driver gmidi_driver = {
--	.speed		= USB_SPEED_FULL,
-+	.max_speed	= USB_SPEED_FULL,
- 	.function	= (char *)longname,
- 	.unbind		= gmidi_unbind,
- 
-diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-index ab9c924..5af70fcc 100644
---- a/drivers/usb/gadget/goku_udc.c
-+++ b/drivers/usb/gadget/goku_udc.c
-@@ -1357,7 +1357,7 @@ static int goku_start(struct usb_gadget_driver *driver,
- 	int			retval;
- 
- 	if (!driver
--			|| driver->speed < USB_SPEED_FULL
-+			|| driver->max_speed < USB_SPEED_FULL
- 			|| !bind
- 			|| !driver->disconnect
- 			|| !driver->setup)
+ 	.disconnect	= fsg_disconnect,
 diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 1b24099..4bd48ea 100644
+index 4bd48ea..23c75d8 100644
 --- a/drivers/usb/gadget/inode.c
 +++ b/drivers/usb/gadget/inode.c
-@@ -1774,9 +1774,9 @@ gadgetfs_suspend (struct usb_gadget *gadget)
+@@ -837,7 +837,6 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
+ 		break;
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 	case USB_SPEED_HIGH:
+ 		/* fails if caller didn't provide that descriptor... */
+ 		ep->desc = &data->hs_desc;
+@@ -845,7 +844,6 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 		if (value == 0)
+ 			data->state = STATE_EP_ENABLED;
+ 		break;
+-#endif
+ 	default:
+ 		DBG(data->dev, "unconnected, %s init abandoned\n",
+ 				data->name);
+@@ -1331,7 +1329,6 @@ static const struct file_operations ep0_io_operations = {
+  * Unrecognized ep0 requests may be handled in user space.
+  */
  
- static struct usb_gadget_driver gadgetfs_driver = {
- #ifdef	CONFIG_USB_GADGET_DUALSPEED
--	.speed		= USB_SPEED_HIGH,
-+	.max_speed	= USB_SPEED_HIGH,
- #else
--	.speed		= USB_SPEED_FULL,
-+	.max_speed	= USB_SPEED_FULL,
- #endif
- 	.function	= (char *) driver_desc,
- 	.unbind		= gadgetfs_unbind,
-@@ -1800,7 +1800,7 @@ static int gadgetfs_probe (struct usb_gadget *gadget)
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ static void make_qualifier (struct dev_data *dev)
+ {
+ 	struct usb_qualifier_descriptor		qual;
+@@ -1354,7 +1351,6 @@ static void make_qualifier (struct dev_data *dev)
+ 
+ 	memcpy (dev->rbuf, &qual, sizeof qual);
+ }
+-#endif
+ 
+ static int
+ config_buf (struct dev_data *dev, u8 type, unsigned index)
+@@ -1434,7 +1430,6 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 			dev->dev->bMaxPacketSize0 = dev->gadget->ep0->maxpacket;
+ 			req->buf = dev->dev;
+ 			break;
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 		case USB_DT_DEVICE_QUALIFIER:
+ 			if (!dev->hs_config)
+ 				break;
+@@ -1444,7 +1439,6 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 			break;
+ 		case USB_DT_OTHER_SPEED_CONFIG:
+ 			// FALLTHROUGH
+-#endif
+ 		case USB_DT_CONFIG:
+ 			value = config_buf (dev,
+ 					w_value >> 8,
+@@ -1773,11 +1767,7 @@ gadgetfs_suspend (struct usb_gadget *gadget)
  }
  
- static struct usb_gadget_driver probe_driver = {
--	.speed		= USB_SPEED_HIGH,
-+	.max_speed	= USB_SPEED_HIGH,
- 	.unbind		= gadgetfs_nop,
- 	.setup		= (void *)gadgetfs_nop,
- 	.disconnect	= gadgetfs_nop,
-diff --git a/drivers/usb/gadget/m66592-udc.c b/drivers/usb/gadget/m66592-udc.c
-index fbdfca8..72dc3f1 100644
---- a/drivers/usb/gadget/m66592-udc.c
-+++ b/drivers/usb/gadget/m66592-udc.c
-@@ -1482,7 +1482,7 @@ static int m66592_start(struct usb_gadget_driver *driver,
- 	int retval;
- 
- 	if (!driver
--			|| driver->speed != USB_SPEED_HIGH
-+			|| driver->max_speed != USB_SPEED_HIGH
- 			|| !bind
- 			|| !driver->setup)
- 		return -EINVAL;
-diff --git a/drivers/usb/gadget/net2272.c b/drivers/usb/gadget/net2272.c
-index e21ec48..c6c4934 100644
---- a/drivers/usb/gadget/net2272.c
-+++ b/drivers/usb/gadget/net2272.c
-@@ -1461,7 +1461,7 @@ static int net2272_start(struct usb_gadget_driver *driver,
- 	unsigned i;
- 
- 	if (!driver || !bind || !driver->unbind || !driver->setup ||
--	    driver->speed != USB_SPEED_HIGH)
-+	    driver->max_speed != USB_SPEED_HIGH)
- 		return -EINVAL;
- 	if (!dev)
- 		return -ENODEV;
-diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
-index c3220a1..1eb4774 100644
---- a/drivers/usb/gadget/net2280.c
-+++ b/drivers/usb/gadget/net2280.c
-@@ -1892,7 +1892,7 @@ static int net2280_start(struct usb_gadget_driver *driver,
- 	 * "must not be used in normal operation"
- 	 */
- 	if (!driver
--			|| driver->speed != USB_SPEED_HIGH
-+			|| driver->max_speed != USB_SPEED_HIGH
- 			|| !bind || !driver->setup)
- 		return -EINVAL;
- 	if (!dev)
-diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-index d781540..1db6d0e 100644
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -2701,7 +2701,7 @@ static int pch_udc_start(struct usb_gadget_driver *driver,
- 	struct pch_udc_dev	*dev = pch_udc;
- 	int			retval;
- 
--	if (!driver || (driver->speed == USB_SPEED_UNKNOWN) || !bind ||
-+	if (!driver || (driver->max_speed == USB_SPEED_UNKNOWN) || !bind ||
- 	    !driver->setup || !driver->unbind || !driver->disconnect) {
- 		dev_err(&dev->pdev->dev,
- 			"%s: invalid driver parameter\n", __func__);
+ static struct usb_gadget_driver gadgetfs_driver = {
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 	.max_speed	= USB_SPEED_HIGH,
+-#else
+-	.max_speed	= USB_SPEED_FULL,
+-#endif
+ 	.function	= (char *) driver_desc,
+ 	.unbind		= gadgetfs_unbind,
+ 	.setup		= gadgetfs_setup,
 diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
-index 2db4913..104a18a 100644
+index 104a18a..93f0b94 100644
 --- a/drivers/usb/gadget/printer.c
 +++ b/drivers/usb/gadget/printer.c
-@@ -1552,7 +1552,7 @@ fail:
+@@ -164,12 +164,6 @@ module_param(qlen, uint, S_IRUGO|S_IWUSR);
+ 
+ #define QLEN	qlen
+ 
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+-#define DEVSPEED	USB_SPEED_HIGH
+-#else   /* full speed (low speed doesn't do bulk) */
+-#define DEVSPEED        USB_SPEED_FULL
+-#endif
+-
+ /*-------------------------------------------------------------------------*/
+ 
+ #define xprintk(d, level, fmt, args...) \
+@@ -288,8 +282,6 @@ static const struct usb_descriptor_header *fs_printer_function [11] = {
+ 	NULL
+ };
+ 
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+-
+ /*
+  * usb 2.0 devices need to expose both high speed and full speed
+  * descriptors, unless they only run at full speed.
+@@ -328,13 +320,6 @@ static const struct usb_descriptor_header *hs_printer_function [11] = {
+ /* maxpacket and other transfer characteristics vary by speed. */
+ #define ep_desc(g, hs, fs) (((g)->speed == USB_SPEED_HIGH)?(hs):(fs))
+ 
+-#else
+-
+-/* if there's no high speed support, maxpacket doesn't change. */
+-#define ep_desc(g, hs, fs) (((void)(g)), (fs))
+-
+-#endif	/* !CONFIG_USB_GADGET_DUALSPEED */
+-
+ /*-------------------------------------------------------------------------*/
+ 
+ /* descriptors that are built on-demand */
+@@ -979,9 +964,7 @@ printer_set_config(struct printer_dev *dev, unsigned number)
+ 
+ 		switch (gadget->speed) {
+ 		case USB_SPEED_FULL:	speed = "full"; break;
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+ 		case USB_SPEED_HIGH:	speed = "high"; break;
+-#endif
+ 		default:		speed = "?"; break;
+ 		}
+ 
+@@ -998,23 +981,15 @@ config_buf(enum usb_device_speed speed, u8 *buf, u8 type, unsigned index,
+ {
+ 	int					len;
+ 	const struct usb_descriptor_header	**function;
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+ 	int					hs = (speed == USB_SPEED_HIGH);
+ 
++	if (index >= device_desc.bNumConfigurations)
++		return -EINVAL;
++
+ 	if (type == USB_DT_OTHER_SPEED_CONFIG)
+ 		hs = !hs;
+ 
+-	if (hs) {
+-		function = hs_printer_function;
+-	} else {
+-		function = fs_printer_function;
+-	}
+-#else
+-	function = fs_printer_function;
+-#endif
+-
+-	if (index >= device_desc.bNumConfigurations)
+-		return -EINVAL;
++	function = hs ? hs_printer_function : fs_printer_function;
+ 
+ 	/* for now, don't advertise srp-only devices */
+ 	if (!is_otg)
+@@ -1156,7 +1131,6 @@ printer_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 				value = min(wLength, (u16) sizeof device_desc);
+ 				memcpy(req->buf, &device_desc, value);
+ 				break;
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+ 			case USB_DT_DEVICE_QUALIFIER:
+ 				if (!gadget_is_dualspeed(gadget))
+ 					break;
+@@ -1175,7 +1149,6 @@ printer_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 				if (!gadget_is_dualspeed(gadget))
+ 					break;
+ 				/* FALLTHROUGH */
+-#endif /* CONFIG_USB_GADGET_DUALSPEED */
+ 			case USB_DT_CONFIG:
+ 				value = config_buf(gadget->speed, req->buf,
+ 						wValue >> 8,
+@@ -1460,11 +1433,9 @@ autoconf_fail:
+ 		goto autoconf_fail;
+ 	out_ep->driver_data = out_ep;	/* claim */
+ 
+-#ifdef	CONFIG_USB_GADGET_DUALSPEED
+ 	/* assumes that all endpoints are dual-speed */
+ 	hs_ep_in_desc.bEndpointAddress = fs_ep_in_desc.bEndpointAddress;
+ 	hs_ep_out_desc.bEndpointAddress = fs_ep_out_desc.bEndpointAddress;
+-#endif	/* DUALSPEED */
+ 
+ 	usb_gadget_set_selfpowered(gadget);
+ 
+@@ -1552,7 +1523,7 @@ fail:
  /*-------------------------------------------------------------------------*/
  
  static struct usb_gadget_driver printer_driver = {
--	.speed		= DEVSPEED,
-+	.max_speed	= DEVSPEED,
+-	.max_speed	= DEVSPEED,
++	.max_speed	= USB_SPEED_HIGH,
  
  	.function	= (char *) driver_desc,
  	.unbind		= printer_unbind,
-diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-index a8f7a05..df99690 100644
---- a/drivers/usb/gadget/r8a66597-udc.c
-+++ b/drivers/usb/gadget/r8a66597-udc.c
-@@ -1442,7 +1442,7 @@ static int r8a66597_start(struct usb_gadget_driver *driver,
- 	int retval;
+diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
+index dfed4c1..8642abb 100644
+--- a/drivers/usb/gadget/u_ether.c
++++ b/drivers/usb/gadget/u_ether.c
+@@ -92,17 +92,10 @@ struct eth_dev {
  
- 	if (!driver
--			|| driver->speed != USB_SPEED_HIGH
-+			|| driver->max_speed != USB_SPEED_HIGH
- 			|| !bind
- 			|| !driver->setup)
- 		return -EINVAL;
+ #define DEFAULT_QLEN	2	/* double buffering by default */
+ 
+-
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+-
+ static unsigned qmult = 5;
+ module_param(qmult, uint, S_IRUGO|S_IWUSR);
+ MODULE_PARM_DESC(qmult, "queue length multiplier at high/super speed");
+ 
+-#else	/* full speed (low speed doesn't do bulk) */
+-#define qmult		1
+-#endif
+-
+ /* for dual-speed hardware, use deeper queues at high/super speed */
+ static inline int qlen(struct usb_gadget *gadget)
+ {
 diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 7eb2ec3..c8ea048 100644
+index c8ea048..22404cf 100644
 --- a/include/linux/usb/gadget.h
 +++ b/include/linux/usb/gadget.h
-@@ -760,7 +760,7 @@ static inline int usb_gadget_disconnect(struct usb_gadget *gadget)
- /**
-  * struct usb_gadget_driver - driver for usb 'slave' devices
-  * @function: String describing the gadget's function
-- * @speed: Highest speed the driver handles.
-+ * @max_speed: Highest speed the driver handles.
-  * @setup: Invoked for ep0 control requests that aren't handled by
-  *	the hardware level driver. Most calls must be handled by
-  *	the gadget driver, including descriptor and configuration
-@@ -824,7 +824,7 @@ static inline int usb_gadget_disconnect(struct usb_gadget *gadget)
+@@ -548,14 +548,7 @@ static inline struct usb_gadget *dev_to_usb_gadget(struct device *dev)
   */
- struct usb_gadget_driver {
- 	char			*function;
--	enum usb_device_speed	speed;
-+	enum usb_device_speed	max_speed;
- 	void			(*unbind)(struct usb_gadget *);
- 	int			(*setup)(struct usb_gadget *,
- 					const struct usb_ctrlrequest *);
+ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+ {
+-#ifdef CONFIG_USB_GADGET_DUALSPEED
+-	/* runtime test would check "g->max_speed" ... that might be
+-	 * useful to work around hardware bugs, but is mostly pointless
+-	 */
+-	return 1;
+-#else
+-	return 0;
+-#endif
++	return g->max_speed >= USB_SPEED_HIGH;
+ }
+ 
+ /**
+@@ -565,15 +558,7 @@ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+  */
+ static inline int gadget_is_superspeed(struct usb_gadget *g)
+ {
+-#ifdef CONFIG_USB_GADGET_SUPERSPEED
+-	/*
+-	 * runtime test would check "g->max_speed" ... that might be
+-	 * useful to work around hardware bugs, but is mostly pointless
+-	 */
+-	return 1;
+-#else
+-	return 0;
+-#endif
++	return g->max_speed >= USB_SPEED_SUPER;
+ }
+ 
+ /**
 -- 
 1.7.3.1
 
