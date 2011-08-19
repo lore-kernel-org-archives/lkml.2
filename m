@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab1HSSI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 14:08:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59380 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754114Ab1HSSIz (ORCPT
+	id S1754449Ab1HSSK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 14:10:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48398 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab1HSSK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 14:08:55 -0400
+	Fri, 19 Aug 2011 14:10:56 -0400
+Date: Fri, 19 Aug 2011 19:10:54 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] fs/minix: Verify bitmap block counts before mounting
+Message-ID: <20110819181054.GA2203@ZenIV.linux.org.uk>
+References: <20110819180159.GB2270@zod.bos.redhat.com>
 MIME-Version: 1.0
-Date: Fri, 19 Aug 2011 21:08:54 +0300
-Message-ID: <CAC67Hz_G9cs7zECFmJ9a=twJfEUMja3eBGzAFvryUh+BpTTETw@mail.gmail.com>
-Subject: [RFC][PATCH] Failed neighbors attached to routes are not released
-From: Guy Yur <guyyur@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819180159.GB2270@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 19, 2011 at 02:02:00PM -0400, Josh Boyer wrote:
 
-The issue I am seeing is with a neighbor used as a gateway in a route,
-when the neighbor gets nud FAILED it will not be removed from the
-neighbor cache.
-The reference count for the neighbor remains > 1 when
-neigh_periodic_work() is called.
+> -unsigned long minix_count_free_blocks(struct minix_sb_info *sbi)
+> +unsigned long minix_count_free_blocks(struct super_block *sb)
+>  {
+> -	return (count_free(sbi->s_zmap, sbi->s_zmap_blocks,
+> -		sbi->s_nzones - sbi->s_firstdatazone + 1)
+> +	struct minix_sb_info *sbi = minix_sb(sb);
+> +	u32 bits = sbi->s_nzones - (sbi->s_firstdatazone + 1);
+> +	unsigned blocks = minix_blocks_needed(bits, sb->s_blocksize);
+> +
+> +	return (count_free(sbi->s_zmap, blocks, bits)
+>  		<< sbi->s_log_zone_size);
+>  }
 
-Issue noticed with IPv6 neighbors on Arch Linux with kernel 3.0.3
-kernel config includes CONFIG_IPV6_ROUTER_PREF
+> +	unsigned blocks = minix_blocks_needed(bits, sb->s_blocksize);
+> +
+> +	return count_free(sbi->s_imap, blocks, bits);
 
-The problem affects routing when the neighbor loses connectivity and returns.
+I'd pass sb->s_blocksize to that sucker instead of blocks; less redundancy
+and we have good uses for it there anyway.
 
-Scenario: Using a default route and a static route through different interfaces.
-When the neighbor gateway of the static route goes down the traffic
-will move to the default gateway as expected.
-Once the static route neighbor comes back up it is not asked for
-neighbor solicitation
-because the route is marked as FAILED and the traffic will continue to
-pass through the default gateway.
+> +static inline unsigned minix_blocks_needed(unsigned bits, unsigned blocksize)
+> +{
+> +	unsigned blocks = bits / (blocksize * 8);
+> +
+> +	if (bits % (blocksize * 8))
+> +		blocks++;
+> +	return blocks;
+> +}
 
-Steps to reproduce the route not being removed:
-1. add an IPv6 address on an interface
-2. add a route to a network through a gateway on the interface's network
-3. make sure the gateway address is not reachable
-4. ping6 a host in the route network
-5. "ip -6 nei" will show the gateway neighbor as FAILED and it won't be released
-
-Steps to reproduce the routing problem:
-1. client and two gateway machines (A and B)
-2. on the client define a static route through A and a default route through B
-3. disconnect eth on A
-4. ping6 a host in the network that should go through A
-   after a while the traffic will move through B which is the default route
-5. reconnect eth on A
-6. ping6 a host in the network again, the traffic will still go through B
-   "ip -6 nei" on the client will still show A as FAILED
-
-Patch to change the nud state to NONE if the reference count > 1 --
-allowing the neighbor to be released in a future pass.
-
---- linux/net/core/neighbour.c.orig	2011-08-19 13:15:35.041524169 +0300
-+++ linux/net/core/neighbour.c	2011-08-19 18:19:07.271276096 +0300
-@@ -802,14 +802,16 @@ static void neigh_periodic_work(struct w
- 			if (time_before(n->used, n->confirmed))
- 				n->used = n->confirmed;
-
--			if (atomic_read(&n->refcnt) == 1 &&
--			    (state == NUD_FAILED ||
-+			if ((state == NUD_FAILED ||
- 			     time_after(jiffies, n->used + n->parms->gc_staletime))) {
--				*np = n->next;
--				n->dead = 1;
--				write_unlock(&n->lock);
--				neigh_cleanup_and_release(n);
--				continue;
-+				if (atomic_read(&n->refcnt) == 1) {
-+					*np = n->next;
-+					n->dead = 1;
-+					write_unlock(&n->lock);
-+					neigh_cleanup_and_release(n);
-+					continue;
-+				} else
-+					n->nud_state = NUD_NONE;
- 			}
- 			write_unlock(&n->lock);
+Yecchh...  The usual idiom for that is DIV_ROUND_UP(bits, blocksize * 8)
+(see linux/kernel.h for details).
