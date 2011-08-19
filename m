@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab1HSQu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:50:56 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57378 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756526Ab1HSQsU (ORCPT
+	id S1756543Ab1HSQvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:51:00 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:43847 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab1HSQuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:48:20 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 34/43] um: Don't restore current->blocked on error
-Date: Fri, 19 Aug 2011 17:46:50 +0100
-Message-Id: <1313772419-21951-35-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+	Fri, 19 Aug 2011 12:50:55 -0400
+Date: Fri, 19 Aug 2011 20:50:51 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Philip Rakity <prakity@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] power: max17042: do not lose accuracy calculating
+ current_now
+Message-ID: <20110819165051.GI22761@oksana.dev.rtsoft.ru>
+References: <26076760.93301313475177035.JavaMail.weblogic@epml13>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <26076760.93301313475177035.JavaMail.weblogic@epml13>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Tue, Aug 16, 2011 at 06:12:58AM +0000, MyungJoo Ham wrote:
+> Philip Rakity<prakity@marvell.com> Date : 2011-08-13 13:19 (GMT+09:00)
+> > 
+> > PROP_CURRENT_NOW value is first divided then multiplied up
+> > causing a lose of accuracy.  Use the same method as
+> > PROP_CURRENT_AVG to do the calculation.
+> > 
+> > Signed-off-by: Philip Rakity 
+> 
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-If we fail to setup the signal stack frame then we don't need to
-restore current->blocked because it is not modified by
-setup_signal_stack_*.
+Applied, thanks!
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Richard Weinberger <richard@nod.at>
-Tested-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/um/kernel/signal.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/arch/um/kernel/signal.c b/arch/um/kernel/signal.c
-index 9aa5cba..9a5ffe1 100644
---- a/arch/um/kernel/signal.c
-+++ b/arch/um/kernel/signal.c
-@@ -66,13 +66,9 @@ static int handle_signal(struct pt_regs *regs, unsigned long signr,
- #endif
- 		err = setup_signal_stack_si(sp, signr, ka, regs, info, oldset);
- 
--	if (err) {
--		spin_lock_irq(&current->sighand->siglock);
--		current->blocked = *oldset;
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
-+	if (err)
- 		force_sigsegv(signr, current);
--	} else
-+	else
- 		block_sigmask(ka, signr);
- 
- 	return err;
 -- 
-1.7.4.4
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
