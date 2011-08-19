@@ -1,143 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab1HSWeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 18:34:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27884 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab1HSWdS (ORCPT
+	id S1756458Ab1HSWmH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 18:42:07 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:38486 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756389Ab1HSWmE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 18:33:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
-	in-reply-to:references:x-system-of-record;
-	b=DtbEquY/0KKNhrF4xH2clqBFqW1A1lXEjdGfjomKt52reUe1Wudzi/N9lbwHQNDOG
-	Xj/O25ARCJeuH6JTkiicQ==
-From: Michal Nazarewicz <mnazarewicz@google.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 1/4] usb: Provide usb_device_speed_name() function
-Date: Sat, 20 Aug 2011 00:32:59 +0200
-Message-Id: <7e9435f5e8c2e9d6363d79de79f81b4f259e230c.1313791722.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1313791722.git.mina86@mina86.com>
-References: <cover.1313791722.git.mina86@mina86.com>
-X-System-Of-Record: true
+	Fri, 19 Aug 2011 18:42:04 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 0/3] make ntfs_free() NULL safe
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Content-Type: text/plain; charset=windows-1252
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <alpine.LNX.2.00.1108200007520.31857@swampdragon.chaosbits.net>
+Date: Fri, 19 Aug 2011 23:42:02 +0100
+Cc: linux-kernel@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3FD00282-F6B7-443A-B019-DBBEF75E86E6@tuxera.com>
+References: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net> <39DAF2CE-95BC-4E0C-B30E-4686DF0E8D31@tuxera.com> <alpine.LNX.2.00.1108200007520.31857@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+Hi,
 
-In a few places kernel wants to print a human-readable USB
-device speed name (eg. "high") instead of a raw number
-(eg. 3).  Usually a switch is introduced in those places
-leading to code repetition.  To mitigate this issue, this
-commit introduces usb_device_speed_name() function, which
-returns a human-readable name of provided speed.
+On 19 Aug 2011, at 23:21, Jesper Juhl wrote:
+> On Fri, 19 Aug 2011, Anton Altaparmakov wrote:
+>> On 19 Aug 2011, at 22:30, Jesper Juhl wrote:
+>>> Here's a small series of patches that make it safe to call ntfs_free() 
+>>> with a NULL pointer and reaps some bennefits from that.
+>>> 
+>>> The first patch in the series simply makes ntfs_free() safe to call with a 
+>>> NULL pointer. This fits with many other kernel freeing functions, that are 
+>>> generally safe to call with NULL pointers.
+>>> 
+>>> The second patch adds some documentation to ntfs_free() similar to what's 
+>>> already provided for the allocation functions.  ntfs_free() is fairly 
+>>> simple so you could argue that such documentation is not really needed, 
+>>> but I say it's still nice to have if for no other reason than 
+>>> completeness.
+>>> 
+>>> The third patch removes a number of tests for NULL pointers before calls 
+>>> to ntfs_free() that patch 1 make redundant.
+>> 
+>> Patches look fine.  Feel free to add my
+>> 
+>> 	Acked-by: Anton Altaparmakov <anton@tuxera.com>
+>> 
+> Thank you.
+> 
+>> and to send them to Linus for inclusion…
+>> 
+> I think I'll wait a bit before doing that. Hopefully some maintainer will 
+> pick them up and push them. But if that doesn't happen I'll make sure to 
+> re-sumbit them myself and point them higher up the hierarchy (with your 
+> ACK attached) :-)
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/Makefile          |    3 +++
- drivers/usb/common.c          |   24 ++++++++++++++++++++++++
- drivers/usb/gadget/udc-core.c |   19 ++-----------------
- include/linux/usb/ch9.h       |    8 ++++++++
- 4 files changed, 37 insertions(+), 17 deletions(-)
- create mode 100644 drivers/usb/common.c
+Ok, thanks.  I have no other changes for NTFS so no point in me taking them to submit to Linus, you might as well do it yourself (and I am incredibly busy at the moment).  (-:
 
-diff --git a/drivers/usb/Makefile b/drivers/usb/Makefile
-index 30ddf8d..a3167cc 100644
---- a/drivers/usb/Makefile
-+++ b/drivers/usb/Makefile
-@@ -51,3 +51,6 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
- obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
- obj-$(CONFIG_USB_OTG_UTILS)	+= otg/
- obj-$(CONFIG_USB_GADGET)	+= gadget/
-+
-+obj-$(CONFIG_USB)		+= common.o
-+obj-$(CONFIG_USB_GADGET)	+= common.o
-diff --git a/drivers/usb/common.c b/drivers/usb/common.c
-new file mode 100644
-index 0000000..e9d7141
---- /dev/null
-+++ b/drivers/usb/common.c
-@@ -0,0 +1,24 @@
-+/*
-+ * Provides code common for host and device side USB.
-+ */
-+
-+#include <linux/kernel.h>  /* for ARRAY_SIZE() */
-+#include <linux/module.h>  /* for EXPORT_SYMBOL_GPL() */
-+#include <linux/usb/ch9.h>
-+
-+const char *usb_device_speed_name(enum usb_device_speed speed)
-+{
-+	static const char *const names[] = {
-+		"UNKNOWN",
-+		"low-speed",
-+		"full-speed",
-+		"high-speed",
-+		"wireless",
-+		"super-speed",
-+	};
-+
-+	if (speed < 0 || speed >= ARRAY_SIZE(names))
-+		speed = USB_SPEED_UNKNOWN;
-+	return names[speed];
-+}
-+EXPORT_SYMBOL_GPL(usb_device_speed_name);
-diff --git a/drivers/usb/gadget/udc-core.c b/drivers/usb/gadget/udc-core.c
-index 05ba472..e1ecdbc 100644
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@ -375,23 +375,8 @@ static ssize_t usb_udc_speed_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct usb_udc		*udc = container_of(dev, struct usb_udc, dev);
--	struct usb_gadget	*gadget = udc->gadget;
--
--	switch (gadget->speed) {
--	case USB_SPEED_LOW:
--		return snprintf(buf, PAGE_SIZE, "low-speed\n");
--	case USB_SPEED_FULL:
--		return snprintf(buf, PAGE_SIZE, "full-speed\n");
--	case USB_SPEED_HIGH:
--		return snprintf(buf, PAGE_SIZE, "high-speed\n");
--	case USB_SPEED_WIRELESS:
--		return snprintf(buf, PAGE_SIZE, "wireless\n");
--	case USB_SPEED_SUPER:
--		return snprintf(buf, PAGE_SIZE, "super-speed\n");
--	case USB_SPEED_UNKNOWN:	/* FALLTHROUGH */
--	default:
--		return snprintf(buf, PAGE_SIZE, "UNKNOWN\n");
--	}
-+	return snprintf(buf, PAGE_SIZE, "%s\n",
-+			usb_device_speed_name(udc->gadget->speed));
- }
- static DEVICE_ATTR(speed, S_IRUSR, usb_udc_speed_show, NULL);
- 
-diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-index 0fd3fbd..61c4c80 100644
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -851,6 +851,14 @@ enum usb_device_speed {
- 	USB_SPEED_SUPER,			/* usb 3.0 */
- };
- 
-+/**
-+ * usb_device_speed_name() - Returns human readable-name of the speed.
-+ * @speed: The speed to return human-readable name for.  If it's not
-+ *   any of the speeds defined in usb_device_speed enum, string for
-+ *   USB_SPEED_UNKNOWN will be returned.
-+ */
-+extern const char *usb_device_speed_name(enum usb_device_speed speed);
-+
- enum usb_device_state {
- 	/* NOTATTACHED isn't in the USB spec, and this state acts
- 	 * the same as ATTACHED ... but it's clearer this way.
+>>> This whole things came about because Coverity Prevent spotted that in 
+>>> fs/ntfs/runlist.c on line 967 we call ntfs_runlists_merge() which frees 
+>>> its second argument and we then explicitly free that argument via 
+>>> ntfs_free() again on line 970. This patch series also makes that a non 
+>>> issue.
+>> 
+>> Ah but Coverity Prevent is incorrect in its spotting!
+>> 
+>> Have a look yourself!
+>> 
+>> ntfs_runlists_merge() _ONLY_ frees its second argument if it returns success.  If it returns error it does _NOT_ free its second argument!
+>> 
+> On second inspection I believe you are right.
+
+(-:
+
+>> And line 970 is _ONLY_ executed if ntfs_runlists_merge() returned error, i.e. in the case that the second argument was _NOT_ freed.  If the argument was freed, ntfs_runlists_merge() would have returned success, and then line 970 would never have been reached…
+>> 
+>> So I am afraid this is a bug in Coverity Prevent rather than in NTFS.  (-:
+>> 
+> I'll make a note in prevent that this is a false positive.
+> 
+> I still believe the 3 patches make sense though, regardless of this.
+
+Indeed, that is why you got my ACK for them…  (-:
+
+Best regards,
+
+	Anton
 -- 
-1.7.3.1
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
