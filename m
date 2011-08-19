@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab1HSKpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 06:45:47 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62626 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab1HSKpn (ORCPT
+	id S1753152Ab1HSKqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 06:46:46 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42554 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1HSKqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 06:45:43 -0400
+	Fri, 19 Aug 2011 06:46:45 -0400
+X-AuditID: b753bd60-a0885ba000000655-7f-4e4e3f126be8
+X-AuditID: b753bd60-a0885ba000000655-7f-4e4e3f126be8
+From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Subject: [PATCH v2] avoid null pointer access in vm_struct
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Fri, 19 Aug 2011 19:51:33 +0900
+Message-ID: <20110819105133.7504.62129.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <201108190823.06638.oliver@neukum.org>
-References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com>
-	<201108171914.52257.oliver@neukum.org>
-	<CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
-	<201108190823.06638.oliver@neukum.org>
-Date: Fri, 19 Aug 2011 12:45:42 +0200
-Message-ID: <CA+O4pCKteFZBT0UMetuk4-gsUf4wG3DXnOooW47GWD7o=dgpQQ@mail.gmail.com>
-Subject: Re: [PATCH] Increase usbfs bulk buffer size
-From: Markus Rechberger <mrechberger@gmail.com>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 8:23 AM, Oliver Neukum <oliver@neukum.org> wrote:
-> Am Mittwoch, 17. August 2011, 19:44:16 schrieb Markus Rechberger:
->> I understand that USBFS is not 100% optimized, although we are already
->> using 3-4 times that much buffer with isochronous and it was working
->> fine for years so far as long as the system doesn't run out of memory
->> .. but even kerneldrivers would have issues with it in such a
->> situation.
->
-> The problem is not what happens on your test system dedicated to this use.
-> There it'll work. But you allowed everybody else to make the kernel request
-> the second largest chunk of memory there is. On a otherwise busy system
-> with fragmented memory this is not good.
->
-> As I said, you want scatter/gather if you need this.
-> There still would be the problem with the API, but if this is really a problem,
-> you could define a new ioctl()
->
+The /proc/vmallocinfo shows information about vmalloc allocations in vmlist
+that is a linklist of vm_struct. It, however, may access pages field of
+vm_struct where a page was not allocated, which results in a null pointer
+access and leads to a kernel panic.
 
-let's say there are a few thousand users of the 190k isochronous implementation.
-I don't want to add more complex code to the kernel, if it's not
-accepted I'm okay with it,
-since I know the performance impact I can recommend it to those who
-are interested in it.
-Our software works without it anyway, and Bulk is just for special use
-in our case.
+Why this happen:
+In __vmalloc_area_node(), the nr_pages field of vm_struct are set to the
+expected number of pages to be allocated, before the actual pages
+allocations. At the same time, when the /proc/vmallocinfo is read, it
+accesses the pages field of vm_struct according to the nr_pages field at
+show_numa_info(). Thus, a null pointer access happens.
 
-Best Regards,
-Markus
+Patch:
+This patch sets nr_pages field of vm_struct AFTER the pages allocations
+finished in __vmalloc_area_node(). So, it can avoid accessing the pages
+field with unallocated page when show_numa_info() is called.
+
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+
+ mm/vmalloc.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 7ef0903..49d8aed 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1529,7 +1529,6 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 	nr_pages = (area->size - PAGE_SIZE) >> PAGE_SHIFT;
+ 	array_size = (nr_pages * sizeof(struct page *));
+ 
+-	area->nr_pages = nr_pages;
+ 	/* Please note that the recursion is strictly bounded. */
+ 	if (array_size > PAGE_SIZE) {
+ 		pages = __vmalloc_node(array_size, 1, nested_gfp|__GFP_HIGHMEM,
+@@ -1538,15 +1537,15 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 	} else {
+ 		pages = kmalloc_node(array_size, nested_gfp, node);
+ 	}
+-	area->pages = pages;
+-	area->caller = caller;
+-	if (!area->pages) {
++	if (!pages) {
+ 		remove_vm_area(area->addr);
+ 		kfree(area);
+ 		return NULL;
+ 	}
++	area->pages = pages;
++	area->caller = caller;
+ 
+-	for (i = 0; i < area->nr_pages; i++) {
++	for (i = 0; i < nr_pages; i++) {
+ 		struct page *page;
+ 		gfp_t tmp_mask = gfp_mask | __GFP_NOWARN;
+ 
+@@ -1562,6 +1561,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+ 		}
+ 		area->pages[i] = page;
+ 	}
++	area->nr_pages = nr_pages;
+ 
+ 	if (map_vm_area(area, prot, &pages))
+ 		goto fail;
+
