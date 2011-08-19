@@ -1,148 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab1HSOTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:19:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51724 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab1HSOQj (ORCPT
+	id S1755432Ab1HSOTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:19:50 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64596 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754737Ab1HSOTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:16:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/16] freezer: rename thaw_process() to __thaw_task() and simplify the implementation
-Date: Fri, 19 Aug 2011 16:16:11 +0200
-Message-Id: <1313763382-12341-6-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+	Fri, 19 Aug 2011 10:19:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313761404.18591.1.camel@vkoul-udesk3>
+References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
+	<1313499399.1603.92.camel@vkoul-udesk3>
+	<CACRpkdaY_wuz+zS-iKCPT-M7EpvtxCNX+OJ6NROSaQtZ6XoNMg@mail.gmail.com>
+	<1313761404.18591.1.camel@vkoul-udesk3>
+Date: Fri, 19 Aug 2011 16:19:44 +0200
+Message-ID: <CAKnu2Mpu2H18=xF4OwmqSgML_dDa6SE7ZqHFjLb2GL_-Wabqsw@mail.gmail.com>
+Subject: Re: [PATCH] DMAEngine: Define generic transfer request api
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Jassi Brar <jaswinder.singh@linaro.org>, sundaram@ti.com,
+        dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
+        nsekhar@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thaw_process() now has only internal users - system and cgroup
-freezers.  Remove the unnecessary return value, rename, unexport and
-collapse __thaw_process() into it.  This will help further updates to
-the freezer code.
+2011/8/19 Koul, Vinod <vinod.koul@intel.com>:
+> On Tue, 2011-08-16 at 15:06 +0200, Linus Walleij wrote:
+>> On Tue, Aug 16, 2011 at 2:56 PM, Koul, Vinod <vinod.koul@intel.com> wrote:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul Menage <menage@google.com>
----
- include/linux/freezer.h |    3 +--
- kernel/cgroup_freezer.c |    7 +++----
- kernel/freezer.c        |   30 +++++++++++-------------------
- kernel/power/process.c  |    2 +-
- 4 files changed, 16 insertions(+), 26 deletions(-)
+>> I think Sundaram is in the position of doing some heavy work on
+>> using one or the other of the API:s, and I think he is better
+>> suited than anyone else of us to select what scheme to use,
+>> in the end he's going to write the first code using the API.
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 8ee31e5..80a455d 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -45,7 +45,7 @@ static inline bool should_send_signal(struct task_struct *p)
- }
- 
- /* Takes and releases task alloc lock using task_lock() */
--extern int thaw_process(struct task_struct *p);
-+extern void __thaw_task(struct task_struct *t);
- 
- extern bool __refrigerator(bool check_kthr_stop);
- extern int freeze_processes(void);
-@@ -167,7 +167,6 @@ static inline int frozen(struct task_struct *p) { return 0; }
- static inline int freezing(struct task_struct *p) { return 0; }
- static inline void set_freeze_flag(struct task_struct *p) {}
- static inline void clear_freeze_flag(struct task_struct *p) {}
--static inline int thaw_process(struct task_struct *p) { return 1; }
- 
- static inline bool __refrigerator(bool check_kthr_stop) { return false; }
- static inline int freeze_processes(void) { BUG(); return 0; }
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e691818..e7fa0ec 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -130,7 +130,7 @@ struct cgroup_subsys freezer_subsys;
-  *   write_lock css_set_lock (cgroup iterator start)
-  *    task->alloc_lock
-  *   read_lock css_set_lock (cgroup iterator start)
-- *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
-+ *    task->alloc_lock (inside __thaw_task(), prevents race with refrigerator())
-  *     sighand->siglock
-  */
- static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
-@@ -300,9 +300,8 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- 	struct task_struct *task;
- 
- 	cgroup_iter_start(cgroup, &it);
--	while ((task = cgroup_iter_next(cgroup, &it))) {
--		thaw_process(task);
--	}
-+	while ((task = cgroup_iter_next(cgroup, &it)))
-+		__thaw_task(task);
- 	cgroup_iter_end(cgroup, &it);
- 
- 	freezer->state = CGROUP_THAWED;
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 656492c..f5db7fd 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -145,18 +145,8 @@ void cancel_freezing(struct task_struct *p)
- 	}
- }
- 
--static int __thaw_process(struct task_struct *p)
--{
--	if (frozen(p)) {
--		p->flags &= ~PF_FROZEN;
--		return 1;
--	}
--	clear_freeze_flag(p);
--	return 0;
--}
--
- /*
-- * Wake up a frozen process
-+ * Wake up a frozen task
-  *
-  * task_lock() is needed to prevent the race with refrigerator() which may
-  * occur if the freezing of tasks fails.  Namely, without the lock, if the
-@@ -164,15 +154,17 @@ static int __thaw_process(struct task_struct *p)
-  * refrigerator() could call frozen_process(), in which case the task would be
-  * frozen and no one would thaw it.
-  */
--int thaw_process(struct task_struct *p)
-+void __thaw_task(struct task_struct *p)
- {
-+	bool was_frozen;
-+
- 	task_lock(p);
--	if (__thaw_process(p) == 1) {
--		task_unlock(p);
--		wake_up_process(p);
--		return 1;
--	}
-+	if ((was_frozen = frozen(p)))
-+		p->flags &= ~PF_FROZEN;
-+	else
-+		clear_freeze_flag(p);
- 	task_unlock(p);
--	return 0;
-+
-+	if (was_frozen)
-+		wake_up_process(p);
- }
--EXPORT_SYMBOL(thaw_process);
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 0cf3a27..bec09c3 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -176,7 +176,7 @@ static void thaw_tasks(bool nosig_only)
- 		if (cgroup_freezing_or_frozen(p))
- 			continue;
- 
--		thaw_process(p);
-+		__thaw_task(p);
- 	} while_each_thread(g, p);
- 	read_unlock(&tasklist_lock);
- }
--- 
-1.7.6
+> And Unfortunately TI folks don't seem to care about this discussion :(
+> Haven't seen anything on this from them, or on previous RFC by Jassi
 
+Well if there is no code usig the API then there is no rush
+in merging it either I guess. Whenever someone (TI or
+Samsung) cook some driver patches they can choose their
+approach.
+
+Thanks,
+Linus Walleij
