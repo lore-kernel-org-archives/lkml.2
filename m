@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab1HSTld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:41:33 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:34745 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087Ab1HSTkc (ORCPT
+	id S932078Ab1HSTli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:41:38 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:55643 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081Ab1HSTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 15:40:32 -0400
+	Fri, 19 Aug 2011 15:40:31 -0400
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: apatard@mandriva.com, gregkh@suse.de, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] staging: xgifb: vb_table: delete unused data
-Date: Fri, 19 Aug 2011 22:40:23 +0300
-Message-Id: <1313782830-31461-6-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 04/12] staging: xgifb: delete unused definitions
+Date: Fri, 19 Aug 2011 22:40:22 +0300
+Message-Id: <1313782830-31461-5-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313782830-31461-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1313782830-31461-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,880 +20,976 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete unused data.
+Delete some more unused definitions.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/vb_table.h |  729 --------------------------------------
- 1 files changed, 0 insertions(+), 729 deletions(-)
+ drivers/staging/xgifb/XGI_main.h    |   93 --------
+ drivers/staging/xgifb/XGI_main_26.c |    2 -
+ drivers/staging/xgifb/XGIfb.h       |   12 -
+ drivers/staging/xgifb/vb_def.h      |  417 -----------------------------------
+ drivers/staging/xgifb/vb_struct.h   |    6 -
+ 5 files changed, 0 insertions(+), 530 deletions(-)
 
-diff --git a/drivers/staging/xgifb/vb_table.h b/drivers/staging/xgifb/vb_table.h
-index d10de48..0184292 100644
---- a/drivers/staging/xgifb/vb_table.h
-+++ b/drivers/staging/xgifb/vb_table.h
-@@ -173,37 +173,6 @@ static unsigned char XGI340_AGPReg[12] = {
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index 09a35fd..d0a672c 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -15,8 +15,6 @@
+ #define VER_MINOR                 8
+ #define VER_LEVEL                 1
  
- static unsigned char XGI340_SR16[4] = {0x03, 0x83, 0x03, 0x83};
- 
--#if 0
--static unsigned char XGI330_SR15_1[8][8] = {
--	{0x0, 0x0, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00},
--	{0x5, 0x15, 0x15, 0x15, 0x15, 0x15, 0x00, 0x00},
--	{0xba, 0xba, 0xba, 0xba, 0xBA, 0xBA, 0x00, 0x00},
--	{0x55, 0x57, 0x57, 0xAB, 0xAB, 0xAB, 0x00, 0x00},
--	{0x60, 0x34, 0x34, 0x34, 0x34, 0x34, 0x00, 0x00},
--	{0x0, 0x80, 0x80, 0x80, 0x83, 0x83, 0x00, 0x00},
--	{0x50, 0x50, 0x50, 0x3C, 0x3C, 0x3C, 0x00, 0x00},
--	{0x0, 0xa5, 0xfb, 0xf6, 0xF6, 0xF6, 0x00, 0x00}
--};
+-#define DRIVER_DESC  "XGI Volari Frame Buffer Module Version 0.8.1"
 -
--static unsigned char XGI330_cr40_1[15][8] = {
--	{0x66, 0x40, 0x40, 0x28, 0x24, 0x24, 0x00, 0x00},
--	{0x66, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x00, 0x00},
--	{0x00, 0xf0, 0xf0, 0xf0, 0xF0, 0xF0, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x10, 0x10, 0x10, 0x10, 0x20, 0x20, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x88, 0x88, 0x88, 0xAA, 0xAC, 0xAC, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x77, 0x77, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
--	{0x00, 0xA2, 0x00, 0x00, 0xA2, 0xA2, 0x00, 0x00},
--};
+ #ifndef PCI_VENDOR_ID_XG
+ #define PCI_VENDOR_ID_XG          0x18CA
+ #endif
+@@ -37,11 +35,6 @@
+ #define PCI_DEVICE_ID_XG_27      0x027
+ #endif
+ 
+-
+-
+-#define XGI_IOTYPE1 void __iomem
+-#define XGI_IOTYPE2 __iomem
+-
+ static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
+ 	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20, PCI_ANY_ID, PCI_ANY_ID,
+ 	 0, 0, 0},
+@@ -57,31 +50,11 @@ static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
+ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ 
+ /* To be included in fb.h */
+-#ifndef FB_ACCEL_XGI_GLAMOUR_2
+-#define FB_ACCEL_XGI_GLAMOUR_2  40	/* XGI 315, 650, 740		*/
+-#endif
+ #ifndef FB_ACCEL_XGI_XABRE
+ #define FB_ACCEL_XGI_XABRE      41	/* XGI 330 ("Xabre")		*/
+ #endif
+ 
+-#define MAX_ROM_SCAN              0x10000
+-
+-#define SEQ_ADR                   0x14
+ #define SEQ_DATA                  0x15
+-#define DAC_ADR                   0x18
+-#define DAC_DATA                  0x19
+-#define CRTC_ADR                  0x24
+-#define CRTC_DATA                 0x25
+-#define DAC2_ADR                  (0x16-0x30)
+-#define DAC2_DATA                 (0x17-0x30)
+-#define VB_PART1_ADR              (0x04-0x30)
+-#define VB_PART1_DATA             (0x05-0x30)
+-#define VB_PART2_ADR              (0x10-0x30)
+-#define VB_PART2_DATA             (0x11-0x30)
+-#define VB_PART3_ADR              (0x12-0x30)
+-#define VB_PART3_DATA             (0x13-0x30)
+-#define VB_PART4_ADR              (0x14-0x30)
+-#define VB_PART4_DATA             (0x15-0x30)
+ 
+ #define XGISR			  XGI_Pr.P3c4
+ #define XGICR                     XGI_Pr.P3d4
+@@ -94,24 +67,12 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ #define XGIPART5                  XGI_Pr.Part5Port
+ #define XGIDAC2A                  XGIPART5
+ #define XGIDAC2D                  (XGIPART5 + 1)
+-#define XGIMISCR                  (XGI_Pr.RelIO + 0x1c)
+-#define XGIINPSTAT		  (XGI_Pr.RelIO + 0x2a)
+ 
+ #define IND_XGI_PASSWORD          0x05  /* SRs */
+-#define IND_XGI_COLOR_MODE        0x06
+ #define IND_XGI_RAMDAC_CONTROL    0x07
+ #define IND_XGI_DRAM_SIZE         0x14
+-#define IND_XGI_SCRATCH_REG_16    0x16
+-#define IND_XGI_SCRATCH_REG_17    0x17
+-#define IND_XGI_SCRATCH_REG_1A    0x1A
+ #define IND_XGI_MODULE_ENABLE     0x1E
+ #define IND_XGI_PCI_ADDRESS_SET   0x20
+-#define IND_XGI_TURBOQUEUE_ADR    0x26
+-#define IND_XGI_TURBOQUEUE_SET    0x27
+-#define IND_XGI_POWER_ON_TRAP     0x38
+-#define IND_XGI_POWER_ON_TRAP2    0x39
+-#define IND_XGI_CMDQUEUE_SET      0x26
+-#define IND_XGI_CMDQUEUE_THRESHOLD  0x27
+ 
+ #define IND_XGI_SCRATCH_REG_CR30  0x30  /* CRs */
+ #define IND_XGI_SCRATCH_REG_CR31  0x31
+@@ -119,23 +80,10 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ #define IND_XGI_SCRATCH_REG_CR33  0x33
+ #define IND_XGI_LCD_PANEL         0x36
+ #define IND_XGI_SCRATCH_REG_CR37  0x37
+-#define IND_XGI_AGP_IO_PAD        0x48
+ 
+-#define IND_BRI_DRAM_STATUS       0x63 /* PCI config memory size offset */
+-
+-#define MMIO_QUEUE_PHYBASE        0x85C0
+-#define MMIO_QUEUE_WRITEPORT      0x85C4
+-#define MMIO_QUEUE_READPORT       0x85C8
+-
+-#define IND_XGI_CRT2_WRITE_ENABLE_300 0x24
+ #define IND_XGI_CRT2_WRITE_ENABLE_315 0x2F
+ 
+ #define XGI_PASSWORD              0x86  /* SR05 */
+-#define XGI_INTERLACED_MODE       0x20  /* SR06 */
+-#define XGI_8BPP_COLOR_MODE       0x0
+-#define XGI_15BPP_COLOR_MODE      0x1
+-#define XGI_16BPP_COLOR_MODE      0x2
+-#define XGI_32BPP_COLOR_MODE      0x4
+ 
+ #define XGI_DRAM_SIZE_MASK     0xF0  /*SR14 */
+ #define XGI_DRAM_SIZE_1MB      0x00
+@@ -147,27 +95,6 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ #define XGI_DRAM_SIZE_64MB     0x06
+ #define XGI_DRAM_SIZE_128MB    0x07
+ #define XGI_DRAM_SIZE_256MB    0x08
+-#define XGI_DATA_BUS_MASK      0x02
+-#define XGI_DATA_BUS_64        0x00
+-#define XGI_DATA_BUS_128       0x01
+-#define XGI_DUAL_CHANNEL_MASK  0x0C
+-#define XGI_SINGLE_CHANNEL_1_RANK 0x0
+-#define XGI_SINGLE_CHANNEL_2_RANK 0x1
+-#define XGI_ASYM_DDR		  0x02
+-#define XGI_DUAL_CHANNEL_1_RANK	  0x3
+-
+-#define XGI550_DRAM_SIZE_MASK     0x3F  /* 550/650/740 SR14 */
+-#define XGI550_DRAM_SIZE_4MB      0x00
+-#define XGI550_DRAM_SIZE_8MB      0x01
+-#define XGI550_DRAM_SIZE_16MB     0x03
+-#define XGI550_DRAM_SIZE_24MB     0x05
+-#define XGI550_DRAM_SIZE_32MB     0x07
+-#define XGI550_DRAM_SIZE_64MB     0x0F
+-#define XGI550_DRAM_SIZE_96MB     0x17
+-#define XGI550_DRAM_SIZE_128MB    0x1F
+-#define XGI550_DRAM_SIZE_256MB    0x3F
+-
+-#define XGI_SCRATCH_REG_1A_MASK   0x10
+ 
+ #define XGI_ENABLE_2D             0x40  /* SR1E */
+ 
+@@ -175,7 +102,6 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ #define XGI_PCI_ADDR_ENABLE       0x80
+ 
+ #define XGI_SIMULTANEOUS_VIEW_ENABLE  0x01  /* CR30 */
+-#define XGI_MODE_SELECT_CRT2      0x02
+ #define XGI_VB_OUTPUT_COMPOSITE   0x04
+ #define XGI_VB_OUTPUT_SVIDEO      0x08
+ #define XGI_VB_OUTPUT_SCART       0x10
+@@ -198,27 +124,9 @@ MODULE_DEVICE_TABLE(pci, xgifb_pci_table);
+ 				   XGI_VB_SCART | XGI_VB_HIVISION|XGI_VB_YPBPR)
+ 
+ #define XGI_EXTERNAL_CHIP_MASK		   0x0E  /* CR37 */
+-#define XGI_EXTERNAL_CHIP_XGI301           0x01  /* in CR37 << 1 ! */
+-#define XGI_EXTERNAL_CHIP_LVDS             0x02  /* in CR37 << 1 ! */
+-#define XGI_EXTERNAL_CHIP_TRUMPION         0x03  /* in CR37 << 1 ! */
+-#define XGI_EXTERNAL_CHIP_LVDS_CHRONTEL    0x04  /* in CR37 << 1 ! */
+-#define XGI_EXTERNAL_CHIP_CHRONTEL         0x05  /* in CR37 << 1 ! */
+ #define XGI310_EXTERNAL_CHIP_LVDS          0x02  /* in CR37 << 1 ! */
+ #define XGI310_EXTERNAL_CHIP_LVDS_CHRONTEL 0x03  /* in CR37 << 1 ! */
+ 
+-#define XGI_AGP_2X                0x20  /* CR48 */
+-
+-#define BRI_DRAM_SIZE_MASK        0x70  /* PCI bridge config data */
+-#define BRI_DRAM_SIZE_2MB         0x00
+-#define BRI_DRAM_SIZE_4MB         0x01
+-#define BRI_DRAM_SIZE_8MB         0x02
+-#define BRI_DRAM_SIZE_16MB        0x03
+-#define BRI_DRAM_SIZE_32MB        0x04
+-#define BRI_DRAM_SIZE_64MB        0x05
+-
+-#define SR_BUFFER_SIZE            5
+-#define CR_BUFFER_SIZE            5
+-
+ /* ------------------- Global Variables ----------------------------- */
+ 
+ /* Fbcon variables */
+@@ -423,7 +331,6 @@ static struct _XGIbios_mode {
+ 	 MD_XGI315},
+ 	{"1280x768x32",  0x25, 0x0000, 0x0000, 1280,  768, 32, 1, 160, 48,
+ 	 MD_XGI315},
+-#define MODEINDEX_1280x960 48
+ 	{"1280x960x8",   0x7C, 0x0000, 0x0000, 1280,  960,  8, 1, 160, 60,
+ 	 MD_XGI300|MD_XGI315},  /* TW: Modenumbers being patched */
+ 	{"1280x960x16",  0x7D, 0x0000, 0x0000, 1280,  960, 16, 1, 160, 60,
+diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+index 8a19a7d..0636300 100644
+--- a/drivers/staging/xgifb/XGI_main_26.c
++++ b/drivers/staging/xgifb/XGI_main_26.c
+@@ -45,11 +45,9 @@
+ #include "vb_setmode.h"
+ 
+ #define Index_CR_GPIO_Reg1 0x48
+-#define Index_CR_GPIO_Reg2 0x49
+ #define Index_CR_GPIO_Reg3 0x4a
+ 
+ #define GPIOG_EN    (1<<6)
+-#define GPIOG_WRITE (1<<6)
+ #define GPIOG_READ  (1<<1)
+ 
+ #define XGIFB_ROM_SIZE	65536
+diff --git a/drivers/staging/xgifb/XGIfb.h b/drivers/staging/xgifb/XGIfb.h
+index 45b6015..5d81cb6 100644
+--- a/drivers/staging/xgifb/XGIfb.h
++++ b/drivers/staging/xgifb/XGIfb.h
+@@ -7,11 +7,9 @@
+ #define DISPTYPE_CRT2       0x00000004L
+ #define DISPTYPE_LCD        0x00000002L
+ #define DISPTYPE_TV         0x00000001L
+-#define DISPTYPE_DISP1      DISPTYPE_CRT1
+ #define DISPTYPE_DISP2      (DISPTYPE_CRT2 | DISPTYPE_LCD | DISPTYPE_TV)
+ #define DISPMODE_SINGLE	    0x00000020L
+ #define DISPMODE_MIRROR	    0x00000010L
+-#define DISPMODE_DUALVIEW   0x00000040L
+ 
+ #define HASVB_NONE	    0x00
+ #define HASVB_301	    0x01
+@@ -19,13 +17,8 @@
+ #define HASVB_TRUMPION	    0x04
+ #define HASVB_LVDS_CHRONTEL 0x10
+ #define HASVB_302	    0x20
+-#define HASVB_303	    0x40
+ #define HASVB_CHRONTEL	    0x80
+ 
+-#ifndef XGIFB_ID
+-#define XGIFB_ID	0x53495346 /* Identify myself with 'XGIF' */
 -#endif
 -
- static unsigned char XGI330_sr25[] = {0x00, 0x0};
- static unsigned char XGI330_sr31 = 0xc0;
- static unsigned char XGI330_sr32 = 0x11;
-@@ -1007,112 +976,6 @@ static struct XGI_CRT1TableStruct XGI_CRT1Table[] = {
- 	  0x03, 0xDE, 0xC0, 0x84, 0xBF, 0x04, 0x90} }  /* 0x47 */
+ enum XGI_CHIP_TYPE {
+ 	XG40 = 32,
+ 	XG41,
+@@ -47,11 +40,6 @@ enum xgi_tvtype {
  };
  
--#if 0
--static struct XGI330_CHTVRegDataStruct XGI_CHTVRegUNTSC[] = {
--	/* Index: 000h, 001h, 002h, 004h, 003h, 005h, 006h, 007h,
--		  008h, 015h, 01Fh, 00Ch, 00Dh, 00Eh, 00Fh, 010h */
--	/* 00 (640x200,640x400) */
--	{ {0x4A, 0x77, 0xBB, 0x94, 0x84, 0x48, 0xFE, 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01  } },
--	/* 01 (640x350) */
--	{ {0x4A, 0x77, 0xBB, 0x94, 0x84, 0x48, 0xFE, 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01  } },
--	/* 02 (720x400) */
--	{ {0x4A, 0x77, 0xBB, 0x94, 0x84, 0x48, 0xFE, 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01  } },
--	/* 03 (720x350) */
--	{ {0x4A, 0x77, 0xBB, 0x94, 0x84, 0x48, 0xFE, 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01  } },
--	/* 04 (640x480) ;;5/6/02 */
--	{ {0x6A, 0x77, 0xBB, 0x6E, 0x84, 0x2E, 0x02, 0x5A,
--	   0x04, 0x00, 0x80, 0x20, 0x7E, 0x80, 0x97, 0x00  } },
--	/* 05 (800x600) ;;1/12/02 */
--	{ {0xCF, 0x77, 0xB7, 0xC8, 0x84, 0x3B, 0x02, 0x5A,
--	   0x04, 0x00, 0x80, 0x19, 0x88, 0xAE, 0xA3, 0x00  } },
--	/* 06 (1024x768) ;;5/6/02 */
--	{ {0xEE, 0x77, 0xBB, 0x66, 0x87, 0x32, 0x01, 0x5A,
--	   0x04, 0x00, 0x80, 0x1B, 0xD4, 0x2F, 0x6F, 0x00  } }
--};
+ enum xgi_tv_plug { /* vicki@030226 */
+-/*	TVPLUG_Legacy = 0, */
+-/*	TVPLUG_COMPOSITE,  */
+-/*	TVPLUG_SVIDEO,	   */
+-/*	TVPLUG_SCART,	   */
+-/*	TVPLUG_TOTAL	   */
+ 	TVPLUG_UNKNOWN = 0,
+ 	TVPLUG_COMPOSITE = 1,
+ 	TVPLUG_SVIDEO = 2,
+diff --git a/drivers/staging/xgifb/vb_def.h b/drivers/staging/xgifb/vb_def.h
+index 8528871..0684686 100644
+--- a/drivers/staging/xgifb/vb_def.h
++++ b/drivers/staging/xgifb/vb_def.h
+@@ -3,171 +3,48 @@
+ #ifndef _INITDEF_
+ #define _INITDEF_
+ 
+-#define SEQ_ADDRESS_PORT            0x0014
+-#define SEQ_DATA_PORT               0x0015
+-#define MISC_OUTPUT_REG_READ_PORT   0x001C
+-#define MISC_OUTPUT_REG_WRITE_PORT  0x0012
+-#define GRAPH_DATA_PORT             0x1F
+-#define GRAPH_ADDRESS_PORT          0x1E
+-#define XGI_MASK_DUAL_CHIP          0x04  /* SR3A */
+-#define CRTC_ADDRESS_PORT_COLOR     0x0024
+-#define VIDEO_SUBSYSTEM_ENABLE_PORT 0x0013
+-#define PCI_COMMAND                 0x04
 -
--static struct XGI330_CHTVRegDataStruct XGI_CHTVRegONTSC[] = {
--	/* Index: 000h, 001h, 002h, 004h, 003h, 005h, 006h, 007h,
--		  008h, 015h, 01Fh, 00Ch, 00Dh, 00Eh, 00Fh, 010h */
--	/* 00 (640x200,640x400) */
--	{ {0x49, 0x77, 0xBB, 0x7B, 0x84, 0x34, 0x00, 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 01 (640x350) */
--	{ {0x49, 0x77, 0xBB, 0x7B, 0x84, 0x34, 0x00 , 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 02 (720x400) */
--	{ {0x49, 0x77, 0xBB, 0x7B, 0x84, 0x34, 0x00 , 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 03 (720x350) */
--	{ {0x49, 0x77, 0xBB, 0x7B, 0x84, 0x34, 0x00 , 0x50,
--	   0x04, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 04 (640x480) ;;5/6/02 */
--	{ {0x69, 0x77, 0xBB, 0x6E, 0x84, 0x1E, 0x00 , 0x5A,
--	   0x04, 0x00, 0x80, 0x25, 0x1A, 0x80, 0x26, 0x00} },
--	/* 05 (800x600) ;;5/6/02 */
--	{ {0xCE, 0x77, 0xB7, 0xB6, 0x83, 0x2C, 0x02 , 0x5A,
--	   0x04, 0x00, 0x80, 0x1C, 0x00, 0x82, 0x97, 0x00} },
--	/* 06 (1024x768) ;;5/6/02 */
--	{ {0xED, 0x77, 0xBB, 0x66, 0x8C, 0x21, 0x02 , 0x5A,
--	   0x04, 0x00, 0x80, 0x1F, 0xA0, 0x7E, 0x73, 0x00} }
--};
+-/* ~shampoo */
 -
--static struct XGI330_CHTVRegDataStruct XGI_CHTVRegUPAL[] = {
--	/* Index: 000h, 001h, 002h, 004h, 003h, 005h, 006h, 007h,
--		  008h, 015h, 01Fh, 00Ch, 00Dh, 00Eh, 00Fh, 010h */
--	/* ; 00 (640x200,640x400) */
--	{ {0x41, 0x7F, 0xB7, 0x34, 0xAD, 0x50, 0x34, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* ; 01 (640x350) */
--	{ {0x41, 0x7F, 0xB7, 0x80, 0x85, 0x50, 0x00, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* ; 02 (720x400) */
--	{ {0x41, 0x7F, 0xB7, 0x34, 0xAD, 0x50, 0x34, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* ; 03 (720x350) */
--	{ {0x41, 0x7F, 0xB7, 0x12, 0x85, 0x50, 0x00, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* ; 04 (640x480) */
--	{ {0x61, 0x7F, 0xB7, 0x99, 0x84, 0x35, 0x04, 0x5A,
--	   0x05, 0x00, 0x80, 0x26, 0x2A, 0x55, 0x5D, 0x00} },
--	/* ; 05 (800x600) ;;1/12/02 */
--	{ {0xC3, 0x7F, 0xB7, 0x7A, 0x84, 0x40, 0x02, 0x5A,
--	   0x05, 0x00, 0x80, 0x1F, 0x84, 0x3D, 0x28, 0x00} },
--	/* ; 06 (1024x768) ;;1/12/02 */
--	{ {0xE5, 0x7F, 0xB7, 0x1D, 0xA7, 0x3E, 0x04, 0x5A,
--	   0x05, 0x00, 0x80, 0x20, 0x3E, 0xE4, 0x22, 0x00} }
--};
 -
--static struct XGI330_CHTVRegDataStruct XGI_CHTVRegOPAL[] = {
--	/* Index: 000, 0x01, 0x02, 0x04, 0x03, 0x05, 0x06, 0x07,
--		  0x08, 0x15, 0x1F, 0x0C, 0x0D, 0x0E, 0x0F, 0x10h */
--	/* 00 (640x200,640x400) */
--	{ {0x41, 0x7F, 0xB7, 0x36, 0xAD, 0x50, 0x34, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 01 (640x350) */
--	{ {0x41, 0x7F, 0xB7, 0x86, 0x85, 0x50, 0x00, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 02 (720x400) */
--	{ {0x41, 0x7F, 0xB7, 0x36, 0xAD, 0x50, 0x34, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 03 (720x350) */
--	{ {0x41, 0x7F, 0xB7, 0x86, 0x85, 0x50, 0x00, 0x83,
--	   0x05, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01} },
--	/* 04 (640x480) */
--	{ {0x61, 0x7F, 0xB7, 0x99, 0x84, 0x35, 0x04, 0x5A,
--	   0x05, 0x00, 0x80, 0x26, 0x2A, 0x55, 0x5D, 0x00} },
--	/* 05 (800x600) ;;1/12/02 */
--	{ {0xC1, 0x7F, 0xB7, 0x4D, 0x8C, 0x1E, 0x31, 0x5A,
--	   0x05, 0x00, 0x80, 0x26, 0x78, 0x19, 0x34, 0x00} },
--	/* 06 (1024x768) ;;1/12/02 */
--	{ {0xE4, 0x7F, 0xB7, 0x1E, 0xAF, 0x29, 0x37, 0x5A,
--	   0x05, 0x00, 0x80, 0x25, 0x8C, 0xB2, 0x2A, 0x00} }
--};
+ #define VB_XGI301C      0x0020 /* for 301C */
+ /*end 301b*/
+ 
+-#define VB_YPbPrInfo    0x07   /*301lv*/
+-#define VB_YPbPr525i    0x00
+ #define VB_YPbPr525p    0x01
+ #define VB_YPbPr750p    0x02
+ #define VB_YPbPr1080i   0x03
+ 
+-/* #define CRT1Len 17 */
+ #define LVDSCRT1Len     15
+-#define CHTVRegDataLen  5
+-
+-/* #define ModeInfoFlag 0x07 */
+-/* #define IsTextMode 0x07 */
+-/* #define ModeText 0x00 */
+-/* #define ModeCGA 0x01 */
+-/* #define ModeEGA 0x02 */
+-/* #define ModeVGA 0x03 */
+-/* #define Mode15Bpp 0x04 */
+-/* #define Mode16Bpp 0x05 */
+-/* #define Mode24Bpp 0x06 */
+-/* #define Mode32Bpp 0x07 */
+-
+-/* #define DACInfoFlag 0x18 */
+-/* #define MemoryInfoFlag 0x1E0 */
+-/* #define MemorySizeShift 0x05 */
+ 
+ #define SupportCHTV             0x0800
+ #define SupportCRT2in301C       0x0100  /* for 301C */
+-/* #define SyncNN 0xc000 */
+-#define ECLKindex0              0x0000
+-#define ECLKindex1              0x0100
+-#define ECLKindex2              0x0200
+-#define ECLKindex3              0x0300
+-#define ECLKindex4              0x0400
+-
+-/* #define SetCRT2ToTV 0x009C */
+-/* #define SetPALTV 0x0100 */
+-#define SetNotSimuTVMode        0x0400
+-#define SetDispDevSwitch        0x0800
+ #define SetCHTVOverScan         0x8000
+-/* #define SetCRT2ToLCDA 0x8000 301b */
+ #define PanelRGB18Bit           0x0100
+ #define PanelRGB24Bit           0x0000
+ 
+-#define ClearBufferFlag         0x20
+-
+-#define YPbPrModeInfo           0x38
+-/* #define YPbPrMode525i 0x00 */
+-/* #define YPbPrMode525p 0x08 */
+-/* #define YPbPrMode750p 0x10 */
+-/* #define YPbPrMode1080i 0x18 */
+-
+-#define  EnablePALMN            0x40
+-/* #define ProgrammingCRT2 0x01 */
+-/* #define TVSimuMode 0x02 */
+-/* #define RPLLDIV2XO 0x04 */
+-/* #define LCDVESATiming 0x08 */
+-/* #define EnableLVDSDDA 0x10 */
+-#define SetDispDevSwitchFlag    0x20
+-#define CheckWinDos             0x40
+-#define SetJDOSMode             0x80
+-
+ #define Panel320x480            0x07 /*fstn*/
+ /* [ycchen] 02/12/03 Modify for Multi-Sync. LCD Support */
+ #define PanelResInfo            0x1F /* CR36 Panel Type/LCDResInfo */
+-#define PanelRefInfo            0x60
+ #define Panel800x600            0x01
+ #define Panel1024x768           0x02
+ #define Panel1024x768x75        0x22
+ #define Panel1280x1024          0x03
+ #define Panel1280x1024x75       0x23
+ #define Panel640x480            0x04
+-#define Panel1024x600           0x05
+-#define Panel1152x864           0x06
+ #define Panel1280x960           0x07
+-#define Panel1152x768           0x08
+ #define Panel1400x1050          0x09
+-#define Panel1280x768           0x0A
+ #define Panel1600x1200          0x0B
+ 
+ #define PanelRef60Hz            0x00
+ #define PanelRef75Hz            0x20
+ 
+-#define ExtChipTrumpion         0x06
+-#define ExtChipCH7005           0x08
+-#define ExtChipMitacTV          0x0a
+-
+-/* #define DDC2DelayTime 300 */
+-
+ #define CRT2DisplayFlag         0x2000
+-/* #define LCDDataLen 8 */
+-/* #define HiTVDataLen 12 */
+-/* #define TVDataLen 16 */
+-/* #define SetPALTV 0x0100 */
+-
+-#define St750pTVHT              1716
+-#define St750pTVVT               525
+-#define Ext750pTVHT             1716
+-#define Ext750pTVVT              525
+-#define St525pTVHT              1716
+-#define St525pTVVT               525
+-#define Ext525pTVHT             1716
+-#define Ext525pTVVT              525
+-#define St525iTVHT              1716
+-#define St525iTVVT               525
+-#define Ext525iTVHT             1716
+-#define Ext525iTVVT              525
+-
+-#define VCLKStartFreq           25
+-#define SoftDramType            0x80
+-
+-#define AfterLockCRT2           0x4000
+-#define Ext2StructSize          5
+-
+ 
+ #define YPbPr525iVCLK           0x03B
+ #define YPbPr525iVCLK_2         0x03A
+ 
+-/* #define LCDVESATiming 0x08 */
+-#define StStructSize            0x06
+-
+-
+ #define XGI_CRT2_PORT_00        (0x00 - 0x030)
+ #define XGI_CRT2_PORT_04        (0x04 - 0x030)
+ #define XGI_CRT2_PORT_10        (0x10 - 0x30)
+ #define XGI_CRT2_PORT_12        (0x12 - 0x30)
+ #define XGI_CRT2_PORT_14        (0x14 - 0x30)
+ 
+-
+-#define ADR_CRT2PtrData         0x20E
+-#define offset_Zurac            0x210
+-#define ADR_LVDSDesPtrData      0x212
+-#define ADR_LVDSCRT1DataPtr     0x214
+-#define ADR_CHTVVCLKPtr         0x216
+-#define ADR_CHTVRegDataPtr      0x218
+-
+-/* #define EnableLVDSDDA 0x10 */
+-/* #define LVDSDesDataLen 3 */
+-#define ActiveNonExpanding      0x40
+-#define ActiveNonExpandingShift 6
+-/* #define ActivePAL 0x20 */
+-#define ActivePALShift          5
+-/* #define ModeSwitchStatus 0x0F */
+-#define SoftTVType              0x40
+-#define SoftSettingAddr         0x52
+-#define ModeSettingAddr         0x53
+-
+-/* #define SelectCRT1Rate 0x4 */
+-
+ #define _PanelType00             0x00
+ #define _PanelType01             0x08
+ #define _PanelType02             0x10
+@@ -185,164 +62,26 @@
+ #define _PanelType0E             0x70
+ #define _PanelType0F             0x78
+ 
+-/* 1: XGI is primary vga 0:XGI is secondary vga */
+-#define PRIMARY_VGA             0
+-#define BIOSIDCodeAddr          0x235
+-#define OEMUtilIDCodeAddr       0x237
+-#define VBModeIDTableAddr       0x239
+-#define OEMTVPtrAddr            0x241
+-#define PhaseTableAddr          0x243
+-#define NTSCFilterTableAddr     0x245
+-#define PALFilterTableAddr      0x247
+-#define OEMLCDPtr_1Addr         0x249
+-#define OEMLCDPtr_2Addr         0x24B
+-#define LCDHPosTable_1Addr      0x24D
+-#define LCDHPosTable_2Addr      0x24F
+-#define LCDVPosTable_1Addr      0x251
+-#define LCDVPosTable_2Addr      0x253
+-#define OEMLCDPIDTableAddr      0x255
+-
+-#define VBModeStructSize        5
+-#define PhaseTableSize          4
+-#define FilterTableSize         4
+-#define LCDHPosTableSize        7
+-#define LCDVPosTableSize        5
+-#define OEMLVDSPIDTableSize     4
+-#define LVDSHPosTableSize       4
+-#define LVDSVPosTableSize       6
+-
+-#define VB_ModeID               0
+-#define VB_TVTableIndex         1
+-#define VB_LCDTableIndex        2
+-#define VB_LCDHIndex            3
+-#define VB_LCDVIndex            4
+-
+-#define OEMLCDEnable            0x0001
+-#define OEMLCDDelayEnable       0x0002
+-#define OEMLCDPOSEnable         0x0004
+-#define OEMTVEnable             0x0100
+-#define OEMTVDelayEnable        0x0200
+-#define OEMTVFlickerEnable      0x0400
+-#define OEMTVPhaseEnable        0x0800
+-#define OEMTVFilterEnable       0x1000
+-
+-#define OEMLCDPanelIDSupport    0x0080
+-
+-/* #define LCDVESATiming 0x0001 //LCD Info CR37 */
+-/* #define EnableLVDSDDA 0x0002 */
+-/* #define SetLCDPolarity 0x00E0 */
+ /* =============================================================
+    for 310
+ ============================================================== */
+-#define SoftSetting_OFFSET  0x52
+-#define SR07_OFFSET  0x7C
+-#define SR15_OFFSET  0x7D
+-#define SR16_OFFSET  0x81
+-#define SR17_OFFSET  0x85
+-#define SR19_OFFSET  0x8D
+-#define SR1F_OFFSET  0x99
+-#define SR21_OFFSET  0x9A
+-#define SR22_OFFSET  0x9B
+-#define SR23_OFFSET  0x9C
+-#define SR24_OFFSET  0x9D
+-#define SR25_OFFSET  0x9E
+-#define SR31_OFFSET  0x9F
+-#define SR32_OFFSET  0xA0
+-#define SR33_OFFSET  0xA1
+-
+-#define CR40_OFFSET  0xA2
+-#define SR25_1_OFFSET  0xF6
+-#define CR49_OFFSET  0xF7
+-
+-#define VB310Data_1_2_Offset  0xB6
+-#define VB310Data_4_D_Offset  0xB7
+-#define VB310Data_4_E_Offset  0xB8
+-#define VB310Data_4_10_Offset 0xBB
+-
+-#define RGBSenseDataOffset    0xBD
+-#define YCSenseDataOffset     0xBF
+-#define VideoSenseDataOffset  0xC1
+-#define OutputSelectOffset    0xF3
+-
+-#define ECLK_MCLK_DISTANCE        0x14
+-#define VBIOSTablePointerStart    0x200
+-#define StandTablePtrOffset       (VBIOSTablePointerStart+0x02)
+-#define EModeIDTablePtrOffset     (VBIOSTablePointerStart+0x04)
+-#define CRT1TablePtrOffset        (VBIOSTablePointerStart+0x06)
+-#define ScreenOffsetPtrOffset     (VBIOSTablePointerStart+0x08)
+-#define VCLKDataPtrOffset         (VBIOSTablePointerStart+0x0A)
+-#define MCLKDataPtrOffset         (VBIOSTablePointerStart+0x0E)
+-#define CRT2PtrDataPtrOffset      (VBIOSTablePointerStart+0x10)
+-#define TVAntiFlickPtrOffset      (VBIOSTablePointerStart+0x12)
+-#define TVDelayPtr1Offset         (VBIOSTablePointerStart+0x14)
+-#define TVPhaseIncrPtr1Offset     (VBIOSTablePointerStart+0x16)
+-#define TVYFilterPtr1Offset       (VBIOSTablePointerStart+0x18)
+-#define LCDDelayPtr1Offset        (VBIOSTablePointerStart+0x20)
+-#define TVEdgePtr1Offset          (VBIOSTablePointerStart+0x24)
+-#define CRT2Delay1Offset          (VBIOSTablePointerStart+0x28)
+-#define LCDDataDesOffset          (VBIOSTablePointerStart-0x02)
+-#define LCDDataPtrOffset          (VBIOSTablePointerStart+0x2A)
+-#define LCDDesDataPtrOffset       (VBIOSTablePointerStart+0x2C)
+ /* add LCDDataList for GetLCDPtr */
+ #define LCDDataList               (VBIOSTablePointerStart+0x22)
+-/* add TVDataList for GetTVPtr */
+-#define TVDataList                (VBIOSTablePointerStart+0x36)
+ /*  */
+ /* Modify from 310.inc */
+ /*  */
+ /*  */
+ 
+-
+-#define ShowMsgFlag                  0x20    /* SoftSetting */
+-#define ShowVESAFlag                 0x10
+-#define HotPlugFunction              0x08
+ #define ModeSoftSetting              0x04
+-#define TVSoftSetting                0x02
+-#define LCDSoftSetting               0x01
+ 
+-#define GatingCRTinLCDA              0x10
+-#define SetHiTVOutput                0x08
+-#define SetYPbPrOutput               0x04
+ #define BoardTVType                  0x02
+-#define SetSCARTOutput               0x01
+-
+-/* TVModeSetting, Others as same as CR30 */
+-#define ModeSettingYPbPr             0x02
+-
+-/* TVModeSetting same as CR35 */
+-
+-/* LCDModeSetting same as CR37 */
+-
+-#define EnableNewTVFont              0x10    /* MiscCapability */
+-
+-#define EnableLCDOutput              0x80    /* LCDCfgSetting */
+ 
+ #define SoftDRAMType                 0x80    /* DRAMSetting */
+-#define SoftDRAMConfig               0x40
+-#define MosSelDRAMType               0x20
+-#define SDRAM                        000h
+-#define SGRAM                        0x01
+-#define ESDRAM                       0x02
+-
+-#define EnableAGPCfgSetting          0x01    /* AGPCfgSetting */
+ 
+ /* ---------------- SetMode Stack */
+ #define CRT1Len           15
+ #define VCLKLen           4
+-#define DefThreshold      0x0100
+-#define ExtRegsSize       ((57+8+37+70+63+28+768+1)/64+1)
+-
+-#define VGA_XGI315        0x0001       /* VGA Type Info */
+-#define VGA_SNewis315e    0x0002       /* 315 series */
+-#define VGA_XGI550        0x0004
+-#define VGA_XGI640        0x0008
+-#define VGA_XGI740        0x0010
+-#define VGA_XGI650        0x0020
+-#define VGA_XGI650M       0x0040
+-#define VGA_XGI651        0x0080
+ #define VGA_XGI340        0x0001       /* 340 series */
+-#define VGA_XGI330        0x0001       /* 330 series */
+-#define VGA_XGI660        0x0001       /* 660 series */
+ 
+ #define VB_XGI301         0x0001       /* VB Type Info */
+ #define VB_XGI301B        0x0002       /* 301 series */
+@@ -353,32 +92,16 @@
+ #define VB_LVDS_NS        0x0001       /* 3rd party chip */
+ #define VB_CH7017         0x0002
+ #define VB_CH7007         0x0080       /* [Billy] 07/05/03 */
+-/* #define VB_LVDS_SI 0x0004 */
+ 
+ #define ModeInfoFlag      0x0007
+-#define IsTextMode        0x0007
+ #define ModeText          0x0000
+-#define ModeCGA           0x0001
+ #define ModeEGA           0x0002    /* 16 colors mode */
+ #define ModeVGA           0x0003    /* 256 colors mode */
+-#define Mode15Bpp         0x0004    /* 15 Bpp Color Mode */
+-#define Mode16Bpp         0x0005    /* 16 Bpp Color Mode */
+-#define Mode24Bpp         0x0006    /* 24 Bpp Color Mode */
+-#define Mode32Bpp         0x0007    /* 32 Bpp Color Mode */
+ 
+ #define DACInfoFlag       0x0018
+-#define MONODAC           0x0000
+-#define CGADAC            0x0008
+-#define EGADAC            0x0010
+-#define VGADAC            0x0018
+ 
+ #define MemoryInfoFlag    0x01e0
+ #define MemorySizeShift   5
+-#define Need1MSize        0x0000
+-#define Need2MSize        0x0020
+-#define Need4MSize        0x0060
+-#define Need8MSize        0x00e0
+-#define Need16MSize       0x01e0
+ 
+ #define Charx8Dot         0x0200
+ #define LineCompareOff    0x0400
+@@ -388,11 +111,7 @@
+ #define DoubleScanMode    0x8000
+ 
+ /* -------------- Ext_InfoFlag */
+-#define SupportModeInfo     0x0007
+-#define Support256          0x0003
+-#define Support15Bpp        0x0004
+ #define Support16Bpp        0x0005
+-#define Support24Bpp        0x0006
+ #define Support32Bpp        0x0007
+ 
+ #define SupportAllCRT2      0x0078
+@@ -414,7 +133,6 @@
+ /* -------------- SetMode Stack/Scratch */
+ #define SetSimuScanMode     0x0001    /* VBInfo/CR30 & CR31 */
+ #define SwitchToCRT2        0x0002
+-#define SetCRT2ToTV1        0x009C
+ #define SetCRT2ToTV         0x089C
+ #define SetCRT2ToAVIDEO     0x0004
+ #define SetCRT2ToSVIDEO     0x0008
+@@ -425,23 +143,16 @@
+ #define SetCRT2ToLCDA       0x0100
+ #define SetInSlaveMode      0x0200
+ #define SetNotSimuMode      0x0400
+-#define HKEventMode         0x0800
+ #define SetCRT2ToYPbPr      0x0800
+ #define LoadDACFlag         0x1000
+ #define DisableCRT2Display  0x2000
+ #define DriverMode          0x4000
+ #define SetCRT2ToDualEdge   0x8000
+-#define HotKeySwitch        0x8000
+ 
+ #define ProgrammingCRT2     0x0001       /* Set Flag */
+ #define EnableVCMode        0x0002
+-#define SetHKEventMode      0x0004
+ #define ReserveTVOption     0x0008
+-#define DisableRelocateIO   0x0010
+ #define Win9xDOSMode        0x0020
+-#define JDOSMode            0x0040
+-/* #define SetWin9xforJap 0x0080 // not used now */
+-/* #define SetWin9xforKorea 0x0100 // not used now */
+ #define GatingCRT           0x0800
+ #define DisableChB          0x1000
+ #define EnableChB           0x2000
+@@ -453,15 +164,11 @@
+ #define SetNTSCJ            0x0002
+ #define SetPALMTV           0x0004
+ #define SetPALNTV           0x0008
+-#define SetCHTVUnderScan    0x0000
+-/* #define SetCHTVOverScan 0x0010 */
+ #define SetYPbPrMode525i     0x0020
+ #define SetYPbPrMode525p     0x0040
+ #define SetYPbPrMode750p     0x0080
+ #define SetYPbPrMode1080i    0x0100
+-#define SetTVStdMode         0x0200
+ #define SetTVLowResolution   0x0400
+-#define SetTVSimuMode        0x0800
+ #define TVSimuMode           0x0800
+ #define RPLLDIV2XO           0x1000
+ #define NTSC1024x768         0x2000
+@@ -472,38 +179,20 @@
+ #define EnableScalingLCD     0x0008
+ #define SetPWDEnable         0x0004
+ #define SetLCDtoNonExpanding 0x0010
+-#define SetLCDPolarity       0x00e0
+ #define SetLCDDualLink       0x0100
+ #define SetLCDLowResolution  0x0200
+ #define SetLCDStdMode        0x0400
+ 
+ /* LCD Capability shampoo */
+ #define DefaultLCDCap        0x80ea
+-#define RLVDSDHL00           0x0000
+-#define RLVDSDHL01           0x0001
+-#define RLVDSDHL10           0x0002 /* default */
+-#define RLVDSDHL11           0x0003
+ #define EnableLCD24bpp       0x0004 /* default */
+ #define DisableLCD24bpp      0x0000
+-#define RLVDSClkSFT0         0x0000
+-#define RLVDSClkSFT1         0x0008 /* default */
+-#define EnableLVDSDCBal      0x0010
+-#define DisableLVDSDCBal     0x0000 /* default */
+-#define SinglePolarity       0x0020 /* default */
+-#define MultiPolarity        0x0000
+ #define LCDPolarity          0x00c0 /* default: SyncNN */
+-#define LCDSingleLink        0x0000 /* default */
+ #define LCDDualLink          0x0100
+ #define EnableSpectrum       0x0200
+-#define DisableSpectrum      0x0000 /* default */
+ #define PWDEnable            0x0400
+-#define PWDDisable           0x0000 /* default */
+-#define PWMEnable            0x0800
+-#define PWMDisable           0x0000 /* default */
+ #define EnableVBCLKDRVLOW    0x4000
+-#define EnableVBCLKDRVHigh   0x0000 /* default */
+ #define EnablePLLSPLOW       0x8000
+-#define EnablePLLSPHigh      0x0000 /* default */
+ 
+ #define LCDBToA              0x20   /* LCD SetFlag */
+ #define StLCDBToA            0x40
+@@ -522,12 +211,7 @@
+ #define TVSense              0xc7
+ 
+ #define TVOverScan           0x10               /* CR35 */
+-#define TVOverScanShift      4
+ 
+-#define NTSCMode             0x00
+-#define PALMode              0x00
+-#define NTSCJMode            0x02
+-#define PALMNMode            0x0c
+ #define YPbPrMode            0xe0
+ #define YPbPrMode525i        0x00
+ #define YPbPrMode525p        0x20
+@@ -537,95 +221,36 @@
+ 
+ #define LCDRGB18Bit          0x01               /* CR37 */
+ #define LCDNonExpanding      0x10
+-#define LCDNonExpandingShift 4
+ #define LCDSync              0x20
+ #define LCDSyncBit           0xe0 /* H/V polarity & sync ID */
+-#define LCDSyncShift         6
+ 
+ #define ScalingLCD           0x08
+ 
+ #define EnableDualEdge       0x01 /* CR38 */
+ #define SetToLCDA            0x02
+ #define SetYPbPr             0x04
+-#define DisableChannelA      0x08
+-#define DisableChannelB      0x10
+-#define ExtChipType          0xe0
+-#define ExtChip301           0x20
+-#define ExtChipLVDS          0x40
+-#define ExtChipCH7019        0x60
+-
+-#define BacklightControlBit  0x01 /* CR3A */
+-#define Win9xforJap          0x40
+-#define Win9xforKorea        0x80
+-
+-#define ForceMDBits          0x07 /* CR3B */
+-#define ForceMD_JDOS         0x00
+-#define ForceMD_640x400T     0x01
+-#define ForceMD_640x350T     0x02
+-#define ForceMD_720x400T     0x03
+-#define ForceMD_640x480E     0x04
+-#define ForceMD_640x400E     0x05
+-#define ForceP1Bit           0x10
+-#define ForceP2Bit           0x20
+-#define EnableForceMDinBIOS  0x40
+-#define EnableForceMDinDrv   0x80
+ 
+ /* ---------------------- VUMA Information */
+-#define LCDSettingFromCMOS    0x04 /* CR3C */
+-#define TVSettingFromCMOS     0x08
+ #define DisplayDeviceFromCMOS 0x10
+-#define HKSupportInSBIOS      0x20
+-#define OSDSupportInSBIOS     0x40
+-#define DisableLogo           0x80
+ 
+ /* ---------------------- HK Evnet Definition */
+-#define HKEvent               0x0f /* CR3D */
+-#define HK_ModeSwitch         0x01
+-#define HK_Expanding          0x02
+-#define HK_OverScan           0x03
+-#define HK_Brightness         0x04
+-#define HK_Contrast           0x05
+-#define HK_Mute               0x06
+-#define HK_Volume             0x07
+ #define ModeSwitchStatus      0xf0
+ #define ActiveCRT1            0x10
+ #define ActiveLCD             0x0020
+ #define ActiveTV              0x40
+ #define ActiveCRT2            0x80
+ 
+-#define TVSwitchStatus        0x1f /* CR3E */
+ #define ActiveAVideo          0x01
+ #define ActiveSVideo          0x02
+ #define ActiveSCART           0x04
+ #define ActiveHiTV            0x08
+ #define ActiveYPbPr           0x10
+ 
+-#define EnableHKEvent         0x01 /* CR3F */
+-#define EnableOSDEvent        0x02
+-#define StartOSDEvent         0x04
+-#define IgnoreHKEvent         0x08
+-#define IgnoreOSDEvent        0x10
+-
+-/* //------------- Misc. Definition */
+-#define SelectCRT1Rate               00h
+-/* #define SelectCRT2Rate 04h */
+-
+-#define DDC1DelayTime           1000
+-#ifdef TRUMPION
+-#define DDC2DelayTime           15
+-#else
+-#define DDC2DelayTime           150
 -#endif
 -
- static unsigned char XGI_CH7017LV1024x768[] = {
- 	0x60, 0x02, 0x00, 0x07, 0x40, 0xED,
- 	0xA3, 0xC8, 0xC7, 0xAC, 0xE0, 0x02};
-@@ -1151,16 +1014,6 @@ static struct XGI330_LCDDataStruct  XGI_ExtLCD1024x768Data[] = {
- 	{1,  1,  1344, 806, 1344, 806}
+-#define R_FACTOR                04Dh
+-#define G_FACTOR                097h
+-#define B_FACTOR                01Ch
+ /* --------------------------------------------------------- */
+ /* translated from asm code 301def.h */
+ /*  */
+ /* --------------------------------------------------------- */
+ #define LCDDataLen           8
+-#define HiTVDataLen          12
+ #define TVDataLen            12
+ #define LVDSCRT1Len_H        8
+ #define LVDSCRT1Len_V        7
+@@ -635,7 +260,6 @@
+ #define LVDSDesDataLen2      8
+ #define LCDDesDataLen2       8
+ #define CHTVRegLen           16
+-#define CHLVRegLen           12
+ 
+ #define StHiTVHT             892
+ #define StHiTVVT             1126
+@@ -646,7 +270,6 @@
+ #define NTSCHT               1716
+ #define NTSCVT                525
+ #define NTSC1024x768HT       1908
+-#define NTSC1024x768VT        525
+ #define PALHT                1728
+ #define PALVT                 625
+ 
+@@ -657,8 +280,6 @@
+ #define YPbPrTV750pHT        1650
+ #define YPbPrTV750pVT         750
+ 
+-#define CRT2VCLKSel          0xc0
+-
+ #define CRT2Delay1           0x04 /* XGI301 */
+ #define CRT2Delay2           0x0A /* 301B,302 */
+ 
+@@ -675,57 +296,41 @@
+ #define VCLK52_406           0x09
+ #define VCLK56_25            0x0A
+ #define VCLK65               0x0B
+-#define VCLK67_765           0x0C
+ #define VCLK68_179           0x0D
+ #define VCLK72_852           0x0E
+ #define VCLK75               0x0F
+-#define VCLK75_8             0x10
+ #define VCLK78_75            0x11
+ #define VCLK79_411           0x12
+ #define VCLK83_95            0x13
+-#define VCLK84_8             0x14
+ #define VCLK86_6             0x15
+ #define VCLK94_5             0x16
+-#define VCLK104_998          0x17
+-#define VCLK105_882          0x18
+ #define VCLK108_2            0x19
+-#define VCLK109_175          0x1A
+ #define VCLK113_309          0x1B
+ #define VCLK116_406          0x1C
+-#define VCLK132_258          0x1D
+ #define VCLK135_5            0x1E
+ #define VCLK139_054          0x1F
+ #define VCLK157_5            0x20
+ #define VCLK162              0x21
+ #define VCLK175              0x22
+ #define VCLK189              0x23
+-#define VCLK194_4            0x24
+ #define VCLK202_5            0x25
+ #define VCLK229_5            0x26
+ #define VCLK234              0x27
+-#define VCLK252_699          0x28
+ #define VCLK254_817          0x29
+-#define VCLK265_728          0x2A
+ #define VCLK266_952          0x2B
+ #define VCLK269_655          0x2C
+-#define VCLK272_042          0x2D
+ #define VCLK277_015          0x2E
+-#define VCLK286_359          0x2F
+ #define VCLK291_132          0x30
+ #define VCLK291_766          0x31
+-#define VCLK309_789          0x32
+ #define VCLK315_195          0x33
+ #define VCLK323_586          0x34
+ #define VCLK330_615          0x35
+-#define VCLK332_177          0x36
+ #define VCLK340_477          0x37
+ #define VCLK375_847          0x38
+ #define VCLK388_631          0x39
+ #define VCLK125_999          0x51
+ #define VCLK148_5            0x52
+-#define VCLK178_992          0x54
+ #define VCLK217_325          0x55
+-#define VCLK299_505          0x56
+ #define YPbPr750pVCLK        0x57
+ 
+ #define TVVCLKDIV2           0x3A
+@@ -735,34 +340,13 @@
+ #define HiTVSimuVCLK         0x3E
+ #define HiTVTextVCLK         0x3F
+ #define VCLK39_77            0x40
+-/* #define YPbPr750pVCLK 0x0F */
+ #define YPbPr525pVCLK           0x3A
+-/* #define ;;YPbPr525iVCLK 0x3B */
+-/* #define ;;YPbPr525iVCLK_2 0x3A */
+ #define NTSC1024VCLK         0x41
+-#define VCLK25_175_41        0x42 /* ; ScaleLCD */
+-#define VCLK25_175_42        0x43
+-#define VCLK28_322_43        0x44
+-#define VCLK40_44            0x45
+-#define VCLKQVGA_1           0x46 /* ; QVGA */
+-#define VCLKQVGA_2           0x47
+-#define VCLKQVGA_3           0x48
+ #define VCLK35_2             0x49 /* ; 800x480 */
+ #define VCLK122_61           0x4A
+ #define VCLK80_350           0x4B
+ #define VCLK107_385          0x4C
+ 
+-#define CHTVVCLK30_2         0x50 /* ;;CHTV */
+-#define CHTVVCLK28_1         0x51
+-#define CHTVVCLK43_6         0x52
+-#define CHTVVCLK26_4         0x53
+-#define CHTVVCLK24_6         0x54
+-#define CHTVVCLK47_8         0x55
+-#define CHTVVCLK31_5         0x56
+-#define CHTVVCLK26_2         0x57
+-#define CHTVVCLK39           0x58
+-#define CHTVVCLK36           0x59
+-
+ #define CH7007TVVCLK30_2     0x00 /* [Billy] 2007/05/18 For CH7007 */
+ #define CH7007TVVCLK28_1     0x01
+ #define CH7007TVVCLK43_6     0x02
+@@ -847,5 +431,4 @@
+ #define RES1280x960x85       0x46
+ #define RES1280x960x120      0x47
+ 
+-#define LFBDRAMTrap          0x30
+ #endif
+diff --git a/drivers/staging/xgifb/vb_struct.h b/drivers/staging/xgifb/vb_struct.h
+index de02913..c40d9d8 100644
+--- a/drivers/staging/xgifb/vb_struct.h
++++ b/drivers/staging/xgifb/vb_struct.h
+@@ -1,12 +1,6 @@
+ #ifndef _VB_STRUCT_
+ #define _VB_STRUCT_
+ 
+-#ifdef _INITNEW_
+-#define EXTERN
+-#else
+-#define EXTERN extern
+-#endif
+-
+ struct XGI_PanelDelayTblStruct {
+ 	unsigned char timer[2];
  };
- 
--/*struct XGI330_LCDDataStruct  XGI_St2LCD1024x768Data[] = {
--	{62,  25, 800,  546, 1344, 806},
--	{32,  15, 930,  546, 1344, 806},
--	{62,  25, 800,  546, 1344, 806},
--	{104, 45, 945,  496, 1344, 806},
--	{62,  25, 800,  546, 1344, 806},
--	{31,  18, 1008, 624, 1344, 806},
--	{1,   1,  1344, 806, 1344, 806}
--};*/
--
- static struct XGI330_LCDDataStruct  XGI_CetLCD1024x768Data[] = {
- 	{1, 1, 1344, 806, 1344, 806}, /* ; 00 (320x200,320x400,
- 					       640x200,640x400) */
-@@ -1194,19 +1047,6 @@ static struct XGI330_LCDDataStruct  XGI_ExtLCD1280x1024Data[] = {
- 	{1,   1,   1688, 1066, 1688, 1066}
- };
- 
--#if 0
--static struct XGI330_LCDDataStruct  XGI_St2LCD1280x1024Data[] = {
--	{22,  5,  800,  510,  1650, 1088},
--	{22,  5,  800,  510,  1650, 1088},
--	{176, 45, 900,  510,  1650, 1088},
--	{176, 45, 900,  510,  1650, 1088},
--	{22,  5,  800,  510,  1650, 1088},
--	{13,  5,  1024, 675,  1560, 1152},
--	{16,  9,  1266, 804,  1688, 1072},
--	{1,   1,  1688, 1066, 1688, 1066}
--};
--#endif
--
- static struct XGI330_LCDDataStruct  XGI_CetLCD1280x1024Data[] = {
- 	{1, 1, 1688, 1066, 1688, 1066}, /* 00 (320x200,320x400,
- 					       640x200,640x400) */
-@@ -1315,19 +1155,6 @@ static struct XGI330_LCDDataStruct  XGI_ExtLCD1024x768x75Data[] = {
- 	{1,  1,  1312, 800, 1312, 800}  /* ; 06 (1024x768x75Hz) */
- };
- 
--#if 0
--static struct XGI330_LCDDataStruct  XGI_StLCD1024x768x75Data[] = {
--	{42, 25, 1536, 419, 1344, 806}, /* ; 00 (320x200,320x400,
--						 640x200,640x400) */
--	{48, 25, 1536, 369, 1344, 806}, /* ; 01 (320x350,640x350) */
--	{42, 25, 1536, 419, 1344, 806}, /* ; 02 (360x400,720x400) */
--	{48, 25, 1536, 369, 1344, 806}, /* ; 03 (720x350) */
--	{8,  5,  1312, 500, 1312, 800}, /* ; 04 (640x480x75Hz) */
--	{41, 25, 1024, 625, 1312, 800}, /* ; 05 (800x600x75Hz) */
--	{1,  1,  1312, 800, 1312, 800}  /* ; 06 (1024x768x75Hz) */
--};
--#endif
--
- static struct XGI330_LCDDataStruct  XGI_CetLCD1024x768x75Data[] = {
- 	{1, 1, 1312, 800, 1312, 800}, /* ; 00 (320x200,320x400,
- 					       640x200,640x400) */
-@@ -2041,63 +1868,6 @@ static unsigned char XGI330_Ren750pGroup3[] = {
- 	0x18, 0x1D, 0x23, 0x28, 0x4C, 0xAA, 0x01
- };
- 
--#if 0
--static struct XGI_PanelDelayTblStruct XGI330_PanelDelayTbl[] = {
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} },
--	{ {0x00, 0x00} }
--};
--
--static struct XGI330_LVDSDataStruct  XGI330_LVDS320x480Data_1[] = {
--	{848,  433, 400,  525},
--	{848,  389, 400,  525},
--	{848,  433, 400,  525},
--	{848,  389, 400,  525},
--	{848,  518, 400,  525},
--	{1056, 628, 400,  525},
--	{400,  525, 400,  525},
--	{800,  449, 1000, 644},
--	{800,  525, 1000, 635}
--};
--
--static struct XGI330_LVDSDataStruct  XGI330_LVDS800x600Data_1[] = {
--	{848,  433, 1060, 629},
--	{848,  389, 1060, 629},
--	{848,  433, 1060, 629},
--	{848,  389, 1060, 629},
--	{848,  518, 1060, 629},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{800,  449, 1000, 644},
--	{800,  525, 1000, 635}
--};
--
--static struct XGI330_LVDSDataStruct  XGI330_LVDS800x600Data_2[] = {
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{800,  449, 1000, 644},
--	{800,  525, 1000, 635}
--};
--#endif
--
- static struct XGI330_LVDSDataStruct  XGI_LVDS1024x768Data_1[] = {
- 	{ 960, 438, 1344, 806},	/* 00 (320x200,320x400,640x200,640x400) */
- 	{ 960, 388, 1344, 806},	/* 01 (320x350,640x350) */
-@@ -2143,79 +1913,7 @@ static struct XGI330_LVDSDataStruct  XGI_LVDS1280x1024Data_2[] = {
- 	{800,  449, 1280, 801},
- 	{800,  525, 1280, 813}
- };
--/*
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768Data_1[] = {
--	{768,  438, 1408, 806},
--	{768,  388, 1408, 806},
--	{768,  438, 1408, 806},
--	{768,  388, 1408, 806},
--	{768,  518, 1408, 806},
--	{928,  638, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806}
--};
--
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768Data_2[] = {
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806},
--	{1408, 806, 1408, 806}
--};
--
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768NData_1[] = {
--	{704,  438, 1344, 806},
--	{704,  388, 1344, 806},
--	{704,  438, 1344, 806},
--	{704,  388, 1344, 806},
--	{704,  518, 1344, 806},
--	{864,  638, 1344, 806},
--	{1088, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806}
--};
- 
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768NData_2[] = {
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806},
--	{1344, 806, 1344, 806}
--};
--
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768SData_1[] = {
--	{1048, 438, 1688, 806},
--	{1048, 388, 1688, 806},
--	{1148, 438, 1688, 806},
--	{1148, 388, 1688, 806},
--	{1048, 518, 1688, 806},
--	{1208, 638, 1688, 806},
--	{1432, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806}
--};
--
--struct XGI330_LVDSDataStruct  XGI_LVDS1280x768SData_2[] = {
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806},
--	{1688, 806, 1688, 806}
--};
--*/
- static struct XGI330_LVDSDataStruct  XGI_LVDS1400x1050Data_1[] = {
- 	{928,   416, 1688, 1066},
- 	{928,   366, 1688, 1066},
-@@ -2502,20 +2200,6 @@ static struct XGI330_LCDDataDesStruct2 XGI_LVDSNoScalingDesDatax75[] = {
- 	{0, 1328,   0,  771, 112, 6}  /* ; 0A (1280x768x75Hz) */
- };
- 
--#if 0
--static struct XGI330_LVDSDataStruct  XGI330_LVDS640x480Data_1[] = {
--	{ 800, 449,  800, 449},
--	{ 800, 449,  800, 449},
--	{ 800, 449,  800, 449},
--	{ 800, 449,  800, 449},
--	{ 800, 525,  800, 525},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628},
--	{1056, 628, 1056, 628}
--};
--#endif
--
- static struct XGI330_CHTVDataStruct  XGI_CHTVUNTSCData[] = {
- 	{ 840, 600,  840, 600},
- 	{ 840, 600,  840, 600},
-@@ -2805,68 +2489,6 @@ static struct XGI_LVDSCRT1VDataStruct XGI_LVDSCRT11280x1024_2_Vx75[] = {
- 	{ {0x28, 0x5A, 0x13, 0x87, 0xFF, 0x29, 0xA9} } /* ; 05 (x1024) */
- };
- 
--#if 0
--static struct XGI_LVDSCRT1DataStruct  XGI_CHTVCRT1UNTSC[] = {
--	{ {0x64, 0x4f, 0x88, 0x56, 0x9f, 0x56, 0x3e,
--	  0xe8, 0x84, 0x8f, 0x57, 0x20, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x56, 0x9f, 0x56, 0x3e,
--	  0xd0, 0x82, 0x5d, 0x57, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x56, 0x9f, 0x56, 0x3e,
--	  0xe8, 0x84, 0x8f, 0x57, 0x20, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x56, 0x9f, 0x56, 0x3e,
--	  0xd0, 0x82, 0x5d, 0x57, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x5d, 0x4f, 0x81, 0x53, 0x9c, 0x56, 0xba,
--	  0x18, 0x84, 0xdf, 0x57, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x80, 0x63, 0x84, 0x6c, 0x17, 0xec, 0xf0,
--	  x90, 0x8c, 0x57, 0xed, 0x20, 0x00, 0x06, 0x01 } }
--};
--
--static struct XGI_LVDSCRT1DataStruct  XGI_CHTVCRT1ONTSC[] = {
--	{ {0x64, 0x4f, 0x88, 0x5a, 0x9f, 0x0b, 0x3e,
--	  0xc0, 0x84, 0x8f, 0x0c, 0x20, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x5a, 0x9f, 0x0b, 0x3e,
--	  0xb0, 0x8d, 0x5d, 0x0c, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x5a, 0x9f, 0x0b, 0x3e,
--	  0xc0, 0x84, 0x8f, 0x0c, 0x20, 0x00, 0x01, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x5a, 0x9f, 0x0b, 0x3e,
--	  0xb0, 0x8d, 0x5d, 0x0c, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x5d, 0x4f, 0x81, 0x56, 0x9c, 0x0b, 0x3e,
--	  0xe8, 0x84, 0xdf, 0x0c, 0x00, 0x00, 0x01, 0x00 } },
--	{ {0x7d, 0x63, 0x81, 0x6a, 0x16, 0xba, 0xf0,
--	  x7f, 0x86, 0x57, 0xbb, 0x00, 0x00, 0x06, 0x01 } }
--};
--
--static struct XGI_LVDSCRT1DataStruct  XGI_CHTVCRT1UPAL[] = {
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xf8, 0x83, 0x8f, 0x70, 0x20, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xde, 0x81, 0x5d, 0x70, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xf8, 0x83, 0x8f, 0x70, 0x20, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xde, 0x81, 0x5d, 0x70, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x55, 0x80, 0xec, 0xba,
--	  0x50, 0x84, 0xdf, 0xed, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x70, 0x63, 0x94, 0x68, 0x8d, 0x42, 0xf1,
--	  xc8, 0x8c, 0x57, 0xe9, 0x20, 0x00, 0x05, 0x01 } }
--};
--
--static struct XGI_LVDSCRT1DataStruct  XGI_CHTVCRT1OPAL[] = {
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xf0, 0x83, 0x8f, 0x70, 0x20, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xde, 0x81, 0x5d, 0x70, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xf0, 0x83, 0x8f, 0x70, 0x20, 0x00, 0x05, 0x00 } },
--	{ {0x79, 0x4f, 0x9d, 0x5a, 0x90, 0x6f, 0x3e,
--	  0xde, 0x81, 0x5d, 0x70, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x64, 0x4f, 0x88, 0x55, 0x80, 0x6f, 0xba,
--	  0x20, 0x83, 0xdf, 0x70, 0x00, 0x00, 0x05, 0x00 } },
--	{ {0x73, 0x63, 0x97, 0x69, 0x8e, 0xec, 0xf0,
--	  x90, 0x8c, 0x57, 0xed, 0x20, 0x00, 0x05, 0x01 } }
--};
--#endif
--
- /*add for new UNIVGABIOS*/
- static struct XGI330_LCDDataTablStruct XGI_LCDDataTable[] = {
- 	{Panel1024x768, 0x0019, 0x0001, 0}, /* XGI_ExtLCD1024x768Data */
-@@ -3007,19 +2629,6 @@ static struct XGI330_TVDataTablStruct XGI_TVDataTable[] = {
- 	{0xffff, 0x0000, 12}  /* END */
- };
- 
--#if 0
--static unsigned short TVLenList[] = {
--	LVDSCRT1Len_H,
--	LVDSCRT1Len_V,
--	LVDSDataLen,
--	0,
--	TVDataLen,
--	0,
--	0,
--	CHTVRegLen
--};
--#endif
--
- /* Chrontel 7017 TV CRT1 Timing List */
- static struct XGI330_TVDataTablStruct XGI_EPLCHTVCRT1Ptr[] = {
- 	{0x0011, 0x0000, 0}, /* XGI_CHTVCRT1UNTSC */
-@@ -3060,44 +2669,6 @@ static unsigned short LCDLenList[] = {
- 	0
- };
- 
--#if 0
--/* 660, Dual link */
--static struct XGI330_LCDCapStruct  XGI660_LCDDLCapList[] = {
--/* LCDCap1024x768 */
--	{Panel1024x768, DefaultLCDCap, 0, 0x014, 0x88, 0x06, VCLK65,
--	 0x6C, 0xC3, 0x35, 0x62, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10},
--/* LCDCap1280x1024 */
--	{Panel1280x1024, LCDDualLink+DefaultLCDCap, StLCDBToA,
--	0x053, 0x70, 0x03, VCLK108_2,
--	 0x70, 0x44, 0xF8, 0x2F, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1400x1050 */
--	{Panel1400x1050, LCDDualLink+DefaultLCDCap, StLCDBToA,
--	0x053, 0x70, 0x03, VCLK108_2,
--	 0x70, 0x44, 0xF8, 0x2F, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1600x1200 */
--	{Panel1600x1200, LCDDualLink+DefaultLCDCap, LCDToFull,
--	0x053, 0xC0, 0x03, VCLK162,
--	 0x43, 0x22, 0x70, 0x24, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1024x768x75 */
--	{Panel1024x768x75, DefaultLCDCap, 0, 0x014, 0x60, 0, VCLK78_75,
--	 0x2B, 0x61, 0x2B, 0x61, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10},
--/* LCDCap1280x1024x75 */
--	{Panel1280x1024x75, LCDDualLink+DefaultLCDCap, StLCDBToA,
--	0x053, 0x90, 0x03, VCLK135_5,
--	 0x54, 0x42, 0x4A, 0x61, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCapDefault */
--	{0xFF, DefaultLCDCap, 0, 0x053, 0x88, 0x06, VCLK65,
--	0x6C, 0xC3, 0x35, 0x62, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10}
--};
--#endif
--
- /* Dual link only */
- static struct XGI330_LCDCapStruct  XGI_LCDDLCapList[] = {
- /* LCDCap1024x768 */
-@@ -3134,40 +2705,6 @@ static struct XGI330_LCDCapStruct  XGI_LCDDLCapList[] = {
- 	0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10}
- };
- 
--#if 0
--static struct XGI330_LCDCapStruct  XGI660_LCDCapList[] = {
--/* LCDCap1024x768 */
--	{Panel1024x768, DefaultLCDCap, 0, 0x014, 0x88, 0x06, VCLK65,
--	0x6C, 0xC3, 0x35, 0x62, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10},
--/* LCDCap1280x1024 */
--	{Panel1280x1024, DefaultLCDCap, StLCDBToA, 0x053, 0x70, 0x03, VCLK108_2,
--	0x70, 0x44, 0xF8, 0x2F, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1400x1050 */
--	{Panel1400x1050, DefaultLCDCap, StLCDBToA, 0x053, 0x70, 0x03, VCLK108_2,
--	 0x70, 0x44, 0xF8, 0x2F, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1600x1200 */
--	{Panel1600x1200, DefaultLCDCap, LCDToFull, 0x053, 0xC0, 0x03, VCLK162,
--	 0x5A, 0x23, 0x5A, 0x23, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCap1024x768x75 */
--	{Panel1024x768x75, DefaultLCDCap, 0, 0x014, 0x60, 0, VCLK78_75,
--	 0x2B, 0x61, 0x2B, 0x61, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10},
--/* LCDCap1280x1024x75 */
--	{Panel1280x1024x75, + DefaultLCDCap, StLCDBToA,
--	0x053, 0x90, 0x03, VCLK135_5,
--	 0x54, 0x42, 0x4A, 0x61, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	 0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x30, 0x10},
--/* LCDCapDefault */
--	{0xFF, DefaultLCDCap, 0, 0x053, 0x88, 0x06, VCLK65,
--	0x6C, 0xC3, 0x35, 0x62, 0x02, 0x14, 0x0A, 0x02, 0x00,
--	0x30, 0x10, 0x5A, 0x10, 0x10, 0x0A, 0xC0, 0x28, 0x10}
--};
--#endif
--
- static struct XGI330_LCDCapStruct  XGI_LCDCapList[] = {
- /* LCDCap1024x768 */
- 	{Panel1024x768, DefaultLCDCap, 0, 0x012, 0x88, 0x06, VCLK65,
-@@ -3384,169 +2921,6 @@ static struct XGI_Ext2Struct XGI330_RefIndex[] = {
- 	0x30, 0x47, 0x37, 1024, 768},/* 48 1024x768x160Hz */
- };
- 
--
--#if 0
--static struct XGI330_VCLKDataStruct XGI330_VCLKData[] = {
--	{0x1b, 0xe1,  25}, /* 0x0 */
--	{0x4e, 0xe4,  28}, /* 0x1 */
--	{0x57, 0xe4,  31}, /* 0x2 */
--	{0xc3, 0xc8,  36}, /* 0x3 */
--	{0x42, 0xe2,  40}, /* 0x4 */
--	{0xfe, 0xcd,  43}, /* 0x5 */
--	{0x5d, 0xc4,  44}, /* 0x6 */
--	{0x52, 0xe2,  49}, /* 0x7 */
--	{0x53, 0xe2,  50}, /* 0x8 */
--	{0x74, 0x67,  52}, /* 0x9 */
--	{0x6d, 0x66,  56}, /* 0xa */
--	{0x6c, 0xc3,  65}, /* 0xb */
--	{0x46, 0x44,  67}, /* 0xc */
--	{0xb1, 0x46,  68}, /* 0xd */
--	{0xd3, 0x4a,  72}, /* 0xe */
--	{0x29, 0x61,  75}, /* 0xf */
--	{0x6e, 0x46,  76}, /* 0x10 */
--	{0x2b, 0x61,  78}, /* 0x11 */
--	{0x31, 0x42,  79}, /* 0x12 */
--	{0xab, 0x44,  83}, /* 0x13 */
--	{0x46, 0x25,  84}, /* 0x14 */
--	{0x78, 0x29,  86}, /* 0x15 */
--	{0x62, 0x44,  94}, /* 0x16 */
--	{0x2b, 0x41, 104}, /* 0x17 */
--	{0x3a, 0x23, 105}, /* 0x18 */
--	{0x70, 0x44, 108}, /* 0x19 */
--	{0x3c, 0x23, 109}, /* 0x1a */
--	{0x5e, 0x43, 113}, /* 0x1b */
--	{0xbc, 0x44, 116}, /* 0x1c */
--	{0xe0, 0x46, 132}, /* 0x1d */
--	{0x54, 0x42, 135}, /* 0x1e */
--	{0xea, 0x2a, 139}, /* 0x1f */
--	{0x41, 0x22, 157}, /* 0x20 */
--	{0x70, 0x24, 162}, /* 0x21 */
--	{0x30, 0x21, 175}, /* 0x22 */
--	{0x4e, 0x22, 189}, /* 0x23 */
--	{0xde, 0x26, 194}, /* 0x24 */
--	{0x62, 0x06, 202}, /* 0x25 */
--	{0x3f, 0x03, 229}, /* 0x26 */
--	{0xb8, 0x06, 234}, /* 0x27 */
--	{0x34, 0x02, 253}, /* 0x28 */
--	{0x58, 0x04, 255}, /* 0x29 */
--	{0x24, 0x01, 265}, /* 0x2a */
--	{0x9b, 0x02, 267}, /* 0x2b */
--	{0x70, 0x05, 270}, /* 0x2c */
--	{0x25, 0x01, 272}, /* 0x2d */
--	{0x9c, 0x02, 277}, /* 0x2e */
--	{0x27, 0x01, 286}, /* 0x2f */
--	{0x3c, 0x02, 291}, /* 0x30 */
--	{0xef, 0x0a, 292}, /* 0x31 */
--	{0xf6, 0x0a, 310}, /* 0x32 */
--	{0x95, 0x01, 315}, /* 0x33 */
--	{0xf0, 0x09, 324}, /* 0x34 */
--	{0xfe, 0x0a, 331}, /* 0x35 */
--	{0xf3, 0x09, 332}, /* 0x36 */
--	{0xea, 0x08, 340}, /* 0x37 */
--	{0xe8, 0x07, 376}, /* 0x38 */
--	{0xde, 0x06, 389}, /* 0x39 */
--	{0x52, 0x2a,  54}, /* 0x3a */
--	{0x52, 0x6a,  27}, /* 0x3b */
--	{0x62, 0x24,  70}, /* 0x3c */
--	{0x62, 0x64,  70}, /* 0x3d */
--	{0xa8, 0x4c,  30}, /* 0x3e */
--	{0x20, 0x26,  33}, /* 0x3f */
--	{0x31, 0xc2,  39}, /* 0x40 */
--	{0x60, 0x36,  30}, /* 0x41 */
--	{0x40, 0x4A,  28}, /* 0x42 */
--	{0x9F, 0x46,  44}, /* 0x43 */
--	{0x97, 0x2C,  26}, /* 0x44 */
--	{0x44, 0xE4,  25}, /* 0x45 */
--	{0x7E, 0x32,  47}, /* 0x46 */
--	{0x08, 0x24,  31}, /* 0x47 */
--	{0x97, 0x2c,  26}, /* 0x48 */
--	{0xCE, 0x3c,  39}, /* 0x49 */
--	{0x52, 0x4A,  36}, /* 0x4a */
--	{0x2C, 0x61,  95}, /* 0x4b */
--	{0x78, 0x27, 108}, /* 0x4c */
--	{0x66, 0x43, 123},  /* 0x4d */
--	{0x2c, 0x61,  80},  /* 0x4e */
--	{0x3b, 0x61, 108}  /* 0x4f */
--};
--
--static struct XGI_VBVCLKDataStruct XGI330_VBVCLKData[] = {
--	{0x1b, 0xe1,  25}, /* 0x0 */
--	{0x4e, 0xe4,  28}, /* 0x1 */
--	{0x57, 0xe4,  31}, /* 0x2 */
--	{0xc3, 0xc8,  36}, /* 0x3 */
--	{0x42, 0x47,  40}, /* 0x4 */
--	{0xfe, 0xcd,  43}, /* 0x5 */
--	{0x5d, 0xc4,  44}, /* 0x6 */
--	{0x52, 0x47,  49}, /* 0x7 */
--	{0x53, 0x47,  50}, /* 0x8 */
--	{0x74, 0x67,  52}, /* 0x9 */
--	{0x6d, 0x66,  56}, /* 0xa */
--	{0x5a, 0x64,  65}, /* 0xb */
--	{0x46, 0x44,  67}, /* 0xc */
--	{0xb1, 0x46,  68}, /* 0xd */
--	{0xd3, 0x4a,  72}, /* 0xe */
--	{0x29, 0x61,  75}, /* 0xf */
--	{0x6d, 0x46,  75}, /* 0x10 */
--	{0x41, 0x43,  78}, /* 0x11 */
--	{0x31, 0x42,  79}, /* 0x12 */
--	{0xab, 0x44,  83}, /* 0x13 */
--	{0x46, 0x25,  84}, /* 0x14 */
--	{0x78, 0x29,  86}, /* 0x15 */
--	{0x62, 0x44,  94}, /* 0x16 */
--	{0x2b, 0x22, 104}, /* 0x17 */
--	{0x49, 0x24, 105}, /* 0x18 */
--	{0xf8, 0x2f, 108}, /* 0x19 */
--	{0x3c, 0x23, 109}, /* 0x1a */
--	{0x5e, 0x43, 113}, /* 0x1b */
--	{0xbc, 0x44, 116}, /* 0x1c */
--	{0xe0, 0x46, 132}, /* 0x1d */
--	{0xd4, 0x28, 135}, /* 0x1e */
--	{0xea, 0x2a, 139}, /* 0x1f */
--	{0x41, 0x22, 157}, /* 0x20 */
--	{0x70, 0x24, 162}, /* 0x21 */
--	{0x30, 0x21, 175}, /* 0x22 */
--	{0x4e, 0x22, 189}, /* 0x23 */
--	{0xde, 0x26, 194}, /* 0x24 */
--	{0x70, 0x07, 202}, /* 0x25 */
--	{0x3f, 0x03, 229}, /* 0x26 */
--	{0xb8, 0x06, 234}, /* 0x27 */
--	{0x34, 0x02, 253}, /* 0x28 */
--	{0x58, 0x04, 255}, /* 0x29 */
--	{0x24, 0x01, 265}, /* 0x2a */
--	{0x9b, 0x02, 267}, /* 0x2b */
--	{0x70, 0x05, 270}, /* 0x2c */
--	{0x25, 0x01, 272}, /* 0x2d */
--	{0x9c, 0x02, 277}, /* 0x2e */
--	{0x27, 0x01, 286}, /* 0x2f */
--	{0x3c, 0x02, 291}, /* 0x30 */
--	{0xef, 0x0a, 292}, /* 0x31 */
--	{0xf6, 0x0a, 310}, /* 0x32 */
--	{0x95, 0x01, 315}, /* 0x33 */
--	{0xf0, 0x09, 324}, /* 0x34 */
--	{0xfe, 0x0a, 331}, /* 0x35 */
--	{0xf3, 0x09, 332}, /* 0x36 */
--	{0xea, 0x08, 340}, /* 0x37 */
--	{0xe8, 0x07, 376}, /* 0x38 */
--	{0xde, 0x06, 389}, /* 0x39 */
--	{0x52, 0x2a,  54}, /* 0x3a */
--	{0x52, 0x6a,  27}, /* 0x3b */
--	{0x62, 0x24,  70}, /* 0x3c */
--	{0x62, 0x64,  70}, /* 0x3d */
--	{0xa8, 0x4c,  30}, /* 0x3e */
--	{0x20, 0x26,  33}, /* 0x3f */
--	{0x31, 0xc2,  39}, /* 0x40 */
--	{0x2e, 0x48,  25}, /* 0x41 */
--	{0x24, 0x46,  25}, /* 0x42 */
--	{0x26, 0x64,  28}, /* 0x43 */
--	{0x37, 0x64,  40}, /* 0x44 */
--	{0xa1, 0x42, 108}, /* 0x45 */
--	{0x37, 0x61, 100}, /* 0x46 */
--	{0x78, 0x27, 108}, /* 0x47 */
--	{0x5e, 0x64, 68},  /* 0x48 chiawen for fuj1280x768*/
--	{0x70, 0x44, 108}, /* 0x49 chiawen for 1400x1050*/
--};
--#endif
--
- static unsigned char XGI330_ScreenOffset[] = {
- 	0x14, 0x19, 0x20, 0x28, 0x32, 0x40,
- 	0x50, 0x64, 0x78, 0x80, 0x2d, 0x35,
-@@ -3591,46 +2965,13 @@ static unsigned char XGI330_OutputSelect = 0x40;
- static unsigned char XGI330_SoftSetting = 0x30;
- static unsigned char XGI330_SR07 = 0x18;
- 
--#if 0
--static unsigned char XGI330New_SR15[8][8] = {
--	{ 0x0,  0x4, 0x60, 0x60},
--	{ 0xf,  0xf,  0xf,  0xf},
--	{0xba, 0xba, 0xba, 0xba},
--	{0xa9, 0xa9, 0xac, 0xac},
--	{0xa0, 0xa0, 0xa0, 0xa8},
--	{ 0x0,  0x0,  0x2,  0x2},
--	{0x30, 0x30, 0x40, 0x40},
--	{ 0x0, 0xa5, 0xfb, 0xf6}
--};
--
--static unsigned char XGI330New_CR40[5][8] = {
--	{0x77, 0x77, 0x44, 0x44},
--	{0x77, 0x77, 0x44, 0x44},
--	{ 0x0,  0x0,  0x0,  0x0},
--	{0x5b, 0x5b, 0xab, 0xab},
--	{ 0x0,  0x0, 0xf0, 0xf8}
--};
--#endif
--
- static unsigned char XGI330_CR49[] = {0xaa, 0x88};
- static unsigned char XGI330_SR1F = 0x0;
- static unsigned char XGI330_SR21 = 0xa3;
--#if 0
--static unsigned char XGI330_650_SR21 = 0xa7;
--#endif
- static unsigned char XGI330_SR22 = 0xfb;
- static unsigned char XGI330_SR23 = 0xf6;
- static unsigned char XGI330_SR24 = 0xd;
- 
--#if 0
--static unsigned char XGI660_SR21 = 0xa3;/* 2003.0312 */
--static unsigned char XGI660_SR22 = 0xf3;/* 2003.0312 */
--
--static unsigned char XGI330_LVDS_SR32 = 0x00;   /* ynlai for 650 LVDS */
--static unsigned char XGI330_LVDS_SR33 = 0x00;	/* chiawen for 650 LVDS */
--static unsigned char XGI330_650_SR31 = 0x40;
--static unsigned char XGI330_650_SR33 = 0x04;
--#endif
- static unsigned char XGI330_CRT2Data_1_2 = 0x0;
- static unsigned char XGI330_CRT2Data_4_D = 0x0;
- static unsigned char XGI330_CRT2Data_4_E = 0x0;
-@@ -3641,14 +2982,6 @@ static unsigned short XGI330_YCSenseData = 0xb3;
- static unsigned short XGI330_RGBSenseData2 = 0x0190;     /*301b*/
- static unsigned short XGI330_VideoSenseData2 = 0x0110;
- static unsigned short XGI330_YCSenseData2 = 0x016B;
--#if 0
--static unsigned char XGI330_NTSCPhase[] = {0x21, 0xed, 0x8a, 0x8};
--static unsigned char XGI330_PALPhase[] = {0x2a, 0x5, 0xd3, 0x0};
--static unsigned char XGI330_NTSCPhase2[] = {0x21, 0xF0, 0x7B, 0xD6};/*301b*/
--static unsigned char XGI330_PALPhase2[] = {0x2a, 0x09, 0x86, 0xe9};
--static unsigned char XGI330_PALMPhase[] = {0x21, 0xE4, 0x2E, 0x9B};   /*palmn*/
--static unsigned char XGI330_PALNPhase[] = {0x21, 0xF4, 0x3E, 0xBA};
--#endif
- static unsigned char XG40_I2CDefinition = 0x00 ;
- static unsigned char XG20_CR97 = 0x10 ;
- 
-@@ -3805,21 +3138,6 @@ static struct XGI330_VCLKDataStruct XGI_VCLKData[] = {
- 	{0x66, 0x43, 123}, /* 4A (122.61Mhz) */
- 	{0x2C, 0x61,  80}, /* 4B (80.350Mhz) */
- 	{0x3B, 0x61, 108}, /* 4C (107.385Mhz) */
--/*
--	{0x60, 0x36, 30},// 4D (30.200MHz)   }// No use
--	{0x60, 0x36, 30},// 4E (30.200MHz)   }// No use
--	{0x60, 0x36, 30},// 4F (30.200MHz)   }// No use
--	{0x60, 0x36, 30},// 50 (30.200MHz)   }// CHTV
--	{0x40, 0x4A, 28},// 51 (28.190MHz)
--	{0x9F, 0x46, 44},// 52 (43.600MHz)
--	{0x97, 0x2C, 26},// 53 (26.400MHz)
--	{0x44, 0xE4, 25},// 54 (24.600MHz)
--	{0x7E, 0x32, 47},// 55 (47.832MHz)
--	{0x8A, 0x24, 31},// 56 (31.500MHz)
--	{0x97, 0x2C, 26},// 57 (26.200MHz)
--	{0xCE, 0x3C, 39},// 58 (39.000MHz)
--	{0x52, 0x4A, 36},// 59 (36.000MHz)
--*/
- 	{0x69, 0x61, 191}, /* 4D (190.96MHz ) */
- 	{0x4F, 0x22, 192}, /* 4E (192.069MHz) */
- 	{0x28, 0x26, 322}, /* 4F (322.273MHz) */
-@@ -3912,21 +3230,6 @@ static struct XGI330_VCLKDataStruct XGI_VBVCLKData[] = {
- 	{0x66, 0x43, 123}, /* 4A (122.61Mhz) */
- 	{0x2C, 0x61, 80 }, /* 4B (80.350Mhz) */
- 	{0x3B, 0x61, 108}, /* 4C (107.385Mhz) */
--/*
--	{0x60, 0x36, 30}, // 4D (30.200MHz)   }// No use
--	{0x60, 0x36, 30}, // 4E (30.200MHz)   }// No use
--	{0x60, 0x36, 30}, // 4F (30.200MHz)   }// No use
--	{0x60, 0x36, 30}, // 50 (30.200MHz)   }// CHTV
--	{0x40, 0x4A, 28}, // 51 (28.190MHz)
--	{0x9F, 0x46, 44}, // 52 (43.600MHz)
--	{0x97, 0x2C, 26}, // 53 (26.400MHz)
--	{0x44, 0xE4, 25}, // 54 (24.600MHz)
--	{0x7E, 0x32, 47}, // 55 (47.832MHz)
--	{0x8A, 0x24, 31}, // 56 (31.500MHz)
--	{0x97, 0x2C, 26}, // 57 (26.200MHz)
--	{0xCE, 0x3C, 39}, // 58 (39.000MHz)
--	{0x52, 0x4A, 36}, // 59 (36.000MHz)
--*/
- 	{0x69, 0x61, 191}, /* 4D (190.96MHz ) */
- 	{0x4F, 0x22, 192}, /* 4E (192.069MHz) */
- 	{0x28, 0x26, 322}, /* 4F (322.273MHz) */
-@@ -3941,38 +3244,6 @@ static struct XGI330_VCLKDataStruct XGI_VBVCLKData[] = {
- 	{0xFF, 0x00,   0}  /* End mark */
- };
- 
--#if 0
--static unsigned char XGI660_TVDelayList[] = {
--	0x44, /* ; 0 ExtNTSCDelay */
--	0x44, /* ; 1 StNTSCDelay */
--	0x44, /* ; 2 ExtPALDelay */
--	0x44, /* ; 3 StPALDelay */
--	0x44, /* ; 4 ExtHiTVDelay(1080i) */
--	0x44, /* ; 5 StHiTVDelay(1080i) */
--	0x44, /* ; 6 ExtYPbPrDelay(525i) */
--	0x44, /* ; 7 StYPbPrDealy(525i) */
--	0x44, /* ; 8 ExtYPbPrDelay(525p) */
--	0x44, /* ; 9 StYPbPrDealy(525p) */
--	0x44, /* ; A ExtYPbPrDelay(750p) */
--	0x44  /* ; B StYPbPrDealy(750p) */
--};
--
--static unsigned char XGI660_TVDelayList2[] = {
--	0x44, /* ; 0 ExtNTSCDelay */
--	0x44, /* ; 1 StNTSCDelay */
--	0x44, /* ; 2 ExtPALDelay */
--	0x44, /* ; 3 StPALDelay */
--	0x44, /* ; 4 ExtHiTVDelay */
--	0x44, /* ; 5 StHiTVDelay */
--	0x44, /* ; 6 ExtYPbPrDelay(525i) */
--	0x44, /* ; 7 StYPbPrDealy(525i) */
--	0x44, /* ; 8 ExtYPbPrDelay(525p) */
--	0x44, /* ; 9 StYPbPrDealy(525p) */
--	0x44, /* ; A ExtYPbPrDelay(750p) */
--	0x44  /* ; B StYPbPrDealy(750p) */
--};
--#endif
--
- static unsigned char XGI301TVDelayList[] = {
- 	0x22, /* ; 0 ExtNTSCDelay */
- 	0x22, /* ; 1 StNTSCDelay */
 -- 
 1.7.2.5
 
