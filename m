@@ -1,144 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab1HSQvW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:51:22 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57375 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756492Ab1HSQsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:48:20 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH v2 33/43] um: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:49 +0100
-Message-Id: <1313772419-21951-34-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+	id S932157Ab1HSQvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:51:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756431Ab1HSQvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 12:51:31 -0400
+Date: Fri, 19 Aug 2011 12:51:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 10/11] VFS: Cache request_queue in struct block_device
+Message-ID: <20110819165101.GA13862@redhat.com>
+References: <1312259893-4548-1-git-send-email-andi@firstfloor.org>
+ <1312259893-4548-11-git-send-email-andi@firstfloor.org>
+ <20110818194245.GJ15413@redhat.com>
+ <4E4D7E3C.8060104@linux.intel.com>
+ <20110819141409.GD18656@redhat.com>
+ <20110819153622.GD25996@one.firstfloor.org>
+ <20110819155534.GA13464@redhat.com>
+ <20110819162312.GE25996@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819162312.GE25996@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Fri, Aug 19, 2011 at 06:23:12PM +0200, Andi Kleen wrote:
+> > Primarily because of code complexity. We are stashing away a pointer and
+> > not taking any reference anywhere. So I am not even sure who is making
+> > sure that request queue is not gone and there are no comments in the code
+> > about why we are stashing a pointer and how are we making sure that
+> > request queue is around for the lifetime of bdev.
+> 
+> Can you point out a concrete problem in my approach?  This seems
+> rather vague.
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+I am not saying that there is a problem in your approach. I am just
+asking or trying to understand that who makes sure request queue is
+not gone. 
 
-Also, use the new helper function block_sigmask() which centralises
-the code for updating current->blocked after successfully delivering a
-signal and reduces the amount of duplicate code across
-architectures. In the past some architectures got this code wrong, so
-using this helper function should stop that from happening again.
+So if you could just comment two things in code it will help for
+a futuer reader of the code.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Richard Weinberger <richard@nod.at>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
+- Why are we stashing this extra pointer.
+- What makes sure that object pointed by this pointer is not freed.
 
-v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
-for adding sigmask to current->blocked" so they need to go through the
-same tree but this patch would benefit from some maintainer ACK's.
+I am not saying that there is a problem. Just that I don't know enough
+of code to understand how we are making sure queue object is still
+around.
 
-Richard, I dropped your Acked-by because I felt this patch changed
-quite dramatically since v1 and warrants another review. I hope that's
-OK.
-
- arch/um/kernel/signal.c     |   22 ++++++++--------------
- arch/um/sys-i386/signal.c   |   12 ++----------
- arch/um/sys-x86_64/signal.c |    6 +-----
- 3 files changed, 11 insertions(+), 29 deletions(-)
-
-diff --git a/arch/um/kernel/signal.c b/arch/um/kernel/signal.c
-index b5c094c..9aa5cba 100644
---- a/arch/um/kernel/signal.c
-+++ b/arch/um/kernel/signal.c
-@@ -72,15 +72,8 @@ static int handle_signal(struct pt_regs *regs, unsigned long signr,
- 		recalc_sigpending();
- 		spin_unlock_irq(&current->sighand->siglock);
- 		force_sigsegv(signr, current);
--	} else {
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked, &current->blocked,
--			  &ka->sa.sa_mask);
--		if (!(ka->sa.sa_flags & SA_NODEFER))
--			sigaddset(&current->blocked, signr);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
--	}
-+	} else
-+		block_sigmask(ka, signr);
- 
- 	return err;
- }
-@@ -163,12 +156,13 @@ int do_signal(void)
-  */
- long sys_sigsuspend(int history0, int history1, old_sigset_t mask)
- {
--	mask &= _BLOCKABLE;
--	spin_lock_irq(&current->sighand->siglock);
-+	sigset_t blocked;
-+
- 	current->saved_sigmask = current->blocked;
--	siginitset(&current->blocked, mask);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+
-+	mask &= _BLOCKABLE;
-+	siginitset(&blocked, mask);
-+	set_current_blocked(&blocked);
- 
- 	current->state = TASK_INTERRUPTIBLE;
- 	schedule();
-diff --git a/arch/um/sys-i386/signal.c b/arch/um/sys-i386/signal.c
-index 89a4662..4403b48 100644
---- a/arch/um/sys-i386/signal.c
-+++ b/arch/um/sys-i386/signal.c
-@@ -458,11 +458,7 @@ long sys_sigreturn(struct pt_regs regs)
- 		goto segfault;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (copy_sc_from_user(&current->thread.regs, sc))
- 		goto segfault;
-@@ -489,11 +485,7 @@ long sys_rt_sigreturn(struct pt_regs regs)
- 		goto segfault;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (copy_sc_from_user(&current->thread.regs, &uc->uc_mcontext))
- 		goto segfault;
-diff --git a/arch/um/sys-x86_64/signal.c b/arch/um/sys-x86_64/signal.c
-index b6b65c7..581b64d 100644
---- a/arch/um/sys-x86_64/signal.c
-+++ b/arch/um/sys-x86_64/signal.c
-@@ -270,11 +270,7 @@ long sys_rt_sigreturn(struct pt_regs *regs)
- 		goto segfault;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (copy_sc_from_user(&current->thread.regs, &uc->uc_mcontext,
- 			      &frame->fpstate))
--- 
-1.7.4.4
-
+Thanks
+Vivek
