@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab1HRXzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 19:55:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42128 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752098Ab1HRXzQ (ORCPT
+	id S1752261Ab1HSAA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 20:00:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19117 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab1HSAAy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 19:55:16 -0400
-Date: Thu, 18 Aug 2011 16:54:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 6/7] mm: vmscan: Throttle reclaim if encountering too
- many dirty pages under writeback
-Message-Id: <20110818165428.4f01a1b9.akpm@linux-foundation.org>
-In-Reply-To: <1312973240-32576-7-git-send-email-mgorman@suse.de>
-References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
-	<1312973240-32576-7-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Aug 2011 20:00:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=naTVt1mD+9GuAq6/9QhWXaC5dfnvaqV7Jy6X2wOj5/aDbggu6Cp55OsG1KCu3DpWG
+	ETzMe4oR/Fl5aqJF3YT9g==
+MIME-Version: 1.0
+In-Reply-To: <20110818144025.8e122a67.akpm@linux-foundation.org>
+References: <1313650253-21794-1-git-send-email-gthelen@google.com> <20110818144025.8e122a67.akpm@linux-foundation.org>
+From: Greg Thelen <gthelen@google.com>
+Date: Thu, 18 Aug 2011 17:00:30 -0700
+Message-ID: <CAHH2K0b_jNHfAnSpDqBMKh4NbZCu8JrEcfjb+rputWKXgv5FLA@mail.gmail.com>
+Subject: Re: [PATCH] memcg: remove unneeded preempt_disable
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-arch@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        jweiner@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Aug 2011 11:47:19 +0100
-Mel Gorman <mgorman@suse.de> wrote:
+On Thu, Aug 18, 2011 at 2:40 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> (cc linux-arch)
+>
+> On Wed, 17 Aug 2011 23:50:53 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> Both mem_cgroup_charge_statistics() and mem_cgroup_move_account() were
+>> unnecessarily disabling preemption when adjusting per-cpu counters:
+>>     preempt_disable()
+>>     __this_cpu_xxx()
+>>     __this_cpu_yyy()
+>>     preempt_enable()
+>>
+>> This change does not disable preemption and thus CPU switch is possible
+>> within these routines.  This does not cause a problem because the total
+>> of all cpu counters is summed when reporting stats.  Now both
+>> mem_cgroup_charge_statistics() and mem_cgroup_move_account() look like:
+>>     this_cpu_xxx()
+>>     this_cpu_yyy()
+>>
+>> ...
+>>
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -664,24 +664,20 @@ static unsigned long mem_cgroup_read_events(struct mem_cgroup *mem,
+>>  static void mem_cgroup_charge_statistics(struct mem_cgroup *mem,
+>>                                        bool file, int nr_pages)
+>>  {
+>> -     preempt_disable();
+>> -
+>>       if (file)
+>> -             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], nr_pages);
+>> +             this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_CACHE], nr_pages);
+>>       else
+>> -             __this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], nr_pages);
+>> +             this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_RSS], nr_pages);
+>>
+>>       /* pagein of a big page is an event. So, ignore page size */
+>>       if (nr_pages > 0)
+>> -             __this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGIN]);
+>> +             this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGIN]);
+>>       else {
+>> -             __this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGOUT]);
+>> +             this_cpu_inc(mem->stat->events[MEM_CGROUP_EVENTS_PGPGOUT]);
+>>               nr_pages = -nr_pages; /* for event */
+>>       }
+>>
+>> -     __this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
+>> -
+>> -     preempt_enable();
+>> +     this_cpu_add(mem->stat->events[MEM_CGROUP_EVENTS_COUNT], nr_pages);
+>>  }
+>
+> On non-x86 architectures this_cpu_add() internally does
+> preempt_disable() and preempt_enable().  So the patch is a small
+> optimisation for x86 and a larger deoptimisation for non-x86.
+>
+> I think I'll apply it, as the call frequency is low (correct?) and the
+> problem will correct itself as other architectures implement their
+> atomic this_cpu_foo() operations.
 
-> The percentage that must be in writeback depends on the priority. At
-> default priority, all of them must be dirty. At DEF_PRIORITY-1, 50%
-> of them must be, DEF_PRIORITY-2, 25% etc. i.e. as pressure increases
-> the greater the likelihood the process will get throttled to allow
-> the flusher threads to make some progress.
+mem_cgroup_charge_statistics() is a common operation, which is called
+on each memcg page charge and uncharge.
 
-It'd be nice if the code comment were to capture this piece of implicit
-arithmetic.  After all, it's a magic number and magic numbers should
-stick out like sore thumbs.
+The per arch/config effects of this patch:
+* non-preemptible kernels: there's no difference before/after this patch.
+* preemptible x86: this patch helps by removing an unnecessary
+preempt_disable/enable.
+* preemptible non-x86: this patch hurts by adding implicit
+preempt_disable/enable around each operation.
 
-And.. how do we know that the chosen magic numbers were optimal?
+So I am uncomfortable this patch's unmeasured impact on archs that do
+not have atomic this_cpu_foo() operations.  Please drop the patch from
+mmotm.  Sorry for the noise.
