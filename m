@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab1HSQz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:55:26 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51449 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab1HSQzX (ORCPT
+	id S1756548Ab1HSQzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:55:48 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57293 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756397Ab1HSQrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:55:23 -0400
-Date: Fri, 19 Aug 2011 20:55:18 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ian <ian@opensource.wolfsonmicro.com>,
-        Vasily Khoruzhick <anarsoul@gmail.com>, u.kleine-koenig@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Added #include of module.h to s3c_adc_battery.c
-Message-ID: <20110819165518.GK22761@oksana.dev.rtsoft.ru>
-References: <1313662449.18176.18.camel@Tapajos>
- <201108181321.11293.anarsoul@gmail.com>
- <1313663688.18176.23.camel@Tapajos>
- <20110818160612.GB20208@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110818160612.GB20208@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Aug 2011 12:47:35 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 15/43] microblaze: No need to reset handler if SA_ONESHOT
+Date: Fri, 19 Aug 2011 17:46:31 +0100
+Message-Id: <1313772419-21951-16-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 01:06:13AM +0900, Mark Brown wrote:
-> On Thu, Aug 18, 2011 at 11:34:48AM +0100, Ian wrote:
-> > On Thu, 2011-08-18 at 13:21 +0300, Vasily Khoruzhick wrote:
-> > > On Thursday 18 August 2011 13:14:09 Ian wrote:
-> > > > s3c_adc_battery.c will not compile without moule.h as it contains the
-> > > > definitions of: MODULE_AUTHOR, MODULE_DESCRIPTION & MODULE_LICENSE.
-> > > 
-> > > I've already sent pretty same patch a ~week ago, here it is:
-> > > https://patchwork.kernel.org/patch/1061302/
-> > 
-> > Ah, apologies - please disregard this patch then.
-> 
-> Hrm, Anton's been pretty quiet recently - might be an idea to start
-> CCing akpm on this stuff?
+From: Matt Fleming <matt.fleming@intel.com>
 
-Don't panic. :-) I'm still here, been on a vacation (and was trying to
-not read emails :-), then was catching up with my other duties.
+get_signal_to_deliver() already resets the signal handler if
+SA_ONESHOT is set in ka->sa.sa_flags, there's no need to do it again
+in handle_signal(). Furthermore, because we were modifying
+ka->sa.sa_handler (which is a copy of sighand->action[]) instead of
+sighand->action[] the original code actually had no effect on signal
+delivery.
 
-Ian, I added your Signed-off-by line to the Vasily's patch, for
-the credits.
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Michal Simek <monstr@monstr.eu>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/microblaze/kernel/signal.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Thank you!
-
+diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
+index 90de06d..9e749c0 100644
+--- a/arch/microblaze/kernel/signal.c
++++ b/arch/microblaze/kernel/signal.c
+@@ -320,9 +320,6 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	else
+ 		setup_rt_frame(sig, ka, NULL, oldset, regs);
+ 
+-	if (ka->sa.sa_flags & SA_ONESHOT)
+-		ka->sa.sa_handler = SIG_DFL;
+-
+ 	if (!(ka->sa.sa_flags & SA_NODEFER)) {
+ 		spin_lock_irq(&current->sighand->siglock);
+ 		sigorsets(&current->blocked,
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.4.4
+
