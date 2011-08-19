@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab1HSEy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 00:54:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36304 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1HSEyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 00:54:55 -0400
-Date: Thu, 18 Aug 2011 21:54:22 -0700 (PDT)
-Message-Id: <20110818.215422.291743606960028861.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 18 Aug 2011 21:54:23 -0700 (PDT)
+	id S1752093Ab1HSFAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 01:00:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43236 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab1HSFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 01:00:12 -0400
+From: Anand Gadiyar <gadiyar@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+CC: Anand Gadiyar <gadiyar@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, <stable@kernel.org>
+Subject: [PATCH resend] mfd: omap-usb-host: Make TLL mode work again
+Date: Fri, 19 Aug 2011 10:29:00 +0530
+Message-ID: <1313729940-10508-1-git-send-email-gadiyar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This code section seems to have been accidentally copy pasted.
+It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
+register and prevents the TLL mode from working correctly.
 
-Please pull to get this array bounds fix from Ian Campbell.
+Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: stable@kernel.org
+---
+Resent with Felipe's ack and stable@kernel.org in CC
 
-Thanks!
+ drivers/mfd/omap-usb-host.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-The following changes since commit 5c80c71b9a0ec518b4b58d2a61de01a04f4a4453:
-
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable (2011-08-18 14:20:00 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc.git master
-
-Ian Campbell (1):
-      sparc: fix array bounds error setting up PCIC NMI trap
-
- arch/sparc/kernel/pcic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Index: linux-2.6/drivers/mfd/omap-usb-host.c
+===================================================================
+--- linux-2.6.orig/drivers/mfd/omap-usb-host.c
++++ linux-2.6/drivers/mfd/omap-usb-host.c
+@@ -676,7 +676,6 @@ static void usbhs_omap_tll_init(struct d
+ 				| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
+ 				| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
+ 
+-			reg |= (1 << (i + 1));
+ 		} else
+ 			continue;
+ 
