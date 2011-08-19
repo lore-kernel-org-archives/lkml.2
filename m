@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab1HSNgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:36:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1160 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755041Ab1HSN3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755297Ab1HSN3h (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Aug 2011 09:29:37 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58759 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab1HSN3d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:29:33 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158325"
+   d="scan'208";a="159732418"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
-        Joe Perches <joe@perches.com>, David Decotigny <decot@google.com>,
-        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 52/75] sungem: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:27:24 +0100
-Message-ID: <1313760467-8598-52-git-send-email-ian.campbell@citrix.com>
+        Ion Badulescu <ionut@badula.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH 50/75] starfire: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:27:22 +0100
+Message-ID: <1313760467-8598-50-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Ion Badulescu <ionut@badula.org>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Joe Perches <joe@perches.com>
-Cc: David Decotigny <decot@google.com>
-Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/net/sungem.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/starfire.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/sungem.c b/drivers/net/sungem.c
-index ade35dd..39189bf 100644
---- a/drivers/net/sungem.c
-+++ b/drivers/net/sungem.c
-@@ -1071,10 +1071,8 @@ static netdev_tx_t gem_start_xmit(struct sk_buff *skb,
- 			u64 this_ctrl;
+diff --git a/drivers/net/starfire.c b/drivers/net/starfire.c
+index 7ae1f99..d31d52e 100644
+--- a/drivers/net/starfire.c
++++ b/drivers/net/starfire.c
+@@ -1259,7 +1259,10 @@ static netdev_tx_t start_tx(struct sk_buff *skb, struct net_device *dev)
+ 			skb_frag_t *this_frag = &skb_shinfo(skb)->frags[i - 1];
+ 			status |= this_frag->size;
+ 			np->tx_info[entry].mapping =
+-				pci_map_single(np->pci_dev, page_address(this_frag->page) + this_frag->page_offset, this_frag->size, PCI_DMA_TODEVICE);
++				pci_map_single(np->pci_dev,
++					       skb_frag_address(this_frag),
++					       this_frag->size,
++					       PCI_DMA_TODEVICE);
+ 		}
  
- 			len = this_frag->size;
--			mapping = pci_map_page(gp->pdev,
--					       this_frag->page,
--					       this_frag->page_offset,
--					       len, PCI_DMA_TODEVICE);
-+			mapping = skb_frag_dma_map(&gp->pdev->dev, this_frag,
-+						   0, len, PCI_DMA_TODEVICE);
- 			this_ctrl = ctrl;
- 			if (frag == skb_shinfo(skb)->nr_frags - 1)
- 				this_ctrl |= TXDCTRL_EOF;
+ 		np->tx_ring[entry].addr = cpu_to_dma(np->tx_info[entry].mapping);
 -- 
 1.7.2.5
 
