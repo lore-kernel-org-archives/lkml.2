@@ -1,66 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab1HSSRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 14:17:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752187Ab1HSSRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 14:17:16 -0400
-Date: Fri, 19 Aug 2011 14:17:13 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] fs/minix: Verify bitmap block counts before mounting
-Message-ID: <20110819181713.GC2270@zod.bos.redhat.com>
-References: <20110819180159.GB2270@zod.bos.redhat.com>
- <20110819181054.GA2203@ZenIV.linux.org.uk>
+	id S1754766Ab1HSSR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 14:17:56 -0400
+Received: from zimbra.cbs.mpg.de ([194.95.183.231]:36175 "EHLO
+	zimbra.cbs.mpg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106Ab1HSSRx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 14:17:53 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Aug 2011 14:17:53 EDT
+Date: Fri, 19 Aug 2011 20:08:07 +0200 (CEST)
+From: System Administrator <dolk@cbs.mpg.de>
+Message-ID: <347758817.4072.1313777287819.JavaMail.root@zimbra>
+Subject: E-mail Security
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819181054.GA2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.206.15.47]
+X-Mailer: Zimbra 6.0.9_GA_2686 (zclient/6.0.9_GA_2686)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 07:10:54PM +0100, Al Viro wrote:
-> On Fri, Aug 19, 2011 at 02:02:00PM -0400, Josh Boyer wrote:
-> 
-> > -unsigned long minix_count_free_blocks(struct minix_sb_info *sbi)
-> > +unsigned long minix_count_free_blocks(struct super_block *sb)
-> >  {
-> > -	return (count_free(sbi->s_zmap, sbi->s_zmap_blocks,
-> > -		sbi->s_nzones - sbi->s_firstdatazone + 1)
-> > +	struct minix_sb_info *sbi = minix_sb(sb);
-> > +	u32 bits = sbi->s_nzones - (sbi->s_firstdatazone + 1);
-> > +	unsigned blocks = minix_blocks_needed(bits, sb->s_blocksize);
-> > +
-> > +	return (count_free(sbi->s_zmap, blocks, bits)
-> >  		<< sbi->s_log_zone_size);
-> >  }
-> 
-> > +	unsigned blocks = minix_blocks_needed(bits, sb->s_blocksize);
-> > +
-> > +	return count_free(sbi->s_imap, blocks, bits);
-> 
-> I'd pass sb->s_blocksize to that sucker instead of blocks; less redundancy
-> and we have good uses for it there anyway.
-
-OK.  So just move the blocks calculating into count_free itself.  I'll
-rework.
-
-> > +static inline unsigned minix_blocks_needed(unsigned bits, unsigned blocksize)
-> > +{
-> > +	unsigned blocks = bits / (blocksize * 8);
-> > +
-> > +	if (bits % (blocksize * 8))
-> > +		blocks++;
-> > +	return blocks;
-> > +}
-> 
-> Yecchh...  The usual idiom for that is DIV_ROUND_UP(bits, blocksize * 8)
-> (see linux/kernel.h for details).
-
-Will fix.
-
-josh
+You have reached the storage limit on your mailbox.
+ 
+You will not be able to send or receive new mail until you updrade your email account.
+ 
+click the below link to fill your emaill upgrade form.
+ 
+http://www.bvgl.ch/phpform/forms/form1.html
+ 
+Technical Support Team
+192.168.0.1
