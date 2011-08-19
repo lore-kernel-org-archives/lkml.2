@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab1HSTla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:41:30 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:60205 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab1HSTkc (ORCPT
+	id S932190Ab1HSTlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:41:42 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:55649 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab1HSTkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Aug 2011 15:40:32 -0400
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: apatard@mandriva.com, gregkh@suse.de, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/12] staging: xgifb: delete write-only variables
-Date: Fri, 19 Aug 2011 22:40:28 +0300
-Message-Id: <1313782830-31461-11-git-send-email-aaro.koskinen@iki.fi>
+Subject: [PATCH 06/12] staging: xgifb: delete unused structs
+Date: Fri, 19 Aug 2011 22:40:24 +0300
+Message-Id: <1313782830-31461-7-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313782830-31461-1-git-send-email-aaro.koskinen@iki.fi>
 References: <1313782830-31461-1-git-send-email-aaro.koskinen@iki.fi>
@@ -20,75 +20,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete couple write-only variables.
+Delete unused struct declarations.
 
 Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 ---
- drivers/staging/xgifb/XGI_main.h    |    8 --------
- drivers/staging/xgifb/XGI_main_26.c |   10 ----------
- 2 files changed, 0 insertions(+), 18 deletions(-)
+ drivers/staging/xgifb/vb_ext.h    |   20 -----------
+ drivers/staging/xgifb/vb_struct.h |   64 -------------------------------------
+ drivers/staging/xgifb/vgatypes.h  |    5 ---
+ 3 files changed, 0 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 2f82488..168f25c 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -179,7 +179,6 @@ static int XGIfb_userom = 0;
- /*static int XGIfb_useoem = -1; */
+diff --git a/drivers/staging/xgifb/vb_ext.h b/drivers/staging/xgifb/vb_ext.h
+index 814a446..0b1f55b 100644
+--- a/drivers/staging/xgifb/vb_ext.h
++++ b/drivers/staging/xgifb/vb_ext.h
+@@ -1,26 +1,6 @@
+ #ifndef _VBEXT_
+ #define _VBEXT_
  
- /* global flags */
--static int XGIfb_registered;
- static int XGIfb_tvmode = 0;
- static int XGIfb_pdc = 0;
- static int enable_dstn = 0;
-@@ -193,13 +192,6 @@ static int XGIfb_crt2type = -1;
- /* PR: Tv plug type (for overriding autodetection) */
- static int XGIfb_tvplug = -1;
+-struct DWORDREGS {
+-	unsigned long Eax, Ebx, Ecx, Edx, Esi, Edi, Ebp;
+-};
+-
+-struct WORDREGS {
+-	unsigned short  ax, hi_ax, bx, hi_bx, cx, hi_cx, dx, hi_dx, si,
+-			hi_si, di, hi_di, bp, hi_bp;
+-};
+-
+-struct BYTEREGS {
+-	unsigned char   al, ah, hi_al, hi_ah, bl, bh, hi_bl, hi_bh, cl, ch,
+-			hi_cl, hi_ch, dl, dh, hi_dl, hi_dh;
+-};
+-
+-typedef union _X86_REGS {
+-	struct  DWORDREGS e;
+-	struct  WORDREGS x;
+-	struct  BYTEREGS h;
+-} X86_REGS, *PX86_REGS;
+-
+ extern void XGI_GetSenseStatus(struct xgi_hw_device_info *HwDeviceExtension,
+ 			       struct vb_device_info *pVBInfo);
+ extern unsigned short XGINew_SenseLCD(struct xgi_hw_device_info *,
+diff --git a/drivers/staging/xgifb/vb_struct.h b/drivers/staging/xgifb/vb_struct.h
+index c40d9d8..3ef79e0 100644
+--- a/drivers/staging/xgifb/vb_struct.h
++++ b/drivers/staging/xgifb/vb_struct.h
+@@ -1,10 +1,6 @@
+ #ifndef _VB_STRUCT_
+ #define _VB_STRUCT_
  
--static unsigned char XGIfb_detectedpdc = 0;
+-struct XGI_PanelDelayTblStruct {
+-	unsigned char timer[2];
+-};
 -
--static unsigned char XGIfb_detectedlcda = 0xff;
--
--
--
--
- /* TW: For ioctl XGIFB_GET_INFO */
- /* XGIfb_info XGIfbinfo; */
+ struct XGI_LCDDataStruct {
+ 	unsigned short RVBHCMAX;
+ 	unsigned short RVBHCFACT;
+@@ -39,24 +35,6 @@ struct XGI_TVDataStruct {
+ 	unsigned char RY4COE;
+ };
  
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index 7d06c05..ebd63ad 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -2046,8 +2046,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 	if (XGIfb_off)
- 		return -ENXIO;
+-struct XGI_LVDSDataStruct {
+-	unsigned short VGAHT;
+-	unsigned short VGAVT;
+-	unsigned short LCDHT;
+-	unsigned short LCDVT;
+-};
+-
+-struct XGI_LVDSDesStruct {
+-	unsigned short LCDHDES;
+-	unsigned short LCDVDES;
+-};
+-
+-struct XGI_LVDSCRT1DataStruct {
+-	unsigned char CR[15];
+-};
+-
+-/*add for LCDA*/
+-
+ struct XGI_StStruct {
+ 	unsigned char St_ModeID;
+ 	unsigned short St_ModeFlag;
+@@ -140,10 +118,6 @@ struct XGI_ModeResInfoStruct {
+ 	unsigned char  YChar;
+ };
  
--	XGIfb_registered = 0;
+-struct XGI_LCDNBDesStruct {
+-	unsigned char NB[12];
+-};
 -
- 	memset(&XGIhw_ext, 0, sizeof(struct xgi_hw_device_info));
- 	fb_info = framebuffer_alloc(sizeof(struct fb_info), &pdev->dev);
- 	if (!fb_info)
-@@ -2307,12 +2305,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 		}
- 	}
+ /*add for new UNIVGABIOS*/
+ struct XGI_LCDDesStruct {
+ 	unsigned short LCDHDES;
+@@ -159,12 +133,6 @@ struct XGI_LCDDataTablStruct {
+ 	unsigned short DATAPTR;
+ };
  
--	XGIfb_detectedpdc = 0;
+-struct XGI_TVTablDataStruct {
+-	unsigned short MASK;
+-	unsigned short CAP;
+-	unsigned short DATAPTR;
+-};
 -
--	XGIfb_detectedlcda = 0xff;
--
--	/* TW: Try to find about LCDA */
--
- 	if ((XGIhw_ext.ujVBChipID == VB_CHIP_302B) ||
- 			(XGIhw_ext.ujVBChipID == VB_CHIP_301LV) ||
- 			(XGIhw_ext.ujVBChipID == VB_CHIP_302LV)) {
-@@ -2476,8 +2468,6 @@ static int __devinit xgifb_probe(struct pci_dev *pdev,
- 		goto error_1;
- 	}
+ struct XGI330_LCDDataDesStruct {
+ 	unsigned short LCDHDES;
+ 	unsigned short LCDHRS;
+@@ -252,10 +220,6 @@ struct XGI_XG21CRT1Struct {
+ 	unsigned char ModeID, CR02, CR03, CR15, CR16;
+ };
  
--	XGIfb_registered = 1;
+-struct XGI330_CHTVRegDataStruct {
+-	unsigned char Reg[16];
+-};
 -
- 	printk(KERN_INFO "fb%d: %s frame buffer device, Version %d.%d.%02d\n",
- 	       fb_info->node, myid, VER_MAJOR, VER_MINOR, VER_LEVEL);
+ struct XGI330_LCDCapStruct {
+ 	unsigned char	LCD_ID;
+ 	unsigned short	LCD_Capability;
+@@ -318,18 +282,6 @@ struct XGI301C_Tap4TimingStruct {
+ 	unsigned char  Reg[64];   /* C0-FF */
+ };
  
+-struct XGI_New_StandTableStruct {
+-	unsigned char  CRT_COLS;
+-	unsigned char  ROWS;
+-	unsigned char  CHAR_HEIGHT;
+-	unsigned short CRT_LEN;
+-	unsigned char  SR[4];
+-	unsigned char  MISC;
+-	unsigned char  CRTC[0x19];
+-	unsigned char  ATTR[0x14];
+-	unsigned char  GRC[9];
+-};
+-
+ struct vb_device_info {
+ 	unsigned char  ISXPDOS;
+ 	unsigned long   P3c4, P3d4, P3c0, P3ce, P3c2, P3cc;
+@@ -456,20 +408,4 @@ struct vb_device_info {
+ 	struct XGI_XG21CRT1Struct	  *UpdateCRT1;
+ };  /* _struct vb_device_info */
+ 
+-
+-struct TimingInfo {
+-	unsigned short Horizontal_ACTIVE;
+-	unsigned short Horizontal_FP;
+-	unsigned short Horizontal_SYNC;
+-	unsigned short Horizontal_BP;
+-	unsigned short Vertical_ACTIVE;
+-	unsigned short Vertical_FP;
+-	unsigned short Vertical_SYNC;
+-	unsigned short Vertical_BP;
+-	double	       DCLK;
+-	unsigned char  FrameRate;
+-	unsigned char  Interlace;
+-	unsigned short Margin;
+-};
+-
+ #endif /* _VB_STRUCT_ */
+diff --git a/drivers/staging/xgifb/vgatypes.h b/drivers/staging/xgifb/vgatypes.h
+index 5aeb3a4..7f911f1 100644
+--- a/drivers/staging/xgifb/vgatypes.h
++++ b/drivers/staging/xgifb/vgatypes.h
+@@ -47,11 +47,6 @@ enum XGI_LCD_TYPE {
+ };
+ #endif
+ 
+-struct XGI_DSReg {
+-	unsigned char jIdx;
+-	unsigned char jVal;
+-};
+-
+ struct xgi_hw_device_info {
+ 	unsigned long ulExternalChip; /* NO VB or other video bridge*/
+ 				      /* if ujVBChipID = VB_CHIP_UNKNOWN, */
 -- 
 1.7.2.5
 
