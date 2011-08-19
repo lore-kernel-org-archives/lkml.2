@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1HSNod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:44:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:10937 "EHLO SMTP.CITRIX.COM"
+	id S1755962Ab1HSNqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:46:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:21391 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631Ab1HSN2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:28:49 -0400
+	id S1754515Ab1HSN2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:28:38 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158289"
+   d="scan'208";a="16158260"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 29/75] greth: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:27:01 +0100
-Message-ID: <1313760467-8598-29-git-send-email-ian.campbell@citrix.com>
+        Divy Le Ray <divy@chelsio.com>
+Subject: [PATCH 22/75] cxgb3: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:54 +0100
+Message-ID: <1313760467-8598-22-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -26,51 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to avoid long lines also use phys_to_virt(page_to_phys(page)) =>
-page_address(page) (since the are effectively the same thing for lowmem pages).
-
-Also dump the frag's size instead of the headlen when dumping a frag.
-
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Kristoffer Glembo <kristoffer@gaisler.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Divy Le Ray <divy@chelsio.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/net/greth.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/cxgb3/sge.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/greth.c b/drivers/net/greth.c
-index 16ce45c..562a251 100644
---- a/drivers/net/greth.c
-+++ b/drivers/net/greth.c
-@@ -113,9 +113,8 @@ static void greth_print_tx_packet(struct sk_buff *skb)
- 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+diff --git a/drivers/net/cxgb3/sge.c b/drivers/net/cxgb3/sge.c
+index d6fa177..a0baaa0 100644
+--- a/drivers/net/cxgb3/sge.c
++++ b/drivers/net/cxgb3/sge.c
+@@ -979,8 +979,8 @@ static inline unsigned int make_sgl(const struct sk_buff *skb,
+ 	for (i = 0; i < nfrags; i++) {
+ 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
- 		print_hex_dump(KERN_DEBUG, "TX: ", DUMP_PREFIX_OFFSET, 16, 1,
--			       phys_to_virt(page_to_phys(skb_shinfo(skb)->frags[i].page)) +
--			       skb_shinfo(skb)->frags[i].page_offset,
--			       length, true);
-+			       skb_frag_address(&skb_shinfo(skb)->frags[i]),
-+			       skb_shinfo(skb)->frags[i].size, true);
- 	}
- }
+-		mapping = pci_map_page(pdev, frag->page, frag->page_offset,
+-				       frag->size, PCI_DMA_TODEVICE);
++		mapping = skb_frag_dma_map(&pdev->dev, frag, 0, frag->size,
++					   PCI_DMA_TODEVICE);
+ 		sgp->len[j] = cpu_to_be32(frag->size);
+ 		sgp->addr[j] = cpu_to_be64(mapping);
+ 		j ^= 1;
+@@ -2116,7 +2116,7 @@ static void lro_add_page(struct adapter *adap, struct sge_qset *qs,
+ 	len -= offset;
  
-@@ -528,11 +527,8 @@ greth_start_xmit_gbit(struct sk_buff *skb, struct net_device *dev)
+ 	rx_frag += nr_frags;
+-	rx_frag->page = sd->pg_chunk.page;
++	__skb_frag_set_page(rx_frag, sd->pg_chunk.page);
+ 	rx_frag->page_offset = sd->pg_chunk.offset + offset;
+ 	rx_frag->size = len;
  
- 		greth_write_bd(&bdp->stat, status);
- 
--		dma_addr = dma_map_page(greth->dev,
--					frag->page,
--					frag->page_offset,
--					frag->size,
--					DMA_TO_DEVICE);
-+		dma_addr = skb_frag_dma_map(greth->dev, frag, 0, frag->size,
-+					    DMA_TO_DEVICE);
- 
- 		if (unlikely(dma_mapping_error(greth->dev, dma_addr)))
- 			goto frag_map_error;
 -- 
 1.7.2.5
 
