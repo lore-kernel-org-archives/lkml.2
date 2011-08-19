@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab1HSMNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:13:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42948 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753664Ab1HSMNN (ORCPT
+	id S1753785Ab1HSMOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:14:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58805 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1HSMOd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:13:13 -0400
-Date: Fri, 19 Aug 2011 07:13:08 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: JJ Ding <jj_ding@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-Message-ID: <20110819121308.GA16386@thinkpad-t410>
-Mail-Followup-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-	Eric Piel <E.A.B.Piel@tudelft.nl>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	Chase Douglas <chase.douglas@canonical.com>,
-	Henrik Rydberg <rydberg@euromail.se>,
-	Alessandro Rubini <rubini@cvml.unipv.it>
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
- <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
- <20110818173959.GE28313@thinkpad-t410>
- <87hb5ddcsa.fsf@emc.com.tw>
+	Fri, 19 Aug 2011 08:14:33 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sergei Shtylyov" <sshtylyov@mvista.com>,
+        "Felipe Balbi" <balbi@ti.com>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181623390.1628-100000@iolanthe.rowland.org>
+ <op.v0gi7koy3l0zgt@mnazarewicz-glaptop> <4E4E4565.70902@linutronix.de>
+Date: Fri, 19 Aug 2011 14:14:29 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hb5ddcsa.fsf@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v0gmyfhi3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4E4E4565.70902@linutronix.de>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 04:29:57PM +0800, JJ Ding wrote:
-> > You should only report the ABS_[XY] coordinates when fingers != 0. The
-> > xorg synaptics module sees the values reported in that case as
-> > legitimate. This is causing me to see strange behaviors when scrolling
-> > with two-finger drags.
-> AFAIK, though v2 and v3 differ in packet format, they really report the
-> same data to the userspace. In this version of v3 support, I even try to
-> make v2 and v3 report all the data in the same sequnce. If you're seeing
-> this issue, maybe we should do the same with v2?
+On Fri, 19 Aug 2011 13:13:41 +0200, Sebastian Andrzej Siewior  
+<bigeasy@linutronix.de> wrote:
+> There are three speeds:
+> - the max speed the UDC supports i.e. HS (no field for that?)
 
-Actually neither v1 nor v2 reports ABS_[XY] unless fingers != 0. In v2
-the reporting is in a switch statement on the number of fingers, and 0
-is unhandled.
+Yep, the field seems to be missing for that one.  We have is_dualspeed and
+comment in gadget_is_superspeed() says about is_superspeed but that does
+not exist.
+
+> - the max speed the gadget / function driver support i.e. SS
+>    (driver->max_speed ?)
+
+Actually “max_speed” is only in usb_composite_driver structure.
+usb_gadget_driver has only “speed” and it's description says that it is
+the “highest speed the driver handles.”  Because of that description I've
+assumed that it is UDC driver's responsibility to figure out maximum speed
+it can use.
+
+> - the speed the UDC is connected at the moment i.e. FS. (gadget->speed)
+
+OK, I see my mistake.  I misinterpreted gadget->speed as the max speed
+gadget supports.
+
+So in the end, it would seem to me that we need to do the following is
+usb_gadget_probe_direvr() before passing the usb_gadget_driver to the
+usb_gadegt's bind:
+
+if (driver->speed == USB_SPEED_SUPER && !gadget_is_superspeed(udc->gadget))
+	driver->speed = USB_SPEED_HIGH;
+if (driver->speed == USB_SPEED_HIGH && !gadget_is_dualspeed(udc->gadget))
+	driver->speed = USB_SPEED_FULL;
+
+(Although I'm not sure about USB_SPEED_FULL vs. USB_SPEED_LOW.)
+
+Either than, or make sure that all UDC drivers handle correctly gadgets
+that declare speed as highest of what the UDC can handle.
+
+
+At the moment however, gadget_is_superspeed() is implemented using #ifdefs
+(which I missed before) so we need to add a is_superspeed to usb_gadget
+structure.  Or maybe better yet get rid of is_dualspeed and add max_speed?
+
+
+Does what I'm writing make sense at all?
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
