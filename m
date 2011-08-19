@@ -1,32 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab1HSCCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 22:02:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63106 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1HSCCd (ORCPT
+	id S1753371Ab1HSCEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 22:04:55 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:61025 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab1HSCEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 22:02:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-Date: Fri, 19 Aug 2011 03:02:33 +0100
-Message-ID: <CAPweEDzY7BQ_yxY1hVZdW8dL4GzQ_t=0KcXP_Mp45XrRShJ14Q@mail.gmail.com>
-Subject: Re: ARM promising platform, needs to learn from PC.
-From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Aug 2011 22:04:54 -0400
+Subject: [PATCH] PM: pm_clock.h needs to include linux/notifier.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Aug 2011 10:04:46 +0800
+Message-ID: <1313719486.20874.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dear linus,
+This patch fixes below build error:
 
-i've written this up, including some examples in FAQ form that would
-and would not satisfy the proposed "selfish-is-out, cooperation-is-in"
-patch-acceptance rule, here:
-http://lkcl.net/linux/linux-selfish.vs.cooperation.html
+  CC      drivers/base/power/clock_ops.o
+In file included from drivers/base/power/clock_ops.c:13:
+include/linux/pm_clock.h:15: error: field 'nb' has incomplete type
+drivers/base/power/clock_ops.c: In function 'pm_clk_notify':
+drivers/base/power/clock_ops.c:437: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/base/power/clock_ops.c:437: warning: initialization from incompatible pointer type
+make[3]: *** [drivers/base/power/clock_ops.o] Error 1
+make[2]: *** [drivers/base/power] Error 2
+make[1]: *** [drivers/base] Error 2
+make: *** [drivers] Error 2
 
-comments greatly appreciated, as would additional examples to add to the FAQ.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next next-20110818.
+Axel
 
-l.
+ include/linux/pm_clock.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/pm_clock.h b/include/linux/pm_clock.h
+index f888013..8348866 100644
+--- a/include/linux/pm_clock.h
++++ b/include/linux/pm_clock.h
+@@ -10,6 +10,7 @@
+ #define _LINUX_PM_CLOCK_H
+ 
+ #include <linux/device.h>
++#include <linux/notifier.h>
+ 
+ struct pm_clk_notifier_block {
+ 	struct notifier_block nb;
+-- 
+1.7.4.1
+
+
+
