@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab1HSUnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 16:43:42 -0400
-Received: from mga10.intel.com ([192.55.52.92]:21500 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752187Ab1HSUnl (ORCPT
+	id S1756686Ab1HSUrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 16:47:16 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53598 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755555Ab1HSUrN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 16:43:41 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Aug 2011 16:43:41 EDT
-Subject: Re: [PATCH 2/3] vfork: make it killable
-From: Matt Fleming <matt.fleming@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-In-Reply-To: <20110812175629.GC7484@redhat.com>
-References: <20110727163159.GA23785@redhat.com>
-	 <20110729192358.GB31717@mtj.dyndns.org> <20110812175550.GA7484@redhat.com>
-	 <20110812175629.GC7484@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Fri, 19 Aug 2011 21:33:58 +0100
-Message-ID: <1313786038.19751.2.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 16:47:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+Subject: Re: [Bug #40282] IP forwarding regression since 3.0-rc6
+Date: Fri, 19 Aug 2011 22:48:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera> <bkwpSnItbJM.A.r-H.mMCSOB@chimera> <20110819T132841.GA.a087a.stse@fsing.rootsland.net>
+In-Reply-To: <20110819T132841.GA.a087a.stse@fsing.rootsland.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201108192248.57430.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-12 at 19:56 +0200, Oleg Nesterov wrote:
-> Make vfork() killable.
+On Friday, August 19, 2011, Stephan Seitz wrote:
+> On Sun, Aug 14, 2011 at 09:07:36PM +0200, Rafael J. Wysocki wrote:
+> >This message has been generated automatically as a part of a report
+> >of regressions introduced between 2.6.39 and 3.0.
+> >
+> >The following bug entry is on the current list of known regressions
+> >introduced between 2.6.39 and 3.0.  Please verify if it still should
+> >be listed and let the tracking team know (either way).
+> >
+> >
+> >Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=40282
+> >Subject		: IP forwarding regression since 3.0-rc6
+> >Submitter	: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+> >Date		: 2011-07-25 12:51 (21 days old)
+> >Message-ID	: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+> >References	: http://marc.info/?l=linux-kernel&m=131159880004908&w=2
 > 
-> Change do_fork(CLONE_VFORK) to do wait_for_completion_killable().
-> If it fails we do not return to the user-mode and never touch ->mm
-> shared with our child.
-> 
-> However, in this case we should clear child->vfork_done before
-> return, we use task_lock() in do_fork()->wait_for_vfork_done()
-> and complete_vfork_done() to serialize with each other.
+> It seems the bug has been completely fixed in kernel 3.0.3. At least 
+> I don’t have any problems anymore. So I think the bug can be closed.
 
-It's probably worth updating the comment above task_lock() in
-include/linux/sched.h, to say that it is now used to protect
-->vfork_done.
+Thanks, closing.
 
+Rafael
