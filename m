@@ -1,91 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab1HSEb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 00:31:29 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49884 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab1HSEb2 (ORCPT
+	id S1752038Ab1HSEim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 00:38:42 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51597 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab1HSEih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 00:31:28 -0400
-Date: Fri, 19 Aug 2011 05:31:20 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: Al Viro <viro@ftp.linux.org.uk>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: Subject: [PATCH 00/91] pending uml patches
-Message-ID: <20110819043120.GY2203@ZenIV.linux.org.uk>
-References: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
- <4E4D642F.3010909@nod.at>
- <20110818191946.GW2203@ZenIV.linux.org.uk>
+	Fri, 19 Aug 2011 00:38:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818191946.GW2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110819023406.GA12732@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+	<20110818094824.GA25752@localhost>
+	<1313669702.6607.24.camel@sauron>
+	<20110818131343.GA17473@localhost>
+	<CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
+	<20110819023406.GA12732@localhost>
+Date: Fri, 19 Aug 2011 10:08:36 +0530
+Message-ID: <CAFPAmTSzYg5n150_ykv-Vvc4QVbz14Oxn_Mm+EqxzbUL3c39tg@mail.gmail.com>
+Subject: Re: [PATCH] writeback: Per-block device bdi->dirty_writeback_interval
+ and bdi->dirty_expire_interval.
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 08:19:46PM +0100, Al Viro wrote:
-> On Thu, Aug 18, 2011 at 09:12:47PM +0200, Richard Weinberger wrote:
-> > Have you touched your patches since yesterday?
-> > I've already pulled and uploaded them to my shiny new git repo at:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rw/linux-um.git unstable
-> 
-> Reordered and added missing S-o-b on a couple, split one commit.
+HI Wu,
 
-Umm...  One comment after looking at your tree: you probably want to rebase
-for-3.2 on top of fixes (and presumably feed it to sfr for inclusion into
-linux-next).
+On Fri, Aug 19, 2011 at 8:04 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> Hi Kautuk,
+>
+> On Fri, Aug 19, 2011 at 12:25:58AM +0800, Kautuk Consul wrote:
+>>
+>> Lines: 59
+>>
+>> Hi Wu,
+>>
+>> On Thu, Aug 18, 2011 at 6:43 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > Hi Artem,
+>> >
+>> >> Here is a real use-case we had when developing the N900 phone. We had
+>> >> internal flash and external microSD slot. Internal flash is soldered in
+>> >> and cannot be removed by the user. MicroSD, in contrast, can be removed
+>> >> by the user.
+>> >>
+>> >> For the internal flash we wanted long intervals and relaxed limits to
+>> >> gain better performance.
+>> >>
+>> >> For MicroSD we wanted very short intervals and tough limits to make sure
+>> >> that if the user suddenly removes his microSD (users do this all the
+>> >> time) - we do not lose data.
+>> >
+>> > Thinking twice about it, I find that the different requirements for
+>> > interval flash/external microSD can also be solved by this scheme.
+>> >
+>> > Introduce a per-bdi dirty_background_time (and optionally dirty_time)
+>> > as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
+>> > however with unit "milliseconds worth of data".
+>> >
+>> > The per-bdi dirty_background_time will be set low for external microSD
+>> > and high for internal flash. Then you get timely writeouts for microSD
+>> > and reasonably delayed writes for internal flash (controllable by the
+>> > global dirty_expire_centisecs).
+>> >
+>> > The dirty_background_time will actually work more reliable than
+>> > dirty_expire_centisecs because it will checked immediately after the
+>> > application dirties more pages. And the dirty_time could provide
+>> > strong data integrity guarantee -- much stronger than
+>> > dirty_expire_centisecs -- if used.
 
-And for pity sake, do *not* merge from Linus every day; that's one sure
-way to get yourself flamed into crisp.  Just trying to figure out
-what's in your tree is a _hard_ exercise.  git cherry between Linus'
-tree and e.g. #fixes in yours gives a long list of commits, most of them
-_probably_ duplicates of the stuff in mainline.  What are bnx2 patches
-doing in there, for example?
+The dirty_writeback_centisecs is the value we are also actually
+interested in, and not just
+dirty_expire_interval. This value is what is actually used to reset
+the per-BDI timeout in the code.
 
-I've tried to figure out what's going on in there; AFAICS, your #fixes
-is mainline plus
-Al Viro (6):
-      um: fix oopsable race in line_close()
-      um: winch_interrupt() can happen inside of free_winch()
-      um: fix free_winch() mess
-      um: PTRACE_[GS]ETFPXREGS had been wired on the wrong subarch
-      um: fix strrchr problems
-      um: clean arch_ptrace() up a bit
+>> >
+>> > Does that sound reasonable?
+>> >
+>> > Thanks,
+>> > Fengguang
+>> >
+>>
+>> My understanding of your email appears that you are agreeing in
+>> principle that the temporal
+>> aspect of this problem needs to be addressed along with your spatial
+>> pattern analysis technique.
+>
+> Yup.
+>
+>> I feel a more generic solution to the problem is required because the
+>> problem faced by Artem can appear
+>> in a different situation for a different application.
+>>
+>> I can re-implement my original patch in either centiseconds or
+>> milliseconds as suggested by you.
+>
+> My concern on your patch is the possible conflicts and confusions
+> between the global and the per-bdi dirty_expire_centisecs. To maintain
+> compatibility you need to keep the global one. Then there is the hard
 
-Ingo van Lil (1):
-      um: Save FPU registers between task switches
+If you refer to my original email, I have addressed this as follows:
+When the global value is set, then all the per-BDI dirty*_centisecs
+are also reset
+to the global value.
+This is essential for retaining the functionality across Linux
+distributions using
+the global values.
+This amounts to compatibility as the global values will take effect.
+After that point, if the user/admin feels, he/she can adjust/tune the
+per-BDI counters to
+certain empirical value as per the specific application. This will not
+alter the global values.
 
-Jonathan Neusch<C3><A4>fer (3):
-      UserModeLinux-HOWTO.txt: fix a typo
-      um: drivers/xterm.c: fix a file descriptor leak
-      UserModeLinux-HOWTO.txt: remove ^H characters
+> question of "what to do with the per-bdi values when the global value
+> is changed". Whatever policy you choose, there will be user unexpected
+> behaviors.
+>
 
-Thadeu Lima de Souza Cascardo (1):
-      um: disable CMPXCHG_DOUBLE as it breaks UML build
+How ?
+Of course, if the user tuned some per-BDI values and then chose to
+reset the global values
+we need to reset the per-BDI interfaces also as that is what the
+original functionality of those
+counters is.
+Worst case scenario : The timeout might not take effect immediately as
+per the newer global value.
+The first timeout might still happen as per the older per-BDI value.
 
-	I've cherry-picked those on top of the same branchpoint; see
-#cleaned-fixes in um-headers.git.  AFAICS, that's the same contents as
-your #fixes, with clean history.  Diff against your #fixes consists of
--       .irq_set_type = pmic_irq_type, <<<<<<< HEAD
--       .irq_bus_lock           = pmic_irq_buslock,
-+       .irq_set_type           = pmic_irq_type,
-+       .irq_bus_lock           = pmic_bus_lock,
-in drivers/platform/x86/intel_pmic_gpio.c, which is an obvious mismerge
-(AFAICS, on May 29).
+Individual per-BDI tuning should be done after the global values have been set.
+Worst case scenario: Again, the timeout might not take effect
+immediately as per the newer
+per-BDI value. This first timeout might still happen as per the older
+global value that the per-BDI had
+before its individual tuning.
 
-IME the sane policy is to keep for-linus, pulling into it when Linus
-pulls from you.  At that point it's a fast-forward and all previous
-history is not cluttering the things up anymore.  for-next I rebase and
-reorder at will, TBH, but generally I start it at the current tip of
-for-linus.
+Both of the above worst case scenarios can lead to unexpected
+behaviours but for short intervals
+and only in the first timeout.
+i)  The above timeout scenario can also happen if you don't alter this
+interface.
+      The first timeout might be at the end of the older interval time
+and only after that the new value will
+       take effect in terms of intervals.
+ii)   Since these values would be quite important for the overall
+functionality of the device, I don't
+expect that the globals and the individual values would be frequently set/reset.
+iii)   Anyways, only an advanced user would try to tune these per-BDI
+values and would take care of
+the point at which she/he set/reset these values in the system.
+Or, maybe we solve this by fiddling around with the timeout values to
+modify/cancel the timer based
+on the new value ?
 
-Beyond what you've got in #for-3.2 I have a couple of commits, but that
-can wait until the history is sorted out.  As it is, I 100% guarantee
-that pull request on your #fixes as it is will result in pyrotechnical
-effects from hell (OK, from Linus, actually, but in this case there won't
-be any real difference).
+Is there any other possible worst-case scenario I left out ?
 
+> I don't like such conflicting/inconsistent interfaces.
+>
+
+Well, I believe that the inconsistency or the lack of functionality
+existed earlier, when global
+values were all that existed. When the logical decision of having
+per-block device threads
+came around most of the /proc/sys/vm/dirty_* functionality can and
+needs to be split.
+This decision is as natural as your decision to have per-BDI dirty
+bandwidth estimation.
+Again, this problem is due to the advent of removable disk devices and
+needs to be addressed
+at a per-BDI level.
+
+> Given that we'll need to introduce the dirty_background_time interface
+> anyway, and it happen to can address the N900 internal/removable storage
+> problem (mostly), I'm more than glad to cancel the dirty_expire_centisecs
+> problem.
+>
+
+I have following doubts with respect to your dirty_background_time
+interface suggestion:
+i)   You say that you'll do this only for the N900 problem for solving
+the unexpected disk removal
+      problem.
+      I believe you are ignoring the problem of rate of undirtying of
+the block device pages for
+      making reclamation of that block device's file-cache pages at a
+sooner possible future time.
+      I mentioned this in my earlier emails also.
+ii)   Will you be changing the dirty_background_time dynamically with
+your algorithm ?
+      According to your description, I think not.
+iii)  I cannot see how your implementation of dirty_background_time is
+different from mine, except
+      maybe for the first time interval taking effect properly.
+      However, we can also think that the first time interval should
+probably be honoured with the older
+      value to make the transition from the old timer value to new
+timer value smoother in terms of
+      periodic writeback functionality.
+
+> Or, do you have better way out of the dirty_expire_centisecs dilemma?
+>
+
+Maybe we can delete the global value entirely. However as you
+correctly mentioned above, this
+will impact other tools distributions altering these global values.
+
+You mentioned the close relationship between the dirty_background_time
+and the global dirty
+[_background]_ratio.
+Do you mean to say that you intend to change the dirty_background_time
+based on changes to
+the dirty_background_ratio ?
+Since the global dirty_background_ratio doesn't result in changes to
+the dirty_writeback_centisecs
+wouldn't this amount to a radical change in the existing relationship
+of these configurable values ?
+
+> Thanks,
+> Fengguang
+>
