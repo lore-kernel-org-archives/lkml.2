@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab1HSNog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:44:36 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:58675 "EHLO
+	id S1756039Ab1HSNoi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:44:38 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25060 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab1HSN2t (ORCPT
+	with ESMTP id S1754580Ab1HSN2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:28:49 -0400
+	Fri, 19 Aug 2011 09:28:46 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="159732277"
+   d="scan'208";a="159732287"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Michael Chan <mchan@broadcom.com>
-Subject: [PATCH 18/75] bnx2: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:26:50 +0100
-Message-ID: <1313760467-8598-18-git-send-email-ian.campbell@citrix.com>
+        Grant Likely <grant.likely@secretlab.ca>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Decotigny <decot@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 20/75] cassini: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:52 +0100
+Message-ID: <1313760467-8598-20-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -26,39 +32,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Michael Chan <mchan@broadcom.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Decotigny <decot@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mike Frysinger <vapier@gentoo.org>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/net/bnx2.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/cassini.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
-index 4b2b570..005dd81 100644
---- a/drivers/net/bnx2.c
-+++ b/drivers/net/bnx2.c
-@@ -2929,8 +2929,8 @@ bnx2_reuse_rx_skb_pages(struct bnx2 *bp, struct bnx2_rx_ring_info *rxr,
+diff --git a/drivers/net/cassini.c b/drivers/net/cassini.c
+index 646c86b..de5c7590 100644
+--- a/drivers/net/cassini.c
++++ b/drivers/net/cassini.c
+@@ -2048,8 +2048,8 @@ static int cas_rx_process_pkt(struct cas *cp, struct cas_rx_comp *rxc,
+ 		skb->truesize += hlen - swivel;
+ 		skb->len      += hlen - swivel;
  
- 		shinfo = skb_shinfo(skb);
- 		shinfo->nr_frags--;
--		page = shinfo->frags[shinfo->nr_frags].page;
--		shinfo->frags[shinfo->nr_frags].page = NULL;
-+		page = skb_frag_page(&shinfo->frags[shinfo->nr_frags]);
-+		__skb_frag_set_page(&shinfo->frags[shinfo->nr_frags], NULL);
+-		get_page(page->buffer);
+-		frag->page = page->buffer;
++		__skb_frag_set_page(frag, page->buffer);
++		__skb_frag_ref(frag);
+ 		frag->page_offset = off;
+ 		frag->size = hlen - swivel;
  
- 		cons_rx_pg->page = page;
- 		dev_kfree_skb(skb);
-@@ -6510,8 +6510,8 @@ bnx2_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		txbd = &txr->tx_desc_ring[ring_prod];
+@@ -2072,8 +2072,8 @@ static int cas_rx_process_pkt(struct cas *cp, struct cas_rx_comp *rxc,
+ 			skb->len      += hlen;
+ 			frag++;
  
- 		len = frag->size;
--		mapping = dma_map_page(&bp->pdev->dev, frag->page, frag->page_offset,
--				       len, PCI_DMA_TODEVICE);
-+		mapping = skb_frag_dma_map(&bp->pdev->dev, frag, 0, len,
+-			get_page(page->buffer);
+-			frag->page = page->buffer;
++			__skb_frag_set_page(frag, page->buffer);
++			__skb_frag_ref(frag);
+ 			frag->page_offset = 0;
+ 			frag->size = hlen;
+ 			RX_USED_ADD(page, hlen + cp->crc_size);
+@@ -2830,9 +2830,8 @@ static inline int cas_xmit_tx_ringN(struct cas *cp, int ring,
+ 		skb_frag_t *fragp = &skb_shinfo(skb)->frags[frag];
+ 
+ 		len = fragp->size;
+-		mapping = pci_map_page(cp->pdev, fragp->page,
+-				       fragp->page_offset, len,
+-				       PCI_DMA_TODEVICE);
++		mapping = skb_frag_dma_map(&cp->pdev->dev, fragp, 0, len,
 +					   PCI_DMA_TODEVICE);
- 		if (dma_mapping_error(&bp->pdev->dev, mapping))
- 			goto dma_error;
- 		dma_unmap_addr_set(&txr->tx_buf_ring[ring_prod], mapping,
+ 
+ 		tabort = cas_calc_tabort(cp, fragp->page_offset, len);
+ 		if (unlikely(tabort)) {
+@@ -2843,7 +2842,7 @@ static inline int cas_xmit_tx_ringN(struct cas *cp, int ring,
+ 				      ctrl, 0);
+ 			entry = TX_DESC_NEXT(ring, entry);
+ 
+-			addr = cas_page_map(fragp->page);
++			addr = cas_page_map(skb_frag_page(fragp));
+ 			memcpy(tx_tiny_buf(cp, ring, entry),
+ 			       addr + fragp->page_offset + len - tabort,
+ 			       tabort);
 -- 
 1.7.2.5
 
