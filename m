@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab1HSI6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 04:58:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51443 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab1HSI6H (ORCPT
+	id S1752450Ab1HSJE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 05:04:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44572 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab1HSJE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 04:58:07 -0400
-From: tom.leiming@gmail.com
-To: sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Ming Lei <tom.leiming@gmail.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] mfd: omap-usb-host: fix build failure
-Date: Fri, 19 Aug 2011 16:57:54 +0800
-Message-Id: <1313744274-5031-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 19 Aug 2011 05:04:56 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+Subject: Re: ARM promising platform, needs to learn from PC.
+Date: Fri, 19 Aug 2011 11:04:44 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-10-server; KDE/4.6.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com> <CAPweEDzY7BQ_yxY1hVZdW8dL4GzQ_t=0KcXP_Mp45XrRShJ14Q@mail.gmail.com>
+In-Reply-To: <CAPweEDzY7BQ_yxY1hVZdW8dL4GzQ_t=0KcXP_Mp45XrRShJ14Q@mail.gmail.com>
+Organization: OpenWrt
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108191104.44422.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+Hello,
 
-The patch fixes the build failure:
+On Friday 19 August 2011 04:02:33 Luke Kenneth Casson Leighton wrote:
+> dear linus,
+> 
+> i've written this up, including some examples in FAQ form that would
+> and would not satisfy the proposed "selfish-is-out, cooperation-is-in"
+> patch-acceptance rule, here:
+> http://lkcl.net/linux/linux-selfish.vs.cooperation.html
+> 
+> comments greatly appreciated, as would additional examples to add to the
+> FAQ.
 
-drivers/mfd/omap-usb-host.c:1034:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1034:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/mfd/omap-usb-host.c:1034:1: warning: parameter names (without
-types) in function declaration
-drivers/mfd/omap-usb-host.c:1040:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1040:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/mfd/omap-usb-host.c:1040:1: warning: parameter names (without
-types) in function declaration
-drivers/mfd/omap-usb-host.c:1045:13: error: 'THIS_MODULE' undeclared
-here (not in a function)
-drivers/mfd/omap-usb-host.c:1050:15: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/omap-usb-host.c:1050:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1050:1: warning: type defaults to 'int' in
-declaration of 'MODULE_AUTHOR'
-drivers/mfd/omap-usb-host.c:1050:15: warning: function declaration isn't
-a prototype
-drivers/mfd/omap-usb-host.c:1051:14: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/omap-usb-host.c:1051:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1051:1: warning: type defaults to 'int' in
-declaration of 'MODULE_ALIAS'
-drivers/mfd/omap-usb-host.c:1051:14: warning: function declaration isn't
-a prototype
-drivers/mfd/omap-usb-host.c:1052:16: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/omap-usb-host.c:1052:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1052:1: warning: type defaults to 'int' in
-declaration of 'MODULE_LICENSE'
-drivers/mfd/omap-usb-host.c:1052:16: warning: function declaration isn't
-a prototype
-drivers/mfd/omap-usb-host.c:1053:20: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/omap-usb-host.c:1053:1: warning: data definition has no type
-or storage class
-drivers/mfd/omap-usb-host.c:1053:1: warning: type defaults to 'int' in
-declaration of 'MODULE_DESCRIPTION'
-drivers/mfd/omap-usb-host.c:1053:20: warning: function declaration isn't
-a prototype
-make[2]: *** [drivers/mfd/omap-usb-host.o] Error 1
-  CC      fs/proc/namespaces.o
-make[1]: *** [drivers/mfd] Error 2
-make: *** [drivers] Error 2
-make: *** Waiting for unfinished jobs....
+Most of your examples, especially the RDC is example is just badly chosen.
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/mfd/omap-usb-host.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I had patches supporting this sub arch acccepted until we could get rid of it 
+and make it work with the generic x86 infrastructure. The only thing that has 
+not been accepted yet is some kind of "cpuid-like" feature for RDC.
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 29601e7..03debe8 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -17,6 +17,7 @@
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
- #include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/types.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
+The rdc321x GPIO driver has been accepted mainline and only serves on RDC-
+based SoC.
+
+Sorry to say that, but I do not understand the point of your FAQ, most people, 
+if explained with good reasons, would accept a new architecture/SoC/sub-arch, 
+but that's also at the price of the submitter to eventually rethink its way of 
+supporting the architecture (Device Tree, code re-organisation ...).
 -- 
-1.7.4.1
-
+Florian
