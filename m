@@ -1,252 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab1HSN1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:27:55 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:12775 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1HSN1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:27:52 -0400
+	id S1753850Ab1HSN2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:28:03 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:53547 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378Ab1HSN16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:27:58 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="159732145"
+   d="scan'208";a="16158199"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
-Subject: [PATCH 01/75] net: add APIs for manipulating skb page fragments.
-Date: Fri, 19 Aug 2011 14:26:33 +0100
-Message-ID: <1313760467-8598-1-git-send-email-ian.campbell@citrix.com>
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH 03/75] net: ipv4: convert to SKB frag APIs
+Date: Fri, 19 Aug 2011 14:26:35 +0100
+Message-ID: <1313760467-8598-3-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The primary aim is to add skb_frag_(ref|unref) in order to remove the use of
-bare get/put_page on SKB pages fragments and to isolate users from subsequent
-changes to the skb_frag_t data structure.
-
-Also included are helper APIs for passing a paged fragment to kmap and
-dma_map_page since I was seeing the same pattern a lot. A helper for
-pci_map_page is ommitted due to Michał Mirosław's recommendation that users
-should transition to pci_map_page instead.
-
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
 Cc: netdev@vger.kernel.org
 ---
- include/linux/skbuff.h |  170 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 168 insertions(+), 2 deletions(-)
+ net/ipv4/inet_lro.c   |    2 +-
+ net/ipv4/ip_output.c  |    7 ++++---
+ net/ipv4/tcp.c        |    3 ++-
+ net/ipv4/tcp_output.c |    2 +-
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 7b996ed..2562764 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -29,6 +29,7 @@
- #include <linux/rcupdate.h>
- #include <linux/dmaengine.h>
- #include <linux/hrtimer.h>
-+#include <linux/dma-mapping.h>
+diff --git a/net/ipv4/inet_lro.c b/net/ipv4/inet_lro.c
+index ef7ae60..8e6be5a 100644
+--- a/net/ipv4/inet_lro.c
++++ b/net/ipv4/inet_lro.c
+@@ -433,7 +433,7 @@ static struct sk_buff *__lro_proc_segment(struct net_lro_mgr *lro_mgr,
+ 	if (!lro_mgr->get_frag_header ||
+ 	    lro_mgr->get_frag_header(frags, (void *)&mac_hdr, (void *)&iph,
+ 				     (void *)&tcph, &flags, priv)) {
+-		mac_hdr = page_address(frags->page) + frags->page_offset;
++		mac_hdr = skb_frag_address(frags);
+ 		goto out1;
+ 	}
  
- /* Don't change this without changing skb_csum_unnecessary! */
- #define CHECKSUM_NONE 0
-@@ -1126,14 +1127,47 @@ static inline int skb_pagelen(const struct sk_buff *skb)
- 	return len + skb_headlen(skb);
- }
+diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
+index 8c65633..ae3bb14 100644
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -989,13 +989,13 @@ alloc_new_skb:
+ 			if (page && (left = PAGE_SIZE - off) > 0) {
+ 				if (copy >= left)
+ 					copy = left;
+-				if (page != frag->page) {
++				if (page != skb_frag_page(frag)) {
+ 					if (i == MAX_SKB_FRAGS) {
+ 						err = -EMSGSIZE;
+ 						goto error;
+ 					}
+-					get_page(page);
+ 					skb_fill_page_desc(skb, i, page, off, 0);
++					skb_frag_ref(skb, i);
+ 					frag = &skb_shinfo(skb)->frags[i];
+ 				}
+ 			} else if (i < MAX_SKB_FRAGS) {
+@@ -1015,7 +1015,8 @@ alloc_new_skb:
+ 				err = -EMSGSIZE;
+ 				goto error;
+ 			}
+-			if (getfrag(from, page_address(frag->page)+frag->page_offset+frag->size, offset, copy, skb->len, skb) < 0) {
++			if (getfrag(from, skb_frag_address(frag)+frag->size,
++				    offset, copy, skb->len, skb) < 0) {
+ 				err = -EFAULT;
+ 				goto error;
+ 			}
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 46febca..5fe632c 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3035,7 +3035,8 @@ int tcp_md5_hash_skb_data(struct tcp_md5sig_pool *hp,
  
--static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
--				      struct page *page, int off, int size)
-+/**
-+ * __skb_fill_page_desc - initialise a paged fragment in an skb
-+ * @skb: buffer containing fragment to be initialised
-+ * @i: paged fragment index to initialise
-+ * @page: the page to use for this fragment
-+ * @off: the offset to the data with @page
-+ * @size: the length of the data
-+ *
-+ * Initialises the @i'th fragment of @skb to point to &size bytes at
-+ * offset @off within @page.
-+ *
-+ * Does not take any additional reference on the fragment.
-+ */
-+static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
-+					struct page *page, int off, int size)
- {
- 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 
- 	frag->page		  = page;
- 	frag->page_offset	  = off;
- 	frag->size		  = size;
-+}
-+
-+/**
-+ * skb_fill_page_desc - initialise a paged fragment in an skb
-+ * @skb: buffer containing fragment to be initialised
-+ * @i: paged fragment index to initialise
-+ * @page: the page to use for this fragment
-+ * @off: the offset to the data with @page
-+ * @size: the length of the data
-+ *
-+ * As per __skb_fill_page_desc() -- initialises the @i'th fragment of
-+ * @skb to point to &size bytes at offset @off within @page. In
-+ * addition updates @skb such that @i is the last fragment.
-+ *
-+ * Does not take any additional reference on the fragment.
-+ */
-+static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
-+				      struct page *page, int off, int size)
-+{
-+	__skb_fill_page_desc(skb, i, page, off, size);
- 	skb_shinfo(skb)->nr_frags = i + 1;
- }
- 
-@@ -1628,6 +1662,138 @@ static inline void netdev_free_page(struct net_device *dev, struct page *page)
- }
- 
- /**
-+ * skb_frag_page - retrieve the page refered to by a paged fragment
-+ * @frag: the paged fragment
-+ *
-+ * Returns the &struct page associated with @frag.
-+ */
-+static inline struct page *skb_frag_page(const skb_frag_t *frag)
-+{
-+	return frag->page;
-+}
-+
-+/**
-+ * __skb_frag_ref - take an addition reference on a paged fragment.
-+ * @frag: the paged fragment
-+ *
-+ * Takes an additional reference on the paged fragment @frag.
-+ */
-+static inline void __skb_frag_ref(skb_frag_t *frag)
-+{
-+	get_page(skb_frag_page(frag));
-+}
-+
-+/**
-+ * skb_frag_ref - take an addition reference on a paged fragment of an skb.
-+ * @skb: the buffer
-+ * @f: the fragment offset.
-+ *
-+ * Takes an additional reference on the @f'th paged fragment of @skb.
-+ */
-+static inline void skb_frag_ref(struct sk_buff *skb, int f)
-+{
-+	__skb_frag_ref(&skb_shinfo(skb)->frags[f]);
-+}
-+
-+/**
-+ * __skb_frag_unref - release a reference on a paged fragment.
-+ * @frag: the paged fragment
-+ *
-+ * Releases a reference on the paged fragment @frag.
-+ */
-+static inline void __skb_frag_unref(skb_frag_t *frag)
-+{
-+	put_page(skb_frag_page(frag));
-+}
-+
-+/**
-+ * skb_frag_unref - release a reference on a paged fragment of an skb.
-+ * @skb: the buffer
-+ * @f: the fragment offset
-+ *
-+ * Releases a reference on the @f'th paged fragment of @skb.
-+ */
-+static inline void skb_frag_unref(struct sk_buff *skb, int f)
-+{
-+	__skb_frag_unref(&skb_shinfo(skb)->frags[f]);
-+}
-+
-+/**
-+ * skb_frag_address - gets the address of the data contained in a paged fragment
-+ * @frag: the paged fragment buffer
-+ *
-+ * Returns the address of the data within @frag. The page must already
-+ * be mapped.
-+ */
-+static inline void *skb_frag_address(const skb_frag_t *frag)
-+{
-+	return page_address(skb_frag_page(frag)) + frag->page_offset;
-+}
-+
-+/**
-+ * skb_frag_address_safe - gets the address of the data contained in a paged fragment
-+ * @frag: the paged fragment buffer
-+ *
-+ * Returns the address of the data within @frag. Checks that the page
-+ * is mapped and returns %NULL otherwise.
-+ */
-+static inline void *skb_frag_address_safe(const skb_frag_t *frag)
-+{
-+	void *ptr = page_address(skb_frag_page(frag));
-+	if (unlikely(!ptr))
-+		return NULL;
-+
-+	return ptr + frag->page_offset;
-+}
-+
-+/**
-+ * __skb_frag_set_page - sets the page contained in a paged fragment
-+ * @frag: the paged fragment
-+ * @page: the page to set
-+ *
-+ * Sets the fragment @frag to contain @page.
-+ */
-+static inline void __skb_frag_set_page(skb_frag_t *frag, struct page *page)
-+{
-+	frag->page = page;
-+	__skb_frag_ref(frag);
-+}
-+
-+/**
-+ * skb_frag_set_page - sets the page contained in a paged fragment of an skb
-+ * @skb: the buffer
-+ * @f: the fragment offset
-+ * @page: the page to set
-+ *
-+ * Sets the @f'th fragment of @skb to contain @page.
-+ */
-+static inline void skb_frag_set_page(struct sk_buff *skb, int f,
-+				     struct page *page)
-+{
-+	__skb_frag_set_page(&skb_shinfo(skb)->frags[f], page);
-+}
-+
-+/**
-+ * skb_frag_dma_map - maps a paged fragment via the DMA API
-+ * @device: the device to map the fragment to
-+ * @frag: the paged fragment to map
-+ * @offset: the offset within the fragment (starting at the
-+ *          fragment's own offset)
-+ * @size: the number of bytes to map
-+ * @direction: the direction of the mapping (%PCI_DMA_*)
-+ *
-+ * Maps the page associated with @frag to @device.
-+ */
-+static inline dma_addr_t skb_frag_dma_map(struct device *dev,
-+					  const skb_frag_t *frag,
-+					  size_t offset, size_t size,
-+					  enum dma_data_direction dir)
-+{
-+	return dma_map_page(dev, skb_frag_page(frag),
-+			    frag->page_offset + offset, size, dir);
-+}
-+
-+/**
-  *	skb_clone_writable - is the header of a clone writable
-  *	@skb: buffer to check
-  *	@len: length up to which to write
+ 	for (i = 0; i < shi->nr_frags; ++i) {
+ 		const struct skb_frag_struct *f = &shi->frags[i];
+-		sg_set_page(&sg, f->page, f->size, f->page_offset);
++		struct page *page = skb_frag_page(f);
++		sg_set_page(&sg, page, f->size, f->page_offset);
+ 		if (crypto_hash_update(desc, &sg, f->size))
+ 			return 1;
+ 	}
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 882e0b0..0377c06 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1095,7 +1095,7 @@ static void __pskb_trim_head(struct sk_buff *skb, int len)
+ 	k = 0;
+ 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+ 		if (skb_shinfo(skb)->frags[i].size <= eat) {
+-			put_page(skb_shinfo(skb)->frags[i].page);
++			skb_frag_unref(skb, i);
+ 			eat -= skb_shinfo(skb)->frags[i].size;
+ 		} else {
+ 			skb_shinfo(skb)->frags[k] = skb_shinfo(skb)->frags[i];
 -- 
 1.7.2.5
 
