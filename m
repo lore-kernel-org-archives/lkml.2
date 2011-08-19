@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab1HSQsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:48:10 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57335 "EHLO
+	id S1756482Ab1HSQrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:47:49 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57305 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756499Ab1HSQr6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756448Ab1HSQrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:58 -0400
+	Fri, 19 Aug 2011 12:47:43 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>
-Subject: [PATCH v2 24/43] parisc: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:40 +0100
-Message-Id: <1313772419-21951-25-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v2 19/43] mn10300: Use set_current_blocked() and block_sigmask()
+Date: Fri, 19 Aug 2011 17:46:35 +0100
+Message-Id: <1313772419-21951-20-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -36,9 +36,9 @@ architectures. In the past some architectures got this code wrong, so
 using this helper function should stop that from happening again.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
 
@@ -46,16 +46,35 @@ v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
 for adding sigmask to current->blocked" so they need to go through the
 same tree but this patch would benefit from some maintainer ACK's.
 
- arch/parisc/kernel/signal.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ arch/mn10300/kernel/signal.c |   32 ++++++++++----------------------
+ 1 files changed, 10 insertions(+), 22 deletions(-)
 
-diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
-index 12c1ed3..bd36152 100644
---- a/arch/parisc/kernel/signal.c
-+++ b/arch/parisc/kernel/signal.c
-@@ -131,10 +131,7 @@ sys_rt_sigreturn(struct pt_regs *regs, int in_syscall)
- 	}
- 		
+diff --git a/arch/mn10300/kernel/signal.c b/arch/mn10300/kernel/signal.c
+index 690f4e9..bd77c6d 100644
+--- a/arch/mn10300/kernel/signal.c
++++ b/arch/mn10300/kernel/signal.c
+@@ -38,12 +38,13 @@
+  */
+ asmlinkage long sys_sigsuspend(int history0, int history1, old_sigset_t mask)
+ {
+-	mask &= _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
++
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
+ 
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+@@ -172,10 +173,7 @@ asmlinkage long sys_sigreturn(void)
+ 		goto badframe;
+ 
  	sigdelsetmask(&set, ~_BLOCKABLE);
 -	spin_lock_irq(&current->sighand->siglock);
 -	current->blocked = set;
@@ -63,22 +82,38 @@ index 12c1ed3..bd36152 100644
 -	spin_unlock_irq(&current->sighand->siglock);
 +	set_current_blocked(&set);
  
- 	/* Good thing we saved the old gr[30], eh? */
- #ifdef CONFIG_64BIT
-@@ -454,12 +451,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	if (!setup_rt_frame(sig, ka, info, oldset, regs, in_syscall))
- 		return 0;
+ 	if (restore_sigcontext(current_frame(), &frame->sc, &d0))
+ 		goto badframe;
+@@ -203,10 +201,7 @@ asmlinkage long sys_rt_sigreturn(void)
+ 		goto badframe;
  
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
 -	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked,sig);
+-	current->blocked = set;
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
-+	block_sigmask(ka, sig);
++	set_current_blocked(&set);
  
- 	tracehook_signal_handler(sig, info, ka, regs, 
- 		test_thread_flag(TIF_SINGLESTEP) ||
+ 	if (restore_sigcontext(current_frame(), &frame->uc.uc_mcontext, &d0))
+ 		goto badframe;
+@@ -476,15 +471,8 @@ static int handle_signal(int sig,
+ 	else
+ 		ret = setup_frame(sig, ka, oldset, regs);
+ 
+-	if (ret == 0) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked, &current->blocked,
+-			  &ka->sa.sa_mask);
+-		if (!(ka->sa.sa_flags & SA_NODEFER))
+-			sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
+-	}
++	if (ret == 0)
++		block_sigmask(ka, sig);
+ 
+ 	return ret;
+ }
 -- 
 1.7.4.4
 
