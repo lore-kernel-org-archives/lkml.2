@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1HSNnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:43:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17543 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab1HSNnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:43:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,251,1312182000"; 
-   d="scan'208";a="8934767"
-Subject: Re: [PATCH] DMAEngine: Define generic transfer request api
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>, sundaram@ti.com,
-        dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
-        nsekhar@ti.com
-In-Reply-To: <CACRpkdaY_wuz+zS-iKCPT-M7EpvtxCNX+OJ6NROSaQtZ6XoNMg@mail.gmail.com>
-References: <1313147667-3385-1-git-send-email-jaswinder.singh@linaro.org>
-	 <1313499399.1603.92.camel@vkoul-udesk3>
-	 <CACRpkdaY_wuz+zS-iKCPT-M7EpvtxCNX+OJ6NROSaQtZ6XoNMg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Aug 2011 19:13:24 +0530
-Message-ID: <1313761404.18591.1.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755969Ab1HSNoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:44:11 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25060 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641Ab1HSN2u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:28:50 -0400
+X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
+   d="scan'208";a="159732301"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+        Dimitris Michailidis <dm@chelsio.com>
+Subject: [PATCH 23/75] cxgb4: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:55 +0100
+Message-ID: <1313760467-8598-23-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 15:06 +0200, Linus Walleij wrote:
-> On Tue, Aug 16, 2011 at 2:56 PM, Koul, Vinod <vinod.koul@intel.com> wrote:
-> 
-> > Currently we have two approaches to solve this problem first being the
-> > DMA_STRIDE_CONFIG proposed by Linus W, I feel this one is better
-> > approach as this can give client ability to configure each transfer
-> > rather than set for the channel. Linus W, do you agree?
-> 
-> I think Sundaram is in the position of doing some heavy work on
-> using one or the other of the API:s, and I think he is better
-> suited than anyone else of us to select what scheme to use,
-> in the end he's going to write the first code using the API.
-And Unfortunately TI folks don't seem to care about this discussion :(
-Haven't seen anything on this from them, or on previous RFC by Jassi
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Dimitris Michailidis <dm@chelsio.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/cxgb4/sge.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/net/cxgb4/sge.c b/drivers/net/cxgb4/sge.c
+index 56adf44..f1813b5 100644
+--- a/drivers/net/cxgb4/sge.c
++++ b/drivers/net/cxgb4/sge.c
+@@ -215,8 +215,8 @@ static int map_skb(struct device *dev, const struct sk_buff *skb,
+ 	end = &si->frags[si->nr_frags];
+ 
+ 	for (fp = si->frags; fp < end; fp++) {
+-		*++addr = dma_map_page(dev, fp->page, fp->page_offset, fp->size,
+-				       DMA_TO_DEVICE);
++		*++addr = skb_frag_dma_map(dev, fp, 0, fp->size,
++					   DMA_TO_DEVICE);
+ 		if (dma_mapping_error(dev, *addr))
+ 			goto unwind;
+ 	}
+@@ -1409,13 +1409,14 @@ int cxgb4_ofld_send(struct net_device *dev, struct sk_buff *skb)
+ }
+ EXPORT_SYMBOL(cxgb4_ofld_send);
+ 
+-static inline void copy_frags(struct skb_shared_info *ssi,
++static inline void copy_frags(struct sk_buff *skb,
+ 			      const struct pkt_gl *gl, unsigned int offset)
+ {
++	struct skb_shared_info *ssi = skb_shinfo(skb);
+ 	unsigned int n;
+ 
+ 	/* usually there's just one frag */
+-	ssi->frags[0].page = gl->frags[0].page;
++	skb_frag_set_page(skb, 0, gl->frags[0].page);
+ 	ssi->frags[0].page_offset = gl->frags[0].page_offset + offset;
+ 	ssi->frags[0].size = gl->frags[0].size - offset;
+ 	ssi->nr_frags = gl->nfrags;
+@@ -1459,7 +1460,7 @@ struct sk_buff *cxgb4_pktgl_to_skb(const struct pkt_gl *gl,
+ 		__skb_put(skb, pull_len);
+ 		skb_copy_to_linear_data(skb, gl->va, pull_len);
+ 
+-		copy_frags(skb_shinfo(skb), gl, pull_len);
++		copy_frags(skb, gl, pull_len);
+ 		skb->len = gl->tot_len;
+ 		skb->data_len = skb->len - pull_len;
+ 		skb->truesize += skb->data_len;
+@@ -1522,7 +1523,7 @@ static void do_gro(struct sge_eth_rxq *rxq, const struct pkt_gl *gl,
+ 		return;
+ 	}
+ 
+-	copy_frags(skb_shinfo(skb), gl, RX_PKT_PAD);
++	copy_frags(skb, gl, RX_PKT_PAD);
+ 	skb->len = gl->tot_len - RX_PKT_PAD;
+ 	skb->data_len = skb->len;
+ 	skb->truesize += skb->data_len;
+@@ -1735,6 +1736,7 @@ static int process_responses(struct sge_rspq *q, int budget)
+ 
+ 			si.va = page_address(si.frags[0].page) +
+ 				si.frags[0].page_offset;
++
+ 			prefetch(si.va);
+ 
+ 			si.nfrags = frags + 1;
 -- 
-~Vinod
+1.7.2.5
 
