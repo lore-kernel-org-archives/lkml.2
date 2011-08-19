@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1HSMb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:31:58 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:37663 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751378Ab1HSMbz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:31:55 -0400
+	id S1753562Ab1HSMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:34:09 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57338 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab1HSMeF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:34:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110819113953.GM23101@legolas.emea.dhcp.ti.com>
-References: <1313753646-29089-1-git-send-email-keshava_mgowda@ti.com>
-	<20110819113953.GM23101@legolas.emea.dhcp.ti.com>
-Date: Fri, 19 Aug 2011 18:01:53 +0530
-Message-ID: <CAP05o4KFJ984KTxKu=aNd4OdSkTdCvT_RgFQ6pw8yRDFyprB_A@mail.gmail.com>
-Subject: Re: [PATCH 0/5 v6] mfd: omap: usb: Runtime PM support for EHCI and
- OHCI drivers
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gadiyar@ti.com, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, khilman@ti.com,
-        b-cousson@ti.com, paul@pwsan.com, johnstul@us.ibm.com,
-        vishwanath.bs@ti.com, tom.leiming@gmail.com, toddpoynor@google.com
+In-Reply-To: <BANLkTikFLbU70uJO0yrf8HipcVEwbUHgsw@mail.gmail.com>
+References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04992C02AC@HQMAIL01.nvidia.com>
+	<BANLkTinNmPVEM4Eu4efxkuwrCU_FVWFaAg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04992C049D@HQMAIL01.nvidia.com>
+	<BANLkTikFLbU70uJO0yrf8HipcVEwbUHgsw@mail.gmail.com>
+Date: Fri, 19 Aug 2011 14:34:04 +0200
+Message-ID: <CACRpkdbYvO4LfdTNGm3DJXKTKzS1_8cOXeqWfP3-yUikuxXTTA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] drivers: create a pinmux subsystem v3
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 5:10 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Fri, Aug 19, 2011 at 05:04:01PM +0530, Keshava Munegowda wrote:
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>
->> The Hwmod structures and Runtime PM features are implemented
->> For EHCI and OHCI drivers of OMAP3 and OMAP4.
->> The global suspend/resume of EHCI and OHCI
->> is validated on OMAP3430 sdp board with these patches.
->>
->> these patches are rebased to kevin's pm branch and
->> usbhs latest mainline kernel patches
->>
->> TODO:
->>      - Aggressive clock cutting in usb bus suspends
->>      - Remote Wakeup implementation using irq-chaining
->
-> what happened with V5 ? I didn't see any comments to that one. Please
-> start adding your changes here too.
+On Thu, Jun 16, 2011 at 2:47 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
 
-I rebased (trival) on anand gadiyar's TLL patch, covered typos and re tested on
-omap3 and omap4 again.
-I know its simple thing to do, but I don't want to see any merge
-conflicts by sameo or anybody.
-I request, if you have any comments please let me know so that we can
-freeze this patch series
-before I complete the development of  aggressive clock cutting/remote
-wakeup other wise
-I am requesting you ack-by :-)
+> So to summarize there are two related areas of discussion
+> here:
+>
+> 1. Whether a pinmux map shall map one or 1..N functions
+> 2. How to handle per-driver instance namespacing of functions
+>
+> In both cases I'm currently using simple strings and claiming
+> that by namespacing these strings cleverly we can avoid
+> complexity. So my answer to these are:
+>
+> 1. Use several functions with ovelapping maps, just name
+>  them differently
+> 2. Use a string convention and namespace by using
+>  platform/machine/package data and string conventions
+>  such as a "::" separator
+>
+> While I *think* (and DO correct me!) that you would argue:
+>
+> 1. Make it possible to map several functions to a single
+>  device map
+> 2. Namespace device instances by different map field
+>  members referring to specific instances
+>
+> Is this correctly understood, even if we may not agree?
 
-keshava
+I have now after being massaged by Grant changed opinion
+on (2) and each pin controller (e.g. pinmux) instance has it's
+struct device * or pinctrl_dev_name field in the mapping
+table, so I hope you will find that part solved in an acceptable
+way in the v4 patch set. So we'd solved 50% of our
+disagreements.
+
+(Please verify!)
+
+So remains (1). I hope you will ACK the patch set if I fix
+this also...
+
+I'm thinking about good ways to solve it, reading through
+your old mails, new suggestions based on the new patch
+set are welcome.
+
+Thanks,
+Linus Walleij
