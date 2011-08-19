@@ -1,211 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab1HSMNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:13:11 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42645 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1HSMNI convert rfc822-to-8bit (ORCPT
+	id S1753868Ab1HSMNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:13:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42948 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab1HSMNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:13:08 -0400
+	Fri, 19 Aug 2011 08:13:13 -0400
+Date: Fri, 19 Aug 2011 07:13:08 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+Message-ID: <20110819121308.GA16386@thinkpad-t410>
+Mail-Followup-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+	Eric Piel <E.A.B.Piel@tudelft.nl>,
+	Daniel Kurtz <djkurtz@chromium.org>,
+	Chase Douglas <chase.douglas@canonical.com>,
+	Henrik Rydberg <rydberg@euromail.se>,
+	Alessandro Rubini <rubini@cvml.unipv.it>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+ <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+ <20110818173959.GE28313@thinkpad-t410>
+ <87hb5ddcsa.fsf@emc.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZjNr6Wse9A_y_8TXBGc6NNr_=-uXGsFPD2w-mhwGUcDg@mail.gmail.com>
-References: <1312891671-28680-1-git-send-email-per.forlin@linaro.org>
-	<1312891671-28680-3-git-send-email-per.forlin@linaro.org>
-	<CACRpkdZjNr6Wse9A_y_8TXBGc6NNr_=-uXGsFPD2w-mhwGUcDg@mail.gmail.com>
-Date: Fri, 19 Aug 2011 14:13:07 +0200
-Message-ID: <CAJ0pr18MbMj=Np+_0e_F1RmBvRVUhOF5=0ZUUtU4yc_3kKE+cw@mail.gmail.com>
-Subject: Re: [PATCH --mmotm v8 2/3] mmc: core: add random fault injection
-From: Per Forlin <per.forlin@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Chris Ball <cjb@laptop.org>, linux-doc@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linaro-dev@lists.linaro.org,
-        linux-mm@kvack.org, J Freyensee <james_p_freyensee@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hb5ddcsa.fsf@emc.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 August 2011 13:40, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Aug 9, 2011 at 2:07 PM, Per Forlin <per.forlin@linaro.org> wrote:
->
->> This adds support to inject data errors after a completed host transfer.
->> The mmc core will return error even though the host transfer is successful.
->> This simple fault injection proved to be very useful to test the
->> non-blocking error handling in the mmc_blk_issue_rw_rq().
->> Random faults can also test how the host driver handles pre_req()
->> and post_req() in case of errors.
->
-> Good idea!
->
-Thanks.
+On Fri, Aug 19, 2011 at 04:29:57PM +0800, JJ Ding wrote:
+> > You should only report the ABS_[XY] coordinates when fingers != 0. The
+> > xorg synaptics module sees the values reported in that case as
+> > legitimate. This is causing me to see strange behaviors when scrolling
+> > with two-finger drags.
+> AFAIK, though v2 and v3 differ in packet format, they really report the
+> same data to the userspace. In this version of v3 support, I even try to
+> make v2 and v3 report all the data in the same sequnce. If you're seeing
+> this issue, maybe we should do the same with v2?
 
->> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->> index 89bdeae..a4996b0 100644
->> --- a/drivers/mmc/core/core.c
->> +++ b/drivers/mmc/core/core.c
->> @@ -25,6 +25,11 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/suspend.h>
->>
->> +#ifdef CONFIG_FAIL_MMC_REQUEST
->> +#include <linux/fault-inject.h>
->> +#include <linux/random.h>
->> +#endif
->
-> You don't need to #ifdef around the #include <> stuff, and if you
-> do, something is wrong with those headers. It's just a bunch of defines
-> that aren't used in some circumstances. Stack them with the others,
-> simply, just #ifdef the code below.
->
-I added them after suggestion from J Freyensee.  I am also in favor of
-no ifdefs here. I'll remove them in the next patchset unless James has
-any strong objections.
-
-
->> @@ -83,6 +88,43 @@ static void mmc_flush_scheduled_work(void)
->>        flush_workqueue(workqueue);
->>  }
->>
->> +#ifdef CONFIG_FAIL_MMC_REQUEST
->> +
->> +/*
->> + * Internal function. Inject random data errors.
->> + * If mmc_data is NULL no errors are injected.
->> + */
->> +static void mmc_should_fail_request(struct mmc_host *host,
->> +                                   struct mmc_request *mrq)
->> +{
->> +       struct mmc_command *cmd = mrq->cmd;
->> +       struct mmc_data *data = mrq->data;
->> +       static const int data_errors[] = {
->> +               -ETIMEDOUT,
->> +               -EILSEQ,
->> +               -EIO,
->> +       };
->> +
->> +       if (!data)
->> +               return;
->> +
->> +       if (cmd->error || data->error ||
->> +           !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
->> +               return;
->> +
->> +       data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
->> +       data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
->> +}
->> +
->> +#else /* CONFIG_FAIL_MMC_REQUEST */
->> +
->> +static void mmc_should_fail_request(struct mmc_host *host,
->> +                                   struct mmc_request *mrq)
->
-> Should be "static inline" so we know it will be folded in and nullified
-> by the compiler, lots of kernel code use that pattern.
->
-I'll fix.
-
->> diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
->> index f573753..189581d 100644
->> --- a/drivers/mmc/core/debugfs.c
->> +++ b/drivers/mmc/core/debugfs.c
->> @@ -13,6 +13,9 @@
->>  #include <linux/seq_file.h>
->>  #include <linux/slab.h>
->>  #include <linux/stat.h>
->> +#ifdef CONFIG_FAIL_MMC_REQUEST
->> +#include <linux/fault-inject.h>
->> +#endif
->
-> No #ifdef:ing...
->
-I'll remove it.
-
->> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
->> index 0f83858..ee472fe 100644
->> --- a/include/linux/mmc/host.h
->> +++ b/include/linux/mmc/host.h
->> @@ -12,6 +12,9 @@
->>
->>  #include <linux/leds.h>
->>  #include <linux/sched.h>
->> +#ifdef CONFIG_FAIL_MMC_REQUEST
->> +#include <linux/fault-inject.h>
->> +#endif
->
-> Neither here...
->
-dito
-
->> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
->> index 47879c7..ebff0c9 100644
->> --- a/lib/Kconfig.debug
->> +++ b/lib/Kconfig.debug
->
-> I'm contemplating if we should create drivers/mmc/Kconfig.debug
-> and stash this in there instead, i.e. also move out MMC_DEBUG
-> from drivers/mmc/Kconfig and add to that?
->
-> It seems more apropriate to select this from the MMC subsystem.
-> However the core of fault injection is in lib/
->
-> So maybe a simple:
->
-> config FAIL_MMC_REQUEST
->    bool
->    select FAULT_INJECTION
->
-> That can then be selected by a debug option in the MMC subsystem?
-> I fear it may be hard to find this otherwise...
->
-> (NB: I have very little clue how the Kconfig.debug files get sourced
-> into the Kbuild so I might be misguided...)
->
-The FAIL_MMC_REQUEST sits right next to the rest of the fail injection
-functions.
-
-config FAILSLAB
-	depends on FAULT_INJECTION
-	depends on SLAB || SLUB
-
-config FAIL_PAGE_ALLOC
-	depends on FAULT_INJECTION
-
-config FAIL_MAKE_REQUEST
-	depends on FAULT_INJECTION && BLOCK
-
-config FAIL_IO_TIMEOUT
-	depends on FAULT_INJECTION && BLOCK
-
-config FAIL_MMC_REQUEST
-	select DEBUG_FS
-	depends on FAULT_INJECTION && MMC
-
-I think the proper place is to have it here together with the rest.
-
->> @@ -1090,6 +1090,17 @@ config FAIL_IO_TIMEOUT
->>          Only works with drivers that use the generic timeout handling,
->>          for others it wont do anything.
->>
->> +config FAIL_MMC_REQUEST
->> +       bool "Fault-injection capability for MMC IO"
->> +       select DEBUG_FS
->> +       depends on FAULT_INJECTION && MMC
->
-> Isn't:
->
-> depends on MMC
-> select FAULT_INJECTION
->
-> Simpler to use? Now you have to select fault injection first
-> to even see this option right?
->
-In menuconfig you have to select FAULT_INJECTION first, then you can
-choose from a list of available fault injection options. I don't see
-any real reason for treating FAIL_MMC_REQUEST different from the rest.
-
-Thanks for your comments.
-/Per
+Actually neither v1 nor v2 reports ABS_[XY] unless fingers != 0. In v2
+the reporting is in a switch statement on the number of fingers, and 0
+is unhandled.
