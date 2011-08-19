@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab1HSNjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:39:35 -0400
+	id S1755879Ab1HSNj6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:39:58 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:58735 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab1HSN3O (ORCPT
+	with ESMTP id S1754994Ab1HSN3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:29:14 -0400
+	Fri, 19 Aug 2011 09:29:12 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="159732384"
+   d="scan'208";a="159732376"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH 41/75] qeth: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:27:13 +0100
-Message-ID: <1313760467-8598-41-git-send-email-ian.campbell@citrix.com>
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 40/75] pasemi: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:27:12 +0100
+Message-ID: <1313760467-8598-40-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -29,31 +28,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-s390@vger.kernel.org
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: netdev@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
 ---
- drivers/s390/net/qeth_core_main.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/net/pasemi_mac.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index 4550573..91d87ba 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -3204,7 +3204,8 @@ static inline void __qeth_fill_buffer(struct sk_buff *skb,
+diff --git a/drivers/net/pasemi_mac.c b/drivers/net/pasemi_mac.c
+index 9ec112c..3cd2cd3 100644
+--- a/drivers/net/pasemi_mac.c
++++ b/drivers/net/pasemi_mac.c
+@@ -1505,9 +1505,8 @@ static int pasemi_mac_start_tx(struct sk_buff *skb, struct net_device *dev)
+ 	for (i = 0; i < nfrags; i++) {
+ 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
  
- 	for (cnt = 0; cnt < skb_shinfo(skb)->nr_frags; cnt++) {
- 		frag = &skb_shinfo(skb)->frags[cnt];
--		buffer->element[element].addr = (char *)page_to_phys(frag->page)
-+		buffer->element[element].addr = (char *)
-+			page_to_phys(skb_frag_page(frag))
- 			+ frag->page_offset;
- 		buffer->element[element].length = frag->size;
- 		buffer->element[element].eflags = SBAL_EFLAGS_MIDDLE_FRAG;
+-		map[i+1] = pci_map_page(mac->dma_pdev, frag->page,
+-					frag->page_offset, frag->size,
+-					PCI_DMA_TODEVICE);
++		map[i + 1] = skb_frag_dma_map(&mac->dma_pdev->dev, frag, 0,
++					      frag->size, PCI_DMA_TODEVICE);
+ 		map_size[i+1] = frag->size;
+ 		if (pci_dma_mapping_error(mac->dma_pdev, map[i+1])) {
+ 			nfrags = i;
 -- 
 1.7.2.5
 
