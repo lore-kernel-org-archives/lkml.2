@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab1HSGVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 02:21:39 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56890 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab1HSGVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 02:21:38 -0400
-Message-ID: <4E4E00E3.7080306@linux.vnet.ibm.com>
-Date: Fri, 19 Aug 2011 11:51:23 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	id S1752121Ab1HSGeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 02:34:06 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:56657 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378Ab1HSGeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 02:34:02 -0400
+X-ASG-Debug-ID: 1313735641-03d6a510a82f4580001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E4E03D5.40404@fusionio.com>
+Date: Fri, 19 Aug 2011 08:33:57 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Subject: Re: [PATCH V2 1/1][cleanup] memcg: renaming of mem variable to memcg
-References: <20110812070623.28939.4733.sendpatchset@oc5400248562.ibm.com> <20110817124339.GA10245@tiehlicka.suse.cz>
-In-Reply-To: <20110817124339.GA10245@tiehlicka.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Shaohua Li <shaohua.li@intel.com>
+CC: "teravest@google.com" <teravest@google.com>,
+        lkml <linux-kernel@vger.kernel.org>, "Shi, Alex" <alex.shi@intel.com>
+Subject: Re: cfq-iosched: a regression
+References: <1313462826.27321.22.camel@sli10-conroe>
+X-ASG-Orig-Subj: Re: cfq-iosched: a regression
+In-Reply-To: <1313462826.27321.22.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1313735641
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.72191
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2011 06:13 PM, Michal Hocko wrote:
-> Sorry for late reply
->
-> On Fri 12-08-11 12:36:23, Raghavendra K T wrote:
->>   The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses
->>   "struct mem_cgroup *memcg". This patch renames all mem variables to memcg in
->>   source file.
->>
->> Testing : Compile tested with following configurations.
->> 1) make defconfig ARCH=i386 + CONFIG_CGROUP_MEM_RES_CTLR=y
->> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
->>
->> Binary size Before patch
->> ========================
->>     text	   data	    bss	    dec	    hex	filename
->> 8911169	 520464	1884160	11315793	 acaa51	vmlinux
->>
->> Binary Size After patch
->> =======================
->>     text	   data	    bss	    dec	    hex	filename
->> 8911169	 520464	1884160	11315793	 acaa51	vmlinux
->
-> It would be much nicer to see unchanged md5sum. I am not sure how much
-> possible is this with current gcc or whether special command line
-> parameters have to be used (at least !CONFIG_DEBUG_INFO* is necessary)
-> but simple variable rename shouldn't be binary visible.
-> I guess that a similar approach was used during 32b and 64b x86
-> unification.
->
-I agree,  I could get same MD5 sum only in N N N config case (3rd config).
-  I am not sure whether we can get same Md5 after lines have been split.
-Here is what I tried: static KBUILD_BUILD_TIMESTAMP 
-KBUILD_BUILD_VERSION, initramfs source. strip vmlinux. (could not 
-disable CONFIG_BUG).
-I referred to 32nb 64b unification also, did not get much insight from 
-there on same MD5.
+On 2011-08-16 04:47, Shaohua Li wrote:
+> We have a kernel build regression since 3.1-rc1, which is about 10%
+> regression. The kernel source is in an ext3 filesystem.
+> Alex Shi bisect it to commit:
+> commit a07405b7802691d29ab3b23bdc76ee6d006aad0b
+> Author: Justin TerAvest <teravest@google.com>
+> Date:   Sun Jul 10 22:09:19 2011 +0200
+> 
+>     cfq: Remove special treatment for metadata rqs.
+> 
+> Apparently this is caused by lack metadata preemption, where ext3/ext4
+> do use READ_META. I didn't see a way to fix the issue, so suggest
+> reverting the patch.
+> 
+> Reported-by: Alex Shi<alex.shi@intel.com>
+> Reported-by: Shaohua Li<shaohua.li@intel.com>
 
->>
->> 2) make defconfig ARCH=i386 + CONFIG_CGROUP_MEM_RES_CTLR=y
->> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=n
->
-> I would assume the same testing results as above
-Yes
-8908671	 519808	1884160	11312639	 ac9dff	vmlinux
->
->>
->> 3) make defconfig ARCH=i386  CONFIG_CGROUP_MEM_RES_CTLR=n
->> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=n
->
-> ditto.
+I had a gut feeling on that meta data, it's hard to know exactly where
+it helps at this point. I'll revert the commit and then we can diagnose
+this on the side.
 
-8878794	 517632	1880064	11276490	 ac10ca	vmlinux before and after
->
->>
->> Other sanity check:
->> Bootable configuration on x86 (T60p)  with  CONFIG_CGROUP_MEM_RES_CTLR=y
->> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
->> is tesed with basic mounting of memcgroup, creation of child and parallel fault.
->> mkdir -p /cgroup
->> mount -t cgroup none /cgroup -o memory
->> mkdir /cgroup/0
->> echo $$>  /cgroup/0/tasks
->> time ./parallel_fault 2 100000 32
->>
->> real	0m0.025s
->> user	0m0.001s
->> sys	0m0.033s
->
-> This looks like a random test. I wouldn't add it to the changelog.
-Agree.
+-- 
+Jens Axboe
 
