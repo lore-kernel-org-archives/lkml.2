@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab1HSWxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 18:53:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53604 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754662Ab1HSWxB (ORCPT
+	id S1756554Ab1HSXK1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 19:10:27 -0400
+Received: from atreides.gradator.net ([212.85.155.42]:45297 "EHLO
+	atreides.gradator.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab1HSXKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 18:53:01 -0400
-Date: Fri, 19 Aug 2011 15:52:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        yrl.pp-manager.tt@hitachi.com, Namhyung Kim <namhyung@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH v2] avoid null pointer access in vm_struct
-Message-Id: <20110819155238.b11d19fb.akpm@linux-foundation.org>
-In-Reply-To: <20110819105133.7504.62129.stgit@ltc219.sdl.hitachi.co.jp>
-References: <20110819105133.7504.62129.stgit@ltc219.sdl.hitachi.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 19:10:25 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Aug 2011 19:10:25 EDT
+Date: Sat, 20 Aug 2011 01:03:44 +0200
+From: Sylvain Rochet <gradator@gradator.net>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Cc: Sylvain Rochet <gradator@gradator.net>
+Message-ID: <20110819230344.GA24784@gradator.net>
+References: <20101018223540.GA20730@gradator.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <20101018223540.GA20730@gradator.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: gradator@atreides.gradator.net
+Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
+X-SA-Exim-Scanned: Yes (on atreides.gradator.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011 19:51:33 +0900
-Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com> wrote:
 
-> The /proc/vmallocinfo shows information about vmalloc allocations in vmlist
-> that is a linklist of vm_struct. It, however, may access pages field of
-> vm_struct where a page was not allocated, which results in a null pointer
-> access and leads to a kernel panic.
-> 
-> Why this happen:
-> In __vmalloc_area_node(), the nr_pages field of vm_struct are set to the
-> expected number of pages to be allocated, before the actual pages
-> allocations. At the same time, when the /proc/vmallocinfo is read, it
-> accesses the pages field of vm_struct according to the nr_pages field at
-> show_numa_info(). Thus, a null pointer access happens.
-> 
-> Patch:
-> This patch sets nr_pages field of vm_struct AFTER the pages allocations
-> finished in __vmalloc_area_node(). So, it can avoid accessing the pages
-> field with unallocated page when show_numa_info() is called.
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think this is still just a workaround to fix up the real bug, and
-that the real bug is that the vm_struct is installed into the vmlist
-*before* it is fully initialised.  It's just wrong to insert an object
-into a globally-visible list and to then start populating it!  If we
-were instead to fully initialise the vm_struct and *then* insert it
-into vmlist, the bug is fixed.
+Hi,
 
-Also I'd agree with Paul's concern regarding cross-CPU memory ordering.
+On Tue, Oct 19, 2010 at 12:35:40AM +0200, Sylvain Rochet wrote:
+>=20
+> ... upgraded to 2.6.33.5, then 2.6.33.7, finally to 2.6.35.7, and I=20
+> always end up with the same ending, it seems inotify can miss some VFS=20
+> events from time to time.
 
+I finally find out why.
+
+The NFS server does not always know the name of the modified file, if=20
+the modified inode was cleared from the VFS cache fsnotify does not know=20
+as well the filename then inotify child events on directories are=20
+silently tossed.
+
+Easy way to reproduce:
+
+Add a few printk debug (here it only works if /data is the NFS export):
+
+--- begin//fs/nfsd/vfs.c        2011-07-22 04:17:23.000000000 +0200
++++ linux-3.0/fs/nfsd/vfs.c     2011-07-30 03:18:17.837560809 +0200
+@@ -975,6 +975,8 @@
+        inode =3D dentry->d_inode;
+        exp   =3D fhp->fh_export;
+=20
++       printk("nfsd write inode=3D%ld name=3D%s\n", inode->i_ino, dentry->=
+d_name.name);
++
+        /*
+         * Request sync writes if
+         *  -   the sync export option has been set, or
+
+diff -Nru begin//include/linux/fsnotify.h linux-3.0/include/linux/fsnotify.h
+--- begin//include/linux/fsnotify.h     2011-07-22 04:17:23.000000000 +0200
++++ linux-3.0/include/linux/fsnotify.h  2011-07-30 03:07:00.330239062 +0200
+@@ -216,8 +232,15 @@
+                mask |=3D FS_ISDIR;
+=20
+        if (!(file->f_mode & FMODE_NONOTIFY)) {
++               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data")=
+ )
++                       printk("fsnotify modify inode=3D%ld name=3D%s\n", i=
+node->i_ino, file->f_dentry->d_name.name);
+                fsnotify_parent(path, NULL, mask);
+                fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
++       } else {
++               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data")=
+ )
++                       printk("fsnotify modify-nonotify inode=3D%ld name=
+=3D%s\n", inode->i_ino, file->f_dentry->d_name.name);
+        }
+ }
+
+
+On the NFS client, open a fd and send some data:
+
+# exec 1> test
+# ls -la
+#=20
+
+On the NFS server, check the kern log:
+
+Aug 20 00:57:44 inotifydebug kernel: nfsd write inode=3D13 name=3Dtest
+Aug 20 00:57:44 inotifydebug kernel: fsnotify modify inode=3D13 name=3Dtest
+
+Everything goes well.
+
+Now, clear the VFS cache on the NFS server:
+
+# echo 3 > /proc/sys/vm/drop_caches=20
+
+On the NFS client, send some data to the fd:
+
+# ls -la
+#=20
+
+On the NFS server, check the kern log:
+
+Aug 20 00:58:56 inotifydebug kernel: nfsd write inode=3D13 name=3D
+Aug 20 00:58:56 inotifydebug kernel: fsnotify modify inode=3D13 name=3D
+
+The filename is lost, fsnotify does not know the filename anymore,=20
+therefore inotify cannot send event about a modified file in a watched=20
+directory.
+
+End of the story.
+
+I guess this is almost impossible to fix this fsnotify bug, this is due=20
+by the fact that NFS use inode as file identifiers, so in some case this=20
+is impossible to know the modified filepath, and therefore impossible to=20
+match the file event to the directory watch.
+
+Kind regards,
+Sylvain
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk5O69AACgkQDFub3qtEsS8zPgCfe5WwDzEh1Vxi3omGs8i6qx9J
+UB0AoIUPMsJ9f/vsK/kEwHLqcoVr978l
+=XDSa
+-----END PGP SIGNATURE-----
+
+--4Ckj6UjgE2iN1+kY--
