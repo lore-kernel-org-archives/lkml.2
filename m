@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab1HSNtE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:49:04 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38664 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab1HSNs5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:48:57 -0400
-From: Deepthy Ravi <deepthy.ravi@ti.com>
-To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, Vaibhav Hiremath <hvaibhav@ti.com>,
-        Deepthy Ravi <deepthy.ravi@ti.com>
-Subject: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Date: Fri, 19 Aug 2011 19:18:45 +0530
-Message-ID: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com>
-X-Mailer: git-send-email 1.6.2.4
+	id S1756056Ab1HSNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:49:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457Ab1HSNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:49:07 -0400
+Date: Fri, 19 Aug 2011 09:48:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch v3 2/8] kdump: Make kimage_load_crash_segment() weak
+Message-ID: <20110819134836.GB18656@redhat.com>
+References: <20110812134849.748973593@linux.vnet.ibm.com>
+ <20110812134907.166585439@linux.vnet.ibm.com>
+ <20110818171541.GC15413@redhat.com>
+ <1313760472.3858.26.camel@br98xy6r>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313760472.3858.26.camel@br98xy6r>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+On Fri, Aug 19, 2011 at 03:27:52PM +0200, Michael Holzheu wrote:
+> Hello Vivek,
+> 
+> On Thu, 2011-08-18 at 13:15 -0400, Vivek Goyal wrote:
+> > On Fri, Aug 12, 2011 at 03:48:51PM +0200, Michael Holzheu wrote:
+> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > > 
+> > > On s390 we do not create page tables at all for the crashkernel memory.
+> > > This requires a s390 specific version for kimage_load_crash_segment().
+> > > Therefore this patch declares this function as "__weak". The s390 version is
+> > > very simple. It just copies the kexec segment to real memory without using
+> > > page tables:
+> > > 
+> > > int kimage_load_crash_segment(struct kimage *image,
+> > >                               struct kexec_segment *segment)
+> > > {
+> > >         return copy_from_user_real((void *) segment->mem, segment->buf,
+> > >                                    segment->bufsz);
+> > > }
+> > > 
+> > > There are two main advantages of not creating page tables for the
+> > > crashkernel memory:
+> > > 
+> > > a) It saves memory. We have scenarios in mind, where crashkernel
+> > >    memory can be very large and saving page table space is important.
+> > > b) We protect the crashkernel memory from being overwritten.
+> > 
+> > Michael,
+> > 
+> > Thinking more about it. Can't we provide a arch specific version of
+> > kmap() and kunmap() so that we create temporary mappings to copy
+> > the pages and then these are torn off.
+> 
+> Isn't kmap/kunmap() used for higmem? These functions are called from
+> many different functions in the Linux kernel, not only for kdump. I
+> would assume that creating and removing mappings with these functions is
+> not what a caller would expect and probably would break the Linux kernel
+> at many other places, no?
 
-Fix the build break caused when CONFIG_MEDIA_CONTROLLER
-option is disabled and if any sensor driver has to be used
-between MC and non MC framework compatible devices.
+[CCing linux-mm]
 
-For example,if tvp514x video decoder driver migrated to
-MC framework is being built without CONFIG_MEDIA_CONTROLLER
-option enabled, the following error messages will result.
-drivers/built-in.o: In function `tvp514x_remove':
-drivers/media/video/tvp514x.c:1285: undefined reference to
-`media_entity_cleanup'
-drivers/built-in.o: In function `tvp514x_probe':
-drivers/media/video/tvp514x.c:1237: undefined reference to
-`media_entity_init'
+Yes it is being used for highmem pages. If arch has not defined kmap()
+then generic definition is just returning page_address(page), expecting
+that page will be mapped.
 
-The file containing definitions of media_entity_init and
-media_entity_cleanup functions will not be built if that
-config option is disabled. And this is corrected by
-defining two dummy functions.
+I was wondering that what will be broken if arch decides to extend this
+to create temporary mappings for pages which are not HIGHMEM but do
+not have any mapping. (Like this special case of s390).
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Deepthy Ravi <deepthy.ravi@ti.com>
----
- include/media/media-entity.h |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+I guess memory management guys can give a better answer here. As a layman,
+kmap() seems to be the way to get a kernel mapping for any page frame
+and if one is not already there, then arch might create one on the fly,
+like we do for HIGHMEM pages. So the question is can be extend this
+to also cover pages which are not highmem but do not have any mappings
+on s390.
 
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index cd8bca6..c90916e 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -121,9 +121,18 @@ struct media_entity_graph {
- 	int top;
- };
- 
-+#ifdef CONFIG_MEDIA_CONTROLLER
- int media_entity_init(struct media_entity *entity, u16 num_pads,
- 		struct media_pad *pads, u16 extra_links);
- void media_entity_cleanup(struct media_entity *entity);
-+#else
-+static inline int media_entity_init(struct media_entity *entity, u16 num_pads,
-+		struct media_pad *pads, u16 extra_links)
-+{
-+	return 0;
-+}
-+static inline void media_entity_cleanup(struct media_entity *entity) {}
-+#endif
- 
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
--- 
-1.7.0.4
+> 
+> Perhaps we can finish this discussion after my vacation. I will change
+> my patch series that we even do not need this patch...
 
+So how are you planning to get rid of this patch without modifying kmap(),
+kunmap() implementation for s390?
+
+> 
+> So only two common code patches are remaining. I will send the common
+> code patches again and will ask Andrew Morton to integrate them in the
+> next merge window.The s390 patches will be integrated by Martin.
+
+I am fine with merge of other 2 common patches. Once you repost the
+series, I will ack those.
+
+Thanks
+Vivek
