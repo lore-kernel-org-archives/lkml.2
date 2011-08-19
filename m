@@ -1,187 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab1HSTBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:01:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab1HSTBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 15:01:44 -0400
-Date: Fri, 19 Aug 2011 15:00:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
-Message-ID: <20110819190037.GJ18656@redhat.com>
-References: <20110816022006.348714319@intel.com>
- <20110816022329.190706384@intel.com>
- <20110819020637.GA13597@redhat.com>
- <20110819025406.GA13365@localhost>
+	id S1755571Ab1HSTB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:01:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50578 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab1HSTBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 15:01:52 -0400
+Message-ID: <4E4EB31B.70709@suse.cz>
+Date: Fri, 19 Aug 2011 21:01:47 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819025406.GA13365@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mikeci@acm.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Possible bug in 8250.c
+References: <26505.1313775887@sonic.net>
+In-Reply-To: <26505.1313775887@sonic.net>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 10:54:06AM +0800, Wu Fengguang wrote:
-> Hi Vivek,
+On 08/19/2011 07:44 PM, Ivica Mikec wrote:
 > 
-> > > +		base_rate = bdi->dirty_ratelimit;
-> > > +		pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
-> > > +					       background_thresh, nr_dirty,
-> > > +					       bdi_thresh, bdi_dirty);
-> > > +		if (unlikely(pos_ratio == 0)) {
-> > > +			pause = MAX_PAUSE;
-> > > +			goto pause;
-> > >  		}
-> > > +		task_ratelimit = (u64)base_rate *
-> > > +					pos_ratio >> RATELIMIT_CALC_SHIFT;
-> > 
-> > Hi Fenguaang,
-> > 
-> > I am little confused here. I see that you have already taken pos_ratio
-> > into account in bdi_update_dirty_ratelimit() and wondering why to take
-> > that into account again in balance_diry_pages().
-> > 
-> > We calculated the pos_rate and balanced_rate and adjusted the
-> > bdi->dirty_ratelimit accordingly in bdi_update_dirty_ratelimit().
+>  Hi!
 > 
-> Good question. There are some inter-dependencies in the calculation,
-> and the dependency chain is the opposite to the one in your mind:
-> balance_dirty_pages() used pos_ratio in the first place, so that
-> bdi_update_dirty_ratelimit() have to use pos_ratio in the calculation
-> of the balanced dirty rate, too.
 > 
-> Let's return to how the balanced dirty rate is estimated. Please pay
-> special attention to the last paragraphs below the "......" line.
+> I noticed a problem in 8250.c. 
 > 
-> Start by throttling each dd task at rate
+> My board has only one UART port, and is 16550 compatible, so in function serial8250_interrupt I see that serial_in function is called twice. Second time, code "else if (end == NULL)" is executed and function return IRQ_NONE. This causes an entry in /proc/irq/spurious:
 > 
->         task_ratelimit = task_ratelimit_0                               (1)
->                          (any non-zero initial value is OK)
+> count 239
+> unhandled 1
+> last_unhandled 4294700846 ms
 > 
-> After 200ms, we measured
-> 
->         dirty_rate = # of pages dirtied by all dd's / 200ms
->         write_bw   = # of pages written to the disk / 200ms
-> 
-> For the aggressive dd dirtiers, the equality holds
-> 
->         dirty_rate == N * task_rate
->                    == N * task_ratelimit
->                    == N * task_ratelimit_0                              (2)
-> Or     
->         task_ratelimit_0 = dirty_rate / N                               (3)
-> 
-> Now we conclude that the balanced task ratelimit can be estimated by
-> 
->         balanced_rate = task_ratelimit_0 * (write_bw / dirty_rate)      (4)
-> 
-> Because with (2) and (3), (4) yields the desired equality (1):
-> 
->         balanced_rate == (dirty_rate / N) * (write_bw / dirty_rate)
->                       == write_bw / N
+> But this is not a spurious interrupt.
 
-Hi Fengguang,
+How did you find out? Have you checked that the port signals that it
+raised an interrupt? I.e. does it go through the 'if (!(iir &
+UART_IIR_NO_INT))' branch?
 
-Following is my understanding. Please correct me where I got it wrong.
+What other devices are bound to the same interrupt? Attach /proc/interrupts.
 
-Ok, I think I follow till this point. I think what you are saying is
-that following is our goal in a stable system.
-
-	task_ratelimit = write_bw/N				(6)
-
-So we measure the write_bw of a bdi over a period of time and use that
-as feedback loop to modify bdi->dirty_ratelimit which inturn modifies
-task_ratelimit and hence we achieve the balance. So we will start with
-some arbitrary task limit say task_ratelimit_0, and modify that limit
-over a period of time based on our feedback loop to achieve a balanced
-system. And following seems to be the formula.
-					    write_bw
-	task_ratelimit = task_ratelimit_0 * ------- 		(7)
-					    dirty_rate
-
-Now I also understand that by using (2) and (3), you proved that
-how (7) will lead to (6) and that is our deisred goal. 
-
-> 
-> .............................................................................
-> 
-> Now let's revisit (1). Since balance_dirty_pages() chooses to execute
-> the ratelimit
-> 
->         task_ratelimit = task_ratelimit_0
->                        = dirty_ratelimit * pos_ratio                    (5)
-> 
-
-So balance_drity_pages() chose to take into account pos_ratio() also
-because for various reason like just taking into account only bandwidth
-variation as feedback was not sufficient. So we also took pos_ratio
-into account which in-trun is dependent on gloabal dirty pages and per
-bdi dirty_pages/rate.
-
-So we refined the formula for calculating a tasks's effective rate
-over a period of time to following.
-					    write_bw
-	task_ratelimit = task_ratelimit_0 * ------- * pos_ratio		(9)
-					    dirty_rate
-
-Is my understanding right so far?
-
-> Put (5) into (4), we get the final form used in
-> bdi_update_dirty_ratelimit()
-> 
->         balanced_rate = (dirty_ratelimit * pos_ratio) * (write_bw / dirty_rate)
-> 
-> So you really need to take (dirty_ratelimit * pos_ratio) as a single entity.
-
-Now few questions.
-
-- What is dirty_ratelimit in formula above?
-
-- Is it wrong to understand the issue in following manner.
-
-  bdi->dirty_ratelimit is tracking write bandwidth variation on the bdi
-  and effectively tracks write_bw/N.
-
-  bdi->dirty_ratelimit = write_bw/N
-
-  or 
-
-					    		  write_bw
-  bdi->dirty_ratelimit = previous_bdi->dirty_ratelimit * -------------    (10)
-					     		  dirty_rate
-
- Hence a tasks's balanced rate from (9) and (10) is.
-
- task_ratelimit = bdi->dirty_ratelimit * pos_ratio		(11)
-
-So my understanding about (10) and (11) is wrong? if no, then question
-comes that bdi->dirty_ratelimit is supposed to be keeping track of 
-write bandwidth variations only. And in turn task ratelimit will be
-driven by both bandwidth varation as well as pos_ratio variation.
-
-But you seem to be doing following.
-
- bdi->dirty_ratelimit = adjust based on a cobination of bandwidth feedback
-		        and pos_ratio feedback. 
-
- task_ratelimit = bdi->dirty_ratelimit * pos_ratio		(12)
-
-So my question is that when task_ratelimit is finally being adjusted 
-based on pos_ratio feedback, why bdi->dirty_ratelimit also needs to
-take that into account.
-
-I know you have tried explaining it, but sorry, I did not get it. May
-be give it another shot in a layman's terms and I might understand it.
-
-Thanks
-Vivek
+regards,
+-- 
+js
+suse labs
