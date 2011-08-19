@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1HSMxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:53:41 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:41401 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1HSMxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:53:38 -0400
-Subject: Re: [patch 0/3] kdump: Add external kdump entry point for s390
- stand-alone dump tools
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Simon Horman <horms@verge.net.au>
-Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
-        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, ebiederm@xmission.com,
-        schwidefsky@de.ibm.com, kexec@lists.infradead.org, vgoyal@redhat.com
-In-Reply-To: <20110819011431.GB20747@verge.net.au>
-References: <20110729123944.562622201@linux.vnet.ibm.com>
-	 <20110819011431.GB20747@verge.net.au>
+	id S1752897Ab1HSMys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:54:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26945 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab1HSMyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:54:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="40031720"
+Subject: Re: [GIT PULL] dmaengine: at_hdmac fixes for next
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E4A7713.1070902@atmel.com>
+References: <4E4A7713.1070902@atmel.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 19 Aug 2011 14:53:20 +0200
-Message-ID: <1313758400.3858.12.camel@br98xy6r>
+Date: Fri, 19 Aug 2011 18:23:46 +0530
+Message-ID: <1313758426.2336.2.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Simon,
-
-On Fri, 2011-08-19 at 10:14 +0900, Simon Horman wrote:
-> On Fri, Jul 29, 2011 at 02:39:44PM +0200, Michael Holzheu wrote:
-> > Hello Vivek,
-> > 
-> > I finished the patches that add the stand-alone dump tools support on
-> > top of the recently sent v2 patch series. The following three patches
-> > implement the program check idea that we have discussed recently:
-> > 
-> > [1] kdump: Add new machine_kexec_finish() architecture callback
-> > [2] s390: Add external kdump entry point for s390 stand-alone dump tools
-> > [3] kexec-tools: Emit program check on s390 for checksum failure
+On Tue, 2011-08-16 at 15:56 +0200, Nicolas Ferre wrote:
+> Vinod,
 > 
-> Hi Michael,
+> Please pull from:
 > 
-> in general I am fine with these patches and happy to merge them
+>   git://github.com/at91linux/linux-2.6-at91.git nfe/sdma_at_hdmac
+> 
+> to receive latest updates for the Atmel at_hdmac dmaengine driver. Those changes are made on top of current linus' git tree (v3.1-rc2-59-g5bad33c).
+> The patches below have been discussed on the linux-arm-kernel mailing-list.
+> 
+> Thanks,
+> 
+> Nicolas Ferre (4):
+>       dmaengine: at_hdmac: replace spin_lock* with irqsave variants
+>       dmaengine: at_hdmac: improve power management routines
+>       dmaengine: at_hdmac: add wrappers for testing channel state
+>       dmaengine: at_hdmac: fix way to specify cyclic capability
+> 
+>  drivers/dma/at_hdmac.c      |  159 +++++++++++++++++++++++++++++++++---------
+>  drivers/dma/at_hdmac_regs.h |   24 +++++++
+>  2 files changed, 149 insertions(+), 34 deletions(-)
+> 
+Hi Nicolas,
 
-That's good news.
+I tried to merge your branch, but I also get lot on unwanted commits :(
+Looks like this branch is based on current Linus's tree, I typically
+base my next on rc-X and not any random commit.
 
-> although I am a little unclear about the status of the kernel side of
-> things. Please let me know if you would like me to merge the kexec-tools
-> patches now or wait a bit (for an updated version?).
+Either you can rebase to latest rc-X and I will merge, or since I
+created a test branch I can extract your 4 patches and apply to my next.
 
-I think that we are almost done with the discussion. I will send you my
-current kexec-tools patches and would be glad, if you could integrate
-them now.
+Let me know which way you prefer
 
->From Monday I will be two weeks on vacation. If there are additional
-questions please contact Martin Schwidefsky and Heiko Carstens.
 
-> Also, if you could give me any pointers on how to obtain an s390
-> cross-compiling environment for x86_64 I would be most grateful.
-
-There are debian packages for under:
-http://debian.speedblue.org/ 
-
-Michael
+-- 
+~Vinod
 
