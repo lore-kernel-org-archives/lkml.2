@@ -1,80 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1HSNZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:25:01 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36059 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1HSNY6 convert rfc822-to-8bit (ORCPT
+	id S1753550Ab1HSN1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:27:55 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:12775 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab1HSN1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:24:58 -0400
+	Fri, 19 Aug 2011 09:27:52 -0400
+X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
+   d="scan'208";a="159732145"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
+Subject: [PATCH 01/75] net: add APIs for manipulating skb page fragments.
+Date: Fri, 19 Aug 2011 14:26:33 +0100
+Message-ID: <1313760467-8598-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-In-Reply-To: <20110819130615.GA6307@kernel.org>
-References: <1312315404-sup-6084@shiny>
-	<20110819130615.GA6307@kernel.org>
-Date: Fri, 19 Aug 2011 09:24:57 -0400
-Message-ID: <CA+5PVA5QMZ3i7Pr1jsis+r4CeZZCWEt59oZXNhtf4Ea-yeAgGA@mail.gmail.com>
-Subject: Re: [build breakage] Re: [GIT PULL] Btrfs pull round two
-From: Josh Boyer <jwboyer@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 9:06 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Chris Mason <chris.mason@oracle.com> wrote:
->
->> Hi everyone,
->>
->> This has the rest of the btrfs cleanups for 3.1. †The bulk of this is
->> error handing fixes from SUSE and cleanups from Fujitsu.
->
-> I havent seen a lkml mail of this pull request:
->
-> †5c80c71b9a0e: Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable
->
-> so i'm following up on this earlier pull request.
->
-> the aptly named btrfs-unstable branch indeed does not even build on
-> x86 defconfig (32-bit):
->
-> † LD † † †.tmp_vmlinux1
-> †fs/built-in.o: In function `btrfs_can_relocate':
-> †(.text+0x1d6605): undefined reference to `__udivdi3'
-> †make: *** [.tmp_vmlinux1] Error 1
->
-> and given that most of the commits:
->
-> 81d86e1b7096: Merge branch 'btrfs-3.0' into for-linus
-> f1e490a7ebe4: Btrfs: set i_size properly when fallocating and we already
-> 9a4327ca1f45: btrfs: unlock on error in btrfs_file_llseek()
-> cb6db4e57632: btrfs: btrfs_permission's RO check shouldn't apply to device nodes
-> f81c9cdc567c: Btrfs: truncate pages from clone ioctl target range
-> 0e588859618b: Btrfs: fix uninitialized sync_pending
-> bb3ac5a4dfc8: Btrfs: fix wrong free space information
-> f4ac904c411b: btrfs: memory leak in btrfs_add_inode_defrag()
-> c97c2916e25c: Btrfs: use plain page_address() in header fields setget functions
-> cb1b69f4508a: Btrfs: forced readonly when btrfs_drop_snapshot() fails
-> cdcb725c05fe: Btrfs: check if there is enough space for balancing smarter
-> 38c01b960592: Btrfs: fix a bug of balance on full multi-disk partitions
-> 34f3e4f23ca3: Btrfs: fix an oops of log replay
-> d5e2003c2bcd: Btrfs: detect wether a device supports discard
-> 93ee7a9340d6: Linux 3.1-rc2
->
-> were committed after -rc2 and were at most a couple of hours old
-> before you sent them off to Linus, did you really expect any other
-> outcome than breaking upstream in trivial ways? :-)
+The primary aim is to add skb_frag_(ref|unref) in order to remove the use of
+bare get/put_page on SKB pages fragments and to isolate users from subsequent
+changes to the skb_frag_t data structure.
 
-FYI, this was noticed and a patch was posted to linux-btrfs:
+Also included are helper APIs for passing a paged fragment to kmap and
+dma_map_page since I was seeing the same pattern a lot. A helper for
+pci_map_page is ommitted due to Micha≈Ç Miros≈Çaw's recommendation that users
+should transition to pci_map_page instead.
 
-http://thread.gmane.org/gmane.comp.file-systems.btrfs/12673
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Micha≈Ç Miros≈Çaw" <mirq-linux@rere.qmqm.pl>
+Cc: netdev@vger.kernel.org
+---
+ include/linux/skbuff.h |  170 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 168 insertions(+), 2 deletions(-)
 
-Josef bugged them to send it upstream.
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 7b996ed..2562764 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -29,6 +29,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/dmaengine.h>
+ #include <linux/hrtimer.h>
++#include <linux/dma-mapping.h>
+ 
+ /* Don't change this without changing skb_csum_unnecessary! */
+ #define CHECKSUM_NONE 0
+@@ -1126,14 +1127,47 @@ static inline int skb_pagelen(const struct sk_buff *skb)
+ 	return len + skb_headlen(skb);
+ }
+ 
+-static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
+-				      struct page *page, int off, int size)
++/**
++ * __skb_fill_page_desc - initialise a paged fragment in an skb
++ * @skb: buffer containing fragment to be initialised
++ * @i: paged fragment index to initialise
++ * @page: the page to use for this fragment
++ * @off: the offset to the data with @page
++ * @size: the length of the data
++ *
++ * Initialises the @i'th fragment of @skb to point to &size bytes at
++ * offset @off within @page.
++ *
++ * Does not take any additional reference on the fragment.
++ */
++static inline void __skb_fill_page_desc(struct sk_buff *skb, int i,
++					struct page *page, int off, int size)
+ {
+ 	skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+ 
+ 	frag->page		  = page;
+ 	frag->page_offset	  = off;
+ 	frag->size		  = size;
++}
++
++/**
++ * skb_fill_page_desc - initialise a paged fragment in an skb
++ * @skb: buffer containing fragment to be initialised
++ * @i: paged fragment index to initialise
++ * @page: the page to use for this fragment
++ * @off: the offset to the data with @page
++ * @size: the length of the data
++ *
++ * As per __skb_fill_page_desc() -- initialises the @i'th fragment of
++ * @skb to point to &size bytes at offset @off within @page. In
++ * addition updates @skb such that @i is the last fragment.
++ *
++ * Does not take any additional reference on the fragment.
++ */
++static inline void skb_fill_page_desc(struct sk_buff *skb, int i,
++				      struct page *page, int off, int size)
++{
++	__skb_fill_page_desc(skb, i, page, off, size);
+ 	skb_shinfo(skb)->nr_frags = i + 1;
+ }
+ 
+@@ -1628,6 +1662,138 @@ static inline void netdev_free_page(struct net_device *dev, struct page *page)
+ }
+ 
+ /**
++ * skb_frag_page - retrieve the page refered to by a paged fragment
++ * @frag: the paged fragment
++ *
++ * Returns the &struct page associated with @frag.
++ */
++static inline struct page *skb_frag_page(const skb_frag_t *frag)
++{
++	return frag->page;
++}
++
++/**
++ * __skb_frag_ref - take an addition reference on a paged fragment.
++ * @frag: the paged fragment
++ *
++ * Takes an additional reference on the paged fragment @frag.
++ */
++static inline void __skb_frag_ref(skb_frag_t *frag)
++{
++	get_page(skb_frag_page(frag));
++}
++
++/**
++ * skb_frag_ref - take an addition reference on a paged fragment of an skb.
++ * @skb: the buffer
++ * @f: the fragment offset.
++ *
++ * Takes an additional reference on the @f'th paged fragment of @skb.
++ */
++static inline void skb_frag_ref(struct sk_buff *skb, int f)
++{
++	__skb_frag_ref(&skb_shinfo(skb)->frags[f]);
++}
++
++/**
++ * __skb_frag_unref - release a reference on a paged fragment.
++ * @frag: the paged fragment
++ *
++ * Releases a reference on the paged fragment @frag.
++ */
++static inline void __skb_frag_unref(skb_frag_t *frag)
++{
++	put_page(skb_frag_page(frag));
++}
++
++/**
++ * skb_frag_unref - release a reference on a paged fragment of an skb.
++ * @skb: the buffer
++ * @f: the fragment offset
++ *
++ * Releases a reference on the @f'th paged fragment of @skb.
++ */
++static inline void skb_frag_unref(struct sk_buff *skb, int f)
++{
++	__skb_frag_unref(&skb_shinfo(skb)->frags[f]);
++}
++
++/**
++ * skb_frag_address - gets the address of the data contained in a paged fragment
++ * @frag: the paged fragment buffer
++ *
++ * Returns the address of the data within @frag. The page must already
++ * be mapped.
++ */
++static inline void *skb_frag_address(const skb_frag_t *frag)
++{
++	return page_address(skb_frag_page(frag)) + frag->page_offset;
++}
++
++/**
++ * skb_frag_address_safe - gets the address of the data contained in a paged fragment
++ * @frag: the paged fragment buffer
++ *
++ * Returns the address of the data within @frag. Checks that the page
++ * is mapped and returns %NULL otherwise.
++ */
++static inline void *skb_frag_address_safe(const skb_frag_t *frag)
++{
++	void *ptr = page_address(skb_frag_page(frag));
++	if (unlikely(!ptr))
++		return NULL;
++
++	return ptr + frag->page_offset;
++}
++
++/**
++ * __skb_frag_set_page - sets the page contained in a paged fragment
++ * @frag: the paged fragment
++ * @page: the page to set
++ *
++ * Sets the fragment @frag to contain @page.
++ */
++static inline void __skb_frag_set_page(skb_frag_t *frag, struct page *page)
++{
++	frag->page = page;
++	__skb_frag_ref(frag);
++}
++
++/**
++ * skb_frag_set_page - sets the page contained in a paged fragment of an skb
++ * @skb: the buffer
++ * @f: the fragment offset
++ * @page: the page to set
++ *
++ * Sets the @f'th fragment of @skb to contain @page.
++ */
++static inline void skb_frag_set_page(struct sk_buff *skb, int f,
++				     struct page *page)
++{
++	__skb_frag_set_page(&skb_shinfo(skb)->frags[f], page);
++}
++
++/**
++ * skb_frag_dma_map - maps a paged fragment via the DMA API
++ * @device: the device to map the fragment to
++ * @frag: the paged fragment to map
++ * @offset: the offset within the fragment (starting at the
++ *          fragment's own offset)
++ * @size: the number of bytes to map
++ * @direction: the direction of the mapping (%PCI_DMA_*)
++ *
++ * Maps the page associated with @frag to @device.
++ */
++static inline dma_addr_t skb_frag_dma_map(struct device *dev,
++					  const skb_frag_t *frag,
++					  size_t offset, size_t size,
++					  enum dma_data_direction dir)
++{
++	return dma_map_page(dev, skb_frag_page(frag),
++			    frag->page_offset + offset, size, dir);
++}
++
++/**
+  *	skb_clone_writable - is the header of a clone writable
+  *	@skb: buffer to check
+  *	@len: length up to which to write
+-- 
+1.7.2.5
 
-josh
