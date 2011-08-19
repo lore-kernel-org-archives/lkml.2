@@ -1,394 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab1HSOa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:30:29 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:47988 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755684Ab1HSOaY (ORCPT
+	id S1756008Ab1HSOaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:30:35 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:51485 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883Ab1HSO1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:30:24 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Michal Nazarewicz <mina86@mina86.com>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v5] usb: gadget: storage: make FSG_NUM_BUFFERS variable size
-Date: Fri, 19 Aug 2011 16:28:25 +0200
-Message-ID: <1313764105-28437-1-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 19 Aug 2011 10:27:51 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 19 Aug 2011 16:27:36 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [PATCHv15 0/8] Contiguous Memory Allocator
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+Message-id: <1313764064-9747-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+Hello again,
 
-FSG_NUM_BUFFERS is set to 2 as default.
-Usually 2 buffers are enough to establish a good buffering pipeline.
-The number may be increased in order to compensate a for bursty VFS
-behaviour.
+This is yet another round of Contiguous Memory Allocator patches. Now I
+implemented all the ideas that has been discussed during Linaro Sprint
+meeting.
 
-Here follows a description of system that may require more than
-2 buffers.
- * CPU ondemand governor active
- * latency cost for wake up and/or frequency change
- * DMA for IO
+This version provides a solution for complete integration of CMA to DMA
+mapping subsystem on ARM architecture. The issue caused by double dma
+pages mapping and possible aliasing in coherent memory mapping has been
+finally resolved, both for GFP_ATOMIC case (allocations comes from
+coherent memory pool) and non-GFP_ATOMIC case (allocations comes from
+CMA managed areas).
 
-Use case description.
- * Data transfer from MMC via VFS to USB.
- * DMA shuffles data from MMC and to USB.
- * The CPU wakes up every now and then to pass data in and out from VFS,
-   which cause the bursty VFS behaviour.
+For coherent, nommu, ARMv4 and ARMv5 systems the current DMA-mapping
+implementation has been kept.
 
-Test set up
- * Running dd on the host reading from the mass storage device
- * cmdline: dd if=/dev/sdb of=/dev/null bs=4k count=$((256*100))
- * Caches are dropped on the host and on the device before each run
+For ARMv6+ systems, CMA has been enabled and a special pool of coherent
+memory for atomic allocations has been created. The size of this pool
+defaults to CONSISTEN_DMA_SIZE/8, but can be changed with coherent_pool
+kernel parameter (if really required).
 
-Measurements on a Snowball board with ondemand_govenor active.
+All atomic allocations are served from this pool. I've did a little
+simplification here, because there is no separate pool for writecombine
+memory - such requests are also served from coherent pool. I don't think
+that such simplification is a problem here - I found no driver that use
+dma_alloc_writecombine with GFP_ATOMIC flags.
 
-FSG_NUM_BUFFERS 2
-104857600 bytes (105 MB) copied, 5.62173 s, 18.7 MB/s
-104857600 bytes (105 MB) copied, 5.61811 s, 18.7 MB/s
-104857600 bytes (105 MB) copied, 5.57817 s, 18.8 MB/s
+All non-atomic allocation are served from CMA area. Kernel mapping is
+updated to reflect required memory attributes changes. This is possible
+because during early boot, all CMA area are remapped with 4KiB pages in
+kernel low-memory.
 
-FSG_NUM_BUFFERS 4
-104857600 bytes (105 MB) copied, 5.26839 s, 19.9 MB/s
-104857600 bytes (105 MB) copied, 5.2691 s, 19.9 MB/s
-104857600 bytes (105 MB) copied, 5.2711 s, 19.9 MB/s
+This version have been tested on Samsung S5PC110 based Goni machine and
+Exynos4 UniversalC210 board with various V4L2 multimedia drivers.
 
-There may not be one optimal number for all boards. This is why
-the number is added to Kconfig. If selecting USB_GADGET_DEBUG_FILES
-this value may be set by a module parameter as well.
+Coherent atomic allocations has been tested by manually enabling the dma
+bounce for the s3c-sdhci device.
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
----
-Change log.
-v2: Update after proofreading comments from Michal Nazarewicz
-v3: Clarify the description of this patch based on input from Alan Stern
-v4: - Introduce a module_param to set number of pipeline buffers
-    if USB_DEBUG is set. In order to add this support fsg_common is
-    allocated at runtime. The fsg_buffhd list size is appended to fsg_dev
-    and fsg_common at runtime allocation.
-    - The previous acks from Michal and Alan on v3 are not applicable
-    for this version since it's a new implementation.
-v5: - Separate allocation of buffhds in f_mass_storage.c
-    - Change FSG_NUM_BUFFERS to fsg_num_buffers to indicate variable value.
-    - code clean up and document module param, all thanks to Michal and Alan.
+All patches are prepared for Linux Kernel v3.1-rc2.
 
- drivers/usb/gadget/Kconfig          |   16 ++++++++++++++++
- drivers/usb/gadget/f_mass_storage.c |   24 ++++++++++++++++--------
- drivers/usb/gadget/file_storage.c   |   26 ++++++++++++++++----------
- drivers/usb/gadget/mass_storage.c   |    3 +++
- drivers/usb/gadget/multi.c          |    3 +++
- drivers/usb/gadget/storage_common.c |   25 +++++++++++++++++++++++--
- 6 files changed, 77 insertions(+), 20 deletions(-)
+A few words for these who see CMA for the first time:
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 44b6b40..65ceecf 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -96,6 +96,22 @@ config USB_GADGET_VBUS_DRAW
- 	   This value will be used except for system-specific gadget
- 	   drivers that have more specific information.
- 
-+config USB_GADGET_STORAGE_NUM_BUFFERS
-+	int "Number of storage pipeline buffers"
-+	range 2 4
-+	default 2
-+	help
-+	   Usually 2 buffers are enough to establish a good buffering
-+	   pipeline. The number may be increased in order to compensate
-+	   for a bursty VFS behaviour. For instance there may be cpu wake up
-+	   latencies that makes the VFS to appear bursty in a system with
-+	   an cpu on-demand governor. Especially if DMA is doing IO to
-+	   offload the CPU. In this case the CPU will go into power
-+	   save often and spin up occasionally to move data within VFS.
-+	   If selecting USB_GADGET_DEBUG_FILES this value may be set by
-+	   a module parameter as well.
-+	   If unsure, say 2.
-+
- #
- # USB Peripheral Controller Support
- #
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 5b93395..49da6a1 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -363,7 +363,7 @@ struct fsg_common {
- 
- 	struct fsg_buffhd	*next_buffhd_to_fill;
- 	struct fsg_buffhd	*next_buffhd_to_drain;
--	struct fsg_buffhd	buffhds[FSG_NUM_BUFFERS];
-+	struct fsg_buffhd	*buffhds;
- 
- 	int			cmnd_size;
- 	u8			cmnd[MAX_COMMAND_SIZE];
-@@ -2348,7 +2348,7 @@ reset:
- 	if (common->fsg) {
- 		fsg = common->fsg;
- 
--		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+		for (i = 0; i < fsg_num_buffers; ++i) {
- 			struct fsg_buffhd *bh = &common->buffhds[i];
- 
- 			if (bh->inreq) {
-@@ -2406,7 +2406,7 @@ reset:
- 	clear_bit(IGNORE_BULK_OUT, &fsg->atomic_bitflags);
- 
- 	/* Allocate the requests */
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		struct fsg_buffhd	*bh = &common->buffhds[i];
- 
- 		rc = alloc_request(common, fsg->bulk_in, &bh->inreq);
-@@ -2475,7 +2475,7 @@ static void handle_exception(struct fsg_common *common)
- 
- 	/* Cancel all the pending transfers */
- 	if (likely(common->fsg)) {
--		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+		for (i = 0; i < fsg_num_buffers; ++i) {
- 			bh = &common->buffhds[i];
- 			if (bh->inreq_busy)
- 				usb_ep_dequeue(common->fsg->bulk_in, bh->inreq);
-@@ -2487,7 +2487,7 @@ static void handle_exception(struct fsg_common *common)
- 		/* Wait until everything is idle */
- 		for (;;) {
- 			int num_active = 0;
--			for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+			for (i = 0; i < fsg_num_buffers; ++i) {
- 				bh = &common->buffhds[i];
- 				num_active += bh->inreq_busy + bh->outreq_busy;
- 			}
-@@ -2510,7 +2510,7 @@ static void handle_exception(struct fsg_common *common)
- 	 */
- 	spin_lock_irq(&common->lock);
- 
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		bh = &common->buffhds[i];
- 		bh->state = BUF_STATE_EMPTY;
- 	}
-@@ -2737,6 +2737,14 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 		common->free_storage_on_release = 0;
- 	}
- 
-+	common->buffhds = kcalloc(fsg_num_buffers,
-+				  sizeof *(common->buffhds), GFP_KERNEL);
-+	if (!common->buffhds) {
-+		if (common->free_storage_on_release)
-+			kfree(common);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
- 	common->ops = cfg->ops;
- 	common->private_data = cfg->private_data;
- 
-@@ -2814,7 +2822,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 
- 	/* Data buffers cyclic list */
- 	bh = common->buffhds;
--	i = FSG_NUM_BUFFERS;
-+	i = fsg_num_buffers;
- 	goto buffhds_first_it;
- 	do {
- 		bh->next = bh + 1;
-@@ -2940,7 +2948,7 @@ static void fsg_common_release(struct kref *ref)
- 
- 	{
- 		struct fsg_buffhd *bh = common->buffhds;
--		unsigned i = FSG_NUM_BUFFERS;
-+		unsigned i = fsg_num_buffers;
- 		do {
- 			kfree(bh->buf);
- 		} while (++bh, --i);
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index 639e14a..97e5d13 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -461,7 +461,6 @@ struct fsg_dev {
- 
- 	struct fsg_buffhd	*next_buffhd_to_fill;
- 	struct fsg_buffhd	*next_buffhd_to_drain;
--	struct fsg_buffhd	buffhds[FSG_NUM_BUFFERS];
- 
- 	int			thread_wakeup_needed;
- 	struct completion	thread_notifier;
-@@ -488,6 +487,8 @@ struct fsg_dev {
- 	unsigned int		nluns;
- 	struct fsg_lun		*luns;
- 	struct fsg_lun		*curlun;
-+	/* Must be the last entry */
-+	struct fsg_buffhd	buffhds[];
- };
- 
- typedef void (*fsg_routine_t)(struct fsg_dev *);
-@@ -2752,7 +2753,7 @@ static int do_set_interface(struct fsg_dev *fsg, int altsetting)
- 
- reset:
- 	/* Deallocate the requests */
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		struct fsg_buffhd *bh = &fsg->buffhds[i];
- 
- 		if (bh->inreq) {
-@@ -2813,7 +2814,7 @@ reset:
- 	}
- 
- 	/* Allocate the requests */
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		struct fsg_buffhd	*bh = &fsg->buffhds[i];
- 
- 		if ((rc = alloc_request(fsg, fsg->bulk_in, &bh->inreq)) != 0)
-@@ -2909,7 +2910,7 @@ static void handle_exception(struct fsg_dev *fsg)
- 	/* Cancel all the pending transfers */
- 	if (fsg->intreq_busy)
- 		usb_ep_dequeue(fsg->intr_in, fsg->intreq);
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		bh = &fsg->buffhds[i];
- 		if (bh->inreq_busy)
- 			usb_ep_dequeue(fsg->bulk_in, bh->inreq);
-@@ -2920,7 +2921,7 @@ static void handle_exception(struct fsg_dev *fsg)
- 	/* Wait until everything is idle */
- 	for (;;) {
- 		num_active = fsg->intreq_busy;
--		for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+		for (i = 0; i < fsg_num_buffers; ++i) {
- 			bh = &fsg->buffhds[i];
- 			num_active += bh->inreq_busy + bh->outreq_busy;
- 		}
-@@ -2942,7 +2943,7 @@ static void handle_exception(struct fsg_dev *fsg)
- 	 * state, and the exception.  Then invoke the handler. */
- 	spin_lock_irq(&fsg->lock);
- 
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		bh = &fsg->buffhds[i];
- 		bh->state = BUF_STATE_EMPTY;
- 	}
-@@ -3172,7 +3173,7 @@ static void /* __init_or_exit */ fsg_unbind(struct usb_gadget *gadget)
- 	}
- 
- 	/* Free the data buffers */
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i)
-+	for (i = 0; i < fsg_num_buffers; ++i)
- 		kfree(fsg->buffhds[i].buf);
- 
- 	/* Free the request and buffer for endpoint 0 */
-@@ -3460,7 +3461,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 	req->complete = ep0_complete;
- 
- 	/* Allocate the data buffers */
--	for (i = 0; i < FSG_NUM_BUFFERS; ++i) {
-+	for (i = 0; i < fsg_num_buffers; ++i) {
- 		struct fsg_buffhd	*bh = &fsg->buffhds[i];
- 
- 		/* Allocate for the bulk-in endpoint.  We assume that
-@@ -3471,7 +3472,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 			goto out;
- 		bh->next = bh + 1;
- 	}
--	fsg->buffhds[FSG_NUM_BUFFERS - 1].next = &fsg->buffhds[0];
-+	fsg->buffhds[fsg_num_buffers - 1].next = &fsg->buffhds[0];
- 
- 	/* This should reflect the actual gadget power source */
- 	usb_gadget_set_selfpowered(gadget);
-@@ -3587,7 +3588,9 @@ static int __init fsg_alloc(void)
- {
- 	struct fsg_dev		*fsg;
- 
--	fsg = kzalloc(sizeof *fsg, GFP_KERNEL);
-+	fsg = kzalloc(sizeof *fsg +
-+		      fsg_num_buffers * sizeof *(fsg->buffhds), GFP_KERNEL);
-+
- 	if (!fsg)
- 		return -ENOMEM;
- 	spin_lock_init(&fsg->lock);
-@@ -3605,6 +3608,9 @@ static int __init fsg_init(void)
- 	int		rc;
- 	struct fsg_dev	*fsg;
- 
-+	if (!FSG_NUM_BUFFERS_IS_VALID(fsg_num_buffers))
-+		return -EINVAL;
-+
- 	if ((rc = fsg_alloc()) != 0)
- 		return rc;
- 	fsg = the_fsg;
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index d3eb274..fa6dedf 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -179,6 +179,9 @@ MODULE_LICENSE("GPL");
- 
- static int __init msg_init(void)
- {
-+	if (!FSG_NUM_BUFFERS_IS_VALID(fsg_num_buffers))
-+		return -EINVAL;
-+
- 	return usb_composite_probe(&msg_driver, msg_bind);
- }
- module_init(msg_init);
-diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
-index 8c7b747..5f146da 100644
---- a/drivers/usb/gadget/multi.c
-+++ b/drivers/usb/gadget/multi.c
-@@ -360,6 +360,9 @@ static struct usb_composite_driver multi_driver = {
- 
- static int __init multi_init(void)
- {
-+	if (!FSG_NUM_BUFFERS_IS_VALID(fsg_num_buffers))
-+		return -EINVAL;
-+
- 	return usb_composite_probe(&multi_driver, multi_bind);
- }
- module_init(multi_init);
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index d3dd227..6906c4a 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -52,6 +52,12 @@
-  * characters rather then a pointer to void.
-  */
- 
-+/*
-+ * When USB_GADGET_DEBUG_FILES is defined the module param num_buffers
-+ * sets the number of pipeline buffers (length of the fsg_buffhd array).
-+ * The valid range of num_buffers is: num >= 2 && num <= 4.
-+ */
-+
- 
- #include <linux/usb/storage.h>
- #include <scsi/scsi.h>
-@@ -262,8 +268,23 @@ static struct fsg_lun *fsg_lun_from_dev(struct device *dev)
- #define EP0_BUFSIZE	256
- #define DELAYED_STATUS	(EP0_BUFSIZE + 999)	/* An impossibly large value */
- 
--/* Number of buffers we will use.  2 is enough for double-buffering */
--#define FSG_NUM_BUFFERS	2
-+#ifdef CONFIG_USB_GADGET_DEBUG_FILES
-+
-+static unsigned int fsg_num_buffers = CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS;
-+module_param_named(num_buffers, fsg_num_buffers, uint, S_IRUGO);
-+MODULE_PARM_DESC(num_buffers, "Number of pipeline buffers");
-+
-+#else
-+
-+/*
-+ * Number of buffers we will use.
-+ * 2 is usually enough for good buffering pipeline
-+ */
-+#define fsg_num_buffers	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
-+
-+#endif /* CONFIG_USB_DEBUG */
-+
-+#define FSG_NUM_BUFFERS_IS_VALID(num) ((num) >= 2 && (num) <= 4)
- 
- /* Default size of buffer length. */
- #define FSG_BUFLEN	((u32)16384)
+   The Contiguous Memory Allocator (CMA) makes it possible for device
+   drivers to allocate big contiguous chunks of memory after the system
+   has booted. 
+
+   The main difference from the similar frameworks is the fact that CMA
+   allows to transparently reuse memory region reserved for the big
+   chunk allocation as a system memory, so no memory is wasted when no
+   big chunk is allocated. Once the alloc request is issued, the
+   framework will migrate system pages to create a required big chunk of
+   physically contiguous memory.
+
+   For more information you can refer to nice LWN articles: 
+   http://lwn.net/Articles/447405/ and http://lwn.net/Articles/450286/
+   as well as links to previous versions of the CMA framework.
+
+   The CMA framework has been initially developed by Michal Nazarewicz
+   at Samsung Poland R&D Center. Since version 9, I've taken over the
+   development, because Michal has left the company.
+
+TODO (optional):
+- implement support for contiguous memory areas placed in HIGHMEM zone
+
+Best regards
 -- 
-1.7.4.1
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+Links to previous versions of the patchset:
+v14: <http://www.spinics.net/lists/linux-media/msg36536.html>
+v13: (internal, intentionally not released)
+v12: <http://www.spinics.net/lists/linux-media/msg35674.html>
+v11: <http://www.spinics.net/lists/linux-mm/msg21868.html>
+v10: <http://www.spinics.net/lists/linux-mm/msg20761.html>
+ v9: <http://article.gmane.org/gmane.linux.kernel.mm/60787>
+ v8: <http://article.gmane.org/gmane.linux.kernel.mm/56855>
+ v7: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
+ v6: <http://article.gmane.org/gmane.linux.kernel.mm/55626>
+ v5: (intentionally left out as CMA v5 was identical to CMA v4)
+ v4: <http://article.gmane.org/gmane.linux.kernel.mm/52010>
+ v3: <http://article.gmane.org/gmane.linux.kernel.mm/51573>
+ v2: <http://article.gmane.org/gmane.linux.kernel.mm/50986>
+ v1: <http://article.gmane.org/gmane.linux.kernel.mm/50669>
+
+
+Changelog:
+
+v15:
+    1. fixed calculation of the total memory after activating CMA area (was
+       broken from v12)
+
+    2. more code cleanup in drivers/base/dma-contiguous.c
+
+    3. added address limit for default CMA area
+
+    4. rewrote ARM DMA integration:
+	- removed "ARM: DMA: steal memory for DMA coherent mappings" patch
+	- kept current DMA mapping implementation for coherent, nommu and
+	  ARMv4/ARMv5 systems
+	- enabled CMA for all ARMv6+ systems
+	- added separate, small pool for coherent atomic allocations, defaults
+	  to CONSISTENT_DMA_SIZE/8, but can be changed with kernel parameter
+	  coherent_pool=[size]
+
+v14:
+    1. Merged with "ARM: DMA: steal memory for DMA coherent mappings" 
+       patch, added support for GFP_ATOMIC allocations.
+
+    2. Added checks for NULL device pointer
+
+v13: (internal, intentionally not released)
+
+v12:
+    1. Fixed 2 nasty bugs in dma-contiguous allocator:
+       - alignment argument was not passed correctly
+       - range for dma_release_from_contiguous was not checked correctly
+
+    2. Added support for architecture specfic dma_contiguous_early_fixup()
+       function
+
+    3. CMA and DMA-mapping integration for ARM architechture has been
+       rewritten to take care of the memory aliasing issue that might
+       happen for newer ARM CPUs (mapping of the same pages with different
+       cache attributes is forbidden). TODO: add support for GFP_ATOMIC
+       allocations basing on the "ARM: DMA: steal memory for DMA coherent
+       mappings" patch and implement support for contiguous memory areas
+       that are placed in HIGHMEM zone
+
+v11:
+    1. Removed genalloc usage and replaced it with direct calls to
+       bitmap_* functions, dropped patches that are not needed
+       anymore (genalloc extensions)
+
+    2. Moved all contiguous area management code from mm/cma.c
+       to drivers/base/dma-contiguous.c
+
+    3. Renamed cm_alloc/free to dma_alloc/release_from_contiguous
+
+    4. Introduced global, system wide (default) contiguous area
+       configured with kernel config and kernel cmdline parameters
+
+    5. Simplified initialization to just one function:
+       dma_declare_contiguous()
+
+    6. Added example of device private memory contiguous area
+
+v10:
+    1. Rebased onto 3.0-rc2 and resolved all conflicts
+
+    2. Simplified CMA to be just a pure memory allocator, for use
+       with platfrom/bus specific subsystems, like dma-mapping.
+       Removed all device specific functions are calls.
+
+    3. Integrated with ARM DMA-mapping subsystem.
+
+    4. Code cleanup here and there.
+
+    5. Removed private context support.
+
+v9: 1. Rebased onto 2.6.39-rc1 and resolved all conflicts
+
+    2. Fixed a bunch of nasty bugs that happened when the allocation
+       failed (mainly kernel oops due to NULL ptr dereference).
+
+    3. Introduced testing code: cma-regions compatibility layer and
+       videobuf2-cma memory allocator module.
+
+v8: 1. The alloc_contig_range() function has now been separated from
+       CMA and put in page_allocator.c.  This function tries to
+       migrate all LRU pages in specified range and then allocate the
+       range using alloc_contig_freed_pages().
+
+    2. Support for MIGRATE_CMA has been separated from the CMA code.
+       I have not tested if CMA works with ZONE_MOVABLE but I see no
+       reasons why it shouldn't.
+
+    3. I have added a @private argument when creating CMA contexts so
+       that one can reserve memory and not share it with the rest of
+       the system.  This way, CMA acts only as allocation algorithm.
+
+v7: 1. A lot of functionality that handled driver->allocator_context
+       mapping has been removed from the patchset.  This is not to say
+       that this code is not needed, it's just not worth posting
+       everything in one patchset.
+
+       Currently, CMA is "just" an allocator.  It uses it's own
+       migratetype (MIGRATE_CMA) for defining ranges of pageblokcs
+       which behave just like ZONE_MOVABLE but dispite the latter can
+       be put in arbitrary places.
+
+    2. The migration code that was introduced in the previous version
+       actually started working.
+
+
+v6: 1. Most importantly, v6 introduces support for memory migration.
+       The implementation is not yet complete though.
+
+       Migration support means that when CMA is not using memory
+       reserved for it, page allocator can allocate pages from it.
+       When CMA wants to use the memory, the pages have to be moved
+       and/or evicted as to make room for CMA.
+
+       To make it possible it must be guaranteed that only movable and
+       reclaimable pages are allocated in CMA controlled regions.
+       This is done by introducing a MIGRATE_CMA migrate type that
+       guarantees exactly that.
+
+       Some of the migration code is "borrowed" from Kamezawa
+       Hiroyuki's alloc_contig_pages() implementation.  The main
+       difference is that thanks to MIGRATE_CMA migrate type CMA
+       assumes that memory controlled by CMA are is always movable or
+       reclaimable so that it makes allocation decisions regardless of
+       the whether some pages are actually allocated and migrates them
+       if needed.
+
+       The most interesting patches from the patchset that implement
+       the functionality are:
+
+         09/13: mm: alloc_contig_free_pages() added
+         10/13: mm: MIGRATE_CMA migration type added
+         11/13: mm: MIGRATE_CMA isolation functions added
+         12/13: mm: cma: Migration support added [wip]
+
+       Currently, kernel panics in some situations which I am trying
+       to investigate.
+
+    2. cma_pin() and cma_unpin() functions has been added (after
+       a conversation with Johan Mossberg).  The idea is that whenever
+       hardware does not use the memory (no transaction is on) the
+       chunk can be moved around.  This would allow defragmentation to
+       be implemented if desired.  No defragmentation algorithm is
+       provided at this time.
+
+    3. Sysfs support has been replaced with debugfs.  I always felt
+       unsure about the sysfs interface and when Greg KH pointed it
+       out I finally got to rewrite it to debugfs.
+
+
+v5: (intentionally left out as CMA v5 was identical to CMA v4)
+
+
+v4: 1. The "asterisk" flag has been removed in favour of requiring
+       that platform will provide a "*=<regions>" rule in the map
+       attribute.
+
+    2. The terminology has been changed slightly renaming "kind" to
+       "type" of memory.  In the previous revisions, the documentation
+       indicated that device drivers define memory kinds and now,
+
+v3: 1. The command line parameters have been removed (and moved to
+       a separate patch, the fourth one).  As a consequence, the
+       cma_set_defaults() function has been changed -- it no longer
+       accepts a string with list of regions but an array of regions.
+
+    2. The "asterisk" attribute has been removed.  Now, each region
+       has an "asterisk" flag which lets one specify whether this
+       region should by considered "asterisk" region.
+
+    3. SysFS support has been moved to a separate patch (the third one
+       in the series) and now also includes list of regions.
+
+v2: 1. The "cma_map" command line have been removed.  In exchange,
+       a SysFS entry has been created under kernel/mm/contiguous.
+
+       The intended way of specifying the attributes is
+       a cma_set_defaults() function called by platform initialisation
+       code.  "regions" attribute (the string specified by "cma"
+       command line parameter) can be overwritten with command line
+       parameter; the other attributes can be changed during run-time
+       using the SysFS entries.
+
+    2. The behaviour of the "map" attribute has been modified
+       slightly.  Currently, if no rule matches given device it is
+       assigned regions specified by the "asterisk" attribute.  It is
+       by default built from the region names given in "regions"
+       attribute.
+
+    3. Devices can register private regions as well as regions that
+       can be shared but are not reserved using standard CMA
+       mechanisms.  A private region has no name and can be accessed
+       only by devices that have the pointer to it.
+
+    4. The way allocators are registered has changed.  Currently,
+       a cma_allocator_register() function is used for that purpose.
+       Moreover, allocators are attached to regions the first time
+       memory is registered from the region or when allocator is
+       registered which means that allocators can be dynamic modules
+       that are loaded after the kernel booted (of course, it won't be
+       possible to allocate a chunk of memory from a region if
+       allocator is not loaded).
+
+    5. Index of new functions:
+
+    +static inline dma_addr_t __must_check
+    +cma_alloc_from(const char *regions, size_t size,
+    +               dma_addr_t alignment)
+
+    +static inline int
+    +cma_info_about(struct cma_info *info, const const char *regions)
+
+    +int __must_check cma_region_register(struct cma_region *reg);
+
+    +dma_addr_t __must_check
+    +cma_alloc_from_region(struct cma_region *reg,
+    +                      size_t size, dma_addr_t alignment);
+
+    +static inline dma_addr_t __must_check
+    +cma_alloc_from(const char *regions,
+    +               size_t size, dma_addr_t alignment);
+
+    +int cma_allocator_register(struct cma_allocator *alloc);
+
+
+Patches in this patchset:
+
+  mm: move some functions from memory_hotplug.c to page_isolation.c
+  mm: alloc_contig_freed_pages() added
+
+    Code "stolen" from Kamezawa.  The first patch just moves code
+    around and the second provide function for "allocates" already
+    freed memory.
+
+  mm: alloc_contig_range() added
+
+    This is what Kamezawa asked: a function that tries to migrate all
+    pages from given range and then use alloc_contig_freed_pages()
+    (defined by the previous commit) to allocate those pages. 
+
+  mm: MIGRATE_CMA migration type added
+  mm: MIGRATE_CMA isolation functions added
+
+    Introduction of the new migratetype and support for it in CMA.
+    MIGRATE_CMA works similar to ZONE_MOVABLE expect almost any
+    memory range can be marked as one.
+
+  mm: cma: Contiguous Memory Allocator added
+
+    The code CMA code. Manages CMA contexts and performs memory
+    allocations.
+
+  ARM: integrate CMA with dma-mapping subsystem
+
+    Main client of CMA frame work. CMA serves as a alloc_pages()
+    replacement.
+
+  ARM: S5PV210: example of CMA private area for FIMC device on Goni board
+
+    Example of platform/board specific code that creates cma
+    context and assigns it to particular device.
+
+
+Patch summary:
+
+KAMEZAWA Hiroyuki (2):
+  mm: move some functions from memory_hotplug.c to page_isolation.c
+  mm: alloc_contig_freed_pages() added
+
+Marek Szyprowski (3):
+  drivers: add Contiguous Memory Allocator
+  ARM: integrate CMA with DMA-mapping subsystem
+  ARM: S5PV210: example of CMA private area for FIMC device on Goni
+    board
+
+Michal Nazarewicz (3):
+  mm: alloc_contig_range() added
+  mm: MIGRATE_CMA migration type added
+  mm: MIGRATE_CMA isolation functions added
+
+ arch/Kconfig                          |    3 +
+ arch/arm/Kconfig                      |    2 +
+ arch/arm/include/asm/device.h         |    3 +
+ arch/arm/include/asm/dma-contiguous.h |   33 +++
+ arch/arm/include/asm/mach/map.h       |    1 +
+ arch/arm/mach-s5pv210/mach-goni.c     |    4 +
+ arch/arm/mm/dma-mapping.c             |  362 +++++++++++++++++++++++++------
+ arch/arm/mm/init.c                    |    8 +
+ arch/arm/mm/mm.h                      |    3 +
+ arch/arm/mm/mmu.c                     |   29 ++-
+ drivers/base/Kconfig                  |   79 +++++++
+ drivers/base/Makefile                 |    1 +
+ drivers/base/dma-contiguous.c         |  386 +++++++++++++++++++++++++++++++++
+ include/linux/dma-contiguous.h        |  102 +++++++++
+ include/linux/mmzone.h                |   41 +++-
+ include/linux/page-isolation.h        |   51 ++++-
+ mm/Kconfig                            |    8 +-
+ mm/compaction.c                       |   10 +
+ mm/memory_hotplug.c                   |  111 ----------
+ mm/page_alloc.c                       |  287 ++++++++++++++++++++++--
+ mm/page_isolation.c                   |  129 +++++++++++-
+ 21 files changed, 1417 insertions(+), 236 deletions(-)
+ create mode 100644 arch/arm/include/asm/dma-contiguous.h
+ create mode 100644 drivers/base/dma-contiguous.c
+ create mode 100644 include/linux/dma-contiguous.h
+
+-- 
+1.7.1.569.g6f426
 
