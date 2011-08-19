@@ -1,87 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1HSCnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 22:43:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35987 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1HSCne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 22:43:34 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=poF6ICSe450A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=hD80L64hAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=uZzB4uCBtwBe02ULVPwA:9 a=9hNdVQouoWKd_NWpvHQA:7 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][GIT PULL][v3.1] ftrace: Fix README to state tracing_on to
- start/stop tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Geunsik Lim <geunsik.lim@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 18 Aug 2011 22:43:31 -0400
-Message-ID: <1313721812.15704.85.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1753091Ab1HSCy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 22:54:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752741Ab1HSCyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 22:54:25 -0400
+Date: Thu, 18 Aug 2011 22:53:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110819025321.GB13597@redhat.com>
+References: <20110816022006.348714319@intel.com>
+ <20110816022328.811348370@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110816022328.811348370@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 16, 2011 at 10:20:08AM +0800, Wu Fengguang wrote:
 
-Ingo,
+[..]
+> +/*
+> + * Dirty position control.
+> + *
+> + * (o) global/bdi setpoints
+> + *
+> + * We want the dirty pages be balanced around the global/bdi setpoints.
+> + * When the number of dirty pages is higher/lower than the setpoint, the
+> + * dirty position control ratio (and hence task dirty ratelimit) will be
+> + * decreased/increased to bring the dirty pages back to the setpoint.
+> + *
+> + *     pos_ratio = 1 << RATELIMIT_CALC_SHIFT
+> + *
+> + *     if (dirty < setpoint) scale up   pos_ratio
+> + *     if (dirty > setpoint) scale down pos_ratio
+> + *
+> + *     if (bdi_dirty < bdi_setpoint) scale up   pos_ratio
+> + *     if (bdi_dirty > bdi_setpoint) scale down pos_ratio
+> + *
+> + *     task_ratelimit = balanced_rate * pos_ratio >> RATELIMIT_CALC_SHIFT
+> + *
+> + * (o) global control line
+> + *
+> + *     ^ pos_ratio
+> + *     |
+> + *     |            |<===== global dirty control scope ======>|
+> + * 2.0 .............*
+> + *     |            .*
+> + *     |            . *
+> + *     |            .   *
+> + *     |            .     *
+> + *     |            .        *
+> + *     |            .            *
+> + * 1.0 ................................*
+> + *     |            .                  .     *
+> + *     |            .                  .          *
+> + *     |            .                  .              *
+> + *     |            .                  .                 *
+> + *     |            .                  .                    *
+> + *   0 +------------.------------------.----------------------*------------->
+> + *           freerun^          setpoint^                 limit^   dirty pages
+> + *
+> + * (o) bdi control lines
+> + *
+> + * The control lines for the global/bdi setpoints both stretch up to @limit.
+> + * The below figure illustrates the main bdi control line with an auxiliary
+> + * line extending it to @limit.
+> + *
+> + *   o
+> + *     o
+> + *       o                                      [o] main control line
+> + *         o                                    [*] auxiliary control line
+> + *           o
+> + *             o
+> + *               o
+> + *                 o
+> + *                   o
+> + *                     o
+> + *                       o--------------------- balance point, rate scale = 1
+> + *                       | o
+> + *                       |   o
+> + *                       |     o
+> + *                       |       o
+> + *                       |         o
+> + *                       |           o
+> + *                       |             o------- connect point, rate scale = 1/2
+> + *                       |               .*
+> + *                       |                 .   *
+> + *                       |                   .      *
+> + *                       |                     .         *
+> + *                       |                       .           *
+> + *                       |                         .              *
+> + *                       |                           .                 *
+> + *  [--------------------+-----------------------------.--------------------*]
+> + *  0                 setpoint                     x_intercept           limit
+> + *
+> + * The auxiliary control line allows smoothly throttling bdi_dirty down to
+> + * normal if it starts high in situations like
+> + * - start writing to a slow SD card and a fast disk at the same time. The SD
+> + *   card's bdi_dirty may rush to many times higher than bdi setpoint.
+> + * - the bdi dirty thresh drops quickly due to change of JBOD workload
+> + */
+> +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> +					unsigned long thresh,
+> +					unsigned long bg_thresh,
+> +					unsigned long dirty,
+> +					unsigned long bdi_thresh,
+> +					unsigned long bdi_dirty)
+> +{
+> +	unsigned long freerun = dirty_freerun_ceiling(thresh, bg_thresh);
+> +	unsigned long limit = hard_dirty_limit(thresh);
+> +	unsigned long x_intercept;
+> +	unsigned long setpoint;		/* the target balance point */
+> +	unsigned long span;
+> +	long long pos_ratio;		/* for scaling up/down the rate limit */
+> +	long x;
+> +
+> +	if (unlikely(dirty >= limit))
+> +		return 0;
+> +
+> +	/*
+> +	 * global setpoint
+> +	 *
+> +	 *                         setpoint - dirty 3
+> +	 *        f(dirty) := 1 + (----------------)
+> +	 *                         limit - setpoint
+> +	 *
+> +	 * it's a 3rd order polynomial that subjects to
+> +	 *
+> +	 * (1) f(freerun)  = 2.0 => rampup base_rate reasonably fast
+> +	 * (2) f(setpoint) = 1.0 => the balance point
+> +	 * (3) f(limit)    = 0   => the hard limit
+> +	 * (4) df/dx       < 0	 => negative feedback control
+> +	 * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
+> +	 *     => fast response on large errors; small oscillation near setpoint
+> +	 */
+> +	setpoint = (freerun + limit) / 2;
+> +	x = div_s64((setpoint - dirty) << RATELIMIT_CALC_SHIFT,
+> +		    limit - setpoint + 1);
+> +	pos_ratio = x;
+> +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> +	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> +	pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
+> +
+> +	/*
+> +	 * bdi setpoint
+> +	 *
+> +	 *        f(dirty) := 1.0 + k * (dirty - setpoint)
+> +	 *
+> +	 * The main bdi control line is a linear function that subjects to
+> +	 *
+> +	 * (1) f(setpoint) = 1.0
+> +	 * (2) k = - 1 / (8 * write_bw)  (in single bdi case)
+> +	 *     or equally: x_intercept = setpoint + 8 * write_bw
+> +	 *
+> +	 * For single bdi case, the dirty pages are observed to fluctuate
+> +	 * regularly within range
+> +	 *        [setpoint - write_bw/2, setpoint + write_bw/2]
+> +	 * for various filesystems, where (2) can yield in a reasonable 12.5%
+> +	 * fluctuation range for pos_ratio.
+> +	 *
+> +	 * For JBOD case, bdi_thresh (not bdi_dirty!) could fluctuate up to its
+> +	 * own size, so move the slope over accordingly.
+> +	 */
+> +	if (unlikely(bdi_thresh > thresh))
+> +		bdi_thresh = thresh;
+> +	/*
+> +	 * scale global setpoint to bdi's:  setpoint *= bdi_thresh / thresh
+> +	 */
+> +	x = div_u64((u64)bdi_thresh << 16, thresh | 1);
+> +	setpoint = setpoint * (u64)x >> 16;
+> +	/*
+> +	 * Use span=(4*write_bw) in single bdi case as indicated by
+> +	 * (thresh - bdi_thresh ~= 0) and transit to bdi_thresh in JBOD case.
+> +	 */
+> +	span = div_u64((u64)bdi_thresh * (thresh - bdi_thresh) +
+> +		       (u64)(4 * bdi->avg_write_bandwidth) * bdi_thresh,
+> +		       thresh + 1);
+> +	x_intercept = setpoint + 2 * span;
+> +
 
-This patch isn't critical but it is rather embarrassing that
-tracing_enabled has been marked deprecated, but we still report to use
-it in the README file. This patch has extremely low risk in breaking
-anything and fixes an embarrassing documentation issue.
+Hi Fengguang,
 
-I would like to see this fixed in the next major release.
+Few very basic queries.
 
-Thanks!
+- Why can't we use the same formula for bdi position ratio as gloabl
+  position ratio. Are you not looking for similar proporties. Near the
+  set point variation is less and away from setup poing throttling is
+  faster.
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+- In the bdi calculation, setpoint seems to be in number of pages and 
+  limit (x_intercept) seems to be a combination of nr pages + pages/sec.
+  Why it is different from gloabl setpoint and limit. I mean could this
+  not have been like global calculation where we try to keep bdi_dirty
+  close to bdi_thresh and calculate pos_ratio. 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/urgent
+- In global pos_ratio calculation terminology used is "limit" while
+  the same thing seems be being meintioned as x_intercept in bdi position
+  ratio calculation.
 
-Head SHA1: 7bd09e1564b3d3534c8f5b32566dc5427d22c372
+Am I missing something very basic here.
 
-
-Geunsik Lim (1):
-      ftrace: Fix README to state tracing_on to start/stop tracing
-
-----
- kernel/trace/trace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
----------------------------
-commit 7bd09e1564b3d3534c8f5b32566dc5427d22c372
-Author: Geunsik Lim <geunsik.lim@samsung.com>
-Date:   Fri Aug 12 14:30:22 2011 +0900
-
-    ftrace: Fix README to state tracing_on to start/stop tracing
-    
-    tracing_enabled option is deprecated.
-    To start/stop tracing, write to /sys/kernel/debug/tracing/tracing_on
-    without tracing_enabled. This patch is based on Linux 3.1.0-rc1
-    
-    Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
-    Link: http://lkml.kernel.org/r/1313127022-23830-1-git-send-email-leemgs1@gmail.com
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e5df02c..91abdbf 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2710,9 +2710,9 @@ static const char readme_msg[] =
- 	"# cat /sys/kernel/debug/tracing/trace_options\n"
- 	"noprint-parent nosym-offset nosym-addr noverbose\n"
- 	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
--	"# echo 1 > /sys/kernel/debug/tracing/tracing_enabled\n"
-+	"# echo 1 > /sys/kernel/debug/tracing/tracing_on\n"
- 	"# cat /sys/kernel/debug/tracing/trace > /tmp/trace.txt\n"
--	"# echo 0 > /sys/kernel/debug/tracing/tracing_enabled\n"
-+	"# echo 0 > /sys/kernel/debug/tracing/tracing_on\n"
- ;
- 
- static ssize_t
-
-
+Thanks
+Vivek
