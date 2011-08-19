@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1HSCmL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 22:42:11 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56674 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab1HSCmJ (ORCPT
+	id S1753541Ab1HSCnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 22:43:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35987 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab1HSCne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 22:42:09 -0400
-X-AuditID: b753bd60-a1286ba000000655-73-4e4dcd7eaa75
-X-AuditID: b753bd60-a1286ba000000655-73-4e4dcd7eaa75
-Message-ID: <4E4DCD59.1070203@hitachi.com>
-Date: Fri, 19 Aug 2011 11:41:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>, yrl.pp-manager.tt@hitachi.com,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH 0/5][RFC] kprobes/ftrace: Have kprobes use ftrace on ftrace
- nops
-References: <20110810162222.017387055@goodmis.org>  <4E43209D.7090104@hitachi.com>  <1313022842.18583.282.camel@gandalf.stny.rr.com>  <4E43769C.9000901@hitachi.com>  <1313067691.18583.290.camel@gandalf.stny.rr.com>  <4E44967C.1090101@hitachi.com>  <1313154537.18583.319.camel@gandalf.stny.rr.com>  <4E464D6C.9020807@hitachi.com>  <1313290684.18583.362.camel@gandalf.stny.rr.com>  <4E47A33E.5020202@hitachi.com>  <1313413562.15704.5.camel@gandalf.stny.rr.com>  <4E4BB041.1050004@hitachi.com> <1313697988.15704.77.camel@gandalf.stny.rr.com>
-In-Reply-To: <1313697988.15704.77.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	Thu, 18 Aug 2011 22:43:34 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=poF6ICSe450A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=hD80L64hAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=uZzB4uCBtwBe02ULVPwA:9 a=9hNdVQouoWKd_NWpvHQA:7 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL][v3.1] ftrace: Fix README to state tracing_on to
+ start/stop tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Geunsik Lim <geunsik.lim@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 18 Aug 2011 22:43:31 -0400
+Message-ID: <1313721812.15704.85.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/08/19 5:06), Steven Rostedt wrote:
-> On Wed, 2011-08-17 at 21:12 +0900, Masami Hiramatsu wrote:
-> 
->> I see. OK, I'm now looking forward to your work ;)
-> 
-> Hi Masami,
-> 
-> BTW, do you have any test suits that I could use to test the changes I
-> make. Something that I may be able to catch regressions with?
 
-Yes, here are the test to ensure putting probes on module/module init code.
+Ingo,
 
-http://sourceforge.net/mailarchive/forum.php?thread_name=65795E11DBF1E645A09CEC7EAEE94B9C39F68E90%40USINDEVS02.corp.hds.com&forum_name=dle-develop
+This patch isn't critical but it is rather embarrassing that
+tracing_enabled has been marked deprecated, but we still report to use
+it in the README file. This patch has extremely low risk in breaking
+anything and fixes an embarrassing documentation issue.
 
-http://sourceforge.net/mailarchive/forum.php?thread_name=65795E11DBF1E645A09CEC7EAEE94B9C39F68E8F%40USINDEVS02.corp.hds.com&forum_name=dle-develop
+I would like to see this fixed in the next major release.
 
-Also, basic smoke test is already in the kernel.
+Thanks!
 
-BTW, I think we may need more testcases for checking registers etc.
+Please pull the latest tip/perf/urgent tree, which can be found at:
 
-Thank you,
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Head SHA1: 7bd09e1564b3d3534c8f5b32566dc5427d22c372
+
+
+Geunsik Lim (1):
+      ftrace: Fix README to state tracing_on to start/stop tracing
+
+----
+ kernel/trace/trace.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+---------------------------
+commit 7bd09e1564b3d3534c8f5b32566dc5427d22c372
+Author: Geunsik Lim <geunsik.lim@samsung.com>
+Date:   Fri Aug 12 14:30:22 2011 +0900
+
+    ftrace: Fix README to state tracing_on to start/stop tracing
+    
+    tracing_enabled option is deprecated.
+    To start/stop tracing, write to /sys/kernel/debug/tracing/tracing_on
+    without tracing_enabled. This patch is based on Linux 3.1.0-rc1
+    
+    Signed-off-by: Geunsik Lim <geunsik.lim@samsung.com>
+    Link: http://lkml.kernel.org/r/1313127022-23830-1-git-send-email-leemgs1@gmail.com
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e5df02c..91abdbf 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2710,9 +2710,9 @@ static const char readme_msg[] =
+ 	"# cat /sys/kernel/debug/tracing/trace_options\n"
+ 	"noprint-parent nosym-offset nosym-addr noverbose\n"
+ 	"# echo print-parent > /sys/kernel/debug/tracing/trace_options\n"
+-	"# echo 1 > /sys/kernel/debug/tracing/tracing_enabled\n"
++	"# echo 1 > /sys/kernel/debug/tracing/tracing_on\n"
+ 	"# cat /sys/kernel/debug/tracing/trace > /tmp/trace.txt\n"
+-	"# echo 0 > /sys/kernel/debug/tracing/tracing_enabled\n"
++	"# echo 0 > /sys/kernel/debug/tracing/tracing_on\n"
+ ;
+ 
+ static ssize_t
+
+
