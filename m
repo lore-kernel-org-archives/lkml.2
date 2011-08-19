@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab1HSN2Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:28:16 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:45968 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab1HSN2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:28:10 -0400
-Subject: Re: [patch v3 2/8] kdump: Make kimage_load_crash_segment() weak
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110818171541.GC15413@redhat.com>
-References: <20110812134849.748973593@linux.vnet.ibm.com>
-	 <20110812134907.166585439@linux.vnet.ibm.com>
-	 <20110818171541.GC15413@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 19 Aug 2011 15:27:52 +0200
-Message-ID: <1313760472.3858.26.camel@br98xy6r>
+	id S1755855Ab1HSNsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:48:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44611 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350Ab1HSNsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:48:03 -0400
+Date: Fri, 19 Aug 2011 23:47:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20110819234756.ef70fa07dccb6adc17d2f516@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__19_Aug_2011_23_47_56_+1000_lmIgiYezd/R9tAsI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+--Signature=_Fri__19_Aug_2011_23_47_56_+1000_lmIgiYezd/R9tAsI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2011-08-18 at 13:15 -0400, Vivek Goyal wrote:
-> On Fri, Aug 12, 2011 at 03:48:51PM +0200, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > On s390 we do not create page tables at all for the crashkernel memory.
-> > This requires a s390 specific version for kimage_load_crash_segment().
-> > Therefore this patch declares this function as "__weak". The s390 version is
-> > very simple. It just copies the kexec segment to real memory without using
-> > page tables:
-> > 
-> > int kimage_load_crash_segment(struct kimage *image,
-> >                               struct kexec_segment *segment)
-> > {
-> >         return copy_from_user_real((void *) segment->mem, segment->buf,
-> >                                    segment->bufsz);
-> > }
-> > 
-> > There are two main advantages of not creating page tables for the
-> > crashkernel memory:
-> > 
-> > a) It saves memory. We have scenarios in mind, where crashkernel
-> >    memory can be very large and saving page table space is important.
-> > b) We protect the crashkernel memory from being overwritten.
-> 
-> Michael,
-> 
-> Thinking more about it. Can't we provide a arch specific version of
-> kmap() and kunmap() so that we create temporary mappings to copy
-> the pages and then these are torn off.
+Hi Rafael,
 
-Isn't kmap/kunmap() used for higmem? These functions are called from
-many different functions in the Linux kernel, not only for kdump. I
-would assume that creating and removing mappings with these functions is
-not what a caller would expect and probably would break the Linux kernel
-at many other places, no?
+After merging the pm tree, today's linux-next build (most of the arm and
+avr32 builds at least) failed like this:
 
-Perhaps we can finish this discussion after my vacation. I will change
-my patch series that we even do not need this patch...
+In file included from drivers/base/power/clock_ops.c:14:
+include/linux/pm_clock.h:15: error: field 'nb' has incomplete type
 
-So only two common code patches are remaining. I will send the common
-code patches again and will ask Andrew Morton to integrate them in the
-next merge window. The s390 patches will be integrated by Martin.
+You need to include something that defines "struct notifier_block".
 
-Michael
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__19_Aug_2011_23_47_56_+1000_lmIgiYezd/R9tAsI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOTmmMAAoJEDMEi1NhKgbslFgIAIcdmybVNXfAkNS4n91ox+eO
+Psv/OHvPrxBDnU+Dwzg4IHyNQjU0lk8VB+/A80n+rzKLEodnfaYe99Nc1Sk8y502
+IdEqgHKMEIVXoya53cpsNmhzNGwM0CX3luRfnZeYId8M7JGFa6hXR9vCUODCBJM3
+GojxeNiNmu+Wu2jP+jK6LvvlV3Hg2P7Znh+g8n9uigAm9kKC6gQrmP/lnBwGmdue
+/u0a4u6qhn70CjaYzfYW+DwdZ5qagZ4fkU1bsikVn5eUfWDGH3MysyDzYKpkDWsQ
+lj7631OUhGXbDRC+2MKMYiDLXbL3pmV3baVkCKnJdye3Wfa95p60eNCo2aNlQDE=
+=lUik
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Aug_2011_23_47_56_+1000_lmIgiYezd/R9tAsI--
