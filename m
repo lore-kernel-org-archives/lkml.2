@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab1HSQQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:16:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29330 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533Ab1HSQQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:16:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="39487760"
-Message-ID: <4E4E8C52.6070900@linux.intel.com>
-Date: Fri, 19 Aug 2011 09:16:18 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com,
-        jean.pihet@newoldbits.com, mingo@redhat.com, trenn@suse.de,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/3] trace points: power: remove 'cpu_id' from trace_clock_*
-References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com> <1313766840.15704.104.camel@gandalf.stny.rr.com> <CACVXFVNKe+gt2VmrHcJ2Pd1ZvqfOPn+211vR-PcM-WDTYDN4cQ@mail.gmail.com>
-In-Reply-To: <CACVXFVNKe+gt2VmrHcJ2Pd1ZvqfOPn+211vR-PcM-WDTYDN4cQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756241Ab1HSQR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:17:58 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:57959 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756173Ab1HSQRy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 12:17:54 -0400
+Date: Fri, 19 Aug 2011 09:17:49 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20110819091749.091dd1cb@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/19/2011 8:39 AM, Ming Lei wrote:
-> Hi,
->
-> On Fri, Aug 19, 2011 at 11:14 PM, Steven Rostedt<rostedt@goodmis.org>  wrote:
->> Do you know if these changes wont break powertop?
-> I have run powertop 1.13 on these changes, and found it works well
-> just like before,
-> no breaks found.
-please use powertop 1.98 instead
-1.13 does not use trace events while 1.98 does
+The following changes since commit
+5c80c71b9a0ec518b4b58d2a61de01a04f4a4453:
 
->
-> thanks,
+  Merge branch 'for-linus' of
+  git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable
+  (2011-08-18 14:20:00 -0700)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 ..BRANCH.NOT.VERIFIED..
+
+I just pushed the OF fix and should have sent it earlier this week so
+it's still mirroring out.  It's a trivial fix so I hope you don't mind
+it missing out on the normal linux-next soak time.
+
+The rest of the changes are mostly related to the now hidden resource
+re-allocation code, along with a good couple from Jon to better handle
+PCIe parameters (this one has been going through a lot of review and
+testing, but I can move it over to my -next tree if you don't think
+it's appropriate).
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
+
+David Daney (1):
+      PCI: OF: Don't crash when bridge parent is NULL.
+
+Jon Mason (2):
+      PCI: Set PCI-E Max Payload Size on fabric
+      PCI: export pcie_bus_configure_settings symbol
+
+Ram Pai (3):
+      PCI : ability to relocate assigned pci-resources
+      PCI: make cardbus-bridge resources optional
+      PCI: code and comments cleanup
+
+Yinghai Lu (2):
+      PCI: honor child buses add_size in hot plug configuration
+      PCI: make SRIOV resources optional
+
+ arch/x86/pci/acpi.c              |    9 ++
+ drivers/pci/hotplug/pcihp_slot.c |   45 +----------
+ drivers/pci/of.c                 |    2 +-
+ drivers/pci/pci.c                |   67 +++++++++++++++
+ drivers/pci/pci.h                |    4 +
+ drivers/pci/probe.c              |  146 +++++++++++++++++++++++++++++++++ 
+ drivers/pci/setup-bus.c          |  166 ++++++++++++++++++++++++++-----------
+ drivers/pci/setup-res.c          |  152 ++++++++++++++++++++++-------------
+ include/linux/pci.h              |   16 ++++-
+9 files changed, 454 insertions(+), 153 deletions(-)
