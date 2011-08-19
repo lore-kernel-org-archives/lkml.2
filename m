@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab1HSAUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 20:20:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20785 "EHLO mga11.intel.com"
+	id S1752802Ab1HSAiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 20:38:21 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:41661 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab1HSAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 20:20:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,248,1312182000"; 
-   d="scan'208";a="42870917"
-Subject: Re: cfq-iosched: a regression
-From: Shaohua Li <shaohua.li@intel.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
-        "Shi, Alex" <alex.shi@intel.com>
-In-Reply-To: <CAN5ZDdewpvg=82O69yGSXJczJMZrfqrLNS=RQiD2Ne2RqQTF1w@mail.gmail.com>
-References: <1313462826.27321.22.camel@sli10-conroe>
-	 <CAN5ZDdewpvg=82O69yGSXJczJMZrfqrLNS=RQiD2Ne2RqQTF1w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Aug 2011 08:21:35 +0800
-Message-ID: <1313713295.29510.1.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1751716Ab1HSAiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 20:38:20 -0400
+Date: Thu, 18 Aug 2011 17:38:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110819003817.GJ2325@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110817224916.GO2419@linux.vnet.ibm.com>
+ <20110817230219.GJ2227@zod.bos.redhat.com>
+ <20110817230641.GA7837@somewhere.redhat.com>
+ <20110817231750.GK2227@zod.bos.redhat.com>
+ <20110818183523.GD2325@linux.vnet.ibm.com>
+ <20110818140034.668e8dea.akpm@linux-foundation.org>
+ <20110818212334.GE2325@linux.vnet.ibm.com>
+ <20110818221920.GR2227@zod.bos.redhat.com>
+ <20110818231646.GH2325@linux.vnet.ibm.com>
+ <20110818162723.aa63bc38.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818162723.aa63bc38.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 04:22 +0800, Justin TerAvest wrote:
-> Hi Shaohua,
+On Thu, Aug 18, 2011 at 04:27:23PM -0700, Andrew Morton wrote:
+> On Thu, 18 Aug 2011 16:16:46 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> What was the workload you were running to find this regression?
-kernel build as I declared below.
+> > Andrew, are you willing to ack this?
+> 
+> WhoMeNope.  That would imply that I understood it, but my brain is far
+> too small to understand rcutree.c - that's what we have paulmcks for.
 
-Thanks,
-Shaohua
+Yeah, well, the only reason my brain can encompass rcutree.c is that
+there is not much else there.  I will CC you when submitting the patch.
 
-> On Mon, Aug 15, 2011 at 7:47 PM, Shaohua Li <shaohua.li@intel.com> wrote:
-> > We have a kernel build regression since 3.1-rc1, which is about 10%
-> > regression. The kernel source is in an ext3 filesystem.
-> > Alex Shi bisect it to commit:
-> > commit a07405b7802691d29ab3b23bdc76ee6d006aad0b
-> > Author: Justin TerAvest <teravest@google.com>
-> > Date:   Sun Jul 10 22:09:19 2011 +0200
-> >
-> >    cfq: Remove special treatment for metadata rqs.
-> >
-> > Apparently this is caused by lack metadata preemption, where ext3/ext4
-> > do use READ_META. I didn't see a way to fix the issue, so suggest
-> > reverting the patch.
-> >
-> > Reported-by: Alex Shi<alex.shi@intel.com>
-> > Reported-by: Shaohua Li<shaohua.li@intel.com>
-> >
-> >
-
-
+							Thanx, Paul
