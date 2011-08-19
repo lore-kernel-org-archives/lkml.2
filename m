@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab1HSQrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:47:23 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57255 "EHLO
+	id S1756378Ab1HSQrb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:47:31 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57259 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751160Ab1HSQrW (ORCPT
+	by vger.kernel.org with ESMTP id S1756334Ab1HSQr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:22 -0400
+	Fri, 19 Aug 2011 12:47:27 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Havard Skinnemoen <hskinnemoen@gmail.com>
-Subject: [PATCH v2 06/43] avr32: Use block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:22 +0100
-Message-Id: <1313772419-21951-7-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>
+Subject: [PATCH v2 07/43] blackfin: Use set_current_blocked() and block_sigmask()
+Date: Fri, 19 Aug 2011 17:46:23 +0100
+Message-Id: <1313772419-21951-8-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -22,52 +20,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Matt Fleming <matt.fleming@linux.intel.com>
 
-Use the new helper function block_sigmask() which centralises the code
-for updating current->blocked after successfully delivering a signal
-and reduces the amount of duplicate code across architectures.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check whether the signal we're about to block
+is pending in the shared queue.
 
-In the past some architectures got this code wrong, so using this
-helper function should stop that from happening again.
+Also, use the new helper function block_sigmask() which centralises
+the code for updating current->blocked after successfully delivering a
+signal and reduces the amount of duplicate code across
+architectures. In the past some architectures got this code wrong, so
+using this helper function should stop that from happening again.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Havard Skinnemoen <hskinnemoen@gmail.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
 ---
 
 v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
 for adding sigmask to current->blocked" so they need to go through the
 same tree but this patch would benefit from some maintainer ACK's.
 
- arch/avr32/kernel/signal.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ arch/blackfin/kernel/signal.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index 06f4293..feeb77b 100644
---- a/arch/avr32/kernel/signal.c
-+++ b/arch/avr32/kernel/signal.c
-@@ -223,7 +223,6 @@ static inline void
- handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	      sigset_t *oldset, struct pt_regs *regs, int syscall)
- {
--	sigset_t blocked;
- 	int ret;
+diff --git a/arch/blackfin/kernel/signal.c b/arch/blackfin/kernel/signal.c
+index d536f35..05ece02 100644
+--- a/arch/blackfin/kernel/signal.c
++++ b/arch/blackfin/kernel/signal.c
+@@ -99,10 +99,7 @@ asmlinkage int do_rt_sigreturn(unsigned long __unused)
+ 		goto badframe;
  
- 	/*
-@@ -244,10 +243,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	/*
- 	 * Block the signal if we were successful.
- 	 */
--	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&blocked, sig);
--	set_current_blocked(&blocked);
-+	block_sigmask(ka, sig);
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
+ 
+ 	if (rt_restore_sigcontext(regs, &frame->uc.uc_mcontext, &r0))
+ 		goto badframe;
+@@ -266,15 +263,9 @@ handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
+ 	/* set up the stack frame */
+ 	ret = setup_rt_frame(sig, ka, info, oldset, regs);
+ 
+-	if (ret == 0) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked, &current->blocked,
+-			  &ka->sa.sa_mask);
+-		if (!(ka->sa.sa_flags & SA_NODEFER))
+-			sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
+-	}
++	if (ret == 0)
++		block_sigmask(ka, sig);
++
+ 	return ret;
  }
  
- /*
 -- 
 1.7.4.4
 
