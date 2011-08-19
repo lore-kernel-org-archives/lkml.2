@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1HSQrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:47:19 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57226 "EHLO
+	id S1756578Ab1HSQ5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:57:52 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57239 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751697Ab1HSQrP (ORCPT
+	by vger.kernel.org with ESMTP id S1753186Ab1HSQrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:15 -0400
+	Fri, 19 Aug 2011 12:47:19 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 01/43] signal: Add block_sigmask() for adding sigmask to current->blocked
-Date: Fri, 19 Aug 2011 17:46:17 +0100
-Message-Id: <1313772419-21951-2-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH v2 03/43] arm: Use set_current_blocked() and block_sigmask()
+Date: Fri, 19 Aug 2011 17:46:19 +0100
+Message-Id: <1313772419-21951-4-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -22,95 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Matt Fleming <matt.fleming@linux.intel.com>
 
-This patch abstracts the code sequence for adding a signal handler's
-sa_mask to current->blocked because the sequence is identical for all
-architectures. Furthermore, in the past some architectures actually
-got this code wrong, so introduce a wrapper that all architectures can
-use.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check for shared signals we're about to block.
+
+Also, use the new helper function block_sigmask() which centralises
+the code for updating current->blocked after successfully delivering a
+signal and reduces the amount of duplicate code across
+architectures. In the past some architectures got this code wrong, so
+using this helper function should stop that from happening again.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
 ---
- arch/x86/kernel/signal.c |    6 +-----
- include/linux/signal.h   |    1 +
- kernel/signal.c          |   21 +++++++++++++++++++++
- 3 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 54ddaeb2..46a01bd 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -682,7 +682,6 @@ static int
- handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 		struct pt_regs *regs)
+v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
+for adding sigmask to current->blocked" so they need to go through the
+same tree but this patch would benefit from some maintainer ACK's.
+
+Will, I dropped your Acked-by because I felt this patch changed quite
+dramatically since v1 and warrants another review. I hope that's OK.
+
+ arch/arm/kernel/signal.c |   24 ++++++++----------------
+ 1 files changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index 0340224..d13e61a 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -66,12 +66,13 @@ const unsigned long syscall_restart_code[2] = {
+  */
+ asmlinkage int sys_sigsuspend(int restart, unsigned long oldmask, old_sigset_t mask)
  {
--	sigset_t blocked;
- 	int ret;
- 
- 	/* Are we from a system call? */
-@@ -733,10 +732,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	 */
- 	regs->flags &= ~X86_EFLAGS_TF;
- 
--	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&blocked, sig);
--	set_current_blocked(&blocked);
-+	block_sigmask(ka, sig);
- 
- 	tracehook_signal_handler(sig, info, ka, regs,
- 				 test_thread_flag(TIF_SINGLESTEP));
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index a822300..7987ce74 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -254,6 +254,7 @@ extern void set_current_blocked(const sigset_t *);
- extern int show_unhandled_signals;
- 
- extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
-+extern void block_sigmask(struct k_sigaction *ka, int signr);
- extern void exit_signals(struct task_struct *tsk);
- 
- extern struct kmem_cache *sighand_cachep;
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 291c970..7a08164 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -2314,6 +2314,27 @@ relock:
- 	return signr;
- }
- 
-+/**
-+ * block_sigmask - add @ka's signal mask to current->blocked
-+ * @ka: action for @signr
-+ * @signr: signal that has been successfully delivered
-+ *
-+ * This function should be called when a signal has succesfully been
-+ * delivered. It adds the mask of signals for @ka to current->blocked
-+ * so that they are blocked during the execution of the signal
-+ * handler. In addition, @signr will be blocked unless %SA_NODEFER is
-+ * set in @ka->sa.sa_flags.
-+ */
-+void block_sigmask(struct k_sigaction *ka, int signr)
-+{
+-	mask &= _BLOCKABLE;
+-	spin_lock_irq(&current->sighand->siglock);
 +	sigset_t blocked;
 +
-+	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
-+		sigaddset(&blocked, signr);
-+	set_current_blocked(&blocked);
-+}
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
 +
- /*
-  * It could be that complete_signal() picked us to notify about the
-  * group-wide signal. Other threads should be notified now to take
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
+ 
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+@@ -281,10 +282,7 @@ static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
+ 	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
+ 	if (err == 0) {
+ 		sigdelsetmask(&set, ~_BLOCKABLE);
+-		spin_lock_irq(&current->sighand->siglock);
+-		current->blocked = set;
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
++		set_current_blocked(&set);
+ 	}
+ 
+ 	__get_user_error(regs->ARM_r0, &sf->uc.uc_mcontext.arm_r0, err);
+@@ -637,13 +635,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	/*
+ 	 * Block the signal if we were successful.
+ 	 */
+-	spin_lock_irq(&tsk->sighand->siglock);
+-	sigorsets(&tsk->blocked, &tsk->blocked,
+-		  &ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&tsk->blocked, sig);
+-	recalc_sigpending();
+-	spin_unlock_irq(&tsk->sighand->siglock);
++	block_sigmask(ka, sig);
+ 
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
