@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1HST0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:26:47 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:35967 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755684Ab1HST0q (ORCPT
+	id S1755979Ab1HSTaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:30:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42548 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab1HSTaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 15:26:46 -0400
-Date: Fri, 19 Aug 2011 15:26:38 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH RFC] ARM: vexpress: Use assembler mnemonic for WFI in
- platform_do_lowpower.
-Message-ID: <20110819192638.GA21043@elliptictech.com>
-References: <1313777004-4716-1-git-send-email-nbowler@elliptictech.com>
- <20110819181514.GA12654@gallagher>
+	Fri, 19 Aug 2011 15:30:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819181514.GA12654@gallagher>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAG1a4rus+VVhhB3ayuDF2pCQDusLekGOAxf33+u_uzxC1yz1MA@mail.gmail.com>
+References: <1312872786.70934.YahooMailNeo@web111712.mail.gq1.yahoo.com>
+ <CAK1hOcN7q=F=UV=aCAsVOYO=Ex34X0tbwLHv9BkYkA=ik7G13w@mail.gmail.com>
+ <1313075625.50520.YahooMailNeo@web111715.mail.gq1.yahoo.com>
+ <201108111938.25836.vda.linux@googlemail.com> <CAG1a4rsO7JDqmYiwyxPrAHdLNbJt+wqymSzU9i1dv5w5C2OFog@mail.gmail.com>
+ <CAK1hOcM5u-zB7fUnR5QVJGBrEnLMhK9Q+EmWBknThga70UQaLw@mail.gmail.com> <CAG1a4rus+VVhhB3ayuDF2pCQDusLekGOAxf33+u_uzxC1yz1MA@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Fri, 19 Aug 2011 15:29:34 -0400
+Message-ID: <CAF_S4t--+Ufkb2bVrt9e59R=yty5U5Cb=Kt5RbjPjraM_equog@mail.gmail.com>
+Subject: Re: running of out memory => kernel crash
+To: Pavel Ivanov <paivanof@gmail.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Mahmood Naderan <nt_mahmood@yahoo.com>,
+        David Rientjes <rientjes@google.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "\"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>,
+        "\"linux-mm@kvack.org\"" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-19 19:15 +0100, Jamie Iles wrote:
-> On Fri, Aug 19, 2011 at 02:03:24PM -0400, Nick Bowler wrote:
-[...]
-> > -		/*
-> > -		 * here's the WFI
-> > -		 */
-> > -		asm(".word	0xe320f003\n"
-> > +		asm("wfi\n"
-> >  		    :
-> >  		    :
-> >  		    : "memory", "cc");
-> 
-> There's a wfi() macro defined in arch/arm/include/asm/system.h that 
-> could be used here.
+On Thu, Aug 18, 2011 at 10:26, Pavel Ivanov <paivanof@gmail.com> wrote:
+> On Thu, Aug 18, 2011 at 8:44 AM, Denys Vlasenko
+> <vda.linux@googlemail.com> wrote:
+>>> I have a little concern about this explanation of yours. Suppose we
+>>> have some amount of more or less actively executing processes in the
+>>> system. Suppose they started to use lots of resident memory. Amount of
+>>> memory they use is less than total available physical memory but when
+>>> we add total size of code for those processes it would be several
+>>> pages more than total size of physical memory. As I understood from
+>>> your explanation in such situation one process will execute its time
+>>> slice, kernel will switch to other one, find that its code was pushed
+>>> out of RAM, read it from disk, execute its time slice, switch to next
+>>> process, read its code from disk, execute and so on. So system will be
+>>> virtually unusable because of constantly reading from disk just to
+>>> execute next small piece of code. But oom will never be firing in such
+>>> situation. Is my understanding correct?
+>>
+>> Yes.
+>>
+>>> Shouldn't it be considered as an unwanted behavior?
+>>
+>> Yes. But all alternatives (such as killing some process) seem to be worse.
+>
+> Could you elaborate on this? We have a completely unusable server
+> which can be revived only by hard power cycling (administrators won't
+> be able to log in because sshd and shell will fall victims of the same
+> unending disk reading). And as an alternative we can kill some process
+> and at least allow administrator to log in and check if something else
+> can be done to make server feel better. Why is it worse?
+>
+> I understand that it could be very hard to detect such situation but
+> at least it's worth trying I think.
 
-Indeed, thanks for pointing that out.
-
-I'm a little wary, however: the wfi macro does not include the "cc"
-clobber that this code has currently, and I don't know what the
-implications of removing it are.  There appears to be no current
-users of the wfi macro.
-
-Taking a closer look, there appear to be five platforms that have a
-hardcoded WFI just like the above (including the "cc" clobber):
-exynos4, realview, shmobile, tegra and vexpress.  omap defines its
-own do_wfi macro, *without* the "cc" clobber.
-
-Nevertheless, using the macro seems to work just fine, so I can
-certainly re-spin the patch with that instead.
-
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Deciding when to call the server unusable is a policy decision that
+the kernel can't make very easily on its own; the point when the
+system is considered unusable may be different depending on workload.
+You could create a userspace daemon, however, that mlockall()s, then
+monitors memory usage, load average, etc and kills processes when
+things start to go south. You could also use the memory resource
+cgroup controller to set hard limits on memory usage.
