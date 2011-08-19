@@ -1,130 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab1HSOYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:24:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45215 "EHLO mga03.intel.com"
+	id S1755101Ab1HSOZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:25:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753963Ab1HSOYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:24:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,251,1312182000"; 
-   d="scan'208";a="40262704"
-Date: Fri, 19 Aug 2011 22:24:33 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH] writeback: Per-block device
- bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
-Message-ID: <20110819142433.GA15401@localhost>
-References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
- <20110818094824.GA25752@localhost>
- <1313669702.6607.24.camel@sauron>
- <20110818131343.GA17473@localhost>
- <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
- <20110819023406.GA12732@localhost>
- <CAFPAmTSzYg5n150_ykv-Vvc4QVbz14Oxn_Mm+EqxzbUL3c39tg@mail.gmail.com>
- <20110819052839.GB28266@localhost>
- <20110819060803.GA7887@localhost>
- <CAFPAmTQU_rHwFi8KRdTU6BjMFhvq0HKNfufQ762i1KQEHVPk8g@mail.gmail.com>
+	id S1753103Ab1HSOY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 10:24:57 -0400
+Date: Fri, 19 Aug 2011 10:24:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, ebiederm@xmission.com,
+        mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com, oomichi@mxs.nes.nec.co.jp,
+        horms@verge.net.au, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [patch 1/2] kdump: Add KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+Message-ID: <20110819142403.GF18656@redhat.com>
+References: <20110819141857.052232873@linux.vnet.ibm.com>
+ <20110819141940.177788593@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFPAmTQU_rHwFi8KRdTU6BjMFhvq0HKNfufQ762i1KQEHVPk8g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110819141940.177788593@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kautuk,
-
-On Fri, Aug 19, 2011 at 03:00:30PM +0800, Kautuk Consul wrote:
-> Hi Wu,
+On Fri, Aug 19, 2011 at 04:18:58PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> Yes. I think I do understand your approach.
+> On s390 there is a different KEXEC_CONTROL_MEMORY_LIMIT for the normal and
+> the kdump kexec case. Therefore this patch introduces a new macro
+> KEXEC_CRASH_CONTROL_MEMORY_LIMIT. This is set to
+> KEXEC_CONTROL_MEMORY_LIMIT for all architectures that do not define
+> KEXEC_CRASH_CONTROL_MEMORY_LIMIT.
 > 
-> Your aim is to always retain the per BDI timeout value.
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+
+Looks good to me. 
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> ---
+>  include/linux/kexec.h |    4 ++++
+>  kernel/kexec.c        |    2 +-
+>  2 files changed, 5 insertions(+), 1 deletion(-)
 > 
-> You want to check for threshholds by mathematically adjusting the
-> background time too
-> into your over_bground_thresh() formula so that your understanding
-> holds true always and also
-> affects the page dirtying scenario I mentioned.
-> This definitely helps and refines this scenario in terms of flushing
-> out of the dirty pages.
-
-Thanks.
-
-> Doubts:
-> i)   Your entire implementation seems to be dependent on someone
-> calling balance_dirty_pages()
->      directly or indirectly. This function will call the
-> bdi_start_background_writeback() which wakes
->      up the flusher thread.
->      What about those page dirtying code paths which might not call
-> balance_dirty_pages ?
->      Those paths then depend on the BDI thread periodically writing it
-> to disk and then we are again
->      dependent on the writeback interval.
->      Can we assume that the kernel will reliably call
-> balance_dirty_pages() whenever the pages
->      are dirtied ? If that was true, then we would not need bdi
-> periodic writeback threads ever.
-
-Yes. The kernel need a way to limit the total number of dirty pages at
-any given time and to keep them under dirty_ratio/dirty_bytes.
-
-balance_dirty_pages() is such a central place to throttle the dirty
-pages. Whatever code path generating dirty pages are required to call
-into balance_dirty_pages_ratelimited_nr() which will in turn call
-balance_dirty_pages().
-
-So, the values specified by dirty_ratio/dirty_bytes will be executed
-effectively by balance_dirty_pages(). In contrast, the values
-specified by dirty_expire_centisecs is merely a parameter used by
-wb_writeback() to select the eligible inodes to do writeout. The 30s
-dirty expire time is never a guarantee that all inodes/pages dirtied
-before 30s will be timely written to disk. It's better interpreted in
-the opposite way: when under the dirty_background_ratio threshold and
-hence background writeout does not kick in, dirty inodes younger than
-30s won't be written to disk by the flusher.
-
-> ii)  Even after your rigorous checking, the bdi_writeback_thread()
-> will still do a schedule_timeout()
->      with the global value. Will your current solution then handle
-> Artem's disk removal scenario ?
->      Else, you start using your value in the schedule_timeout() call
-> in the bdi_writeback_thread()
->      function, which brings us back to the interval phenomenon I was
-> talking about.
-
-wb_writeback() will keep running as long as over_bground_thresh().
-
-The flusher will keep writing as long as there are more works, since
-there is a
-
-                if (!list_empty(&bdi->work_list))
-                        continue;
-
-before the schedule_timeout() call.
-
-And the flusher thread will always be woke up timely from
-balance_dirty_pages().
-
-So schedule_timeout() won't block in the way at all.
-
-> Does this patch really help the user control exact time when the write
-> BIO is transferred from the
-> MM to the Block layer assuming balance_dirty_pages() is not called ?
-
-It would be a serious bug if balance_dirty_pages() is somehow not
-called. But note that balance_dirty_pages() is designed to be called
-on every N pages to reduce overheads.
-
-Thanks,
-Fengguang
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -33,6 +33,10 @@
+>  #error KEXEC_ARCH not defined
+>  #endif
+>  
+> +#ifndef KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+> +#define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+> +#endif
+> +
+>  #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+>  #define KEXEC_CORE_NOTE_NAME "CORE"
+>  #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -498,7 +498,7 @@ static struct page *kimage_alloc_crash_c
+>  	while (hole_end <= crashk_res.end) {
+>  		unsigned long i;
+>  
+> -		if (hole_end > KEXEC_CONTROL_MEMORY_LIMIT)
+> +		if (hole_end > KEXEC_CRASH_CONTROL_MEMORY_LIMIT)
+>  			break;
+>  		if (hole_end > crashk_res.end)
+>  			break;
