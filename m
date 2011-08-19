@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab1HSHts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 03:49:48 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44870 "EHLO
+	id S1752541Ab1HSHtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 03:49:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45680 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1HSHs4 (ORCPT
+	with ESMTP id S1752343Ab1HSHs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 03:48:56 -0400
+	Fri, 19 Aug 2011 03:48:58 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
 	in-reply-to:references:x-system-of-record;
-	b=LCcqGutyrluzTsvYdJJ7PmDjlVtmxG7+MIZz7k2bwHYx2Vyr8pjbHTD9Z5W1OtRL6
-	NMGOCUhSTrzSUE5Lfqstg==
+	b=meyCaSl6VqGOQg5X8hXxmh4DPpaeHrPRWViuLDOmYc5IumEKgEREgqxu+51lNyrPF
+	ajXnyB95W9BcBRr/SXRng==
 From: Michel Lespinasse <walken@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
@@ -21,9 +21,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
         Mel Gorman <mgorman@suse.de>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Shaohua Li <shaohua.li@intel.com>
-Subject: [PATCH 3/9] mm: rcu read lock when getting from tail to head page
-Date: Fri, 19 Aug 2011 00:48:25 -0700
-Message-Id: <1313740111-27446-4-git-send-email-walken@google.com>
+Subject: [PATCH 4/9] mm: use get_page in deactivate_page()
+Date: Fri, 19 Aug 2011 00:48:26 -0700
+Message-Id: <1313740111-27446-5-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1313740111-27446-1-git-send-email-walken@google.com>
 References: <1313740111-27446-1-git-send-email-walken@google.com>
@@ -32,88 +32,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the tail page case, put_compound_page() uses get_page_unless_zero()
-to get a reference on the head page. There is a small possibility that
-the compound page might get split, and the head page freed, before that
-reference can be obtained.
-
-Similarly, page_trans_compound_anon_split() needs to get a reference
-on a a THP page's head before it can proceed with splitting it.
-
-In order to guarantee page count stability one rcu grace period after
-allocation, as described in page_cache_get_speculative() comment in
-pagemap.h, we need to take the rcu read lock from the time we locate the
-head page until we get a reference on it.
+deactivate_page() already holds a reference to the page, so it can
+use get_page() instead of get_page_unless_zero().
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- mm/ksm.c  |    4 ++++
- mm/swap.c |    8 +++++++-
- 2 files changed, 11 insertions(+), 1 deletions(-)
+ mm/swap.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 9a68b0c..0eec889 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -817,10 +817,12 @@ out:
- static int page_trans_compound_anon_split(struct page *page)
- {
- 	int ret = 0;
-+	rcu_read_lock();
- 	struct page *transhuge_head = page_trans_compound_anon(page);
- 	if (transhuge_head) {
- 		/* Get the reference on the head to split it. */
- 		if (get_page_unless_zero(transhuge_head)) {
-+			rcu_read_unlock();
- 			/*
- 			 * Recheck we got the reference while the head
- 			 * was still anonymous.
-@@ -834,10 +836,12 @@ static int page_trans_compound_anon_split(struct page *page)
- 				 */
- 				ret = 1;
- 			put_page(transhuge_head);
-+			return ret;
- 		} else
- 			/* Retry later if split_huge_page run from under us. */
- 			ret = 1;
- 	}
-+	rcu_read_unlock();
- 	return ret;
- }
- 
 diff --git a/mm/swap.c b/mm/swap.c
-index 3a442f1..ac617dc 100644
+index ac617dc..11574b1 100644
 --- a/mm/swap.c
 +++ b/mm/swap.c
-@@ -78,7 +78,10 @@ static void put_compound_page(struct page *page)
+@@ -517,6 +517,8 @@ static void drain_cpu_pagevecs(int cpu)
+  */
+ void deactivate_page(struct page *page)
  {
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = page->first_page;
-+		struct page *page_head;
++	struct pagevec *pvec;
 +
-+		rcu_read_lock();
-+		page_head = page->first_page;
- 		smp_rmb();
- 		/*
- 		 * If PageTail is still set after smp_rmb() we can be sure
-@@ -87,6 +90,8 @@ static void put_compound_page(struct page *page)
- 		 */
- 		if (likely(PageTail(page) && get_page_unless_zero(page_head))) {
- 			unsigned long flags;
-+
-+			rcu_read_unlock();
- 			/*
- 			 * Verify that our page_head wasn't converted
- 			 * to a a regular page before we got a
-@@ -140,6 +145,7 @@ static void put_compound_page(struct page *page)
- 			}
- 		} else {
- 			/* page_head is a dangling pointer */
-+			rcu_read_unlock();
- 			VM_BUG_ON(PageTail(page));
- 			goto out_put_single;
- 		}
+ 	/*
+ 	 * In a workload with many unevictable page such as mprotect, unevictable
+ 	 * page deactivation for accelerating reclaim is pointless.
+@@ -524,13 +526,11 @@ void deactivate_page(struct page *page)
+ 	if (PageUnevictable(page))
+ 		return;
+ 
+-	if (likely(get_page_unless_zero(page))) {
+-		struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
+-
+-		if (!pagevec_add(pvec, page))
+-			pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
+-		put_cpu_var(lru_deactivate_pvecs);
+-	}
++	get_page(page);
++	pvec = &get_cpu_var(lru_deactivate_pvecs);
++	if (!pagevec_add(pvec, page))
++		pagevec_lru_move_fn(pvec, lru_deactivate_fn, NULL);
++	put_cpu_var(lru_deactivate_pvecs);
+ }
+ 
+ void lru_add_drain(void)
 -- 
 1.7.3.1
 
