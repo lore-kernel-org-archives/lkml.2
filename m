@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1HSN3w (ORCPT <rfc822;w@1wt.eu>);
+	id S1755476Ab1HSN34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:29:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58759 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab1HSN3w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Aug 2011 09:29:52 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:64883 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755394Ab1HSN3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:29:48 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158334"
+   d="scan'208";a="159732455"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 59/75] virtionet: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:27:31 +0100
-Message-ID: <1313760467-8598-59-git-send-email-ian.campbell@citrix.com>
+        xen-devel@lists.xensource.com
+Subject: [PATCH 62/75] xen: netback: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:27:34 +0100
+Message-ID: <1313760467-8598-62-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -27,28 +26,119 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: xen-devel@lists.xensource.com
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/virtio_net.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/xen-netback/netback.c |   34 +++++++++++++++++++++++-----------
+ 1 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 0c7321c..52667a8 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -149,7 +149,7 @@ static void set_skb_frag(struct sk_buff *skb, struct page *page,
- 	f = &skb_shinfo(skb)->frags[i];
- 	f->size = min((unsigned)PAGE_SIZE - offset, *len);
- 	f->page_offset = offset;
--	f->page = page;
-+	__skb_frag_set_page(f, page);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index fd00f25..3068f67 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -215,6 +215,16 @@ static int get_page_ext(struct page *pg,
+ 			 sizeof(struct iphdr) + MAX_IPOPTLEN + \
+ 			 sizeof(struct tcphdr) + MAX_TCP_OPTION_SPACE)
  
- 	skb->data_len += f->size;
- 	skb->len += f->size;
++static unsigned long frag_get_pending_idx(skb_frag_t *frag)
++{
++	return (unsigned long)skb_frag_page(frag);
++}
++
++static void frag_set_pending_idx(skb_frag_t *frag, unsigned long pending_idx)
++{
++	__skb_frag_set_page(frag, (void *)pending_idx);
++}
++
+ static inline pending_ring_idx_t pending_index(unsigned i)
+ {
+ 	return i & (MAX_PENDING_REQS-1);
+@@ -512,7 +522,7 @@ static int netbk_gop_skb(struct sk_buff *skb,
+ 
+ 	for (i = 0; i < nr_frags; i++) {
+ 		netbk_gop_frag_copy(vif, skb, npo,
+-				    skb_shinfo(skb)->frags[i].page,
++				    skb_frag_page(&skb_shinfo(skb)->frags[i]),
+ 				    skb_shinfo(skb)->frags[i].size,
+ 				    skb_shinfo(skb)->frags[i].page_offset,
+ 				    &head);
+@@ -913,7 +923,7 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
+ 	int i, start;
+ 
+ 	/* Skip first skb fragment if it is on same page as header fragment. */
+-	start = ((unsigned long)shinfo->frags[0].page == pending_idx);
++	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+ 
+ 	for (i = start; i < shinfo->nr_frags; i++, txp++) {
+ 		struct page *page;
+@@ -945,7 +955,7 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
+ 		memcpy(&pending_tx_info[pending_idx].req, txp, sizeof(*txp));
+ 		xenvif_get(vif);
+ 		pending_tx_info[pending_idx].vif = vif;
+-		frags[i].page = (void *)pending_idx;
++		frag_set_pending_idx(&frags[i], pending_idx);
+ 	}
+ 
+ 	return gop;
+@@ -976,13 +986,13 @@ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
+ 	}
+ 
+ 	/* Skip first skb fragment if it is on same page as header fragment. */
+-	start = ((unsigned long)shinfo->frags[0].page == pending_idx);
++	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
+ 
+ 	for (i = start; i < nr_frags; i++) {
+ 		int j, newerr;
+ 		pending_ring_idx_t index;
+ 
+-		pending_idx = (unsigned long)shinfo->frags[i].page;
++		pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
+ 
+ 		/* Check error status: if okay then remember grant handle. */
+ 		newerr = (++gop)->status;
+@@ -1008,7 +1018,7 @@ static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
+ 		pending_idx = *((u16 *)skb->data);
+ 		xen_netbk_idx_release(netbk, pending_idx);
+ 		for (j = start; j < i; j++) {
+-			pending_idx = (unsigned long)shinfo->frags[i].page;
++			pending_idx = frag_get_pending_idx(&shinfo->frags[i]);
+ 			xen_netbk_idx_release(netbk, pending_idx);
+ 		}
+ 
+@@ -1029,12 +1039,14 @@ static void xen_netbk_fill_frags(struct xen_netbk *netbk, struct sk_buff *skb)
+ 	for (i = 0; i < nr_frags; i++) {
+ 		skb_frag_t *frag = shinfo->frags + i;
+ 		struct xen_netif_tx_request *txp;
++		struct page *page;
+ 		unsigned long pending_idx;
+ 
+-		pending_idx = (unsigned long)frag->page;
++		pending_idx = frag_get_pending_idx(frag);
+ 
+ 		txp = &netbk->pending_tx_info[pending_idx].req;
+-		frag->page = virt_to_page(idx_to_kaddr(netbk, pending_idx));
++		page = virt_to_page(idx_to_kaddr(netbk, pending_idx));
++		__skb_frag_set_page(frag, page);
+ 		frag->size = txp->size;
+ 		frag->page_offset = txp->offset;
+ 
+@@ -1349,11 +1361,11 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
+ 		skb_shinfo(skb)->nr_frags = ret;
+ 		if (data_len < txreq.size) {
+ 			skb_shinfo(skb)->nr_frags++;
+-			skb_shinfo(skb)->frags[0].page =
+-				(void *)(unsigned long)pending_idx;
++			frag_set_pending_idx(&skb_shinfo(skb)->frags[0],
++					     pending_idx);
+ 		} else {
+ 			/* Discriminate from any valid pending_idx value. */
+-			skb_shinfo(skb)->frags[0].page = (void *)~0UL;
++			frag_set_pending_idx(&skb_shinfo(skb)->frags[0], ~0UL);
+ 		}
+ 
+ 		__skb_queue_tail(&netbk->tx_queue, skb);
 -- 
 1.7.2.5
 
