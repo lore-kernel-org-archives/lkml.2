@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab1HSLxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:53:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65287 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab1HSLxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:53:13 -0400
+	id S1753738Ab1HSLw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:52:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59024 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab1HSLwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 07:52:45 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH 1/2] AM3517EVM: Add support for base-board MMC slot
+Date: Fri, 19 Aug 2011 17:22:30 +0530
+Message-ID: <1313754751-11752-2-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+In-Reply-To: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
+References: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4yKHQGrY4kbwd+VPsg1ggj3wQqoN+uPLmh31RnhbroysQ@mail.gmail.com>
-References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com>
-	<CAGsJ_4yKHQGrY4kbwd+VPsg1ggj3wQqoN+uPLmh31RnhbroysQ@mail.gmail.com>
-Date: Fri, 19 Aug 2011 13:53:12 +0200
-Message-ID: <CACRpkdZB7XaB1SxWdqU1-176oab0zMjdu=YfNjgLFsLTztAwyg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drivers: create a pinmux subsystem v3
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Joe Perches <joe@perches.com>,
-        Martin Persson <martin.persson@stericsson.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 14, 2011 at 7:57 AM, Barry Song <21cnbao@gmail.com> wrote:
+From: Vaibhav Hiremath <hvaibhav@ti.com>
 
-> has this been ready for 3.1? we have been planning to write pinmux
-> driver based on this framework.
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+ arch/arm/mach-omap2/board-am3517evm.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-On Mon, Aug 8, 2011 at 4:28 AM, Barry Song <21cnbao@gmail.com> wrote:
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index f3006c3..bea6da0 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -24,6 +24,7 @@
+ #include <linux/i2c/pca953x.h>
+ #include <linux/can/platform/ti_hecc.h>
+ #include <linux/davinci_emac.h>
++#include <linux/mmc/host.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/am35xx.h>
+@@ -39,6 +40,7 @@
+ 
+ #include "mux.h"
+ #include "control.h"
++#include "hsmmc.h"
+ 
+ #define AM35XX_EVM_MDIO_FREQUENCY	(1000000)
+ 
+@@ -460,6 +462,23 @@ static void am3517_evm_hecc_init(struct ti_hecc_platform_data *pdata)
+ static struct omap_board_config_kernel am3517_evm_config[] __initdata = {
+ };
+ 
++static struct omap2_hsmmc_info mmc[] = {
++	{
++		.mmc		= 1,
++		.caps		= MMC_CAP_4_BIT_DATA,
++		.gpio_cd	= 127,
++		.gpio_wp	= 126,
++	},
++	{
++		.mmc		= 2,
++		.caps		= MMC_CAP_4_BIT_DATA,
++		.gpio_cd	= 128,
++		.gpio_wp	= 129,
++	},
++	{}      /* Terminator */
++};
++
++
+ static void __init am3517_evm_init(void)
+ {
+ 	omap_board_config = am3517_evm_config;
+@@ -487,6 +506,9 @@ static void __init am3517_evm_init(void)
+ 
+ 	/* MUSB */
+ 	am3517_evm_musb_init();
++
++	/* MMC init function */
++	omap2_hsmmc_init(mmc);
+ }
+ 
+ MACHINE_START(OMAP3517EVM, "OMAP3517/AM3517 EVM")
+-- 
+1.7.1
 
-> What is the status of pincfg subsystem? what's the plan about merging
-> this subsystem?
-
-I failed, we needed feedback from some more players.
-If you need this framework, please review and ACK the
-patch set when you're happy with it so I know I have users who
-are happy with it as it looks.
-
-v4 is out today atleast. If there are no big objections so I have to
-re-architect it again, I might be able to ask Stephen to pull it
-into linux-next.
-
-Thanks,
-Linus Walleij
