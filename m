@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab1HSPWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 11:22:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56438 "EHLO mx1.redhat.com"
+	id S1756043Ab1HSPYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 11:24:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54674 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590Ab1HSPWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 11:22:53 -0400
-Date: Fri, 19 Aug 2011 18:23:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-Message-ID: <20110819152335.GA19489@redhat.com>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
+	id S1751832Ab1HSPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 11:24:15 -0400
+From: Anand Gadiyar <gadiyar@ti.com>
+To: <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>
+CC: Anand Gadiyar <gadiyar@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH linux-next] mfd: omap-usb-host: add module.h and export.h to fix build break
+Date: Fri, 19 Aug 2011 20:54:05 +0530
+Message-ID: <1313767445-20033-1-git-send-email-gadiyar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 11:51:01AM +0300, Sasha Levin wrote:
-> The MAC of a virtio-net device is located at the first field of the device
-> specific header. This header is located at offset 20 if the device doesn't
-> support MSI-X or offset 24 if it does.
-> 
-> Current code in virtnet_probe() used to probe the MAC before checking for
-> MSI-X, which means that the read was always made from offset 20 regardless
-> of whether MSI-X in enabled or not.
-> 
-> This patch moves the MAC probe to after the detection of whether MSI-X is
-> enabled. This way the MAC will be read from offset 24 if the device indeed
-> supports MSI-X.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Cc: kvm@vger.kernel.org
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+linux-next as of 20110817 fails to build if these two headers
+are not included. Including module.h is sufficient for now,
+but add export.h for EXPORT_SYMBOL and THIS_MODULE in advance
+to avoid a later build break.
 
-I am not sure I see a bug in virtio: the config pace layout simply
-changes as msix is enabled and disabled (and if you look at the latest
-draft, also on whether 64 bit features are enabled).
-It doesn't depend on msix capability being present in device.
+Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+Noticed this while testing another patch. I see similar
+changes to other files in drivers/mfd made by Paul recently.
 
-The spec seems to be explicit enough:
-	If MSI-X is enabled for the device, two additional fields immediately
-	follow this header.
+ drivers/mfd/omap-usb-host.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-So I'm guessing the bug is in kvm tools which assume
-same layout for when msix is enabled and disabled.
-qemu-kvm seems to do the right thing so the device
-seems to get the correct mac.
-
-> ---
->  drivers/net/virtio_net.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 0c7321c..55ccf96 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -981,14 +981,6 @@ static int virtnet_probe(struct virtio_device *vdev)
->  		/* (!csum && gso) case will be fixed by register_netdev() */
->  	}
->  
-> -	/* Configuration may specify what MAC to use.  Otherwise random. */
-> -	if (virtio_has_feature(vdev, VIRTIO_NET_F_MAC)) {
-> -		vdev->config->get(vdev,
-> -				  offsetof(struct virtio_net_config, mac),
-> -				  dev->dev_addr, dev->addr_len);
-> -	} else
-> -		random_ether_addr(dev->dev_addr);
-> -
->  	/* Set up our device-specific information */
->  	vi = netdev_priv(dev);
->  	netif_napi_add(dev, &vi->napi, virtnet_poll, napi_weight);
-> @@ -1032,6 +1024,14 @@ static int virtnet_probe(struct virtio_device *vdev)
->  			dev->features |= NETIF_F_HW_VLAN_FILTER;
->  	}
->  
-> +	/* Configuration may specify what MAC to use.  Otherwise random. */
-> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_MAC)) {
-> +		vdev->config->get(vdev,
-> +				  offsetof(struct virtio_net_config, mac),
-> +				  dev->dev_addr, dev->addr_len);
-> +	} else
-> +		random_ether_addr(dev->dev_addr);
-> +
->  	err = register_netdev(dev);
->  	if (err) {
->  		pr_debug("virtio_net: registering device failed\n");
-> -- 
-> 1.7.6
+Index: linux-2.6/drivers/mfd/omap-usb-host.c
+===================================================================
+--- linux-2.6.orig/drivers/mfd/omap-usb-host.c
++++ linux-2.6/drivers/mfd/omap-usb-host.c
+@@ -20,6 +20,8 @@
+ #include <linux/types.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
