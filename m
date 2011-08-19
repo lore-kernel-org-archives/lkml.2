@@ -1,160 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1HSBGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 21:06:00 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:24708 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458Ab1HSBF7 convert rfc822-to-8bit (ORCPT
+	id S1752912Ab1HSBKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 21:10:25 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:57639 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1HSBKY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 21:05:59 -0400
-X-IronPort-AV: E=Sophos;i="4.68,248,1312182000"; 
-   d="scan'208";a="572103247"
-Subject: [GIT PULL] Please pull NFS client bugfixes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Aug 2011 21:05:57 -0400
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 18 Aug 2011 21:10:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110818145213.db5a9d65.akpm@linux-foundation.org>
+References: <201106082045.p58Kjwmd027729@imap1.linux-foundation.org>
+	<BANLkTikAvnam2WNTBMj_J5yBHrxJxSjLuw@mail.gmail.com>
+	<BANLkTimPT-LEsEs34dvPZNbVKnwCT8ck6g@mail.gmail.com>
+	<20110818145213.db5a9d65.akpm@linux-foundation.org>
+Date: Fri, 19 Aug 2011 09:10:23 +0800
+Message-ID: <CABqxG0cXmW0FKjHo9bZZo2PE7cVWtcZtPpeePH_Tsn+kdT7q=Q@mail.gmail.com>
+Subject: Re: + sysctl-add-proc_dointvec_unsigned-handler-update.patch added to
+ -mm tree
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1313715957.25064.1.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 19 Aug 2011 01:05:58.0425 (UTC) FILETIME=[279EF890:01CC5E0C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Aug 19, 2011 at 5:52 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 10 Jun 2011 17:51:50 +0800
+> Dave Young <hidave.darkstar@gmail.com> wrote:
+>
+>> On Fri, Jun 10, 2011 at 1:19 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>> > On Wed, Jun 8, 2011 at 11:45 PM,  <akpm@linux-foundation.org> wrote:
+>> >> --- a/kernel/sysctl.c~sysctl-add-proc_dointvec_unsigned-handler-update
+>> >> +++ a/kernel/sysctl.c
+>> >> @@ -2515,6 +2515,7 @@ int proc_dointvec_unsigned(struct ctl_ta
+>> >>  {
+>> >>        struct do_proc_dointvec_minmax_conv_param param = {
+>> >>                .min = &zero,
+>> >> +               .max = (int *) table->extra2,
+>> >>        };
+>> >>        return do_proc_dointvec(table, write, buffer, lenp, ppos,
+>> >>                                do_proc_dointvec_minmax_conv, &param);
+>> >
+>> > This is still buggybecause "zero" is only 1 variable and max can be an array.
+>> > Sysctl boundary comparisons are done element-by-element.
+>>
+>> Where's the array use case?
+>
+> Guys, these patches:
+>
+> sysctl-add-proc_dointvec_bool-handler.patch
+> sysctl-use-proc_dointvec_bool-where-appropriate.patch
+> sysctl-add-proc_dointvec_unsigned-handler.patch
+> sysctl-add-proc_dointvec_unsigned-handler-update.patch
+> sysctl-use-proc_dointvec_unsigned-where-appropriate.patch
+>
+> are still floating about in my tree, and stuck.
+>
+> As everyone has forgotten all about it I think I'll just drop the
+> patches.  If you're still motivated, please resend from scratch and
+> let's take another look at them.  And this time please let's drive the
+> discussion to a conclusion and not leave stuff floating around
+> unresolved for months?
+>
 
-Please pull from the "bugfixes" branch of the repository at
-
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git bugfixes
-
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/blocklayout/blocklayout.c    |    1 +
- fs/nfs/callback.h                   |    2 +-
- fs/nfs/callback_proc.c              |   25 +++++++++++++++++++------
- fs/nfs/callback_xdr.c               |   24 +++++++-----------------
- fs/nfs/objlayout/objio_osd.c        |   28 ++++++++++++----------------
- fs/nfs/objlayout/pnfs_osd_xdr_cli.c |    3 +++
- 6 files changed, 43 insertions(+), 40 deletions(-)
-
-commit 910ac68a2b80c7de95bc8488734067b1bb15d583
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Tue Aug 2 14:46:52 2011 -0400
-
-    NFSv4.1: Return NFS4ERR_BADSESSION to callbacks during session resets
-    
-    If the client is in the process of resetting the session when it receives
-    a callback, then returning NFS4ERR_DELAY may cause a deadlock with the
-    DESTROY_SESSION call.
-    
-    Basically, if the client returns NFS4ERR_DELAY in response to the
-    CB_SEQUENCE call, then the server is entitled to believe that the
-    client is busy because it is already processing that call. In that
-    case, the server is perfectly entitled to respond with a
-    NFS4ERR_BACK_CHAN_BUSY to any DESTROY_SESSION call.
-    
-    Fix this by having the client reply with a NFS4ERR_BADSESSION in
-    response to the callback if it is resetting the session.
-    
-    Cc: stable@kernel.org [2.6.38+]
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 55a673990ec04cf63005318bcf08c2b0046e5778
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Tue Aug 2 14:46:29 2011 -0400
-
-    NFSv4.1: Fix the callback 'highest_used_slotid' behaviour
-    
-    Currently, there is no guarantee that we will call nfs4_cb_take_slot() even
-    though nfs4_callback_compound() will consistently call
-    nfs4_cb_free_slot() provided the cb_process_state has set the 'clp' field.
-    The result is that we can trigger the BUG_ON() upon the next call to
-    nfs4_cb_take_slot().
-    
-    This patch fixes the above problem by using the slot id that was taken in
-    the CB_SEQUENCE operation as a flag for whether or not we need to call
-    nfs4_cb_free_slot().
-    It also fixes an atomicity problem: we need to set tbl->highest_used_slotid
-    atomically with the check for NFS4_SESSION_DRAINING, otherwise we end up
-    racing with the various tests in nfs4_begin_drain_session().
-    
-    Cc: stable@kernel.org [2.6.38+]
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 9af7db3228acc286c50e3a0f054ec982efdbc6c6
-Author: Boaz Harrosh <bharrosh@panasas.com>
-Date:   Wed Aug 3 21:52:51 2011 -0700
-
-    pnfs-obj: Fix the comp_index != 0 case
-    
-    There were bugs in the case of partial layout where olo_comp_index
-    is not zero. This used to work and was tested but one of the later
-    cleanup SQUASHMEs broke it and was not tested since.
-    
-    Also add a dprint that specify those received layout parameters.
-    Everything else was already printed.
-    
-    [Needed in v3.0]
-    CC: Stable Tree <stable@kernel.org>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 20618b21da0796115e81906d24ff1601552701b7
-Author: Boaz Harrosh <bharrosh@panasas.com>
-Date:   Wed Aug 3 21:54:33 2011 -0700
-
-    pnfs-obj: Bug when we are running out of bio
-    
-    When we have a situation that the number of pages we want
-    to encode is bigger then the size of the bio. (Which can
-    currently happen only when all IO is going to a single device
-    .e.g group_width==1) then the IO is submitted short and we
-    report back only the amount of bytes we actually wrote/read
-    and all is fine. BUT ...
-    
-    There was a bug that the current length counter was advanced
-    before the fail to add the extra page, and we come to a situation
-    that the CDB length was one-page longer then the actual bio size,
-    which is of course rejected by the osd-target.
-    
-    While here also fix the bio size calculation, in the case
-    that we received more then one group of devices.
-    
-    CC: Stable Tree <stable@kernel.org>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 88c9e42196285a7c573e2abda11a4b5037c669bc
-Author: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date:   Tue Aug 2 09:57:35 2011 +0200
-
-    nfs: add missing prefetch.h include
-    
-    Fix this compile error on s390:
-    
-      CC [M]  fs/nfs/blocklayout/blocklayout.o
-    fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_read':
-    fs/nfs/blocklayout/blocklayout.c:201:4: error: implicit declaration of function 'prefetchw'
-    
-    Introduced with 9549ec01 "pnfsblock: bl_read_pagelist".
-    
-    Cc: Fred Isaman <iisaman@citi.umich.edu>
-    Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
+Sorry about that situation, Consider the alexey's concern maybe I will
+ resend only the "bool" patches.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Regards
+Yang RuiRui
