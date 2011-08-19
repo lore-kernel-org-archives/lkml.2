@@ -1,98 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab1HSOCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:02:54 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:33435 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab1HSOCw (ORCPT
+	id S1753809Ab1HSOE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:04:58 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35816 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab1HSOE4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:02:52 -0400
-Subject: Re: [patch v3 2/8] kdump: Make kimage_load_crash_segment() weak
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <20110819134836.GB18656@redhat.com>
-References: <20110812134849.748973593@linux.vnet.ibm.com>
-	 <20110812134907.166585439@linux.vnet.ibm.com>
-	 <20110818171541.GC15413@redhat.com> <1313760472.3858.26.camel@br98xy6r>
-	 <20110819134836.GB18656@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 19 Aug 2011 16:02:34 +0200
-Message-ID: <1313762554.3858.37.camel@br98xy6r>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 10:04:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110819104816.GA5030@pulham.picochip.com>
+References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+	<20110819104816.GA5030@pulham.picochip.com>
+Date: Fri, 19 Aug 2011 16:04:54 +0200
+Message-ID: <CACRpkdZhg_1WM37uqT1PNmpUjWS_groWJmNnR4SBjqJ6LFQQWQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+On Fri, Aug 19, 2011 at 12:48 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+> On Fri, Aug 19, 2011 at 11:53:50AM +0200, Linus Walleij wrote:
+>> +Interaction with the GPIO subsystem
+>> +===================================
+>> +
+>> +The GPIO drivers may want to perform operations of various types on the same
+>> +physical pins that are also registered as GPIO pins.
+>> +
+>> +Since the pin controller subsystem have its pinspace local to the pin
+>> +controller we need a mapping so that the pin control subsystem can figure out
+>> +which pin controller handles control of a certain GPIO pin. This member
+>> +in the pin controller descriptor handles this mapping:
+>> +
+>> +static struct pinctrl_desc foo_desc = {
+>> +     ...
+>> +     .gpio_base = FIRST_PIN,
+>> +};
+>> +
+>> +When GPIO-specific functions in the pin control subsystem are called, these
+>> +mappings will be used to look up the apropriate pin controller by inspecting
+>> +and matching the pin to this pin range.
+>
+> On our (difficultly muxed!) platform we have two types of GPIO - a
+> Synopsys controller which is a fairly conventional GPIO controller, then
+> a sigma-delta GPIO controller which can also do a an analogue type
+> output (as well as digital).
 
-On Fri, 2011-08-19 at 09:48 -0400, Vivek Goyal wrote:
+Does that mean it is really not a GPIO controller but a kind of D/A converter?
 
-[snip]
+>  For lots of our pads they can either be
+> ARM GPIO, SD GPIO or some other function, so I don't see how this fits
+> in with a single GPIO base.
 
-> > > Michael,
-> > > 
-> > > Thinking more about it. Can't we provide a arch specific version of
-> > > kmap() and kunmap() so that we create temporary mappings to copy
-> > > the pages and then these are torn off.
-> > 
-> > Isn't kmap/kunmap() used for higmem? These functions are called from
-> > many different functions in the Linux kernel, not only for kdump. I
-> > would assume that creating and removing mappings with these functions is
-> > not what a caller would expect and probably would break the Linux kernel
-> > at many other places, no?
-> 
-> [CCing linux-mm]
-> 
-> Yes it is being used for highmem pages. If arch has not defined kmap()
-> then generic definition is just returning page_address(page), expecting
-> that page will be mapped.
-> 
-> I was wondering that what will be broken if arch decides to extend this
-> to create temporary mappings for pages which are not HIGHMEM but do
-> not have any mapping. (Like this special case of s390).
+And each of them are modeled as a separate gpio_chip I guess?
 
-At least we have significant additional overhead for all the other
-places where kmap/kunmap is called.
+Otherwise it's a bad match with reality. We had this discussion with GRant
+where two gpio_chips would use the same number range in the GPIO
+global pinspace, and it's basically not allowed IIRC.
 
-> I guess memory management guys can give a better answer here. As a layman,
-> kmap() seems to be the way to get a kernel mapping for any page frame
-> and if one is not already there, then arch might create one on the fly,
-> like we do for HIGHMEM pages. So the question is can be extend this
-> to also cover pages which are not highmem but do not have any mappings
-> on s390.
-> 
-> > 
-> > Perhaps we can finish this discussion after my vacation. I will change
-> > my patch series that we even do not need this patch...
-> 
-> So how are you planning to get rid of this patch without modifying kmap(),
-> kunmap() implementation for s390?
+But yes, there is an assumption that each pin controller will only
+deal with one block of GPIO pins. So if I make it possible to support
+several GPIO ranges for one pin controller, does that solve your problem?
 
-I will update my patch series that we do not remove page tables for
-crashkernel memory. So everything will be as on other architectures.
+Like this:
 
-I hope that we can find a good solution after my vacation. Perhaps then
-I have enough energy again :-)
+struct pinctrl_gpio_range {
+    char *name;
+    unsigned int base;
+    unsigned int npins;
+}
 
-> > So only two common code patches are remaining. I will send the common
-> > code patches again and will ask Andrew Morton to integrate them in the
-> > next merge window.The s390 patches will be integrated by Martin.
-> 
-> I am fine with merge of other 2 common patches. Once you repost the
-> series, I will ack those.
+static unsigned int gpio_ranges[] = {
+    {
+        .name="chip1",
+        .base = 0,
+        .npins = 16,
+    },
+    {
+        .name =" chip2",
+        .base = 32,
+        .npins = 16,
+    },
+    {
+        .name = "chip3",
+        .base = 64,
+        .npins = 16,
+    },
+};
 
-Great! I will resend the patches and contact Andrew Morton.
+static struct pinctrl_desc foo_desc = {
+        ...
+        .gpio_ranges = gpio_ranges,
+        .num_gpio_ranges = ARRAY_SIZE(gpio_ranges),
+};
 
-Thanks!
+For three different 32-bit GPIO controllers muxed on
+pins 0..31 using GPIO space pins from 0..95.
 
-Michael
+Then I pass the number of the instance down to the
+driver in the gpio_request_enable() callback like
+this:
 
+int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
+	    unsigned instance,
+	    unsigned offset);
+
+Would this work?
+
+This has a restriction: the GPIO space must be mapped in
+continous ranges, as must the pin controller. Else we need
+one entry per pin in the list above...
+
+>> +The correspondence for the range from the GPIO subsystem to the pin controller
+>> +subsystem must be one-to-one. Thus the GPIO pins are in the pin controller
+>> +range [0 .. maxpin] where maxpin is the specified end of the pin range.
+>
+> So doesn't this mean that the enumeration that was initially described
+> as arbitrary actually has to enumerate the GPIO pins first?
+
+If you use GPIO accessors, the enumeration has to match.
+So I rewrite it like this:
+
+"this enumeration was arbitrarily chosen, in practice you need to think
+through your numbering system so that it matches the layout of registers
+and such things in your driver, or the code may become complicated. You must
+also consider matching of offsets to the GPIO ranges that may be handled by
+the pin controller."
+
+OK?
+
+>> +static struct class pinctrl_class = {
+>> +     .name = "pinctrl",
+>> +     .dev_release = pinctrl_dev_release,
+>> +     .dev_attrs = pinctrl_dev_attrs,
+>> +};
+>
+> Greg K-H has mentioned in the past that class is now deprecated for new
+> use and that a bus_type should be used instead.
+
+Can you provide a reference with some detail?
+The pin control devices are usually aleady on a bus like the
+platform_bus or amba_bus or i2c_bus, then they register a
+class device in this case.
+
+The kerneldoc documentation says
+"A bus is a channel between the processor and one or more devices."
+
+This isn't the case here.
+
+Anyhthing that help me understand this is appreciated, Arnd?
+
+>> +/**
+>> + * struct pinctrl_desc - pin controller descriptor, register this to pin
+>> + * control subsystem
+>> + * @name: name for the pin controller
+>> + * @pins: an array of pin descriptors describing all the pins handled by
+>> + *   this pin controller
+>> + * @npins: number of descriptors in the array, usually just ARRAY_SIZE()
+>> + *   of the pins field above
+>> + * @maxpin: since pin spaces may be sparse, there can he "holes" in the
+>> + *   pin range, this attribute gives the maximum pin number in the
+>> + *   total range. This should not be lower than npins for example,
+>> + *   but may be equal to npins if you have no holes in the pin range.
+>> + * @pmxops: pinmux operation vtable, if you support pinmuxing in your driver
+>> + * @gpio_base: the base offset of the pin range in the GPIO subsystem that
+>> + *   is handled by this controller, if applicable. This member is only
+>> + *   relevant if you want to e.g. control pins from the GPIO subsystem.
+>> + * @gpio_pins: the number of pins from (and including) the gpio_base offset
+>> + *   handled by this pin controller.
+>> + * @owner: module providing the pin controller, used for refcounting
+>> + */
+>> +struct pinctrl_desc {
+>> +     const char *name;
+>> +     struct pinctrl_pin_desc const *pins;
+>> +     unsigned int npins;
+>> +     unsigned int maxpin;
+>> +     struct pinmux_ops *pmxops;
+>> +     unsigned int gpio_base;
+>> +     unsigned int gpio_pins;
+>> +     struct module *owner;
+>
+> Would it be better to put the owner in the ops structure like file_ops?
+> I'm sure I remember someone saying that it's better to do that so that
+> it's in the modules .data/.rodata section but I can't find that
+> reference.
+
+I can't do that because the pinmux_ops vtable is not mandatory.
+
+The plan is to add more ops for other things like pin bias etc.
+
+>> +/**
+>> + * struct pinctrl_dev - pin control class device
+>> + * @desc: the pin controller descriptor supplied when initializing this pin
+>> + *   controller
+>> + * @node: node to include this pin controller in the global pin controller list
+>> + * @dev: the device entry for this pin controller
+>> + * @owner: module providing the pin controller, used for refcounting
+>> + * @driver_data: driver data for drivers registering to the pin controller
+>> + *   subsystem
+>> + *
+>> + * This should be dereferenced and used by the pin controller core ONLY
+>> + */
+>> +struct pinctrl_dev {
+>> +     struct pinctrl_desc *desc;
+>> +     struct radix_tree_root pin_desc_tree;
+>> +     spinlock_t pin_desc_tree_lock;
+>> +     struct list_head node;
+>> +     struct device dev;
+>> +     struct module *owner;
+>> +     void *driver_data;
+>
+> Couldn't the struct device driver_data be used here?
+
+I'm already using dev_set_drvdata(&pctldev->dev, pctldev);
+So I can retrieve the pctldev withdev_get_drvdata(dev);
+in sysfs...
+
+If I wasn't registering sysfs nodes I couldv'e used it.
+
+>> +/* These should only be used from drives */
+>
+> s/drives/drivers?
+
+OK.
+
+>> +/**
+>> + * struct pinmux_ops - pinmux operations, to be implemented by pin controller
+>> + * drivers that support pinmuxing
+>> + * @request: called by the core to see if a certain pin can be made available
+>> + *   available for muxing. This is called by the core to acquire the pins
+>> + *   before selecting any actual mux setting across a function. The driver
+>> + *   is allowed to answer "no" by returning a negative error code
+>> + * @free: the reverse function of the request() callback, frees a pin after
+>> + *   being requested
+>
+> So is the request like gpio_request() or just test if it the pin is
+> available?  If its the latter then perhaps pin_is_available() might be a
+> better name?
+
+It's the former. The pin controller may have some electrical
+properties that makes it impossible to request a certain pin for muxing
+at a certain time. (Found out on earlier list review.)
+
+>> +#else /* !CONFIG_PINMUX */
+>> +
+>> +static inline int pinmux_request_gpio(unsigned gpio)
+>> +{
+>> +     return 0;
+>> +}
+>> +
+>> +static inline void pinmux_free_gpio(unsigned gpio)
+>> +{
+>> +}
+>> +
+>> +static inline struct pinmux *pinmux_get(struct device *dev, const char *func)
+>> +{
+>> +     return NULL;
+>> +}
+>
+> The CONFIG_PINMUX=y version of pinmux_get returns an ERR_PTR() encoded
+> error so perhaps this should return something like ERR_PTR(-ENXIO)?
+
+No this is modeled more like the regulator stubs in
+<linux/regulator.h>. For example, if you're compiling for a
+platform that does not support regulators they are assumed to
+be always on.
+
+In this case, if compiled for a platform without pinmux, we assume
+we got the pins we need already so it just works, not fail.
+
+Thanks,
+Linus Walleij
