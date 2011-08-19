@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab1HSO2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:28:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35692 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1HSO2o (ORCPT
+	id S1755824Ab1HSO3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:29:20 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47392 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754324Ab1HSO3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:28:44 -0400
-Date: Fri, 19 Aug 2011 16:28:39 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] apm-emulation: use wait_event_freezable() instead of
- freezer_[do_not_]count()
-Message-ID: <20110819142839.GH20085@htj.dyndns.org>
-References: <20110818080653.GF13572@htj.dyndns.org>
- <20110818173511.GB6910@redhat.com>
+	Fri, 19 Aug 2011 10:29:16 -0400
+Date: Fri, 19 Aug 2011 10:29:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Sergei Shtylyov <sshtylyov@mvista.com>, Felipe Balbi <balbi@ti.com>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+In-Reply-To: <op.v0gmyfhi3l0zgt@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108191009410.2016-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110818173511.GB6910@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 19 Aug 2011, Michal Nazarewicz wrote:
 
-On Thu, Aug 18, 2011 at 07:35:11PM +0200, Oleg Nesterov wrote:
-> > Use wait_event_freezable() instead.
-> >
-> > The only annoyance is that wait_event_freezable() wakes up with
-> > -ERESTART if there are pending signals
+> On Fri, 19 Aug 2011 13:13:41 +0200, Sebastian Andrzej Siewior  
+> <bigeasy@linutronix.de> wrote:
+> > There are three speeds:
+> > - the max speed the UDC supports i.e. HS (no field for that?)
 > 
-> IOW, we do not have wait_event_freezable_uninterruptible/etc.
+> Yep, the field seems to be missing for that one.  We have is_dualspeed and
+> comment in gadget_is_superspeed() says about is_superspeed but that does
+> not exist.
 
-Yeap, we can add it but let's leave it alone for now.
+Evidently we need is_superspeed.
 
-> Perhaps we can introduce TASK_FREEZABLE ? It should be used along
-> with TASK_UNINTERRUPTIBLE (like TASK_WAKEKILL). freeze_task() can
-> use TASK_INTERRUPTIBLE | FREEZABLE for wake_up.
+> > - the max speed the gadget / function driver support i.e. SS
+> >    (driver->max_speed ?)
 > 
-> vfork() can use FREEZABLE too (although this is not needed in the
-> long term, we should teach it to sleep in TASK_INTERRUPTIBLE).
+> Actually “max_speed” is only in usb_composite_driver structure.
+> usb_gadget_driver has only “speed” and it's description says that it is
+> the “highest speed the driver handles.”  Because of that description I've
+> assumed that it is UDC driver's responsibility to figure out maximum speed
+> it can use.
+
+Correct.
+
+> > - the speed the UDC is connected at the moment i.e. FS. (gadget->speed)
 > 
-> But I feel you are going to reimplement freezer completely, in this
-> case please ignore.
+> OK, I see my mistake.  I misinterpreted gadget->speed as the max speed
+> gadget supports.
+> 
+> So in the end, it would seem to me that we need to do the following is
+> usb_gadget_probe_direvr() before passing the usb_gadget_driver to the
+> usb_gadegt's bind:
+> 
+> if (driver->speed == USB_SPEED_SUPER && !gadget_is_superspeed(udc->gadget))
+> 	driver->speed = USB_SPEED_HIGH;
+> if (driver->speed == USB_SPEED_HIGH && !gadget_is_dualspeed(udc->gadget))
+> 	driver->speed = USB_SPEED_FULL;
 
-Hmmm... yeah, I just posted preparation patches for the freezer and
-will now try to integrate with the rest of job control stuff.  Not
-quite sure how it would turn out yet.  Let's see.
+No, the usb_gadget_driver structure is read-only to the UDC driver
+(except for the .driver field).  .speed is the maximum speed supported
+by the gadget driver -- it doesn't change at runtime.  If the driver
+was written to support speeds up to high speed, then those are the
+speeds it supports, regardless of the UDC's capabilities.
 
-Thank you.
+Maybe if would help if the .speed field in struct usb_gadget_driver was
+renamed to max_speed.
 
--- 
-tejun
+> (Although I'm not sure about USB_SPEED_FULL vs. USB_SPEED_LOW.)
+> 
+> Either than, or make sure that all UDC drivers handle correctly gadgets
+> that declare speed as highest of what the UDC can handle.
+
+I don't quite understand that sentence.  However, it is definitely true 
+that all UDC drivers _must_ avoid connecting at speeds that are faster 
+than the usb_gadget_driver's .speed field.
+
+> At the moment however, gadget_is_superspeed() is implemented using #ifdefs
+> (which I missed before) so we need to add a is_superspeed to usb_gadget
+> structure.  Or maybe better yet get rid of is_dualspeed and add max_speed?
+
+Either one would be okay.  max_speed is simpler, although it would 
+require some work to change the existing usages of is_dualspeed.
+
+Alan Stern
+
