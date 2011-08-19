@@ -1,116 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1HSOVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:21:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63671 "EHLO
+	id S1754702Ab1HSOXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:23:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55472 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685Ab1HSOQe (ORCPT
+	with ESMTP id S1753553Ab1HSOXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:16:34 -0400
+	Fri, 19 Aug 2011 10:23:37 -0400
+Date: Fri, 19 Aug 2011 16:23:32 +0200
 From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Samuel Ortiz <sameo@linux.intel.com>, wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH 02/16] freezer: don't unnecessarily set PF_NOFREEZE explicitly
-Date: Fri, 19 Aug 2011 16:16:08 +0200
-Message-Id: <1313763382-12341-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
+To: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com
+Cc: arnd@arndb.de, oleg@redhat.com
+Subject: Re: [PATCHSET] freezer: fix various bugs and simplify implementation
+Message-ID: <20110819142332.GG20085@htj.dyndns.org>
 References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers set PF_NOFREEZE in their kthread functions which is
-completely unnecessary and racy - some part of freezer code doesn't
-consider cases where PF_NOFREEZE is set asynchronous to freezer
-operations.
+Ummm... got mass delivery failure notifications for menage@google.com.
+cc'ing the other cgroup maintainer.  Li Zefan, do you know what's
+wrong with the address?  If it has changed, it would probably be a
+good idea to update MAINTAINERS.  The original thread can be found at
 
-In general, there's no reason to allow setting PF_NOFREEZE explicitly.
-Remove them and change the documentation to note that setting
-PF_NOFREEZE directly isn't allowed.
+  http://thread.gmane.org/gmane.linux.kernel/1181594
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: wwang <wei_wang@realsil.com.cn>
----
- Documentation/power/freezing-of-tasks.txt |    2 +-
- drivers/bluetooth/btmrvl_main.c           |    2 --
- drivers/mfd/twl4030-irq.c                 |    3 ---
- drivers/mfd/twl6030-irq.c                 |    2 --
- drivers/staging/rts_pstor/rtsx.c          |    2 --
- 5 files changed, 1 insertions(+), 10 deletions(-)
+Thank you.
 
-diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-index 38b5724..710c965 100644
---- a/Documentation/power/freezing-of-tasks.txt
-+++ b/Documentation/power/freezing-of-tasks.txt
-@@ -67,7 +67,7 @@ III. Which kernel threads are freezable?
- 
- Kernel threads are not freezable by default.  However, a kernel thread may clear
- PF_NOFREEZE for itself by calling set_freezable() (the resetting of PF_NOFREEZE
--directly is strongly discouraged).  From this point it is regarded as freezable
-+directly is not allowed).  From this point it is regarded as freezable
- and must call try_to_freeze() in a suitable place.
- 
- IV. Why do we do that?
-diff --git a/drivers/bluetooth/btmrvl_main.c b/drivers/bluetooth/btmrvl_main.c
-index 548d1d9..57312d4 100644
---- a/drivers/bluetooth/btmrvl_main.c
-+++ b/drivers/bluetooth/btmrvl_main.c
-@@ -473,8 +473,6 @@ static int btmrvl_service_main_thread(void *data)
- 
- 	init_waitqueue_entry(&wait, current);
- 
--	current->flags |= PF_NOFREEZE;
--
- 	for (;;) {
- 		add_wait_queue(&thread->wait_q, &wait);
- 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 8a7ee31..6aae831 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -289,9 +289,6 @@ static int twl4030_irq_thread(void *data)
- 	static unsigned i2c_errors;
- 	static const unsigned max_i2c_errors = 100;
- 
--
--	current->flags |= PF_NOFREEZE;
--
- 	while (!kthread_should_stop()) {
- 		int ret;
- 		int module_irq;
-diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-index eb3b5f8..6fd7795 100644
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -96,8 +96,6 @@ static int twl6030_irq_thread(void *data)
- 	static const unsigned max_i2c_errors = 100;
- 	int ret;
- 
--	current->flags |= PF_NOFREEZE;
--
- 	while (!kthread_should_stop()) {
- 		int i;
- 		union {
-diff --git a/drivers/staging/rts_pstor/rtsx.c b/drivers/staging/rts_pstor/rtsx.c
-index 16c73fb..a1b9093 100644
---- a/drivers/staging/rts_pstor/rtsx.c
-+++ b/drivers/staging/rts_pstor/rtsx.c
-@@ -466,8 +466,6 @@ static int rtsx_control_thread(void *__dev)
- 	struct rtsx_chip *chip = dev->chip;
- 	struct Scsi_Host *host = rtsx_to_host(dev);
- 
--	current->flags |= PF_NOFREEZE;
--
- 	for (;;) {
- 		if (wait_for_completion_interruptible(&dev->cmnd_ready))
- 			break;
 -- 
-1.7.6
-
+tejun
