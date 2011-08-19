@@ -1,125 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab1HSPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 11:37:16 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:7840 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415Ab1HSPhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 11:37:12 -0400
-From: Maxim Patlasov <maxim.patlasov@gmail.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] CFQ: fixing performance issues
-Date: Fri, 19 Aug 2011 19:38:37 +0400
-Message-Id: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1756176Ab1HSPho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 11:37:44 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55647 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab1HSPhl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 11:37:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313763382-12341-6-git-send-email-tj@kernel.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-6-git-send-email-tj@kernel.org>
+From: Paul Menage <menage@google.com>
+Date: Fri, 19 Aug 2011 08:37:20 -0700
+X-Google-Sender-Auth: aK38yfS1IHz-9UnUHSU29d7lCwI
+Message-ID: <CALdu-PC1bVESvJ2p13hpb4QuABGFyjhoke60+UB79YCOBtTXGg@mail.gmail.com>
+Subject: Re: [PATCH 05/16] freezer: rename thaw_process() to __thaw_task() and
+ simplify the implementation
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, arnd@arndb.de, oleg@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 19, 2011 at 7:16 AM, Tejun Heo <tj@kernel.org> wrote:
+> thaw_process() now has only internal users - system and cgroup
+> freezers.  Remove the unnecessary return value, rename, unexport and
+> collapse __thaw_process() into it.  This will help further updates to
+> the freezer code.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Paul Menage <menage@google.com>
 
-While chasing cfq vs. noop performance degradation in some complex testing
-environment (RHEL6-based kernel, Intel vconsolidate and Dell dvd-store tests
-running in virtual environments on relaively powerful servers equipped with
-fast h/w raid-s), I found a bunch of problems relating to 'idling' in cases
-when 'preempting' would be much more beneficial. Now, securing some free time
-to fiddle with mainline kernel (I used 3.1.0-rc2 in my tests), I managed to
-reproduce one of performance issues using aio-stress alone. The problem that
-this patch-set concerns is idling on seeky cfqq-s marked as 'deep'.
+Probably better to have Matt Helsley look at this?
 
-Special handling of 'deep' cfqq-s was introduced long time ago by commit
-76280aff1c7e9ae761cac4b48591c43cd7d69159. The idea was that, if an application
-is using large I/O depth, it is already optimized to make full utilization of
-the hardware, and therefore idling should be beneficial. The problem was that
-it's enough to see large I/O depth only once and given cfqq would keep 'deep'
-flag for long while. Obviously, it may hurt performance much if h/w is able to
-concurrently process many i/o request effectively.
+Paul
 
-Later, the problem was (partially) amended by patch
-8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07 clearing 'deep' and 'idle_window'
-flags if "the device is much faster than the queue can deliver". Unfortunately,
-the logic introduced by that patch suffers from two main problems:
- - cfqq may keep 'deep' and 'idle_window' flags for a while till that logic
-   clears these flags; preemption is effectively disabled within this time gap
- - even on commodity h/w with single slow SATA hdd, that logic may provide
-   wrong estimation (claim device as fast when it's actually slow).
-There are also a few more deficiencies in that logic. I described them in some
-details in patch description.
-
-Let's now look at figures. Commodity server with slow hdd, eight aio-stress
-running concurrently, cmd-line of each:
-
-# aio-stress -a 4 -b 4 -c 1 -r 4 -O -o 0 -t 1 -d 1 -i 1 -s 16 f1_$I f2_$I f3_$I f4_$I
-
-Aggreagate throughput:
-
-Pristine 3.1.0-rc2 (CFQ): 3.59 MB/s
-Pristine 3.1.0-rc2 (noop): 2.49 MB/s
-3.1.0-rc2 w/o 8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07 (CFQ): 5.46 MB/s
-
-So, that patch steals about 35% of throughput on single slow hdd!
-
-Now let's look at the server with fast h/w raid (LSI 1078 RAID-0 from 8 10K
-RPMS SAS Disks). To make "time gap" effect visible, I had to modify aio-stress
-slightly:
-
-> --- aio-stress-orig.c	2011-08-16 17:00:04.000000000 -0400
-> +++ aio-stress.c	2011-08-18 14:49:31.000000000 -0400
-> @@ -884,6 +884,7 @@ static int run_active_list(struct thread
->      }
->      if (num_built) {
->  	ret = run_built(t, num_built, t->iocbs);
-> +	usleep(1000);
->  	if (ret < 0) {
->  	    fprintf(stderr, "error %d on run_built\n", ret);
->  	    exit(1);
-
-(this change models an app with non-zero think-time). Aggregate throughput:
-
-Pristine 3.1.0-rc2 (CFQ): 67.29 MB/s
-Pristine 3.1.0-rc2 (noop): 99.76 MB/s
-
-So, we can see about 30% performance degradation of CFQ as compared with noop.
-Let's see how idling affects it:
-
-Pristine 3.1.0-rc2 (CFQ, slice_idle=0): 106.28 MB/s
-
-This proves that all degradation is due to idling. To be 100% sure that idling
-on "deep" tasks is guilty, let's re-run test after commenting out lines marking
-cfqq as "deep":
-
->        //if (cfqq->queued[0] + cfqq->queued[1] >= 4)
->        //      cfq_mark_cfqq_deep(cfqq);
-
-3.1.0-rc2 (CFQ, mark_cfqq_deep is commented, default slice_idle): 98.51 MB/s
-
-The throughput here is essentially the same as in case of noop scheduler. This
-proves that 30% degradation resulted from idling on "deep" tasks and that patch
-8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07 doesn't fully address such a
-test-case. As a last effort let's verify that that patch really recognize fast
-h/w raid as "fast enough". To do it, let's revert changes in
-cfq_update_idle_window back to the state of pristine 3.1.0-rc2, but make
-clearing "deep" flag in cfq_select_queue unconditional (pretending that
-condition "the queue delivers all requests before half its slice is used" is
-always met):
-
->        if (CFQQ_SEEKY(cfqq) && cfq_cfqq_idle_window(cfqq) /* &&
->            (cfq_cfqq_slice_new(cfqq) ||
->            (cfqq->slice_end - jiffies > jiffies - cfqq->slice_start)) */ ) {
->                cfq_clear_cfqq_deep(cfqq);
->                cfq_clear_cfqq_idle_window(cfqq);
->        }
-
-3.1.0-rc2 (CFQ, always clear "deep" flag, default slice_idle): 67.67 MB/s
-
-The throughput here is the same as in case of CFQ on pristine 3.1.0-rc2. This
-testifies hypothesis that degradation results from lack of preemption due to
-time gap between marking a task as "deep" in cfq_update_idle_window and clearing
-this flag in cfq_select_queue.
-
-After applying the patch from this patch-set, aggregate througput on the server
-with fast h/w raid is 98.13 MB/s. On commodity server with slow hdd: 5.45 MB/s.
-
-Thanks,
-Maxim
+> ---
+>  include/linux/freezer.h |    3 +--
+>  kernel/cgroup_freezer.c |    7 +++----
+>  kernel/freezer.c        |   30 +++++++++++-------------------
+>  kernel/power/process.c  |    2 +-
+>  4 files changed, 16 insertions(+), 26 deletions(-)
+>
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index 8ee31e5..80a455d 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -45,7 +45,7 @@ static inline bool should_send_signal(struct task_struct *p)
+>  }
+>
+>  /* Takes and releases task alloc lock using task_lock() */
+> -extern int thaw_process(struct task_struct *p);
+> +extern void __thaw_task(struct task_struct *t);
+>
+>  extern bool __refrigerator(bool check_kthr_stop);
+>  extern int freeze_processes(void);
+> @@ -167,7 +167,6 @@ static inline int frozen(struct task_struct *p) { return 0; }
+>  static inline int freezing(struct task_struct *p) { return 0; }
+>  static inline void set_freeze_flag(struct task_struct *p) {}
+>  static inline void clear_freeze_flag(struct task_struct *p) {}
+> -static inline int thaw_process(struct task_struct *p) { return 1; }
+>
+>  static inline bool __refrigerator(bool check_kthr_stop) { return false; }
+>  static inline int freeze_processes(void) { BUG(); return 0; }
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index e691818..e7fa0ec 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -130,7 +130,7 @@ struct cgroup_subsys freezer_subsys;
+>  *   write_lock css_set_lock (cgroup iterator start)
+>  *    task->alloc_lock
+>  *   read_lock css_set_lock (cgroup iterator start)
+> - *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
+> + *    task->alloc_lock (inside __thaw_task(), prevents race with refrigerator())
+>  *     sighand->siglock
+>  */
+>  static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
+> @@ -300,9 +300,8 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+>        struct task_struct *task;
+>
+>        cgroup_iter_start(cgroup, &it);
+> -       while ((task = cgroup_iter_next(cgroup, &it))) {
+> -               thaw_process(task);
+> -       }
+> +       while ((task = cgroup_iter_next(cgroup, &it)))
+> +               __thaw_task(task);
+>        cgroup_iter_end(cgroup, &it);
+>
+>        freezer->state = CGROUP_THAWED;
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index 656492c..f5db7fd 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -145,18 +145,8 @@ void cancel_freezing(struct task_struct *p)
+>        }
+>  }
+>
+> -static int __thaw_process(struct task_struct *p)
+> -{
+> -       if (frozen(p)) {
+> -               p->flags &= ~PF_FROZEN;
+> -               return 1;
+> -       }
+> -       clear_freeze_flag(p);
+> -       return 0;
+> -}
+> -
+>  /*
+> - * Wake up a frozen process
+> + * Wake up a frozen task
+>  *
+>  * task_lock() is needed to prevent the race with refrigerator() which may
+>  * occur if the freezing of tasks fails.  Namely, without the lock, if the
+> @@ -164,15 +154,17 @@ static int __thaw_process(struct task_struct *p)
+>  * refrigerator() could call frozen_process(), in which case the task would be
+>  * frozen and no one would thaw it.
+>  */
+> -int thaw_process(struct task_struct *p)
+> +void __thaw_task(struct task_struct *p)
+>  {
+> +       bool was_frozen;
+> +
+>        task_lock(p);
+> -       if (__thaw_process(p) == 1) {
+> -               task_unlock(p);
+> -               wake_up_process(p);
+> -               return 1;
+> -       }
+> +       if ((was_frozen = frozen(p)))
+> +               p->flags &= ~PF_FROZEN;
+> +       else
+> +               clear_freeze_flag(p);
+>        task_unlock(p);
+> -       return 0;
+> +
+> +       if (was_frozen)
+> +               wake_up_process(p);
+>  }
+> -EXPORT_SYMBOL(thaw_process);
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index 0cf3a27..bec09c3 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -176,7 +176,7 @@ static void thaw_tasks(bool nosig_only)
+>                if (cgroup_freezing_or_frozen(p))
+>                        continue;
+>
+> -               thaw_process(p);
+> +               __thaw_task(p);
+>        } while_each_thread(g, p);
+>        read_unlock(&tasklist_lock);
+>  }
+> --
+> 1.7.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
