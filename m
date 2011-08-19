@@ -1,277 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab1HSOVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:21:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42096 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab1HSOU5 (ORCPT
+	id S1753757Ab1HSOQd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:16:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63671 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab1HSOQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:20:57 -0400
-Subject: Re: +
- prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision .patch
- added to -mm tree
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        roland@hack.frob.com, torvalds@linux-foundation.org
-Date: Fri, 19 Aug 2011 16:20:51 +0200
-In-Reply-To: <20110819131339.GB8411@redhat.com>
-References: <20110817115543.GA8745@redhat.com>
-	 <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
-	 <20110817134516.GA14136@redhat.com>
-	 <20110818124353.GA2839@tango.0pointer.de>
-	 <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop>
-	 <20110818184857.GA12094@redhat.com> <1313717521.991.4.camel@mop>
-	 <20110819122503.GA8411@redhat.com>
-	 <CAPXgP11KC2fTWBVYo6CBXe924YAyTGhx9=UTBDf4cP5Acuo0NA@mail.gmail.com>
-	 <20110819131339.GB8411@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313763653.1119.12.camel@mop>
-Mime-Version: 1.0
+	Fri, 19 Aug 2011 10:16:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, oleg@redhat.com
+Subject: [PATCHSET] freezer: fix various bugs and simplify implementation
+Date: Fri, 19 Aug 2011 16:16:06 +0200
+Message-Id: <1313763382-12341-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 15:13 +0200, Oleg Nesterov wrote:
-> On 08/19, Kay Sievers wrote:
+Hello,
 
-> But this has other (OK, minor) problems too, afaics. First of all, this
-> ->has_child_subreaper = T is not right when the caller exits. We should
-> not look for ->is_child_subreaper parent, our children should to find us.
-> 
-> Right?
+The freezer code has developed a number of convolutions and bugs.
+It's now using five per-task flags - TIF_FREEZE, PF_FREEZING,
+PF_NOFREEZE, PF_FROZEN, PF_FREEZER_SKIP and PF_FREEZER_NOSIG, and at
+the same time has quite a few race conditions.  PF_NOFREEZE
+modifications can race against PM freezer, cgroup_freezer can race
+against PM freezer, and so on.
 
-The flags are still inherited. If the subreaper isn't there anymore, we
-will look it up and not find it. I think that's ok for the very unusual
-case that a service manager goes away and its children still run. We
-will just fall back to the usual PID 1 logic.
+This patchset tries to simplify the freezer implementation and fix the
+various bugs.  It makes the synchronization more straight forward and
+replaces TIF_FREEZE with directly checking freeze conditions which are
+in effect, which makes the whole thing much saner.
 
-> And. afaics this makes the semantics of prctl(REAPER) a bit unclear...
-> Suppose a task P does
-> 
-> 	C1 = fork();
-> 
-> 	prctl(REAPER);
-> 
-> 	C2 = fork();
-> 
-> In this case it "owns" the children of C2, but not C1. This is fine, and
-> perhaps this is even better.
+This patchset removes TIF_FREEZE and PF_FREEZING.  Also,
+PF_FREEZER_SKIP users are planned to move away from the flag and will
+be removed.  It contains the following 16 patches.
 
-Yeah, thought about that too. I think it is what we want. 
+ 0001-freezer-fix-current-state-restoration-race-in-refrig.patch
+ 0002-freezer-don-t-unnecessarily-set-PF_NOFREEZE-explicit.patch
+ 0003-freezer-unexport-refrigerator-and-update-try_to_free.patch
+ 0004-freezer-implement-and-use-kthread_freezable_should_s.patch
+ 0005-freezer-rename-thaw_process-to-__thaw_task-and-simpl.patch
+ 0006-freezer-make-exiting-tasks-properly-unfreezable.patch
+ 0007-freezer-don-t-distinguish-nosig-tasks-on-thaw.patch
+ 0008-freezer-use-dedicated-lock-instead-of-task_lock-memo.patch
+ 0009-freezer-make-freezing-indicate-freeze-condition-in-e.patch
+ 0010-freezer-fix-set_freezable-_with_signal-race.patch
+ 0011-freezer-kill-PF_FREEZING.patch
+ 0012-freezer-clean-up-freeze_processes-failure-path.patch
+ 0013-cgroup_freezer-prepare-for-removal-of-TIF_FREEZE.patch
+ 0014-freezer-make-freezing-test-freeze-conditions-in-effe.patch
+ 0015-freezer-remove-now-unused-TIF_FREEZE.patch
+ 0016-freezer-remove-should_send_signal-and-update-frozen.patch
 
-> But what if P->parent did prctl(REAPER) too? Then P becomes the sub-reaper
-> for the tasks which were forked before prctl().
-> 
-> In short, in general the caller of prctl(REAPER) doesn't know how this
-> can affect the forks in the past.
-> 
-> Again, again, I am not arguing. Just I think we should discuss everything
-> if we are going to add the new feature.
+This patchset is on top of the current linus#master (01b883358b "Merge
+git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc") and
+available in the following git branch.
 
-I agree. I'll add a few lines of comment to explain this when we have a
-version that looks fine. I'll need to update the man page for the prctl
-anyway. It's probably the best place to explain the use of this flag.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
 
-> Finally. I am not sure this is really better, but it seems we can
-> can ->has_child_subreape "more correct" with the same effect.
-> 		me->has_child_subreaper =
-> 			parent->has_child_subreaper ||
-> 			parent->is_child_subreaper;
+diffstat follows.
 
-Nice idea! Looks so much better, yes.
+ Documentation/power/freezing-of-tasks.txt |   14 +-
+ arch/alpha/include/asm/thread_info.h      |    2
+ arch/arm/include/asm/thread_info.h        |    2
+ arch/avr32/include/asm/thread_info.h      |    2
+ arch/blackfin/include/asm/thread_info.h   |    2
+ arch/cris/include/asm/thread_info.h       |    2
+ arch/frv/include/asm/thread_info.h        |    2
+ arch/h8300/include/asm/thread_info.h      |    2
+ arch/ia64/include/asm/thread_info.h       |    2
+ arch/m32r/include/asm/thread_info.h       |    2
+ arch/m68k/include/asm/thread_info.h       |    1
+ arch/microblaze/include/asm/thread_info.h |    2
+ arch/mips/include/asm/thread_info.h       |    2
+ arch/mn10300/include/asm/thread_info.h    |    2
+ arch/parisc/include/asm/thread_info.h     |    2
+ arch/powerpc/include/asm/thread_info.h    |    2
+ arch/s390/include/asm/thread_info.h       |    2
+ arch/sh/include/asm/thread_info.h         |    2
+ arch/sparc/include/asm/thread_info_32.h   |    2
+ arch/sparc/include/asm/thread_info_64.h   |    2
+ arch/um/include/asm/thread_info.h         |    2
+ arch/unicore32/include/asm/thread_info.h  |    2
+ arch/x86/include/asm/thread_info.h        |    2
+ arch/xtensa/include/asm/thread_info.h     |    2
+ drivers/bluetooth/btmrvl_main.c           |    2
+ drivers/mfd/twl4030-irq.c                 |    3
+ drivers/mfd/twl6030-irq.c                 |    2
+ drivers/net/irda/stir4200.c               |    2
+ drivers/platform/x86/thinkpad_acpi.c      |   15 +-
+ drivers/staging/rts_pstor/rtsx.c          |    2
+ fs/btrfs/async-thread.c                   |    2
+ fs/btrfs/disk-io.c                        |    8 -
+ fs/ext4/super.c                           |    3
+ fs/fs-writeback.c                         |    4
+ fs/gfs2/log.c                             |    4
+ fs/gfs2/quota.c                           |    4
+ fs/jbd/journal.c                          |    2
+ fs/jbd2/journal.c                         |    2
+ fs/jfs/jfs_logmgr.c                       |    2
+ fs/jfs/jfs_txnmgr.c                       |    4
+ fs/nilfs2/segment.c                       |    2
+ fs/xfs/linux-2.6/xfs_buf.c                |    2
+ include/linux/freezer.h                   |   78 +++++--------
+ include/linux/kthread.h                   |    1
+ include/linux/sched.h                     |    3
+ kernel/cgroup_freezer.c                   |   51 +++-----
+ kernel/exit.c                             |    8 +
+ kernel/fork.c                             |    1
+ kernel/freezer.c                          |  179 +++++++++++++++++-------------
+ kernel/kthread.c                          |   25 ++++
+ kernel/power/hibernate.c                  |   15 --
+ kernel/power/process.c                    |   65 +++-------
+ kernel/power/user.c                       |    4
+ mm/backing-dev.c                          |    8 -
+ 54 files changed, 247 insertions(+), 315 deletions(-)
 
-Thanks a lot again,
-Kay
+Thanks.
 
-
-version 4:
-- as we check from within 'flagged' processes only, we can
-  avoid the &init_task or point-to-ourselves check
-
-- set parent->has_child_subreaper only in child processes
-  so prctl(PR_SET_CHILD_SUBREAPER) toggle is cleaner
-  regarding already existing and future childs
-
-version 3:
-- rename all child_reaper to child_subreaper to avoid confusion with
- the PID namespace child_reaper variable
-
-- check all possible threads of the reaper process for valid one
-
-- optimization: let processes inherit a flag to indicate that there is
-  a subreaper to lookup, in case they need to be re-parented.
-
-version 2:
-- uses task->real_parent to walk up the chain of parents.
-
-- does not use init_task but the the parent pointer to itself
-
-- moves the flag into task->signal to have it process-wide
-  and not per thread
-
-- moves the parent walk after the check for
-  pid_ns->child_reaper == father
-
-- makes sure it does not return a PF_EXITING task
-
-- adds some explanation of SIGCHLD + wait() vs. async events
-  like taskstats, to the changelog
-
-- updates the comments for find_new_reaper()
-
-
-From: Lennart Poettering <lennart@poettering.net>
-Subject: prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
-
-Userspace service managers/supervisors need to track their started
-services. Many services daemonize by double-forking and get implicitely
-re-parented to PID 1. The process manager will no longer be able to
-receive the SIGCHLD signals for them, and is no longer in charge of
-reaping the children with wait(). All information about the children
-is lost at the moment PID 1 cleans up the re-parented processes.
-
-With this prctl, a service manager process can mark itself as a sort of
-'sub-init', able to stay as the parent for all orphaned processes
-created by the started services. All SIGCHLD signals will be delivered
-to the service manager.
-
-Receiving SIGCHLD and doing wait() is in cases of a service-manager
-much preferred over any possible asynchronous notification about
-specific PIDs, because the service manager has full access to the
-child process data in /proc and the PID can not be re-used until
-the wait(), the service-manager itself is in charge of, has happended.
-
-As a side effect, the relevant parent PID information does not get lost
-by a double-fork, which results in a more elaborate process tree and 'ps'
-output.
-
-This is orthogonal to PID namespaces. PID namespaces are isolated
-from each other, while a service management process usually requires
-the serices to live in the same namespace, to be able to talk to each
-other.
-
-Users of this will be the systemd per-user instance, which provides
-init-like functionality for the user's login session and D-Bus, which
-activates bus services on on-demand. Both will need init-like capabilities
-to be able to properly keep track of the services they start.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Lennart Poettering <lennart@poettering.net>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
----
-
- include/linux/prctl.h |    3 +++
- include/linux/sched.h |   12 ++++++++++++
- kernel/exit.c         |   26 +++++++++++++++++++++-----
- kernel/fork.c         |    3 +++
- kernel/sys.c          |    8 ++++++++
- 5 files changed, 47 insertions(+), 5 deletions(-)
-
---- a/include/linux/prctl.h
-+++ b/include/linux/prctl.h
-@@ -102,4 +102,7 @@
- 
- #define PR_MCE_KILL_GET 34
- 
-+#define PR_SET_CHILD_SUBREAPER 35
-+#define PR_GET_CHILD_SUBREAPER 36
-+
- #endif /* _LINUX_PRCTL_H */
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -550,6 +550,18 @@ struct signal_struct {
- 	int			group_stop_count;
- 	unsigned int		flags; /* see SIGNAL_* flags below */
- 
-+	/*
-+	 * PR_SET_CHILD_SUBREAPER marks a process, like a service
-+	 * manager, to re-parent orphan (double-forking) child processes
-+	 * to this process instead of 'init'. The service manager is
-+	 * able to receive SIGCHLD signals and is able to investigate
-+	 * the process until it calls wait(). All children of this
-+	 * process will inherit a flag if they should look for a
-+	 * child_subreaper process at exit.
-+	 */
-+	unsigned int		is_child_subreaper:1;
-+	unsigned int		has_child_subreaper:1;
-+
- 	/* POSIX.1b Interval Timers */
- 	struct list_head posix_timers;
- 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -689,11 +689,12 @@ static void exit_mm(struct task_struct *
- }
- 
- /*
-- * When we die, we re-parent all our children.
-- * Try to give them to another thread in our thread
-- * group, and if no such member exists, give it to
-- * the child reaper process (ie "init") in our pid
-- * space.
-+ * When we die, we re-parent all our children, and try to:
-+ * 1. give them to another thread in our thread group, if such a
-+ *    member exists
-+ * 2. give it to the first anchestor process which prctl'd itself
-+ *    as a child_subreaper for its children (like a service manager)
-+ * 3. give it to the init process (PID 1) in our pid namespace
-  */
- static struct task_struct *find_new_reaper(struct task_struct *father)
- 	__releases(&tasklist_lock)
-@@ -724,6 +725,21 @@ static struct task_struct *find_new_reap
- 		 * forget_original_parent() must move them somewhere.
- 		 */
- 		pid_ns->child_reaper = init_pid_ns.child_reaper;
-+	} else if (father->signal->has_child_subreaper) {
-+		struct task_struct *reaper;
-+
-+		/* find the first ancestor marked as child_subreaper */
-+		for (reaper = father->real_parent;
-+		     !same_thread_group(reaper, pid_ns->child_reaper);
-+		     reaper = reaper->real_parent) {
-+			if (!reaper->signal->is_child_subreaper)
-+				continue;
-+			thread = reaper;
-+			do {
-+				if (!(thread->flags & PF_EXITING))
-+					return reaper;
-+			} while_each_thread(reaper, thread);
-+		}
- 	}
- 
- 	return pid_ns->child_reaper;
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -987,6 +987,9 @@ static int copy_signal(unsigned long clo
- 	sig->oom_score_adj = current->signal->oom_score_adj;
- 	sig->oom_score_adj_min = current->signal->oom_score_adj_min;
- 
-+	sig->has_child_subreaper = current->signal->has_child_subreaper ||
-+				   current->signal->is_child_subreaper;
-+
- 	mutex_init(&sig->cred_guard_mutex);
- 
- 	return 0;
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1799,6 +1799,14 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
- 			else
- 				error = PR_MCE_KILL_DEFAULT;
- 			break;
-+		case PR_SET_CHILD_SUBREAPER:
-+			me->signal->is_child_subreaper = !!arg2;
-+			error = 0;
-+			break;
-+		case PR_GET_CHILD_SUBREAPER:
-+			error = put_user(me->signal->is_child_subreaper,
-+					 (int __user *) arg2);
-+			break;
- 		default:
- 			error = -EINVAL;
- 			break;
-
-
+--
+tejun
