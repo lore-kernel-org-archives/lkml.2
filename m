@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1HSTZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 15:25:12 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:20881 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755684Ab1HSTZI (ORCPT
+	id S1756013Ab1HST0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 15:26:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60744 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755684Ab1HST0L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 15:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=q5lQYnUOdNXzQRhPWv55d0RK+A2vB4nhLg6OUgXxBVyTNATbQI3tRQ1yW4TFty4Ip
-	Re/lg5lLR0nGB64+JefJw==
-Date: Fri, 19 Aug 2011 12:25:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: 3.1-rc2: CONFIG_NUMA Question
-In-Reply-To: <alpine.DEB.2.02.1108180758290.7903@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1108191223230.20477@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1108180649040.10458@p34.internal.lan> <CAM_iQpWPaavsa7gSURP5CL8+Es2P5rEdtLRmrOx+wQkThX7v9w@mail.gmail.com> <alpine.DEB.2.02.1108180758290.7903@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 19 Aug 2011 15:26:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <4E4E2B2A.40100@odi.ch>
+References: <4E4E2B2A.40100@odi.ch>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Fri, 19 Aug 2011 15:25:30 -0400
+Message-ID: <CAF_S4t_5qfx1H+nm+fvYd24k4ezF__JDFLvg6gv_so8SeVqKvA@mail.gmail.com>
+Subject: Re: contention on long-held spinlock
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+Cc: linux-kernel@vger.kernel.org, Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        linux-driver@qlogic.com, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Aug 2011, Justin Piszcz wrote:
+2011/8/19 Ortwin Glück <odi@odi.ch>:
+> Hi,
+>
+> I have observed a bad behaviour that is likely caused by spinlocks in the
+> qla2xxx driver. This is a QLogic Fibre Channel storage driver.
 
-> > The max of NUMA nodes is specified by CONFIG_NODES_SHIFT,
-> > in your case, it is 6, which means it supports up to 2^6 nodes.
-> Ok, is there any overhead having more than is needed?
-> 
+Please CC the relevant maintainers when reporting driver bugs (I'm
+adding them in this reply); it will help make sure the right people
+notice. Maintainer addresses can be found in the MAINTAINERS file at
+the root of the linux source tree.
 
-Yeah, try to avoid going above 8 because that causes nodemasks that are 
-typically allocated on the stack of kernel text to be dynamically 
-allocated through the slab allocator to avoid the possibility of overflow.  
-I doubt you have the need for more than 64 nodes, so I'd highly recommend 
-leaving it at the default unless you want to debug or test some large 
-numa=fake settings.
+What version of the kernel are you using? It would also help to
+provide dmesg output from when the problem is occurring, if anything
+out of the ordinary can be found there (if you've already rebooted,
+check /var/log/kern.log - or wherever your distribution puts the
+kernel log)
+
+> Somehow the attached SAN had a problem and became unresponsive. Many
+> processes queued up waiting to write to the device. The processes were doing
+> nothing but wait, but system load increased to insane values (40 and above
+> on a 4 core machine). The system was very sluggish and unresponsive, making
+> it very hard and slow to see what actually was the problem.
+>
+> I didn't run an indepth analysis, but this is my guess: I see that qla2xxx
+> uses spinlocks to guard the HW against concurrent access. So if the HW
+> becomes unresponsive all waiters would busy spin and burn resources, right?
+> Those spinlocks are superfast as long as the HW responds well, but become a
+> CPU burner once the HW becomes slow.
+>
+> I wonder if spinlocks could be made aware of such a situation and relax.
+> Something like if spinning for more than 1000 times, perform a simple
+> backoff and sleep. A spinlock should never spin busy for several seconds,
+> right?
+
+That's what mutexes are for. Note, however, that interrupt handlers
+cannot use mutexes as they cannot sleep, nor can they wait for lock
+holders which may themselves sleep.
+
+Also note that holding spinlocks for a long time is more likely to
+result in lockups than a slowdown - a CPU attempting to grab a
+spinlock disables migration and preemption, so on your four CPU
+system, four processes waiting on spinlocks is enough to completely
+lock up the system (unless you're using the real-time branch's kernel,
+which converts most spinlocks to mutexes).
