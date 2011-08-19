@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab1HSQtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:49:22 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57402 "EHLO
+	id S1756533Ab1HSQtT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:49:19 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57406 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932119Ab1HSQsi (ORCPT
+	by vger.kernel.org with ESMTP id S932126Ab1HSQsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:48:38 -0400
+	Fri, 19 Aug 2011 12:48:39 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ian Kent <raven@themaw.net>
-Subject: [PATCH v2 40/43] autofs4: Use set_current_blocked()
-Date: Fri, 19 Aug 2011 17:46:56 +0100
-Message-Id: <1313772419-21951-41-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>
+Subject: [PATCH v2 41/43] coda: Use set_current_blocked()
+Date: Fri, 19 Aug 2011 17:46:57 +0100
+Message-Id: <1313772419-21951-42-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -28,42 +28,49 @@ incorrect as we need to check whether the signal we're about to block
 is pending in the shared queue.
 
 Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Ian Kent <raven@themaw.net>
+Cc: Jan Harkes <jaharkes@cs.cmu.edu>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- fs/autofs4/waitq.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+ fs/coda/upcall.c |   19 ++++++++-----------
+ 1 files changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index e1fbdee..58ba49a 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -458,21 +458,16 @@ int autofs4_wait(struct autofs_sb_info *sbi, struct dentry *dentry,
- 	 */
- 	if (wq->name.name) {
- 		/* Block all but "shutdown" signals while waiting */
--		sigset_t oldset;
-+		sigset_t oldset, blocked;
- 		unsigned long irqflags;
+diff --git a/fs/coda/upcall.c b/fs/coda/upcall.c
+index 9727e0c..ce5925d 100644
+--- a/fs/coda/upcall.c
++++ b/fs/coda/upcall.c
+@@ -575,24 +575,21 @@ int venus_statfs(struct dentry *dentry, struct kstatfs *sfs)
+  */
+ static void coda_block_signals(sigset_t *old)
+ {
+-	spin_lock_irq(&current->sighand->siglock);
++	sigset_t blocked;
++
+ 	*old = current->blocked;
  
--		spin_lock_irqsave(&current->sighand->siglock, irqflags);
- 		oldset = current->blocked;
--		siginitsetinv(&current->blocked, SHUTDOWN_SIGS & ~oldset.sig[0]);
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
-+		siginitsetinv(&blocked, SHUTDOWN_SIGS & ~oldset.sig[0]);
-+		set_current_blocked(&blocked);
+-	sigfillset(&current->blocked);
+-	sigdelset(&current->blocked, SIGKILL);
+-	sigdelset(&current->blocked, SIGSTOP);
+-	sigdelset(&current->blocked, SIGINT);
++	sigfillset(&blocked);
++	sigdelset(&blocked, SIGKILL);
++	sigdelset(&blocked, SIGSTOP);
++	sigdelset(&blocked, SIGINT);
  
- 		wait_event_interruptible(wq->queue, wq->name.name == NULL);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&blocked);
+ }
  
--		spin_lock_irqsave(&current->sighand->siglock, irqflags);
--		current->blocked = oldset;
--		recalc_sigpending();
--		spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
-+		set_current_blocked(&oldset);
- 	} else {
- 		DPRINTK("skipped sleeping");
- 	}
+ static void coda_unblock_signals(sigset_t *old)
+ {
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = *old;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(old);
+ }
+ 
+ /* Don't allow signals to interrupt the following upcalls before venus
 -- 
 1.7.4.4
 
