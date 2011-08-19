@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab1HSFAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 01:00:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43236 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab1HSFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 01:00:12 -0400
-From: Anand Gadiyar <gadiyar@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-CC: Anand Gadiyar <gadiyar@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, <stable@kernel.org>
-Subject: [PATCH resend] mfd: omap-usb-host: Make TLL mode work again
-Date: Fri, 19 Aug 2011 10:29:00 +0530
-Message-ID: <1313729940-10508-1-git-send-email-gadiyar@ti.com>
-X-Mailer: git-send-email 1.5.6.6
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752154Ab1HSFDK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 01:03:10 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58477 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab1HSFDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 01:03:08 -0400
+Date: Thu, 18 Aug 2011 22:02:49 -0700 (PDT)
+Message-Id: <20110818.220249.1523360015062657902.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: khc@pm.waw.pl, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH][Trivial] net/wan/hdlc_ppp: remove dead goto
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1108130138100.7387@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1108130138100.7387@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 18 Aug 2011 22:02:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code section seems to have been accidentally copy pasted.
-It causes incorrect bits to be set up in the TLL_CHANNEL_CONF
-register and prevents the TLL mode from working correctly.
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sat, 13 Aug 2011 01:39:43 +0200 (CEST)
 
-Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: stable@kernel.org
----
-Resent with Felipe's ack and stable@kernel.org in CC
+> From: Jesper Juhl <jj@chaosbits.net>
+> 
+> We'll either hit one of the case labels or the default in the switch
+> and in all cases do we then 'goto out', so having 'goto out' right
+> after the switch is pointless as we can never hit it - remove it.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
- drivers/mfd/omap-usb-host.c |    1 -
- 1 file changed, 1 deletion(-)
+Probably a lot cleaner to use break statements in the switch() statement
+and keep this goto in place.
 
-Index: linux-2.6/drivers/mfd/omap-usb-host.c
-===================================================================
---- linux-2.6.orig/drivers/mfd/omap-usb-host.c
-+++ linux-2.6/drivers/mfd/omap-usb-host.c
-@@ -676,7 +676,6 @@ static void usbhs_omap_tll_init(struct d
- 				| OMAP_TLL_CHANNEL_CONF_ULPINOBITSTUFF
- 				| OMAP_TLL_CHANNEL_CONF_ULPIDDRMODE);
- 
--			reg |= (1 << (i + 1));
- 		} else
- 			continue;
- 
+That's more straightforward control flow than what this thing is doing.
