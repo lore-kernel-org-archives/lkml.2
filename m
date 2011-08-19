@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab1HSQsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:48:21 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57371 "EHLO
+	id S932141Ab1HSQu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:50:56 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57378 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756436Ab1HSQsS (ORCPT
+	by vger.kernel.org with ESMTP id S1756526Ab1HSQsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:48:18 -0400
+	Fri, 19 Aug 2011 12:48:20 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH v2 32/43] tile: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:48 +0100
-Message-Id: <1313772419-21951-33-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 34/43] um: Don't restore current->blocked on error
+Date: Fri, 19 Aug 2011 17:46:50 +0100
+Message-Id: <1313772419-21951-35-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -23,82 +22,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+If we fail to setup the signal stack frame then we don't need to
+restore current->blocked because it is not modified by
+setup_signal_stack_*.
 
-Also, use the new helper function block_sigmask() which centralises
-the code for updating current->blocked after successfully delivering a
-signal and reduces the amount of duplicate code across
-architectures. In the past some architectures got this code wrong, so
-using this helper function should stop that from happening again.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Richard Weinberger <richard@nod.at>
+Tested-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
+ arch/um/kernel/signal.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
-for adding sigmask to current->blocked" so they need to go through the
-same tree but this patch would benefit from some maintainer ACK's.
-
-Chris, I dropped your Acked-by because I felt this patch changed quite
-dramatically since v1 and warrants another review. I hope that's OK.
-
-
- arch/tile/kernel/compat_signal.c |    5 +----
- arch/tile/kernel/signal.c        |   13 ++-----------
- 2 files changed, 3 insertions(+), 15 deletions(-)
-
-diff --git a/arch/tile/kernel/compat_signal.c b/arch/tile/kernel/compat_signal.c
-index a7869ad..77763cc 100644
---- a/arch/tile/kernel/compat_signal.c
-+++ b/arch/tile/kernel/compat_signal.c
-@@ -303,10 +303,7 @@ long compat_sys_rt_sigreturn(struct pt_regs *regs)
- 		goto badframe;
+diff --git a/arch/um/kernel/signal.c b/arch/um/kernel/signal.c
+index 9aa5cba..9a5ffe1 100644
+--- a/arch/um/kernel/signal.c
++++ b/arch/um/kernel/signal.c
+@@ -66,13 +66,9 @@ static int handle_signal(struct pt_regs *regs, unsigned long signr,
+ #endif
+ 		err = setup_signal_stack_si(sp, signr, ka, regs, info, oldset);
  
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
- 		goto badframe;
-diff --git a/arch/tile/kernel/signal.c b/arch/tile/kernel/signal.c
-index bedaf4e..f79d4b8 100644
---- a/arch/tile/kernel/signal.c
-+++ b/arch/tile/kernel/signal.c
-@@ -97,10 +97,7 @@ SYSCALL_DEFINE1(rt_sigreturn, struct pt_regs *, regs)
- 		goto badframe;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
- 		goto badframe;
-@@ -286,13 +283,7 @@ static int handle_signal(unsigned long sig, siginfo_t *info,
- 		 * the work_pending path in the return-to-user code, and
- 		 * either way we can re-enable interrupts unconditionally.
- 		 */
+-	if (err) {
 -		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked,
--			  &current->blocked, &ka->sa.sa_mask);
--		if (!(ka->sa.sa_flags & SA_NODEFER))
--			sigaddset(&current->blocked, sig);
+-		current->blocked = *oldset;
 -		recalc_sigpending();
 -		spin_unlock_irq(&current->sighand->siglock);
-+		block_sigmask(ka, sig);
- 	}
++	if (err)
+ 		force_sigsegv(signr, current);
+-	} else
++	else
+ 		block_sigmask(ka, signr);
  
- 	return ret;
+ 	return err;
 -- 
 1.7.4.4
 
