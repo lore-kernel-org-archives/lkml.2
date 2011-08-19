@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab1HSMPZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:15:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7041 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab1HSMPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:15:23 -0400
-Date: Fri, 19 Aug 2011 08:15:16 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: aesni-intel - Add ivsize to ablk_ecb_alg
-Message-ID: <20110819121516.GA2270@zod.bos.redhat.com>
-References: <20110811164040.GB2167@zod.bos.redhat.com>
- <20110815071528.GA29656@gondor.apana.org.au>
- <20110815115038.GA2227@zod.bos.redhat.com>
- <20110816123227.GB9413@gondor.apana.org.au>
- <20110818174425.GN2227@zod.bos.redhat.com>
- <20110819000229.GA1076@gondor.apana.org.au>
- <20110819021516.GU2227@zod.bos.redhat.com>
- <20110819073224.GA3658@gondor.apana.org.au>
- <20110819081207.GA3954@gondor.apana.org.au>
+	id S1754047Ab1HSMQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:16:13 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50542 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1HSMQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:16:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819081207.GA3954@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+Date: Fri, 19 Aug 2011 13:16:08 +0100
+Message-ID: <CAPweEDw0ueS6Pku7jtiHjC55e9XVEXE92L2qo098iNcTw_bFRg@mail.gmail.com>
+Subject: Re: ARM promising platform, needs to learn from PC.
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 04:12:08PM +0800, Herbert Xu wrote:
-> On Fri, Aug 19, 2011 at 03:32:24PM +0800, Herbert Xu wrote:
-> > 
-> > Meanwhile I'll make a patch that ensures cryptd is registered
-> > before aesni.
-> 
-> Please try this patch.  Thanks!
+At some point, in a random thread, a highly respected but very
+depressed ARM linux kernel developer wrote:
 
-This worked great.  I'm confused why adding ivsize to the ablk_ecb_alg
-"worked" as well, but looking at the traces again I agree this seems
-like the actual problem.
+> What's the way out of this?  I've no idea.  Can ARM continue being part
+> of the mainline kernel?  I've no idea.  Will we be ripping out all the
+> ARM platform code from the mainline kernel?  I've no idea.
 
-Thanks!
+> I am now completely demotivated.
 
-> commit 9d4c522a113f6caa8b792ae829a25490fa87b1a2
-> Author: Herbert Xu <herbert@gondor.apana.org.au>
-> Date:   Fri Aug 19 16:11:23 2011 +0800
-> 
->     crypto: cryptd - Use subsys_initcall to prevent races with aesni
->     
->     As cryptd is depeneded on by other algorithms such as aesni-intel,
->     it needs to be registered before them.  When everything is built
->     as modules, this occurs naturally.  However, for this to work when
->     they are built-in, we need to use subsys_initcall in cryptd.
->     
->     Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+dear russell,
 
-Tested-by: Josh Boyer <jwboyer@redhat.com>
+the purpose of the proposed "selfish is out, collaboration is in"
+patch rule is ultimately to allow you to feel that what you're doing
+is actually encouraging people to cooperate and help each other - the
+complete opposite of the present situation.
 
-> diff --git a/crypto/cryptd.c b/crypto/cryptd.c
-> index e46d21a..671d4d6 100644
-> --- a/crypto/cryptd.c
-> +++ b/crypto/cryptd.c
-> @@ -945,7 +945,7 @@ static void __exit cryptd_exit(void)
->  	crypto_unregister_template(&cryptd_tmpl);
->  }
->  
-> -module_init(cryptd_init);
-> +subsys_initcall(cryptd_init);
->  module_exit(cryptd_exit);
->  
->  MODULE_LICENSE("GPL");
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+right now, you're being massively taken advantage of.  not by your
+peers, but by pathological cancerous Corporations who expect you to
+clean up their mess and do unpaid work for them, so that they can make
+absolute maximum profits.
+
+i'd say you were absolutely within perfectly reasonable rights to tell
+everyone to f*** off until there is a solution, and the only puzzling
+question i have to ask is why in god's name have you tolerated things
+for so long?? :)
+
+can i therefore respectfully ask for your thoughts on the proposed
+rule (and in particular, on the examples which help clarify matters)?
+is it pure bullshit, or what?
+
+warm regards,
+
+l.
