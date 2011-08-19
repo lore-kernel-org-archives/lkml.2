@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1HSLbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:31:40 -0400
-Received: from fsing.rootsland.net ([62.141.37.30]:54054 "EHLO
-	fsing.rootsland.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab1HSLbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:31:39 -0400
-X-DKIM: OpenDKIM Filter v2.1.3 fsing.rootsland.net 23EC712FC81E9
-Date: Fri, 19 Aug 2011 13:31:32 +0200
-From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #40282] IP forwarding regression since 3.0-rc6
-Message-ID: <20110819T132841.GA.a087a.stse@fsing.rootsland.net>
-Mail-Followup-To: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Kernel Testers List <kernel-testers@vger.kernel.org>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Florian Mickler <florian@mickler.org>
-References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
- <bkwpSnItbJM.A.r-H.mMCSOB@chimera>
+	id S1753309Ab1HSLiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:38:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43360 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab1HSLiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 07:38:10 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <tom.leiming@gmail.com>, <toddpoynor@google.com>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v6] mfd: omap: usb: Runtime PM support for EHCI and OHCI drivers
+Date: Fri, 19 Aug 2011 17:04:01 +0530
+Message-ID: <1313753646-29089-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
-Content-Disposition: inline
-In-Reply-To: <bkwpSnItbJM.A.r-H.mMCSOB@chimera>
-Organization: Minas Tirith, Gondor
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
---YiEDa0DAkWCtVeE4
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The Hwmod structures and Runtime PM features are implemented
+For EHCI and OHCI drivers of OMAP3 and OMAP4.
+The global suspend/resume of EHCI and OHCI
+is validated on OMAP3430 sdp board with these patches.
 
-On Sun, Aug 14, 2011 at 09:07:36PM +0200, Rafael J. Wysocki wrote:
->This message has been generated automatically as a part of a report
->of regressions introduced between 2.6.39 and 3.0.
->
->The following bug entry is on the current list of known regressions
->introduced between 2.6.39 and 3.0.  Please verify if it still should
->be listed and let the tracking team know (either way).
->
->
->Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D40282
->Subject		: IP forwarding regression since 3.0-rc6
->Submitter	: Stephan Seitz <stse+lkml@fsing.rootsland.net>
->Date		: 2011-07-25 12:51 (21 days old)
->Message-ID	: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
->References	: http://marc.info/?l=3Dlinux-kernel&m=3D131159880004908&w=3D2
+these patches are rebased to kevin's pm branch and
+usbhs latest mainline kernel patches
 
-It seems the bug has been completely fixed in kernel 3.0.3. At least=20
-I don=E2=80=99t have any problems anymore. So I think the bug can be closed.
+TODO:
+     - Aggressive clock cutting in usb bus suspends
+     - Remote Wakeup implementation using irq-chaining
 
-Thank you all for helping and fixing the bug.
 
-Shade and sweet water!
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
 
-	Stephan
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  mfd: omap: usb: Runtime PM support
 
---=20
-| Stephan Seitz             E-Mail: stse@fsing.rootsland.net |
-| PGP Public Keys: http://fsing.rootsland.net/~stse/pgp.html |
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  279 +++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  244 +++++++++
+ arch/arm/mach-omap2/usb-host.c             |  114 ++---
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |  733 +++++++++++-----------------
+ drivers/usb/host/ehci-omap.c               |   17 +-
+ drivers/usb/host/ohci-omap3.c              |   18 +-
+ 9 files changed, 886 insertions(+), 558 deletions(-)
 
---YiEDa0DAkWCtVeE4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk5OSZQACgkQXse+NwPOAZ6WZwCffX0wR5LRvAKrrOpQjriR8dXC
-r3AAn3a+JTlcl/ejh8YxdPHUc9F5uW1P
-=I7Ae
------END PGP SIGNATURE-----
-
---YiEDa0DAkWCtVeE4--
