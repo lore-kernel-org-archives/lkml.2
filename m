@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab1HSMQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:16:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50542 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab1HSMQJ (ORCPT
+	id S1753913Ab1HSMRp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:17:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47828 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1HSMRn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:16:09 -0400
+	Fri, 19 Aug 2011 08:17:43 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Yang Rui Rui" <ruirui.r.yang@tieto.com>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sergei Shtylyov" <sshtylyov@mvista.com>,
+        "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Ruirui R" <ruirui.r.yang@tietoenator.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] usb: gadget: get rid of USB_GADGET_DUALSPEED and
+ USB_GADGET_SUPERSPEED
+References: <Pine.LNX.4.44L0.1108181055240.1912-100000@iolanthe.rowland.org>
+ <op.v0e5q6pyvgw7ix@mnazarewicz-glaptop> <4E4DC418.8050009@tieto.com>
+Date: Fri, 19 Aug 2011 14:17:40 +0200
 MIME-Version: 1.0
-In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-Date: Fri, 19 Aug 2011 13:16:08 +0100
-Message-ID: <CAPweEDw0ueS6Pku7jtiHjC55e9XVEXE92L2qo098iNcTw_bFRg@mail.gmail.com>
-Subject: Re: ARM promising platform, needs to learn from PC.
-From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v0gm3q043l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <4E4DC418.8050009@tieto.com>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At some point, in a random thread, a highly respected but very
-depressed ARM linux kernel developer wrote:
+> On 08/19/2011 01:05 AM, Michal Nazarewicz wrote:
+>> For the most part, usb_composite_probe() is called only once in module's
+>> init function.  As far as I know, only g_ffs calls it several times.  So
+>> in all cases expect for g_ffs, composite_driver.speed =
+>> min(composite_driver.speed,
+>> driver->max_speed) should have the same effect as composite_driver.speed
+>> = driver->max_speed.
 
-> What's the way out of this?  I've no idea.  Can ARM continue being part
-> of the mainline kernel?  I've no idea.  Will we be ripping out all the
-> ARM platform code from the mainline kernel?  I've no idea.
+On Fri, 19 Aug 2011 04:02:00 +0200, Yang Rui Rui <ruirui.r.yang@tieto.com>  
+wrote:
+> For original code, ifndef CONFIG_USB_GADGET_SUPERSPEED and max_speed =  
+> USB_SPEED_SUPER then the result will be:
+>
+> composite_driver.speed = min(USB_SPEED_HIGH, USB_SPEED_SUPER)
+>
+> For patched code, composite_driver.speed = USB_SPEED_SUPER
 
-> I am now completely demotivated.
+OK, I see your point.  This is the issue that we are discussing in another
+“branch” of the thread.  It seems either usb_gadget_driver_probe() should
+make sure driver->speed is not too high or each UDC need to handle gadgets
+which support speed higher then the UDC can handle.
 
-dear russell,
-
-the purpose of the proposed "selfish is out, collaboration is in"
-patch rule is ultimately to allow you to feel that what you're doing
-is actually encouraging people to cooperate and help each other - the
-complete opposite of the present situation.
-
-right now, you're being massively taken advantage of.  not by your
-peers, but by pathological cancerous Corporations who expect you to
-clean up their mess and do unpaid work for them, so that they can make
-absolute maximum profits.
-
-i'd say you were absolutely within perfectly reasonable rights to tell
-everyone to f*** off until there is a solution, and the only puzzling
-question i have to ask is why in god's name have you tolerated things
-for so long?? :)
-
-can i therefore respectfully ask for your thoughts on the proposed
-rule (and in particular, on the examples which help clarify matters)?
-is it pure bullshit, or what?
-
-warm regards,
-
-l.
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
