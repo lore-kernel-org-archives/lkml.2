@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1HSGeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 02:34:06 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:56657 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab1HSGeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 02:34:02 -0400
-X-ASG-Debug-ID: 1313735641-03d6a510a82f4580001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E4E03D5.40404@fusionio.com>
-Date: Fri, 19 Aug 2011 08:33:57 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: "teravest@google.com" <teravest@google.com>,
-        lkml <linux-kernel@vger.kernel.org>, "Shi, Alex" <alex.shi@intel.com>
-Subject: Re: cfq-iosched: a regression
-References: <1313462826.27321.22.camel@sli10-conroe>
-X-ASG-Orig-Subj: Re: cfq-iosched: a regression
-In-Reply-To: <1313462826.27321.22.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1313735641
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.72191
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1751557Ab1HSGvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 02:51:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:55720 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1HSGvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 02:51:13 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-f4-4e4e07df8c75
+Date: Fri, 19 Aug 2011 15:51:11 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH] ARM:EXYNOS4: Add the missing clock of EXYNOS4210 to remove
+ leakage power
+In-reply-to: <4E425573.30408@samsung.com>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>, dg77.kim@samsung.com
+Message-id: <002701cc5e3c$61a16e80$24e44b80$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcxXQ7sU10ZTRbvDT0660e/e5TItkwGWa/7g
+References: <4E425573.30408@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-16 04:47, Shaohua Li wrote:
-> We have a kernel build regression since 3.1-rc1, which is about 10%
-> regression. The kernel source is in an ext3 filesystem.
-> Alex Shi bisect it to commit:
-> commit a07405b7802691d29ab3b23bdc76ee6d006aad0b
-> Author: Justin TerAvest <teravest@google.com>
-> Date:   Sun Jul 10 22:09:19 2011 +0200
+Chanwoo Choi wrote:
 > 
->     cfq: Remove special treatment for metadata rqs.
+> Singed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Singed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos4/clock.c                 |  295
+> +++++++++++++++++++++++++
+>  arch/arm/mach-exynos4/include/mach/regs-pmu.h |    6 +
+>  2 files changed, 301 insertions(+), 0 deletions(-)
+>  mode change 100644 => 100755 arch/arm/mach-exynos4/clock.c
 > 
-> Apparently this is caused by lack metadata preemption, where ext3/ext4
-> do use READ_META. I didn't see a way to fix the issue, so suggest
-> reverting the patch.
-> 
-> Reported-by: Alex Shi<alex.shi@intel.com>
-> Reported-by: Shaohua Li<shaohua.li@intel.com>
+NO. don't change the mode :(
 
-I had a gut feeling on that meta data, it's hard to know exactly where
-it helps at this point. I'll revert the commit and then we can diagnose
-this on the side.
+And I don't think we _really_ need to add all clocks if they will not be used anywhere in kernel. If it is required, please turn off the clocks in boot loader.
 
--- 
-Jens Axboe
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
