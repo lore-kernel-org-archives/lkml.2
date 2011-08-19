@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab1HSLIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:08:31 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35050 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab1HSLI2 (ORCPT
+	id S1753061Ab1HSLLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:11:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33849 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752343Ab1HSLLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:08:28 -0400
-Subject: Re: [kernel.org users] [KORG] Taking hera down to deal with the
- load issues
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: warthog9@kernel.org, linux-kernel@vger.kernel.org, users@kernel.org
-In-Reply-To: <20110818.221433.2023110799070604982.davem@davemloft.net>
-References: <4E4AFCFC.9020008@kernel.org>	<4E4B7664.9070301@kernel.org>
-	 <20110818.221433.2023110799070604982.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Aug 2011 07:08:23 -0400
-Message-ID: <1313752103.3243.33.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 07:11:19 -0400
+Date: Fri, 19 Aug 2011 12:10:54 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ian Campbell <ijc@hellion.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "tim@xen.org" <tim@xen.org>
+Subject: Re: [PATCH v7 09/16] ARM: LPAE: MMU setup for the 3-level page
+ table format
+Message-ID: <20110819111054.GC6558@e102109-lin.cambridge.arm.com>
+References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+ <1312988619-16804-10-git-send-email-catalin.marinas@arm.com>
+ <1313749557.5010.345.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313749557.5010.345.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 22:14 -0700, David Miller wrote:
-> From: "J.H." <warthog9@kernel.org>
-> Date: Wed, 17 Aug 2011 01:05:56 -0700
+On Fri, Aug 19, 2011 at 11:25:57AM +0100, Ian Campbell wrote:
+> On Wed, 2011-08-10 at 16:03 +0100, Catalin Marinas wrote:
+> > +/*
+> > + *     cpu_v7_set_pte_ext(ptep, pte)
+> > + *
+> > + *     Set a level 2 translation table entry.
+> > + *
+> > + *     - ptep  - pointer to level 2 translation table entry
+> > + *               (hardware version is stored at +2048 bytes)
 > 
-> > This second kernel is at least, so far, acting a lot closer to what I'd
-> > expect from hera, but the disk cache is still filling.  I'm going to
-> > keep an eye on it for a bit longer tonight.  As a note, the only
-> > difference between the first 3.1-rc1 kernel and the second, that is
-> > currently running, was the explicit disabling of IMA and recompiling the
-> > kernel.
+> +2048 thing not true for LPAE?
 > 
-> I wonder if the IMA bits are generating crypto hashes for every file
-> modification done on the machine.
+> > + *     - pte   - PTE value to store
+> > + *     - ext   - value for extended PTE bits
+> 
+> "ext" is not actually present/used in this variant, rather pte is split
+> between r1 and r2?
 
-Possibly, but IMA doesn't recalculate the hash for every modification.
-Without the boot command line parameter 'ima_tcb', nothing should be
-measured.  With 'ima_tcb', only files accessed by root are measured and
-then only re-measured, if flushed from the inode cache or has been
-marked changed, which occurs on __fput(), not every write.
+Yes, you are right, the comments have just been copied from proc-v7.S.
+I'll go through them again make sure they are still valid.
 
-thanks,
+> > + */
+> > +ENTRY(cpu_v7_set_pte_ext)
+> > +#ifdef CONFIG_MMU
+> > +       tst     r2, #L_PTE_PRESENT
+> > +       beq     1f
+> > +       tst     r3, #1 << (55 - 32)             @ L_PTE_DIRTY
+> > +       orreq   r2, #L_PTE_RDONLY
+> > +1:     strd    r2, r3, [r0]
+> 
+> AIUI this 64-bit store is not atomic. Is there something about the ARM
+> architecture which would prevent the MMU prefetching the half written
+> entry and caching it in the TLB?
 
-Mimi
+CPU implementations that include LPAE guarantee the atomicity of a
+double-word store (STRD) if the alignment is correct.
 
+Thanks.
+
+-- 
+Catalin
