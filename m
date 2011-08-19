@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab1HSQsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:48:05 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57311 "EHLO
+	id S1756520Ab1HSQsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:48:10 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57335 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756374Ab1HSQrw (ORCPT
+	by vger.kernel.org with ESMTP id S1756499Ab1HSQr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:52 -0400
+	Fri, 19 Aug 2011 12:47:58 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2 20/43] OpenRISC: Don't reimplement force_sigsegv()
-Date: Fri, 19 Aug 2011 17:46:36 +0100
-Message-Id: <1313772419-21951-21-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
+        Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>
+Subject: [PATCH v2 24/43] parisc: Use set_current_blocked() and block_sigmask()
+Date: Fri, 19 Aug 2011 17:46:40 +0100
+Message-Id: <1313772419-21951-25-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -23,37 +24,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Instead of open coding the sequence from force_sigsegv() just call
-it. This also fixes a bug because we were modifying ka->sa.sa_handler
-(which is a copy of sighand->action[]), whereas the intention of the
-code was to modify sighand->action[] directly.
+As described in e6fa16ab ("signal: sigprocmask() should do
+retarget_shared_pending()") the modification of current->blocked is
+incorrect as we need to check whether the signal we're about to block
+is pending in the shared queue.
 
-As the original code was working with a copy it had no effect on
-signal delivery.
+Also, use the new helper function block_sigmask() which centralises
+the code for updating current->blocked after successfully delivering a
+signal and reduces the amount of duplicate code across
+architectures. In the past some architectures got this code wrong, so
+using this helper function should stop that from happening again.
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/openrisc/kernel/signal.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
-index 5f759c7..c023db9 100644
---- a/arch/openrisc/kernel/signal.c
-+++ b/arch/openrisc/kernel/signal.c
-@@ -257,9 +257,7 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	return;
+v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
+for adding sigmask to current->blocked" so they need to go through the
+same tree but this patch would benefit from some maintainer ACK's.
+
+ arch/parisc/kernel/signal.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
+index 12c1ed3..bd36152 100644
+--- a/arch/parisc/kernel/signal.c
++++ b/arch/parisc/kernel/signal.c
+@@ -131,10 +131,7 @@ sys_rt_sigreturn(struct pt_regs *regs, int in_syscall)
+ 	}
+ 		
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->blocked = set;
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	set_current_blocked(&set);
  
- give_sigsegv:
--	if (sig == SIGSEGV)
--		ka->sa.sa_handler = SIG_DFL;
--	force_sig(SIGSEGV, current);
-+	force_sigsegv(sig, current);
- }
+ 	/* Good thing we saved the old gr[30], eh? */
+ #ifdef CONFIG_64BIT
+@@ -454,12 +451,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 	if (!setup_rt_frame(sig, ka, info, oldset, regs, in_syscall))
+ 		return 0;
  
- static inline void
+-	spin_lock_irq(&current->sighand->siglock);
+-	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&current->blocked,sig);
+-	recalc_sigpending();
+-	spin_unlock_irq(&current->sighand->siglock);
++	block_sigmask(ka, sig);
+ 
+ 	tracehook_signal_handler(sig, info, ka, regs, 
+ 		test_thread_flag(TIF_SINGLESTEP) ||
 -- 
 1.7.4.4
 
