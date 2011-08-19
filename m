@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1HSXpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 19:45:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50499 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab1HSXpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 19:45:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,253,1312182000"; 
-   d="scan'208";a="9117955"
-Date: Sat, 20 Aug 2011 01:47:43 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Robert Schwebel <rsc@pengutronix.de>
-Subject: Re: [PATCH] mfd wm8350: rename static gpio_set_debounce()
-Message-ID: <20110819234743.GC3319@sortiz-mobl>
-References: <20110810080549.GX31404@pengutronix.de>
- <20110819095326.GB22865@pengutronix.de>
- <20110819215819.GA3772@opensource.wolfsonmicro.com>
+	id S1756604Ab1HSX6W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 19:58:22 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:42844 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab1HSX6V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 19:58:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110819215819.GA3772@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [91.17.207.25]
+From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Date: Sat, 20 Aug 2011 01:51:49 +0200
+Message-ID: <CANvSZQ804KZWhPG4JvzOPtkC02ibD6YmRnUvHCEhLB8DKEo7LQ@mail.gmail.com>
+Subject: [bug] ext{3,4}: __find_get_block_slow() failed on 3.0.3
+To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 10:58:19PM +0100, Mark Brown wrote:
-> On Fri, Aug 19, 2011 at 11:53:26AM +0200, Uwe Kleine-König wrote:
-> 
-> > Can you please apply this patch? Even though it works around something
-> > ugly (IMHO), it fixes a build failure on arm/imx. (Not on a vanilla
-> > defconfig though.)
-> 
-> Samuel generally only applies patches about once a month or so.
-Actually once every 2 weeks, usually :) I will be catching up with my mfd
-patches backlog this weekend.
+Hi there,
 
-Cheers,
-Samuel.
+while rsyncing a large amount (> 1TB) of data from an ext3 to an ext4
+on my machine [1], I encountered an issue where rsync and syslog
+eventually started consuming 100% CPU and my syslog was flooded [2]
+with error messages:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+-- 8< --
+> kernel: [101543.047293] b_state=0x00000029, b_size=>[10ock01543.04>[101543.047321] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
+> kernel: [101543.047330] b_state=0x00000029, b_size=4096
+> kernel: [101543.047>[10ock01543.047348] b_state=0x00000029, b_size=4096
+> kernel: [101543.047353] device blocksize: 4096
+> kernel: [101543.047359] __find_get_block_slow() failed. block=328204473, b01543.0>[10ock01543.047>[1ock01543.047404] b_state=0x00000029, b_size=4096
+> kernel: [101543.047409] device blocksize: 4096
+> kernel: [101543.047414] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
+> kernel: [10154ock01543.0>[1ock01543.0492>[1ock01543.0492>[1ock01543.049>[1ock01543.0492>[1ock01543.0>[1ock01543.049>[1ock01543.049>[1ock01543.0492>[10ock01543.0>[1ock=01543.04>[1ock01543.>[1ock01543.0493>[1ock01543.049>[1ock01543.04>[1ock01543.0493>[1ock01543.04941>[1ock01543.0494>[1ock01543.0>[1ock01543.049>[10ock01543.0>[1ock01543.04>[1ock01543.04>[1ock01543.0495>[1ock01543.0495>[1ock01543.0495>[1ock01543.0496>[1ock01543.04>[1ock01543.04>[1ock01543.049>[1ock01543.049>[1ock01543.04>[1ock01543.0497>[1ock01543.0>[1ock01543.0497>[1ock01543.0497>[1ock01543.0498>[1ock01543.0498>[1ock01543.04>[1ock01543.04>[1ock01543.0498>[1ock01543.0498>[1ock01543.0499>[1ock01543.0499>[1ock01543.04>[101543.049967] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
+> kernel: [101543.049975] b_state=0x00000029, b_size=4096
+> kernel: [101543.049980] device blocksize: 4096
+> kernel: [101543.049986] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
+-- 8< --
+
+These are not preceded by any other error messages (about possible FS
+inconsistencies) as has been the case in the past when bugs related to
+this error message were reported.
+
+Judging by the block size, the possibly corrupt volume is the ext3 one
+(the ext4 volume has a block size of 2048).
+
+A forced fsck.ext{3,4} of the source and target partitions did not
+show any inconsistencies.
+
+Any ideas?
+
+Thanks,
+Thilo
+
+[1] Linux andromeda 3.0.3-030003-generic #201108180913 SMP Thu Aug 18
+09:15:59 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+[2] /var/log/kern.log grew to 200 MB just while shutting down the system
