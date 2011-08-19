@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1HSL7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:59:06 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:39923 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab1HSL7C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:59:02 -0400
+	id S1753630Ab1HSMAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:00:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668Ab1HSMAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:00:07 -0400
+Message-ID: <4E4E503B.3050406@redhat.com>
+Date: Fri, 19 Aug 2011 13:59:55 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110709102337.GD9247@sirena.org.uk>
-References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTi=r=N5OwfsVLRuBsNRSpv91pTgeKA@mail.gmail.com>
-	<20110709102337.GD9247@sirena.org.uk>
-Date: Fri, 19 Aug 2011 13:59:00 +0200
-Message-ID: <CACRpkdaqHcY_phZouGn5dJWzF3FKXuP_4Fn-EJZFivrnQRrnKg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] drivers: create a pinmux subsystem v3
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Persson <martin.persson@stericsson.com>,
-        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
-        Linaro Dev <linaro-dev@lists.linaro.org>,
-        linux-arm-kernel@lists.infradead.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "David S. Miller" <davem@davemloft.net>, containers@lists.osdl.org
+Subject: Re: [dm-devel] clone() with CLONE_NEWNET breaks kobject_uevent_env()
+References: <4E4CDF44.5080109@redhat.com> <m17h69sr03.fsf@fess.ebiederm.org> <4E4E395B.7070106@redhat.com> <m1liup4oes.fsf@fess.ebiederm.org>
+In-Reply-To: <m1liup4oes.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.2.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 9, 2011 at 12:23 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Jun 13, 2011 at 01:57:36PM -0600, Grant Likely wrote:
->> On Mon, Jun 13, 2011 at 10:58 AM, Linus Walleij
+On 08/19/2011 01:43 PM, Eric W. Biederman wrote:
+> Milan Broz <mbroz@redhat.com> writes:
+> 
+>> On 08/19/2011 11:13 AM, Eric W. Biederman wrote:
+>>> Milan Broz <mbroz@redhat.com> writes:
+>>>
+>>> I think the proper fix is to remove the error return from
+>>> kobject_uevent_env and kobject_uevent, and make it harder to get calling
+>>> of this function wrong.  Possibly in conjunction with that tag all of
+>>> the memory allocations of kobject_uevent_env with GFP_NOFAIL or
+>>> something so the memory allocator knows that this path is totally
+>>> not able to deal with failure.
+>>>
+>>> Is kobject_uevent_env anything except an asynchronous best effort
+>>> notification to user-space that a device has come or gone?
 >>
->> I would *strongly* recommend against individual device drivers
->> accessing the pinmux api.  This is system level configuration code,
->> and should be handled at the system level.
->
-> There can also be advantages to putting the pin into the designed mode
-> without the driver being loaded from the electrical point of view.  For
-> example, selecting appropriate pull values for pads can cut down on
-> power consumption.
+>> Unfortunately it is for device-mapper. libdevmapper
+>> depends on information that uevent was sent because udev rules uses
+>> semaphore to inform that some action was taken.
+>> So if dm-ioctl returns flag that uevent was not sent, it fallback
+>> to different error path (otherwise it waits for completion forever).
+>> (TBH I am more and more convinced this was not quite clever concept.)
+> 
+> If I understand your description and the code right the guarantee that
+> you need is that kobject_uevent will return success only if it has
+> queued a packet in every listening netlink socket.
 
-Since the pin control subsystem is reference counting wrt
-mux settings, one does not exclude the other. So for
-example a driver may or may not grab a certain set-up of pins
-and the core platform may do the same, but when they start to
-request different conflicting things the subsystem will complain,
-as is apropriate.
+I think so. IOW success == event was sent to all active listeners.
 
-So this is a very pure driver framework, without policy, it just
-does what it's told, and will prevent undefined and impossible
-settings. Atleast that's the idea.
+> We already ignore ENOBUFS so the guarantee you appear to need in
+> libdevmapper does not appear to be present in kobject_uevent.
+> 
+> Does the libdevmapper code work despite getting a spurious failure?
 
-Thanks,
-Linus Walleij
+BTW I do not see ENOBUFS but ESRCH (from netlink_broadcast_filtered).
+
+If spurious failure is that event is sent (even partially) but it reports
+failure, it is the exact situation I see now - libdevmapper will try
+to decrement system semaphore which is already removed from udev rules.
+
+Final state is correct, just it prints ugly warnings. IOW it recovers
+from this situation correctly.
+
+But Kay's suggestion to use netlink_has_listeners() seems like good
+idea. IOW if there is no listener, it should skip quietly and not
+fail the whole call...
+
+Milan
