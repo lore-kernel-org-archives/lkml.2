@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab1HSQmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:42:36 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62195 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab1HSQme (ORCPT
+	id S1752105Ab1HSQoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:44:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51909 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707Ab1HSQoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:42:34 -0400
-Date: Fri, 19 Aug 2011 13:43:06 -0300
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, oleg@redhat.com, Marcel Holtmann <marcel@holtmann.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, wwang <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 02/16] freezer: don't unnecessarily set PF_NOFREEZE
- explicitly
-Message-ID: <20110819164306.GA24573@joana>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, menage@google.com,
-	linux-kernel@vger.kernel.org, arnd@arndb.de, oleg@redhat.com,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	wwang <wei_wang@realsil.com.cn>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org>
- <1313763382-12341-3-git-send-email-tj@kernel.org>
+	Fri, 19 Aug 2011 12:44:17 -0400
+Date: Fri, 19 Aug 2011 20:44:12 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] power_supply: fix unterminated platform_device_id table
+ for max8997_charger and max8998_charger
+Message-ID: <20110819164412.GF22761@oksana.dev.rtsoft.ru>
+References: <25685223.241031312165079264.JavaMail.weblogic@epml15>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1313763382-12341-3-git-send-email-tj@kernel.org>
+In-Reply-To: <25685223.241031312165079264.JavaMail.weblogic@epml15>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-
-* Tejun Heo <tj@kernel.org> [2011-08-19 16:16:08 +0200]:
-
-> Some drivers set PF_NOFREEZE in their kthread functions which is
-> completely unnecessary and racy - some part of freezer code doesn't
-> consider cases where PF_NOFREEZE is set asynchronous to freezer
-> operations.
+On Mon, Aug 01, 2011 at 02:18:00AM +0000, MyungJoo Ham wrote:
+> Sender : Axel Lin<axel.lin@gmail.com>
+> Date : 2011-08-01 08:23 (GMT+09:00)
+> > The platform_device_id table is supposed to be zero-terminated.
+> >
+> > Signed-off-by: Axel Lin 
+> > ---
+> > drivers/power/max8997_charger.c |    1 +
+> > drivers/power/max8998_charger.c |    1 +
+> > 2 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> In general, there's no reason to allow setting PF_NOFREEZE explicitly.
-> Remove them and change the documentation to note that setting
-> PF_NOFREEZE directly isn't allowed.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: wwang <wei_wang@realsil.com.cn>
-> ---
->  Documentation/power/freezing-of-tasks.txt |    2 +-
->  drivers/bluetooth/btmrvl_main.c           |    2 --
->  drivers/mfd/twl4030-irq.c                 |    3 ---
->  drivers/mfd/twl6030-irq.c                 |    2 --
->  drivers/staging/rts_pstor/rtsx.c          |    2 --
->  5 files changed, 1 insertions(+), 10 deletions(-)
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
+Applied, thanks!
 
-	Gustavo
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
