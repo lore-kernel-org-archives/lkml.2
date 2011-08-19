@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab1HSNE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:04:29 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:3761 "EHLO sjogate2.atmel.com"
+	id S1752622Ab1HSNHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:07:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37143 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751277Ab1HSNE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:04:28 -0400
-Message-ID: <4E4E5F52.7070605@atmel.com>
-Date: Fri, 19 Aug 2011 15:04:18 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.20) Gecko/20110804 Lightning/1.0b2 Thunderbird/3.1.12
+	id S1751277Ab1HSNHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:07:51 -0400
+Date: Fri, 19 Aug 2011 15:06:15 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [build breakage] Re: [GIT PULL] Btrfs pull round two
+Message-ID: <20110819130615.GA6307@kernel.org>
+References: <1312315404-sup-6084@shiny>
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-CC: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] dmaengine: at_hdmac fixes for next
-References: <4E4A7713.1070902@atmel.com> <1313758426.2336.2.camel@vkoul-udesk3>
-In-Reply-To: <1313758426.2336.2.camel@vkoul-udesk3>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312315404-sup-6084@shiny>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Fri, 19 Aug 2011 13:07:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 19/08/2011 14:53, Koul, Vinod :
-> On Tue, 2011-08-16 at 15:56 +0200, Nicolas Ferre wrote:
->> Vinod,
->>
->> Please pull from:
->>
->>   git://github.com/at91linux/linux-2.6-at91.git nfe/sdma_at_hdmac
->>
->> to receive latest updates for the Atmel at_hdmac dmaengine driver. Those changes are made on top of current linus' git tree (v3.1-rc2-59-g5bad33c).
->> The patches below have been discussed on the linux-arm-kernel mailing-list.
->>
->> Thanks,
->>
->> Nicolas Ferre (4):
->>       dmaengine: at_hdmac: replace spin_lock* with irqsave variants
->>       dmaengine: at_hdmac: improve power management routines
->>       dmaengine: at_hdmac: add wrappers for testing channel state
->>       dmaengine: at_hdmac: fix way to specify cyclic capability
->>
->>  drivers/dma/at_hdmac.c      |  159 +++++++++++++++++++++++++++++++++---------
->>  drivers/dma/at_hdmac_regs.h |   24 +++++++
->>  2 files changed, 149 insertions(+), 34 deletions(-)
->>
-> Hi Nicolas,
+
+* Chris Mason <chris.mason@oracle.com> wrote:
+
+> Hi everyone,
 > 
-> I tried to merge your branch, but I also get lot on unwanted commits :(
-> Looks like this branch is based on current Linus's tree, I typically
-> base my next on rc-X and not any random commit.
+> This has the rest of the btrfs cleanups for 3.1.  The bulk of this is
+> error handing fixes from SUSE and cleanups from Fujitsu.
 
-Yes, I am sorry for that and realize that it can be a mess for you... I
-will take the habit to cling to a -rcX for my pull requests.
+I havent seen a lkml mail of this pull request:
 
-> Either you can rebase to latest rc-X and I will merge, or since I
-> created a test branch I can extract your 4 patches and apply to my next.
+ 5c80c71b9a0e: Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable
 
-If you have a test branch close at hand you can extract my patches.
-Thanks for your help.
+so i'm following up on this earlier pull request.
 
-Best regards,
--- 
-Nicolas Ferre
+the aptly named btrfs-unstable branch indeed does not even build on 
+x86 defconfig (32-bit):
 
+   LD      .tmp_vmlinux1
+ fs/built-in.o: In function `btrfs_can_relocate':
+ (.text+0x1d6605): undefined reference to `__udivdi3'
+ make: *** [.tmp_vmlinux1] Error 1
+
+and given that most of the commits:
+
+81d86e1b7096: Merge branch 'btrfs-3.0' into for-linus
+f1e490a7ebe4: Btrfs: set i_size properly when fallocating and we already
+9a4327ca1f45: btrfs: unlock on error in btrfs_file_llseek()
+cb6db4e57632: btrfs: btrfs_permission's RO check shouldn't apply to device nodes
+f81c9cdc567c: Btrfs: truncate pages from clone ioctl target range
+0e588859618b: Btrfs: fix uninitialized sync_pending
+bb3ac5a4dfc8: Btrfs: fix wrong free space information
+f4ac904c411b: btrfs: memory leak in btrfs_add_inode_defrag()
+c97c2916e25c: Btrfs: use plain page_address() in header fields setget functions
+cb1b69f4508a: Btrfs: forced readonly when btrfs_drop_snapshot() fails
+cdcb725c05fe: Btrfs: check if there is enough space for balancing smarter
+38c01b960592: Btrfs: fix a bug of balance on full multi-disk partitions
+34f3e4f23ca3: Btrfs: fix an oops of log replay
+d5e2003c2bcd: Btrfs: detect wether a device supports discard
+93ee7a9340d6: Linux 3.1-rc2
+
+were committed after -rc2 and were at most a couple of hours old 
+before you sent them off to Linus, did you really expect any other 
+outcome than breaking upstream in trivial ways? :-)
+
+Thanks,
+
+	Ingo
