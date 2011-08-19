@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab1HSN2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:28:33 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16586 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab1HSN2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:28:22 -0400
+	id S1754827Ab1HSN26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:28:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25060 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab1HSN2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:28:47 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158238"
+   d="scan'208";a="159732274"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
-        Jie Yang <jie.yang@atheros.com>
-Subject: [PATCH 15/75] atlx: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:26:47 +0100
-Message-ID: <1313760467-8598-15-git-send-email-ian.campbell@citrix.com>
+        Rasesh Mody <rmody@brocade.com>, Debashis Dutt <ddutt@brocade.com>
+Subject: [PATCH 17/75] bna: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:49 +0100
+Message-ID: <1313760467-8598-17-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -26,31 +26,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jay Cliburn <jcliburn@gmail.com>
-Cc: Chris Snook <chris.snook@gmail.com>
-Cc: Jie Yang <jie.yang@atheros.com>
+Cc: Rasesh Mody <rmody@brocade.com>
+Cc: Debashis Dutt <ddutt@brocade.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/atlx/atl1.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/bna/bnad.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
-index 97e6954..995eb3c 100644
---- a/drivers/net/atlx/atl1.c
-+++ b/drivers/net/atlx/atl1.c
-@@ -2283,9 +2283,8 @@ static void atl1_tx_map(struct atl1_adapter *adapter, struct sk_buff *skb,
- 			buffer_info->length = (buf_len > ATL1_MAX_TX_BUF_LEN) ?
- 				ATL1_MAX_TX_BUF_LEN : buf_len;
- 			buf_len -= buffer_info->length;
--			buffer_info->dma = pci_map_page(adapter->pdev,
--				frag->page,
--				frag->page_offset + (i * ATL1_MAX_TX_BUF_LEN),
-+			buffer_info->dma = skb_frag_dma_map(&adapter->pdev->dev,
-+				frag, i * ATL1_MAX_TX_BUF_LEN,
- 				buffer_info->length, PCI_DMA_TODEVICE);
+diff --git a/drivers/net/bna/bnad.c b/drivers/net/bna/bnad.c
+index 8e35b25..7b8c21f 100644
+--- a/drivers/net/bna/bnad.c
++++ b/drivers/net/bna/bnad.c
+@@ -2622,8 +2622,8 @@ bnad_start_xmit(struct sk_buff *skb, struct net_device *netdev)
  
- 			if (++next_to_use == tpd_ring->count)
+ 		BUG_ON(!(size <= BFI_TX_MAX_DATA_PER_VECTOR));
+ 		txqent->vector[vect_id].length = htons(size);
+-		dma_addr = dma_map_page(&bnad->pcidev->dev, frag->page,
+-					frag->page_offset, size, DMA_TO_DEVICE);
++		dma_addr = skb_frag_dma_map(&bnad->pcidev->dev, frag,
++					    0, size, DMA_TO_DEVICE);
+ 		dma_unmap_addr_set(&unmap_q->unmap_array[unmap_prod], dma_addr,
+ 				   dma_addr);
+ 		BNA_SET_DMA_ADDR(dma_addr, &txqent->vector[vect_id].host_addr);
 -- 
 1.7.2.5
 
