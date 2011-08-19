@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab1HSLw6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:52:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59024 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab1HSLwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:52:45 -0400
-From: Abhilash K V <abhilash.kv@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        Vaibhav Hiremath <hvaibhav@ti.com>, Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH 1/2] AM3517EVM: Add support for base-board MMC slot
-Date: Fri, 19 Aug 2011 17:22:30 +0530
-Message-ID: <1313754751-11752-2-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
-References: <1313754751-11752-1-git-send-email-abhilash.kv@ti.com>
+	id S1754093Ab1HSLxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:53:36 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39979 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab1HSLxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 07:53:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+Date: Fri, 19 Aug 2011 12:53:30 +0100
+Message-ID: <CAPweEDwvTcFFrsWhjhaRgC+1YbwGthxQrd40mw9H6aLgXzJ1Jg@mail.gmail.com>
+Subject: Re: ARM promising platform, needs to learn from PC.
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+> I'm suggesting splitting out the crazy part into a separate project
+> that does this. Open-source. Like a mini-kernel.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
----
- arch/arm/mach-omap2/board-am3517evm.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ linus, i'm surprised, shocked even!  are you seriously proposing that
+the linux kernel be split into two, ooo, i dunno... something along
+the lines of a core and an OSKit v2.0?  the last time OSKit was
+created it didn't go down too well :)  but seriously: yes, i also came
+up with this idea, and, whilst it sounds like a great idea in
+principle, it is merely "moving the problem".
 
-diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
-index f3006c3..bea6da0 100644
---- a/arch/arm/mach-omap2/board-am3517evm.c
-+++ b/arch/arm/mach-omap2/board-am3517evm.c
-@@ -24,6 +24,7 @@
- #include <linux/i2c/pca953x.h>
- #include <linux/can/platform/ti_hecc.h>
- #include <linux/davinci_emac.h>
-+#include <linux/mmc/host.h>
- 
- #include <mach/hardware.h>
- #include <mach/am35xx.h>
-@@ -39,6 +40,7 @@
- 
- #include "mux.h"
- #include "control.h"
-+#include "hsmmc.h"
- 
- #define AM35XX_EVM_MDIO_FREQUENCY	(1000000)
- 
-@@ -460,6 +462,23 @@ static void am3517_evm_hecc_init(struct ti_hecc_platform_data *pdata)
- static struct omap_board_config_kernel am3517_evm_config[] __initdata = {
- };
- 
-+static struct omap2_hsmmc_info mmc[] = {
-+	{
-+		.mmc		= 1,
-+		.caps		= MMC_CAP_4_BIT_DATA,
-+		.gpio_cd	= 127,
-+		.gpio_wp	= 126,
-+	},
-+	{
-+		.mmc		= 2,
-+		.caps		= MMC_CAP_4_BIT_DATA,
-+		.gpio_cd	= 128,
-+		.gpio_wp	= 129,
-+	},
-+	{}      /* Terminator */
-+};
-+
-+
- static void __init am3517_evm_init(void)
- {
- 	omap_board_config = am3517_evm_config;
-@@ -487,6 +506,9 @@ static void __init am3517_evm_init(void)
- 
- 	/* MUSB */
- 	am3517_evm_musb_init();
-+
-+	/* MMC init function */
-+	omap2_hsmmc_init(mmc);
- }
- 
- MACHINE_START(OMAP3517EVM, "OMAP3517/AM3517 EVM")
--- 
-1.7.1
+ likewise with any other ideas such as allowing the linux kernel to be
+a userspace application (running under L4KA or other microkernel).
 
+ so i think you'll find that whilst such ideas are great in principle,
+they merely solve _your_ stress levels, not anyone else's :)
+
+> Because the thing is,
+> the main kernel doesn't care, and _shouldn't_ care. Those board files
+> are just noise.
+
+ yes, and they're necessary.  they link everything together, for the
+actual real-world manufacturer shipping the real-world customised
+one-of-a-kind mass-volume product, of which there are merely many many
+thousands if not millions of units sold.
+
+ yes, it initially sounded like i was arguing "in favour" of those...
+noisy-board-files, but you can see - if you read to the end of the
+sentence - i'm most certainly not.
+
+ this is where the "selfish patch is out, collaborative patches are
+in" rule would come into play.
+
+ under the proposed rule, such board files would *not* qualify.
+
+ however, if that board file was for a device that was part of a
+collaboration (such as: it was for the pandaboard, IMX53QSB, or its
+hardware CAD/CAM files were available under an OSI-Approved License),
+i would argue that it *should* qualify.
+
+ i've listed examples of each, in the FAQ.
+
+ it would be good to be able to clearly link each concrete example to
+a real-world case where linux developers have clearly gone "argggh!",
+to evaluate how effective the proposed "selfish is out, collaboration
+is in" rule would be.
+
+ l.
