@@ -1,124 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab1HSKRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 06:17:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58446 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1HSKRo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 06:17:44 -0400
-From: "Bhandiwad, Hrishikesh" <hrishikesh.b@ti.com>
-To: "Bhandiwad, Hrishikesh" <hrishikesh.b@ti.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Hiremath, Vaibhav" <hvaibhav@ti.com>, "Premi, Sanjeev" <premi@ti.com>
-Date: Fri, 19 Aug 2011 15:47:17 +0530
-Subject: RE: [PATCH v2] OMAP3: NAND: Adding NAND support and specifying NAND
- partitions.
-Thread-Topic: [PATCH v2] OMAP3: NAND: Adding NAND support and specifying
- NAND partitions.
-Thread-Index: AcxN7Rcenppx6jumQrSwPRIeKzi/xQQbBUeG
-Message-ID: <ADF30F4D7BDE934D9B632CE7D5C7ACA4047C4D08A0BA@dbde03.ent.ti.com>
-References: <1311943396-16710-1-git-send-email-hrishikesh.b@ti.com>
-In-Reply-To: <1311943396-16710-1-git-send-email-hrishikesh.b@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752800Ab1HSKXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 06:23:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751976Ab1HSKXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 06:23:02 -0400
+Message-ID: <4E4E395B.7070106@redhat.com>
+Date: Fri, 19 Aug 2011 12:22:19 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "David S. Miller" <davem@davemloft.net>, containers@lists.osdl.org
+Subject: Re: [dm-devel] clone() with CLONE_NEWNET breaks kobject_uevent_env()
+References: <4E4CDF44.5080109@redhat.com> <m17h69sr03.fsf@fess.ebiederm.org>
+In-Reply-To: <m17h69sr03.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.2.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-As this patch is trivial can it be upstreamed ?
-Thanks & Regards,
-Hrishikesh
-________________________________________
-From: Bhandiwad, Hrishikesh
-Sent: Friday, July 29, 2011 6:13 PM
-To: linux-mtd@lists.infradead.org; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
-Cc: Bhandiwad, Hrishikesh; Hiremath, Vaibhav; Premi, Sanjeev
-Subject: [PATCH v2] OMAP3: NAND: Adding NAND support and specifying NAND partitions.
+On 08/19/2011 11:13 AM, Eric W. Biederman wrote:
+> Milan Broz <mbroz@redhat.com> writes:
+> 
+> I think the proper fix is to remove the error return from
+> kobject_uevent_env and kobject_uevent, and make it harder to get calling
+> of this function wrong.  Possibly in conjunction with that tag all of
+> the memory allocations of kobject_uevent_env with GFP_NOFAIL or
+> something so the memory allocator knows that this path is totally
+> not able to deal with failure.
+> 
+> Is kobject_uevent_env anything except an asynchronous best effort
+> notification to user-space that a device has come or gone?
 
-This patch adds the NAND support on OMAP3EVM board and also allocates
-five partitions  on NAND.
-Referred to file: arch/arm/mach-omap2/board-omap3beagle.c
+Unfortunately it is for device-mapper. libdevmapper
+depends on information that uevent was sent because udev rules uses
+semaphore to inform that some action was taken.
+So if dm-ioctl returns flag that uevent was not sent, it fallback
+to different error path (otherwise it waits for completion forever).
+(TBH I am more and more convinced this was not quite clever concept.)
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Sanjeev Premi <premi@ti.com>
-Signed-off-by: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
----
- arch/arm/mach-omap2/board-omap3evm.c |   37 ++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+But the whole concept "send event to the list of namespaces, maybe someone listen"
+seems also not quite clever to me :-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-index b4d4346..3ac96d4 100644
---- a/arch/arm/mach-omap2/board-omap3evm.c
-+++ b/arch/arm/mach-omap2/board-omap3evm.c
-@@ -30,6 +30,9 @@
- #include <linux/usb/otg.h>
- #include <linux/smsc911x.h>
+How much time consuming is that? If you create thousand(s) of cloned namespaces,
+how it will perform with uevent notification performance?
+(IOW first event is sent through netlink and 999+ reports failure... strange.)
 
-+#include <linux/mtd/partitions.h>
-+#include <linux/mtd/nand.h>
-+
- #include <linux/wl12xx.h>
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/machine.h>
-@@ -101,6 +104,37 @@ static void __init omap3_evm_get_revision(void)
-        }
- }
-
-+static struct mtd_partition omap3evm_nand_partitions[] = {
-+       /* All the partition sizes are listed in terms of NAND block size */
-+       {
-+               .name           = "X-Loader",
-+               .offset         = 0,
-+               .size           = 4 * NAND_BLOCK_SIZE,
-+               .mask_flags     = MTD_WRITEABLE,        /* force read-only */
-+       },
-+       {
-+               .name           = "U-Boot",
-+               .offset         = 0x80000,
-+               .size           = 15 * NAND_BLOCK_SIZE,
-+               .mask_flags     = MTD_WRITEABLE,        /* force read-only */
-+       },
-+       {
-+               .name           = "U-Boot Env",
-+               .offset         = 0x260000,
-+               .size           = 1 * NAND_BLOCK_SIZE,
-+       },
-+       {
-+               .name           = "Kernel",
-+               .offset         = 0x280000,
-+               .size           = 32 * NAND_BLOCK_SIZE,
-+       },
-+       {
-+               .name           = "File System",
-+               .offset         = 0x680000,
-+               .size           = MTDPART_SIZ_FULL,
-+       },
-+};
-+
- #if defined(CONFIG_SMSC911X) || defined(CONFIG_SMSC911X_MODULE)
- #include <plat/gpmc-smsc911x.h>
-
-@@ -696,6 +730,9 @@ static void __init omap3_evm_init(void)
-
-        omap_serial_init();
-
-+       omap_nand_flash_init(NAND_BUSWIDTH_16, omap3evm_nand_partitions,
-+                       ARRAY_SIZE(omap3evm_nand_partitions));
-+
-        /* OMAP3EVM uses ISP1504 phy and so register nop transceiver */
-        usb_nop_xceiv_register();
-
---
-1.6.2.4
-
+Milan
