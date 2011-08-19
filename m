@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1HSLxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 07:53:36 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39979 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab1HSLxb (ORCPT
+	id S1754146Ab1HSLyC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 07:54:02 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:61311 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab1HSLyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 07:53:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
-Date: Fri, 19 Aug 2011 12:53:30 +0100
-Message-ID: <CAPweEDwvTcFFrsWhjhaRgC+1YbwGthxQrd40mw9H6aLgXzJ1Jg@mail.gmail.com>
-Subject: Re: ARM promising platform, needs to learn from PC.
-From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Aug 2011 07:54:00 -0400
+Subject: Re: [PATCH] writeback: Per-block device
+ bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Kautuk Consul <consul.kautuk@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Date: Fri, 19 Aug 2011 14:55:43 +0300
+In-Reply-To: <20110818131343.GA17473@localhost>
+References: <CAFPAmTSrh4r71eQqW-+_nS2KFK2S2RQvYBEpa3QnNkZBy8ncbw@mail.gmail.com>
+	 <20110818094824.GA25752@localhost> <1313669702.6607.24.camel@sauron>
+	 <20110818131343.GA17473@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1313754949.6607.52.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm suggesting splitting out the crazy part into a separate project
-> that does this. Open-source. Like a mini-kernel.
+On Thu, 2011-08-18 at 21:13 +0800, Wu Fengguang wrote:
+> Thinking twice about it, I find that the different requirements for
+> interval flash/external microSD can also be solved by this scheme.
+> 
+> Introduce a per-bdi dirty_background_time (and optionally dirty_time)
+> as the counterpart of (and works in parallel to) global dirty[_background]_ratio,
+> however with unit "milliseconds worth of data".
+> 
+> The per-bdi dirty_background_time will be set low for external microSD
+> and high for internal flash. Then you get timely writeouts for microSD
+> and reasonably delayed writes for internal flash (controllable by the
+> global dirty_expire_centisecs).
+> 
+> The dirty_background_time will actually work more reliable than
+> dirty_expire_centisecs because it will checked immediately after the
+> application dirties more pages. And the dirty_time could provide
+> strong data integrity guarantee -- much stronger than
+> dirty_expire_centisecs -- if used.
+> 
+> Does that sound reasonable?
 
- linus, i'm surprised, shocked even!  are you seriously proposing that
-the linux kernel be split into two, ooo, i dunno... something along
-the lines of a core and an OSKit v2.0?  the last time OSKit was
-created it didn't go down too well :)  but seriously: yes, i also came
-up with this idea, and, whilst it sounds like a great idea in
-principle, it is merely "moving the problem".
+Yes, this would probably work. But note, we do not have this problem
+anymore, I was just talking about the past experience, so I cannot
+validate any possible patch.
 
- likewise with any other ideas such as allowing the linux kernel to be
-a userspace application (running under L4KA or other microkernel).
+Thanks.
 
- so i think you'll find that whilst such ideas are great in principle,
-they merely solve _your_ stress levels, not anyone else's :)
+-- 
+Best Regards,
+Artem Bityutskiy
 
-> Because the thing is,
-> the main kernel doesn't care, and _shouldn't_ care. Those board files
-> are just noise.
-
- yes, and they're necessary.  they link everything together, for the
-actual real-world manufacturer shipping the real-world customised
-one-of-a-kind mass-volume product, of which there are merely many many
-thousands if not millions of units sold.
-
- yes, it initially sounded like i was arguing "in favour" of those...
-noisy-board-files, but you can see - if you read to the end of the
-sentence - i'm most certainly not.
-
- this is where the "selfish patch is out, collaborative patches are
-in" rule would come into play.
-
- under the proposed rule, such board files would *not* qualify.
-
- however, if that board file was for a device that was part of a
-collaboration (such as: it was for the pandaboard, IMX53QSB, or its
-hardware CAD/CAM files were available under an OSI-Approved License),
-i would argue that it *should* qualify.
-
- i've listed examples of each, in the FAQ.
-
- it would be good to be able to clearly link each concrete example to
-a real-world case where linux developers have clearly gone "argggh!",
-to evaluate how effective the proposed "selfish is out, collaboration
-is in" rule would be.
-
- l.
