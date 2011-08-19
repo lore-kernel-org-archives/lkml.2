@@ -1,211 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab1HSM4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:56:12 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:47235 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751421Ab1HSMzg (ORCPT
+	id S1752630Ab1HSNAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:00:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64558 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab1HSNAL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:55:36 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, <linux-doc@vger.kernel.org>,
-        Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 2/3] mmc: core: add random fault injection
-Date: Fri, 19 Aug 2011 14:52:37 +0200
-Message-ID: <1313758358-27536-3-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
-References: <1313758358-27536-1-git-send-email-per.forlin@stericsson.com>
- <1313758358-27536-2-git-send-email-per.forlin@stericsson.com>
+	Fri, 19 Aug 2011 09:00:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <201108191347.16990.florian@openwrt.org>
+References: <CAPweEDxwyB6BekTc8PqyVBeAkK3oMv1ZQ_ZX=zuta10OdCy5Kw@mail.gmail.com>
+	<201108191104.44422.florian@openwrt.org>
+	<CAPweEDyStyuHhkdswfnm1TiaEkQ69L90z_r=ytfqaqWXgrghzg@mail.gmail.com>
+	<201108191347.16990.florian@openwrt.org>
+Date: Fri, 19 Aug 2011 14:00:10 +0100
+Message-ID: <CAPweEDymi8UX2pyAwysTA3oOc9Hwjj6fyFKa4-hrEXpkSWr-1A@mail.gmail.com>
+Subject: Re: ARM promising platform, needs to learn from PC.
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+On Fri, Aug 19, 2011 at 12:47 PM, Florian Fainelli <florian@openwrt.org> wrote:
+> Hello,
 
-This adds support to inject data errors after a completed host transfer.
-The mmc core will return error even though the host transfer is successful.
-This simple fault injection proved to be very useful to test the
-non-blocking error handling in the mmc_blk_issue_rw_rq().
-Random faults can also test how the host driver handles pre_req()
-and post_req() in case of errors.
+ hii florian
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- drivers/mmc/core/core.c    |   41 +++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |   25 +++++++++++++++++++++++++
- include/linux/mmc/host.h   |    5 +++++
- lib/Kconfig.debug          |   11 +++++++++++
- 4 files changed, 82 insertions(+), 0 deletions(-)
+> On Friday 19 August 2011 12:57:38 Luke Kenneth Casson Leighton wrote:
+>> On Fri, Aug 19, 2011 at 10:04 AM, Florian Fainelli <florian@openwrt.org>
+> wrote:
+>> > Hello,
+>> >
+>> > On Friday 19 August 2011 04:02:33 Luke Kenneth Casson Leighton wrote:
+>> >> dear linus,
+>> >>
+>> >> i've written this up, including some examples in FAQ form that would
+>> >> and would not satisfy the proposed "selfish-is-out, cooperation-is-in"
+>> >> patch-acceptance rule, here:
+>> >> http://lkcl.net/linux/linux-selfish.vs.cooperation.html
+>> >>
+>> >> comments greatly appreciated, as would additional examples to add to the
+>> >> FAQ.
+>> >
+>> > Most of your examples, especially the RDC is example is just badly
+>> > chosen.
+>>
+>>  ok, that's good to hear - that's a valuable opinion to hear, on a
+>> work-in-progress, and i look forward to receiving positive
+>> contributions which help improve the document.  do you have any
+>> suggestions on how they might be improved?  or, do you have any other
+>> examples which might best fit?
+>
+> Most if not all of the x86 platforms that I know about (OLPC,
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 91a0a74..d704dfa 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -24,6 +24,8 @@
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
- #include <linux/suspend.h>
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -83,6 +85,43 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+/*
-+ * Internal function. Inject random data errors.
-+ * If mmc_data is NULL no errors are injected.
-+ */
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
-+
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error ||
-+	    !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-+}
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static inline void mmc_should_fail_request(struct mmc_host *host,
-+					   struct mmc_request *mrq)
-+{
-+}
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -109,6 +148,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
- 
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 998797e..5acd707 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -12,6 +12,7 @@
- #include <linux/seq_file.h>
- #include <linux/slab.h>
- #include <linux/stat.h>
-+#include <linux/fault-inject.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -158,6 +159,23 @@ static int mmc_clock_opt_set(void *data, u64 val)
- 	return 0;
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+
-+#ifdef KERNEL
-+/*
-+ * Internal function. Pass the boot param fail_mmc_request to
-+ * the setup fault injection attributes routine.
-+ */
-+static int __init setup_fail_mmc_request(char *str)
-+{
-+	return setup_fault_attr(&fail_mmc_request, str);
-+}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
-+#endif /* KERNEL */
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
- DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
- 	"%llu\n");
- 
-@@ -188,6 +206,13 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	host->fail_mmc_request = fail_mmc_request;
-+	if (IS_ERR(fault_create_debugfs_attr("fail_mmc_request",
-+					     root,
-+					     &host->fail_mmc_request)))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 1d09562..4c4bddf 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -12,6 +12,7 @@
- 
- #include <linux/leds.h>
- #include <linux/sched.h>
-+#include <linux/fault-inject.h>
- 
- #include <linux/mmc/core.h>
- #include <linux/mmc/pm.h>
-@@ -302,6 +303,10 @@ struct mmc_host {
- 
- 	struct mmc_async_req	*areq;		/* active async req */
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	struct fault_attr	fail_mmc_request;
-+#endif
-+
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c0cb9c4..1c7dbbf 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1070,6 +1070,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION && MMC
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful to test the error handling in the mmc block device
-+	  and to test how the mmc host driver handles retries from
-+	  the block device.
-+
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
--- 
-1.6.3.3
+ ah you mean the Geode LX :)  beautiful chip.  self-clocking, no power
+management needed.  amazing.
 
+> RDC, Moorestown,
+> CE4100 ...) are supported, and they introduced positive refactoring of the x86
+> code when they got submitted for inclusion.
+
+ yes.  ok.  i take it that the positive refactoring involved making
+lives easier for all maintainers involved? thus it would count as
+non-selfish collaboration, and would thus clearly and easily qualify
+under the proposed rule.
+
+>>
+>>  or, do you feel that the examples require further clarification, or
+>> perhaps references?
+>
+> Yes, definitively include references in your document.
+
+ ok.  i'm working on that.  i'm looking for one in amongst this lot:
+http://thread.gmane.org/gmane.linux.kernel/1114495/focus=112007
+
+ it's the one i spotted where someone said that there were drivers
+submitted by SoC manufacturers that, because the hard macro which he
+referred to as a "node" e.g. a USB-2 macro came from the exact same
+Silicon Design House, were exactly the same.  but because they were
+submitted by different SoC manufacturers, the code was (evidently)
+duplicated.
+
+>>  ... and there are multiple devices using the RDC-based SoCs, yes?
+>> not just one hardware device, yes?  therefore, under the
+>> "collaboration is ok" proposed rule, it's "in".
+>
+> Yes there are thousands of devices using that SoC out there.
+
+ then that would definitely count.  although, hypothetically, if those
+thousands of devices were all from the one hardware supplier (i know
+they're not in this case) then i would argue that it would not, on the
+basis that it was "selfish" and "self-centred" of that hardware
+supplier.
+
+ then again, as you can see, i give *another* example where, despite
+the selfish nature of the hardware supplier, it turns out that there
+are dozens if not hundreds of people, unrelated to that hardware
+supplier, who are collaborating and cooperating around that
+"selfishly-designed" device, and i would argue that any patches
+submitted by that community (or through the hardware supplier on
+behalf of that community) *should* be accepted, if sufficient evidence
+is presented which proves that collaboration and cooperation is taking
+place.
+
+ actually... funnily enough, many of the openwrt devices would qualify
+as this kind of example! :)  they're designed utterly selfishly (and
+usually GPL-violating), then Free Software Developers reverse-engineer
+them and re-create the linux kernel sources, for the benefit of
+others.
+
+ so it's not a hard-and-fast rule, it's very very loose and generic,
+aimed at turning the Linux Free Software Kernel _back_ into a
+collaborative project, instead of being a lackey and a punching-bag
+for a bunch of pathological corporations who sponge off of the
+goodwill of the Free Software Community.
+
+
+>> i tell you what - i'll put in an extra example (preceding it), which
+>> says "we are a SoC manufacturer, we have created a custom CPU, we have
+>> placed it into one and only one hardware design, and we are
+>> restricting the SoC to sole and exclusive use in that hardware.
+>> please accept our one-SoC, one-design linux kernel patches".  Answer:
+>> not a cat in hell's chance.
+>>
+>> is that sufficient explanation and clarification?
+>
+> That's definitively clearer and better.
+
+ ok good stuff.  added.
+
+ thanks florian.
+
+ l.
