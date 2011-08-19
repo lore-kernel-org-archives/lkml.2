@@ -1,45 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab1HSGUE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 02:20:04 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:54959 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849Ab1HSGUA (ORCPT
+	id S1752215Ab1HSGVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 02:21:39 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56890 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab1HSGVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 02:20:00 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Markus Rechberger <mrechberger@gmail.com>
-Subject: Re: [PATCH] Increase usbfs bulk buffer size
-Date: Fri, 19 Aug 2011 08:23:06 +0200
-User-Agent: KMail/1.13.5 (Linux/3.1.0-rc1-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <CA+O4pCKfWLP+ohfUVi811CRbmrb2FyoMwkmxxGJ1TF2kKtGDEA@mail.gmail.com> <201108171914.52257.oliver@neukum.org> <CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
-In-Reply-To: <CA+O4pCK3vZjZwM0D7Q0gzsTZRJC1PfzYvoVmq-g2jJQ=uP_6ug@mail.gmail.com>
+	Fri, 19 Aug 2011 02:21:38 -0400
+Message-ID: <4E4E00E3.7080306@linux.vnet.ibm.com>
+Date: Fri, 19 Aug 2011 11:51:23 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Michal Hocko <mhocko@suse.cz>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ying Han <yinghan@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Subject: Re: [PATCH V2 1/1][cleanup] memcg: renaming of mem variable to memcg
+References: <20110812070623.28939.4733.sendpatchset@oc5400248562.ibm.com> <20110817124339.GA10245@tiehlicka.suse.cz>
+In-Reply-To: <20110817124339.GA10245@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108190823.06638.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 17. August 2011, 19:44:16 schrieb Markus Rechberger:
-> I understand that USBFS is not 100% optimized, although we are already
-> using 3-4 times that much buffer with isochronous and it was working
-> fine for years so far as long as the system doesn't run out of memory
-> .. but even kerneldrivers would have issues with it in such a
-> situation.
+On 08/17/2011 06:13 PM, Michal Hocko wrote:
+> Sorry for late reply
+>
+> On Fri 12-08-11 12:36:23, Raghavendra K T wrote:
+>>   The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes uses
+>>   "struct mem_cgroup *memcg". This patch renames all mem variables to memcg in
+>>   source file.
+>>
+>> Testing : Compile tested with following configurations.
+>> 1) make defconfig ARCH=i386 + CONFIG_CGROUP_MEM_RES_CTLR=y
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
+>>
+>> Binary size Before patch
+>> ========================
+>>     text	   data	    bss	    dec	    hex	filename
+>> 8911169	 520464	1884160	11315793	 acaa51	vmlinux
+>>
+>> Binary Size After patch
+>> =======================
+>>     text	   data	    bss	    dec	    hex	filename
+>> 8911169	 520464	1884160	11315793	 acaa51	vmlinux
+>
+> It would be much nicer to see unchanged md5sum. I am not sure how much
+> possible is this with current gcc or whether special command line
+> parameters have to be used (at least !CONFIG_DEBUG_INFO* is necessary)
+> but simple variable rename shouldn't be binary visible.
+> I guess that a similar approach was used during 32b and 64b x86
+> unification.
+>
+I agree,  I could get same MD5 sum only in N N N config case (3rd config).
+  I am not sure whether we can get same Md5 after lines have been split.
+Here is what I tried: static KBUILD_BUILD_TIMESTAMP 
+KBUILD_BUILD_VERSION, initramfs source. strip vmlinux. (could not 
+disable CONFIG_BUG).
+I referred to 32nb 64b unification also, did not get much insight from 
+there on same MD5.
 
-The problem is not what happens on your test system dedicated to this use.
-There it'll work. But you allowed everybody else to make the kernel request
-the second largest chunk of memory there is. On a otherwise busy system
-with fragmented memory this is not good.
+>>
+>> 2) make defconfig ARCH=i386 + CONFIG_CGROUP_MEM_RES_CTLR=y
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=n
+>
+> I would assume the same testing results as above
+Yes
+8908671	 519808	1884160	11312639	 ac9dff	vmlinux
+>
+>>
+>> 3) make defconfig ARCH=i386  CONFIG_CGROUP_MEM_RES_CTLR=n
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=n CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=n
+>
+> ditto.
 
-As I said, you want scatter/gather if you need this.
-There still would be the problem with the API, but if this is really a problem,
-you could define a new ioctl()
+8878794	 517632	1880064	11276490	 ac10ca	vmlinux before and after
+>
+>>
+>> Other sanity check:
+>> Bootable configuration on x86 (T60p)  with  CONFIG_CGROUP_MEM_RES_CTLR=y
+>> CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED=y
+>> is tesed with basic mounting of memcgroup, creation of child and parallel fault.
+>> mkdir -p /cgroup
+>> mount -t cgroup none /cgroup -o memory
+>> mkdir /cgroup/0
+>> echo $$>  /cgroup/0/tasks
+>> time ./parallel_fault 2 100000 32
+>>
+>> real	0m0.025s
+>> user	0m0.001s
+>> sys	0m0.033s
+>
+> This looks like a random test. I wouldn't add it to the changelog.
+Agree.
 
-	Regards
-		Oliver
