@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab1HSR7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 13:59:55 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61769 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1HSR7y convert rfc822-to-8bit (ORCPT
+	id S1754006Ab1HSSB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 14:01:58 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41644 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751685Ab1HSSB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 13:59:54 -0400
+	Fri, 19 Aug 2011 14:01:57 -0400
+X-Sasl-enc: eeIhw04zy4G9opuUI5vR1fSSkII7TstOyu/X5jXYsd1s 1313776914
+Date: Fri, 19 Aug 2011 11:01:37 -0700
+From: Greg KH <greg@kroah.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mathieu.desnoyers@polymtl.ca,
+        laijs@cn.fujitsu.com, eric.dumazet@gmail.com, patches@linaro.org,
+        peterz@infradead.org, josh@joshtriplett.org, rostedt@goodmis.org,
+        stable@kernel.org, dhowells@redhat.com, darren@dvhart.com,
+        niv@us.ibm.com, tglx@linutronix.de, dipankar@in.ibm.com,
+        Valdis.Kletnieks@vt.edu, mingo@elte.hu, akpm@linux-foundation.org
+Subject: Re: [stable] [PATCH RFC tip/core/urgent] rcu: Avoid having
+ just-onlined CPU resched itself when RCU is idle
+Message-ID: <20110819180137.GA22040@kroah.com>
+References: <20110819163547.GA5182@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1313760467-8598-67-git-send-email-ian.campbell@citrix.com>
-References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
-	<1313760467-8598-67-git-send-email-ian.campbell@citrix.com>
-Date: Fri, 19 Aug 2011 18:59:53 +0100
-Message-ID: <CANK3SE2zOO2TwiF=vSrGRB=D6=MZdwMywe2mTkUBn56XJdPXfg@mail.gmail.com>
-Subject: Re: [PATCH 67/75] et131x: convert to SKB paged frag API.
-From: Mark Einon <mark.einon@gmail.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819163547.GA5182@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 August 2011 14:27, Ian Campbell <ian.campbell@citrix.com> wrote:
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Mark Einon <mark.einon@gmail.com>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: devel@driverdev.osuosl.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/staging/et131x/et1310_tx.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
+On Fri, Aug 19, 2011 at 09:35:47AM -0700, Paul E. McKenney wrote:
+> CPUs set rdp->qs_pending when coming online to resolve races with
+> grace-period start.  However, this means that if RCU is idle, the
+> just-onlined CPU might needlessly send itself resched IPIs.  Adjust the
+> online-CPU initialization to avoid this, and also to correctly cause
+> the CPU to respond to the current grace period if needed.
+> 
+> This patch is believed to fix or otherwise suppress problems in
+> https://bugzilla.redhat.com/show_bug.cgi?id=726877, however, the
+> relationship is not apparent to this patch's author.  That said, it is
+> hard to argue with test results.
+> 
+> This will be available from -rcu as soon as kernel.org's mirrors update:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> 
+> Reported-by: Nicolas Mailhot <nicolas.mailhot@laposte.net>
+> Reported-by: Michal Jaegermann <michal@harddata.com>
+> Reported-by: Josh Boyer <jwboyer@redhat.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Tested-by: Josh Boyer <jwboyer@redhat.com>
+> 
+>  rcutree.c |   11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
+> 
 
-Just a heads up - This patch is going to create some merge issues
-if/when the outstanding changes I've sent for inclusion in the staging
-tree get merged back.
-Should be fairly trivial to fix though.
+<formletter>
 
-Cheers,
-Mark
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
->
-> diff --git a/drivers/staging/et131x/et1310_tx.c b/drivers/staging/et131x/et1310_tx.c
-> index 8fb3051..03e7a4e 100644
-> --- a/drivers/staging/et131x/et1310_tx.c
-> +++ b/drivers/staging/et131x/et1310_tx.c
-> @@ -519,12 +519,12 @@ static int nic_send_packet(struct et131x_adapter *etdev, struct tcb *tcb)
->                         * returned by pci_map_page() is always 32-bit
->                         * addressable (as defined by the pci/dma subsystem)
->                         */
-> -                       desc[frag++].addr_lo =
-> -                           pci_map_page(etdev->pdev,
-> -                                        frags[i - 1].page,
-> -                                        frags[i - 1].page_offset,
-> -                                        frags[i - 1].size,
-> -                                        PCI_DMA_TODEVICE);
-> +                       desc[frag++].addr_lo = skb_frag_dma_map(
-> +                                                       &etdev->pdev->dev,
-> +                                                       &frags[i - 1],
-> +                                                       0,
-> +                                                       frags[i - 1].size,
-> +                                                       PCI_DMA_TODEVICE);
->                }
->        }
->
-> --
-> 1.7.2.5
->
->
+</formletter>
