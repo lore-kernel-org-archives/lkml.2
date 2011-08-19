@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1HSNPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:15:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52210 "EHLO mga01.intel.com"
+	id S1753360Ab1HSNQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:16:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762Ab1HSNP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:15:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,251,1312182000"; 
-   d="scan'208";a="43065191"
-Subject: Re: [GIT PULL] dmaengine: at_hdmac fixes for next
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E4E5F52.7070605@atmel.com>
-References: <4E4A7713.1070902@atmel.com>
-	 <1313758426.2336.2.camel@vkoul-udesk3>  <4E4E5F52.7070605@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Aug 2011 18:45:04 +0530
-Message-ID: <1313759704.2336.10.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751279Ab1HSNQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:16:36 -0400
+Date: Fri, 19 Aug 2011 15:13:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        roland@hack.frob.com, torvalds@linux-foundation.org
+Subject: Re: +
+	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+	.patch added to -mm tree
+Message-ID: <20110819131339.GB8411@redhat.com>
+References: <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com> <20110817134516.GA14136@redhat.com> <20110818124353.GA2839@tango.0pointer.de> <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop> <20110818184857.GA12094@redhat.com> <1313717521.991.4.camel@mop> <20110819122503.GA8411@redhat.com> <CAPXgP11KC2fTWBVYo6CBXe924YAyTGhx9=UTBDf4cP5Acuo0NA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP11KC2fTWBVYo6CBXe924YAyTGhx9=UTBDf4cP5Acuo0NA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 15:04 +0200, Nicolas Ferre wrote:
-> Le 19/08/2011 14:53, Koul, Vinod :
-> > On Tue, 2011-08-16 at 15:56 +0200, Nicolas Ferre wrote:
-> >> Vinod,
-> >>
-> >> Please pull from:
-> >>
-> >>   git://github.com/at91linux/linux-2.6-at91.git nfe/sdma_at_hdmac
-> >>
-> >> to receive latest updates for the Atmel at_hdmac dmaengine driver. Those changes are made on top of current linus' git tree (v3.1-rc2-59-g5bad33c).
-> >> The patches below have been discussed on the linux-arm-kernel mailing-list.
-> >>
-> >> Thanks,
-> >>
-> >> Nicolas Ferre (4):
-> >>       dmaengine: at_hdmac: replace spin_lock* with irqsave variants
-> >>       dmaengine: at_hdmac: improve power management routines
-> >>       dmaengine: at_hdmac: add wrappers for testing channel state
-> >>       dmaengine: at_hdmac: fix way to specify cyclic capability
-> >>
-> >>  drivers/dma/at_hdmac.c      |  159 +++++++++++++++++++++++++++++++++---------
-> >>  drivers/dma/at_hdmac_regs.h |   24 +++++++
-> >>  2 files changed, 149 insertions(+), 34 deletions(-)
-> >>
-> > Hi Nicolas,
-> > 
-> > I tried to merge your branch, but I also get lot on unwanted commits :(
-> > Looks like this branch is based on current Linus's tree, I typically
-> > base my next on rc-X and not any random commit.
-> 
-> Yes, I am sorry for that and realize that it can be a mess for you... I
-> will take the habit to cling to a -rcX for my pull requests.
-> 
-> > Either you can rebase to latest rc-X and I will merge, or since I
-> > created a test branch I can extract your 4 patches and apply to my next.
-> 
-> If you have a test branch close at hand you can extract my patches.
-> Thanks for your help.
-Okay, Applied, it should be pushing out now :)
+On 08/19, Kay Sievers wrote:
+>
+> On Fri, Aug 19, 2011 at 14:25, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> >> +             case PR_SET_CHILD_SUBREAPER:
+> >> +                     me->signal->is_child_subreaper = !!arg2;
+> >> +                     me->signal->has_child_subreaper = true;
+> >
+> > Hmm. This looks wrong... why do we set ->has_child_subreaper?
+>
+> That's the flag we pass down to our childs, hence we need to set it here.
 
-yes I always create test branch for applying patches and do a ff merge
-to next. That makes my workspace easy to manage and discard if anything
-in my checks go wrong
+Aha, I see. I've misread copy_signal(), it copies ->has_child_subreaper,
+_not_ ->is_child_subreaper (as I wrongly thought) from parent. And I was
+going to blame this logic in the next email, I already started to write it ;)
+
+But this has other (OK, minor) problems too, afaics. First of all, this
+->has_child_subreaper = T is not right when the caller exits. We should
+not look for ->is_child_subreaper parent, our children should to find us.
+
+Right?
+
+And. afaics this makes the semantics of prctl(REAPER) a bit unclear...
+Suppose a task P does
+
+	C1 = fork();
+
+	prctl(REAPER);
+
+	C2 = fork();
+
+In this case it "owns" the children of C2, but not C1. This is fine, and
+perhaps this is even better.
+
+But what if P->parent did prctl(REAPER) too? Then P becomes the sub-reaper
+for the tasks which were forked before prctl().
+
+In short, in general the caller of prctl(REAPER) doesn't know how this
+can affect the forks in the past.
+
+Again, again, I am not arguing. Just I think we should discuss everything
+if we are going to add the new feature.
 
 
--- 
-~Vinod
+
+Finally. I am not sure this is really better, but it seems we can
+can ->has_child_subreape "more correct" with the same effect.
+
+	- prctl(PR_SET_CHILD_SUBREAPER):
+
+		me->is_child_subreaper = !!arg2;
+		// ->has_child_subreaper is not set
+
+	- copy_signal():
+
+		me->has_child_subreaper =
+			parent->has_child_subreaper ||
+			parent->is_child_subreaper;
+
+Oleg.
 
