@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab1HSQrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:47:36 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57275 "EHLO
+	id S932128Ab1HSQzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:55:11 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57290 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756383Ab1HSQrc (ORCPT
+	by vger.kernel.org with ESMTP id S1756404Ab1HSQrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:32 -0400
+	Fri, 19 Aug 2011 12:47:35 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Hirokazu Takata <takata@linux-m32r.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kyle McMartin <kyle@redhat.com>
-Subject: [PATCH v2 12/43] m32r: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:28 +0100
-Message-Id: <1313772419-21951-13-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 16/43] microblaze: Fix signal masking
+Date: Fri, 19 Aug 2011 17:46:32 +0100
+Message-Id: <1313772419-21951-17-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -23,61 +22,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+There are a couple of problems with the current signal code,
 
-Also, use the new helper function block_sigmask() which centralises
-the code for updating current->blocked after successfully delivering a
-signal and reduces the amount of duplicate code across
-architectures. In the past some architectures got this code wrong, so
-using this helper function should stop that from happening again.
+1. If we failed to setup the signal stack frame then we
+should not be masking any signals.
 
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Kyle McMartin <kyle@redhat.com>
+2. ka->sa.sa_mask is only added to the current blocked signals list if
+SA_NODEFER is set in ka->sa.sa_flags. If we successfully setup the
+signal frame and are going to run the handler then we must honour
+sa_mask.
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Michal Simek <monstr@monstr.eu>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
+ arch/microblaze/kernel/signal.c |   31 ++++++++++++++++++-------------
+ 1 files changed, 18 insertions(+), 13 deletions(-)
 
-v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
-for adding sigmask to current->blocked" so they need to go through the
-same tree but this patch would benefit from some maintainer ACK's.
-
- arch/m32r/kernel/signal.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
-
-diff --git a/arch/m32r/kernel/signal.c b/arch/m32r/kernel/signal.c
-index a08697f..f54d969 100644
---- a/arch/m32r/kernel/signal.c
-+++ b/arch/m32r/kernel/signal.c
-@@ -112,10 +112,7 @@ sys_rt_sigreturn(unsigned long r0, unsigned long r1,
- 		goto badframe;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext, &result))
- 		goto badframe;
-@@ -300,12 +297,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	if (setup_rt_frame(sig, ka, info, oldset, regs))
- 		return -EFAULT;
- 
--	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked,sig);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	block_sigmask(ka, sig);
- 	return 0;
+diff --git a/arch/microblaze/kernel/signal.c b/arch/microblaze/kernel/signal.c
+index 9e749c0..f2c13d5 100644
+--- a/arch/microblaze/kernel/signal.c
++++ b/arch/microblaze/kernel/signal.c
+@@ -169,7 +169,7 @@ get_sigframe(struct k_sigaction *ka, struct pt_regs *regs, size_t frame_size)
+ 	return (void __user *)((sp - frame_size) & -8UL);
  }
  
+-static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
++static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 			sigset_t *set, struct pt_regs *regs)
+ {
+ 	struct rt_sigframe __user *frame;
+@@ -267,10 +267,11 @@ static void setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 		current->comm, current->pid, frame, regs->pc);
+ #endif
+ 
+-	return;
++	return 0;
+ 
+ give_sigsegv:
+ 	force_sigsegv(sig, current);
++	return -EFAULT;
+ }
+ 
+ /* Handle restarting system calls */
+@@ -314,21 +315,25 @@ static int
+ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 		siginfo_t *info, sigset_t *oldset, struct pt_regs *regs)
+ {
++	int ret;
++
+ 	/* Set up the stack frame */
+ 	if (ka->sa.sa_flags & SA_SIGINFO)
+-		setup_rt_frame(sig, ka, info, oldset, regs);
++		ret = setup_rt_frame(sig, ka, info, oldset, regs);
+ 	else
+-		setup_rt_frame(sig, ka, NULL, oldset, regs);
++		ret = setup_rt_frame(sig, ka, NULL, oldset, regs);
++
++	if (ret)
++		return ret;
+ 
+-	if (!(ka->sa.sa_flags & SA_NODEFER)) {
+-		spin_lock_irq(&current->sighand->siglock);
+-		sigorsets(&current->blocked,
+-				&current->blocked, &ka->sa.sa_mask);
++	spin_lock_irq(&current->sighand->siglock);
++	sigorsets(&current->blocked, &current->blocked, &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
+ 		sigaddset(&current->blocked, sig);
+-		recalc_sigpending();
+-		spin_unlock_irq(&current->sighand->siglock);
+-	}
+-	return 1;
++	recalc_sigpending();
++	spin_unlock_irq(&current->sighand->siglock);
++
++	return 0;
+ }
+ 
+ /*
+@@ -369,7 +374,7 @@ int do_signal(struct pt_regs *regs, sigset_t *oldset, int in_syscall)
+ 		/* Whee! Actually deliver the signal. */
+ 		if (in_syscall)
+ 			handle_restart(regs, &ka, 1);
+-		if (handle_signal(signr, &ka, &info, oldset, regs)) {
++		if (!handle_signal(signr, &ka, &info, oldset, regs)) {
+ 			/*
+ 			 * A signal was successfully delivered; the saved
+ 			 * sigmask will have been stored in the signal frame,
 -- 
 1.7.4.4
 
