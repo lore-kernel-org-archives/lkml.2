@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab1HSOSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:18:11 -0400
+	id S1754386Ab1HSOQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:16:43 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:63671 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab1HSOQx (ORCPT
+	with ESMTP id S1754161Ab1HSOQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:16:53 -0400
+	Fri, 19 Aug 2011 10:16:37 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 13/16] cgroup_freezer: prepare for removal of TIF_FREEZE
-Date: Fri, 19 Aug 2011 16:16:19 +0200
-Message-Id: <1313763382-12341-14-git-send-email-tj@kernel.org>
+        Jens Axboe <axboe@kernel.dk>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Subject: [PATCH 04/16] freezer: implement and use kthread_freezable_should_stop()
+Date: Fri, 19 Aug 2011 16:16:10 +0200
+Message-Id: <1313763382-12341-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
 References: <1313763382-12341-1-git-send-email-tj@kernel.org>
@@ -21,147 +22,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TIF_FREEZE will be removed soon and freezing() will directly test
-whether any freezing condition is in effect.  Make the following
-changes in preparation.
+Writeback and thinkpad_acpi have been using thaw_process() to prevent
+deadlock between the freezer and kthread_stop(); unfortunately, this
+is inherently racy - nothing prevents freezing from happening between
+thaw_process() and kthread_stop().
 
-* Rename cgroup_freezing_or_frozen() to cgroup_freezing() and make it
-  return bool.
+This patch implements kthread_freezable_should_stop() which enters
+refrigerator if necessary but is guaranteed to return if
+kthread_stop() is invoked.  Both thaw_process() users are converted to
+use the new function.
 
-* Make cgroup_freezing() access task_freezer() under rcu read lock
-  instead of task_lock().  This makes the state dereferencing racy
-  against task moving to another cgroup; however, it was already racy
-  without this change as ->state dereference wasn't synchronized.
-  This will be later dealt with using attach hooks.
+Note that this deadlock condition exists for many of freezable
+kthreads.  They need to be converted to use the new should_stop or
+freezable workqueue.
 
-* freezer->state is now set before trying to push tasks into the
-  target state.
+Tested with synthetic test case.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
 ---
- include/linux/freezer.h |    6 +++---
- kernel/cgroup_freezer.c |   36 ++++++++++++------------------------
- kernel/power/process.c  |    2 +-
- 3 files changed, 16 insertions(+), 28 deletions(-)
+ drivers/platform/x86/thinkpad_acpi.c |   15 ++++++---------
+ fs/fs-writeback.c                    |    4 +---
+ include/linux/freezer.h              |    6 +++---
+ include/linux/kthread.h              |    1 +
+ kernel/freezer.c                     |    6 ++++--
+ kernel/kthread.c                     |   25 +++++++++++++++++++++++++
+ mm/backing-dev.c                     |    8 ++------
+ 7 files changed, 42 insertions(+), 23 deletions(-)
 
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 7bd829f..34f167e 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -2456,8 +2456,9 @@ static int hotkey_kthread(void *data)
+ 	u32 poll_mask, event_mask;
+ 	unsigned int si, so;
+ 	unsigned long t;
+-	unsigned int change_detector, must_reset;
++	unsigned int change_detector;
+ 	unsigned int poll_freq;
++	bool was_frozen;
+ 
+ 	mutex_lock(&hotkey_thread_mutex);
+ 
+@@ -2488,14 +2489,14 @@ static int hotkey_kthread(void *data)
+ 				t = 100;	/* should never happen... */
+ 		}
+ 		t = msleep_interruptible(t);
+-		if (unlikely(kthread_should_stop()))
++		if (unlikely(kthread_freezable_should_stop(&was_frozen)))
+ 			break;
+-		must_reset = try_to_freeze();
+-		if (t > 0 && !must_reset)
++
++		if (t > 0 && !was_frozen)
+ 			continue;
+ 
+ 		mutex_lock(&hotkey_thread_data_mutex);
+-		if (must_reset || hotkey_config_change != change_detector) {
++		if (was_frozen || hotkey_config_change != change_detector) {
+ 			/* forget old state on thaw or config change */
+ 			si = so;
+ 			t = 0;
+@@ -2528,10 +2529,6 @@ exit:
+ static void hotkey_poll_stop_sync(void)
+ {
+ 	if (tpacpi_hotkey_task) {
+-		if (frozen(tpacpi_hotkey_task) ||
+-		    freezing(tpacpi_hotkey_task))
+-			thaw_process(tpacpi_hotkey_task);
+-
+ 		kthread_stop(tpacpi_hotkey_task);
+ 		tpacpi_hotkey_task = NULL;
+ 		mutex_lock(&hotkey_thread_mutex);
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 04cf3b9..b36edb8 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -922,7 +922,7 @@ int bdi_writeback_thread(void *data)
+ 
+ 	trace_writeback_thread_start(bdi);
+ 
+-	while (!kthread_should_stop()) {
++	while (!kthread_freezable_should_stop(NULL)) {
+ 		/*
+ 		 * Remove own delayed wake-up timer, since we are already awake
+ 		 * and we'll take care of the preriodic write-back.
+@@ -952,8 +952,6 @@ int bdi_writeback_thread(void *data)
+ 			 */
+ 			schedule();
+ 		}
+-
+-		try_to_freeze();
+ 	}
+ 
+ 	/* Flush any work that raced with us exiting */
 diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 13559a8..bcc0637 100644
+index 3d73288..8ee31e5 100644
 --- a/include/linux/freezer.h
 +++ b/include/linux/freezer.h
-@@ -63,11 +63,11 @@ extern bool freeze_task(struct task_struct *p, bool sig_only);
- extern bool __set_freezable(bool with_signal);
+@@ -47,7 +47,7 @@ static inline bool should_send_signal(struct task_struct *p)
+ /* Takes and releases task alloc lock using task_lock() */
+ extern int thaw_process(struct task_struct *p);
  
- #ifdef CONFIG_CGROUP_FREEZER
--extern int cgroup_freezing_or_frozen(struct task_struct *task);
-+extern bool cgroup_freezing(struct task_struct *task);
- #else /* !CONFIG_CGROUP_FREEZER */
--static inline int cgroup_freezing_or_frozen(struct task_struct *task)
-+static inline bool cgroup_freezing(struct task_struct *task)
- {
--	return 0;
-+	return false;
- }
- #endif /* !CONFIG_CGROUP_FREEZER */
+-extern bool __refrigerator(void);
++extern bool __refrigerator(bool check_kthr_stop);
+ extern int freeze_processes(void);
+ extern void thaw_processes(void);
  
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e7fa0ec..0478c35 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -48,19 +48,17 @@ static inline struct freezer *task_freezer(struct task_struct *task)
- 			    struct freezer, css);
+@@ -56,7 +56,7 @@ static inline bool try_to_freeze(void)
+ 	might_sleep();
+ 	if (likely(!freezing(current)))
+ 		return false;
+-	return __refrigerator();
++	return __refrigerator(false);
  }
  
--static inline int __cgroup_freezing_or_frozen(struct task_struct *task)
-+bool cgroup_freezing(struct task_struct *task)
- {
--	enum freezer_state state = task_freezer(task)->state;
--	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
--}
-+	enum freezer_state state;
-+	bool ret;
+ extern bool freeze_task(struct task_struct *p, bool sig_only);
+@@ -169,7 +169,7 @@ static inline void set_freeze_flag(struct task_struct *p) {}
+ static inline void clear_freeze_flag(struct task_struct *p) {}
+ static inline int thaw_process(struct task_struct *p) { return 1; }
  
--int cgroup_freezing_or_frozen(struct task_struct *task)
--{
--	int result;
--	task_lock(task);
--	result = __cgroup_freezing_or_frozen(task);
--	task_unlock(task);
--	return result;
-+	rcu_read_lock();
-+	state = task_freezer(task)->state;
-+	ret = state == CGROUP_FREEZING || state == CGROUP_FROZEN;
-+	rcu_read_unlock();
+-static inline bool __refrigerator(void) { return false; }
++static inline bool __refrigerator(bool check_kthr_stop) { return false; }
+ static inline int freeze_processes(void) { BUG(); return 0; }
+ static inline void thaw_processes(void) {}
+ 
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index 1e923e5..6c1903d 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -35,6 +35,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
+ void kthread_bind(struct task_struct *k, unsigned int cpu);
+ int kthread_stop(struct task_struct *k);
+ int kthread_should_stop(void);
++bool kthread_freezable_should_stop(bool *was_frozen);
+ void *kthread_data(struct task_struct *k);
+ 
+ int kthreadd(void *unused);
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 4d59904..656492c 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -9,6 +9,7 @@
+ #include <linux/module.h>
+ #include <linux/syscalls.h>
+ #include <linux/freezer.h>
++#include <linux/kthread.h>
+ 
+ /*
+  * freezing is complete, mark current process as frozen
+@@ -23,7 +24,7 @@ static inline void frozen_process(void)
+ }
+ 
+ /* Refrigerator is place where frozen processes are stored :-). */
+-bool __refrigerator(void)
++bool __refrigerator(bool check_kthr_stop)
+ {
+ 	/* Hmm, should we be allowed to suspend when there are realtime
+ 	   processes around? */
+@@ -50,7 +51,8 @@ bool __refrigerator(void)
+ 
+ 	for (;;) {
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+-		if (!frozen(current))
++		if (!frozen(current) ||
++		    (check_kthr_stop && kthread_should_stop()))
+ 			break;
+ 		was_frozen = true;
+ 		schedule();
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 4ba7ccc..a6cbeea 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -59,6 +59,31 @@ int kthread_should_stop(void)
+ EXPORT_SYMBOL(kthread_should_stop);
+ 
+ /**
++ * kthread_freezable_should_stop - should this freezable kthread return now?
++ * @was_frozen: optional out parameter, indicates whether %current was frozen
++ *
++ * kthread_should_stop() for freezable kthreads, which will enter
++ * refrigerator if necessary.  This function is safe from kthread_stop() /
++ * freezer deadlock and freezable kthreads should use this function instead
++ * of calling try_to_freeze() directly.
++ */
++bool kthread_freezable_should_stop(bool *was_frozen)
++{
++	bool frozen = false;
 +
-+	return ret;
++	might_sleep();
++
++	if (unlikely(freezing(current)))
++		frozen = __refrigerator(true);
++
++	if (was_frozen)
++		*was_frozen = frozen;
++
++	return kthread_should_stop();
++}
++EXPORT_SYMBOL_GPL(kthread_freezable_should_stop);
++
++/**
+  * kthread_data - return data value specified on kthread creation
+  * @task: kthread task in question
+  *
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index d6edf8d..d73a5aa 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -586,14 +586,10 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 
+ 	/*
+ 	 * Finally, kill the kernel thread. We don't need to be RCU
+-	 * safe anymore, since the bdi is gone from visibility. Force
+-	 * unfreeze of the thread before calling kthread_stop(), otherwise
+-	 * it would never exet if it is currently stuck in the refrigerator.
++	 * safe anymore, since the bdi is gone from visibility.
+ 	 */
+-	if (bdi->wb.task) {
+-		thaw_process(bdi->wb.task);
++	if (bdi->wb.task)
+ 		kthread_stop(bdi->wb.task);
+-	}
  }
  
  /*
-@@ -102,9 +100,6 @@ struct cgroup_subsys freezer_subsys;
-  * freezer_can_attach():
-  * cgroup_mutex (held by caller of can_attach)
-  *
-- * cgroup_freezing_or_frozen():
-- * task->alloc_lock (to get task's cgroup)
-- *
-  * freezer_fork() (preserving fork() performance means can't take cgroup_mutex):
-  * freezer->lock
-  *  sighand->siglock (if the cgroup is freezing)
-@@ -177,13 +172,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 
- static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- {
--	rcu_read_lock();
--	if (__cgroup_freezing_or_frozen(tsk)) {
--		rcu_read_unlock();
--		return -EBUSY;
--	}
--	rcu_read_unlock();
--	return 0;
-+	return cgroup_freezing(tsk) ? -EBUSY : 0;
- }
- 
- static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-@@ -279,7 +268,6 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- 	struct task_struct *task;
- 	unsigned int num_cant_freeze_now = 0;
- 
--	freezer->state = CGROUP_FREEZING;
- 	cgroup_iter_start(cgroup, &it);
- 	while ((task = cgroup_iter_next(cgroup, &it))) {
- 		if (!freeze_task(task, true))
-@@ -303,8 +291,6 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- 	while ((task = cgroup_iter_next(cgroup, &it)))
- 		__thaw_task(task);
- 	cgroup_iter_end(cgroup, &it);
--
--	freezer->state = CGROUP_THAWED;
- }
- 
- static int freezer_change_state(struct cgroup *cgroup,
-@@ -321,6 +307,8 @@ static int freezer_change_state(struct cgroup *cgroup,
- 	if (goal_state == freezer->state)
- 		goto out;
- 
-+	freezer->state = goal_state;
-+
- 	switch (goal_state) {
- 	case CGROUP_THAWED:
- 		unfreeze_cgroup(cgroup, freezer);
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index f8012f2..1bbc363 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -154,7 +154,7 @@ void thaw_processes(void)
- 
- 	read_lock(&tasklist_lock);
- 	do_each_thread(g, p) {
--		if (cgroup_freezing_or_frozen(p))
-+		if (cgroup_freezing(p))
- 			continue;
- 
- 		__thaw_task(p);
 -- 
 1.7.6
 
