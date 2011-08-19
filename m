@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab1HSQ4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:56:08 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57270 "EHLO
+	id S932095Ab1HSQ4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:56:06 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57284 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756376Ab1HSQra (ORCPT
+	by vger.kernel.org with ESMTP id S1756389Ab1HSQrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:30 -0400
+	Fri, 19 Aug 2011 12:47:33 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: [PATCH v2 10/43] h8300: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:26 +0100
-Message-Id: <1313772419-21951-11-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: [PATCH v2 13/43] m68k: Use set_current_blocked() and block_sigmask()
+Date: Fri, 19 Aug 2011 17:46:29 +0100
+Message-Id: <1313772419-21951-14-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -34,7 +35,8 @@ architectures. In the past some architectures got this code wrong, so
 using this helper function should stop that from happening again.
 
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
 
@@ -42,23 +44,23 @@ v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
 for adding sigmask to current->blocked" so they need to go through the
 same tree but this patch would benefit from some maintainer ACK's.
 
- arch/h8300/kernel/signal.c |   33 +++++++++------------------------
- 1 files changed, 9 insertions(+), 24 deletions(-)
+ arch/m68k/kernel/signal_mm.c |   22 +++++++++-------------
+ arch/m68k/kernel/signal_no.c |   28 +++++++++-------------------
+ 2 files changed, 18 insertions(+), 32 deletions(-)
 
-diff --git a/arch/h8300/kernel/signal.c b/arch/h8300/kernel/signal.c
-index af842c3..cd63f5a 100644
---- a/arch/h8300/kernel/signal.c
-+++ b/arch/h8300/kernel/signal.c
-@@ -57,14 +57,13 @@ asmlinkage int do_signal(struct pt_regs *regs, sigset_t *oldset);
- asmlinkage int do_sigsuspend(struct pt_regs *regs)
+diff --git a/arch/m68k/kernel/signal_mm.c b/arch/m68k/kernel/signal_mm.c
+index a0afc23..74ba0cf 100644
+--- a/arch/m68k/kernel/signal_mm.c
++++ b/arch/m68k/kernel/signal_mm.c
+@@ -97,12 +97,13 @@ int handle_kernel_fault(struct pt_regs *regs)
+ asmlinkage int
+ sys_sigsuspend(int unused0, int unused1, old_sigset_t mask)
  {
- 	old_sigset_t mask = regs->er3;
--	sigset_t saveset;
-+	sigset_t saveset, blocked;
- 
 -	mask &= _BLOCKABLE;
 -	spin_lock_irq(&current->sighand->siglock);
- 	saveset = current->blocked;
++	sigset_t blocked;
++
+ 	current->saved_sigmask = current->blocked;
 -	siginitset(&current->blocked, mask);
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
@@ -67,22 +69,64 @@ index af842c3..cd63f5a 100644
 +	siginitset(&blocked, mask);
 +	set_current_blocked(&blocked);
  
- 	regs->er0 = -EINTR;
- 	while (1) {
-@@ -90,11 +89,8 @@ do_rt_sigsuspend(struct pt_regs *regs)
- 		return -EFAULT;
- 	sigdelsetmask(&newset, ~_BLOCKABLE);
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+@@ -465,8 +466,7 @@ asmlinkage int do_sigreturn(unsigned long __unused)
+ 		goto badframe;
  
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	current->blocked = set;
+-	recalc_sigpending();
++	set_current_blocked(&set);
+ 
+ 	if (restore_sigcontext(regs, &frame->sc, frame + 1))
+ 		goto badframe;
+@@ -491,8 +491,7 @@ asmlinkage int do_rt_sigreturn(unsigned long __unused)
+ 		goto badframe;
+ 
+ 	sigdelsetmask(&set, ~_BLOCKABLE);
+-	current->blocked = set;
+-	recalc_sigpending();
++	set_current_blocked(&set);
+ 
+ 	if (rt_restore_ucontext(regs, sw, &frame->uc))
+ 		goto badframe;
+@@ -965,10 +964,7 @@ handle_signal(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	if (err)
+ 		return;
+ 
+-	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&current->blocked,sig);
+-	recalc_sigpending();
++	block_sigmask(ka, sig);
+ 
+ 	if (test_thread_flag(TIF_DELAYED_TRACE)) {
+ 		regs->sr &= ~0x8000;
+diff --git a/arch/m68k/kernel/signal_no.c b/arch/m68k/kernel/signal_no.c
+index 36a81bb..33e8bf5 100644
+--- a/arch/m68k/kernel/signal_no.c
++++ b/arch/m68k/kernel/signal_no.c
+@@ -60,12 +60,13 @@ void ret_from_user_rt_signal(void);
+ asmlinkage int
+ sys_sigsuspend(int unused0, int unused1, old_sigset_t mask)
+ {
+-	mask &= _BLOCKABLE;
 -	spin_lock_irq(&current->sighand->siglock);
- 	saveset = current->blocked;
--	current->blocked = newset;
++	sigset_t blocked;
++
+ 	current->saved_sigmask = current->blocked;
+-	siginitset(&current->blocked, mask);
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&newset);
++
++	mask &= _BLOCKABLE;
++	siginitset(&blocked, mask);
++	set_current_blocked(&blocked);
  
- 	regs->er0 = -EINTR;
- 	while (1) {
-@@ -232,10 +228,7 @@ asmlinkage int do_sigreturn(unsigned long __unused,...)
+ 	current->state = TASK_INTERRUPTIBLE;
+ 	schedule();
+@@ -343,10 +344,7 @@ asmlinkage int do_sigreturn(unsigned long __unused)
  		goto badframe;
  
  	sigdelsetmask(&set, ~_BLOCKABLE);
@@ -92,23 +136,23 @@ index af842c3..cd63f5a 100644
 -	spin_unlock_irq(&current->sighand->siglock);
 +	set_current_blocked(&set);
  	
- 	if (restore_sigcontext(regs, &frame->sc, &er0))
+ 	if (restore_sigcontext(regs, &frame->sc, frame + 1, &d0))
  		goto badframe;
-@@ -260,10 +253,7 @@ asmlinkage int do_rt_sigreturn(unsigned long __unused,...)
+@@ -372,10 +370,7 @@ asmlinkage int do_rt_sigreturn(unsigned long __unused)
  		goto badframe;
  
  	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_unlock_irq(&current->sighand->siglock);
+-	spin_lock_irq(&current->sighand->siglock);
 -	current->blocked = set;
 -	recalc_sigpending();
--	spin_lock_irq(&current->sighand->siglock);
+-	spin_unlock_irq(&current->sighand->siglock);
 +	set_current_blocked(&set);
  	
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext, &er0))
+ 	if (rt_restore_ucontext(regs, sw, &frame->uc, &d0))
  		goto badframe;
-@@ -489,12 +479,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	else
- 		setup_frame(sig, ka, oldset, regs);
+@@ -708,12 +703,7 @@ handle_signal(int sig, struct k_sigaction *ka, siginfo_t *info,
+ 	if (err)
+ 		return;
  
 -	spin_lock_irq(&current->sighand->siglock);
 -	sigorsets(&current->blocked,&current->blocked,&ka->sa.sa_mask);
@@ -117,9 +161,9 @@ index af842c3..cd63f5a 100644
 -	recalc_sigpending();
 -	spin_unlock_irq(&current->sighand->siglock);
 +	block_sigmask(ka, sig);
- }
  
- /*
+ 	clear_thread_flag(TIF_RESTORE_SIGMASK);
+ }
 -- 
 1.7.4.4
 
