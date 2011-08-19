@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039Ab1HSVtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 17:49:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12735 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab1HSVtH convert rfc822-to-8bit (ORCPT
+	id S1754831Ab1HSVve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 17:51:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38415 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750707Ab1HSVvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 17:49:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=pqkK38HLkf93IPVyexnkG/NUa5o+eU5ECbLFGqMflTPxAolzKfcV+BCczNT2vEjGx
-	pbjmYT1UfRFVju9Dv5yfQ==
-MIME-Version: 1.0
-In-Reply-To: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com>
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 19 Aug 2011 15:48:45 -0600
-Message-ID: <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
-Subject: Re: APEI: Can not request iomem region for GARs
-To: Pavel Ivanov <paivanof@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 19 Aug 2011 17:51:31 -0400
+Date: Fri, 19 Aug 2011 14:51:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Barry <abarry@cray.com>
+Cc: linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Hugh Dickins <hughd@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Hastings <abh@cray.com>
+Subject: Re: [PATCH v2 1/1] hugepages: Fix race between hugetlbfs umount and
+ quota update.
+Message-Id: <20110819145109.dcd5dac6.akpm@linux-foundation.org>
+In-Reply-To: <4E4EB603.8090305@cray.com>
+References: <4E4EB603.8090305@cray.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 9:43 PM, Pavel Ivanov <paivanof@gmail.com> wrote:
-> Ever since I switched from kernel 2.6.38 to 3.0 and later versions I
-> always get the following error message on each boot:
+On Fri, 19 Aug 2011 14:14:11 -0500
+Andrew Barry <abarry@cray.com> wrote:
+
+> This patch fixes a use-after-free problem in free_huge_page, with a quota update
+> happening after hugetlbfs umount. The problem results when a device driver,
+> which has mapped a hugepage, does a put_page. Put_page, calls free_huge_page,
+> which does a hugetlb_put_quota. As written, hugetlb_put_quota takes an
+> address_space struct pointer "mapping" as an argument. If the put_page occurs
+> after the hugetlbfs filesystem is unmounted, mapping points to freed memory.
+
+OK.  This sounds screwed up.  If a device driver is currently using a
+page from a hugetlbfs file then the unmount shouldn't have succeeded in
+the first place!
+
+Or is it the case that the device driver got a reference to the page by
+other means, bypassing hugetlbfs?  And there's undesirable/incorrect
+interaction between the non-hugetlbfs operation and hugetlbfs?
+
+Or something else?
+
+<starts reading the mailing list>
+
+OK, important missing information from the above is that the driver got
+at this page via get_user_pages() and happened to stumble across a
+hugetlbfs page.  So it's indeed an incorrect interaction between a
+non-hugetlbfs operation and hugetlbfs.
+
+What's different about hugetlbfs?  Why don't other filesystems hit this?
+
+<investigates further>
+
+OK so the incorrect interaction happened in free_huge_page(), which is
+called via the compound page destructor (this dtor is "what's different
+about hugetlbfs").   What is incorrect about this is
+
+a) that we're doing fs operations in response to a
+   get_user_pages()/put_page() operation which has *nothing* to do with
+   filesystems!
+
+b) that we continue to try to do that fs operation against an fs
+   which was unmounted and freed three days ago. duh.
+
+
+So I hereby pronounce that
+
+a) It was wrong to manipulate hugetlbfs quotas within
+   free_huge_page().  Because free_huge_page() is a low-level
+   page-management function which shouldn't know about one of its
+   specific clients (in this case, hugetlbfs).
+
+   In fact it's wrong for there to be *any* mention of hugetlbfs
+   within hugetlb.c.
+
+b) I shouldn't have merged that hugetlbfs quota code.  whodidthat. 
+   Mel, Adam, Dave, at least...
+
+c) The proper fix here is to get that hugetlbfs quota code out of
+   free_huge_page() and do it all where it belongs: within hugetlbfs
+   code.
+
+
+Regular filesystems don't need to diddle quota counts within
+page_cache_release().  Why should hugetlbfs need to?
+
 >
-> [    2.844242] APEI: Can not request iomem region
-> <00000000bf7b522a-00000000bf7b522c> for GARs.
+> ...
 >
-> If it was only in dmesg I wouldn't even notice it. But it's always
-> printed on the console which is kind of annoying.
-> I don't quite understand what this message is about and couldn't find
-> anything on the internet. Does this message mean some error that I
-> could fix? If no, is there any way I can suppress it (besides lowering
-> the error level of messages printed on console, of course)?
+> +		/*Free only if used quota is zero. */
 
-[+cc Huang Ying, APEI author]
+Missing a space there.
 
-BIOS-e820: 00000000bf79e000 - 00000000bf7d0000 (ACPI NVS)
-APEI: Can not request iomem region <00000000bf7b522a-00000000bf7b522c> for GARs.
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -142,11 +142,16 @@ struct hugetlbfs_config {
+>  	struct hstate *hstate;
+>  };
+> 
+> +#define HPAGE_INACTIVE  0
+> +#define HPAGE_ACTIVE    1
 
-This register is in the ACPI NVS region, which is type E820_NVS (not
-E820_RESERVED), so e820_reserve_resources() reserves it as
-IORESOURCE_BUSY.  My guess is that Huang tested this on machines where
-the EINJ/ERST registers are in "reserved" regions, not ACPI NVS
-regions.  The "reserved" regions are not marked IORESOURCE_BUSY.
+The above need documenting, please.  That documentation would perhaps
+help me understand why we need both an "active" flag *and* a refcount.
 
-Huang, when you fix this, please include something like the following
-(mangled) patch so the error message is more consistent with other
-resource messages.
-
-Could you also remove the ERST/EINJ/HEST "Table is not found"
-messages?  As far as I can tell, these tables are optional, and
-printing the message is confusing to users, e.g.,
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
-
-Bjorn
-
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index 8041248..6f97b59 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -460,9 +460,9 @@ int apei_resources_request(struct apei_resources *resources,
-                                       desc);
-                if (!r) {
-                        pr_err(APEI_PFX
--               "Can not request iomem region <%016llx-%016llx> for GARs.\n",
-+               "can not request [mem %#010llx-%#010llx] for %s registers\n",
-                               (unsigned long long)res->start,
--                              (unsigned long long)res->end);
-+                              (unsigned long long)res->end, desc);
-                        res_bak = res;
-                        goto err_unmap_iomem;
-                }
-@@ -472,9 +472,9 @@ int apei_resources_request(struct apei_resources *resources,
-                r = request_region(res->start, res->end - res->start, desc);
-                if (!r) {
-                        pr_err(APEI_PFX
--               "Can not request ioport region <%016llx-%016llx> for GARs.\n",
-+               "can not request [io  %#06llx-%#06llx] for %s registers\n",
-                               (unsigned long long)res->start,
--                              (unsigned long long)res->end);
-+                              (unsigned long long)res->end, desc);
-                        res_bak = res;
-                        goto err_unmap_ioport;
-                }
