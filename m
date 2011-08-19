@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab1HSQsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:48:41 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57382 "EHLO
+	id S1756491Ab1HSQs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:48:57 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57410 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab1HSQsb (ORCPT
+	by vger.kernel.org with ESMTP id S932095Ab1HSQsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:48:31 -0400
+	Fri, 19 Aug 2011 12:48:39 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH v2 35/43] unicore32: Use set_current_blocked() and block_sigmask()
-Date: Fri, 19 Aug 2011 17:46:51 +0100
-Message-Id: <1313772419-21951-36-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Christine Caulfield <ccaulfie@redhat.com>
+Subject: [PATCH v2 42/43] dlm: Remove another superfluous call to recalc_sigpending()
+Date: Fri, 19 Aug 2011 17:46:58 +0100
+Message-Id: <1313772419-21951-43-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -22,60 +22,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-As described in e6fa16ab ("signal: sigprocmask() should do
-retarget_shared_pending()") the modification of current->blocked is
-incorrect as we need to check whether the signal we're about to block
-is pending in the shared queue.
+recalc_sigpending() is called within sigprocmask(), so there is no
+need call it again after sigprocmask() has returned. Furthermore, the
+call to recalc_sigpending() could race with signal_wake_up() because
+it isn't called with sighand->siglock held. I must have missed this
+call when removing the other recalc_sigpending() in commit
+4bcad6c1ef53 ("dlm: Remove superfluous call to recalc_sigpending())".
 
-Also, use the new helper function block_sigmask() which centralises
-the code for updating current->blocked after successfully delivering a
-signal and reduces the amount of duplicate code across
-architectures. In the past some architectures got this code wrong, so
-using this helper function should stop that from happening again.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Christine Caulfield <ccaulfie@redhat.com>
+Acked-by: David Teigland <teigland@redhat.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
+ fs/dlm/user.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-v2 of this patch depends on "[PATCH 01/43] signal: Add block_sigmask()
-for adding sigmask to current->blocked" so they need to go through the
-same tree but this patch would benefit from some maintainer ACK's.
-
-Guan, I dropped your Acked-by because I felt this patch changed quite
-dramatically since v1 and warrants another review. I hope that's OK.
-
- arch/unicore32/kernel/signal.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
-
-diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
-index b163fca..960c029 100644
---- a/arch/unicore32/kernel/signal.c
-+++ b/arch/unicore32/kernel/signal.c
-@@ -63,10 +63,7 @@ static int restore_sigframe(struct pt_regs *regs, struct sigframe __user *sf)
- 	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
- 	if (err == 0) {
- 		sigdelsetmask(&set, ~_BLOCKABLE);
--		spin_lock_irq(&current->sighand->siglock);
--		current->blocked = set;
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
-+		set_current_blocked(&set);
- 	}
+diff --git a/fs/dlm/user.c b/fs/dlm/user.c
+index d8ea607..b38b122 100644
+--- a/fs/dlm/user.c
++++ b/fs/dlm/user.c
+@@ -678,7 +678,6 @@ static int device_close(struct inode *inode, struct file *file)
+ 	   device_remove_lockspace() */
  
- 	err |= __get_user(regs->UCreg_00, &sf->uc.uc_mcontext.regs.UCreg_00);
-@@ -372,13 +369,7 @@ static int handle_signal(unsigned long sig, struct k_sigaction *ka,
- 	/*
- 	 * Block the signal if we were successful.
- 	 */
--	spin_lock_irq(&tsk->sighand->siglock);
--	sigorsets(&tsk->blocked, &tsk->blocked,
--		  &ka->sa.sa_mask);
--	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&tsk->blocked, sig);
+ 	sigprocmask(SIG_SETMASK, &tmpsig, NULL);
 -	recalc_sigpending();
--	spin_unlock_irq(&tsk->sighand->siglock);
-+	block_sigmask(ka, sig);
  
  	return 0;
  }
