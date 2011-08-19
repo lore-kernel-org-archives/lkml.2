@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab1HSPO4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 11:14:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53334 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752855Ab1HSPOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 11:14:53 -0400
+	id S1756124Ab1HSPPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 11:15:34 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58330 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855Ab1HSPPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 11:15:32 -0400
+Date: Fri, 19 Aug 2011 11:15:28 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 1/5] fs: add netlink notification interface
+Message-ID: <20110819151528.GB4602@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org,
+	Alexander Viro <viro@zeniv.linux.org.uk>
+References: <1313669906-14931-1-git-send-email-lczerner@redhat.com>
+ <1313669906-14931-2-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA5QMZ3i7Pr1jsis+r4CeZZCWEt59oZXNhtf4Ea-yeAgGA@mail.gmail.com>
-References: <1312315404-sup-6084@shiny> <20110819130615.GA6307@kernel.org> <CA+5PVA5QMZ3i7Pr1jsis+r4CeZZCWEt59oZXNhtf4Ea-yeAgGA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Aug 2011 08:14:02 -0700
-Message-ID: <CA+55aFwvwSgHgGd-x02GPAKnD3UfcGcWZf8zCVvvLwTFg9FxqQ@mail.gmail.com>
-Subject: Re: [build breakage] Re: [GIT PULL] Btrfs pull round two
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313669906-14931-2-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 6:24 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->
-> FYI, this was noticed and a patch was posted to linux-btrfs:
->
-> http://thread.gmane.org/gmane.comp.file-systems.btrfs/12673
->
-> Josef bugged them to send it upstream.
+On Thu, Aug 18, 2011 at 02:18:22PM +0200, Lukas Czerner wrote:
+> +void fs_nl_send_warning(dev_t dev, unsigned int warntype)
+> +{
 
-Oh Christ!
+I'm pretty sure this interface isn't going to be sufficient in the
+long run.  I can imagine that people might want to pass in a struct
+inode *, or a struct file * if available, so we could pass back the
+inode number involved, or even the pathname.
 
-Please don't send that upstream.
+Also, I'd suggesting changing "warning" to "error", since that's what
+most of the things we are sending really are...
 
-This:
+> +	ret = nla_put_u32(skb, FS_NL_A_WARNING, warntype);
+> +	if (ret)
+> +		goto attr_err_out;
 
--		min_free /= 2;
-+		do_div(min_free, 2);
+Why not make the warning type to be a string instead of an integer?
+This would make it easier to extend the protocol in the future.
 
-is just moronic. Guys, YOU ARE DIVIDING A UNSIGNED VALUE BY TWO. Has
-anybody ever looked at a real computer? Doesn't anybody know how
-computer math works any more? Doing that as a (slow) double division
-on 32-bit is so stupid that it's past even just "wrong". It's way off
-in la-la-land, sitting in a corner, all hopped up on drugs and
-painting its nails purple.
+> +	ret = nla_put_u64(skb, FS_NL_A_CAUSED_ID, current_uid());
+> +	if (ret)
+> +		goto attr_err_out;
 
-Also, the change that is definitely correct:
+I'd also suggest passing back the process id that requested the I/O if
+that's known...
 
--		min_free /= dev_min;
-+		do_div(min_free, dev_min);
-
-should still be something that people think about. Why is "dev_min" a
-signed integer? That looks wrong. You wanted an unsigned divide,
-didn't you (and that is what "do_div()" is designed for).
-
-So guys, please: when you get an error like this, don't just go into
-that mindless place where you paper things over. Think about what is
-going on, and WHY you got the error. Big 64-bit divides are bad bad
-bad. They are so horrendously bad on 32-bit that we don't even support
-them (which is the reason I refuse to put that __udiv into the 32-bit
-libraries), but that are often bad on 64-bit too. So you need to spend
-some time thinking about it when you get that __udivdi3 error.
-
-                             Linus
+						- Ted
