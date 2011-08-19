@@ -1,116 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1HSOZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:25:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753713Ab1HSOZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:25:27 -0400
-Date: Fri, 19 Aug 2011 10:25:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, ebiederm@xmission.com,
-        mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com, oomichi@mxs.nes.nec.co.jp,
-        horms@verge.net.au, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 2/2] kdump: Add size to elfcorehdr kernel parameter
-Message-ID: <20110819142502.GG18656@redhat.com>
-References: <20110819141857.052232873@linux.vnet.ibm.com>
- <20110819141940.335341157@linux.vnet.ibm.com>
+	id S1755410Ab1HSO0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:26:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35165 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941Ab1HSO0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 10:26:13 -0400
+Date: Fri, 19 Aug 2011 15:26:08 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jamie Iles <jamie@jamieiles.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/4 v4] drivers: create a pin control subsystem
+Message-ID: <20110819142608.GB2800@pulham.picochip.com>
+References: <1313747630-32258-1-git-send-email-linus.walleij@stericsson.com>
+ <20110819104816.GA5030@pulham.picochip.com>
+ <CACRpkdZhg_1WM37uqT1PNmpUjWS_groWJmNnR4SBjqJ6LFQQWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110819141940.335341157@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZhg_1WM37uqT1PNmpUjWS_groWJmNnR4SBjqJ6LFQQWQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 04:18:59PM +0200, Michael Holzheu wrote:
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> Currently only the address of the pre-allocated ELF header is passed with
-> the elfcorehdr= kernel parameter. In order to reserve memory for the header
-> in the 2nd kernel also the size is required. Current kdump architecture
-> backends use different methods to do that, e.g. x86 uses the memmap= kernel
-> parameter. On s390 there is no easy way to transfer this information.
-> Therefore the elfcorehdr kernel parameter is extended to also pass the size.
-> This now can also be used as standard mechanism by all future kdump
-> architecture backends.
-> 
-> The syntax of the kernel parameter is extended as follows:
-> 
-> elfcorehdr=[size[KMG]@]offset[KMG]
-> 
-> This change is backward compatible because elfcorehdr=size is still allowed.
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Hi Linus,
 
-Looks good to me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek
-
-> ---
->  Documentation/kernel-parameters.txt |    6 +++---
->  include/linux/crash_dump.h          |    1 +
->  kernel/crash_dump.c                 |   11 +++++++++++
->  3 files changed, 15 insertions(+), 3 deletions(-)
+On Fri, Aug 19, 2011 at 04:04:54PM +0200, Linus Walleij wrote:
+> On Fri, Aug 19, 2011 at 12:48 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+> > On Fri, Aug 19, 2011 at 11:53:50AM +0200, Linus Walleij wrote:
+> >> +Interaction with the GPIO subsystem
+> >> +===================================
+> >> +
+> >> +The GPIO drivers may want to perform operations of various types on the same
+> >> +physical pins that are also registered as GPIO pins.
+> >> +
+> >> +Since the pin controller subsystem have its pinspace local to the pin
+> >> +controller we need a mapping so that the pin control subsystem can figure out
+> >> +which pin controller handles control of a certain GPIO pin. This member
+> >> +in the pin controller descriptor handles this mapping:
+> >> +
+> >> +static struct pinctrl_desc foo_desc = {
+> >> +     ...
+> >> +     .gpio_base = FIRST_PIN,
+> >> +};
+> >> +
+> >> +When GPIO-specific functions in the pin control subsystem are called, these
+> >> +mappings will be used to look up the apropriate pin controller by inspecting
+> >> +and matching the pin to this pin range.
+> >
+> > On our (difficultly muxed!) platform we have two types of GPIO - a
+> > Synopsys controller which is a fairly conventional GPIO controller, then
+> > a sigma-delta GPIO controller which can also do a an analogue type
+> > output (as well as digital).
 > 
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -727,10 +727,10 @@ bytes respectively. Such letter suffixes
->  			See Documentation/block/as-iosched.txt and
->  			Documentation/block/deadline-iosched.txt for details.
->  
-> -	elfcorehdr=	[IA-64,PPC,SH,X86]
-> +	elfcorehdr=[size[KMG]@]offset[KMG] [IA64,PPC,SH,X86,S390]
->  			Specifies physical address of start of kernel core
-> -			image elf header. Generally kexec loader will
-> -			pass this option to capture kernel.
-> +			image elf header and optionally the size. Generally
-> +			kexec loader will pass this option to capture kernel.
->  			See Documentation/kdump/kdump.txt for details.
->  
->  	enable_mtrr_cleanup [X86]
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -10,6 +10,7 @@
->  #define ELFCORE_ADDR_ERR	(-2ULL)
->  
->  extern unsigned long long elfcorehdr_addr;
-> +extern unsigned long long elfcorehdr_size;
->  
->  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  						unsigned long, int);
-> --- a/kernel/crash_dump.c
-> +++ b/kernel/crash_dump.c
-> @@ -20,8 +20,15 @@ unsigned long saved_max_pfn;
->  unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
->  
->  /*
-> + * stores the size of elf header of crash image
-> + */
-> +unsigned long long elfcorehdr_size;
-> +
-> +/*
->   * elfcorehdr= specifies the location of elf core header stored by the crashed
->   * kernel. This option will be passed by kexec loader to the capture kernel.
-> + *
-> + * Syntax: elfcorehdr=[size[KMG]@]offset[KMG]
->   */
->  static int __init setup_elfcorehdr(char *arg)
->  {
-> @@ -29,6 +36,10 @@ static int __init setup_elfcorehdr(char
->  	if (!arg)
->  		return -EINVAL;
->  	elfcorehdr_addr = memparse(arg, &end);
-> +	if (*end == '@') {
-> +		elfcorehdr_size = elfcorehdr_addr;
-> +		elfcorehdr_addr = memparse(end + 1, &end);
-> +	}
->  	return end > arg ? 0 : -EINVAL;
->  }
->  early_param("elfcorehdr", setup_elfcorehdr);
+> Does that mean it is really not a GPIO controller but a kind of D/A converter?
+
+Kind of.  In the basic mode it's just a GPIO controller that does 
+digital I/O.  In the SD mode it all really depends on what the external 
+filter looks like.  As gpio_set_value() takes an int as the value, then 
+the gpio controller theoretically _could_ treat that as an analogue 
+output value and use the pinctrl api to set the converter and rate sizes 
+but I don't really want to go there yet as it's a bit of an abuse of the 
+gpio API!
+
+> >  For lots of our pads they can either be
+> > ARM GPIO, SD GPIO or some other function, so I don't see how this fits
+> > in with a single GPIO base.
+> 
+> And each of them are modeled as a separate gpio_chip I guess?
+> 
+> Otherwise it's a bad match with reality. We had this discussion with GRant
+> where two gpio_chips would use the same number range in the GPIO
+> global pinspace, and it's basically not allowed IIRC.
+
+Yes, the SD-GPIO isn't memory mapped so has a completely separte 
+gpio_chip.
+
+> But yes, there is an assumption that each pin controller will only
+> deal with one block of GPIO pins. So if I make it possible to support
+> several GPIO ranges for one pin controller, does that solve your problem?
+> 
+> Like this:
+> 
+> struct pinctrl_gpio_range {
+>     char *name;
+>     unsigned int base;
+>     unsigned int npins;
+> }
+> 
+> static unsigned int gpio_ranges[] = {
+>     {
+>         .name="chip1",
+>         .base = 0,
+>         .npins = 16,
+>     },
+>     {
+>         .name =" chip2",
+>         .base = 32,
+>         .npins = 16,
+>     },
+>     {
+>         .name = "chip3",
+>         .base = 64,
+>         .npins = 16,
+>     },
+> };
+> 
+> static struct pinctrl_desc foo_desc = {
+>         ...
+>         .gpio_ranges = gpio_ranges,
+>         .num_gpio_ranges = ARRAY_SIZE(gpio_ranges),
+> };
+> 
+> For three different 32-bit GPIO controllers muxed on
+> pins 0..31 using GPIO space pins from 0..95.
+> 
+> Then I pass the number of the instance down to the
+> driver in the gpio_request_enable() callback like
+> this:
+> 
+> int (*gpio_request_enable) (struct pinctrl_dev *pctldev,
+> 	    unsigned instance,
+> 	    unsigned offset);
+> 
+> Would this work?
+> 
+> This has a restriction: the GPIO space must be mapped in
+> continous ranges, as must the pin controller. Else we need
+> one entry per pin in the list above...
+
+OK, that looks perfect!
+
+> >> +The correspondence for the range from the GPIO subsystem to the pin controller
+> >> +subsystem must be one-to-one. Thus the GPIO pins are in the pin controller
+> >> +range [0 .. maxpin] where maxpin is the specified end of the pin range.
+> >
+> > So doesn't this mean that the enumeration that was initially described
+> > as arbitrary actually has to enumerate the GPIO pins first?
+> 
+> If you use GPIO accessors, the enumeration has to match.
+> So I rewrite it like this:
+> 
+> "this enumeration was arbitrarily chosen, in practice you need to think
+> through your numbering system so that it matches the layout of registers
+> and such things in your driver, or the code may become complicated. You must
+> also consider matching of offsets to the GPIO ranges that may be handled by
+> the pin controller."
+> 
+> OK?
+
+Sounds good.
+
+> >> +static struct class pinctrl_class = {
+> >> +     .name = "pinctrl",
+> >> +     .dev_release = pinctrl_dev_release,
+> >> +     .dev_attrs = pinctrl_dev_attrs,
+> >> +};
+> >
+> > Greg K-H has mentioned in the past that class is now deprecated for new
+> > use and that a bus_type should be used instead.
+> 
+> Can you provide a reference with some detail?
+> The pin control devices are usually aleady on a bus like the
+> platform_bus or amba_bus or i2c_bus, then they register a
+> class device in this case.
+> 
+> The kerneldoc documentation says
+> "A bus is a channel between the processor and one or more devices."
+> 
+> This isn't the case here.
+> 
+> Anyhthing that help me understand this is appreciated, Arnd?
+
+There's a thread here https://lkml.org/lkml/2011/3/25/443 where this has 
+been discussed (I originally had a class too).
+
+> >> +/**
+> >> + * struct pinctrl_desc - pin controller descriptor, register this to pin
+> >> + * control subsystem
+> >> + * @name: name for the pin controller
+> >> + * @pins: an array of pin descriptors describing all the pins handled by
+> >> + *   this pin controller
+> >> + * @npins: number of descriptors in the array, usually just ARRAY_SIZE()
+> >> + *   of the pins field above
+> >> + * @maxpin: since pin spaces may be sparse, there can he "holes" in the
+> >> + *   pin range, this attribute gives the maximum pin number in the
+> >> + *   total range. This should not be lower than npins for example,
+> >> + *   but may be equal to npins if you have no holes in the pin range.
+> >> + * @pmxops: pinmux operation vtable, if you support pinmuxing in your driver
+> >> + * @gpio_base: the base offset of the pin range in the GPIO subsystem that
+> >> + *   is handled by this controller, if applicable. This member is only
+> >> + *   relevant if you want to e.g. control pins from the GPIO subsystem.
+> >> + * @gpio_pins: the number of pins from (and including) the gpio_base offset
+> >> + *   handled by this pin controller.
+> >> + * @owner: module providing the pin controller, used for refcounting
+> >> + */
+> >> +struct pinctrl_desc {
+> >> +     const char *name;
+> >> +     struct pinctrl_pin_desc const *pins;
+> >> +     unsigned int npins;
+> >> +     unsigned int maxpin;
+> >> +     struct pinmux_ops *pmxops;
+> >> +     unsigned int gpio_base;
+> >> +     unsigned int gpio_pins;
+> >> +     struct module *owner;
+> >
+> > Would it be better to put the owner in the ops structure like file_ops?
+> > I'm sure I remember someone saying that it's better to do that so that
+> > it's in the modules .data/.rodata section but I can't find that
+> > reference.
+> 
+> I can't do that because the pinmux_ops vtable is not mandatory.
+> 
+> The plan is to add more ops for other things like pin bias etc.
+
+OK, I'd missed that.
+
+> >> +/**
+> >> + * struct pinctrl_dev - pin control class device
+> >> + * @desc: the pin controller descriptor supplied when initializing this pin
+> >> + *   controller
+> >> + * @node: node to include this pin controller in the global pin controller list
+> >> + * @dev: the device entry for this pin controller
+> >> + * @owner: module providing the pin controller, used for refcounting
+> >> + * @driver_data: driver data for drivers registering to the pin controller
+> >> + *   subsystem
+> >> + *
+> >> + * This should be dereferenced and used by the pin controller core ONLY
+> >> + */
+> >> +struct pinctrl_dev {
+> >> +     struct pinctrl_desc *desc;
+> >> +     struct radix_tree_root pin_desc_tree;
+> >> +     spinlock_t pin_desc_tree_lock;
+> >> +     struct list_head node;
+> >> +     struct device dev;
+> >> +     struct module *owner;
+> >> +     void *driver_data;
+> >
+> > Couldn't the struct device driver_data be used here?
+> 
+> I'm already using dev_set_drvdata(&pctldev->dev, pctldev);
+> So I can retrieve the pctldev withdev_get_drvdata(dev);
+> in sysfs...
+> 
+> If I wasn't registering sysfs nodes I couldv'e used it.
+
+OK, fair enough.
+
+> >> +/* These should only be used from drives */
+> >
+> > s/drives/drivers?
+> 
+> OK.
+> 
+> >> +/**
+> >> + * struct pinmux_ops - pinmux operations, to be implemented by pin controller
+> >> + * drivers that support pinmuxing
+> >> + * @request: called by the core to see if a certain pin can be made available
+> >> + *   available for muxing. This is called by the core to acquire the pins
+> >> + *   before selecting any actual mux setting across a function. The driver
+> >> + *   is allowed to answer "no" by returning a negative error code
+> >> + * @free: the reverse function of the request() callback, frees a pin after
+> >> + *   being requested
+> >
+> > So is the request like gpio_request() or just test if it the pin is
+> > available?  If its the latter then perhaps pin_is_available() might be a
+> > better name?
+> 
+> It's the former. The pin controller may have some electrical
+> properties that makes it impossible to request a certain pin for muxing
+> at a certain time. (Found out on earlier list review.)
+
+OK, it's a bit of a language nitpick, but I interpreted that as meaning 
+it was purely a test.
+
+	@request: called by the core to reserve a pin for muxing. This 
+	is called by the core to acquire the pins before selecting any 
+	actual mux setting across a function. The driver is allowed to 
+	answer "no" by returning a negative error code.
+
+maybe makes things a little clearer (to me anyway!)?
+
+> >> +#else /* !CONFIG_PINMUX */
+> >> +
+> >> +static inline int pinmux_request_gpio(unsigned gpio)
+> >> +{
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static inline void pinmux_free_gpio(unsigned gpio)
+> >> +{
+> >> +}
+> >> +
+> >> +static inline struct pinmux *pinmux_get(struct device *dev, const char *func)
+> >> +{
+> >> +     return NULL;
+> >> +}
+> >
+> > The CONFIG_PINMUX=y version of pinmux_get returns an ERR_PTR() encoded
+> > error so perhaps this should return something like ERR_PTR(-ENXIO)?
+> 
+> No this is modeled more like the regulator stubs in
+> <linux/regulator.h>. For example, if you're compiling for a
+> platform that does not support regulators they are assumed to
+> be always on.
+> 
+> In this case, if compiled for a platform without pinmux, we assume
+> we got the pins we need already so it just works, not fail.
+
+That makes perfect sense!  Doh!
+
+Thanks a lot for doing this work Linus, it's really appreciated and 
+looking great!  It's a bit difficult for me to test this on my platform 
+at the moment as I'm still trying to handle all of the device tree stuff 
+but I'll give this a good test as soon as I can.
+
+Jamie
