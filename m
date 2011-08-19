@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1HSAQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 20:16:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58887 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab1HSAQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 20:16:32 -0400
-Message-ID: <4E4DAB21.90309@cn.fujitsu.com>
-Date: Fri, 19 Aug 2011 08:15:29 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: JJ Ding <jj_ding@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        Eric Piel <E.A.B.Piel@tudelft.nl>, Daniel Kurtz <djkurtz@chromium.org>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
-References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <20110818135853.GA28313@thinkpad-t410> <20110818142500.GC28313@thinkpad-t410>
-In-Reply-To: <20110818142500.GC28313@thinkpad-t410>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-19 08:15:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-19 08:15:17,
-	Serialize complete at 2011-08-19 08:15:17
+	id S1752532Ab1HSAUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 20:20:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20785 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751458Ab1HSAUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 20:20:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,248,1312182000"; 
+   d="scan'208";a="42870917"
+Subject: Re: cfq-iosched: a regression
+From: Shaohua Li <shaohua.li@intel.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, lkml <linux-kernel@vger.kernel.org>,
+        "Shi, Alex" <alex.shi@intel.com>
+In-Reply-To: <CAN5ZDdewpvg=82O69yGSXJczJMZrfqrLNS=RQiD2Ne2RqQTF1w@mail.gmail.com>
+References: <1313462826.27321.22.camel@sli10-conroe>
+	 <CAN5ZDdewpvg=82O69yGSXJczJMZrfqrLNS=RQiD2Ne2RqQTF1w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Aug 2011 08:21:35 +0800
+Message-ID: <1313713295.29510.1.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2011 10:25 PM, Seth Forshee wrote:
-> On Thu, Aug 18, 2011 at 08:58:53AM -0500, Seth Forshee wrote:
->> The case 3 code is nearly identical to case 2. How about this?
->>
->> 	case 2:
->> 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
->> 		/* fall through */
->>
->> 	case 3:
->> 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
->> 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
->> 		/* range of pressure and width is the same as v2 */
->> 		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
->> 				     ETP_PMAX_V2, 0, 0);
->> 		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
->> 				     ETP_WMAX_V2, 0, 0);
->> 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
->> 		input_mt_init_slots(dev, 2);
->> 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
->> 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
->> 		break;
->
-> Sorry, that should have been:
->
-> 	case 2:
-> 		__set_bit(BTN_TOOL_QUADTAP, dev->keybit);
-> 		/* fall through */
->
-> 	case 3:
-> 		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
-> 		if (etd->reports_pressure) {
-> 			input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
-> 					     ETP_PMAX_V2, 0, 0);
-> 			input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
-> 					     ETP_WMAX_V2, 0, 0);
-> 		}
-> 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
-> 		input_mt_init_slots(dev, 2);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
-> 		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
-> 		break;
+On Fri, 2011-08-19 at 04:22 +0800, Justin TerAvest wrote:
+> Hi Shaohua,
+> 
+> What was the workload you were running to find this regression?
+kernel build as I declared below.
 
-simplify, seems good.
+Thanks,
+Shaohua
 
-Thanks
--Wanlong Gao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> On Mon, Aug 15, 2011 at 7:47 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> > We have a kernel build regression since 3.1-rc1, which is about 10%
+> > regression. The kernel source is in an ext3 filesystem.
+> > Alex Shi bisect it to commit:
+> > commit a07405b7802691d29ab3b23bdc76ee6d006aad0b
+> > Author: Justin TerAvest <teravest@google.com>
+> > Date:   Sun Jul 10 22:09:19 2011 +0200
+> >
+> >    cfq: Remove special treatment for metadata rqs.
+> >
+> > Apparently this is caused by lack metadata preemption, where ext3/ext4
+> > do use READ_META. I didn't see a way to fix the issue, so suggest
+> > reverting the patch.
+> >
+> > Reported-by: Alex Shi<alex.shi@intel.com>
+> > Reported-by: Shaohua Li<shaohua.li@intel.com>
+> >
+> >
+
 
