@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab1HSVve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 17:51:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38415 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707Ab1HSVvb (ORCPT
+	id S1755361Ab1HSVwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 17:52:38 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:34014 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab1HSVwh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 17:51:31 -0400
-Date: Fri, 19 Aug 2011 14:51:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrew Barry <abarry@cray.com>
-Cc: linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Hugh Dickins <hughd@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Hastings <abh@cray.com>
-Subject: Re: [PATCH v2 1/1] hugepages: Fix race between hugetlbfs umount and
- quota update.
-Message-Id: <20110819145109.dcd5dac6.akpm@linux-foundation.org>
-In-Reply-To: <4E4EB603.8090305@cray.com>
-References: <4E4EB603.8090305@cray.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 17:52:37 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 0/3] make ntfs_free() NULL safe
+Mime-Version: 1.0 (Apple Message framework v1244.3)
+Content-Type: text/plain; charset=windows-1252
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net>
+Date: Fri, 19 Aug 2011 22:52:35 +0100
+Cc: linux-kernel@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net
+Content-Transfer-Encoding: 8BIT
+Message-Id: <39DAF2CE-95BC-4E0C-B30E-4686DF0E8D31@tuxera.com>
+References: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>
+X-Mailer: Apple Mail (2.1244.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011 14:14:11 -0500
-Andrew Barry <abarry@cray.com> wrote:
+Hi,
 
-> This patch fixes a use-after-free problem in free_huge_page, with a quota update
-> happening after hugetlbfs umount. The problem results when a device driver,
-> which has mapped a hugepage, does a put_page. Put_page, calls free_huge_page,
-> which does a hugetlb_put_quota. As written, hugetlb_put_quota takes an
-> address_space struct pointer "mapping" as an argument. If the put_page occurs
-> after the hugetlbfs filesystem is unmounted, mapping points to freed memory.
-
-OK.  This sounds screwed up.  If a device driver is currently using a
-page from a hugetlbfs file then the unmount shouldn't have succeeded in
-the first place!
-
-Or is it the case that the device driver got a reference to the page by
-other means, bypassing hugetlbfs?  And there's undesirable/incorrect
-interaction between the non-hugetlbfs operation and hugetlbfs?
-
-Or something else?
-
-<starts reading the mailing list>
-
-OK, important missing information from the above is that the driver got
-at this page via get_user_pages() and happened to stumble across a
-hugetlbfs page.  So it's indeed an incorrect interaction between a
-non-hugetlbfs operation and hugetlbfs.
-
-What's different about hugetlbfs?  Why don't other filesystems hit this?
-
-<investigates further>
-
-OK so the incorrect interaction happened in free_huge_page(), which is
-called via the compound page destructor (this dtor is "what's different
-about hugetlbfs").   What is incorrect about this is
-
-a) that we're doing fs operations in response to a
-   get_user_pages()/put_page() operation which has *nothing* to do with
-   filesystems!
-
-b) that we continue to try to do that fs operation against an fs
-   which was unmounted and freed three days ago. duh.
-
-
-So I hereby pronounce that
-
-a) It was wrong to manipulate hugetlbfs quotas within
-   free_huge_page().  Because free_huge_page() is a low-level
-   page-management function which shouldn't know about one of its
-   specific clients (in this case, hugetlbfs).
-
-   In fact it's wrong for there to be *any* mention of hugetlbfs
-   within hugetlb.c.
-
-b) I shouldn't have merged that hugetlbfs quota code.  whodidthat. 
-   Mel, Adam, Dave, at least...
-
-c) The proper fix here is to get that hugetlbfs quota code out of
-   free_huge_page() and do it all where it belongs: within hugetlbfs
-   code.
-
-
-Regular filesystems don't need to diddle quota counts within
-page_cache_release().  Why should hugetlbfs need to?
-
->
-> ...
->
-> +		/*Free only if used quota is zero. */
-
-Missing a space there.
-
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -142,11 +142,16 @@ struct hugetlbfs_config {
->  	struct hstate *hstate;
->  };
+On 19 Aug 2011, at 22:30, Jesper Juhl wrote:
+> Here's a small series of patches that make it safe to call ntfs_free() 
+> with a NULL pointer and reaps some bennefits from that.
 > 
-> +#define HPAGE_INACTIVE  0
-> +#define HPAGE_ACTIVE    1
+> The first patch in the series simply makes ntfs_free() safe to call with a 
+> NULL pointer. This fits with many other kernel freeing functions, that are 
+> generally safe to call with NULL pointers.
+> 
+> The second patch adds some documentation to ntfs_free() similar to what's 
+> already provided for the allocation functions.  ntfs_free() is fairly 
+> simple so you could argue that such documentation is not really needed, 
+> but I say it's still nice to have if for no other reason than 
+> completeness.
+> 
+> The third patch removes a number of tests for NULL pointers before calls 
+> to ntfs_free() that patch 1 make redundant.
 
-The above need documenting, please.  That documentation would perhaps
-help me understand why we need both an "active" flag *and* a refcount.
+Patches look fine.  Feel free to add my
+
+	Acked-by: Anton Altaparmakov <anton@tuxera.com>
+
+and to send them to Linus for inclusion…
+
+> This whole things came about because Coverity Prevent spotted that in 
+> fs/ntfs/runlist.c on line 967 we call ntfs_runlists_merge() which frees 
+> its second argument and we then explicitly free that argument via 
+> ntfs_free() again on line 970. This patch series also makes that a non 
+> issue.
+
+Ah but Coverity Prevent is incorrect in its spotting!
+
+Have a look yourself!
+
+ntfs_runlists_merge() _ONLY_ frees its second argument if it returns success.  If it returns error it does _NOT_ free its second argument!
+
+And line 970 is _ONLY_ executed if ntfs_runlists_merge() returned error, i.e. in the case that the second argument was _NOT_ freed.  If the argument was freed, ntfs_runlists_merge() would have returned success, and then line 970 would never have been reached…
+
+So I am afraid this is a bug in Coverity Prevent rather than in NTFS.  (-:
+
+Best regards,
+
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
