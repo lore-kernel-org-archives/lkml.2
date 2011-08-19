@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab1HSRCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 13:02:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58235 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab1HSRC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 13:02:27 -0400
-Date: Fri, 19 Aug 2011 21:02:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Woodhouse <dwmw2@infradead.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] power: max8998_charger.c needs module.h
-Message-ID: <20110819170222.GM22761@oksana.dev.rtsoft.ru>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
- <20110729211143.0a9d6ed7.rdunlap@xenotime.net>
+	id S1756315Ab1HSRER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 13:04:17 -0400
+Received: from void.printf.net ([89.145.121.20]:39750 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab1HSREO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 13:04:14 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-mmc@vger.kernel.org,
+        "'linux-arm-kernel\@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] mmc: atmel rework for next
+References: <4E4A8E73.7050705@atmel.com>
+Date: Fri, 19 Aug 2011 13:03:47 -0400
+In-Reply-To: <4E4A8E73.7050705@atmel.com> (Nicolas Ferre's message of "Tue, 16
+	Aug 2011 17:36:19 +0200")
+Message-ID: <m24o1dnxjg.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110729211143.0a9d6ed7.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 09:11:43PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> power/max8998_charger.c uses interfaces from linux/module.h,
-> so it should include that file.  This fixes build errors.
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> ---
+Hi,
 
-Applied, thank you!
+On Tue, Aug 16 2011, Nicolas Ferre wrote:
+> Hi Chris,
+>
+> Please pull from:
+>
+> git://github.com/at91linux/linux-2.6-at91.git nfe/mmc_atmel
+>
+> This is a series that reworks the atmel-mci driver for a future merge of both at91_mci and atmel-mci drivers. Those patches have been discussed on the mailing-list.
+> I added a tiny at91_mci patch also sent last week.
 
+Thanks, all looks good -- pushed to mmc-next with some commit message
+rewording.  Please wrap your commit messages to 75 cols in future, so
+that they're viewable in "git log" without wrapping.
+
+I'll repeat your warning text from one of the commit messages here for
+the broader audience:
+
+    Warning: at91rm9200 is not supported, to support it we need to use
+    swab32 on data but I have no board to test it.
+
+- Chris.
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
