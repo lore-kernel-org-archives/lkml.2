@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1HSK0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 06:26:51 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:34177 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab1HSK0u convert rfc822-to-8bit (ORCPT
+	id S1753009Ab1HSK2O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 06:28:14 -0400
+Received: from mail.codesourcery.com ([38.113.113.100]:43613 "EHLO
+	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1HSK2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 06:26:50 -0400
+	Fri, 19 Aug 2011 06:28:13 -0400
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Lin Ming <ming.m.lin@intel.com>
+Subject: Re: Hanging threads with pthread_detach and gdb
+Date: Fri, 19 Aug 2011 11:28:09 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-10-generic; KDE/4.7.0; x86_64; ; )
+Cc: Philipp Marek <philipp.marek@linbit.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+References: <201108161458.35774.philipp.marek@linbit.com> <CAF1ivSZ-CCzFUH4WtxqL2QBoyB3WtF+KMqnCBdjaHhZ7-bbVjA@mail.gmail.com> <1313744083.4115.206.camel@minggr.sh.intel.com>
+In-Reply-To: <1313744083.4115.206.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <m17h69sr03.fsf@fess.ebiederm.org>
-References: <4E4CDF44.5080109@redhat.com> <m17h69sr03.fsf@fess.ebiederm.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 19 Aug 2011 12:26:30 +0200
-Message-ID: <CAPXgP13KeTnBD+hgf_hM55EiQFsYCxmCwyhRaNZ0rUJpjKK=-g@mail.gmail.com>
-Subject: Re: [dm-devel] clone() with CLONE_NEWNET breaks kobject_uevent_env()
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108191128.09930.pedro@codesourcery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 11:13, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Milan Broz <mbroz@redhat.com> writes:
->> If you run clone() with CLONE_NEWNET (which is chromium using
->> for sanboxing), udev namespace is cloned too (newly registered
->> in uevent_sock_list) and netlink send (except the first in list)
->> fails with -ESRCH.
->>
->> This causes that _every_ call of kobject_uevent_env() return failure.
+On Friday 19 August 2011 09:54:43, Lin Ming wrote:
+> =====
+> gdb wait for pid=2431
+> gdb is going to sleep ...
+> gdb children list:
+>     pid=2431, exit_state=16, exit_signal=17
+> gdb ptrace list:
+>     pid=2436, exit_state=16, exit_signal=-1
+>     pid=2431, exit_state=16, exit_signal=17
+> =====
+> 
+> exit_state 16 is EXIT_ZOMBIE state.
+> pid 2431 is the thread group leader.
+> pid 2436 is the thread group member(other members have been removed).
+> 
+> gdb is waiting the group leader, but it fails because the group is not
+> empty. Then gdb goes to sleep.
+> 
+> At this moment, all threads have gone into EXIT_ZOMBIE state.
+> So no thread can wake up gdb anymore.
+> 
+> That's why gdb hangs.
+> 
+> I'm not familiar with pthread semantics.
+> Is this a problem need to be fixed?
+> 
 
-> That netlink_ broadcast chooses to treat failure to deliver a packet to
-> anyone as an error and return -ESRCH is a little peculiar.  In general
-> we don't see that error because when you are testing there is at least
-> one listener on the netlink socket.  So as a practical matter I think
-> we should be ignoring return values of -ESRCH from netlink_broadcast,
-> in kobject_uevent_env.
+Yeah, it's an ugly ptrace quirk.  waitpid'ing the exited
+tg leader hangs if there are other threads in the group,
+even if they're zombies.
 
-Wouldn't a wrap in netlink_has_listeners() help before we try to send it?
+I believe this is fixed / worked around mainline GDB:
 
-Kay
+ http://sourceware.org/bugzilla/show_bug.cgi?id=10970
+ http://sourceware.org/bugzilla/show_bug.cgi?id=12702
+ http://sourceware.org/ml/gdb-patches/2011-05/msg00401.html
+
+Though it'd be nice not to need the workaround...
+
+-- 
+Pedro Alves
