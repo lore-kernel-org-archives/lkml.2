@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1HSN2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:28:09 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:12775 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab1HSN17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:27:59 -0400
+	id S1754496Ab1HSN2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:28:33 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:16586 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754006Ab1HSN2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:28:22 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="159732179"
+   d="scan'208";a="16158238"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [PATCH 04/75] net: ipv6: convert to SKB frag APIs
-Date: Fri, 19 Aug 2011 14:26:36 +0100
-Message-ID: <1313760467-8598-4-git-send-email-ian.campbell@citrix.com>
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+        Jie Yang <jie.yang@atheros.com>
+Subject: [PATCH 15/75] atlx: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:47 +0100
+Message-ID: <1313760467-8598-15-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -31,47 +26,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
+Cc: Jay Cliburn <jcliburn@gmail.com>
+Cc: Chris Snook <chris.snook@gmail.com>
+Cc: Jie Yang <jie.yang@atheros.com>
 Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 ---
- net/ipv6/ip6_output.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/atlx/atl1.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 4c882cf..835c04b 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1480,13 +1480,13 @@ alloc_new_skb:
- 			if (page && (left = PAGE_SIZE - off) > 0) {
- 				if (copy >= left)
- 					copy = left;
--				if (page != frag->page) {
-+				if (page != skb_frag_page(frag)) {
- 					if (i == MAX_SKB_FRAGS) {
- 						err = -EMSGSIZE;
- 						goto error;
- 					}
--					get_page(page);
- 					skb_fill_page_desc(skb, i, page, sk->sk_sndmsg_off, 0);
-+					skb_frag_ref(skb, i);
- 					frag = &skb_shinfo(skb)->frags[i];
- 				}
- 			} else if(i < MAX_SKB_FRAGS) {
-@@ -1506,7 +1506,8 @@ alloc_new_skb:
- 				err = -EMSGSIZE;
- 				goto error;
- 			}
--			if (getfrag(from, page_address(frag->page)+frag->page_offset+frag->size, offset, copy, skb->len, skb) < 0) {
-+			if (getfrag(from, skb_frag_address(frag)+frag->size,
-+				    offset, copy, skb->len, skb) < 0) {
- 				err = -EFAULT;
- 				goto error;
- 			}
+diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+index 97e6954..995eb3c 100644
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -2283,9 +2283,8 @@ static void atl1_tx_map(struct atl1_adapter *adapter, struct sk_buff *skb,
+ 			buffer_info->length = (buf_len > ATL1_MAX_TX_BUF_LEN) ?
+ 				ATL1_MAX_TX_BUF_LEN : buf_len;
+ 			buf_len -= buffer_info->length;
+-			buffer_info->dma = pci_map_page(adapter->pdev,
+-				frag->page,
+-				frag->page_offset + (i * ATL1_MAX_TX_BUF_LEN),
++			buffer_info->dma = skb_frag_dma_map(&adapter->pdev->dev,
++				frag, i * ATL1_MAX_TX_BUF_LEN,
+ 				buffer_info->length, PCI_DMA_TODEVICE);
+ 
+ 			if (++next_to_use == tpd_ring->count)
 -- 
 1.7.2.5
 
