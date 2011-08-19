@@ -1,247 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1HSBcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Aug 2011 21:32:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54626 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab1HSBcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Aug 2011 21:32:04 -0400
-Subject: Re: +
- prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision .patch
- added to -mm tree
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
-        roland@hack.frob.com, torvalds@linux-foundation.org
-Date: Fri, 19 Aug 2011 03:31:59 +0200
-In-Reply-To: <20110818184857.GA12094@redhat.com>
-References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org>
-	 <20110817115543.GA8745@redhat.com>
-	 <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com>
-	 <20110817134516.GA14136@redhat.com>
-	 <20110818124353.GA2839@tango.0pointer.de>
-	 <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop>
-	 <20110818184857.GA12094@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1313717521.991.4.camel@mop>
-Mime-Version: 1.0
+	id S1753244Ab1HSBgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Aug 2011 21:36:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28571 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab1HSBgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Aug 2011 21:36:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="39877208"
+Date: Fri, 19 Aug 2011 09:36:28 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Dave Chinner <david@fromorbit.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>, "Shi, Alex" <alex.shi@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [PATCH v9 12/13] memcg: create support routines for page
+ writeback
+Message-ID: <20110819013628.GA7925@localhost>
+References: <1313597705-6093-1-git-send-email-gthelen@google.com>
+ <1313597705-6093-13-git-send-email-gthelen@google.com>
+ <20110818103803.c2617804.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110818023610.GA12514@localhost>
+ <20110818101248.GA12426@quack.suse.cz>
+ <20110818121714.GA1883@localhost>
+ <20110818200856.GD12426@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110818200856.GD12426@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-18 at 20:48 +0200, Oleg Nesterov wrote:
-> On 08/18, Kay Sievers wrote:
-
-> No, this doesn't look right.
+On Fri, Aug 19, 2011 at 04:08:56AM +0800, Jan Kara wrote:
+> On Thu 18-08-11 20:17:14, Wu Fengguang wrote:
+> > On Thu, Aug 18, 2011 at 06:12:48PM +0800, Jan Kara wrote:
+> > > On Thu 18-08-11 10:36:10, Wu Fengguang wrote:
+> > > > Subject: squeeze max-pause area and drop pass-good area
+> > > > Date: Tue Aug 16 13:37:14 CST 2011
+> > > > 
+> > > > Remove the pass-good area introduced in ffd1f609ab10 ("writeback:
+> > > > introduce max-pause and pass-good dirty limits") and make the
+> > > > max-pause area smaller and safe.
+> > > > 
+> > > > This fixes ~30% performance regression in the ext3 data=writeback
+> > > > fio_mmap_randwrite_64k/fio_mmap_randrw_64k test cases, where there are
+> > > > 12 JBOD disks, on each disk runs 8 concurrent tasks doing reads+writes.
+> > > > 
+> > > > Using deadline scheduler also has a regression, but not that big as
+> > > > CFQ, so this suggests we have some write starvation.
+> > > > 
+> > > > The test logs show that
+> > > > 
+> > > > - the disks are sometimes under utilized
+> > > > 
+> > > > - global dirty pages sometimes rush high to the pass-good area for
+> > > >   several hundred seconds, while in the mean time some bdi dirty pages
+> > > >   drop to very low value (bdi_dirty << bdi_thresh).
+> > > >   Then suddenly the global dirty pages dropped under global dirty
+> > > >   threshold and bdi_dirty rush very high (for example, 2 times higher
+> > > >   than bdi_thresh). During which time balance_dirty_pages() is not
+> > > >   called at all.
+> > > > 
+> > > > So the problems are
+> > > > 
+> > > > 1) The random writes progress so slow that they break the assumption of
+> > > > the max-pause logic that "8 pages per 200ms is typically more than
+> > > > enough to curb heavy dirtiers".
+> > > > 
+> > > > 2) The max-pause logic ignored task_bdi_thresh and thus opens the
+> > > >    possibility for some bdi's to over dirty pages, leading to
+> > > >    (bdi_dirty >> bdi_thresh) and then (bdi_thresh >> bdi_dirty) for others.
+> > > > 
+> > > > 3) The higher max-pause/pass-good thresholds somehow leads to some bad
+> > > >    swing of dirty pages.
+> > > > 
+> > > > The fix is to allow the task to slightly dirty over task_bdi_thresh, but
+> > > > no way to exceed bdi_dirty and/or global dirty_thresh.
+> > > > 
+> > > > Tests show that it fixed the JBOD regression completely (both behavior
+> > > > and performance), while still being able to cut down large pause times
+> > > > in balance_dirty_pages() for single-disk cases.
+> > > > 
+> > > > Reported-by: Li Shaohua <shaohua.li@intel.com>
+> > > > Tested-by: Li Shaohua <shaohua.li@intel.com>
+> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > ---
+> > > >  include/linux/writeback.h |   11 -----------
+> > > >  mm/page-writeback.c       |   15 ++-------------
+> > > >  2 files changed, 2 insertions(+), 24 deletions(-)
+> > > > 
+> > > > --- linux.orig/mm/page-writeback.c	2011-08-18 09:52:59.000000000 +0800
+> > > > +++ linux/mm/page-writeback.c	2011-08-18 10:28:57.000000000 +0800
+> > > > @@ -786,21 +786,10 @@ static void balance_dirty_pages(struct a
+> > > >  		 * 200ms is typically more than enough to curb heavy dirtiers;
+> > > >  		 * (b) the pause time limit makes the dirtiers more responsive.
+> > > >  		 */
+> > > > -		if (nr_dirty < dirty_thresh +
+> > > > -			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
+> > > > +		if (nr_dirty < dirty_thresh &&
+> > > > +		    bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2 &&
+> > > >  		    time_after(jiffies, start_time + MAX_PAUSE))
+> > > >  			break;
+> > >   This looks definitely much safer than the original patch since we now
+> > > always observe global dirty limit.
+> > 
+> > Yeah.
+> > 
+> > > I just wonder: We have throttled the
+> > > task because bdi_nr_reclaimable > task_bdi_thresh.
+> > 
+> > Not necessarily. It's possible (bdi_nr_reclaimable < task_bdi_thresh)
+> > for the whole loop. And the 200ms pause that trigger the above test
+> > may totally come from the io_schedule_timeout() calls.
+> > 
+> > > Now in practice there
+> > > should be some pages under writeback and this task should have submitted
+> > > even more just a while ago. So the condition
+> > >   bdi_dirty < (task_bdi_thresh + bdi_thresh) / 2
+> > 
+> > I guess the writeback_inodes_wb() call is irrelevant for the above
+> > test, because writeback_inodes_wb() transfers reclaimable pages to
+> > writeback pages, with the total bdi_dirty value staying the same.
+> > Not to mention the fact that both the bdi_dirty and bdi_nr_reclaimable
+> > variables have not been updated between writeback_inodes_wb() and the
+> > max-pause test.
+>   Right, that comment was a bit off.
 > 
-> This code should do something like
-> 
-> 		for (reaper = father->real_parent;
-> 		     !same_thread_group(reaper, pid_ns->child_reaper);
+> > > looks still relatively weak. Shouldn't there be
+> > >   bdi_nr_reclaimable < (task_bdi_thresh + bdi_thresh) / 2?
+> > 
+> > That's much easier condition to satisfy..
+>   Argh, sorry. I was mistaken by the name of the variable - I though it
+> contains only dirty pages on the bdi but it also contains pages under
+> writeback and bdi_nr_reclaimable is the one that contains only dirty pages.
 
-Without that check, bootup immediately hangs. The problem is, I expect,
-that we need to exit the loop for re-parenting kernel threads, and
-pid_ns->child_reaper seems out of scope in these cases. That's why we
-initially had the &init_task check there.
+Yeah the name may be a bit confusing.. but we'll soon get rid of bdi_nr_reclaimable :)
 
-> 			if (there is a !PF_EXITING thread)
-> 				return thread;
+> So your patch does exactly what I had in mind. You can add:
+>   Acked-by: Jan Kara <jack@suse.cz>
 
-Added this.
+Thanks! I'll test it in linux-next for a week and then send to Linus.
 
-> And I forgot to mention, could you please-please rename child_reaper?
-> Say, is_child_reaper or is_sub_reaper. Or whatever. I do not really
-> care about the naming. But I use grep very often, and personally I
-> dislike the task->child_reaper/signal->child_reaper confusion.
-
-Right, makes sense. Renamed everything to subreaper, which makes it
-clear that we still fall back to 'init' in case things go wrong.
-
-
-version 3:
-- rename all child_reaper to child_subreaper to avoid confusion with
-  the PID namespace child_reaper variable
-
-- check all possible threads of the reaper process for valid one 
-
-- optimization: let processes inherit a flag to indicate that there is
-  a subreaper to lookup, in case they need to be re-parented.
-
-version 2:
-- uses task->real_parent to walk up the chain of parents.
-
-- does not use init_task but the the parent pointer to itself
-
-- moves the flag into task->signal to have it process-wide
-  and not per thread
-
-- moves the parent walk after the check for
-  pid_ns->child_reaper == father
-
-- makes sure it does not return a PF_EXITING task
-
-- adds some explanation of SIGCHLD + wait() vs. async events
-  like taskstats, to the changelog
-
-- updates the comments for find_new_reaper()
-
-
-
-From: Lennart Poettering <lennart@poettering.net>
-Subject: prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
-
-Userspace service managers/supervisors need to track their started
-services. Many services daemonize by double-forking and get implicitely
-re-parented to PID 1. The process manager will no longer be able to
-receive the SIGCHLD signals for them, and is no longer in charge of
-reaping the children with wait(). All information about the children
-is lost at the moment PID 1 cleans up the re-parented processes.
-
-With this prctl, a service manager process can mark itself as a sort of
-'sub-init', able to stay as the parent for all orphaned processes
-created by the started services. All SIGCHLD signals will be delivered
-to the service manager.
-
-Receiving SIGCHLD and doing wait() is in cases of a service-manager
-much preferred over any possible asynchronous notification about
-specific PIDs, because the service manager has full access to the
-child process data in /proc and the PID can not be re-used until
-the wait(), the service-manager itself is in charge of, has happended.
-
-As a side effect, the relevant parent PID information does not get lost
-by a double-fork, which results in a more elaborate process tree and 'ps'
-output.
-
-This is orthogonal to PID namespaces. PID namespaces are isolated
-from each other, while a service management process usually requires
-the serices to live in the same namespace, to be able to talk to each
-other.
-
-Users of this will be the systemd per-user instance, which provides
-init-like functionality for the user's login session and D-Bus, which
-activates bus services on on-demand. Both will need init-like capabilities
-to be able to properly keep track of the services they start.
-
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Lennart Poettering <lennart@poettering.net>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
----
-
- include/linux/prctl.h |    3 +++
- include/linux/sched.h |   12 ++++++++++++
- kernel/exit.c         |   28 +++++++++++++++++++++++-----
- kernel/fork.c         |    3 +++
- kernel/sys.c          |    9 +++++++++
- 5 files changed, 50 insertions(+), 5 deletions(-)
-
---- a/include/linux/prctl.h
-+++ b/include/linux/prctl.h
-@@ -102,4 +102,7 @@
- 
- #define PR_MCE_KILL_GET 34
- 
-+#define PR_SET_CHILD_SUBREAPER 35
-+#define PR_GET_CHILD_SUBREAPER 36
-+
- #endif /* _LINUX_PRCTL_H */
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -550,6 +550,18 @@ struct signal_struct {
- 	int			group_stop_count;
- 	unsigned int		flags; /* see SIGNAL_* flags below */
- 
-+	/*
-+	 * PR_SET_CHILD_SUBREAPER marks a process, like a service
-+	 * manager, to re-parent orphan (double-forking) child processes
-+	 * to this process instead of 'init'. The service manager is
-+	 * able to receive SIGCHLD signals and is able to investigate
-+	 * the process until it calls wait(). All children of this
-+	 * process will inherit a flag if they should look for a
-+	 * child_subreaper process at exit.
-+	 */
-+	unsigned int		is_child_subreaper:1;
-+	unsigned int		has_child_subreaper:1;
-+
- 	/* POSIX.1b Interval Timers */
- 	struct list_head posix_timers;
- 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -689,11 +689,12 @@ static void exit_mm(struct task_struct *
- }
- 
- /*
-- * When we die, we re-parent all our children.
-- * Try to give them to another thread in our thread
-- * group, and if no such member exists, give it to
-- * the child reaper process (ie "init") in our pid
-- * space.
-+ * When we die, we re-parent all our children, and try to:
-+ * 1. give them to another thread in our thread group, if such a
-+ *    member exists
-+ * 2. give it to the first anchestor process which prctl'd itself
-+ *    as a child_subreaper for its children (like a service manager)
-+ * 3. give it to the init process (PID 1) in our pid namespace
-  */
- static struct task_struct *find_new_reaper(struct task_struct *father)
- 	__releases(&tasklist_lock)
-@@ -724,6 +725,23 @@ static struct task_struct *find_new_reap
- 		 * forget_original_parent() must move them somewhere.
- 		 */
- 		pid_ns->child_reaper = init_pid_ns.child_reaper;
-+	} else if (father->signal->has_child_subreaper) {
-+		struct task_struct *reaper;
-+
-+		/* find the first ancestor marked as child_subreaper */
-+		for (reaper = father->real_parent;
-+		     reaper != reaper->real_parent;
-+		     reaper = reaper->real_parent) {
-+			if (same_thread_group(reaper, pid_ns->child_reaper))
-+				break;
-+			if (!reaper->signal->is_child_subreaper)
-+				continue;
-+			thread = reaper;
-+			do {
-+				if (!(thread->flags & PF_EXITING))
-+					return reaper;
-+			} while_each_thread(reaper, thread);
-+		}
- 	}
- 
- 	return pid_ns->child_reaper;
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -987,6 +987,9 @@ static int copy_signal(unsigned long clo
- 	sig->oom_score_adj = current->signal->oom_score_adj;
- 	sig->oom_score_adj_min = current->signal->oom_score_adj_min;
- 
-+	if (current->signal->has_child_subreaper)
-+		sig->has_child_subreaper = true;
-+
- 	mutex_init(&sig->cred_guard_mutex);
- 
- 	return 0;
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1799,6 +1799,15 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
- 			else
- 				error = PR_MCE_KILL_DEFAULT;
- 			break;
-+		case PR_SET_CHILD_SUBREAPER:
-+			me->signal->is_child_subreaper = !!arg2;
-+			me->signal->has_child_subreaper = true;
-+			error = 0;
-+			break;
-+		case PR_GET_CHILD_SUBREAPER:
-+			error = put_user(me->signal->is_child_subreaper,
-+					 (int __user *) arg2);
-+			break;
- 		default:
- 			error = -EINVAL;
- 			break;
-
+Thanks,
+Fengguang
 
