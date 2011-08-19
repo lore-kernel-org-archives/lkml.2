@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab1HSVwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 17:52:38 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:34014 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab1HSVwh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 17:52:37 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH 0/3] make ntfs_free() NULL safe
-Mime-Version: 1.0 (Apple Message framework v1244.3)
-Content-Type: text/plain; charset=windows-1252
-From: Anton Altaparmakov <anton@tuxera.com>
-In-Reply-To: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net>
-Date: Fri, 19 Aug 2011 22:52:35 +0100
-Cc: linux-kernel@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net
-Content-Transfer-Encoding: 8BIT
-Message-Id: <39DAF2CE-95BC-4E0C-B30E-4686DF0E8D31@tuxera.com>
-References: <alpine.LNX.2.00.1108192321130.31857@swampdragon.chaosbits.net>
-To: Jesper Juhl <jj@chaosbits.net>
-X-Mailer: Apple Mail (2.1244.3)
+	id S1754825Ab1HSV5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 17:57:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53733 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1HSV5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 17:57:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Pihet-XID, Jean" <j-pihet@ti.com>
+Subject: Re: linux-next: build failure after merge of the final tree (pm tree related)
+Date: Fri, 19 Aug 2011 23:58:51 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20110819130328.ee5c4b7191db0ce2c8a02e39@canb.auug.org.au> <CAN5iSWpGKF4qu5yqeDk=nxvq0tVs6+mozAEJ+FLdh=Ryx-hsEA@mail.gmail.com>
+In-Reply-To: <CAN5iSWpGKF4qu5yqeDk=nxvq0tVs6+mozAEJ+FLdh=Ryx-hsEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108192358.51522.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 19 Aug 2011, at 22:30, Jesper Juhl wrote:
-> Here's a small series of patches that make it safe to call ntfs_free() 
-> with a NULL pointer and reaps some bennefits from that.
+On Friday, August 19, 2011, Pihet-XID, Jean wrote:
+> Hi Stephen, Rafael,
 > 
-> The first patch in the series simply makes ntfs_free() safe to call with a 
-> NULL pointer. This fits with many other kernel freeing functions, that are 
-> generally safe to call with NULL pointers.
+> On Fri, Aug 19, 2011 at 5:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
+> >
+> > After merging the final tree, today's linux-next build (powerpc
+> > allnoconfig) failed like this:
+> >
+> > In file included from include/linux/netdevice.h:34:0,
+> >                 from include/linux/icmpv6.h:173,
+> >                 from include/linux/ipv6.h:220,
+> >                 from include/net/ipv6.h:16,
+> >                 from include/linux/sunrpc/clnt.h:25,
+> >                 from include/linux/nfs_fs.h:50,
+> >                 from init/do_mounts.c:20:
+> > include/linux/pm_qos.h: In function 'dev_pm_qos_add_request':
+> > include/linux/pm_qos.h:123:6: warning: 'return' with no value, in function returning non-void
+> > include/linux/pm_qos.h: In function 'dev_pm_qos_update_request':
+> > include/linux/pm_qos.h:126:6: warning: 'return' with no value, in function returning non-void
+> > include/linux/pm_qos.h: In function 'dev_pm_qos_remove_request':
+> > include/linux/pm_qos.h:128:6: warning: 'return' with no value, in function returning non-void
+> >
+> > Caused by commit b6d5b88750dc ("PM QoS: Implement per-device PM QoS
+> > constraints").
+> I am really sorry about this. This build failure is indeed due to my
+> patch which has stubs for the !PM case.
+> Here is an updated patch (attached), the only change is in the stubs.
 > 
-> The second patch adds some documentation to ntfs_free() similar to what's 
-> already provided for the allocation functions.  ntfs_free() is fairly 
-> simple so you could argue that such documentation is not really needed, 
-> but I say it's still nice to have if for no other reason than 
-> completeness.
+> >
+> > Please, please compile test with CONFIG options that your patch depends
+> > on switched on and switched off - in this case CONFIG_PM.
+> Well, it is not as easy as it seems. As the patch set describes, I am
+> build testing for x86 and OMAP. At the moment due to config
+> dependencies it is _impossible_ to disable PM in the OMAP config.
 > 
-> The third patch removes a number of tests for NULL pointers before calls 
-> to ntfs_free() that patch 1 make redundant.
+> Also I cannot build test every platform out there.
+> Do you have a procedure for build testing?
+> 
+> >
+> > I have reverted that commit (and the followinf commit 57afcf09649c ("PM
+> > QoS: Add global notification mechanism for device constraints")) for
+> > today.
+> Can we have the updated version merged in?
 
-Patches look fine.  Feel free to add my
+Merged and pushed back.
 
-	Acked-by: Anton Altaparmakov <anton@tuxera.com>
-
-and to send them to Linus for inclusion…
-
-> This whole things came about because Coverity Prevent spotted that in 
-> fs/ntfs/runlist.c on line 967 we call ntfs_runlists_merge() which frees 
-> its second argument and we then explicitly free that argument via 
-> ntfs_free() again on line 970. This patch series also makes that a non 
-> issue.
-
-Ah but Coverity Prevent is incorrect in its spotting!
-
-Have a look yourself!
-
-ntfs_runlists_merge() _ONLY_ frees its second argument if it returns success.  If it returns error it does _NOT_ free its second argument!
-
-And line 970 is _ONLY_ executed if ntfs_runlists_merge() returned error, i.e. in the case that the second argument was _NOT_ freed.  If the argument was freed, ntfs_runlists_merge() would have returned success, and then line 970 would never have been reached…
-
-So I am afraid this is a bug in Coverity Prevent rather than in NTFS.  (-:
-
-Best regards,
-
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
-
+Thanks,
+Rafael
