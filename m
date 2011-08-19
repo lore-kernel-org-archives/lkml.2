@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab1HSNij (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:38:39 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:37564 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755090Ab1HSN3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:29:19 -0400
+	id S1755901Ab1HSNiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:38:55 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58735 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab1HSN3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:29:16 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158315"
+   d="scan'208";a="159732389"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com
-Subject: [PATCH 44/75] qlge: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:27:16 +0100
-Message-ID: <1313760467-8598-44-git-send-email-ian.campbell@citrix.com>
+        Amit Kumar Salecha <amit.salecha@qlogic.com>,
+        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
+        linux-driver@qlogic.com
+Subject: [PATCH 43/75] qlcnic: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:27:15 +0100
+Message-ID: <1313760467-8598-43-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -26,40 +28,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
-Cc: Ron Mercer <ron.mercer@qlogic.com>
+Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>
+Cc: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
 Cc: linux-driver@qlogic.com
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/qlge/qlge_main.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/qlcnic/qlcnic_main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/qlge/qlge_main.c b/drivers/net/qlge/qlge_main.c
-index f07e96e..1da5bc7 100644
---- a/drivers/net/qlge/qlge_main.c
-+++ b/drivers/net/qlge/qlge_main.c
-@@ -1431,10 +1431,8 @@ static int ql_map_send(struct ql_adapter *qdev,
- 			map_idx++;
- 		}
+diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
+index 5ca1b56..cea2e6b 100644
+--- a/drivers/net/qlcnic/qlcnic_main.c
++++ b/drivers/net/qlcnic/qlcnic_main.c
+@@ -2127,8 +2127,8 @@ qlcnic_map_tx_skb(struct pci_dev *pdev,
+ 		frag = &skb_shinfo(skb)->frags[i];
+ 		nf = &pbuf->frag_array[i+1];
  
--		map =
--		    pci_map_page(qdev->pdev, frag->page,
--				 frag->page_offset, frag->size,
--				 PCI_DMA_TODEVICE);
-+		map = skb_frag_dma_map(&qdev->pdev->dev, frag, 0, frag->size,
+-		map = pci_map_page(pdev, frag->page, frag->page_offset,
+-				frag->size, PCI_DMA_TODEVICE);
++		map = skb_frag_dma_map(&pdev->dev, frag, 0, frag->size,
 +				       PCI_DMA_TODEVICE);
- 
- 		err = pci_dma_mapping_error(qdev->pdev, map);
- 		if (err) {
-@@ -1495,7 +1493,7 @@ static void ql_process_mac_rx_gro_page(struct ql_adapter *qdev,
- 	rx_frag = skb_shinfo(skb)->frags;
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	rx_frag += nr_frags;
--	rx_frag->page = lbq_desc->p.pg_chunk.page;
-+	__skb_frag_set_page(rx_frag, lbq_desc->p.pg_chunk.page);
- 	rx_frag->page_offset = lbq_desc->p.pg_chunk.offset;
- 	rx_frag->size = length;
+ 		if (pci_dma_mapping_error(pdev, map))
+ 			goto unwind;
  
 -- 
 1.7.2.5
