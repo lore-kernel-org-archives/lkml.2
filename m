@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1HSOQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 10:16:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39818 "EHLO
+	id S1754814Ab1HSOQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 10:16:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63671 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1HSOQg (ORCPT
+	with ESMTP id S1753346Ab1HSOQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 10:16:36 -0400
+	Fri, 19 Aug 2011 10:16:48 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>,
-        Samuel Ortiz <samuel@sortiz.org>, Chris Mason <chris.mason@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 03/16] freezer: unexport refrigerator() and update try_to_freeze() slightly
-Date: Fri, 19 Aug 2011 16:16:09 +0200
-Message-Id: <1313763382-12341-4-git-send-email-tj@kernel.org>
+Cc: arnd@arndb.de, oleg@redhat.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 10/16] freezer: fix set_freezable[_with_signal]() race
+Date: Fri, 19 Aug 2011 16:16:16 +0200
+Message-Id: <1313763382-12341-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1313763382-12341-1-git-send-email-tj@kernel.org>
 References: <1313763382-12341-1-git-send-email-tj@kernel.org>
@@ -26,357 +20,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason to export two functions for entering the
-refrigerator.  Calling refrigerator() instead of try_to_freeze()
-doesn't save anything noticeable or removes any race condition.
+A kthread doing set_freezable*() may race with on-going PM freeze and
+the freezer might think all tasks are frozen while the new freezable
+kthread is marrily proceeding to execute code paths which aren't
+supposed to be executing during PM freeze.
 
-* Rename refrigerator() to __refrigerator() and make it return bool
-  indicating whether it scheduled out for freezing.
+This can be fixed by modifying and testing the related PF flags inside
+freezer_lock and removing mostly unnecessary early tests from the
+callers of freeze/thaw_task().
 
-* Update try_to_freeze() to return bool and relay the return value of
-  __refrigerator() if freezing().
+* Remove all unnecessary tests from kerne/power/process.c and add
+  PF_NOFREEZE test to freeze_task(), which is meaningful as it avoids
+  sending unsolicted wakeups to nofreeze tasks.
 
-* Convert all refrigerator() users to try_to_freeze().
-
-* Update documentation accordingly.
-
-* While at it, add might_sleep() to try_to_freeze().
+* Reimplement set_freezable[_with_signal]() using __set_freezable()
+  such that freezable PF flags are modified under freezer_lock and
+  try_to_freeze() is called afterwards.  Combined with the above
+  change, this eliminates race condition against freezing.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Christoph Hellwig <hch@infradead.org>
 ---
- Documentation/power/freezing-of-tasks.txt |   12 ++++++------
- drivers/net/irda/stir4200.c               |    2 +-
- fs/btrfs/async-thread.c                   |    2 +-
- fs/btrfs/disk-io.c                        |    8 ++------
- fs/ext4/super.c                           |    3 +--
- fs/gfs2/log.c                             |    4 ++--
- fs/gfs2/quota.c                           |    4 ++--
- fs/jbd/journal.c                          |    2 +-
- fs/jbd2/journal.c                         |    2 +-
- fs/jfs/jfs_logmgr.c                       |    2 +-
- fs/jfs/jfs_txnmgr.c                       |    4 ++--
- fs/nilfs2/segment.c                       |    2 +-
- fs/xfs/linux-2.6/xfs_buf.c                |    2 +-
- include/linux/freezer.h                   |   17 ++++++++---------
- kernel/freezer.c                          |   10 +++++++---
- 15 files changed, 37 insertions(+), 39 deletions(-)
+ include/linux/freezer.h |    9 +++++----
+ kernel/freezer.c        |   28 +++++++++++++++++++++++++++-
+ kernel/power/process.c  |   16 +---------------
+ 3 files changed, 33 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-index 710c965..cbea897 100644
---- a/Documentation/power/freezing-of-tasks.txt
-+++ b/Documentation/power/freezing-of-tasks.txt
-@@ -21,7 +21,7 @@ freeze_processes() (defined in kernel/power/process.c) is called.  It executes
- try_to_freeze_tasks() that sets TIF_FREEZE for all of the freezable tasks and
- either wakes them up, if they are kernel threads, or sends fake signals to them,
- if they are user space processes.  A task that has TIF_FREEZE set, should react
--to it by calling the function called refrigerator() (defined in
-+to it by calling the function called __refrigerator() (defined in
- kernel/power/process.c), which sets the task's PF_FROZEN flag, changes its state
- to TASK_UNINTERRUPTIBLE and makes it loop until PF_FROZEN is cleared for it.
- Then, we say that the task is 'frozen' and therefore the set of functions
-@@ -29,10 +29,10 @@ handling this mechanism is referred to as 'the freezer' (these functions are
- defined in kernel/power/process.c and include/linux/freezer.h).  User space
- processes are generally frozen before kernel threads.
- 
--It is not recommended to call refrigerator() directly.  Instead, it is
--recommended to use the try_to_freeze() function (defined in
--include/linux/freezer.h), that checks the task's TIF_FREEZE flag and makes the
--task enter refrigerator() if the flag is set.
-+__refrigerator() must not be called directly.  Instead, use the
-+try_to_freeze() function (defined in include/linux/freezer.h), that checks
-+the task's TIF_FREEZE flag and makes the task enter __refrigerator() if the
-+flag is set.
- 
- For user space processes try_to_freeze() is called automatically from the
- signal-handling code, but the freezable kernel threads need to call it
-@@ -61,7 +61,7 @@ wait_event_freezable() and wait_event_freezable_timeout() macros.
- After the system memory state has been restored from a hibernation image and
- devices have been reinitialized, the function thaw_processes() is called in
- order to clear the PF_FROZEN flag for each frozen task.  Then, the tasks that
--have been frozen leave refrigerator() and continue running.
-+have been frozen leave __refrigerator() and continue running.
- 
- III. Which kernel threads are freezable?
- 
-diff --git a/drivers/net/irda/stir4200.c b/drivers/net/irda/stir4200.c
-index 41c96b3..e880c79 100644
---- a/drivers/net/irda/stir4200.c
-+++ b/drivers/net/irda/stir4200.c
-@@ -750,7 +750,7 @@ static int stir_transmit_thread(void *arg)
- 
- 			write_reg(stir, REG_CTRL1, CTRL1_TXPWD|CTRL1_RXPWD);
- 
--			refrigerator();
-+			try_to_freeze();
- 
- 			if (change_speed(stir, stir->speed))
- 				break;
-diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
-index 7ec1409..98ab240 100644
---- a/fs/btrfs/async-thread.c
-+++ b/fs/btrfs/async-thread.c
-@@ -340,7 +340,7 @@ again:
- 		if (freezing(current)) {
- 			worker->working = 0;
- 			spin_unlock_irq(&worker->lock);
--			refrigerator();
-+			try_to_freeze();
- 		} else {
- 			spin_unlock_irq(&worker->lock);
- 			if (!kthread_should_stop()) {
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 07b3ac6..64b1c07 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1508,9 +1508,7 @@ static int cleaner_kthread(void *arg)
- 			btrfs_run_defrag_inodes(root->fs_info);
- 		}
- 
--		if (freezing(current)) {
--			refrigerator();
--		} else {
-+		if (!try_to_freeze()) {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			if (!kthread_should_stop())
- 				schedule();
-@@ -1564,9 +1562,7 @@ sleep:
- 		wake_up_process(root->fs_info->cleaner_kthread);
- 		mutex_unlock(&root->fs_info->transaction_kthread_mutex);
- 
--		if (freezing(current)) {
--			refrigerator();
--		} else {
-+		if (!try_to_freeze()) {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			if (!kthread_should_stop() &&
- 			    !btrfs_transaction_blocked(root->fs_info))
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 4687fea..c5e2744 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2854,8 +2854,7 @@ cont_thread:
- 		}
- 		mutex_unlock(&eli->li_list_mtx);
- 
--		if (freezing(current))
--			refrigerator();
-+		try_to_freeze();
- 
- 		cur = jiffies;
- 		if ((time_after_eq(cur, next_wakeup)) ||
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-index 85c6292..b342c71 100644
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -951,8 +951,8 @@ int gfs2_logd(void *data)
- 			wake_up(&sdp->sd_log_waitq);
- 
- 		t = gfs2_tune_get(sdp, gt_logd_secs) * HZ;
--		if (freezing(current))
--			refrigerator();
-+
-+		try_to_freeze();
- 
- 		do {
- 			prepare_to_wait(&sdp->sd_logd_waitq, &wait,
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index 42e8d23..2ccaaac 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -1431,8 +1431,8 @@ int gfs2_quotad(void *data)
- 		/* Check for & recover partially truncated inodes */
- 		quotad_check_trunc_list(sdp);
- 
--		if (freezing(current))
--			refrigerator();
-+		try_to_freeze();
-+
- 		t = min(quotad_timeo, statfs_timeo);
- 
- 		prepare_to_wait(&sdp->sd_quota_wait, &wait, TASK_INTERRUPTIBLE);
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 9fe061f..908fdf0 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -166,7 +166,7 @@ loop:
- 		 */
- 		jbd_debug(1, "Now suspending kjournald\n");
- 		spin_unlock(&journal->j_state_lock);
--		refrigerator();
-+		try_to_freeze();
- 		spin_lock(&journal->j_state_lock);
- 	} else {
- 		/*
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index f24df13..874d1c4 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -173,7 +173,7 @@ loop:
- 		 */
- 		jbd_debug(1, "Now suspending kjournald2\n");
- 		write_unlock(&journal->j_state_lock);
--		refrigerator();
-+		try_to_freeze();
- 		write_lock(&journal->j_state_lock);
- 	} else {
- 		/*
-diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
-index 583636f..c8c2d35 100644
---- a/fs/jfs/jfs_logmgr.c
-+++ b/fs/jfs/jfs_logmgr.c
-@@ -2348,7 +2348,7 @@ int jfsIOWait(void *arg)
- 
- 		if (freezing(current)) {
- 			spin_unlock_irq(&log_redrive_lock);
--			refrigerator();
-+			try_to_freeze();
- 		} else {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			spin_unlock_irq(&log_redrive_lock);
-diff --git a/fs/jfs/jfs_txnmgr.c b/fs/jfs/jfs_txnmgr.c
-index af96060..bb8b661 100644
---- a/fs/jfs/jfs_txnmgr.c
-+++ b/fs/jfs/jfs_txnmgr.c
-@@ -2800,7 +2800,7 @@ int jfs_lazycommit(void *arg)
- 
- 		if (freezing(current)) {
- 			LAZY_UNLOCK(flags);
--			refrigerator();
-+			try_to_freeze();
- 		} else {
- 			DECLARE_WAITQUEUE(wq, current);
- 
-@@ -2994,7 +2994,7 @@ int jfs_sync(void *arg)
- 
- 		if (freezing(current)) {
- 			TXN_UNLOCK();
--			refrigerator();
-+			try_to_freeze();
- 		} else {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			TXN_UNLOCK();
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index bb24ab6..0e72ad6 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -2470,7 +2470,7 @@ static int nilfs_segctor_thread(void *arg)
- 
- 	if (freezing(current)) {
- 		spin_unlock(&sci->sc_state_lock);
--		refrigerator();
-+		try_to_freeze();
- 		spin_lock(&sci->sc_state_lock);
- 	} else {
- 		DEFINE_WAIT(wait);
-diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
-index c57836d..9b6c223 100644
---- a/fs/xfs/linux-2.6/xfs_buf.c
-+++ b/fs/xfs/linux-2.6/xfs_buf.c
-@@ -1741,7 +1741,7 @@ xfsbufd(
- 
- 		if (unlikely(freezing(current))) {
- 			set_bit(XBT_FORCE_SLEEP, &target->bt_flags);
--			refrigerator();
-+			try_to_freeze();
- 		} else {
- 			clear_bit(XBT_FORCE_SLEEP, &target->bt_flags);
- 		}
 diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 1effc8b..3d73288 100644
+index 80a455d..59a6e97 100644
 --- a/include/linux/freezer.h
 +++ b/include/linux/freezer.h
-@@ -47,17 +47,16 @@ static inline bool should_send_signal(struct task_struct *p)
- /* Takes and releases task alloc lock using task_lock() */
- extern int thaw_process(struct task_struct *p);
- 
--extern void refrigerator(void);
-+extern bool __refrigerator(void);
- extern int freeze_processes(void);
- extern void thaw_processes(void);
- 
--static inline int try_to_freeze(void)
-+static inline bool try_to_freeze(void)
- {
--	if (freezing(current)) {
--		refrigerator();
--		return 1;
--	} else
--		return 0;
-+	might_sleep();
-+	if (likely(!freezing(current)))
-+		return false;
-+	return __refrigerator();
- }
+@@ -61,6 +61,7 @@ static inline bool try_to_freeze(void)
  
  extern bool freeze_task(struct task_struct *p, bool sig_only);
-@@ -170,11 +169,11 @@ static inline void set_freeze_flag(struct task_struct *p) {}
- static inline void clear_freeze_flag(struct task_struct *p) {}
- static inline int thaw_process(struct task_struct *p) { return 1; }
+ extern void cancel_freezing(struct task_struct *p);
++extern bool __set_freezable(bool with_signal);
  
--static inline void refrigerator(void) {}
-+static inline bool __refrigerator(void) { return false; }
- static inline int freeze_processes(void) { BUG(); return 0; }
- static inline void thaw_processes(void) {}
+ #ifdef CONFIG_CGROUP_FREEZER
+ extern int cgroup_freezing_or_frozen(struct task_struct *task);
+@@ -118,18 +119,18 @@ static inline int freezer_should_skip(struct task_struct *p)
+ /*
+  * Tell the freezer that the current task should be frozen by it
+  */
+-static inline void set_freezable(void)
++static inline bool set_freezable(void)
+ {
+-	current->flags &= ~PF_NOFREEZE;
++	return __set_freezable(false);
+ }
  
--static inline int try_to_freeze(void) { return 0; }
-+static inline bool try_to_freeze(void) { return false; }
+ /*
+  * Tell the freezer that the current task should be frozen by it and that it
+  * should send a fake signal to the task to freeze it.
+  */
+-static inline void set_freezable_with_signal(void)
++static inline bool set_freezable_with_signal(void)
+ {
+-	current->flags &= ~(PF_NOFREEZE | PF_FREEZER_NOSIG);
++	return __set_freezable(true);
+ }
  
- static inline void freezer_do_not_count(void) {}
- static inline void freezer_count(void) {}
+ /*
 diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 575f863..4d59904 100644
+index d6165cd..501f1b7 100644
 --- a/kernel/freezer.c
 +++ b/kernel/freezer.c
-@@ -23,10 +23,11 @@ static inline void frozen_process(void)
+@@ -106,7 +106,8 @@ bool freeze_task(struct task_struct *p, bool sig_only)
+ 
+ 	spin_lock_irqsave(&freezer_lock, flags);
+ 
+-	if (sig_only && !should_send_signal(p))
++	if ((p->flags & PF_NOFREEZE) ||
++	    (sig_only && !should_send_signal(p)))
+ 		goto out_unlock;
+ 
+ 	if (frozen(p))
+@@ -162,3 +163,28 @@ void __thaw_task(struct task_struct *p)
+ 		wake_up_process(p);
+ 	spin_unlock_irqrestore(&freezer_lock, flags);
  }
- 
- /* Refrigerator is place where frozen processes are stored :-). */
--void refrigerator(void)
-+bool __refrigerator(void)
- {
- 	/* Hmm, should we be allowed to suspend when there are realtime
- 	   processes around? */
-+	bool was_frozen = false;
- 	long save;
- 
- 	task_lock(current);
-@@ -35,7 +36,7 @@ void refrigerator(void)
- 		task_unlock(current);
- 	} else {
- 		task_unlock(current);
--		return;
-+		return was_frozen;
- 	}
- 	save = current->state;
- 	pr_debug("%s entered refrigerator\n", current->comm);
-@@ -51,6 +52,7 @@ void refrigerator(void)
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (!frozen(current))
- 			break;
-+		was_frozen = true;
- 		schedule();
- 	}
- 
-@@ -65,8 +67,10 @@ void refrigerator(void)
- 	 * synchronization which depends on ordered task state change.
- 	 */
- 	set_current_state(save);
 +
-+	return was_frozen;
- }
--EXPORT_SYMBOL(refrigerator);
-+EXPORT_SYMBOL(__refrigerator);
++/**
++ * __set_freezable - make %current freezable
++ * @with_signal: do we want %TIF_SIGPENDING for notification too?
++ *
++ * Mark %current freezable and enter refrigerator if necessary.
++ */
++bool __set_freezable(bool with_signal)
++{
++	might_sleep();
++
++	/*
++	 * Modify flags while holding freezer_lock.  This ensures the
++	 * freezer notices that we aren't frozen yet or the freezing
++	 * condition is visible to try_to_freeze() below.
++	 */
++	spin_lock_irq(&freezer_lock);
++	current->flags &= ~PF_NOFREEZE;
++	if (with_signal)
++		current->flags &= ~PF_FREEZER_NOSIG;
++	spin_unlock_irq(&freezer_lock);
++
++	return try_to_freeze();
++}
++EXPORT_SYMBOL(__set_freezable);
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index f075c2f..7618909 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -22,14 +22,6 @@
+  */
+ #define TIMEOUT	(20 * HZ)
  
- static void fake_signal_wake_up(struct task_struct *p)
+-static inline int freezable(struct task_struct * p)
+-{
+-	if ((p == current) ||
+-	    (p->flags & PF_NOFREEZE))
+-		return 0;
+-	return 1;
+-}
+-
+ static int try_to_freeze_tasks(bool sig_only)
  {
+ 	struct task_struct *g, *p;
+@@ -52,10 +44,7 @@ static int try_to_freeze_tasks(bool sig_only)
+ 		todo = 0;
+ 		read_lock(&tasklist_lock);
+ 		do_each_thread(g, p) {
+-			if (frozen(p) || !freezable(p))
+-				continue;
+-
+-			if (!freeze_task(p, sig_only))
++			if (p == current || !freeze_task(p, sig_only))
+ 				continue;
+ 
+ 			/*
+@@ -171,9 +160,6 @@ void thaw_processes(void)
+ 
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		if (!freezable(p))
+-			continue;
+-
+ 		if (cgroup_freezing_or_frozen(p))
+ 			continue;
+ 
 -- 
 1.7.6
 
