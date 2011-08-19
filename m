@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1HSPOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 11:14:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:57245 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855Ab1HSPOD (ORCPT
+	id S1756077Ab1HSPO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 11:14:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53334 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752855Ab1HSPOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 11:14:03 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=WAcKz-GHrqMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=2E1FBEUPP2zffjyzBRwA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/3] trace points: power: remove 'cpu_id' from
- trace_clock_*
-From: Steven Rostedt <rostedt@goodmis.org>
-To: tom.leiming@gmail.com
-Cc: fweisbec@gmail.com, jean.pihet@newoldbits.com, mingo@redhat.com,
-        trenn@suse.de, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>
-In-Reply-To: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com>
-References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 19 Aug 2011 11:14:00 -0400
-Message-ID: <1313766840.15704.104.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Aug 2011 11:14:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+5PVA5QMZ3i7Pr1jsis+r4CeZZCWEt59oZXNhtf4Ea-yeAgGA@mail.gmail.com>
+References: <1312315404-sup-6084@shiny> <20110819130615.GA6307@kernel.org> <CA+5PVA5QMZ3i7Pr1jsis+r4CeZZCWEt59oZXNhtf4Ea-yeAgGA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Aug 2011 08:14:02 -0700
+Message-ID: <CA+55aFwvwSgHgGd-x02GPAKnD3UfcGcWZf8zCVvvLwTFg9FxqQ@mail.gmail.com>
+Subject: Re: [build breakage] Re: [GIT PULL] Btrfs pull round two
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 23:04 +0800, tom.leiming@gmail.com wrote:
-> From: Ming Lei <tom.leiming@gmail.com>
-> 
-> This patch removes the 'cpu_id' parameter of the clock_*
-> trace point, based on the ideas below:
-> 
-> - the cpu_id which is passed to trace point is always the current
->   cpu
-> - the current cpu info has been included into the trace result already
-> - smp_processor_id() can't be used safely in preemptible context.
-> 
+On Fri, Aug 19, 2011 at 6:24 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+>
+> FYI, this was noticed and a patch was posted to linux-btrfs:
+>
+> http://thread.gmane.org/gmane.comp.file-systems.btrfs/12673
+>
+> Josef bugged them to send it upstream.
 
-Do you know if these changes wont break powertop?
+Oh Christ!
 
--- Steve
+Please don't send that upstream.
 
+This:
 
+-		min_free /= 2;
++		do_div(min_free, 2);
+
+is just moronic. Guys, YOU ARE DIVIDING A UNSIGNED VALUE BY TWO. Has
+anybody ever looked at a real computer? Doesn't anybody know how
+computer math works any more? Doing that as a (slow) double division
+on 32-bit is so stupid that it's past even just "wrong". It's way off
+in la-la-land, sitting in a corner, all hopped up on drugs and
+painting its nails purple.
+
+Also, the change that is definitely correct:
+
+-		min_free /= dev_min;
++		do_div(min_free, dev_min);
+
+should still be something that people think about. Why is "dev_min" a
+signed integer? That looks wrong. You wanted an unsigned divide,
+didn't you (and that is what "do_div()" is designed for).
+
+So guys, please: when you get an error like this, don't just go into
+that mindless place where you paper things over. Think about what is
+going on, and WHY you got the error. Big 64-bit divides are bad bad
+bad. They are so horrendously bad on 32-bit that we don't even support
+them (which is the reason I refuse to put that __udiv into the 32-bit
+libraries), but that are often bad on 64-bit too. So you need to spend
+some time thinking about it when you get that __udivdi3 error.
+
+                             Linus
