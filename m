@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab1HSN2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 09:28:46 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14613 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab1HSN2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 09:28:43 -0400
+	id S1756026Ab1HSNog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 09:44:36 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58675 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab1HSN2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 09:28:49 -0400
 X-IronPort-AV: E=Sophos;i="4.68,251,1312171200"; 
-   d="scan'208";a="16158282"
+   d="scan'208";a="159732277"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: netdev@vger.kernel.org
 CC: linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-        Christian Benvenuti <benve@cisco.com>,
-        Vasanthy Kolluri <vkolluri@cisco.com>,
-        Roopa Prabhu <roprabhu@cisco.com>, David Wang <dwang2@cisco.com>
-Subject: [PATCH 26/75] enic: convert to SKB paged frag API.
-Date: Fri, 19 Aug 2011 14:26:58 +0100
-Message-ID: <1313760467-8598-26-git-send-email-ian.campbell@citrix.com>
+        Michael Chan <mchan@broadcom.com>
+Subject: [PATCH 18/75] bnx2: convert to SKB paged frag API.
+Date: Fri, 19 Aug 2011 14:26:50 +0100
+Message-ID: <1313760467-8598-18-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
 References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
@@ -27,52 +26,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Christian Benvenuti <benve@cisco.com>
-Cc: Vasanthy Kolluri <vkolluri@cisco.com>
-Cc: Roopa Prabhu <roprabhu@cisco.com>
-Cc: David Wang <dwang2@cisco.com>
+Cc: Michael Chan <mchan@broadcom.com>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/enic/enic_main.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/bnx2.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/enic/enic_main.c b/drivers/net/enic/enic_main.c
-index 67a27cd..fc470fa 100644
---- a/drivers/net/enic/enic_main.c
-+++ b/drivers/net/enic/enic_main.c
-@@ -590,9 +590,9 @@ static inline void enic_queue_wq_skb_cont(struct enic *enic,
- 	for (frag = skb_shinfo(skb)->frags; len_left; frag++) {
- 		len_left -= frag->size;
- 		enic_queue_wq_desc_cont(wq, skb,
--			pci_map_page(enic->pdev, frag->page,
--				frag->page_offset, frag->size,
--				PCI_DMA_TODEVICE),
-+			skb_frag_dma_map(&enic->pdev->dev,
-+					 frag, 0, frag->size,
-+					 PCI_DMA_TODEVICE),
- 			frag->size,
- 			(len_left == 0),	/* EOP? */
- 			loopback);
-@@ -704,14 +704,14 @@ static inline void enic_queue_wq_skb_tso(struct enic *enic,
- 	for (frag = skb_shinfo(skb)->frags; len_left; frag++) {
- 		len_left -= frag->size;
- 		frag_len_left = frag->size;
--		offset = frag->page_offset;
-+		offset = 0;
+diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
+index 4b2b570..005dd81 100644
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -2929,8 +2929,8 @@ bnx2_reuse_rx_skb_pages(struct bnx2 *bp, struct bnx2_rx_ring_info *rxr,
  
- 		while (frag_len_left) {
- 			len = min(frag_len_left,
- 				(unsigned int)WQ_ENET_MAX_DESC_LEN);
--			dma_addr = pci_map_page(enic->pdev, frag->page,
--				offset, len,
--				PCI_DMA_TODEVICE);
-+			dma_addr = skb_frag_dma_map(&enic->pdev->dev, frag,
-+						    offset, len,
-+						    PCI_DMA_TODEVICE);
- 			enic_queue_wq_desc_cont(wq, skb,
- 				dma_addr,
- 				len,
+ 		shinfo = skb_shinfo(skb);
+ 		shinfo->nr_frags--;
+-		page = shinfo->frags[shinfo->nr_frags].page;
+-		shinfo->frags[shinfo->nr_frags].page = NULL;
++		page = skb_frag_page(&shinfo->frags[shinfo->nr_frags]);
++		__skb_frag_set_page(&shinfo->frags[shinfo->nr_frags], NULL);
+ 
+ 		cons_rx_pg->page = page;
+ 		dev_kfree_skb(skb);
+@@ -6510,8 +6510,8 @@ bnx2_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		txbd = &txr->tx_desc_ring[ring_prod];
+ 
+ 		len = frag->size;
+-		mapping = dma_map_page(&bp->pdev->dev, frag->page, frag->page_offset,
+-				       len, PCI_DMA_TODEVICE);
++		mapping = skb_frag_dma_map(&bp->pdev->dev, frag, 0, len,
++					   PCI_DMA_TODEVICE);
+ 		if (dma_mapping_error(&bp->pdev->dev, mapping))
+ 			goto dma_error;
+ 		dma_unmap_addr_set(&txr->tx_buf_ring[ring_prod], mapping,
 -- 
 1.7.2.5
 
