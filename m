@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165Ab1HSQ5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 12:57:35 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:57246 "EHLO
+	id S1754971Ab1HSQrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 12:47:19 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:57226 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751697Ab1HSQrU (ORCPT
+	by vger.kernel.org with ESMTP id S1751697Ab1HSQrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 12:47:20 -0400
+	Fri, 19 Aug 2011 12:47:15 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH v2 04/43] avr32: Don't mask signals in the error path
-Date: Fri, 19 Aug 2011 17:46:20 +0100
-Message-Id: <1313772419-21951-5-git-send-email-matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 01/43] signal: Add block_sigmask() for adding sigmask to current->blocked
+Date: Fri, 19 Aug 2011 17:46:17 +0100
+Message-Id: <1313772419-21951-2-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
 References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
@@ -21,63 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@linux.intel.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-The current handle_signal() implementation is broken - it will mask
-signals if we fail to setup the signal stack frame, which isn't the
-desired behaviour, we should only be masking signals if we succeed in
-setting up the stack frame. It looks like this code was copied from
-the old (broken) arm implementation but wasn't updated when the arm
-code was fixed in commit a6c61e9dfdd0 ("[ARM] 3168/1: Update ARM
-signal delivery and masking").
+This patch abstracts the code sequence for adding a signal handler's
+sa_mask to current->blocked because the sequence is identical for all
+architectures. Furthermore, in the past some architectures actually
+got this code wrong, so introduce a wrapper that all architectures can
+use.
 
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Acked-by: Havard Skinnemoen <hskinnemoen@gmail.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@linux.intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/avr32/kernel/signal.c |   25 ++++++++++++-------------
- 1 files changed, 12 insertions(+), 13 deletions(-)
+ arch/x86/kernel/signal.c |    6 +-----
+ include/linux/signal.h   |    1 +
+ kernel/signal.c          |   21 +++++++++++++++++++++
+ 3 files changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/arch/avr32/kernel/signal.c b/arch/avr32/kernel/signal.c
-index 64f886f..9c075e1 100644
---- a/arch/avr32/kernel/signal.c
-+++ b/arch/avr32/kernel/signal.c
-@@ -238,22 +238,21 @@ handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	 */
- 	ret |= !valid_user_regs(regs);
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 54ddaeb2..46a01bd 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -682,7 +682,6 @@ static int
+ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
+ 		struct pt_regs *regs)
+ {
+-	sigset_t blocked;
+ 	int ret;
  
-+	if (ret != 0) {
-+		force_sigsegv(sig, current);
-+		return;
-+	}
-+
- 	/*
--	 * Block the signal if we were unsuccessful.
-+	 * Block the signal if we were successful.
+ 	/* Are we from a system call? */
+@@ -733,10 +732,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
  	 */
--	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
--		spin_lock_irq(&current->sighand->siglock);
--		sigorsets(&current->blocked, &current->blocked,
--			  &ka->sa.sa_mask);
-+	spin_lock_irq(&current->sighand->siglock);
-+	sigorsets(&current->blocked, &current->blocked,
-+		  &ka->sa.sa_mask);
-+	if (!(ka->sa.sa_flags & SA_NODEFER))
- 		sigaddset(&current->blocked, sig);
--		recalc_sigpending();
--		spin_unlock_irq(&current->sighand->siglock);
--	}
--
--	if (ret == 0)
--		return;
--
--	force_sigsegv(sig, current);
-+	recalc_sigpending();
-+	spin_unlock_irq(&current->sighand->siglock);
+ 	regs->flags &= ~X86_EFLAGS_TF;
+ 
+-	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
+-	if (!(ka->sa.sa_flags & SA_NODEFER))
+-		sigaddset(&blocked, sig);
+-	set_current_blocked(&blocked);
++	block_sigmask(ka, sig);
+ 
+ 	tracehook_signal_handler(sig, info, ka, regs,
+ 				 test_thread_flag(TIF_SINGLESTEP));
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index a822300..7987ce74 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -254,6 +254,7 @@ extern void set_current_blocked(const sigset_t *);
+ extern int show_unhandled_signals;
+ 
+ extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
++extern void block_sigmask(struct k_sigaction *ka, int signr);
+ extern void exit_signals(struct task_struct *tsk);
+ 
+ extern struct kmem_cache *sighand_cachep;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 291c970..7a08164 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -2314,6 +2314,27 @@ relock:
+ 	return signr;
  }
  
++/**
++ * block_sigmask - add @ka's signal mask to current->blocked
++ * @ka: action for @signr
++ * @signr: signal that has been successfully delivered
++ *
++ * This function should be called when a signal has succesfully been
++ * delivered. It adds the mask of signals for @ka to current->blocked
++ * so that they are blocked during the execution of the signal
++ * handler. In addition, @signr will be blocked unless %SA_NODEFER is
++ * set in @ka->sa.sa_flags.
++ */
++void block_sigmask(struct k_sigaction *ka, int signr)
++{
++	sigset_t blocked;
++
++	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
++	if (!(ka->sa.sa_flags & SA_NODEFER))
++		sigaddset(&blocked, signr);
++	set_current_blocked(&blocked);
++}
++
  /*
+  * It could be that complete_signal() picked us to notify about the
+  * group-wide signal. Other threads should be notified now to take
 -- 
 1.7.4.4
 
