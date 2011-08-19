@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab1HSM0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 08:26:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55337 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab1HSM0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 08:26:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: of_iomap() matched with plan iounmap()
-Date: Fri, 19 Aug 2011 14:26:18 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Miller <davem@davemloft.net>, davidb@codeaurora.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-References: <20110818170226.GA16721@huya.qualcomm.com> <20110818.203447.462383652600224162.davem@davemloft.net>
-In-Reply-To: <20110818.203447.462383652600224162.davem@davemloft.net>
+	id S1753620Ab1HSM2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 08:28:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753306Ab1HSM2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 08:28:03 -0400
+Date: Fri, 19 Aug 2011 14:25:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        roland@hack.frob.com, torvalds@linux-foundation.org
+Subject: Re: +
+	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+	.patch added to -mm tree
+Message-ID: <20110819122503.GA8411@redhat.com>
+References: <201108162011.p7GKBcY0023134@imap1.linux-foundation.org> <20110817115543.GA8745@redhat.com> <CAPXgP12rYf2HmmsJAuJw=nrtcjTRR1WzDhLNM47eKhKA1UTfJQ@mail.gmail.com> <20110817134516.GA14136@redhat.com> <20110818124353.GA2839@tango.0pointer.de> <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop> <20110818184857.GA12094@redhat.com> <1313717521.991.4.camel@mop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108191426.19152.arnd@arndb.de>
-X-Provags-ID: V02:K0:ldlMnala9FLYx859/yYlwFWKDwHPsgGaJHysYSpNI3C
- 2ELWvcT8NmcnzTxXusJcNJDCtNqzx7pDupZz3uZRQvDV8fvNpD
- NIowF6RZ4eYnsK7CCrRBM6rc0z+33pvo6DxewmobGbjMZnQ9eU
- Xb4epnlLa7FJqbjz/Tq4vDHkzi0j2uEA4oKN2R7WkbfRnP43zu
- wshKvjbHXZr7pDt5yZOuA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313717521.991.4.camel@mop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 August 2011, David Miller wrote:
-> From: David Brown <davidb@codeaurora.org>
-> Date: Thu, 18 Aug 2011 10:02:26 -0700
-> 
-> > The SPARC target contains of_ioremap() and of_iounmap(), which various
-> > drivers use (generally inside of CONFIG_SBUS).
-> > 
-> > include/linux/of_address.h contains a definition for of_iomap(), but
-> > not corresponding unmap call.  Code using this calls the regular
-> > iounmap().
-> > 
-> > Is it safe to assume that of_iomap() will always be based on ioremap()
-> > and therefore it is safe to use iounmap(), or would it be better to
-> > define another name for drivers to use as the inverse of of_iomap().
-> > I'm not sure what to call it, since of_iounmap() is already taken by
-> > SPARC.
-> 
-> It's better to define a matching of_iounmap() interface, even if for
-> now it is exactly iounmap()
+On 08/19, Kay Sievers wrote:
+>
+> On Thu, 2011-08-18 at 20:48 +0200, Oleg Nesterov wrote:
+> > On 08/18, Kay Sievers wrote:
+>
+> > No, this doesn't look right.
+> >
+> > This code should do something like
+> >
+> > 		for (reaper = father->real_parent;
+> > 		     !same_thread_group(reaper, pid_ns->child_reaper);
+>
+> Without that check, bootup immediately hangs. The problem is, I expect,
+> that we need to exit the loop for re-parenting kernel threads,
 
-But the problem is that we need conflicting prototypes for of_iounmap.
-Sparc currently has
+Argh. Indeed, I forgot about kthreads. See below.
 
-extern void of_iounmap(struct resource *res, void __iomem *base, unsigned long size);
-(as the reverse of of_ioremap)
+> - optimization: let processes inherit a flag to indicate that there is
+>   a subreaper to lookup, in case they need to be re-parented.
 
-While we would probably want the generic prototype to be
-extern void of_iounmap(void __iomem *base);
-(as the reverse of of_iomap)
+I'll write another email about this...
 
-We could of course change all existing users of of_iounmap on sparc to use
-the simpler prototype, because it also just calls iounmap.
+>  static struct task_struct *find_new_reaper(struct task_struct *father)
+>  	__releases(&tasklist_lock)
+> @@ -724,6 +725,23 @@ static struct task_struct *find_new_reap
+>  		 * forget_original_parent() must move them somewhere.
+>  		 */
+>  		pid_ns->child_reaper = init_pid_ns.child_reaper;
+> +	} else if (father->signal->has_child_subreaper) {
+> +		struct task_struct *reaper;
+> +
+> +		/* find the first ancestor marked as child_subreaper */
+> +		for (reaper = father->real_parent;
+> +		     reaper != reaper->real_parent;
 
-	Arnd
+This looks mysterious. This relies on the fact that INIT_TASK(tsk)
+sets .real_parent = tsk. "reaper != &init_task" looks much more clean.
+And we can't use PF_KTHREAD because of usermodehelper.
+
+But. Now that you check ->has_child_subreaper before the lookup,
+this problem should go away? I mean, if ->has_child_subreaper == T
+then some of our parents is the userspace task. Even if it was
+spawned by kthread and then exited, we can't miss ->child_reaper
+in the parents chain.
+
+Or I missed something?
+
+
+> +			if (!reaper->signal->is_child_subreaper)
+> +				continue;
+> +			thread = reaper;
+> +			do {
+> +				if (!(thread->flags & PF_EXITING))
+> +					return reaper;
+> +			} while_each_thread(reaper, thread);
+
+Yes, this looks correct.
+
+> +		case PR_SET_CHILD_SUBREAPER:
+> +			me->signal->is_child_subreaper = !!arg2;
+> +			me->signal->has_child_subreaper = true;
+
+Hmm. This looks wrong... why do we set ->has_child_subreaper?
+
+Oleg.
+
