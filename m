@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab1HTHD6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 03:03:58 -0400
-Received: from mailout.selfhost.de ([82.98.82.25]:55296 "EHLO
-	outgoing.selfhost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751153Ab1HTHD4 (ORCPT
+	id S1751826Ab1HTHII (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 03:08:08 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:54137 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1HTHIF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 03:03:56 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Aug 2011 03:03:56 EDT
-Message-ID: <4E4F5AC8.3060302@afaics.de>
-Date: Sat, 20 Aug 2011 08:57:12 +0200
-From: Harald Dunkel <harri@afaics.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Sat, 20 Aug 2011 03:08:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=kBbwVLib3eUf7W79XSrh5KmKe0zXFrmi/KeP0ydus192tfJCS09rua+/jQgHxWKhb
+	MUIG0NALkQlfaeKW+nZ0g==
 MIME-Version: 1.0
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: filesystem access vs 120 seconds timeouts
-X-Enigmail-Version: 1.3
+In-Reply-To: <20110819222203.GC5146@core.coreip.homeip.net>
+References: <1313666888-18939-1-git-send-email-djkurtz@chromium.org>
+ <1313666888-18939-5-git-send-email-djkurtz@chromium.org> <20110819222203.GC5146@core.coreip.homeip.net>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Sat, 20 Aug 2011 15:07:41 +0800
+X-Google-Sender-Auth: Vsl20B4SwaGsx5RvFanoS8SXQzA
+Message-ID: <CAGS+omCZSjJoESSvimLEpj9Mwr3d9Vn78e1ZLk-NWEdgQbxNKw@mail.gmail.com>
+Subject: Re: [PATCH 4/9 v4] Input: synaptics - add image sensor support
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: chase.douglas@canonical.com, rydberg@euromail.se,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Sat, Aug 20, 2011 at 6:22 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Daniel,
+>
+> On Thu, Aug 18, 2011 at 07:28:03PM +0800, Daniel Kurtz wrote:
+>> @@ -558,6 +626,11 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+>>       if (synaptics_parse_hw_state(psmouse->packet, priv, &hw))
+>>               return;
+>>
+>> +     if (SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) {
+>> +             synaptics_image_sensor_process(psmouse, &hw);
+>> +             return;
+>> +     }
+>> +
+>
+> So what about the rest of the SYnaptics processing (wheel, additional
+> buttons, etc)?  Are we sure that touchpads with image sensors will never
+> implement them?
+>
+> --
+> Dmitry
+>
 
-Hi folks,
+All image sensors that I am aware of are clickpads, with one button
+integrated under the pad, which is reported as the middle button.
 
-on huge disk IO operations I get something like this from time
-to time:
+We could report right, middle, up, down, and ext_buttons (scroll is
+not possible, since w=2;buf[1] is used for x for devices that send agm
+packets).
+However, I have no way of knowing if this added complexity is
+necessary, nor any way of testing it.
 
-[ 6220.508495] INFO: task jbd2/sdb3-8:1616 blocked for more than 120 seconds.
-[ 6220.540831] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6220.573046] jbd2/sdb3-8     D 0000000000000000     0  1616      2 0x00000000
-[ 6220.573053]  ffff88021216e050 0000000000000046 ffff8801eab35a40 0000000000000000
-[ 6220.573058]  ffffffff81401020 ffff8802121bbfd8 0000000000010300 0000000000004000
-[ 6220.573063]  ffff8802106cbac0 ffff8802106cba70 ffff88020ec1c000 ffffffff81136cc1
-[ 6220.573069] Call Trace:
-[ 6220.573078]  [<ffffffff81136cc1>] ? cfq_add_rq_rb+0xb6/0xc7
-[ 6220.573085]  [<ffffffff8113a973>] ? kobject_get+0x12/0x17
-[ 6220.573093]  [<ffffffff811cf573>] ? scsi_request_fn+0x374/0x44f
-[ 6220.573100]  [<ffffffff81083800>] ? find_get_page+0x4a/0x76
-[ 6220.573105]  [<ffffffff810838f8>] ? __lock_page+0x66/0x66
-[ 6220.573111]  [<ffffffff812a97aa>] ? io_schedule+0x4b/0x5d
-[ 6220.573116]  [<ffffffff810838fe>] ? sleep_on_page+0x6/0xa
-[ 6220.573121]  [<ffffffff812a9c8e>] ? __wait_on_bit+0x3e/0x71
-[ 6220.573127]  [<ffffffff81083a54>] ? wait_on_page_bit+0x6e/0x73
-[ 6220.573133]  [<ffffffff8104960b>] ? autoremove_wake_function+0x2a/0x2a
-[ 6220.573138]  [<ffffffff81083b04>] ? filemap_fdatawait_range+0x73/0x121
-[ 6220.573155]  [<ffffffff81129921>] ? submit_bio+0xb3/0xbc
-[ 6220.573166]  [<ffffffffa017aabb>] ? jbd2_journal_commit_transaction+0x75f/0xf84 [jbd2]
-[ 6220.573170]  [<ffffffff8103d6b7>] ? lock_timer_base.isra.25+0x22/0x47
-[ 6220.573174]  [<ffffffffa017d70c>] ? kjournald2+0xc0/0x20a [jbd2]
-[ 6220.573177]  [<ffffffff810495e1>] ? abort_exclusive_wait+0x79/0x79
-[ 6220.573181]  [<ffffffffa017d64c>] ? commit_timeout+0x5/0x5 [jbd2]
-[ 6220.573184]  [<ffffffff81049016>] ? kthread+0x76/0x7e
-[ 6220.573187]  [<ffffffff812ac814>] ? kernel_thread_helper+0x4/0x10
-[ 6220.573190]  [<ffffffff81048fa0>] ? kthread_worker_fn+0x139/0x139
-[ 6220.573192]  [<ffffffff812ac810>] ? gs_change+0xb/0xb
-
-
-Is the timeout of 120 seconds still reasonable? Should I simply switch
-off the message, as suggested?
-
-
-Regards
-
-Harri
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk5PWsgACgkQUTlbRTxpHjdaKwCgkt5q3KABhq7FqNzit57A0eaP
-VQUAn0ChNyaIoSMOKmUK3dOtLjAQiAFj
-=H1Df
------END PGP SIGNATURE-----
+-Dan
