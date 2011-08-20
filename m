@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1HTTbv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 15:31:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54793 "EHLO ogre.sisk.pl"
+	id S1755002Ab1HTTd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 15:33:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42300 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755090Ab1HTTbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 15:31:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-sh@vger.kernel.org
-Subject: [PATCH 2/2] sh-sci / PM: Use power.irq_safe
-Date: Sat, 20 Aug 2011 21:33:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-References: <201108202131.19479.rjw@sisk.pl>
-In-Reply-To: <201108202131.19479.rjw@sisk.pl>
+	id S1752726Ab1HTTd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 15:33:57 -0400
+Date: Sat, 20 Aug 2011 20:33:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/7] Reduce filesystem writeback from page reclaim v3
+Message-ID: <20110820193351.GA8349@suse.de>
+References: <1312973240-32576-1-git-send-email-mgorman@suse.de>
+ <20110818165420.0a7aabb5.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108202133.09222.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110818165420.0a7aabb5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thu, Aug 18, 2011 at 04:54:20PM -0700, Andrew Morton wrote:
+> On Wed, 10 Aug 2011 11:47:13 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > The new problem is that
+> > reclaim has very little control over how long before a page in a
+> > particular zone or container is cleaned which is discussed later.
+> 
+> Confused - where was this discussed?  Please tell us more about
+> this problem and how it was addressed.
+> 
 
-Since sci_port_enable() and sci_port_disable() may be run with
-interrupts off and they execute pm_runtime_get_sync() and
-pm_runtime_put_sync(), respectively, the SCI device's
-power.irq_safe flags has to be used to indicate that it is safe
-to execute runtime PM callbacks for this device with interrupts off.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/tty/serial/sh-sci.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-Index: linux/drivers/tty/serial/sh-sci.c
-===================================================================
---- linux.orig/drivers/tty/serial/sh-sci.c
-+++ linux/drivers/tty/serial/sh-sci.c
-@@ -1582,11 +1582,15 @@ static int sci_startup(struct uart_port
- 
- 	dev_dbg(port->dev, "%s(%d)\n", __func__, port->line);
- 
-+	pm_runtime_irq_safe(port->dev);
-+
- 	sci_port_enable(s);
- 
- 	ret = sci_request_irq(s);
--	if (unlikely(ret < 0))
-+	if (unlikely(ret < 0)) {
-+		pm_runtime_irq_unsafe(port->dev);
- 		return ret;
-+	}
- 
- 	sci_request_dma(port);
- 
-@@ -1609,6 +1613,8 @@ static void sci_shutdown(struct uart_por
- 	sci_free_irq(s);
- 
- 	sci_port_disable(s);
-+
-+	pm_runtime_irq_unsafe(port->dev);
- }
- 
- static unsigned int sci_scbrr_calc(unsigned int algo_id, unsigned int bps,
-
+I'm currently on holiday. I am only online checking train timetables.
+I'll be back online properly on August 30th.
