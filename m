@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1HTNFL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 09:05:11 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:46403 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab1HTNFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 09:05:07 -0400
-Subject: [PATCH] ASoC: soc-cache: Avoid a redundant test for
- codec->reg_def_copy
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Aug 2011 21:04:58 +0800
-Message-ID: <1313845498.2619.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753530Ab1HTNJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 09:09:37 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:51113 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751697Ab1HTNJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 09:09:34 -0400
+Date: Sat, 20 Aug 2011 14:09:19 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mips@linux-mips.org,
+        "Steven J. Hill" <sjhill@realitydiluted.com>,
+        Chris Dearman <chris@mips.com>
+Subject: Re: [RFC patch] MIPS: select correct tc
+Message-ID: <20110820130918.GA5097@linux-mips.org>
+References: <CAJd=RBA9ihp94TtjkWbAVo1Y_2+Vp1VskJWVahN85biCEAYWtQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBA9ihp94TtjkWbAVo1Y_2+Vp1VskJWVahN85biCEAYWtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/soc-cache.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+On Thu, Aug 04, 2011 at 10:38:31PM +0800, Hillf Danton wrote:
 
-diff --git a/sound/soc/soc-cache.c b/sound/soc/soc-cache.c
-index fdfd488..d620147 100644
---- a/sound/soc/soc-cache.c
-+++ b/sound/soc/soc-cache.c
-@@ -727,13 +727,11 @@ static int snd_soc_lzo_cache_init(struct snd_soc_codec *codec)
- 	 * and remember to free it afterwards.
- 	 */
- 	tofree = 0;
--	if (!codec->reg_def_copy)
--		tofree = 1;
--
- 	if (!codec->reg_def_copy) {
- 		codec->reg_def_copy = kzalloc(codec->reg_size, GFP_KERNEL);
- 		if (!codec->reg_def_copy)
- 			return -ENOMEM;
-+		tofree = 1;
- 	}
- 
- 	blkcount = snd_soc_lzo_block_count();
--- 
-1.7.4.1
+> If we could find tc on the tc list for @index, the found tc should be returned.
 
+This bug has been in the VPE code since 2009 and it pretty much proofs
+that nobody is using this crap.
 
+I've applied your patch but your finding of this bug which is around since
+about two years pretty much proofs that nobody is using this code, so it
+can be removed.  It's been fugly since day one..
 
+Thanks,
+
+  Ralf
