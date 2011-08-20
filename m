@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab1HTPM5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 11:12:57 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:51366 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab1HTPMy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 11:12:54 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: linux-arch@vger.kernel.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH 2/2] include: Fix compile warning in include/linux/bitops.h
-Date: Sun, 21 Aug 2011 00:12:32 +0900
-Message-Id: <1313853152-1988-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753522Ab1HTPSm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 11:18:42 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:52094 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752507Ab1HTPSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 11:18:41 -0400
+Date: Sat, 20 Aug 2011 17:18:35 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Liam Girdwood <lrg@ti.com>, kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Dong Aisheng <b29396@freescale.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] sound/soc/mxs/mxs-saif.c: add missing kfree
+In-Reply-To: <20110820134439.GA2266@pengutronix.de>
+Message-ID: <Pine.LNX.4.64.1108201718200.30651@ask.diku.dk>
+References: <1313820761-12042-3-git-send-email-julia@diku.dk>
+ <20110820134439.GA2266@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compile warning is caused by __const_hweight8 when using hweight_long with -Wsign-compare option.
-The reason is that the default return value of this macro is signed. So need type casting to remove warning.
+From: Julia Lawall <julia@diku.dk>
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Move the test on pdev->id before the kzalloc to avoid requiring kfree when
+the test fails.  This fix was suggested by Wolfram Sang.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+identifier x;
+expression E1!=0,E2,E3,E4;
+statement S;
+iterator I;
+@@
+
+(
+if (...) { ... when != kfree(x)
+               when != x = E3
+               when != E3 = x
+*  return ...;
+ }
+... when != x = E2
+    when != I(...,x,...) S
+if (...) { ... when != x = E4
+ kfree(x); ... return ...; }
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- include/asm-generic/bitops/const_hweight.h |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
-index fa2a50b..31b7fce 100644
---- a/include/asm-generic/bitops/const_hweight.h
-+++ b/include/asm-generic/bitops/const_hweight.h
-@@ -4,15 +4,15 @@
- /*
-  * Compile time versions of __arch_hweightN()
-  */
--#define __const_hweight8(w)		\
--      (	(!!((w) & (1ULL << 0))) +	\
--	(!!((w) & (1ULL << 1))) +	\
--	(!!((w) & (1ULL << 2))) +	\
--	(!!((w) & (1ULL << 3))) +	\
--	(!!((w) & (1ULL << 4))) +	\
--	(!!((w) & (1ULL << 5))) +	\
--	(!!((w) & (1ULL << 6))) +	\
--	(!!((w) & (1ULL << 7)))	)
-+#define __const_hweight8(w)	(unsigned long)	\
-+      	(	(!!((w) & (1ULL << 0))) +	\
-+		(!!((w) & (1ULL << 1))) +	\
-+		(!!((w) & (1ULL << 2))) +	\
-+		(!!((w) & (1ULL << 3))) +	\
-+		(!!((w) & (1ULL << 4))) +	\
-+		(!!((w) & (1ULL << 5))) +	\
-+		(!!((w) & (1ULL << 6))) +	\
-+		(!!((w) & (1ULL << 7)))	)
+diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
+index 0b3adae..e9a90e4 100644
+--- a/sound/soc/mxs/mxs-saif.c
++++ b/sound/soc/mxs/mxs-saif.c
+@@ -519,12 +519,11 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 	struct mxs_saif *saif;
+ 	int ret = 0;
  
- #define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
- #define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
--- 
-1.7.4.4
-
++	if (pdev->id >= ARRAY_SIZE(mxs_saif))
++		return -EINVAL;
+ 	saif = kzalloc(sizeof(*saif), GFP_KERNEL);
+ 	if (!saif)
+ 		return -ENOMEM;
+-
+-	if (pdev->id >= ARRAY_SIZE(mxs_saif))
+-		return -EINVAL;
+ 	mxs_saif[pdev->id] = saif;
+ 
+ 	saif->clk = clk_get(&pdev->dev, NULL);
