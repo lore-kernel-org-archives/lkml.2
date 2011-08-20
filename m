@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1HTPMe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 11:12:34 -0400
-Received: from void.printf.net ([89.145.121.20]:44264 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab1HTPMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 11:12:32 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: Use switch() instead of if/else if in mmc_blk_issue_rq.
-References: <1313851839-32483-1-git-send-email-linkinjeon@gmail.com>
-Date: Sat, 20 Aug 2011 11:12:26 -0400
-In-Reply-To: <1313851839-32483-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sat, 20 Aug 2011 23:50:39 +0900")
-Message-ID: <m239gwglr9.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753719Ab1HTPM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 11:12:57 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:51366 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab1HTPMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 11:12:54 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: linux-arch@vger.kernel.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH 2/2] include: Fix compile warning in include/linux/bitops.h
+Date: Sun, 21 Aug 2011 00:12:32 +0900
+Message-Id: <1313853152-1988-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The compile warning is caused by __const_hweight8 when using hweight_long with -Wsign-compare option.
+The reason is that the default return value of this macro is signed. So need type casting to remove warning.
 
-On Sat, Aug 20 2011, Namjae Jeon wrote:
-> This uses a switch statement instead of if/else if statements.
-> It will make to improve clarity and scalability, and offer faster execution through compiler optimization than if/else if statements.
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  drivers/mmc/card/block.c |   38 +++++++++++++++++++++++---------------
->  1 files changed, 23 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-> index 1ff5486..fe9dd89 100644
-> --- a/drivers/mmc/card/block.c
-> +++ b/drivers/mmc/card/block.c
-> @@ -1191,23 +1191,31 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
->  		goto out;
->  	}
->  
-> -	if (req && req->cmd_flags & REQ_DISCARD) {
-> -		/* complete ongoing async transfer before issuing discard */
-> -		if (card->host->areq)
-> -			mmc_blk_issue_rw_rq(mq, NULL);
-> -		if (req->cmd_flags & REQ_SECURE)
-> -			ret = mmc_blk_issue_secdiscard_rq(mq, req);
-> -		else
-> +	if (req) {
-> +		switch(req->cmd_flags) {
-> +		case REQ_DISCARD:
-> +			/* complete ongoing async transfer before issuing discard */
-> +			if (card->host->areq)
-> +				mmc_blk_issue_rw_rq(mq, NULL);
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ include/asm-generic/bitops/const_hweight.h |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-But it doesn't work, because you've changed the test for "req->cmd_flags
-& REQ_DISCARD" into a test for "req->cmd_flags == REQ_DISCARD".
-
-- Chris.
+diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
+index fa2a50b..31b7fce 100644
+--- a/include/asm-generic/bitops/const_hweight.h
++++ b/include/asm-generic/bitops/const_hweight.h
+@@ -4,15 +4,15 @@
+ /*
+  * Compile time versions of __arch_hweightN()
+  */
+-#define __const_hweight8(w)		\
+-      (	(!!((w) & (1ULL << 0))) +	\
+-	(!!((w) & (1ULL << 1))) +	\
+-	(!!((w) & (1ULL << 2))) +	\
+-	(!!((w) & (1ULL << 3))) +	\
+-	(!!((w) & (1ULL << 4))) +	\
+-	(!!((w) & (1ULL << 5))) +	\
+-	(!!((w) & (1ULL << 6))) +	\
+-	(!!((w) & (1ULL << 7)))	)
++#define __const_hweight8(w)	(unsigned long)	\
++      	(	(!!((w) & (1ULL << 0))) +	\
++		(!!((w) & (1ULL << 1))) +	\
++		(!!((w) & (1ULL << 2))) +	\
++		(!!((w) & (1ULL << 3))) +	\
++		(!!((w) & (1ULL << 4))) +	\
++		(!!((w) & (1ULL << 5))) +	\
++		(!!((w) & (1ULL << 6))) +	\
++		(!!((w) & (1ULL << 7)))	)
+ 
+ #define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
+ #define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+1.7.4.4
+
