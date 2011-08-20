@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab1HTPff (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 11:35:35 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29250 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab1HTPfb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 11:35:31 -0400
-Message-ID: <4E4FD48B.8030101@oracle.com>
-Date: Sat, 20 Aug 2011 08:36:43 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1753787Ab1HTPgf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 11:36:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14223 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586Ab1HTPgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 11:36:32 -0400
+Date: Sat, 20 Aug 2011 17:33:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        roland@hack.frob.com, torvalds@linux-foundation.org
+Subject: Re: +
+	prctl-add-pr_setget_child_reaper-to-allow-simple-process-supervision
+	.patch added to -mm tree
+Message-ID: <20110820153331.GA22577@redhat.com>
+References: <20110818124353.GA2839@tango.0pointer.de> <20110818142508.GA30959@redhat.com> <1313691091.1107.9.camel@mop> <20110818184857.GA12094@redhat.com> <1313717521.991.4.camel@mop> <20110819122503.GA8411@redhat.com> <CAPXgP11KC2fTWBVYo6CBXe924YAyTGhx9=UTBDf4cP5Acuo0NA@mail.gmail.com> <20110819131339.GB8411@redhat.com> <1313763653.1119.12.camel@mop> <20110819145815.GA15420@redhat.com>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <4E4F814B.5070202@gmail.com> <4E4F865B.2010608@gmail.com>
-In-Reply-To: <4E4F865B.2010608@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E4FD440.0063:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819145815.GA15420@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2011 03:03 AM, Marco Stornelli wrote:
-> Il 20/08/2011 11:41, Marco Stornelli ha scritto:
->> Hi,
->>
->> Il 28/06/2011 17:33, Josef Bacik ha scritto:
->>> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.
->>> Turns out
->>> using fiemap in things like cp cause more problems than it solves, so
->>> lets try
->>> and give userspace an interface that doesn't suck. We need to match
->>> solaris
->>> here, and the definitions are
->>>
->>> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
->>> next hole greater than or equal to the supplied offset
->>> is returned. The definition of a hole is provided near
->>> the end of the DESCRIPTION.
->>>
->>> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
->>> start of the next non-hole file region greater than or
->>> equal to the supplied offset.
->>>
->>
->> I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and I've
->> got some doubts about the right behavior:
->>
->> 1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means
->> always the offset from the start of the file, right?
->>
->> 2) in case of a file with hole at the beginning and data at the end, if
->> I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file
->> because the idea is to search the *next* hole and we have always a
->> virtual hole at the end of the file, right?
+On 08/19, Oleg Nesterov wrote:
 >
-> Just to be precise about this question: the alternative here, it's to 
-> return the same position because we are already in a hole.
+> On 08/19, Kay Sievers wrote:
+> >
+> > version 4:
+>
+> Looks correct... But I don't trust myself. Especially after I missed
+> the problem with klthreads ;)
 
-Yes, the offset is from the start of the file.
+And I missed another problem. So. We do need to check that
+father != init_task even if we check has_child_subreaper.
 
-And yes, same offset is ok. I think the word next should be
-dropped from the definition. It is misleading.
+
+
+Suppose that a kernel thread execs the usermode task T which
+does prctl(REAPER). Suppose that its grandchild C exits, it
+should be reparented to T.
+
+If T is alive - everything fine, the lookup finds T with
+->is_sub_reaper set.
+
+If T has exited - everything fine again, C->parent was already
+reparented to pid_ns->child_reaper (or another sub-reaper).
+
+But! If T exits, there is a window between setting PF_EXITING
+and forget_original_parent() which should re-parent C->parent.
+If C exits in this window, it will see PF_EXITING and continue
+the lookup, but it will never reach pid_ns->child_reaper.
+
+(if we could check ->exit_state instead of PF_EXITING, everything
+ would be fine).
+
+
+
+
+
+And cough... there is another, not that subtle problem ;) That
+task T can _clear_ ->is_child_subreaper after forking the child.
+But since this obviously can't clear C->has_child_subreaper, we
+can't trust it.
+
+
+
+
+So. please add this check back. I insisted you should remove it,
+but I was wrong. Otherwise looks correct.
+
+
+
+
+
+Damn. And why do we check PF_EXITING but not exit_state? this is
+because we have to drop tasklist for exit_task_namespaces(), see
+762a24beed3f3ab93224bd447710e6c36fcf1968. However, there were a
+lot of changes since then. Afaics we can change do_notify_parent()
+to use task_active_pid_ns(tsk->parent) and then we can call
+exit_task_namespaces() before exit_notify(). In this case we can
+change exit_notify/forget_original_parent to reparent and set
+exit_state under tasklist, this also saves unlock+lock.
+
+Oleg.
+
