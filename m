@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab1HTTqm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 15:46:42 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:63258 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab1HTTql convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 15:46:41 -0400
+	id S1754904Ab1HTUAa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 16:00:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369Ab1HTUA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 16:00:27 -0400
+Date: Sat, 20 Aug 2011 23:00:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
+Message-ID: <20110820200043.GB5276@redhat.com>
+References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com>
+ <20110819152335.GA19489@redhat.com>
+ <1313771587.12243.16.camel@lappy>
 MIME-Version: 1.0
-In-Reply-To: <4E5008A1.8070105@landley.net>
-References: <4E5008A1.8070105@landley.net>
-Date: Sat, 20 Aug 2011 21:46:41 +0200
-X-Google-Sender-Auth: kg4lfq8RwIZ1JxxEw-jDGQoZ9Cw
-Message-ID: <CAMuHMdWfpZdwqtPgQKJHYVWRLKMXOeaMWV-mTBQxpE12XNTg_g@mail.gmail.com>
-Subject: Re: m68k with mmu doesn't compile after 66d857b08b8c3ed
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Landley <rob@landley.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, gerg@uclinux.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313771587.12243.16.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Fri, Aug 19, 2011 at 07:33:07PM +0300, Sasha Levin wrote:
+> On Fri, 2011-08-19 at 18:23 +0300, Michael S. Tsirkin wrote:
+> > On Sat, Aug 13, 2011 at 11:51:01AM +0300, Sasha Levin wrote:
+> > > The MAC of a virtio-net device is located at the first field of the device
+> > > specific header. This header is located at offset 20 if the device doesn't
+> > > support MSI-X or offset 24 if it does.
+> > > 
+> > > Current code in virtnet_probe() used to probe the MAC before checking for
+> > > MSI-X, which means that the read was always made from offset 20 regardless
+> > > of whether MSI-X in enabled or not.
+> > > 
+> > > This patch moves the MAC probe to after the detection of whether MSI-X is
+> > > enabled. This way the MAC will be read from offset 24 if the device indeed
+> > > supports MSI-X.
+> > > 
+> > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > Cc: virtualization@lists.linux-foundation.org
+> > > Cc: netdev@vger.kernel.org
+> > > Cc: kvm@vger.kernel.org
+> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > 
+> > I am not sure I see a bug in virtio: the config pace layout simply
+> > changes as msix is enabled and disabled (and if you look at the latest
+> > draft, also on whether 64 bit features are enabled).
+> > It doesn't depend on msix capability being present in device.
+> > 
+> > The spec seems to be explicit enough:
+> > 	If MSI-X is enabled for the device, two additional fields immediately
+> > 	follow this header.
+> > 
+> > So I'm guessing the bug is in kvm tools which assume
+> > same layout for when msix is enabled and disabled.
+> > qemu-kvm seems to do the right thing so the device
+> > seems to get the correct mac.
+> 
+> We assumed that PCI config space has a static layout like most other
+> devices. Having a behavior of "First bit 20 does something, but after
+> enabling MSI-X it does something completely different" sounds strange.
 
-You're really confusing me.
+The layout is always virtio header followed by device specific header.
+We started with a small header so when more data was added, we could not
+extend the header unconditionally.
 
-On Sat, Aug 20, 2011 at 21:18, Rob Landley <rob@landley.net> wrote:
-> The m68k build in 3.0 dies with this:
+We can't change that behaviour for MSI-X now, guests and
+hosts rely on it.
+
 >
->  CC      arch/m68k/kernel/dma.o
-> In file included from arch/m68k/kernel/dma.c:4:
-> arch/m68k/kernel/dma_no.c: In function 'dma_sync_single_for_cpu':
-> arch/m68k/kernel/dma_no.c:44: error: implicit declaration of function 'flush_dcache_range'
+> I'm wondering why offsets of the config structure change during run time
+> and are not statically defined when the device is started.
 
-Your subject says "m68k with mmu doesn't compile", but here you're
-obviously compiling for nommu, as dma.c includes dma_no.c if CONFIG_MMU
-is not set.
+That's because of backwards compatibility with old guests.
+When we know the guest is new, we expose new layout,
+but old guests must see old layout.
 
-> make[1]: *** [arch/m68k/kernel/dma.o] Error 1
-> make: *** [arch/m68k/kernel] Error 2
->
-> That file includes <asm/cacheflush.h>, which for m68k is:
->
-> #ifdef __uClinux__
-> #include "cacheflush_no.h"
-> #else
-> #include "cacheflush_mm.h"
-> #endif
->
-> The nommu header (cacheflush_no.h) does #define flush_dcache_range(),
-> but the clacheflush_mm.h version does not.  I.E. you can only currently
+> It's not like VIRTIO_F_FEATURES_HI can be disabled after it was enabled,
 
-Are you using a uClinux toolchain that defines __uClinux__, or not?
+Yes it can, e.g. at guest reset. Generally features can be tweaked
+any way guest likes until status is set to OK.
 
-> build m68k for Coldfire, you can no longer build it for an actual m68k.
+> or MSI-X can be simply disabled during run time.
 
-JFYI, it builds fine for all "actual m68ks" (with MMU) I'm interested in.
-And I guess Greg will say the same for Coldfire and "actual m68ks" without
-MMU...
+Not sure what you mean by 'run time'. Guest can reset
+or disable the device, change any parameters,
+then re-enable.
 
-Gr{oetje,eeting}s,
+> Maybe this is better solved by copying the way it was done in PCI itself
+> with capability linked list?
+> 
+> -- 
+> 
+> Sasha.
 
-                        Geert
+There are any number of ways to lay out the structure.  I went for what
+seemed a simplest one.  For MSI-X the train has left the station.  We
+can probably still tweak where the high 32 bit features
+for 64 bit features are.  No idea if it's worth it.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+MST
