@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034Ab1HTIIi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 04:08:38 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:35000 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab1HTIIg (ORCPT
+	id S1752218Ab1HTIKS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 04:10:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40229 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab1HTIKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 04:08:36 -0400
-Date: Sat, 20 Aug 2011 16:08:32 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] crypto: aesni-intel - Add ivsize to ablk_ecb_alg
-Message-ID: <20110820080832.GA15013@gondor.apana.org.au>
-References: <20110811164040.GB2167@zod.bos.redhat.com> <20110815071528.GA29656@gondor.apana.org.au> <20110815115038.GA2227@zod.bos.redhat.com> <20110816123227.GB9413@gondor.apana.org.au> <20110818174425.GN2227@zod.bos.redhat.com> <20110819000229.GA1076@gondor.apana.org.au> <20110819021516.GU2227@zod.bos.redhat.com> <20110819073224.GA3658@gondor.apana.org.au> <20110819081207.GA3954@gondor.apana.org.au> <20110819121516.GA2270@zod.bos.redhat.com>
+	Sat, 20 Aug 2011 04:10:15 -0400
+Date: Sat, 20 Aug 2011 10:10:10 +0200
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: paul@paulmenage.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        oleg@redhat.com,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH 07/16] freezer: don't distinguish nosig tasks on thaw
+Message-ID: <20110820081010.GI20085@htj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <1313763382-12341-8-git-send-email-tj@kernel.org>
+ <201108192314.53010.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110819121516.GA2270@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201108192314.53010.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 08:15:16AM -0400, Josh Boyer wrote:
-> On Fri, Aug 19, 2011 at 04:12:08PM +0800, Herbert Xu wrote:
-> > On Fri, Aug 19, 2011 at 03:32:24PM +0800, Herbert Xu wrote:
-> > > 
-> > > Meanwhile I'll make a patch that ensures cryptd is registered
-> > > before aesni.
-> > 
-> > Please try this patch.  Thanks!
-> 
-> This worked great.  I'm confused why adding ivsize to the ablk_ecb_alg
-> "worked" as well, but looking at the traces again I agree this seems
-> like the actual problem.
+Hello, Rafael.
 
-Thanks for testing! Patch applied and pushed.
+On Fri, Aug 19, 2011 at 11:14:52PM +0200, Rafael J. Wysocki wrote:
+> On Friday, August 19, 2011, Tejun Heo wrote:
+> > There's no point in thawing nosig tasks before others.  There's no
+> > ordering requirement between the two groups on thaw, which the staged
+> > thawing can't guarantee anyway.  Simplify thaw_processes() by removing
+> > the distinction and collapsing thaw_tasks() into thaw_processes().
+> > This will help further updates to freezer.
+> 
+> I'm not sure if I like this patch.
+> 
+> Right now there are no ordering requirements between the two groups
+> of processes, but if we decide to freeze filesystems on suspend,
+> we'll need to thaw them between nosig and sig I suppose.
+
+Hmmm... I'm not really following.  How does staged wake up affect
+thawing filesystems?  Staged freezing makes sense as a crude way to
+define dependency during freezing - ie. userland and freezable tasks
+can't have dependency in their own groups but the former can depend on
+the latter on the way to refrigerator.
+
+However, during thawing, it doesn't make any difference regardless of
+what was frozen when and how they depend on each other.  They might as
+well have cyclic dependency and waking them in any order wouldn't make
+any difference.  The task which dependes on another task to do
+something would simply block until that task wakes up and resolves the
+dependency; moreover, performing staged wakeups doesn't really
+guarantee execution order.  It's different from staged freezing in
+that way - staged thawing doesn't have the synchronization phase
+between the two stages.  Tasks which were woken up earlier can easily
+start executing after tasks which were woken up later.
+
+The only guaranteed effect of staged wakeups is that tasks in the
+earlier group would have had its ->state set to TASK_RUNNING before
+the tasks of the second group.  This again is a moot point because
+
+* __refrigerator() restores task->state afterwards overwriting the
+  TASK_RUNNING once the task starts executing (in unknown order).
+  This is fundamentally broken and should be fixed so that task is
+  left in TASK_RUNNING when leaving the refrigerator.
+
+* However, if you leave it at TASK_RUNNING, it doesn't make any
+  difference w.r.t. synchronization.  The only way task->state can
+  participate in synchronization is through wake_up() - ie. through
+  other tasks setting its state to TASK_RUNNING, so if the
+  refrigerator leaves tast state at TASK_RUNNING on return, it can't
+  hinder any synchronization.
+
+So, AFAICS, no matter which way it's looked at, it just doesn't make
+any difference.
+
+Thanks.
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+tejun
