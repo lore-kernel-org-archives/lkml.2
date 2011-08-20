@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab1HSX6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 19:58:22 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:42844 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab1HSX6V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 19:58:21 -0400
-MIME-Version: 1.0
-X-Originating-IP: [91.17.207.25]
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
-Date: Sat, 20 Aug 2011 01:51:49 +0200
-Message-ID: <CANvSZQ804KZWhPG4JvzOPtkC02ibD6YmRnUvHCEhLB8DKEo7LQ@mail.gmail.com>
-Subject: [bug] ext{3,4}: __find_get_block_slow() failed on 3.0.3
-To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756729Ab1HTAHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 20:07:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37683 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756448Ab1HTAHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 20:07:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,253,1312182000"; 
+   d="scan'208";a="40435939"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        josef@redhat.com, chris.mason@oracle.com
+Subject: [PATCH] BTRFS: Free inode mutex on lseek error
+Date: Fri, 19 Aug 2011 17:07:38 -0700
+Message-Id: <1313798858-10938-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+From: Andi Kleen <ak@linux.intel.com>
 
-while rsyncing a large amount (> 1TB) of data from an ext3 to an ext4
-on my machine [1], I encountered an issue where rsync and syslog
-eventually started consuming 100% CPU and my syslog was flooded [2]
-with error messages:
+Introduced with b26751575a9aa55fd6dbf3febde3ff06dfadc44f
 
--- 8< --
-> kernel: [101543.047293] b_state=0x00000029, b_size=>[10ock01543.04>[101543.047321] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
-> kernel: [101543.047330] b_state=0x00000029, b_size=4096
-> kernel: [101543.047>[10ock01543.047348] b_state=0x00000029, b_size=4096
-> kernel: [101543.047353] device blocksize: 4096
-> kernel: [101543.047359] __find_get_block_slow() failed. block=328204473, b01543.0>[10ock01543.047>[1ock01543.047404] b_state=0x00000029, b_size=4096
-> kernel: [101543.047409] device blocksize: 4096
-> kernel: [101543.047414] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
-> kernel: [10154ock01543.0>[1ock01543.0492>[1ock01543.0492>[1ock01543.049>[1ock01543.0492>[1ock01543.0>[1ock01543.049>[1ock01543.049>[1ock01543.0492>[10ock01543.0>[1ock=01543.04>[1ock01543.>[1ock01543.0493>[1ock01543.049>[1ock01543.04>[1ock01543.0493>[1ock01543.04941>[1ock01543.0494>[1ock01543.0>[1ock01543.049>[10ock01543.0>[1ock01543.04>[1ock01543.04>[1ock01543.0495>[1ock01543.0495>[1ock01543.0495>[1ock01543.0496>[1ock01543.04>[1ock01543.04>[1ock01543.049>[1ock01543.049>[1ock01543.04>[1ock01543.0497>[1ock01543.0>[1ock01543.0497>[1ock01543.0497>[1ock01543.0498>[1ock01543.0498>[1ock01543.04>[1ock01543.04>[1ock01543.0498>[1ock01543.0498>[1ock01543.0499>[1ock01543.0499>[1ock01543.04>[101543.049967] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
-> kernel: [101543.049975] b_state=0x00000029, b_size=4096
-> kernel: [101543.049980] device blocksize: 4096
-> kernel: [101543.049986] __find_get_block_slow() failed. block=328204473, b_blocknr=51867812025
--- 8< --
+Cc: josef@redhat.com
+Cc: chris.mason@oracle.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ fs/btrfs/file.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-These are not preceded by any other error messages (about possible FS
-inconsistencies) as has been the case in the past when bugs related to
-this error message were reported.
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 658d669..8791613 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1798,16 +1798,15 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+ 	case SEEK_DATA:
+ 	case SEEK_HOLE:
+ 		ret = find_desired_extent(inode, &offset, origin);
+-		if (ret) {
+-			mutex_unlock(&inode->i_mutex);
+-			return ret;
+-		}
++		if (ret)
++			goto error;
+ 	}
+ 
++	ret = -EINVAL;
+ 	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET))
+-		return -EINVAL;
++		goto error;
+ 	if (offset > inode->i_sb->s_maxbytes)
+-		return -EINVAL;
++		goto error;
+ 
+ 	/* Special lock needed here? */
+ 	if (offset != file->f_pos) {
+@@ -1817,6 +1816,9 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return offset;
++error:
++	mutex_unlock(&inode->i_mutex);
++	return ret;
+ }
+ 
+ const struct file_operations btrfs_file_operations = {
+-- 
+1.7.4.4
 
-Judging by the block size, the possibly corrupt volume is the ext3 one
-(the ext4 volume has a block size of 2048).
-
-A forced fsck.ext{3,4} of the source and target partitions did not
-show any inconsistencies.
-
-Any ideas?
-
-Thanks,
-Thilo
-
-[1] Linux andromeda 3.0.3-030003-generic #201108180913 SMP Thu Aug 18
-09:15:59 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
-[2] /var/log/kern.log grew to 200 MB just while shutting down the system
