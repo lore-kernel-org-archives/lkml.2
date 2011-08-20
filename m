@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab1HTRkW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 13:40:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45906 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751382Ab1HTRkU (ORCPT
+	id S1754580Ab1HTRlm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 13:41:42 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50517
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751382Ab1HTRlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 13:40:20 -0400
-Date: Sat, 20 Aug 2011 18:40:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: anish singh <anish198519851985@gmail.com>
-Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        Kernel-newbies <kernelnewbies@nl.linux.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Dave Hylands <dhylands@gmail.com>
-Subject: Re: Headset driver detection problem during bootup
-Message-ID: <20110820174017.GA28142@opensource.wolfsonmicro.com>
-References: <CAK7N6vrj8V+7EYLmd92qd+Mae2KZu8K6BVwnwda=3y2vrcDWRw@mail.gmail.com>
+	Sat, 20 Aug 2011 13:41:40 -0400
+Date: Sat, 20 Aug 2011 13:41:37 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block bits for 3.1-rc
+Message-ID: <20110820174137.GA27243@infradead.org>
+References: <4E4E6238.3080808@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK7N6vrj8V+7EYLmd92qd+Mae2KZu8K6BVwnwda=3y2vrcDWRw@mail.gmail.com>
-X-Cookie: Excellent day to have a rotten day.
+In-Reply-To: <4E4E6238.3080808@fusionio.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 09:23:13PM +0900, anish singh wrote:
+On Fri, Aug 19, 2011 at 03:16:40PM +0200, Jens Axboe wrote:
+> - Revert of the CFQ meta data special treatment patch, it's been shown
+>   to regress a kernel build workload by about 10%. More investigation
+>   is needed, for 3.1 lets just back it out.
 
-> Once the handler is called then we find out if the headset
-> is there or not using gpio and then normal detection happens
+Sorry, but you can't simply do that without any coordination.  We have
+added that marker to xfs now that the stupid special casing stopped,
+and turning it back on will cause us massive slowdows.  Next time
+please better coordinate this with its users.  In fact I have never
+seen this patch or a discussion on any mailinglist.
 
-> Is it the right way to detect the device during power-up?
-
-> After the device is powered up and then if we insert headset
-> then it is working fine by calling the interrupt handler and
-> everything goes fine.
-
-The standard soc-jack code should already be reading the state of the
-GPIO as part of its startup.
