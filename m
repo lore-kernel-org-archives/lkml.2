@@ -1,130 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab1HTJol (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 05:44:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55243 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab1HTJoj (ORCPT
+	id S1753252Ab1HTJsN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 05:48:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39252 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1HTJsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 05:44:39 -0400
-Date: Sat, 20 Aug 2011 11:44:34 +0200
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        arnd@arndb.de, oleg@redhat.com, lizf@cn.fujitsu.com,
-        paul@paulmenage.org, Matt Helsley <matthltc@us.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [GIT PULL pm-next] freezer: fix various bugs and simplify
- implementation
-Message-ID: <20110820094434.GA24151@htj.dyndns.org>
+	Sat, 20 Aug 2011 05:48:09 -0400
+Message-ID: <4E4F814B.5070202@gmail.com>
+Date: Sat, 20 Aug 2011 11:41:31 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josef Bacik <josef@redhat.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>
+In-Reply-To: <1309275199-10801-1-git-send-email-josef@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+Hi,
 
-Please consider pulling from the following branch to receive freezer
-fixes and simplifications patchset[1].  The only changes from the
-posting are addition of acked-by's, minor patch description updates
-and rebase on top of pm-next (af0fa9cb79 "PM / Hibernate: Include
-storage keys in hibernation image on s390").
+Il 28/06/2011 17:33, Josef Bacik ha scritto:
+> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
+> using fiemap in things like cp cause more problems than it solves, so lets try
+> and give userspace an interface that doesn't suck.  We need to match solaris
+> here, and the definitions are
+>
+> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
+> next hole greater than or equal to the supplied offset
+> is returned. The definition of a hole is provided near
+> the end of the DESCRIPTION.
+>
+> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
+> start of the next non-hole file region greater than or
+> equal to the supplied offset.
+>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
+I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and I've 
+got some doubts about the right behavior:
 
-The HEAD should be 7b5b95b3f51a28ec008a295e5247436637220f41.  If
-git.korg doesn't show it yet.  Please pull from master.korg.
+1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means 
+always the offset from the start of the file, right?
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
+2) in case of a file with hole at the beginning and data at the end, if 
+I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file 
+because the idea is to search the *next* hole and we have always a 
+virtual hole at the end of the file, right?
 
-FYI, this patchset will cause a conflict with s390 TIF flag fix patch.
-The conflict is trivial and Stephen should be able to handle it
-without any problem.  Also, I'm planning on doing some further work on
-cgroup freezer and then will try to bridge it with job control.  If
-that plan fans out, I might ask Oleg to pull from the pm tree.  This
-shouldn't matter too much either way but it *might* be a good idea to
-keep this line of patches in a separate branch.
+3) about the last sentence of point 2), is it always true even if we 
+have a case of block allocation beyond the end of file (fallocate with 
+keep size option)?
 
-Thank you.
+Thanks.
 
-[1] http://thread.gmane.org/gmane.linux.kernel/1181594
+Regards,
 
-Tejun Heo (16):
-      freezer: fix current->state restoration race in refrigerator()
-      freezer: don't unnecessarily set PF_NOFREEZE explicitly
-      freezer: unexport refrigerator() and update try_to_freeze() slightly
-      freezer: implement and use kthread_freezable_should_stop()
-      freezer: rename thaw_process() to __thaw_task() and simplify the implementation
-      freezer: make exiting tasks properly unfreezable
-      freezer: don't distinguish nosig tasks on thaw
-      freezer: use dedicated lock instead of task_lock() + memory barrier
-      freezer: make freezing indicate freeze condition in effect
-      freezer: fix set_freezable[_with_signal]() race
-      freezer: kill PF_FREEZING
-      freezer: clean up freeze_processes() failure path
-      cgroup_freezer: prepare for removal of TIF_FREEZE
-      freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE
-      freezer: remove now unused TIF_FREEZE
-      freezer: remove should_send_signal() and update frozen()
-
- Documentation/power/freezing-of-tasks.txt |   14 +-
- arch/alpha/include/asm/thread_info.h      |    2 -
- arch/arm/include/asm/thread_info.h        |    2 -
- arch/avr32/include/asm/thread_info.h      |    2 -
- arch/blackfin/include/asm/thread_info.h   |    2 -
- arch/cris/include/asm/thread_info.h       |    2 -
- arch/frv/include/asm/thread_info.h        |    2 -
- arch/h8300/include/asm/thread_info.h      |    2 -
- arch/ia64/include/asm/thread_info.h       |    2 -
- arch/m32r/include/asm/thread_info.h       |    2 -
- arch/m68k/include/asm/thread_info.h       |    1 -
- arch/microblaze/include/asm/thread_info.h |    2 -
- arch/mips/include/asm/thread_info.h       |    2 -
- arch/mn10300/include/asm/thread_info.h    |    2 -
- arch/parisc/include/asm/thread_info.h     |    2 -
- arch/powerpc/include/asm/thread_info.h    |    2 -
- arch/s390/include/asm/thread_info.h       |    2 -
- arch/sh/include/asm/thread_info.h         |    2 -
- arch/sparc/include/asm/thread_info_32.h   |    2 -
- arch/sparc/include/asm/thread_info_64.h   |    2 -
- arch/um/include/asm/thread_info.h         |    2 -
- arch/unicore32/include/asm/thread_info.h  |    2 -
- arch/x86/include/asm/thread_info.h        |    2 -
- arch/xtensa/include/asm/thread_info.h     |    2 -
- drivers/bluetooth/btmrvl_main.c           |    2 -
- drivers/mfd/twl4030-irq.c                 |    3 -
- drivers/mfd/twl6030-irq.c                 |    2 -
- drivers/net/irda/stir4200.c               |    2 +-
- drivers/platform/x86/thinkpad_acpi.c      |   15 +--
- drivers/staging/rts_pstor/rtsx.c          |    2 -
- fs/btrfs/async-thread.c                   |    2 +-
- fs/btrfs/disk-io.c                        |    8 +-
- fs/ext4/super.c                           |    3 +-
- fs/fs-writeback.c                         |    4 +-
- fs/gfs2/log.c                             |    4 +-
- fs/gfs2/quota.c                           |    4 +-
- fs/jbd/journal.c                          |    2 +-
- fs/jbd2/journal.c                         |    2 +-
- fs/jfs/jfs_logmgr.c                       |    2 +-
- fs/jfs/jfs_txnmgr.c                       |    4 +-
- fs/nilfs2/segment.c                       |    2 +-
- fs/xfs/linux-2.6/xfs_buf.c                |    2 +-
- include/linux/freezer.h                   |   78 +++++--------
- include/linux/kthread.h                   |    1 +
- include/linux/sched.h                     |    3 +-
- kernel/cgroup_freezer.c                   |   51 ++++-----
- kernel/exit.c                             |    8 +-
- kernel/fork.c                             |    1 -
- kernel/freezer.c                          |  179 +++++++++++++++++------------
- kernel/kthread.c                          |   25 ++++
- kernel/power/hibernate.c                  |   15 +--
- kernel/power/process.c                    |   65 ++++-------
- kernel/power/user.c                       |    4 +-
- mm/backing-dev.c                          |    8 +-
- 54 files changed, 247 insertions(+), 315 deletions(-)
-
---
-tejun
+Marco
