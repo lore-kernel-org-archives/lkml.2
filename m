@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1HTRbW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 13:31:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54864 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab1HTRbN (ORCPT
+	id S1754415Ab1HTRcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 13:32:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58415 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab1HTRcL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 13:31:13 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 2/4] x86: Enter rcu extended qs after idle notifier call
-Date: Sat, 20 Aug 2011 19:30:50 +0200
-Message-Id: <1313861452-24783-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
-References: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
+	Sat, 20 Aug 2011 13:32:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313829403.19751.14.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+ <1313772419-21951-8-git-send-email-matt@console-pimps.org>
+ <CAMjpGUcwkLkHo33WY1vJr4pWPz9wgVcwti5nuqLM2FQYWn6O=A@mail.gmail.com> <1313829403.19751.14.camel@mfleming-mobl1.ger.corp.intel.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sat, 20 Aug 2011 13:31:50 -0400
+X-Google-Sender-Auth: QfYi5W1xw4gQdRAeulANFwD2K3I
+Message-ID: <CAMjpGUexVttx_tnjsL5i9NfF2bTjH5y9H5eLosFQw0Nq12+JoQ@mail.gmail.com>
+Subject: Re: [PATCH v2 07/43] blackfin: Use set_current_blocked() and block_sigmask()
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idle notifier, called by enter_idle(), enters into rcu read
-side critical section but at that time we already switched into
-rcu dynticks idle mode. And it's illegal to use rcu_read_lock()
-in that state.
+On Sat, Aug 20, 2011 at 04:36, Matt Fleming wrote:
+> On Sat, 2011-08-20 at 00:00 -0400, Mike Frysinger wrote:
+>> On Fri, Aug 19, 2011 at 12:46, Matt Fleming wrote:
+>> > --- a/arch/blackfin/kernel/signal.c
+>> > +++ b/arch/blackfin/kernel/signal.c
+>> > -       if (ret == 0) {
+>> > -               spin_lock_irq(&current->sighand->siglock);
+>> > -               sigorsets(&current->blocked, &current->blocked,
+>> > -                         &ka->sa.sa_mask);
+>> > -               if (!(ka->sa.sa_flags & SA_NODEFER))
+>> > -                       sigaddset(&current->blocked, sig);
+>> > -               recalc_sigpending();
+>> > -               spin_unlock_irq(&current->sighand->siglock);
+>> > -       }
+>> > +       if (ret == 0)
+>> > +               block_sigmask(ka, sig);
+>>
+>> the Blackfin version holds siglock and calls recalc_sigpending() while
+>> block_sigmask() does neither.  i'm guessing that is expected behavior
+>> now ?
+>
+> Yah, set_current_blocked() inside of block_sigmask() still grabs siglock
+> and calls recalc_sigpending() for you. Reading current->blocked inside
+> of block_sigmask() is fine and the sigorsets() is OK because we're
+> modifying a stack variable, so only grabbing the lock inside of
+> set_current_blocked() is safe.
 
-This results in rcu reporting its bad mood:
+thanks for clearing that up (and the code itself!).
 
-[    1.275635] WARNING: at include/linux/rcupdate.h:194 __atomic_notifier_call_chain+0xd2/0x110()
-[    1.275635] Hardware name: AMD690VM-FMH
-[    1.275635] Modules linked in:
-[    1.275635] Pid: 0, comm: swapper Not tainted 3.0.0-rc6+ #252
-[    1.275635] Call Trace:
-[    1.275635]  [<ffffffff81051c8a>] warn_slowpath_common+0x7a/0xb0
-[    1.275635]  [<ffffffff81051cd5>] warn_slowpath_null+0x15/0x20
-[    1.275635]  [<ffffffff817d6f22>] __atomic_notifier_call_chain+0xd2/0x110
-[    1.275635]  [<ffffffff817d6f71>] atomic_notifier_call_chain+0x11/0x20
-[    1.275635]  [<ffffffff810018a0>] enter_idle+0x20/0x30
-[    1.275635]  [<ffffffff81001995>] cpu_idle+0xa5/0x110
-[    1.275635]  [<ffffffff817a7465>] rest_init+0xe5/0x140
-[    1.275635]  [<ffffffff817a73c8>] ? rest_init+0x48/0x140
-[    1.275635]  [<ffffffff81cc5ca3>] start_kernel+0x3d1/0x3dc
-[    1.275635]  [<ffffffff81cc5321>] x86_64_start_reservations+0x131/0x135
-[    1.275635]  [<ffffffff81cc5412>] x86_64_start_kernel+0xed/0xf4
-[    1.275635] ---[ end trace a22d306b065d4a66 ]---
-
-Fix this by entering rcu extended quiescent state later, just before
-the CPU goes to sleep.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/process_64.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3d56f0d..1efd185 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -120,7 +120,7 @@ void cpu_idle(void)
- 
- 	/* endless idle loop with no priority at all */
- 	while (1) {
--		tick_nohz_enter_idle(true);
-+		tick_nohz_enter_idle(false);
- 		while (!need_resched()) {
- 
- 			rmb();
-@@ -136,7 +136,12 @@ void cpu_idle(void)
- 			enter_idle();
- 			/* Don't trace irqs off for idle */
- 			stop_critical_timings();
-+
-+			/* enter_idle() needs rcu for notifiers */
-+			rcu_enter_nohz();
- 			pm_idle();
-+			rcu_exit_nohz();
-+
- 			start_critical_timings();
- 
- 			/* In many cases the interrupt that ended idle
-@@ -145,7 +150,7 @@ void cpu_idle(void)
- 			__exit_idle();
- 		}
- 
--		tick_nohz_exit_idle(true);
-+		tick_nohz_exit_idle(false);
- 		preempt_enable_no_resched();
- 		schedule();
- 		preempt_disable();
--- 
-1.7.5.4
-
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
