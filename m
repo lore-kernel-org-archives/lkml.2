@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1HTBrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 21:47:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55273 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab1HTBq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 21:46:58 -0400
-Message-ID: <4E4F11DA.5050209@cn.fujitsu.com>
-Date: Sat, 20 Aug 2011 09:46:02 +0800
-From: liubo <liubo2009@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754274Ab1HTCBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 22:01:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41116 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab1HTCBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 22:01:49 -0400
+Date: Sat, 20 Aug 2011 03:01:47 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Jamie Lokier <jamie@shareable.org>, Sylvain Rochet <gradator@gradator.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
+Message-ID: <20110820020147.GE2203@ZenIV.linux.org.uk>
+References: <20101018223540.GA20730@gradator.net>
+ <20110819230344.GA24784@gradator.net>
+ <20110819233756.GI11512@jl-vm1.vm.bytemark.co.uk>
+ <20110820012943.GD2203@ZenIV.linux.org.uk>
+ <20110819184311.b094d6b7.rdunlap@xenotime.net>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-CC: linux-btrfs@vger.kernel.org, chris.mason@oracle.com, dave@jikos.cz
-Subject: Re: [PATCH] Btrfs: use do_div to avoid compile errors on 32bit box
-References: <1313804076-30228-1-git-send-email-liubo2009@cn.fujitsu.com>
-In-Reply-To: <1313804076-30228-1-git-send-email-liubo2009@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-20 09:45:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-20 09:45:27,
-	Serialize complete at 2011-08-20 09:45:27
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819184311.b094d6b7.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2011 09:34 AM, Liu Bo wrote:
-> When doing div operation of u64 type, we need to be careful and use do_div
-> to avoid compile ERROR on 32bit box:
-> 
-> "ERROR: "__udivdi3" [fs/btrfs/btrfs.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> 
+On Fri, Aug 19, 2011 at 06:43:11PM -0700, Randy Dunlap wrote:
 
-Sorry, guys, I just sent a wrong version.
+> What do you suggest as a functioning alternative to inotify?
 
-Plz ignore this one.  I'm sorry.
-
-thanks,
-liubo
-
-> Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
-> ---
->  fs/btrfs/extent-tree.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-> index 80d6148..9b495ce 100644
-> --- a/fs/btrfs/extent-tree.c
-> +++ b/fs/btrfs/extent-tree.c
-> @@ -6796,14 +6796,14 @@ int btrfs_can_relocate(struct btrfs_root *root, u64 bytenr)
->  	index = get_block_group_index(block_group);
->  	if (index == 0) {
->  		dev_min = 4;
-> -		min_free /= 2;
-> +		do_div(min_free, 2);
->  	} else if (index == 1) {
->  		dev_min = 2;
->  	} else if (index == 2) {
->  		min_free *= 2;
->  	} else if (index == 3) {
->  		dev_min = fs_devices->rw_devices;
-> -		min_free /= dev_min;
-> +		do_div(min_free, dev_min);
->  	}
->  
->  	mutex_lock(&root->fs_info->chunk_mutex);
-
+Depends on what particular (ab)use do you have in mind...
