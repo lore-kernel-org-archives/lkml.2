@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab1HTIOI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 04:14:08 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54482 "EHLO
+	id S1752846Ab1HTIPD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 04:15:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37289 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab1HTIOE (ORCPT
+	with ESMTP id S1751293Ab1HTIO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 04:14:04 -0400
-Date: Sat, 20 Aug 2011 10:13:56 +0200
+	Sat, 20 Aug 2011 04:14:59 -0400
+Date: Sat, 20 Aug 2011 10:14:53 +0200
 From: Tejun Heo <tj@kernel.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: menage@google.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        oleg@redhat.com
-Subject: Re: [PATCH 01/16] freezer: fix current->state restoration race in
- refrigerator()
-Message-ID: <20110820081356.GJ20085@htj.dyndns.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, oleg@redhat.com,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCHSET] freezer: fix various bugs and simplify implementation
+Message-ID: <20110820081453.GK20085@htj.dyndns.org>
 References: <1313763382-12341-1-git-send-email-tj@kernel.org>
- <1313763382-12341-2-git-send-email-tj@kernel.org>
- <201108192308.59705.rjw@sisk.pl>
+ <201108192300.55405.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201108192308.59705.rjw@sisk.pl>
+In-Reply-To: <201108192300.55405.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rafael.
+Hey,
 
-On Fri, Aug 19, 2011 at 11:08:59PM +0200, Rafael J. Wysocki wrote:
-> On Friday, August 19, 2011, Tejun Heo wrote:
-> > refrigerator() saves current->state before entering frozen state and
-> > restores it before returning using __set_current_state(); however,
-> > this is racy, for example, please consider the following sequence.
-> > 
-> > 	set_current_state(TASK_INTERRUPTIBLE);
-> > 	try_to_sleep();
+On Fri, Aug 19, 2011 at 11:00:55PM +0200, Rafael J. Wysocki wrote:
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
 > 
-> Did you mean try_to_freeze() here?
+> Good work, thanks for doing this.  I'd like this to go through my
+> tree if you don't mind, so please let me know when the patchset is
+> ready for me to pull from your branch.
 
-Heh, yeah, I'm constantly being confused among try_to_freeze(),
-try_to_sleep() and try_to_wake_up().  Will update. ;)
+Will update the patchset w/ acked-by's and send pull request soon.
+
+> Also please CC linux-pm on PM-related patches.
+
+Will do so.
 
 Thanks.
 
