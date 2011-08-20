@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1HTP6x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 11:58:53 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:22490 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753319Ab1HTP6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 11:58:52 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: bUPd94YVM1keChsKE848ggfP8.hR1.H_sOrnnSv92aqcq.v
- _gvuOBoPDJcFRoQf.EE1kJUjKbTFTUYvPvX0dX9qTkHyXOA9oDIr.FqIVNj5
- BrdPhtCOdcx8m.RymImWcpc0rHx3r69nUrN.5b5Xs2L93RdhTqUTtK9QQ5oL
- GozD4eWfKwZ3sJZw.ggb9TWeB7yjZazhSZbm5bp6eDe58av5UbiLDx8STRVB
- oRffqDGQXvXFFxxzuN.dEOvQLz61o9xiXnYoUjMI_Do5W58SLILaaBEC8sKi
- zWwHXU1HAuDym9yIyEzCHkNU6F5QCkmF1nzdLizhm3XAlTeuc76goOjMFzrU
- Ulmm_U.DVXLl3PRsbuRMcGBMv9HzmO0ne.stJGoro6HnzeQ--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Sat, 20 Aug 2011 10:58:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: linux-kernel@vger.kernel.org, rientjes@google.com
-Subject: Re: [slub p4 1/7] slub: free slabs without holding locks (V2)
-In-Reply-To: <alpine.DEB.2.00.1108201331400.3008@localhost6.localdomain6>
-Message-ID: <alpine.DEB.2.00.1108201056070.5267@router.home>
-References: <20110809211221.831975979@linux.com> <20110809211259.123603907@linux.com> <alpine.DEB.2.00.1108201331400.3008@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753945Ab1HTP7q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 11:59:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58538 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752928Ab1HTP7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 11:59:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,256,1312182000"; 
+   d="scan'208";a="43376168"
+Message-ID: <4E4FD9EE.5020609@linux.intel.com>
+Date: Sat, 20 Aug 2011 08:59:42 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com,
+        jean.pihet@newoldbits.com, mingo@redhat.com, trenn@suse.de,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/3] trace points: power: remove 'cpu_id' from trace_clock_*
+References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com> <1313766840.15704.104.camel@gandalf.stny.rr.com> <CACVXFVNKe+gt2VmrHcJ2Pd1ZvqfOPn+211vR-PcM-WDTYDN4cQ@mail.gmail.com> <4E4E8C52.6070900@linux.intel.com> <CACVXFVOWgM1aWf9x162Aa=8O6oWEXpDLK31MX+a38PMEt5tJvA@mail.gmail.com>
+In-Reply-To: <CACVXFVOWgM1aWf9x162Aa=8O6oWEXpDLK31MX+a38PMEt5tJvA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Aug 2011, Pekka Enberg wrote:
+It mentions that "Version 1.13 is the latest version of PowerTOP", also 
+no any information about 1.98. so where can I get 1.98? thanks,
 
-> > static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
-> > {
->
-> Is it possible to somehow verify that we're the last thread using the cache
-> when SLUB debugging is enabled? It'd be useful for tracking down callers that
-> violate this assumption.
-
-Hmmm... We do not track "threads" using slabs. I do not really know what
-the "thread" entity that would access a slab is? A subsystem? A kernel
-thread? A user thread? All these can access any slab at any time.
+http://www.kernel.org/pub/linux/status/powertop
 
