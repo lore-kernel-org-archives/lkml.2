@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1HTQBM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 12:01:12 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:40891 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753452Ab1HTQBJ (ORCPT
+	id S1753828Ab1HTQXU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 12:23:20 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39598 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752969Ab1HTQXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 12:01:09 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 9xPQ6C8VM1lfS5RZ8A0R2MNo2JSAoeCECUVyt7etnqJcCtY
- RufD9lXoyJMeBdM1.fLnvwl.hQOE65ZcgFuvppbqpftwFFoCKkkS7_nW7fDb
- nMaT1kb5wN5tmZkGkLGytlDBHB7FbGVfhPUGJmgcBG9ANYioAmvZp0Fab2mr
- QQYdNouzF_EnHvcG8XwOdQcTCZlT_rBEC0YAPlHhZQQf8tkUeKF1NZ4CLBsT
- VdNkBh6uImUA7hjLqjqUvMYxWL1O04lsN3W8OXmV3V1tC7vGBGPgZ15srL5g
- uMBZjjJPU0wVe5TNmOepWJpjtkPcww1LLd_VbZdGxiL4E0WwtIxqaKFdtGbK
- aOc4KHbKeVndcsTY4xAro5pYIDPOVu.Y5S6bSgnqLHEMfGZ8_lSCIUzItyyA
- 4ewrh4h_NYooQkoeLLP89FmEZro1GgSVY_m8-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Sat, 20 Aug 2011 11:01:06 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        rientjes@google.com
-Subject: Re: [slub p4 2/7] slub: Remove useless statements in __slab_alloc
-In-Reply-To: <alpine.DEB.2.00.1108201340270.3008@localhost6.localdomain6>
-Message-ID: <alpine.DEB.2.00.1108201100440.5267@router.home>
-References: <20110809211221.831975979@linux.com> <20110809211259.776343341@linux.com> <alpine.DEB.2.00.1108201340270.3008@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 20 Aug 2011 12:23:19 -0400
+Date: Sat, 20 Aug 2011 17:21:56 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: mikeci@acm.org
+Cc: "Jiri Slaby" <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>
+Subject: Re: Possible bug in 8250.c
+Message-ID: <20110820172156.1ece472c@lxorguk.ukuu.org.uk>
+In-Reply-To: <29681.1313801904@sonic.net>
+References: <29681.1313801904@sonic.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Aug 2011, Pekka Enberg wrote:
+> So in first iteration, interrupt is cleared, and in second, function will execute:
+> 
+>           } else if (end == NULL)
+>                         end = l;
+> 
+> which will terminate the loop, but the return code will be IRQ_RETVAL(0).
 
-> > Cc: torvalds@linux-foundation.org
-> > Signed-off-by: Christoph Lameter <cl@linux.com>
->
-> Linus wasn't actually on the CC of the email.
+If you are getting an extra IRQ when then chip itself is indicating no
+IRQ then the IRQ is spurious. That probably means you have a problem
+elsewhere - eg the IRQ controller being misconfigured between level/edge
+triggered.
 
-Quilt usually does that automatically when it finds a cc.
-
+Alan
