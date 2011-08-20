@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab1HTF5A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 01:57:00 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45549 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab1HTF44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 01:56:56 -0400
-X-AuditID: b753bd60-a28adba0000019f4-d1-4e4f4ca56483
-X-AuditID: b753bd60-a28adba0000019f4-d1-4e4f4ca56483
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip ] [BUGFIX] perf probe: Fix regression of variable finder
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Sat, 20 Aug 2011 14:39:23 +0900
-Message-ID: <20110820053922.3286.65805.stgit@fedora15>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	id S1752156Ab1HTGMw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 02:12:52 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59967 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938Ab1HTGMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 02:12:49 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] sound/soc/kirkwood/kirkwood-i2s.c: add missing kfree
+Date: Sat, 20 Aug 2011 08:12:38 +0200
+Message-Id: <1313820761-12042-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to call convert_variable() if previous call does not fail.
+From: Julia Lawall <julia@diku.dk>
 
-To call convert_variable, it ensures "ret" is 0. However, since
-"ret" has the return value of synthesize_perf_probe_arg() which
-always returns positive value if it succeeded, perf probe doesn't
-call convert_variable(). This will cause a SEGV when we add an
-event with arguments.
+Adjust the goto to jump to the error handling code that includes kfree.
 
-This has to be fixed as it ensures "ret" is greater than 0
-(or not negative).
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-This regression has been introduced by my previous patch, f182e3e1.
+// <smpl>
+@@
+identifier x;
+expression E1!=0,E2,E3,E4;
+statement S;
+iterator I;
+@@
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+(
+if (...) { ... when != kfree(x)
+               when != x = E3
+               when != E3 = x
+*  return ...;
+ }
+... when != x = E2
+    when != I(...,x,...) S
+if (...) { ... when != x = E4
+ kfree(x); ... return ...; }
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
+ sound/soc/kirkwood/kirkwood-i2s.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- tools/perf/util/probe-finder.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 555fc38..5d73262 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -659,7 +659,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
- 		if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
- 			ret = -ENOENT;
+diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+index a33fc51..8f16cd3 100644
+--- a/sound/soc/kirkwood/kirkwood-i2s.c
++++ b/sound/soc/kirkwood/kirkwood-i2s.c
+@@ -424,7 +424,7 @@ static __devinit int kirkwood_i2s_dev_probe(struct platform_device *pdev)
+ 	if (!priv->mem) {
+ 		dev_err(&pdev->dev, "request_mem_region failed\n");
+ 		err = -EBUSY;
+-		goto error;
++		goto error_alloc;
  	}
--	if (ret == 0)
-+	if (ret >= 0)
- 		ret = convert_variable(&vr_die, pf);
  
- 	if (ret < 0)
+ 	priv->io = ioremap(priv->mem->start, SZ_16K);
 
