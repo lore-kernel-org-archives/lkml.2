@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab1HTCoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 22:44:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44963 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab1HTCoO convert rfc822-to-8bit (ORCPT
+	id S1754885Ab1HTDDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 23:03:40 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:32845 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab1HTDDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 22:44:14 -0400
+	Fri, 19 Aug 2011 23:03:37 -0400
+Date: Sat, 20 Aug 2011 04:03:35 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Sylvain Rochet <gradator@gradator.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
+Message-ID: <20110820030335.GA14899@jl-vm1.vm.bytemark.co.uk>
+References: <20101018223540.GA20730@gradator.net>
+ <20110819230344.GA24784@gradator.net>
+ <20110819233756.GI11512@jl-vm1.vm.bytemark.co.uk>
+ <20110820012943.GD2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <4E4E8C52.6070900@linux.intel.com>
-References: <1313766244-22313-1-git-send-email-tom.leiming@gmail.com>
-	<1313766840.15704.104.camel@gandalf.stny.rr.com>
-	<CACVXFVNKe+gt2VmrHcJ2Pd1ZvqfOPn+211vR-PcM-WDTYDN4cQ@mail.gmail.com>
-	<4E4E8C52.6070900@linux.intel.com>
-Date: Sat, 20 Aug 2011 10:44:12 +0800
-Message-ID: <CACVXFVOWgM1aWf9x162Aa=8O6oWEXpDLK31MX+a38PMEt5tJvA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] trace points: power: remove 'cpu_id' from trace_clock_*
-From: Ming Lei <tom.leiming@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com,
-        jean.pihet@newoldbits.com, mingo@redhat.com, trenn@suse.de,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110820012943.GD2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 12:16 AM, Arjan van de Ven
-<arjan@linux.intel.com> wrote:
-> On 8/19/2011 8:39 AM, Ming Lei wrote:
->>
->> Hi,
->>
->> On Fri, Aug 19, 2011 at 11:14 PM, Steven Rostedt<rostedt@goodmis.org>
->>  wrote:
->>>
->>> Do you know if these changes wont break powertop?
->>
->> I have run powertop 1.13 on these changes, and found it works well
->> just like before,
->> no breaks found.
->
-> please use powertop 1.98 instead
-> 1.13 does not use trace events while 1.98 does
+Al Viro wrote:
+> On Sat, Aug 20, 2011 at 12:37:56AM +0100, Jamie Lokier wrote:
+> 
+> > Possible solution:
+> 
+> > Then this can be solved, in principle (if there's no better way), by
+> > watching a "virtual directory" that gets all events for when the
+> > access doesn't have a parent directory.  There needs to be some way to
+> > watch it, and some way to get the appropriate file from the event (as
+> > there is no real directory.  Or maybe there could be a virtual
+> > filesystem (like /proc, /sys etc.) containing a magic directory that
+> > receives these inode-only events, such that lookups in that directory
+> > yield the affected file.  Exactly as if the directory contains a hard
+> > link to every file, perhaps a text encoding of the handles passed
+> > through sys_open_by_handle_at.
+> 
+> There is a better way - stop using idiotify...  It has always been a
+> mistake, driven down our throats by filemangler and desktop crowd.
 
->From the link below:
+Well you still have your sense of humour...
 
-       http://www.lesswatts.org/projects/powertop/download.php
+I've never understood why you think it's about the file manager /
+desktop, or why you so strongly dislike the feature.  It originated
+there historically, but that is not it's primary use.
 
-It mentions that "Version 1.13 is the latest version of PowerTOP", also
-no any information about 1.98. so where can I get 1.98?
+The implementation, sure, but you seem to dislike the very *principle*
+of subscribing to changes.
 
-thanks,
--- 
-Ming Lei
+Every interesting use of inotify that I've seen is for some kind of
+cache support, to eliminate the majority of stat() calls, to remove
+disk I/O (no stat means no inode), to ensure correctness (st_mtime is
+coarse and unreliable), and to avoid having to modify every
+application which might affect any file from which cached items are
+derived to explicitly notify all the applications which might use any
+of those files.
+
+You like high performance, reliable and correct behaviour, and high
+scalability.  So I have never understood why you dislike the
+change-subscription principle so strongly, because it is a natural
+ally to those properties.
+
+All the best,
+-- Jamie
