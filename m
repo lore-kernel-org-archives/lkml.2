@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab1HTHZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 03:25:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47463 "EHLO mx2.suse.de"
+	id S1752029Ab1HTHaU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 03:30:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47571 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab1HTHZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 03:25:55 -0400
-Date: Sat, 20 Aug 2011 09:25:50 +0200
-Message-ID: <s5h8vqo8ry9.wl%tiwai@suse.de>
+	id S1751153Ab1HTHaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 03:30:18 -0400
+Date: Sat, 20 Aug 2011 09:30:14 +0200
+Message-ID: <s5h62ls8rqx.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-Cc: Jesper Juhl <jj@chaosbits.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Edgar (gimli) Hucek" <gimli@dark-green.com>,
-        Tim Howe <tim.howe@cirrus.com>, Stephen Warren <swarren@nvidia.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>, Jaroslav Kysela <perex@perex.cz>
-Subject: Re: [PATCH] Sound, Cirrus: Remove redundant check
-In-Reply-To: <CAOZdJXUOLmT1eGZ7wEtk_UacYCPVz_caZwsnOPE_jFNq5svc-g@mail.gmail.com>
-References: <alpine.LNX.2.00.1108192358510.31857@swampdragon.chaosbits.net>
-	<CAOZdJXUOLmT1eGZ7wEtk_UacYCPVz_caZwsnOPE_jFNq5svc-g@mail.gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Johannes Berg <johannes@sipsolutions.net>, kernel-janitors@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 4/4] sound/aoa/fabrics/layout.c: remove unneeded kfree
+In-Reply-To: <1313820761-12042-4-git-send-email-julia@diku.dk>
+References: <1313820761-12042-4-git-send-email-julia@diku.dk>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -29,65 +27,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sat, 20 Aug 2011 00:16:57 +0000,
-Tabi Timur-B04825 wrote:
+At Sat, 20 Aug 2011 08:12:41 +0200,
+Julia Lawall wrote:
 > 
-> On Fri, Aug 19, 2011 at 6:00 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > The variable 'idxp' is a pointer to 'unsigned int', so the value
-> > obtained when dereferencing it is always greater than or equal to
-> > 0. Testing this is redundant.
+> From: Julia Lawall <julia@diku.dk>
 > 
-> snd_hda_get_conn_index() can return a negative number, so maybe *idxp
-> should be a pointer to a signed int?
+> The label outnodev is only used when kzalloc has not yet taken place or has
+> failed, so there is no need for the call for kfree under this label.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> identifier x;
+> expression E1!=0,E2,E3,E4;
+> statement S;
+> iterator I;
+> @@
+> 
+> (
+> if (...) { ... when != kfree(x)
+>                when != x = E3
+>                when != E3 = x
+> *  return ...;
+>  }
+> ... when != x = E2
+>     when != I(...,x,...) S
+> if (...) { ... when != x = E4
+>  kfree(x); ... return ...; }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Yep, thanks for catching it.
-
-I applied the patch below instead.
+Thanks, applied this one.
+The rest three are left for review by Mark & Liam.
 
 
 Takashi
 
----
-From: Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH] ALSA: hda - Fix error check from snd_hda_get_conn_index() in
- patch_cirrus.c
 
-snd_hda_get_conn_index() returns a negative value while the current code
-stores it in an unsigned int.  It must be stored in a signed integer.
 
-Reported-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
----
- sound/pci/hda/patch_cirrus.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/sound/pci/hda/patch_cirrus.c b/sound/pci/hda/patch_cirrus.c
-index 47d6ffc..d6c93d9 100644
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -375,7 +375,7 @@ static int is_ext_mic(struct hda_codec *codec, unsigned int idx)
- static hda_nid_t get_adc(struct hda_codec *codec, hda_nid_t pin,
- 			 unsigned int *idxp)
- {
--	int i;
-+	int i, idx;
- 	hda_nid_t nid;
- 
- 	nid = codec->start_nid;
-@@ -384,9 +384,11 @@ static hda_nid_t get_adc(struct hda_codec *codec, hda_nid_t pin,
- 		type = get_wcaps_type(get_wcaps(codec, nid));
- 		if (type != AC_WID_AUD_IN)
- 			continue;
--		*idxp = snd_hda_get_conn_index(codec, nid, pin, false);
--		if (*idxp >= 0)
-+		idx = snd_hda_get_conn_index(codec, nid, pin, false);
-+		if (idx >= 0) {
-+			*idxp = idx;
- 			return nid;
-+		}
- 	}
- 	return 0;
- }
--- 
-1.7.6
-
+> ---
+>  sound/aoa/fabrics/layout.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/sound/aoa/fabrics/layout.c b/sound/aoa/fabrics/layout.c
+> index 3fd1a7e..552b97a 100644
+> --- a/sound/aoa/fabrics/layout.c
+> +++ b/sound/aoa/fabrics/layout.c
+> @@ -1073,10 +1073,10 @@ static int aoa_fabric_layout_probe(struct soundbus_dev *sdev)
+>  	sdev->pcmid = -1;
+>  	list_del(&ldev->list);
+>  	layouts_list_items--;
+> +	kfree(ldev);
+>   outnodev:
+>   	of_node_put(sound);
+>   	layout_device = NULL;
+> - 	kfree(ldev);
+>  	return -ENODEV;
+>  }
+>  
+> 
