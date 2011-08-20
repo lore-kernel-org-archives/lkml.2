@@ -1,34 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1HTEOL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 00:14:11 -0400
-Received: from fep16.mx.upcmail.net ([62.179.121.36]:38482 "EHLO
-	fep16.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1HTEOJ (ORCPT
+	id S1753715Ab1HTEO2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 00:14:28 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60294 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab1HTEOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 00:14:09 -0400
-X-Greylist: delayed 79737 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Aug 2011 00:14:09 EDT
-X-SourceIP: 115.184.65.217
-Reply-To: <upcaccount@admin.in.th>
-From: "E-Mail Account Maintenance" <info@hotmail.com>
-Subject: E-Mail Account Maintenance
-Date: Sun, 21 Aug 2011 09:43:50 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110820041406.YDOI1505.viefep16-int.chello.at@edge05.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=jqrf5qXv5urL2URZ3a9OklEvUdrM81ZtB3GWlHLPCVk= c=1 sm=0 p=9S_0AAoY8tkA:10 a=Dyoqhi_TatcA:10 a=8uJ5MO_MQBgA:10 a=8EU9Q7FnrCoA:10 a=Cfj4BQAnxiAA:10 a=OAJ___Sp2ttQPlvN5BkA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 20 Aug 2011 00:14:17 -0400
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: hjk@hansjkoch.de, gregkh@suse.de, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH v2] drivers:uio:change the goto label to consistent with others
+Date: Sat, 20 Aug 2011 12:12:08 +0800
+Message-Id: <1313813528-30913-2-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1313813528-30913-1-git-send-email-wanlong.gao@gmail.com>
+References: <1313813528-30913-1-git-send-email-wanlong.gao@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Willen wij u mededelen dat wij momenteel uitvoeren van gepland onderhouden upgrade van onze UPC webmail      
-        *User name:
-        *Wachtwoord: 
-        *Geboortedatum:
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+sorry for v1's typo mistake.
+Thanks
+
+Remove one *goto* label in uio.c.
+
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ drivers/uio/uio.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index d2efe82..c89f12a 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -750,14 +750,13 @@ static int uio_major_init(void)
+ 
+ 	uio_major = MAJOR(uio_dev);
+ 	uio_cdev = cdev;
+-	result = 0;
+-out:
+-	return result;
++	return 0;
+ out_put:
+ 	kobject_put(&cdev->kobj);
+ out_unregister:
+ 	unregister_chrdev_region(uio_dev, UIO_MAX_DEVICES);
+-	goto out;
++out:
++	return result;
+ }
+ 
+ static void uio_major_cleanup(void)
+-- 
+1.7.4.1
+
