@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1HTHCY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 03:02:24 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56910 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab1HTHCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 03:02:09 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Liam Girdwood <lrg@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Timur Tabi <timur@freescale.com>, Axel Lin <axel.lin@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 1/2] sound/soc/fsl/p1022_ds.c: add missing of_node_put
-Date: Sat, 20 Aug 2011 09:02:00 +0200
-Message-Id: <1313823721-16930-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1751784Ab1HTHD6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 03:03:58 -0400
+Received: from mailout.selfhost.de ([82.98.82.25]:55296 "EHLO
+	outgoing.selfhost.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751153Ab1HTHD4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 03:03:56 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Aug 2011 03:03:56 EDT
+Message-ID: <4E4F5AC8.3060302@afaics.de>
+Date: Sat, 20 Aug 2011 08:57:12 +0200
+From: Harald Dunkel <harri@afaics.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: filesystem access vs 120 seconds timeouts
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-dma_channel_np has been accessed at this point, so decrease its reference
-count before leaving the function.
+Hi folks,
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+on huge disk IO operations I get something like this from time
+to time:
 
-// <smpl>
-@@
-identifier x;
-expression E1!=0,E2,E3,E4;
-statement S;
-iterator I;
-@@
+[ 6220.508495] INFO: task jbd2/sdb3-8:1616 blocked for more than 120 seconds.
+[ 6220.540831] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 6220.573046] jbd2/sdb3-8     D 0000000000000000     0  1616      2 0x00000000
+[ 6220.573053]  ffff88021216e050 0000000000000046 ffff8801eab35a40 0000000000000000
+[ 6220.573058]  ffffffff81401020 ffff8802121bbfd8 0000000000010300 0000000000004000
+[ 6220.573063]  ffff8802106cbac0 ffff8802106cba70 ffff88020ec1c000 ffffffff81136cc1
+[ 6220.573069] Call Trace:
+[ 6220.573078]  [<ffffffff81136cc1>] ? cfq_add_rq_rb+0xb6/0xc7
+[ 6220.573085]  [<ffffffff8113a973>] ? kobject_get+0x12/0x17
+[ 6220.573093]  [<ffffffff811cf573>] ? scsi_request_fn+0x374/0x44f
+[ 6220.573100]  [<ffffffff81083800>] ? find_get_page+0x4a/0x76
+[ 6220.573105]  [<ffffffff810838f8>] ? __lock_page+0x66/0x66
+[ 6220.573111]  [<ffffffff812a97aa>] ? io_schedule+0x4b/0x5d
+[ 6220.573116]  [<ffffffff810838fe>] ? sleep_on_page+0x6/0xa
+[ 6220.573121]  [<ffffffff812a9c8e>] ? __wait_on_bit+0x3e/0x71
+[ 6220.573127]  [<ffffffff81083a54>] ? wait_on_page_bit+0x6e/0x73
+[ 6220.573133]  [<ffffffff8104960b>] ? autoremove_wake_function+0x2a/0x2a
+[ 6220.573138]  [<ffffffff81083b04>] ? filemap_fdatawait_range+0x73/0x121
+[ 6220.573155]  [<ffffffff81129921>] ? submit_bio+0xb3/0xbc
+[ 6220.573166]  [<ffffffffa017aabb>] ? jbd2_journal_commit_transaction+0x75f/0xf84 [jbd2]
+[ 6220.573170]  [<ffffffff8103d6b7>] ? lock_timer_base.isra.25+0x22/0x47
+[ 6220.573174]  [<ffffffffa017d70c>] ? kjournald2+0xc0/0x20a [jbd2]
+[ 6220.573177]  [<ffffffff810495e1>] ? abort_exclusive_wait+0x79/0x79
+[ 6220.573181]  [<ffffffffa017d64c>] ? commit_timeout+0x5/0x5 [jbd2]
+[ 6220.573184]  [<ffffffff81049016>] ? kthread+0x76/0x7e
+[ 6220.573187]  [<ffffffff812ac814>] ? kernel_thread_helper+0x4/0x10
+[ 6220.573190]  [<ffffffff81048fa0>] ? kthread_worker_fn+0x139/0x139
+[ 6220.573192]  [<ffffffff812ac810>] ? gs_change+0xb/0xb
 
-(
-if (...) { ... when != of_node_put(x)
-               when != x = E3
-               when != E3 = x
-*  return ...;
- }
-... when != x = E2
-    when != I(...,x,...) S
-if (...) { ... when != x = E4
- of_node_put(x); ... return ...; }
-)
-// </smpl>
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Is the timeout of 120 seconds still reasonable? Should I simply switch
+off the message, as suggested?
 
----
- sound/soc/fsl/p1022_ds.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/fsl/p1022_ds.c b/sound/soc/fsl/p1022_ds.c
-index 8fa4d5f..fcb862e 100644
---- a/sound/soc/fsl/p1022_ds.c
-+++ b/sound/soc/fsl/p1022_ds.c
-@@ -297,8 +297,10 @@ static int get_dma_channel(struct device_node *ssi_np,
- 	 * dai->platform name should already point to an allocated buffer.
- 	 */
- 	ret = of_address_to_resource(dma_channel_np, 0, &res);
--	if (ret)
-+	if (ret) {
-+		of_node_put(dma_channel_np);
- 		return ret;
-+	}
- 	snprintf((char *)dai->platform_name, DAI_NAME_SIZE, "%llx.%s",
- 		 (unsigned long long) res.start, dma_channel_np->name);
- 
+Regards
 
+Harri
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk5PWsgACgkQUTlbRTxpHjdaKwCgkt5q3KABhq7FqNzit57A0eaP
+VQUAn0ChNyaIoSMOKmUK3dOtLjAQiAFj
+=H1Df
+-----END PGP SIGNATURE-----
