@@ -1,269 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab1HTAhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 20:37:36 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:62789 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab1HTAhe (ORCPT
+	id S1756679Ab1HTAop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 20:44:45 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47125 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1HTAon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 20:37:34 -0400
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC] Kbuild: allow code re-use across different directories
-Date: Fri, 19 Aug 2011 20:37:22 -0400
-Message-Id: <1313800642-32418-1-git-send-email-lacombar@gmail.com>
-X-Mailer: git-send-email 1.7.6.153.g78432
+	Fri, 19 Aug 2011 20:44:43 -0400
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 19 Aug 2011 17:44:22 -0700
+Message-ID: <CAB=NE6XmMJk8mKAM-LB5Jh3ZV1k57RMsCzQ19Z+Ly-BFmk8cVQ@mail.gmail.com>
+Subject: Linux wireless summit videoes from LinuxCon 2011
+To: linux-wireless <linux-wireless@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+For those that could not make it to the 2011 Linux wireless summit at
+LinuxCon Vancouver we have up 3 videoes on YouTube:
 
-The attached patch modify Kbuild to allow to directly re-use code in multiple
-directory without having to go through a copy. Technically, it changes Kbuild to
-use by default the VPATH feature of GNU make and provides accessors for Makefile
-to change it indirectly.
+1) [RFC] 802.11 DFS design on mac80211 / ath9k
 
-Considering:
+http://www.youtube.com/watch?v=_yyFiLFx4Mg
 
-arch/foo/lib:
-fancy.c
+Saxnet present their latest effort on design for a DFS architecture
+for mac80211 and for ath9k. This is from LinuxCon 2011 this week.
+Saxnet did an awesome job. If this design works for certification it
+could mean lowering the entry price for AP vendors looking to pass DFS
+testing. This work is under review now.
 
-We want to be able to build it with -DPANTS=32 in the kernel, but the
-bootloader requires -DPANTS_SIZE=30.
+2) 802.11s on LInux mac80211
 
-Currently we would do, either:
+802.11s Mesh Networking was ratified by IEEE for integration into
+802.11. Javier Cardona has been leading its implementation and support
+on mac80211. In this session he reviews 802.11s with open and
+encrypted environments. 802.11s uses a different encryption algorithm
+called "simultaneous authentication of equals", Javier reviews work
+needed to integrate the userspace application required supporting this
+encryption mechanism on hostapd / wpa_supplicant.
 
-arch/foo/lib/Makefile
-LDFLAGS_fancy.o := -DPANTS=32
-obj-y += fancy.o
+3) wmediumd for mac80211_hwsim
 
-and, either:
+Javier Cardona explains what Cozybit used to test the 802.11s code
+implemented in mac80211. He used extensions to mac80211_hwsim that
+allow links to be lossy. Cozybit also wrote a daemon to communicate to
+mac80211_hwsim to statically or dynamically alter the characteristics
+of the links. Right now mac80211_hwsim only accounts for packet loss
+between links but extensions can be made to also add latency later. He
+also demos a Java application used to create your topology for
+mac80211_hwsim. Researchers should get a chubby with this framework --
+you can extend this to do really cool shit, all in software with no
+hardware.
 
-arch/foo/boot/Makefile:
-LDFLAGS_fancy.o := -DPANTS=30
-obj-y += fancy.o
-$(obj)/fancy.c: $(srctree)/arch/foo/lib/fancy.c
-	$(call cmd,shipped)
+--
 
-or
+Kudos to Saxnet and Cozybit for their presentations and *awesome* work
+on coding up stuff and doing a great job at explaining all this to us.
 
-arch/foo/boot/Makefile:
-LDFLAGS_fancy.o := -DPANTS=30
-obj-y += fancy.o
-$(obj)/fancy.o: $(srctree)/arch/foo/lib/fancy.c
-	$(call cmd,cc_c_o)
+Nothing else was recorded, sorry :) If you loose the links you'll be
+able to find them here:
 
-The former implies an extra copy of the source file, the latter expose Kbuild
-internal function.
+http://wireless.kernel.org/en/users/Documentation#YouTube_Documentation
 
-With the attached patch, we would do:
-
-arch/foo/boot/Makefile:
-LDFLAGS_fancy.o := -DPANTS=30
-obj-y += fancy.o
-vpath-y += $(srctree)/arch/foo/lib
-
-and let GNU make do the job.
-
-Comments welcome,
- - Arnaud
-
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-
----
- Makefile               |    5 +++--
- scripts/Makefile.build |   24 +++++++++++++++---------
- scripts/Makefile.lib   |   17 ++++++++++++-----
- 3 files changed, 30 insertions(+), 16 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index b4ca4e1..db7f7f5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -154,9 +154,10 @@ objtree		:= $(CURDIR)
- src		:= $(srctree)
- obj		:= $(objtree)
- 
--VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
-+KBUILD_VPATH	:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
-+VPATH		:= $(KBUILD_VPATH)
- 
--export srctree objtree VPATH
-+export srctree objtree KBUILD_VPATH
- 
- 
- # SUBARCH tells the usermode build what the underlying arch is.  That is set
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index a0fd502..ac539d7 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -18,6 +18,8 @@ always :=
- targets :=
- subdir-y :=
- subdir-m :=
-+vpath-y :=
-+vpath-m :=
- EXTRA_AFLAGS   :=
- EXTRA_CFLAGS   :=
- EXTRA_CPPFLAGS :=
-@@ -37,6 +39,7 @@ include scripts/Kbuild.include
- 
- # For backward compatibility check that these variables do not change
- save-cflags := $(CFLAGS)
-+save-vpath := $(VPATH)
- 
- # The filename Kbuild has precedence over Makefile
- kbuild-dir := $(if $(filter /%,$(src)),$(src),$(srctree)/$(src))
-@@ -48,6 +51,9 @@ ifeq ($(KBUILD_NOPEDANTIC),)
-         ifneq ("$(save-cflags)","$(CFLAGS)")
-                 $(error CFLAGS was changed in "$(kbuild-file)". Fix it to use EXTRA_CFLAGS)
-         endif
-+        ifneq ("$(save-vpath)","$(VPATH)")
-+                $(error VPATH was changed in "$(kbuild-file)". Please uses vpath-y)
-+        endif
- endif
- 
- #
-@@ -198,13 +204,13 @@ $(multi-objs-y:.o=.lst) : modname = $(modname-multi)
- quiet_cmd_cc_s_c = CC $(quiet_modtag)  $@
- cmd_cc_s_c       = $(CC) $(c_flags) -fverbose-asm -S -o $@ $<
- 
--$(obj)/%.s: $(src)/%.c FORCE
-+$(obj)/%.s: %.c FORCE
- 	$(call if_changed_dep,cc_s_c)
- 
- quiet_cmd_cc_i_c = CPP $(quiet_modtag) $@
- cmd_cc_i_c       = $(CPP) $(c_flags)   -o $@ $<
- 
--$(obj)/%.i: $(src)/%.c FORCE
-+$(obj)/%.i: %.c FORCE
- 	$(call if_changed_dep,cc_i_c)
- 
- cmd_gensymtypes =                                                           \
-@@ -219,7 +225,7 @@ cmd_cc_symtypes_c =                                                         \
-     $(call cmd_gensymtypes,true,$@) >/dev/null;                             \
-     test -s $@ || rm -f $@
- 
--$(obj)/%.symtypes : $(src)/%.c FORCE
-+$(obj)/%.symtypes : %.c FORCE
- 	$(call cmd,cc_symtypes_c)
- 
- # C (.c) files
-@@ -301,13 +307,13 @@ define rule_cc_o_c
- endef
- 
- # Built-in and composite module parts
--$(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
-+$(obj)/%.o: %.c $(recordmcount_source) FORCE
- 	$(call cmd,force_checksrc)
- 	$(call if_changed_rule,cc_o_c)
- 
- # Single-part modules are special since we need to mark them in $(MODVERDIR)
- 
--$(single-used-m): $(obj)/%.o: $(src)/%.c $(recordmcount_source) FORCE
-+$(single-used-m): %.o: %.c $(recordmcount_source) FORCE
- 	$(call cmd,force_checksrc)
- 	$(call if_changed_rule,cc_o_c)
- 	@{ echo $(@:.o=.ko); echo $@; } > $(MODVERDIR)/$(@F:.o=.mod)
-@@ -317,7 +323,7 @@ quiet_cmd_cc_lst_c = MKLST   $@
- 		     $(CONFIG_SHELL) $(srctree)/scripts/makelst $*.o \
- 				     System.map $(OBJDUMP) > $@
- 
--$(obj)/%.lst: $(src)/%.c FORCE
-+$(obj)/%.lst: %.c FORCE
- 	$(call if_changed_dep,cc_lst_c)
- 
- # Compile assembler sources (.S)
-@@ -331,13 +337,13 @@ $(real-objs-m:.o=.s): modkern_aflags := $(KBUILD_AFLAGS_MODULE) $(AFLAGS_MODULE)
- quiet_cmd_as_s_S = CPP $(quiet_modtag) $@
- cmd_as_s_S       = $(CPP) $(a_flags)   -o $@ $< 
- 
--$(obj)/%.s: $(src)/%.S FORCE
-+$(obj)/%.s: %.S FORCE
- 	$(call if_changed_dep,as_s_S)
- 
- quiet_cmd_as_o_S = AS $(quiet_modtag)  $@
- cmd_as_o_S       = $(CC) $(a_flags) -c -o $@ $<
- 
--$(obj)/%.o: $(src)/%.S FORCE
-+$(obj)/%.o: %.S FORCE
- 	$(call if_changed_dep,as_o_S)
- 
- targets += $(real-objs-y) $(real-objs-m) $(lib-y)
-@@ -349,7 +355,7 @@ quiet_cmd_cpp_lds_S = LDS     $@
-       cmd_cpp_lds_S = $(CPP) $(cpp_flags) -P -C -U$(ARCH) \
- 	                     -D__ASSEMBLY__ -DLINKER_SCRIPT -o $@ $<
- 
--$(obj)/%.lds: $(src)/%.lds.S FORCE
-+$(obj)/%.lds: %.lds.S FORCE
- 	$(call if_changed_dep,cpp_lds_S)
- 
- # Build the compiled-in targets
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index aeea84a..b57b621 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -46,6 +46,13 @@ obj-m		:= $(filter-out %/, $(obj-m))
- 
- subdir-ym	:= $(sort $(subdir-y) $(subdir-m))
- 
-+#
-+vpath-ym	:= $(vpath-y) $(vpath-m)
-+VPATH		:= $(KBUILD_VPATH)
-+VPATH		+= $(srctree)/$(src)
-+VPATH		+= $(obj)
-+VPATH		+= $(vpath-ym)
-+
- # if $(foo-objs) exists, foo.o is a composite object 
- multi-used-y := $(sort $(foreach m,$(obj-y), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
- multi-used-m := $(sort $(foreach m,$(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))), $(m))))
-@@ -167,7 +174,7 @@ ifdef REGENERATE_PARSERS
- quiet_cmd_gperf = GPERF $@
-       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
- 
--$(src)/%.hash.c_shipped: $(src)/%.gperf
-+$(src)/%.hash.c_shipped: %.gperf
- 	$(call cmd,gperf)
- 
- # LEX
-@@ -177,7 +184,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
- quiet_cmd_flex = LEX     $@
-       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
- 
--$(src)/%.lex.c_shipped: $(src)/%.l
-+$(src)/%.lex.c_shipped: %.l
- 	$(call cmd,flex)
- 
- # YACC
-@@ -187,13 +194,13 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
- quiet_cmd_bison = YACC    $@
-       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
- 
--$(src)/%.tab.c_shipped: $(src)/%.y
-+$(src)/%.tab.c_shipped: %.y
- 	$(call cmd,bison)
- 
- quiet_cmd_bison_h = YACC    $@
-       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
- 
--$(src)/%.tab.h_shipped: $(src)/%.y
-+$(src)/%.tab.h_shipped: %.y
- 	$(call cmd,bison_h)
- 
- endif
-@@ -204,7 +211,7 @@ endif
- quiet_cmd_shipped = SHIPPED $@
- cmd_shipped = cat $< > $@
- 
--$(obj)/%: $(src)/%_shipped
-+$(obj)/%: %_shipped
- 	$(call cmd,shipped)
- 
- # Commands useful for building a boot image
--- 
-1.7.6.153.g78432
-
+  Luis
