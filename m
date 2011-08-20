@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab1HTCS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Aug 2011 22:18:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52975 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab1HTCS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Aug 2011 22:18:26 -0400
-From: Liu Bo <liubo2009@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <mingo@kernel.org>, <jwboyer@gmail.com>,
-        <josef@redhat.com>, <linux-btrfs@vger.kernel.org>,
-        <chris.mason@oracle.com>, <dave@jikos.cz>
-Subject: [PATCH v2] Btrfs: use do_div to avoid compile errors on 32bit box
-Date: Sat, 20 Aug 2011 10:17:47 +0800
-Message-Id: <1313806667-30495-1-git-send-email-liubo2009@cn.fujitsu.com>
-X-Mailer: git-send-email 1.6.5.2
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-20 10:17:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-20 10:17:12,
-	Serialize complete at 2011-08-20 10:17:12
+	id S1754476Ab1HTCee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Aug 2011 22:34:34 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:37360 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751332Ab1HTCea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Aug 2011 22:34:30 -0400
+Date: Fri, 19 Aug 2011 22:34:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Michal Nazarewicz <mnazarewicz@google.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 3/4] usb: gadget: rename usb_gadget_driver::speed to
+ max_speed
+In-Reply-To: <20110819233133.GD13317@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1108192225120.18944-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing div operation of u64 type, we need to be careful and use do_div
-to avoid compile ERROR on 32bit box:
+On Sat, 20 Aug 2011, Felipe Balbi wrote:
 
-"ERROR: "__udivdi3" [fs/btrfs/btrfs.ko] undefined!
-make[1]: *** [__modpost] Error 1
+> On Sat, Aug 20, 2011 at 12:33:01AM +0200, Michal Nazarewicz wrote:
+> > From: Michal Nazarewicz <mina86@mina86.com>
+> > 
+> > This commit renames the “speed”	field of the usb_gadget_driver
+> > structure to “max_speed”.  This is so that to make it more
+> > apparent that the field represents the maximum speed gadget
+> > driver can support.
+> > 
+> > This also make the field look more like fields with the same
+> > name in usb_gadget and usb_composite_driver structures.  All
+> > of those represent the *maximal* speed given entity supports.
+> > 
+> > After this commit, there are the following fields in various
+> > structures:
+> > * usb_gadget::speed - the current connection speed,
+> > * usb_gadget::max_speed - maximal speed UDC supports,
+> 
+> this will be handled inside the UDC itself, so why do you need to expose
+> it ?
 
-v1->v2:
-- fix stupid do_div() with type "signed integer".
+I wondered about this too.  It turns out that sometimes the gadget
+driver really does need to know about the maximum speed supported by
+the UDC hardware and driver.
 
-Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
----
- fs/btrfs/extent-tree.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+For example, suppose the gadget driver and the UDC both support high
+speed, but the gadget is currently plugged into a USB-1.1 controller
+and therefore running only at full speed.  Then the gadget driver has
+to respond to the Get-Device-Qualifier and Get-Other-Speed-Config
+requests by sending the appropriate descriptors.  But if the UDC
+doesn't support high speed operation then the gadget driver has to
+respond to those requests with a STALL.
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 80d6148..e43e4f1 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -6735,9 +6735,10 @@ int btrfs_can_relocate(struct btrfs_root *root, u64 bytenr)
- 	struct btrfs_fs_devices *fs_devices = root->fs_info->fs_devices;
- 	struct btrfs_device *device;
- 	u64 min_free;
-+	u32 dev_min = 1;
-+	u32 dev_nr = 0;
-+	u32 dup = 2;
- 	int index;
--	int dev_nr = 0;
--	int dev_min = 1;
- 	int full = 0;
- 	int ret = 0;
- 
-@@ -6796,14 +6797,14 @@ int btrfs_can_relocate(struct btrfs_root *root, u64 bytenr)
- 	index = get_block_group_index(block_group);
- 	if (index == 0) {
- 		dev_min = 4;
--		min_free /= 2;
-+		do_div(min_free, dup);
- 	} else if (index == 1) {
- 		dev_min = 2;
- 	} else if (index == 2) {
--		min_free *= 2;
-+		min_free *= dup;
- 	} else if (index == 3) {
- 		dev_min = fs_devices->rw_devices;
--		min_free /= dev_min;
-+		do_div(min_free, dev_min);
- 	}
- 
- 	mutex_lock(&root->fs_info->chunk_mutex);
--- 
-1.6.5.2
+Alan Stern
 
