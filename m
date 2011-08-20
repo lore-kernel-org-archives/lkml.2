@@ -1,71 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab1HTUO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 16:14:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50477 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab1HTUOP (ORCPT
+	id S1754201Ab1HTUuu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 16:50:50 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:37874 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab1HTUuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 16:14:15 -0400
-Date: Sat, 20 Aug 2011 21:14:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] weird crap with vdso on uml/i386
-Message-ID: <20110820201406.GF2203@ZenIV.linux.org.uk>
-References: <E1Qu7nv-0007OP-3E@ZenIV.linux.org.uk>
- <4E4D642F.3010909@nod.at>
- <20110818191946.GW2203@ZenIV.linux.org.uk>
- <20110819043120.GY2203@ZenIV.linux.org.uk>
- <4E4E2427.9080602@nod.at>
- <20110820011845.GC2203@ZenIV.linux.org.uk>
- <4E4FD12F.70508@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E4FD12F.70508@nod.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 20 Aug 2011 16:50:46 -0400
+Subject: [PATCH] kconfig: handle SIGINT in menuconfig
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Michal Marek <mmarek@suse.cz>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Sat, 20 Aug 2011 16:50:32 -0400
+Message-ID: <1313873432.2655.1.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 05:22:23PM +0200, Richard Weinberger wrote:
+From: Davidlohr Bueso <dave@gnu.org>
 
-> Hmmm, very strange.
-> Sadly I cannot reproduce the issue. :(
-> Everything works fine within UML.
-> (Of course I've applied your vDSO/i386 patches)
-> 
-> My test setup:
-> Host kernel: 2.6.37 and 3.0.1
-> Distro: openSUSE 11.4/x86_64
-> 
-> UML kernel: 3.1-rc2
-> Distro: openSUSE 11.1/i386
-> 
-> Does the problem also occur with another host kernel or a different
-> guest image?
+I recently got bitten in the ass when pressing Ctrl-C and lost all my current configuration changes. This patch captures SIGINT and allows the user to save any changes.
+Some code refactoring was made in order to handle the exit behavior.
 
-Could you check what you get in __kernel_vsyscall()?  On iAMD64 box
-where that sucker contains sysenter-based variant the bug is not
-present.  IOW, it's sensitive to syscall vs. systenter vs. int 0x80
-differences.
+CC: Roman Zippel <zippel@linux-m68k.org>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ scripts/kconfig/mconf.c |   76 ++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 52 insertions(+), 24 deletions(-)
 
-I can throw the trimmed-down fs image your way, BTW (66MB of bzipped ext2 ;-/)
-if you want to see if that gets reproduced on your box.  I'll drop it on
-anonftp if you are interested.  FWIW, the same kernel binary/same image
-result in
-	* K7 box - no breakage, SYSENTER-based vdso
-	* K8 box - breakage as described, SYSCALL-based vdso32
-	* P4 box - no breakage, SYSENTER-based vdso32
-Hell knows...  In theory that would seem to point towards ia32_cstar_target(),
-so I'm going to RTFS carefully through that animal.
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 820d2b6..7ca3bb7 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -6,6 +6,7 @@
+  * 2002-11-06 Petr Baudis <pasky@ucw.cz>
+  *
+  * i18n, 2005, Arnaldo Carvalho de Melo <acme@conectiva.com.br>
++ * Handle SIGINT (Ctrl-C), 2011, Davidlohr Bueso <dave@gnu.org>
+  */
+ 
+ #include <ctype.h>
+@@ -15,6 +16,7 @@
+ #include <stdarg.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <signal.h>
+ #include <unistd.h>
+ #include <locale.h>
+ 
+@@ -272,6 +274,7 @@ static struct menu *current_menu;
+ static int child_count;
+ static int single_menu_mode;
+ static int show_all_options;
++static int saved_x, saved_y;
+ 
+ static void conf(struct menu *menu);
+ static void conf_choice(struct menu *menu);
+@@ -792,9 +795,54 @@ static void conf_save(void)
+ 	}
+ }
+ 
++static int handle_exit(int res)
++{
++	switch (res) {
++	case 0:
++		if (conf_write(filename)) {
++			fprintf(stderr, _("\n\n"
++					  "Error while writing of the configuration.\n"
++					  "Your configuration changes were NOT saved."
++					  "\n\n"));
++			return 1;
++		}
++		/* fall through */
++	case -1:
++		printf(_("\n\n"
++			 "*** End of the configuration.\n"
++			 "*** Execute 'make' to start the build or try 'make help'."
++			 "\n\n"));
++		break;
++	default:
++		fprintf(stderr, _("\n\n"
++				  "Your configuration changes were NOT saved."
++				  "\n\n"));
++	}
++
++	return 0;
++}
++
++static void sig_handler(int signo __attribute__((__unused__)))
++{
++	int res;
++	
++	do {
++		dialog_clear();
++		if (conf_get_changed())
++			res = dialog_yesno(NULL,
++					   _("Do you wish to save your "
++					     "new configuration?\n"),
++					   6, 60);
++		else
++			res = -1;
++	} while (res == KEY_ESC);
++
++	end_dialog(saved_x, saved_y);
++	exit(handle_exit(res));
++}
++
+ int main(int ac, char **av)
+ {
+-	int saved_x, saved_y;
+ 	char *mode;
+ 	int res;
+ 
+@@ -802,6 +850,8 @@ int main(int ac, char **av)
+ 	bindtextdomain(PACKAGE, LOCALEDIR);
+ 	textdomain(PACKAGE);
+ 
++	signal(SIGINT, sig_handler);
++
+ 	conf_parse(av[1]);
+ 	conf_read(NULL);
+ 
+@@ -835,28 +885,6 @@ int main(int ac, char **av)
+ 	} while (res == KEY_ESC);
+ 	end_dialog(saved_x, saved_y);
+ 
+-	switch (res) {
+-	case 0:
+-		if (conf_write(filename)) {
+-			fprintf(stderr, _("\n\n"
+-				"Error while writing of the configuration.\n"
+-				"Your configuration changes were NOT saved."
+-				"\n\n"));
+-			return 1;
+-		}
+-		/* fall through */
+-	case -1:
+-		printf(_("\n\n"
+-			"*** End of the configuration.\n"
+-			"*** Execute 'make' to start the build or try 'make help'."
+-			"\n\n"));
+-		break;
+-	default:
+-		fprintf(stderr, _("\n\n"
+-			"Your configuration changes were NOT saved."
+-			"\n\n"));
+-	}
+-
+-	return 0;
++	return handle_exit(res);
+ }
+ 
+-- 
+1.7.4.1
 
-The thing is, whatever happens happens when victim gets resumed inside
-vdso page.  I'll try to dump PTRACE_SETREGS and see the values host
-kernel asked to set and work from there, but the interesting part is
-bloody hard to singlestep through - the victim is back to user mode and
-it is already traced by the guest kernel, so it's not as if we could
-attach host gdb to it and walk through that crap.  And guest gdb is not
-going to be able to set breakpoints in there - vdso page is r/o...
+
+
