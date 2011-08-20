@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab1HTOcm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 10:32:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64660 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab1HTOck (ORCPT
+	id S1753085Ab1HTOoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 10:44:20 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42995 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab1HTOoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 10:32:40 -0400
-Subject: Re: [RFC 0/0] Introducing a generic socket offload framework
-From: jamal <hadi@cyberus.ca>
-Reply-To: jhs@mojatatu.com
-To: San Mehat <san@google.com>
-Cc: davem@davemloft.net, mst@redhat.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        digitaleric@google.com, mikew@google.com, miche@google.com,
-        maccarro@google.com
-In-Reply-To: <CAPi7mHp==JPA-0vNZ+xWRzOuJYUxsUL3UY=o=VtMUsB-YcFHwQ@mail.gmail.com>
-References: <20110818220756.5C93E5C80B@san.sea.corp.google.com>
-	 <1313758185.16299.43.camel@mojatatu>
-	 <CAPi7mHp==JPA-0vNZ+xWRzOuJYUxsUL3UY=o=VtMUsB-YcFHwQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Aug 2011 10:32:35 -0400
-Message-ID: <1313850755.1734.724.camel@mojatatu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 7bit
+	Sat, 20 Aug 2011 10:44:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1324190381.8502.1313851096075.JavaMail.root@idefix>
+References: <CAFtRNNwMBnd6CVJn9UYSu58E-EpAS7p0Qh=ZtfJHfdtS-wKxjg@mail.gmail.com>
+ <1324190381.8502.1313851096075.JavaMail.root@idefix>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Sat, 20 Aug 2011 07:43:56 -0700
+Message-ID: <CAB=NE6WojT4r2faXGFaDCCjAA24WnsXmwxYskARuGFbkcxjvEA@mail.gmail.com>
+Subject: Re: Linux wireless summit videoes from LinuxCon 2011
+To: Zefir Kurtisi <zefir.kurtisi@neratec.com>
+Cc: Nick Kossifidis <mickflemm@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-19 at 07:58 -0700, San Mehat wrote:
+On Sat, Aug 20, 2011 at 7:38 AM, Zefir Kurtisi
+<zefir.kurtisi@neratec.com> wrote:
+> The slides for the DFS presentation are available at
+> http://linuxwireless.org/en/developers/DFS#Related_Information
 
-> Can you explain a good use-case for SOCK_RAW in this type of
-> environment? We were noodling it around locally and couldn't come up
-> with one that we needed to support.
+And also apologies, it was Neratec who did the DFS work...
 
-One that comes to mind is the case of Samir's app: youd need to handle
-some of the apps that ride on top of IP typically using SOCK_RAW
-eg ping, OSPF essentially anything on IP that doesnt have transport
-built into kernel etc; 
-
-> > Q: If you want this to be transparent to the apps, who/what is doing
-> > the tagging of SOCK_HWASSIST? clearly not the app if you dont want to
-> > change it.
-> 
-> The decision of whether to tag a socket or not is made by the 'hardware'
-
-As in some config interface? 
-
-cheers,
-jamal
-
+  Luis
