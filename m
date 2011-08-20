@@ -1,131 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab1HTRJu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 13:09:50 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:45229 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754135Ab1HTRJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 13:09:46 -0400
-Date: Sat, 20 Aug 2011 10:09:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, laijs@cn.fujitsu.com,
-        darren@dvhart.com, rostedt@goodmis.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rtmutex: Permit rt_mutex_unlock() to be invoked
- with irqs disabled
-Message-ID: <20110820170932.GA4261@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110719201410.GA10553@linux.vnet.ibm.com>
- <1311247968.29152.122.camel@twins>
- <20110723220348.GD2415@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1107240118550.2702@ionos>
- <alpine.LFD.2.02.1107240202500.2702@ionos>
- <20110724051744.GF2415@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1107241057320.2702@ionos>
- <20110724155634.GG2415@linux.vnet.ibm.com>
- <CACqU3MWYTzueDrvDqzq8_SB3WS6CWy-rJ=ZQC+QBHN8vkAwtnQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACqU3MWYTzueDrvDqzq8_SB3WS6CWy-rJ=ZQC+QBHN8vkAwtnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754759Ab1HTRb1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 13:31:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34010 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab1HTRbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 13:31:15 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3/4] x86: Call idle notifier after irq_enter()
+Date: Sat, 20 Aug 2011 19:30:51 +0200
+Message-Id: <1313861452-24783-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
+References: <1313861452-24783-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 19, 2011 at 09:31:05PM -0400, Arnaud Lacombe wrote:
-> Hi,
-> 
-> On Sun, Jul 24, 2011 at 11:56 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Sun, Jul 24, 2011 at 11:00:41AM +0200, Thomas Gleixner wrote:
-> >> On Sat, 23 Jul 2011, Paul E. McKenney wrote:
-> >> > On Sun, Jul 24, 2011 at 02:05:13AM +0200, Thomas Gleixner wrote:
-> >> > > On Sun, 24 Jul 2011, Thomas Gleixner wrote:
-> >> > > > > > Thomas, I'm inclined to merge this, any objections?
-> >> > > > >
-> >> > > > > FWIW, it has been passing tests here.
-> >> > > >
-> >> > > > If it's only the unlock path, I'm fine with that change.
-> >> > > >
-> >> > > > Acked-by-me
-> >> > >
-> >> > > Hrmpft. That's requiring all places to take the lock irq safe. Not
-> >> > > really amused. For -RT that's a hotpath and we can really do without
-> >> > > the irq fiddling there. That needs a bit more thought.
-> >> >
-> >> > Indeed...  If I make only some of the lock acquisitions irq safe, lockdep
-> >> > will yell at me.  And rightfully so, as that could result in deadlock.
-> >> >
-> >> > So, what did you have in mind?
-> >>
-> >> Have no real good idea yet for this. Could you grab rt and check
-> >> whether you can observe any impact when the patch is applied?
-> >
-> > Hmmm, wait a minute...  There might be a way to do this with zero
-> > impact on the fastpath, given that I am allocating an rt_mutex on
-> > the stack that is used only by RCU priority boosting, and that only
-> > rt_mutex_init_proxy_locked(), rt_mutex_lock(), and rt_mutex_unlock()
-> > are used.
-> >
-> > So I could do the following:
-> >
-> > o       Use lockdep_set_class_and_name() to make the ->wait_lock()
-> >        field of my rt_mutex have a separate lockdep class.  I guess
-> >        I should allocate a global variable for lock_class_key
-> >        rather than allocating it on the stack.  ;-)
-> >
-> > o       Make all calls from RCU priority boosting to rt_mutex_lock()
-> >        and rt_mutex_unlock() have irqs disabled.
-> >
-> > o       Make __rt_mutex_slowlock() do the following when sleeping:
-> >
-> >        raw_spin_unlock(&lock->wait_lock);
-> >
-> >        debug_rt_mutex_print_deadlock(waiter);
-> >
-> >        {
-> >                int was_disabled = irqs_disabled();
-> >
-> >                if (was_disabled)
-> >                        local_irq_enable();
-> >
-> FWIW, the final construct you opted for in -next:
-> 
->     if (was_disabled = irqs_disabled())
->         local_irq_enable();
-> 
-> triggers:
-> 
-> /linux/linux/kernel/rtmutex.c: In function '__rt_mutex_slowlock':
-> /linux/linux/kernel/rtmutex.c:605:3: warning: suggest parentheses
-> around assignment used as truth value
+Interrupts notify the idle exit state before calling irq_enter().
+But the notifier code calls rcu_read_lock() and this is not
+allowed while rcu is in an extended quiescent state. We need
+to wait for rcu_irq_enter() to be called before doing so
+otherwise this results in a grumpy RCU:
 
-But I -do- have parentheses around that assignment!!!
+[    0.099991] WARNING: at include/linux/rcupdate.h:194 __atomic_notifier_call_chain+0xd2/0x110()
+[    0.099991] Hardware name: AMD690VM-FMH
+[    0.099991] Modules linked in:
+[    0.099991] Pid: 0, comm: swapper Not tainted 3.0.0-rc6+ #255
+[    0.099991] Call Trace:
+[    0.099991]  <IRQ>  [<ffffffff81051c8a>] warn_slowpath_common+0x7a/0xb0
+[    0.099991]  [<ffffffff81051cd5>] warn_slowpath_null+0x15/0x20
+[    0.099991]  [<ffffffff817d6fa2>] __atomic_notifier_call_chain+0xd2/0x110
+[    0.099991]  [<ffffffff817d6ff1>] atomic_notifier_call_chain+0x11/0x20
+[    0.099991]  [<ffffffff81001873>] exit_idle+0x43/0x50
+[    0.099991]  [<ffffffff81020439>] smp_apic_timer_interrupt+0x39/0xa0
+[    0.099991]  [<ffffffff817da253>] apic_timer_interrupt+0x13/0x20
+[    0.099991]  <EOI>  [<ffffffff8100ae67>] ? default_idle+0xa7/0x350
+[    0.099991]  [<ffffffff8100ae65>] ? default_idle+0xa5/0x350
+[    0.099991]  [<ffffffff8100b19b>] amd_e400_idle+0x8b/0x110
+[    0.099991]  [<ffffffff810cb01f>] ? rcu_enter_nohz+0x8f/0x160
+[    0.099991]  [<ffffffff810019a0>] cpu_idle+0xb0/0x110
+[    0.099991]  [<ffffffff817a7505>] rest_init+0xe5/0x140
+[    0.099991]  [<ffffffff817a7468>] ? rest_init+0x48/0x140
+[    0.099991]  [<ffffffff81cc5ca3>] start_kernel+0x3d1/0x3dc
+[    0.099991]  [<ffffffff81cc5321>] x86_64_start_reservations+0x131/0x135
+[    0.099991]  [<ffffffff81cc5412>] x86_64_start_kernel+0xed/0xf4
 
-Sigh, gcc strikes again.  Does the following patch help?  If so, I will
-fold it into commit 83841f02.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/apic/apic.c              |    6 +++---
+ arch/x86/kernel/apic/io_apic.c           |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
+ arch/x86/kernel/irq.c                    |    6 +++---
+ 6 files changed, 10 insertions(+), 10 deletions(-)
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index 0222e34..2548f44 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -602,7 +602,8 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b9338b8..82af921 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -856,8 +856,8 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 * Besides, if we don't timer interrupts ignore the global
+ 	 * interrupt lock, which is the WrongThing (tm) to do.
+ 	 */
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	local_apic_timer_interrupt();
+ 	irq_exit();
  
- 		raw_spin_unlock(&lock->wait_lock);
+@@ -1790,8 +1790,8 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ {
+ 	u32 v;
  
--		if (was_disabled = irqs_disabled())
-+		was_disabled = irqs_disabled();
-+		if (was_disabled)
- 			local_irq_enable();
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1827,8 +1827,8 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 		"Illegal register address",	/* APIC Error Bit 7 */
+ 	};
  
- 		debug_rt_mutex_print_deadlock(waiter);
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e529339..e1b5eec 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2275,8 +2275,8 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 	unsigned vector, me;
+ 
+ 	ack_APIC_irq();
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 
+ 	me = smp_processor_id();
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index ff1ae9b..7ba9757 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -470,8 +470,8 @@ static inline void mce_get_rip(struct mce *m, struct pt_regs *regs)
+ asmlinkage void smp_mce_self_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	mce_notify_irq();
+ 	mce_schedule_work();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 27c6251..f6bbc64 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -396,8 +396,8 @@ static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
+ 
+ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
+ {
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index d746df2..aa578ca 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -19,8 +19,8 @@ void (*mce_threshold_vector)(void) = default_threshold_interrupt;
+ 
+ asmlinkage void smp_threshold_interrupt(void)
+ {
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
+ 	irq_exit();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..73cf928 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -180,8 +180,8 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ 	unsigned vector = ~regs->orig_ax;
+ 	unsigned irq;
+ 
+-	exit_idle();
+ 	irq_enter();
++	exit_idle();
+ 
+ 	irq = __this_cpu_read(vector_irq[vector]);
+ 
+@@ -208,10 +208,10 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 
+ 	ack_APIC_irq();
+ 
+-	exit_idle();
+-
+ 	irq_enter();
+ 
++	exit_idle();
++
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+-- 
+1.7.5.4
+
