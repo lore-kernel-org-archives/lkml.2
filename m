@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1HTIgw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 04:36:52 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:58907 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751685Ab1HTIgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 04:36:47 -0400
-Subject: Re: [PATCH v2 07/43] blackfin: Use set_current_blocked() and
- block_sigmask()
-From: Matt Fleming <matt@console-pimps.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <CAMjpGUcwkLkHo33WY1vJr4pWPz9wgVcwti5nuqLM2FQYWn6O=A@mail.gmail.com>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-	 <1313772419-21951-8-git-send-email-matt@console-pimps.org>
-	 <CAMjpGUcwkLkHo33WY1vJr4pWPz9wgVcwti5nuqLM2FQYWn6O=A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Aug 2011 09:36:43 +0100
-Message-ID: <1313829403.19751.14.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S1752638Ab1HTIht (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 04:37:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54256 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293Ab1HTIhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 04:37:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 07/16] freezer: don't distinguish nosig tasks on thaw
+Date: Sat, 20 Aug 2011 10:39:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: paul@paulmenage.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        oleg@redhat.com,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <201108192314.53010.rjw@sisk.pl> <20110820081010.GI20085@htj.dyndns.org>
+In-Reply-To: <20110820081010.GI20085@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108201039.28663.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-08-20 at 00:00 -0400, Mike Frysinger wrote:
-> On Fri, Aug 19, 2011 at 12:46, Matt Fleming wrote:
-> > --- a/arch/blackfin/kernel/signal.c
-> > +++ b/arch/blackfin/kernel/signal.c
-> > -       if (ret == 0) {
-> > -               spin_lock_irq(&current->sighand->siglock);
-> > -               sigorsets(&current->blocked, &current->blocked,
-> > -                         &ka->sa.sa_mask);
-> > -               if (!(ka->sa.sa_flags & SA_NODEFER))
-> > -                       sigaddset(&current->blocked, sig);
-> > -               recalc_sigpending();
-> > -               spin_unlock_irq(&current->sighand->siglock);
-> > -       }
-> > +       if (ret == 0)
-> > +               block_sigmask(ka, sig);
+On Saturday, August 20, 2011, Tejun Heo wrote:
+> Hello, Rafael.
 > 
-> the Blackfin version holds siglock and calls recalc_sigpending() while
-> block_sigmask() does neither.  i'm guessing that is expected behavior
-> now ?
+> On Fri, Aug 19, 2011 at 11:14:52PM +0200, Rafael J. Wysocki wrote:
+> > On Friday, August 19, 2011, Tejun Heo wrote:
+> > > There's no point in thawing nosig tasks before others.  There's no
+> > > ordering requirement between the two groups on thaw, which the staged
+> > > thawing can't guarantee anyway.  Simplify thaw_processes() by removing
+> > > the distinction and collapsing thaw_tasks() into thaw_processes().
+> > > This will help further updates to freezer.
+> > 
+> > I'm not sure if I like this patch.
+> > 
+> > Right now there are no ordering requirements between the two groups
+> > of processes, but if we decide to freeze filesystems on suspend,
+> > we'll need to thaw them between nosig and sig I suppose.
+> 
+> Hmmm... I'm not really following.  How does staged wake up affect
+> thawing filesystems?  Staged freezing makes sense as a crude way to
+> define dependency during freezing - ie. userland and freezable tasks
+> can't have dependency in their own groups but the former can depend on
+> the latter on the way to refrigerator.
+> 
+> However, during thawing, it doesn't make any difference regardless of
+> what was frozen when and how they depend on each other.  They might as
+> well have cyclic dependency and waking them in any order wouldn't make
+> any difference.  The task which dependes on another task to do
+> something would simply block until that task wakes up and resolves the
+> dependency; moreover, performing staged wakeups doesn't really
+> guarantee execution order.  It's different from staged freezing in
+> that way - staged thawing doesn't have the synchronization phase
+> between the two stages.  Tasks which were woken up earlier can easily
+> start executing after tasks which were woken up later.
+> 
+> The only guaranteed effect of staged wakeups is that tasks in the
+> earlier group would have had its ->state set to TASK_RUNNING before
+> the tasks of the second group.  This again is a moot point because
+> 
+> * __refrigerator() restores task->state afterwards overwriting the
+>   TASK_RUNNING once the task starts executing (in unknown order).
+>   This is fundamentally broken and should be fixed so that task is
+>   left in TASK_RUNNING when leaving the refrigerator.
+> 
+> * However, if you leave it at TASK_RUNNING, it doesn't make any
+>   difference w.r.t. synchronization.  The only way task->state can
+>   participate in synchronization is through wake_up() - ie. through
+>   other tasks setting its state to TASK_RUNNING, so if the
+>   refrigerator leaves tast state at TASK_RUNNING on return, it can't
+>   hinder any synchronization.
+> 
+> So, AFAICS, no matter which way it's looked at, it just doesn't make
+> any difference.
 
-Yah, set_current_blocked() inside of block_sigmask() still grabs siglock
-and calls recalc_sigpending() for you. Reading current->blocked inside
-of block_sigmask() is fine and the sigorsets() is OK because we're
-modifying a stack variable, so only grabbing the lock inside of
-set_current_blocked() is safe.
+OK
 
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+Rafael
