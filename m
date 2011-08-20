@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab1HTRcO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 13:32:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58415 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab1HTRcL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 13:32:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1313829403.19751.14.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
- <1313772419-21951-8-git-send-email-matt@console-pimps.org>
- <CAMjpGUcwkLkHo33WY1vJr4pWPz9wgVcwti5nuqLM2FQYWn6O=A@mail.gmail.com> <1313829403.19751.14.camel@mfleming-mobl1.ger.corp.intel.com>
+	id S1754505Ab1HTRjx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 13:39:53 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:57030 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382Ab1HTRjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 13:39:51 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-Date: Sat, 20 Aug 2011 13:31:50 -0400
-X-Google-Sender-Auth: QfYi5W1xw4gQdRAeulANFwD2K3I
-Message-ID: <CAMjpGUexVttx_tnjsL5i9NfF2bTjH5y9H5eLosFQw0Nq12+JoQ@mail.gmail.com>
-Subject: Re: [PATCH v2 07/43] blackfin: Use set_current_blocked() and block_sigmask()
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Organization: wh0rd.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/4] nohz: Split extended quiescent state handling from nohz switch
+Date: Sat, 20 Aug 2011 13:39:43 -0400
+User-Agent: KMail/1.13.7 (Linux/2.6.39; KDE/4.6.3; x86_64; ; )
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+References: <1313861452-24783-1-git-send-email-fweisbec@gmail.com> <1313861452-24783-2-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1313861452-24783-2-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2604344.hWDOoI9XhV";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108201339.50046.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 04:36, Matt Fleming wrote:
-> On Sat, 2011-08-20 at 00:00 -0400, Mike Frysinger wrote:
->> On Fri, Aug 19, 2011 at 12:46, Matt Fleming wrote:
->> > --- a/arch/blackfin/kernel/signal.c
->> > +++ b/arch/blackfin/kernel/signal.c
->> > -       if (ret == 0) {
->> > -               spin_lock_irq(&current->sighand->siglock);
->> > -               sigorsets(&current->blocked, &current->blocked,
->> > -                         &ka->sa.sa_mask);
->> > -               if (!(ka->sa.sa_flags & SA_NODEFER))
->> > -                       sigaddset(&current->blocked, sig);
->> > -               recalc_sigpending();
->> > -               spin_unlock_irq(&current->sighand->siglock);
->> > -       }
->> > +       if (ret == 0)
->> > +               block_sigmask(ka, sig);
->>
->> the Blackfin version holds siglock and calls recalc_sigpending() while
->> block_sigmask() does neither.  i'm guessing that is expected behavior
->> now ?
->
-> Yah, set_current_blocked() inside of block_sigmask() still grabs siglock
-> and calls recalc_sigpending() for you. Reading current->blocked inside
-> of block_sigmask() is fine and the sigorsets() is OK because we're
-> modifying a stack variable, so only grabbing the lock inside of
-> set_current_blocked() is safe.
-
-thanks for clearing that up (and the code itself!).
+--nextPart2604344.hWDOoI9XhV
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
 Acked-by: Mike Frysinger <vapier@gentoo.org>
 -mike
+
+--nextPart2604344.hWDOoI9XhV
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJOT/FlAAoJEEFjO5/oN/WBKN4QAJMMd4xcKJU95NAO5/l2wzzM
+uqMAF6N2BwxiUJziV+YSNxcQJMpt3SDUFIY+4rNswCMnFilRy7fk7o3JMXjRYNFI
+HQX2O/SnluacQhNpoBv3RmQGKGwl03aSYhpYlOg2+BdWXsW3aE0DQ9B/CD0vNPp5
+XJaGBqrDKtHcBMNzE2V6fHgjYS6WgqHFM7TgcfN4tscqiAnBYSkGPKsktv1hX9jx
+X1KB6ilk5sedkoTPk2q726WSseqZkbjYnBg8876pbLeXuWxU70scA25NMC/nJNN0
+/ytTjeT+7dP/dB1WNzvY9zRwRWzEm+5q45wkObnNxYGR/punk9PHo9UFB2oXZQKj
+ElOAQplgc7wb4kUKe8//z4GLrHVOawlAQ6yOTY8O34I2DLvPmor6OaDn/JxHrlvS
+d8OapghWssvLAF2ix2pI5F9ISjOWDDoOgQfrSXwfFWSOdqiaC0Tfs/B5zBybvJ3Q
+EcV8Z0OZpEKnuZ4Q4IhtzD8gB0QV0SADMLtdUWt3XSyFXrGx3PxJ6IBxwrLbHtSA
+e5EyVuqcnhHMmunMJc22QPz+eyED83PnaF2i5Q1TRr0HcEu5O+kSCZs6IWtXdkYc
+zTKHzl6XPsygxgeCXWfO9fGAT5tjgO07hpHvKwcPdabEDodHqHoAekDh+IMo0fKD
+4OHL0jAfjVJJX5KqGQQ6
+=Wmb5
+-----END PGP SIGNATURE-----
+
+--nextPart2604344.hWDOoI9XhV--
