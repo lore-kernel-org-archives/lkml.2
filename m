@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1HUWgl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 18:36:41 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59349 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab1HUWg0 (ORCPT
+	id S1756081Ab1HUWkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 18:40:22 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59798 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752697Ab1HUWkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 18:36:26 -0400
-Date: Sun, 21 Aug 2011 18:36:17 -0400
-Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
-Message-ID: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Oleg Nesterov <oleg@redhat.com>, bookjovi@gmail.com
-Cc: dhowells@redhat.com, roland@redhat.com, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Spam-Score: -4.4 (----)
+	Sun, 21 Aug 2011 18:40:19 -0400
+Date: Sun, 21 Aug 2011 23:36:48 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: [RFC PATCH v2] Resurrect Intel740 driver: i740fb
+Message-ID: <20110821233648.6d120143@lxorguk.ukuu.org.uk>
+In-Reply-To: <201108212242.12717.linux@rainbow-software.org>
+References: <201108212242.12717.linux@rainbow-software.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7LMakNQ017989
 
-Concur.  The comment should be changed
-Neil
+> - 24bpp modes still don't work in fbtest but it looks like fbtest bug!
+> 
+> Is there any better way to test fb drivers than fbtest?
 
-Oleg Nesterov <oleg@redhat.com> wrote:
+X11 fbdev driver ?
 
->On 08/21, Oleg Nesterov wrote:
->>
->> On 08/21, bookjovi@gmail.com wrote:
->> >
->> > For non-pipe case, limit 0 also means drop the coredump, so just put
->> > the zero limit check at do_coredump function begining.
->>
->> Neil, what do you think? Should we change the code or the comment?
->
->Personally I think we should fix the comment. I think RLIMIT_CORE
->doesn't apply in this case, limit == 1 check is very special. And
->this is what linux always did, except between 725eae32 and 898b374a.
->
->
->Oleg.
->
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Alan
