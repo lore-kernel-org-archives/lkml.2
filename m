@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809Ab1HUR7e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 13:59:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35253 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab1HUR7d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 13:59:33 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Date: Sun, 21 Aug 2011 19:59:26 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <alpine.DEB.2.02.1108151241370.32349@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1108151241370.32349@p34.internal.lan>
+	id S1751930Ab1HUSBb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 14:01:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55576 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784Ab1HUSB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 14:01:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [GIT PULL pm-next] freezer: fix various bugs and simplify implementation
+Date: Sun, 21 Aug 2011 20:03:14 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        arnd@arndb.de, oleg@redhat.com, lizf@cn.fujitsu.com,
+        paul@paulmenage.org, Matt Helsley <matthltc@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+References: <20110820094434.GA24151@htj.dyndns.org> <201108201833.39089.rjw@sisk.pl> <20110821091200.GB24151@htj.dyndns.org>
+In-Reply-To: <20110821091200.GB24151@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108211959.27207.maciej.rutecki@gmail.com>
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108212003.14722.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 15 sierpnia 2011 o 18:43:22 Justin Piszcz wrote:
-> Hello,
+On Sunday, August 21, 2011, Tejun Heo wrote:
+> Hello, Rafafel.
 > 
-> What causes this(?) -- am I out of memory(?) or is this a kernel bug?
+> On Sat, Aug 20, 2011 at 06:33:38PM +0200, Rafael J. Wysocki wrote:
+> > >   ssh://master.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
+> > 
+> > Pulled and stored in the pm-freezer branch in my tree, and merged into
+> > the linux-next branch.
 > 
-> [104147.717815] BUG: soft lockup - CPU#13 stuck for 23s! [kswapd0:934]
-> [104147.717820] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp
-> parport inet_diag ub pl2303 ftdi_sio snd_usb_audio snd_pcm_oss
-> snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib
-> snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event
-> snd_seq snd_timer snd_seq_device snd soundcore usbserial cdc_acm nouveau
-> serio_raw ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi
-> i7core_edac edac_core video [104147.717872] CPU 13
-> [104147.717874] Modules linked in: dm_mod tcp_diag parport_pc ppdev lp
-> parport inet_diag ub pl2303 ftdi_sio snd_usb_audio snd_pcm_oss
-> snd_mixer_oss snd_pcm snd_page_alloc snd_hwdep snd_usbmidi_lib
-> snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event
-> snd_seq snd_timer snd_seq_device snd soundcore usbserial cdc_acm nouveau
-> serio_raw ttm drm_kms_helper drm agpgart i2c_algo_bit mxm_wmi wmi
-> i7core_edac edac_core video [104147.717916]
-> [104147.717921] Pid: 934, comm: kswapd0 Not tainted 3.0.0 #4 Supermicro
-> X8DTH-i/6/iF/6F/X8DTH [104147.717928] RIP: 0010:[<ffffffff81081f71>] 
-> [<ffffffff81081f71>] find_get_pages+0x51/0x110 [104147.717940] RSP:
-> 0018:ffff880626127ba0  EFLAGS: 00000246
-[...]
+> Cool.
+> 
+> > > FYI, this patchset will cause a conflict with s390 TIF flag fix patch.
+> > > The conflict is trivial and Stephen should be able to handle it
+> > > without any problem.  Also, I'm planning on doing some further work on
+> > > cgroup freezer and then will try to bridge it with job control.  If
+> > > that plan fans out, I might ask Oleg to pull from the pm tree.
+> > 
+> > I'm not sure if Linus likes it.  He generally doesn't want the trees
+> > that he pulls from to be entangled this way.
+> 
+> The job control portion has to go through Linus anyway, so let's see
+> how that flies.
+> 
+> > > This shouldn't matter too much either way but it *might* be a good idea to
+> > > keep this line of patches in a separate branch.
+> > 
+> > I'm going to keep it in the pm-freezer branch anyway (there may be patches
+> > on top of it, though)
+> 
+> Yeah, I'm pretty sure it will need some fix too.
 
-It's regression? 2.6.39 works OK?
+Speaking of which, the addition of might_sleep() to try_to_freeze()
+causes a badly looking backtrace to appear during reboot on ARM,
+so I'd prefer it to go into __refrigerator().
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Please tell me what you think of the patch below.
+
+Rafael
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Freezer: Move might_sleep() from try_to_freeze()
+
+There are some code paths that call try_to_freeze() from interrupt
+context, but doing so they know that the current process cannot
+possible be freezing (e.g. during reboot on ARM).  However, the
+recently added might_sleep() annotation in try_to_freeze()
+triggers in those cases, making it look like there were bugs in
+those places, which really isn't the case.
+
+Therefore move might_sleep() from try_to_freeze() to
+__refrigerator() so that it doesn't produce false positives.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ include/linux/freezer.h |    1 -
+ kernel/freezer.c        |    2 ++
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux/include/linux/freezer.h
+===================================================================
+--- linux.orig/include/linux/freezer.h
++++ linux/include/linux/freezer.h
+@@ -41,7 +41,6 @@ extern void thaw_processes(void);
+ 
+ static inline bool try_to_freeze(void)
+ {
+-	might_sleep();
+ 	if (likely(!freezing(current)))
+ 		return false;
+ 	return __refrigerator(false);
+Index: linux/kernel/freezer.c
+===================================================================
+--- linux.orig/kernel/freezer.c
++++ linux/kernel/freezer.c
+@@ -54,6 +54,8 @@ bool __refrigerator(bool check_kthr_stop
+ 	bool was_frozen = false;
+ 	long save;
+ 
++	might_sleep();
++
+ 	/*
+ 	 * No point in checking freezing() again - the caller already did.
+ 	 * Proceed to enter FROZEN.
