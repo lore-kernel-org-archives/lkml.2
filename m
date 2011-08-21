@@ -1,37 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1HUOEX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 10:04:23 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:51373 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab1HUOEV (ORCPT
+	id S1755080Ab1HUOH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 10:07:59 -0400
+Received: from mail.dcu.ie ([136.206.1.5]:59530 "EHLO hawk.dcu.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754296Ab1HUOH4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 10:04:21 -0400
-X-Greylist: delayed 733 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Aug 2011 10:04:21 EDT
-Date: Sun, 21 Aug 2011 15:50:29 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: konrad.wilk@oracle.com, ian.campbell@citrix.com, vgoyal@redhat.com,
-        horms@verge.net.au, olaf@aepfle.de, kexec@lists.infradead.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] kexec-tools: Xen fixes and cleanups
-Message-ID: <20110821135029.GA17323@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Sun, 21 Aug 2011 10:07:56 -0400
+Date: Sun, 21 Aug 2011 15:03:54 +0100
+Message-ID: <4DB96A270002FC09@hawk.dcu.ie>
+From: "Bar Yasser" <Gemma.Murray@dcu.ie>
+Reply-To: rawashdeh.asseral11@w.cn
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I am sending some Xen specific fixes and cleanups for kexec-tools.
-These patches applies to current kexec-tools git tree.
+I am Bar Yasser, I have a very important Business matters i will like to
+discuss with you.If this your Email is valid Contact me through my personal
+email:rawashdeh.asseral11@w.cn Thank you Mr. Yasser Al
 
-Full list of fixes and cleanups:
-  - xen: Take into account Xen control interface changes since Xen Ver. 4.1,
-  - kexec: Export compare_ranges() function from firmware_memmap.c module,
-  - kexec/arch/i386: Rename fixup_memory_ranges_sysfs() to fixup_memory_ranges(),
-  - kexec/arch/i386: Add get_memory_ranges_xen() function.
 
-Daniel
