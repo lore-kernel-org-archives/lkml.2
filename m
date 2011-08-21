@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab1HUWkW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 18:40:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59798 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752697Ab1HUWkT (ORCPT
+	id S1755999Ab1HUWro (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 18:47:44 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:55338 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1HUWrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 18:40:19 -0400
-Date: Sun, 21 Aug 2011 23:36:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [RFC PATCH v2] Resurrect Intel740 driver: i740fb
-Message-ID: <20110821233648.6d120143@lxorguk.ukuu.org.uk>
-In-Reply-To: <201108212242.12717.linux@rainbow-software.org>
-References: <201108212242.12717.linux@rainbow-software.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Aug 2011 18:47:43 -0400
+Date: Mon, 22 Aug 2011 07:47:38 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: konrad.wilk@oracle.com, ian.campbell@citrix.com, vgoyal@redhat.com,
+        olaf@aepfle.de, kexec@lists.infradead.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] kexec-tools: Xen fixes and cleanups
+Message-ID: <20110821224737.GF2300@verge.net.au>
+References: <20110821135029.GA17323@router-fw-old.local.net-space.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110821135029.GA17323@router-fw-old.local.net-space.pl>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> - 24bpp modes still don't work in fbtest but it looks like fbtest bug!
+On Sun, Aug 21, 2011 at 03:50:29PM +0200, Daniel Kiper wrote:
+> Hi,
 > 
-> Is there any better way to test fb drivers than fbtest?
+> I am sending some Xen specific fixes and cleanups for kexec-tools.
+> These patches applies to current kexec-tools git tree.
+> 
+> Full list of fixes and cleanups:
+>   - xen: Take into account Xen control interface changes since Xen Ver. 4.1,
+>   - kexec: Export compare_ranges() function from firmware_memmap.c module,
+>   - kexec/arch/i386: Rename fixup_memory_ranges_sysfs() to fixup_memory_ranges(),
+>   - kexec/arch/i386: Add get_memory_ranges_xen() function.
 
-X11 fbdev driver ?
+Thanks Daniel,
 
-Alan
+all applied.
+
