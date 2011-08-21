@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1HUQRL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 12:17:11 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53132 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab1HUQRK convert rfc822-to-8bit (ORCPT
+	id S1755590Ab1HUQWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 12:22:55 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:54035 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab1HUQWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 12:17:10 -0400
-MIME-Version: 1.0
-X-Originating-IP: [97.79.165.138]
-In-Reply-To: <CABUK1agNHcS8zB2RKPRg0LO8WRe3Z72CWyO+V1UY9M_+V6VO9Q@mail.gmail.com>
-References: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
-	<CABUK1agNHcS8zB2RKPRg0LO8WRe3Z72CWyO+V1UY9M_+V6VO9Q@mail.gmail.com>
-Date: Sun, 21 Aug 2011 11:17:09 -0500
-Message-ID: <CABUK1agSHWTYrRV-EKv4EYpz7Shscnp6azSh68kaUFWDtvrSMg@mail.gmail.com>
-Subject: Re: [PATCH 0/8] drivers:misc: ti-st: fixes
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 21 Aug 2011 12:22:53 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 21 Aug 2011 18:22:12 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: scameron@beardog.cce.hp.com
+Cc: Douglas Gilbert <dgilbert@interlog.com>,
+        james.bottomley@hansenpartnership.com, stephenmcameron@gmail.com,
+        akpm@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] scsi: Document generic scsi device attributes
+Message-ID: <20110821182212.118f188d@stein>
+In-Reply-To: <20110819154135.GF8422@beardog.cce.hp.com>
+References: <20110819144427.15191.54676.stgit@beardog.cce.hp.com>
+	<4E4E7F8B.7020502@interlog.com>
+	<20110819154135.GF8422@beardog.cce.hp.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 12:03 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
-> On Wed, Aug 10, 2011 at 10:18 AM,  <pavan_savoy@ti.com> wrote:
->> From: Pavan Savoy <pavan_savoy@ti.com>
+On Aug 19 scameron@beardog.cce.hp.com wrote:
+> On Fri, Aug 19, 2011 at 11:21:47AM -0400, Douglas Gilbert wrote:
+> > On 11-08-19 10:44 AM, Stephen M. Cameron wrote:
+> > >From: Stephen M. Cameron<scameron@beardog.cce.hp.com>
+> > >
+> > 
+> > <snip>
+> > 
+> > >+What:           /sys/class/scsi_device/..../device/modalias
+> > >+Date:           April, 2007
+> > >+KernelVersion:  Unknown
+> > >+Contact:        James Bottomley<James.Bottomley@HansenPartnership.com>
+> > >+Description:
+> > >+		This read only string value contains a string of the form
+> > >+		"scsi:t-0xXX" where "XX" are two hex digits representing the
+> > >+		SCSI device type.  See also the "type" attribute and table 47
+> > >+		in section 8.2.5.1 "Standard INQUIRY data" of the SCSI-2
+> > >+		specification.
+> > 
+> > My copy of SCSI-2 is draft 10b from 1989 and it doesn't have a
+> > section 8.2.5.1 . Since SCSI-2 was withdrawn over 10 years
+> > ago perhaps you could use a more recent reference. [I see
+> > webstore.ansi.org still sells the SCSI-2 standard for $30 .]
+> > 
+> > SPC-3 is a standard [ANSI INCITS 408-2005; ISO/IEC 14776-453]
+> > and the relevant section, judging from its last draft, would
+> > be table 83 in section 6.4.2 . And it is now called the
+> > "peripheral device type".
+> 
+> I knew it was a mistake for me to try to figure out what the
+> proper reference should be.  If such things change, maybe 
+> having a reference in there at all is a mistake.
 
-greg,
+The versions of the spec change, as do the chapter numbers and table
+numbers.  But it is always "SCSI Primary Commands" ( <- the command
+set specification), "INQUIRY data" ( <- the SCSI command response which
+contains the data that we are talking about here), "Peripheral Device
+Type" ( <- the number which is written into the modalias).
 
-Please review...
+In the last draft revisions of SPC-3 and SPC-4 which were openly published
+at ftp.t10.org, it is table 83 in section 6.4.2.  (Visit archive.org to
+retrieve those drafts.)  But in the words of the same table:  "All
+standards are subject to revision, and parties to agreements based on this
+standard are encouraged to investigate the possibility of applying the
+most recent editions of the listed standards." :-)
 
+> Maybe it should just
+> say something like, "the numbers correspond to the entries in
+> the scsi_device_types[] array in drivers/scsi/scsi.c"
 
+But
+  - the values come from the target, not from the kernel,
+  - their meaning is defined by ANSI/INCITS T10, not by the authors of
+    linux/drivers/scsi/scsi.c.
 
-> Greg,
->
-> Resent, this time seems to have appeared properly ... So please review.
->
->
->> resending with fixed up commit messages.
->>
->> Pavan Savoy (7):
->>  drivers:misc: ti-st: avoid a misleading dbg msg
->>  drivers:misc:ti-st: platform hooks for chip states
->>  drivers:misc: ti-st: reinit completion on ver read
->>  drivers:misc: ti-st: reinit completion before send
->>  drivers:misc: ti-st: wait for completion at fail
->>  drivers:misc: ti-st: free skb on firmware download
->>  drivers:misc: ti-st: fix unexpected UART close
->>
->> Vijay Badawadagi (1):
->>  drivers:misc: ti-st: fail-safe on wrong pkt type
->>
->>  drivers/misc/ti-st/st_core.c |   10 +++++++++-
->>  drivers/misc/ti-st/st_kim.c  |   33 +++++++++++++++++++++++++++++++++
->>  drivers/misc/ti-st/st_ll.c   |   19 +++++++++++++++++++
->>  include/linux/ti_wilink_st.h |   27 ++++++++++++++++++++++++++-
->>  4 files changed, 87 insertions(+), 2 deletions(-)
->>
->> --
->> 1.7.4.1
->>
->>
->
+> since that file is more likely to be close at hand than whichever
+> spec we might refer to.
+
+Maybe call it Peripheral Device Type (PDT, defined by SCSI Primary
+Commands).
+-- 
+Stefan Richter
+-=====-==-== =--- =-=-=
+http://arcgraph.de/sr/
