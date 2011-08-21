@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab1HUOdu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 10:33:50 -0400
-Received: from lo.gmane.org ([80.91.229.12]:48755 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755362Ab1HUOdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 10:33:46 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1755246Ab1HUOdh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 10:33:37 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59712 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab1HUOdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 10:33:36 -0400
+Subject: [PATCH] backlight: ep93xx_bl: add missing include of linux/module.h
+From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Subject: Re: [Doc] =?utf-8?b?YXJjaF9zZXR1cF9wZGV2X2FyY2hkYXRhOg==?= fix documentation for parameter "pdev"
-Date: Sun, 21 Aug 2011 14:33:30 +0000 (UTC)
-Message-ID: <loom.20110821T163206-452@post.gmane.org>
-References: <201108211255.44032.eike-kernel@sf-tec.de>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 21 Aug 2011 22:33:29 +0800
+Message-ID: <1313937209.13671.3.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 112.80.209.86 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.94 Safari/535.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rolf Eike Beer <eike-kernel <at> sf-tec.de> writes:
+ep93xx_bl.c uses interfaces from linux/module.h,
+so it should include that file. This patch fixes below build errors.
 
-> 
-> Signed-off-by: Rolf Eike Beer <eike-kernel <at> sf-tec.de>
-> ---
->  drivers/base/platform.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 0cad9c7..99a5272 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -33,7 +33,7 @@ EXPORT_SYMBOL_GPL(platform_bus);
-> 
->  /**
->   * arch_setup_pdev_archdata - Allow manipulation of archdata before its used
-> - * @dev: platform device
-> + * @pdev: platform device
->   *
->   * This is called before platform_device_add() such that any pdev_archdata may
->   * be setup before the platform_notifier is called.  So if a user needs to
-Already queue. See:
+  CC [M]  drivers/video/backlight/ep93xx_bl.o
+drivers/video/backlight/ep93xx_bl.c:138: error: 'THIS_MODULE' undeclared here (not in a function)
+drivers/video/backlight/ep93xx_bl.c:158: error: expected declaration specifiers or '...' before string constant
+drivers/video/backlight/ep93xx_bl.c:158: warning: data definition has no type or storage class
+drivers/video/backlight/ep93xx_bl.c:158: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/video/backlight/ep93xx_bl.c:158: warning: function declaration isn't a prototype
+drivers/video/backlight/ep93xx_bl.c:159: error: expected declaration specifiers or '...' before string constant
+drivers/video/backlight/ep93xx_bl.c:159: warning: data definition has no type or storage class
+drivers/video/backlight/ep93xx_bl.c:159: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/video/backlight/ep93xx_bl.c:159: warning: function declaration isn't a prototype
+drivers/video/backlight/ep93xx_bl.c:160: error: expected declaration specifiers or '...' before string constant
+drivers/video/backlight/ep93xx_bl.c:160: warning: data definition has no type or storage class
+drivers/video/backlight/ep93xx_bl.c:160: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/video/backlight/ep93xx_bl.c:160: warning: function declaration isn't a prototype
+drivers/video/backlight/ep93xx_bl.c:161: error: expected declaration specifiers or '...' before string constant
+drivers/video/backlight/ep93xx_bl.c:161: warning: data definition has no type or storage class
+drivers/video/backlight/ep93xx_bl.c:161: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
+drivers/video/backlight/ep93xx_bl.c:161: warning: function declaration isn't a prototype
+make[3]: *** [drivers/video/backlight/ep93xx_bl.o] Error 1
+make[2]: *** [drivers/video/backlight] Error 2
+make[1]: *** [drivers/video] Error 2
+make: *** [drivers] Error 2
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-
-next.git;a=commitdiff;h=7de636fa25c19fc4187f85f8325c50b1b21a6d8b
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/ep93xx_bl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks
--Wanlong Gao
+diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+index 9f1e389..b058291 100644
+--- a/drivers/video/backlight/ep93xx_bl.c
++++ b/drivers/video/backlight/ep93xx_bl.c
+@@ -11,7 +11,7 @@
+  * BRIGHT, on the Cirrus EP9307, EP9312, and EP9315 processors.
+  */
+ 
+-
++#include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/fb.h>
+-- 
+1.7.4.1
+
+
 
