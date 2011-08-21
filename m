@@ -1,27 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1HUOH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 10:07:59 -0400
-Received: from mail.dcu.ie ([136.206.1.5]:59530 "EHLO hawk.dcu.ie"
+	id S1755191Ab1HUOLn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 10:11:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45643 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab1HUOH4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 10:07:56 -0400
-Date: Sun, 21 Aug 2011 15:03:54 +0100
-Message-ID: <4DB96A270002FC09@hawk.dcu.ie>
-From: "Bar Yasser" <Gemma.Murray@dcu.ie>
-Reply-To: rawashdeh.asseral11@w.cn
+	id S1754651Ab1HUOLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 10:11:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,258,1312182000"; 
+   d="scan'208";a="40771868"
+Date: Sun, 21 Aug 2011 22:11:36 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Kautuk Consul <consul.kautuk@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>
+Subject: Re: [PATCH] writeback: Per-block device
+ bdi->dirty_writeback_interval and bdi->dirty_expire_interval.
+Message-ID: <20110821141136.GA29660@localhost>
+References: <1313669702.6607.24.camel@sauron>
+ <20110818131343.GA17473@localhost>
+ <CAFPAmTShNRykOEbUfRan_2uAAbBoRHE0RhOh4DrbWKq7a4-Z9Q@mail.gmail.com>
+ <20110819023406.GA12732@localhost>
+ <CAFPAmTSzYg5n150_ykv-Vvc4QVbz14Oxn_Mm+EqxzbUL3c39tg@mail.gmail.com>
+ <20110819052839.GB28266@localhost>
+ <20110819060803.GA7887@localhost>
+ <CAFPAmTQU_rHwFi8KRdTU6BjMFhvq0HKNfufQ762i1KQEHVPk8g@mail.gmail.com>
+ <20110819142433.GA15401@localhost>
+ <CAFPAmTQ2_JdwoLPFWQJze2Zd0QNHwMLWEmktGTQY_jHBAcixKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFPAmTQ2_JdwoLPFWQJze2Zd0QNHwMLWEmktGTQY_jHBAcixKg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kautuk,
 
-I am Bar Yasser, I have a very important Business matters i will like to
-discuss with you.If this your Email is valid Contact me through my personal
-email:rawashdeh.asseral11@w.cn Thank you Mr. Yasser Al
+On Sat, Aug 20, 2011 at 01:20:52AM +0800, Kautuk Consul wrote:
+> Hi Wu,
+> 
+> You're right, the BDI threads should be woken up reliably by the
+> balance_dirty_pages() and balance_dirty_pages()
+> needs to be called from all code that is responsible for dirtying the pages.
+> Sorry, I was not too aware of the balance_dirty_pages() functionality
+> and the way it was being called in entirety or I would
+> have spotted this.
 
+That's fine. One have to get to know the code bit by bit :)
 
+> Thanks for adding the dirty_background_time into your
+> over_bground_thresh() formula.
+> 
+> Now that you seem to have included the time into the threshold, I can
+> relate to your patch better
+> as a solution for the problems I earlier mentioned.
+
+Great, thank you.
+
+Thanks,
+Fengguang
+
+> On Fri, Aug 19, 2011 at 7:54 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > Hi Kautuk,
+> >
+> > On Fri, Aug 19, 2011 at 03:00:30PM +0800, Kautuk Consul wrote:
+> >> Hi Wu,
+> >>
+> >> Yes. I think I do understand your approach.
+> >>
+> >> Your aim is to always retain the per BDI timeout value.
+> >>
+> >> You want to check for threshholds by mathematically adjusting the
+> >> background time too
+> >> into your over_bground_thresh() formula so that your understanding
+> >> holds true always and also
+> >> affects the page dirtying scenario I mentioned.
+> >> This definitely helps and refines this scenario in terms of flushing
+> >> out of the dirty pages.
+> >
+> > Thanks.
+> >
+> >> Doubts:
+> >> i)   Your entire implementation seems to be dependent on someone
+> >> calling balance_dirty_pages()
+> >>      directly or indirectly. This function will call the
+> >> bdi_start_background_writeback() which wakes
+> >>      up the flusher thread.
+> >>      What about those page dirtying code paths which might not call
+> >> balance_dirty_pages ?
+> >>      Those paths then depend on the BDI thread periodically writing it
+> >> to disk and then we are again
+> >>      dependent on the writeback interval.
+> >>      Can we assume that the kernel will reliably call
+> >> balance_dirty_pages() whenever the pages
+> >>      are dirtied ? If that was true, then we would not need bdi
+> >> periodic writeback threads ever.
+> >
+> > Yes. The kernel need a way to limit the total number of dirty pages at
+> > any given time and to keep them under dirty_ratio/dirty_bytes.
+> >
+> > balance_dirty_pages() is such a central place to throttle the dirty
+> > pages. Whatever code path generating dirty pages are required to call
+> > into balance_dirty_pages_ratelimited_nr() which will in turn call
+> > balance_dirty_pages().
+> >
+> > So, the values specified by dirty_ratio/dirty_bytes will be executed
+> > effectively by balance_dirty_pages(). In contrast, the values
+> > specified by dirty_expire_centisecs is merely a parameter used by
+> > wb_writeback() to select the eligible inodes to do writeout. The 30s
+> > dirty expire time is never a guarantee that all inodes/pages dirtied
+> > before 30s will be timely written to disk. It's better interpreted in
+> > the opposite way: when under the dirty_background_ratio threshold and
+> > hence background writeout does not kick in, dirty inodes younger than
+> > 30s won't be written to disk by the flusher.
+> >
+> >> ii)  Even after your rigorous checking, the bdi_writeback_thread()
+> >> will still do a schedule_timeout()
+> >>      with the global value. Will your current solution then handle
+> >> Artem's disk removal scenario ?
+> >>      Else, you start using your value in the schedule_timeout() call
+> >> in the bdi_writeback_thread()
+> >>      function, which brings us back to the interval phenomenon I was
+> >> talking about.
+> >
+> > wb_writeback() will keep running as long as over_bground_thresh().
+> >
+> > The flusher will keep writing as long as there are more works, since
+> > there is a
+> >
+> >                if (!list_empty(&bdi->work_list))
+> >                        continue;
+> >
+> > before the schedule_timeout() call.
+> >
+> > And the flusher thread will always be woke up timely from
+> > balance_dirty_pages().
+> >
+> > So schedule_timeout() won't block in the way at all.
+> >
+> >> Does this patch really help the user control exact time when the write
+> >> BIO is transferred from the
+> >> MM to the Block layer assuming balance_dirty_pages() is not called ?
+> >
+> > It would be a serious bug if balance_dirty_pages() is somehow not
+> > called. But note that balance_dirty_pages() is designed to be called
+> > on every N pages to reduce overheads.
+> >
+> > Thanks,
+> > Fengguang
+> >
