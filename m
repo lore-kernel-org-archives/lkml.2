@@ -1,182 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab1HUW2a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 18:28:30 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47980 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab1HUW23 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 18:28:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-Date: Sun, 21 Aug 2011 18:28:28 -0400
-Message-ID: <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756019Ab1HUW3Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 18:29:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60937 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752719Ab1HUW3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 18:29:21 -0400
+Date: Mon, 22 Aug 2011 08:29:10 +1000
+From: NeilBrown <neilb@suse.de>
+To: Sylvain Rochet <gradator@gradator.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
+Message-ID: <20110822082910.25f5a0d8@notabene.brown>
+In-Reply-To: <20110819230344.GA24784@gradator.net>
+References: <20101018223540.GA20730@gradator.net>
+	<20110819230344.GA24784@gradator.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 20 Aug 2011 01:03:44 +0200 Sylvain Rochet <gradator@gradator.net>
+wrote:
 
-On Fri, Aug 19, 2011 at 7:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Reposting due to popular demand. Several other people are running
-> into the same problem with all kinds of software.
->
-> Only change is rebase against current master.
->
-FWIW, couldn't this be made a boot option ?
+> Hi,
+> 
+> On Tue, Oct 19, 2010 at 12:35:40AM +0200, Sylvain Rochet wrote:
+> > 
+> > ... upgraded to 2.6.33.5, then 2.6.33.7, finally to 2.6.35.7, and I 
+> > always end up with the same ending, it seems inotify can miss some VFS 
+> > events from time to time.
+> 
+> I finally find out why.
+> 
+> The NFS server does not always know the name of the modified file, if 
+> the modified inode was cleared from the VFS cache fsnotify does not know 
+> as well the filename then inotify child events on directories are 
+> silently tossed.
 
-That might help some distros, say Fedora, who actually ships
-2.6.40+x-branded kernels, or allow people to use no longer supported
-distros with recent kernels.
+This may not be helpful but if you export the filesystem with the
+"subtree_check" option then the NFS server will always know a name for any
+file that it modifies.
 
-About this last point, once functional, I intend to upgrade my trixbox
-install (based on 2.6.18) to a 3.x-ish kernel, that might be fun...
+This is not without cost though, which is why it is no longer the default.
 
-Thanks,
- - Arnaud
+If the client opens a file, the server moves it to a new directory and then
+the server cache is flushed, then the client will get an ESTALE error.  This
+is rarely a problem in practice but when it is it can be quite annoying...
 
-> -Andi
->
-> --
->
-> I ran into a couple of programs which broke with the new Linux 3.0 version.
-> Some of those were binary only. I tried to use LD_PRELOAD to work
-> around it, but it was quite difficult and in one case impossible
-> because of a mix of 32bit and 64bit executables.
->
-> This patch adds a UNAME26 personality that makes the kernel
-> report a 2.6.40+x version number instead. The x is the x in 3.x.
->
-> I know this is somewhat ugly, but I didn't find a better workaround,
-> and compatibility to existing programs is important.
->
-> Some programs also read /proc/sys/kernel/osrelease. This can be worked
-> around in user space with mount --bind (and a mount namespace)
->
-> To use:
->
-> wget ftp://ftp.kernel.org/pub/linux/kernel/people/ak/uname26/uname26.c
-> gcc -o uname26 uname26.c
-> ./uname26 program
->
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  include/linux/personality.h |    1 +
->  kernel/sys.c                |   38 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 39 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/personality.h b/include/linux/personality.h
-> index eec3bae..8fc7dd1a 100644
-> --- a/include/linux/personality.h
-> +++ b/include/linux/personality.h
-> @@ -22,6 +22,7 @@ extern int            __set_personality(unsigned int);
->  * These occupy the top three bytes.
->  */
->  enum {
-> +       UNAME26 =               0x0020000,
->        ADDR_NO_RANDOMIZE =     0x0040000,      /* disable randomization of VA space */
->        FDPIC_FUNCPTRS =        0x0080000,      /* userspace function ptrs point to descriptors
->                                                 * (signal handling)
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index a101ba3..bd6d142 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -37,6 +37,8 @@
->  #include <linux/fs_struct.h>
->  #include <linux/gfp.h>
->  #include <linux/syscore_ops.h>
-> +#include <linux/version.h>
-> +#include <linux/ctype.h>
->
->  #include <linux/compat.h>
->  #include <linux/syscalls.h>
-> @@ -44,6 +46,8 @@
->  #include <linux/user_namespace.h>
->
->  #include <linux/kmsg_dump.h>
-> +/* Move somewhere else to avoid recompiling? */
-> +#include <generated/utsrelease.h>
->
->  #include <asm/uaccess.h>
->  #include <asm/io.h>
-> @@ -1154,6 +1158,34 @@ DECLARE_RWSEM(uts_sem);
->  #define override_architecture(name)    0
->  #endif
->
-> +/*
-> + * Work around broken programs that cannot handle "Linux 3.0".
-> + * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-> + */
-> +static int override_release(char __user *release, int len)
-> +{
-> +       int ret = 0;
-> +       char buf[len];
+NeilBrown
+
+
+
+> 
+> Easy way to reproduce:
+> 
+> Add a few printk debug (here it only works if /data is the NFS export):
+> 
+> --- begin//fs/nfsd/vfs.c        2011-07-22 04:17:23.000000000 +0200
+> +++ linux-3.0/fs/nfsd/vfs.c     2011-07-30 03:18:17.837560809 +0200
+> @@ -975,6 +975,8 @@
+>         inode = dentry->d_inode;
+>         exp   = fhp->fh_export;
+>  
+> +       printk("nfsd write inode=%ld name=%s\n", inode->i_ino, dentry->d_name.name);
 > +
-> +       if (current->personality & UNAME26) {
-> +               char *rest = UTS_RELEASE;
-> +               int ndots = 0;
-> +               unsigned v;
-> +
-> +               while (*rest) {
-> +                       if (*rest == '.' && ++ndots >= 3)
-> +                               break;
-> +                       if (!isdigit(*rest) && *rest != '.')
-> +                               break;
-> +                       rest++;
-> +               }
-> +               v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
-> +               snprintf(buf, len, "2.6.%u%s", v, rest);
-> +               ret = copy_to_user(release, buf, len);
-> +       }
-> +       return ret;
-> +}
-> +
->  SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
->  {
->        int errno = 0;
-> @@ -1163,6 +1195,8 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
->                errno = -EFAULT;
->        up_read(&uts_sem);
->
-> +       if (!errno && override_release(name->release, sizeof(name->release)))
-> +               errno = -EFAULT;
->        if (!errno && override_architecture(name))
->                errno = -EFAULT;
->        return errno;
-> @@ -1184,6 +1218,8 @@ SYSCALL_DEFINE1(uname, struct old_utsname __user *, name)
->                error = -EFAULT;
->        up_read(&uts_sem);
->
-> +       if (!error && override_release(name->release, sizeof(name->release)))
-> +               error = -EFAULT;
->        if (!error && override_architecture(name))
->                error = -EFAULT;
->        return error;
-> @@ -1218,6 +1254,8 @@ SYSCALL_DEFINE1(olduname, struct oldold_utsname __user *, name)
->
->        if (!error && override_architecture(name))
->                error = -EFAULT;
-> +       if (!error && override_release(name->release, sizeof(name->release)))
-> +               error = -EFAULT;
->        return error ? -EFAULT : 0;
->  }
->  #endif
-> --
-> 1.7.4.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>         /*
+>          * Request sync writes if
+>          *  -   the sync export option has been set, or
+> 
+> diff -Nru begin//include/linux/fsnotify.h linux-3.0/include/linux/fsnotify.h
+> --- begin//include/linux/fsnotify.h     2011-07-22 04:17:23.000000000 +0200
+> +++ linux-3.0/include/linux/fsnotify.h  2011-07-30 03:07:00.330239062 +0200
+> @@ -216,8 +232,15 @@
+>                 mask |= FS_ISDIR;
+>  
+>         if (!(file->f_mode & FMODE_NONOTIFY)) {
+> +               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data") )
+> +                       printk("fsnotify modify inode=%ld name=%s\n", inode->i_ino, file->f_dentry->d_name.name);
+>                 fsnotify_parent(path, NULL, mask);
+>                 fsnotify(inode, mask, path, FSNOTIFY_EVENT_PATH, NULL, 0);
+> +       } else {
+> +               if( !strcmp(path->mnt->mnt_mountpoint->d_name.name, "data") )
+> +                       printk("fsnotify modify-nonotify inode=%ld name=%s\n", inode->i_ino, file->f_dentry->d_name.name);
+>         }
+>  }
+> 
+> 
+> On the NFS client, open a fd and send some data:
+> 
+> # exec 1> test
+> # ls -la
+> # 
+> 
+> On the NFS server, check the kern log:
+> 
+> Aug 20 00:57:44 inotifydebug kernel: nfsd write inode=13 name=test
+> Aug 20 00:57:44 inotifydebug kernel: fsnotify modify inode=13 name=test
+> 
+> Everything goes well.
+> 
+> Now, clear the VFS cache on the NFS server:
+> 
+> # echo 3 > /proc/sys/vm/drop_caches 
+> 
+> On the NFS client, send some data to the fd:
+> 
+> # ls -la
+> # 
+> 
+> On the NFS server, check the kern log:
+> 
+> Aug 20 00:58:56 inotifydebug kernel: nfsd write inode=13 name=
+> Aug 20 00:58:56 inotifydebug kernel: fsnotify modify inode=13 name=
+> 
+> The filename is lost, fsnotify does not know the filename anymore, 
+> therefore inotify cannot send event about a modified file in a watched 
+> directory.
+> 
+> End of the story.
+> 
+> I guess this is almost impossible to fix this fsnotify bug, this is due 
+> by the fact that NFS use inode as file identifiers, so in some case this 
+> is impossible to know the modified filepath, and therefore impossible to 
+> match the file event to the directory watch.
+> 
+> Kind regards,
+> Sylvain
+
