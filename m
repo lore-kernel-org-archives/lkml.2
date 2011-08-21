@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1HUXj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 19:39:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46699 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab1HUXj4 (ORCPT
+	id S932084Ab1HUXlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 19:41:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33007 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab1HUXlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 19:39:56 -0400
-Message-ID: <4E519744.1020707@gmail.com>
-Date: Mon, 22 Aug 2011 09:39:48 +1000
+	Sun, 21 Aug 2011 19:41:49 -0400
+Message-ID: <4E5197B8.8020608@gmail.com>
+Date: Mon, 22 Aug 2011 09:41:44 +1000
 From: Ryan Mallon <rmallon@gmail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
 To: Axel Lin <axel.lin@gmail.com>
 CC: linux-kernel@vger.kernel.org,
         H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] backlight: ep93xx_bl: add missing include of linux/module.h
-References: <1313937209.13671.3.camel@phoenix>
-In-Reply-To: <1313937209.13671.3.camel@phoenix>
+        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
+References: <1313937545.13671.5.camel@phoenix>
+In-Reply-To: <1313937545.13671.5.camel@phoenix>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/11 00:33, Axel Lin wrote:
-> ep93xx_bl.c uses interfaces from linux/module.h,
-> so it should include that file. This patch fixes below build errors.
+On 22/08/11 00:39, Axel Lin wrote:
+> ep93xx-fb.c uses interfaces from linux/module.h,
+> so it should include that file.  This patch fixes below build errors.
 
-Thanks,
+What actually changed to make these files broken? Did some other header 
+previously include module.h for us? How many other drivers are broken?
+
+Anyway, the change is okay.
 
 Acked-by: Ryan Mallon <rmallon@gmail.com>
 
->    CC [M]  drivers/video/backlight/ep93xx_bl.o
-> drivers/video/backlight/ep93xx_bl.c:138: error: 'THIS_MODULE' undeclared here (not in a function)
-> drivers/video/backlight/ep93xx_bl.c:158: error: expected declaration specifiers or '...' before string constant
-> drivers/video/backlight/ep93xx_bl.c:158: warning: data definition has no type or storage class
-> drivers/video/backlight/ep93xx_bl.c:158: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-> drivers/video/backlight/ep93xx_bl.c:158: warning: function declaration isn't a prototype
-> drivers/video/backlight/ep93xx_bl.c:159: error: expected declaration specifiers or '...' before string constant
-> drivers/video/backlight/ep93xx_bl.c:159: warning: data definition has no type or storage class
-> drivers/video/backlight/ep93xx_bl.c:159: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-> drivers/video/backlight/ep93xx_bl.c:159: warning: function declaration isn't a prototype
-> drivers/video/backlight/ep93xx_bl.c:160: error: expected declaration specifiers or '...' before string constant
-> drivers/video/backlight/ep93xx_bl.c:160: warning: data definition has no type or storage class
-> drivers/video/backlight/ep93xx_bl.c:160: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-> drivers/video/backlight/ep93xx_bl.c:160: warning: function declaration isn't a prototype
-> drivers/video/backlight/ep93xx_bl.c:161: error: expected declaration specifiers or '...' before string constant
-> drivers/video/backlight/ep93xx_bl.c:161: warning: data definition has no type or storage class
-> drivers/video/backlight/ep93xx_bl.c:161: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
-> drivers/video/backlight/ep93xx_bl.c:161: warning: function declaration isn't a prototype
-> make[3]: *** [drivers/video/backlight/ep93xx_bl.o] Error 1
-> make[2]: *** [drivers/video/backlight] Error 2
+>    CC      drivers/video/ep93xx-fb.o
+> drivers/video/ep93xx-fb.c:120: error: expected ')' before 'int'
+> drivers/video/ep93xx-fb.c:122: error: expected ')' before string constant
+> drivers/video/ep93xx-fb.c:409: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/video/ep93xx-fb.c:645: error: expected declaration specifiers or '...' before string constant
+> drivers/video/ep93xx-fb.c:645: warning: data definition has no type or storage class
+> drivers/video/ep93xx-fb.c:645: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/video/ep93xx-fb.c:645: warning: function declaration isn't a prototype
+> drivers/video/ep93xx-fb.c:646: error: expected declaration specifiers or '...' before string constant
+> drivers/video/ep93xx-fb.c:646: warning: data definition has no type or storage class
+> drivers/video/ep93xx-fb.c:646: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
+> drivers/video/ep93xx-fb.c:646: warning: function declaration isn't a prototype
+> drivers/video/ep93xx-fb.c:647: error: expected declaration specifiers or '...' before string constant
+> drivers/video/ep93xx-fb.c:647: warning: data definition has no type or storage class
+> drivers/video/ep93xx-fb.c:647: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/video/ep93xx-fb.c:647: warning: function declaration isn't a prototype
+> drivers/video/ep93xx-fb.c:649: error: expected declaration specifiers or '...' before string constant
+> drivers/video/ep93xx-fb.c:649: warning: data definition has no type or storage class
+> drivers/video/ep93xx-fb.c:649: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/video/ep93xx-fb.c:649: warning: function declaration isn't a prototype
+> make[2]: *** [drivers/video/ep93xx-fb.o] Error 1
 > make[1]: *** [drivers/video] Error 2
 > make: *** [drivers] Error 2
 >
 > Signed-off-by: Axel Lin<axel.lin@gmail.com>
 > ---
->   drivers/video/backlight/ep93xx_bl.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+>   drivers/video/ep93xx-fb.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
 >
-> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
-> index 9f1e389..b058291 100644
-> --- a/drivers/video/backlight/ep93xx_bl.c
-> +++ b/drivers/video/backlight/ep93xx_bl.c
-> @@ -11,7 +11,7 @@
->    * BRIGHT, on the Cirrus EP9307, EP9312, and EP9315 processors.
+> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
+> index 40e5f17..8133a9d 100644
+> --- a/drivers/video/ep93xx-fb.c
+> +++ b/drivers/video/ep93xx-fb.c
+> @@ -17,6 +17,7 @@
+>    *
 >    */
 >
-> -
 > +#include<linux/module.h>
 >   #include<linux/platform_device.h>
->   #include<linux/io.h>
->   #include<linux/fb.h>
+>   #include<linux/dma-mapping.h>
+>   #include<linux/slab.h>
 
