@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1HUDET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 23:04:19 -0400
-Received: from science.horizon.com ([71.41.210.146]:41676 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751532Ab1HUDEQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 23:04:16 -0400
-Date: 20 Aug 2011 23:04:15 -0400
-Message-ID: <20110821030415.18106.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, w@1wt.eu
-Subject: Re: [PATCH 0/2] Improve sequence number generation.
-Cc: dan@doxpara.com, davem@davemloft.net, gerrit@erg.abdn.ac.uk,
-        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, netdev@vger.kernel.org
-In-Reply-To: <20110821012844.GA15222@1wt.eu>
+	id S1755411Ab1HUDQH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 23:16:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52617 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532Ab1HUDQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 23:16:02 -0400
+Date: Sat, 20 Aug 2011 20:15:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Harvey Yang <harvey.huawei.yang@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] devtmpfs: Fix section mismatch warning
+Message-ID: <20110821031555.GA25900@suse.de>
+References: <1313894655-3783-1-git-send-email-harvey.huawei.yang@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313894655-3783-1-git-send-email-harvey.huawei.yang@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> * Should I worry about 32-bit IPv6 performance, since that's even more
->>   unlikely to be running heavy loads on 32-bit hardware?
+On Sun, Aug 21, 2011 at 10:44:15AM +0800, Harvey Yang wrote:
+> drivers/base/built-in.o(.text+0xe554): Section mismatch in reference f
+> rom the function devtmpfsd() to the variable .init.data:setup_done
+> The function devtmpfsd() references
+> the variable __initdata setup_done.
+> This is often because devtmpfsd lacks a __initdata
+> annotation or the annotation of setup_done is wrong.
+> 
+> "setup_done" is not used after init. but putting it into initdata section leads a section mismatch warning, so initialize it dynamically in __init function.
+> 
+> Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
 
-> On x86 you're probably right, but there are other very fast platforms
-> such as ARM, which are used to build routers or appliances, and which
-> are 32-bit and there it may matter.
+Already in linux-next, thanks, it will go to Linus next week.
 
-Thanks for the feedback.  Your point about routers is well-taken.
-It's particularly x86-32 which gives me fits, but I'll keep ARM
-performance in mind, too.
-
->> * If yes, is this fast enough to be acceptable, or do I need to work
->>   harder to find more speed?
-
-> I'd suggest that the most important is no performance regression. Probably
-> that if you can bring something which brings back what we lost with MD5,
-> your work would gain interest.
-
-Okay, I'll go back to the drawing board on performance.
-
-Damn, this is going to be tough.
-
-> I'm copy-pasting here the memo I exchanged in private after my tests, there
-> is nothing secret in it, so better post the whole explanation :
-
-Thank you very much.  It helps me figure out what the time budget is.
+greg k-h
