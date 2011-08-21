@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab1HUWNb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 18:13:31 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31887 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842Ab1HUWN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 18:13:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,260,1312182000"; 
-   d="scan'208";a="43624023"
+	id S1756001Ab1HUWQI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 18:16:08 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34401 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755885Ab1HUWQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 18:16:05 -0400
+Date: Mon, 22 Aug 2011 00:16:02 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [RFC PATCH v2] Resurrect Intel740 driver: i740fb
-References: <201108212242.12717.linux@rainbow-software.org>
-Date: Sun, 21 Aug 2011 15:13:27 -0700
-In-Reply-To: <201108212242.12717.linux@rainbow-software.org> (Ondrej Zary's
-	message of "Sun, 21 Aug 2011 22:42:06 +0200")
-Message-ID: <m24o1ae7lk.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, tony.luck@intel.com
+Subject: Re: using mce_inject I get: RIP 10:<ffffffffa012c909> {ttm_bo_unref+0xf/0x45 [ttm]}
+Message-ID: <20110821221602.GK25996@one.firstfloor.org>
+References: <4E506DEA.1070601@gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E506DEA.1070601@gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ondrej Zary <linux@rainbow-software.org> writes:
->
-> The i740_calc_fifo() function formatting is nice but does not pass
-> checkpatch. Making it checkpatch-compliant makes the code look ugly. How to
-> make it both nice and compatible with Linux coding style?
+On Sat, Aug 20, 2011 at 07:31:06PM -0700, Justin P. Mattock wrote:
+> not sure if I am running mce_test correctly, but during its routine of 
+> testing things I do get a pause with everything, then the below shows up 
+> in dmesg..:
 
-When checkpatch.pl and sanity conflict, sanity should generally win.
+The message is expected, but there should be no noticeable
+pause.
 
 -Andi
 
+> 
+> http://fpaste.org/kMRd/
+> 
+> 
+> [ 1810.670434] Triggering MCE exception on CPU 1
+> [ 1810.670462] [Hardware Error]: CPU 1: Machine Check Exception: 6 Bank 
+> 4: b300000000000000
+> [ 1810.670467] [Hardware Error]: RIP 73:<0000000012343434>
+> [ 1810.670470] [Hardware Error]: TSC 38d1002c216
+> [ 1810.670474] [Hardware Error]: PROCESSOR 0:6f6 TIME 1313892803 SOCKET 
+> 0 APIC 1
+> [ 1810.670477] [Hardware Error]: Run the above through 'mcelog --ascii'
+> [ 1810.670481] [Hardware Error]: Machine check: Processor context corrupt
+> [ 1810.670483] [Hardware Error]: Fake kernel panic: Fatal Machine check
+> [ 1810.670495] MCE exception done on CPU 1
+> [ 1819.064721] Triggering MCE exception on CPU 1
+> 
+> seems light of a pause, then everything resumes properly(music, etc..).
+> Is this something that needs attention, or are these tests as extreme as 
+> can be, and should simply be ignored?
+> (Note: if there is a mce list somewhere let me know so I direct this to 
+> the proper people)
+> 
+> Justin P. Mattock
+> 
+
 -- 
-ak@linux.intel.com -- Speaking for myself only
+ak@linux.intel.com -- Speaking for myself only.
