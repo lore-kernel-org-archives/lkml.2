@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab1HKO00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Aug 2011 10:26:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab1HKO0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Aug 2011 10:26:21 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCHv2 08/10] tracing/filter: Change fold_pred function to use walk_pred_tree
-Date: Thu, 11 Aug 2011 16:25:52 +0200
-Message-Id: <1313072754-4620-9-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1313072754-4620-1-git-send-email-jolsa@redhat.com>
-References: <1313011535.18583.280.camel@gandalf.stny.rr.com>
- <1313072754-4620-1-git-send-email-jolsa@redhat.com>
+	id S1753109Ab1HKO1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Aug 2011 10:27:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58805 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab1HKO1V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Aug 2011 10:27:21 -0400
+Date: Thu, 21 Aug 2011 18:51:37 +0430
+From: Ali Gholami Rudi <ali@rudi.ir>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Keith Packard <keithp@keithp.com>,
+        Michel Alexandre Salim <salimma@fedoraproject.org>,
+        intel-gfx@lists.freedesktop.org, Ali Gholami Rudi <aliqrudi@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        David Airlie <airlied@linux.ie>, Alex Deucher <alexdeucher@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Sedat Dilek <sedat.dilek@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: missing acpi backlight bisected to 9661e92c10
+Message-ID: <20112108185137@lilem.mirepesht>
+In-Reply-To: <20110811141630.GA24704@srcf.ucam.org>
+References: <yunliv38ugd.fsf@aiko.keithp.com>
+ <20110808213140.GA32504@srcf.ucam.org>
+ <yunfwlb8qy4.fsf@aiko.keithp.com>
+ <4E428421.1000605@fedoraproject.org>
+ <yunipq5gvxd.fsf@aiko.keithp.com>
+ <20110810191700.81c3a7ee.akpm@linux-foundation.org>
+ <20112108083014@lilem.mirepesht>
+ <20112108160718@lilem.mirepesht>
+ <20110811123929.GA22409@srcf.ucam.org>
+ <20112108181410@lilem.mirepesht>
+	<20110811141630.GA24704@srcf.ucam.org>
+User-Agent: git://repo.or.cz/mailx.git
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing fold_pred_tree function to use unified predicates tree
-processing.
+Matthew Garrett <mjg@redhat.com> wrote:
+> Well, that all looks fine. And I also can't see any way that this commit
+> could cause the backlight not to appear - all it does is set the parent 
+> if it's present. There's no new path that could cause it to return 
+> early. Does reverting this patch really make things work?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace_events_filter.c |   68 +++++++++++++++++------------------
- 1 files changed, 33 insertions(+), 35 deletions(-)
+Yes.  I'm running the patched kernel right now.
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index d8aa100..f44e68b 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1439,13 +1439,40 @@ static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
- 	return count;
- }
- 
-+struct fold_pred_data {
-+	struct filter_pred *root;
-+	int count;
-+	int children;
-+};
-+
-+static int fold_pred_cb(enum move_type move, struct filter_pred *pred,
-+			int *err, void *data)
-+{
-+	struct fold_pred_data *d = data;
-+	struct filter_pred *root = d->root;
-+
-+	if (move != MOVE_DOWN)
-+		return WALK_PRED_DEFAULT;
-+	if (pred->left != FILTER_PRED_INVALID)
-+		return WALK_PRED_DEFAULT;
-+
-+	if (WARN_ON(d->count == d->children)) {
-+		*err = -EINVAL;
-+		return WALK_PRED_ABORT;
-+	}
-+
-+	pred->index &= ~FILTER_PRED_FOLD;
-+	root->ops[d->count++] = pred->index;
-+	return WALK_PRED_DEFAULT;
-+}
-+
- static int fold_pred(struct filter_pred *preds, struct filter_pred *root)
- {
--	struct filter_pred *pred;
--	enum move_type move = MOVE_DOWN;
--	int count = 0;
-+	struct fold_pred_data data = {
-+		.root  = root,
-+		.count = 0,
-+	};
- 	int children;
--	int done = 0;
- 
- 	/* No need to keep the fold flag */
- 	root->index &= ~FILTER_PRED_FOLD;
-@@ -1463,37 +1490,8 @@ static int fold_pred(struct filter_pred *preds, struct filter_pred *root)
- 		return -ENOMEM;
- 
- 	root->val = children;
--
--	pred = root;
--	do {
--		switch (move) {
--		case MOVE_DOWN:
--			if (pred->left != FILTER_PRED_INVALID) {
--				pred = &preds[pred->left];
--				continue;
--			}
--			if (WARN_ON(count == children))
--				return -EINVAL;
--			pred->index &= ~FILTER_PRED_FOLD;
--			root->ops[count++] = pred->index;
--			pred = get_pred_parent(pred, preds,
--					       pred->parent, &move);
--			continue;
--		case MOVE_UP_FROM_LEFT:
--			pred = &preds[pred->right];
--			move = MOVE_DOWN;
--			continue;
--		case MOVE_UP_FROM_RIGHT:
--			if (pred == root)
--				break;
--			pred = get_pred_parent(pred, preds,
--					       pred->parent, &move);
--			continue;
--		}
--		done = 1;
--	} while (!done);
--
--	return 0;
-+	data.children = children;
-+	return walk_pred_tree(preds, root, fold_pred_cb, &data);
- }
- 
- static int fold_pred_tree_cb(enum move_type move, struct filter_pred *pred,
--- 
-1.7.1
+I can apply a debug patch on the unchanged kernel, if it helps?
+
+	Ali
 
