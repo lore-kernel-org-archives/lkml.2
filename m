@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab1HUAto (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 20:49:44 -0400
-Received: from science.horizon.com ([71.41.210.146]:42356 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751478Ab1HUAtl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 20:49:41 -0400
-Date: 20 Aug 2011 20:49:39 -0400
-Message-ID: <20110821004939.10392.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: davem@davemloft.net, linux@horizon.com
-Subject: Re: [PATCH 0/2] Improve sequence number generation.
-Cc: dan@doxpara.com, gerrit@erg.abdn.ac.uk, herbert@gondor.hengli.com.au,
-        linux-kernel@vger.kernel.org, mpm@selenic.com, netdev@vger.kernel.org,
-        w@1wt.eu
-In-Reply-To: <20110820.164436.684817976385970137.davem@davemloft.net>
+	id S1755176Ab1HUAui (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 20:50:38 -0400
+Received: from mx.treblig.org ([80.68.94.177]:39724 "EHLO mx.treblig.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752240Ab1HUAue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 20:50:34 -0400
+Date: Sun, 21 Aug 2011 01:50:31 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: linux-kernel@vger.kernel.org
+Cc: nicolas.ferre@atmel.com, dan.j.williams@intel.com,
+        akpm@linux-foundation.org
+Subject: [PATCH] Fix missing 'cnt' in ?: in dmatest
+Message-ID: <20110821005031.GB10377@gallifrey>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
+X-Uptime: 01:41:43 up 184 days,  2:14,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> While the increase to 32 bits is definitely desirable, and defends
->> against a much less sophisticated attack, I'm concerned that this is a
->> case of robbing Peter to pay Paul.
+Hi,
+  On the latest tree my compiler has started giving the warning:
 
-> I disagree, attacking this random number selection is much more theoretical
-> than the brute force attacks possible on 24-bits of entropy.
+drivers/dma/dmatest.c:575:28: warning: the omitted middle operand in ?: will always be ?true?, suggest explicit middle operand [-Wparentheses]
 
-Can you explain more precisely what you disagree with?
+The following patch fixes the missing middle clause with the same
+fix that Nicolas Ferre used in the similar clauses.
+(There seems to have been a race between him fixing that and
+the extra clause going in a little later).
 
-What you state after the comma appears to be agreeing with what I
-wrote (it seems like a restatement of my first two clauses), so I'm
-unenlightened as to where the disagreement is.
+I don't actually know the dmatest code/structures, nor do I own
+any hardware to test it on (assuming it needs a DMA engine);
+ but this patch builds, the existing code is almost certainly
+wrong and the fix is the same as the corresponding lines above it.
 
-I'm not saying you didn't address a real problem, just that fixing
-one problem exposed another, and it would be nice to address *both*.
+(WTH is x=y?:z legal C anyway?)
 
-> Show me a usable attack on a real system, then we can talk.
+Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
 
-If you like.  It's about a week of implementation work.  (And I
-don't have 1 week/week of free time, so more than that elapsed.)
+---
+diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+index 765f5ff..1b0ec9d 100644
+--- a/drivers/dma/dmatest.c
++++ b/drivers/dma/dmatest.c
+@@ -572,7 +572,7 @@ static int dmatest_add_channel(struct dma_chan *chan)
+ 	}
+ 	if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
+ 		cnt = dmatest_add_threads(dtc, DMA_PQ);
+-		thread_count += cnt > 0 ?: 0;
++		thread_count += cnt > 0 ? cnt : 0;
+ 	}
+ 
+ 	pr_info("dmatest: Started %u threads using %s\n",
 
-> By comparison, real attacks against the 24-bit value have been
-> demonstrated.
-
-Anywhere that I can see?
-
->> 2) Do *both*: Use a fixed 32-bit offset *plus* a time-varing one.
->>    They can be added together and provide the security advantages of
->>    both.  The only cost is having to compute two hashes per SYN.
->> 
->>    The main problem here is coming up with a hash function fast enough
->>    that computing both hashes is no slower than one MD5 invocation.
-
-> Doubling the hashing cost is a non-starter.   Going to MD5 itself was
-> a huge lose, and was right at the brink of acceptable performance loss.
-> 
-> This whole change was nearly nixed because of the cost introduced
-> merely by going to MD5.
-
-Okay, I'll make certain a proposed solution is strictly faster than MD5.
-I was asking about performance goals, and you've given me an answer.
-Thank you very much!
-
-The patch comment was fairly offhand about the performance cost, and
-prior discussion was apparently private, so it wasn't clear how much
-pain people experienced.
-
-My only other question is whether IPv6 on x86-32 specificaly needs to be
-faster than MD5.  Is that negotiable, or is that also a hard limit?
-(This is challenging because it's trying to hash 288 bits of address material
-in 224 bits of available registers.)
-
-Eureka!  The possible source addresses are very limited.  It's possible to
-pre-hash them, then you only have 160 bits of per-connection variability,
-which can fit in a second hash block.
-
-This requires finding somewhere in the network stack to store the
-pre-hashed IPv6 addresses, as well as a fallback to use when spoofing
-other source addresses, but that shouldn't be TOO difficult.
-
->> 3) Extend the 24-bit time-varying hash to a 28-bit one.
->>    This can cause the sequence numbers to wrap in 7/8 of the time
->>    they would with a fixed offset, but that doesn't seem too bad.
->>    (That's worst case; it's a triangular distribution centered
->>    on 15/16.)
-
-> I want to stay with a 32-bits of entropy, thank you very much.
-
-My goal is to give you *both*.  32 bits fixed + 28 bits time-varying.
-An attacker would have to cryptanalyze the 32 bits (which the 28 bits
-makes harder) *and* brute-force the 28 bits.
-
-(It's almost certainly simpler to brute-force 32 bits.)
-
-
-Thank you for your response!
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
