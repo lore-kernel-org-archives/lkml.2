@@ -1,120 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab1HUNhj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 09:37:39 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34720 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab1HUNhi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 09:37:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com>
-References: <20110818191946.GW2203@ZenIV.linux.org.uk> <20110819043120.GY2203@ZenIV.linux.org.uk>
- <4E4E2427.9080602@nod.at> <20110820011845.GC2203@ZenIV.linux.org.uk>
- <4E4FD12F.70508@nod.at> <20110820201406.GF2203@ZenIV.linux.org.uk>
- <4E501F51.9060905@nod.at> <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com>
- <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
- <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk>
- <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 21 Aug 2011 09:37:18 -0400
-X-Google-Sender-Auth: Gdzh8w0bCK54ENvJ5sNT8diBUTY
-Message-ID: <CAObL_7HGJqP-hdXpdRLYkksfeVtQ1z1ngP58gdTnWwD57duaXA@mail.gmail.com>
-Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
- crap with vdso on uml/i386)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754692Ab1HUNmd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 09:42:33 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:56025
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752365Ab1HUNmb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 09:42:31 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zz9371K542M1432Nzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Julia Lawall <julia@diku.dk>
+CC: Wolfram Sang <w.sang@pengutronix.de>, Liam Girdwood <lrg@ti.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] sound/soc/mxs/mxs-saif.c: add missing kfree
+Thread-Topic: [PATCH] sound/soc/mxs/mxs-saif.c: add missing kfree
+Thread-Index: AQHMX/QdXYzUWg2mbEqcqi32YbdT6JUnT2bQ
+Date: Sun, 21 Aug 2011 13:40:36 +0000
+Message-ID: <65EE16ACC360FA4D99C96DC085B3F772221437@039-SN1MPN1-001.039d.mgd.msft.net>
+References: <1313820761-12042-3-git-send-email-julia@diku.dk>
+ <20110820134439.GA2266@pengutronix.de>
+ <Pine.LNX.4.64.1108201718200.30651@ask.diku.dk>
+ <65EE16ACC360FA4D99C96DC085B3F7722212DF@039-SN1MPN1-001.039d.mgd.msft.net>
+ <Pine.LNX.4.64.1108211318060.4072@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1108211318060.4072@ask.diku.dk>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.89]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 21, 2011 at 7:24 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Sun, Aug 21, 2011 at 4:42 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> On Sun, Aug 21, 2011 at 07:34:43AM +0100, Al Viro wrote:
->>> Suppose we have a traced process.  foo6() is called and the thing it
->>> stopped before the sys_foo6() is reached kernel-side.  The sixth argument
->>> is on stack, ebp is set to user esp.  SYSENTER happens, we read the
->>> 6th argument from userland stack and put it along with the rest into
->>> pt_regs.  tracer examines the arguments, modifies them (including the last
->>> one) and lets the tracee run free - e.g. detaches from the tracee.
->>>
->>> What should happen if we happen to get a signal that would restart that
->>> sucker?  Granted, it's not going to happen with mmap() - it doesn't, AFAICS,
->>> do anything of that kind.  However, I wouldn't bet a dime on other 6-argument
->>> syscalls not stepping on that.  sendto() and recvfrom(), in particular...
->>>
->>> OK, we return to userland.  The sixth argument is placed into %ebp.  Linus'
->>> "pig and proud of that" trick works and we end up slapping userland
->>> %esp into %ebp and hitting SYSENTER again.  Only one problem, though -
->>> the sixth argument on user stack is completely unaffected by what tracer
->>> had done.  Unlike the rest of arguments, that *are* changed.
->>>
->>> We could deal with that in case of SYSENTER if we e.g. replaced that
->>>         jmp .Lenter_kernel
->>> with
->>>         jmp .Lrestart
->>> and added
->>> .Lrestart:
->>>       movl %ebp, (%esp)
->>>       jmp .Lenter_kernel
->>> but in case of SYSCALL it seems to be even messier...  Comments?
->>
->> Oh, hell...  Compat SYSCALL one is really buggered on syscall restarts,
->> ptrace or no ptrace.  Look: calling conventions for SYSCALL are
->>        arg1..5: ebx, ebp, edx, edi, esi.  arg6: stack
->> and after syscall restart we end up with
->>        arg1..5: ebx, ecx, edx, edi, esi.  arg6: ebp
->> so restart will instantly clobber arg2, in effect replacing it with arg6.
->>
->> And yes, adding ptrace to the mix makes things even uglier.  For one thing,
->> changes to ECX via ptrace are completely lost on the fast exit.  Not pretty,
->> and might make life painful for uml, but not for the majority of programs.
->> What's worse, combination of ptrace with restart will lose changes to arg6
->> (again, value on stack left as it was, changes to arg6 by tracer lost) *and*
->> it will lose changes to arg2 (along with arg2 itself - see above).
->>
->> Linus' Dirty Trick(tm) is not trivial to apply - with SYSCALL we *do* retain
->> the address of next insn and that's where we end up going.  IOW, SYSCALL not
->> inside vdso32 currently works (for small values of "works", due to restart
->> issues).  Playing with return elsewhere might break some userland code...
->>
->> Guys, that's *way* out of the area I'm comfortable with.
->>
->
-> I don't see the point of all this hackery at all.  sysenter/sysexit
-> indeed screws up some registers, but we can return on the iret path in
-> the case of restart.
->
-> So why do we lie to ptrace (and iret!) at all?  Why not just fill in
-> pt_regs with the registers as they were (at least the
-> non-clobbered-by-sysenter ones), set the actual C parameters correctly
-> to contain the six arguments (in rdi, rsi, etc.), do the syscall, and
-> return back to userspace without any funny business?  Is there some
-> ABI reason that, once we've started lying to tracers, we have to keep
-> doing so?
+> -----Original Message-----
+> From: Julia Lawall [mailto:julia@diku.dk]
+> Sent: Sunday, August 21, 2011 7:19 PM
+> To: Dong Aisheng-B29396
+> Cc: Wolfram Sang; Liam Girdwood; kernel-janitors@vger.kernel.org; Mark
+> Brown; Jaroslav Kysela; Takashi Iwai; alsa-devel@alsa-project.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] sound/soc/mxs/mxs-saif.c: add missing kfree
+> 
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Move the test on pdev->id before the kzalloc to avoid requiring kfree
+> when the test fails.  This fix was suggested by Wolfram Sang.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> identifier x;
+> expression E1!=0,E2,E3,E4;
+> statement S;
+> iterator I;
+> @@
+> 
+> (
+> if (...) { ... when != kfree(x)
+>                when != x = E3
+>                when != E3 = x
+> *  return ...;
+>  }
+> ... when != x = E2
+>     when != I(...,x,...) S
+> if (...) { ... when != x = E4
+>  kfree(x); ... return ...; }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  sound/soc/mxs/mxs-saif.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c index
+> 0b3adae..ab453ca 100644
+> --- a/sound/soc/mxs/mxs-saif.c
+> +++ b/sound/soc/mxs/mxs-saif.c
+> @@ -519,12 +519,13 @@ static int mxs_saif_probe(struct platform_device
+> *pdev)
+>  	struct mxs_saif *saif;
+>  	int ret = 0;
+> 
+> +	if (pdev->id >= ARRAY_SIZE(mxs_saif))
+> +		return -EINVAL;
+> +
+>  	saif = kzalloc(sizeof(*saif), GFP_KERNEL);
+>  	if (!saif)
+>  		return -ENOMEM;
+> 
+> -	if (pdev->id >= ARRAY_SIZE(mxs_saif))
+> -		return -EINVAL;
+>  	mxs_saif[pdev->id] = saif;
+> 
+>  	saif->clk = clk_get(&pdev->dev, NULL);
 
-Gack.  Is this a holdover from the 32-bit code that shares the
-argument save area with the parameters passed on the C stack?  If so,
-we could just set up the argument save area honestly and pass the real
-parameters in registers like 64-bit C code expects.
+Acked-by: Dong Aisheng <b29396@freescale.com>
 
-If the tracing and restart cases use iret to return to userspace, this
-should all just work.  ptrace users shouldn't notice the overhead, and
-syscall restart is presumably slow enough anyway that it wouldn't
-matter.  The userspace entry code would be as simple as:
+Regards
+Dong Aisheng
 
-sysenter
-ret
-
-or
-
-sysexit
-ret
-
---Andy
