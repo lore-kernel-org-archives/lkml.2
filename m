@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab1HUTGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 15:06:19 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58374 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab1HUTGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 15:06:16 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: Re: boot fails if x2apic is enabled unless efishell is used
-Date: Sun, 21 Aug 2011 21:06:12 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20110816210811.GA3331@breakpoint.cc>
-In-Reply-To: <20110816210811.GA3331@breakpoint.cc>
+	id S1755835Ab1HUTKt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 15:10:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55722 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755766Ab1HUTKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 15:10:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-sh@vger.kernel.org
+Subject: [PATCH 2/2 v2] sh-sci / PM: Use power.irq_safe
+Date: Sun, 21 Aug 2011 21:11:44 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201108202131.19479.rjw@sisk.pl> <201108212109.30399.rjw@sisk.pl>
+In-Reply-To: <201108212109.30399.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108212106.12427.maciej.rutecki@gmail.com>
+Message-Id: <201108212111.45012.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 16 sierpnia 2011 o 23:08:11 Sebastian Andrzej Siewior wrote:
-> This is Intel i7 Sandy bridge on Asrock Z68 Pro3-M.
-> 
-> EFI -> GRUB -> Kernel -> crash
-> EFI -> efishell -> GRUB -> Kernel -> works
-> 
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Old kernels (eg. 3.0.0, or 2.6.39) work OK?
+Since sci_port_enable() and sci_port_disable() may be run with
+interrupts off and they execute pm_runtime_get_sync() and
+pm_runtime_put_sync(), respectively, the SCI device's
+power.irq_safe flags has to be used to indicate that it is safe
+to execute runtime PM callbacks for this device with interrupts off.
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/tty/serial/sh-sci.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux/drivers/tty/serial/sh-sci.c
+===================================================================
+--- linux.orig/drivers/tty/serial/sh-sci.c
++++ linux/drivers/tty/serial/sh-sci.c
+@@ -1913,6 +1913,7 @@ static int __devinit sci_init_single(str
+ 
+ 		port->dev = &dev->dev;
+ 
++		pm_runtime_irq_safe(&dev->dev);
+ 		pm_runtime_enable(&dev->dev);
+ 	}
+ 
+
