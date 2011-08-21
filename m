@@ -1,244 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1HUDrG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 23:47:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:31820 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab1HUDrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 23:47:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,257,1312182000"; 
-   d="scan'208";a="40667927"
-Date: Sun, 21 Aug 2011 11:46:58 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
-Message-ID: <20110821034657.GA30747@localhost>
-References: <20110816022006.348714319@intel.com>
- <20110816022329.190706384@intel.com>
- <20110819020637.GA13597@redhat.com>
- <20110819025406.GA13365@localhost>
- <20110819190037.GJ18656@redhat.com>
+	id S1755490Ab1HUDyM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 23:54:12 -0400
+Received: from nm1.bullet.mail.bf1.yahoo.com ([98.139.212.160]:33734 "HELO
+	nm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751302Ab1HUDyJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 23:54:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 445410.87728.bm@omp1054.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=MfXQYPHn7wltqTkVL3m8FD2ocPb2rBvJxci5Aq+LS4flGsJn5oa+GYurLIxNggsNlMymc6rVmbJ+vFLMlkiwpfIUHRcjQwyQ1G7cNX5MMjG6S9kgjuqg0MgK2cEMUwg1q+ripINDwsJt9m2Dj79WYMsflrM83kVTMwZQgmRZOWs=;
+X-YMail-OSG: eTQF6eEVM1lDC68VWnXH9ehXPnAAeuNczh1OzD13GDsMIOW
+ ucFMExnmPkkW3TxmOKciMB5ndfWngWHzBUHXvWAc1C1YQGxWBuiUyIGWBcZU
+ uObUIF8gvzAGEyOqAU4gi.JyCdVf45GOoF0EIIeveXUm_GVAahm879uBmi0W
+ D8k8.gu7Fo1WKGqfVUb_UejnA.Dlaq_.OQ2UziQFS3_ZmhlE_wTttcX7GNF1
+ FTAR.fnih62MP9W_fOrsOlHeCB3zzoyhOkggZT7kCTNwKIcpaylT0vZFOLqo
+ 1LMnB3Pz15CwD5AqleG.lgIc1Qk7YmmYk1yf2jhEojoIAG7q_XGANG2uKD_t
+ zPlR9sD1yJpXpkJ5kmWmrkCc4aJCJXx60rWhtwwtms_vSGiIrSN3Taoa4y6N
+ wOZcMhaUNSM8rTBnxARf4thkhdBtOfaggc.96cJwzdQH6KmF_3g--
+X-Mailer: YahooMailWebService/0.8.113.313619
+Message-ID: <1313898848.75462.YahooMailNeo@web162014.mail.bf1.yahoo.com>
+Date: Sat, 20 Aug 2011 20:54:08 -0700 (PDT)
+From: Pintu Agarwal <pintu_agarwal@yahoo.com>
+Reply-To: Pintu Agarwal <pintu_agarwal@yahoo.com>
+Subject: help for kernel initcall section (init.h)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110819190037.GJ18656@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 03:00:37AM +0800, Vivek Goyal wrote:
-> On Fri, Aug 19, 2011 at 10:54:06AM +0800, Wu Fengguang wrote:
-> > Hi Vivek,
-> > 
-> > > > +		base_rate = bdi->dirty_ratelimit;
-> > > > +		pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
-> > > > +					       background_thresh, nr_dirty,
-> > > > +					       bdi_thresh, bdi_dirty);
-> > > > +		if (unlikely(pos_ratio == 0)) {
-> > > > +			pause = MAX_PAUSE;
-> > > > +			goto pause;
-> > > >  		}
-> > > > +		task_ratelimit = (u64)base_rate *
-> > > > +					pos_ratio >> RATELIMIT_CALC_SHIFT;
-> > > 
-> > > Hi Fenguaang,
-> > > 
-> > > I am little confused here. I see that you have already taken pos_ratio
-> > > into account in bdi_update_dirty_ratelimit() and wondering why to take
-> > > that into account again in balance_diry_pages().
-> > > 
-> > > We calculated the pos_rate and balanced_rate and adjusted the
-> > > bdi->dirty_ratelimit accordingly in bdi_update_dirty_ratelimit().
-> > 
-> > Good question. There are some inter-dependencies in the calculation,
-> > and the dependency chain is the opposite to the one in your mind:
-> > balance_dirty_pages() used pos_ratio in the first place, so that
-> > bdi_update_dirty_ratelimit() have to use pos_ratio in the calculation
-> > of the balanced dirty rate, too.
-> > 
-> > Let's return to how the balanced dirty rate is estimated. Please pay
-> > special attention to the last paragraphs below the "......" line.
-> > 
-> > Start by throttling each dd task at rate
-> > 
-> >         task_ratelimit = task_ratelimit_0                               (1)
-> >                          (any non-zero initial value is OK)
-> > 
-> > After 200ms, we measured
-> > 
-> >         dirty_rate = # of pages dirtied by all dd's / 200ms
-> >         write_bw   = # of pages written to the disk / 200ms
-> > 
-> > For the aggressive dd dirtiers, the equality holds
-> > 
-> >         dirty_rate == N * task_rate
-> >                    == N * task_ratelimit
-> >                    == N * task_ratelimit_0                              (2)
-> > Or     
-> >         task_ratelimit_0 = dirty_rate / N                               (3)
-> > 
-> > Now we conclude that the balanced task ratelimit can be estimated by
-> > 
-> >         balanced_rate = task_ratelimit_0 * (write_bw / dirty_rate)      (4)
-> > 
-> > Because with (2) and (3), (4) yields the desired equality (1):
-> > 
-> >         balanced_rate == (dirty_rate / N) * (write_bw / dirty_rate)
-> >                       == write_bw / N
-> 
-> Hi Fengguang,
-> 
-> Following is my understanding. Please correct me where I got it wrong.
-> 
-> Ok, I think I follow till this point. I think what you are saying is
-> that following is our goal in a stable system.
-> 
-> 	task_ratelimit = write_bw/N				(6)
-> 
-> So we measure the write_bw of a bdi over a period of time and use that
-> as feedback loop to modify bdi->dirty_ratelimit which inturn modifies
-> task_ratelimit and hence we achieve the balance. So we will start with
-> some arbitrary task limit say task_ratelimit_0, and modify that limit
-> over a period of time based on our feedback loop to achieve a balanced
-> system. And following seems to be the formula.
-> 					    write_bw
-> 	task_ratelimit = task_ratelimit_0 * ------- 		(7)
-> 					    dirty_rate
-> 
-> Now I also understand that by using (2) and (3), you proved that
-> how (7) will lead to (6) and that is our deisred goal. 
-
-That's right.
-
-> > 
-> > .............................................................................
-> > 
-> > Now let's revisit (1). Since balance_dirty_pages() chooses to execute
-> > the ratelimit
-> > 
-> >         task_ratelimit = task_ratelimit_0
-> >                        = dirty_ratelimit * pos_ratio                    (5)
-> > 
-> 
-> So balance_drity_pages() chose to take into account pos_ratio() also
-> because for various reason like just taking into account only bandwidth
-> variation as feedback was not sufficient. So we also took pos_ratio
-> into account which in-trun is dependent on gloabal dirty pages and per
-> bdi dirty_pages/rate.
-
-That's right so far. balance_drity_pages() needs to do dirty position
-control, so used formula (5).
-
-> So we refined the formula for calculating a tasks's effective rate
-> over a period of time to following.
-> 					    write_bw
-> 	task_ratelimit = task_ratelimit_0 * ------- * pos_ratio		(9)
-> 					    dirty_rate
-> 
-
-That's not true. It should still be formula (7) when
-balance_drity_pages() considers pos_ratio.
-
-> > Put (5) into (4), we get the final form used in
-> > bdi_update_dirty_ratelimit()
-> > 
-> >         balanced_rate = (dirty_ratelimit * pos_ratio) * (write_bw / dirty_rate)
-> > 
-> > So you really need to take (dirty_ratelimit * pos_ratio) as a single entity.
-> 
-> Now few questions.
-> 
-> - What is dirty_ratelimit in formula above?
-
-It's bdi->dirty_ratelimit.
-
-> - Is it wrong to understand the issue in following manner.
-> 
->   bdi->dirty_ratelimit is tracking write bandwidth variation on the bdi
->   and effectively tracks write_bw/N.
-> 
->   bdi->dirty_ratelimit = write_bw/N
-
-Yes. Strictly speaking, the target value is (note the "==")
-
-        bdi->dirty_ratelimit == write_bw/N
-
->   or 
-> 
-> 					    		  write_bw
->   bdi->dirty_ratelimit = previous_bdi->dirty_ratelimit * -------------    (10)
-> 					     		  dirty_rate
-
-Both (9) and (10) are not true. The right form is
-
-                                                                     write_bw
-balanced_rate = whatever_ratelimit_executed_in_balance_dirty_pages * ----------
-                                                                     dirty_rate
-
-where
-
-whatever_ratelimit_executed_in_balance_dirty_pages ~= bdi->dirty_ratelimit * pos_ratio
-bdi->dirty_ratelimit ~= balanced_rate
-
->  Hence a tasks's balanced rate from (9) and (10) is.
-> 
->  task_ratelimit = bdi->dirty_ratelimit * pos_ratio		(11)
-> So my understanding about (10) and (11) is wrong? if no, then question
-> comes that
-
-(11) in itself is right. It's the exact form used in code.
- 
-> bdi->dirty_ratelimit is supposed to be keeping track of 
-> write bandwidth variations only.
-
-Yes in a stable workload. Besides, if the number of dd tasks (N)
-changed, dirty_ratelimit will adapt to new value (write_bw / N).
-
-> And in turn task ratelimit will be
-> driven by both bandwidth varation as well as pos_ratio variation.
-
-That's right.
- 
-> But you seem to be doing following.
-> 
->  bdi->dirty_ratelimit = adjust based on a cobination of bandwidth feedback
-> 		        and pos_ratio feedback. 
-> 
->  task_ratelimit = bdi->dirty_ratelimit * pos_ratio		(12)
-> 
-> So my question is that when task_ratelimit is finally being adjusted 
-> based on pos_ratio feedback, why bdi->dirty_ratelimit also needs to
-> take that into account.
-
-In _concept_, bdi->dirty_ratelimit only depends on
-whatever_ratelimit_executed_in_balance_dirty_pages.
-
-Then, we try to estimate the latter with formula
-
-whatever_ratelimit_executed_in_balance_dirty_pages ~= bdi->dirty_ratelimit * pos_ratio
-
-That is the main reason we want to limit the step size of bdi->dirty_ratelimit:
-otherwise the above estimation will have big errors if bdi->dirty_ratelimit
-has changed a lot during the past 200ms.
-
-That's also the reason balanced_rate will have larger errors when
-close to @limit: because there pos_ratio drops _quickly_ to 0, hence
-the regular fluctuations in dirty pages will result in big
-fluctuations in the _relative_ value of pos_ratio.
-
-> I know you have tried explaining it, but sorry, I did not get it. May
-> be give it another shot in a layman's terms and I might understand it.
-
-Sorry for that. I can explain if you have more questions :)
-
-Thanks,
-Fengguang
+Hi,
+ 
+I need some help in modifying initcall section in init.h.
+ 
+That is :
+ 
+#define __define_initcall(level,fn,id) \
+ static initcall_t __initcall_##fn##id __used \
+ __attribute__((__section__(".initcall" level ".init"))) = fn
+ 
+I have to create two different kinds (and later more) of init section and use one of them based on some condition.
+For example, I have one init section for normal mode and one init section for charger mode.
+During charger mode, I do not have to execute all the initcall so a charger.initcall is create with lesser init function.
+The charger initcall section is as follows:
+#define __define_charger_initcall(level,fn,id) \
+ static initcall_t __charger_initcall_##fn##id __used \
+ __attribute__((__section__(".charger.initcall" level ".init"))) = fn
+ 
+ 
+Now the problem is that during compile time both of them needs to be polulated based on CHARGER_MODE is enabled or disabled.
+How can this decision be taken during compile time under the macro "__define_initcall" ??
+ 
+Something like :
+ 
+#define __define_initcall(level,fn,id)     \
+                                                       static initcall_t __initcall_##fn##id __used \
+                                                       __attribute__((__section__(".initcall" level ".init"))) = fn  \
+                                                       #if defined(CHARGER_MODE)  \
+                                                       static initcall_t __charger_initcall_##fn##id __used  \
+                                                       __attribute__((__section__(".charger.initcall" level ".init"))) = fn   \
+                                                       #endif
+ 
+Right now this cannot be done, as macro cannot exists inside a macro statement.
+ 
+If any body have any alternative or better idea of doing this please help.
+ 
+In gernal, how can I take decision during compile time itself and decide which initcall to be used instead of calling all of them.
+ 
+ 
+ 
+Thanks, Regards.
+Pintu
