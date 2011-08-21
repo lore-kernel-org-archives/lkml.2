@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab1HUSwe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 14:52:34 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34740 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1HUSwa (ORCPT
+	id S1755578Ab1HUTBY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 15:01:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64036 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab1HUTBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 14:52:30 -0400
-Message-ID: <4E5153D8.7010607@gmail.com>
-Date: Sun, 21 Aug 2011 11:52:08 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Sun, 21 Aug 2011 15:01:23 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Carlos R. Mafra" <crmafra2@gmail.com>
+Subject: Re: 3.0-rc2 failed s2ram: Freezing of tasks failed after 20.00 seconds
+Date: Sun, 21 Aug 2011 21:01:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.4; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <20110816094245.GA2042@Pilar.site>
+In-Reply-To: <20110816094245.GA2042@Pilar.site>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        akinobu.mita@gmail.com
-Subject: module param for CPU_NOTIFIER_ERROR_INJECT
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108212101.18139.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello,
-I am playing around with CPU_NOTIFIER_ERROR_INJECT and am noticing that
-
-example 2
-# modprobe cpu-notifier-error-inject cpu_up_prepare_error=-2
-# echo 1 > /sys/devices/system/cpu/cpu1/online
-bash: echo: write error: No such file or directory
-
-is not working for me, or atleast is not showing me any info that it is 
-working.
-
-the other proceedure does work:
-
-example 1
-# modprobe cpu-notifier-error-inject cpu_down_prepare_error=-1
-# echo 0 > /sys/devices/system/cpu/cpu1/online
-bash: echo: write error: Operation not permitted
-
-dmesg shows:
-[ 2427.924405] Injecting error (-1) at cpu notifier
-[ 2427.930569] _cpu_down: attempt to take down CPU 1 failed
-
-
-any ideas on what I need to do or is this working, and am I not seeing 
-anything in dmesg?
-
-Justin P. Mattock
+On wtorek, 16 sierpnia 2011 o 11:42:45 Carlos R. Mafra wrote:
+> I started testing 3.0-rc2 yesterday and after a few successful suspend to
+> ram it did not suspend anymore and I got this:
+> 
+[...]
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=41512
+for your bug report, please add your address to the CC list in there, thanks!
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
