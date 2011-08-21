@@ -1,119 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab1HUGRW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 02:17:22 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53598 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750901Ab1HUGRV (ORCPT
+	id S1752386Ab1HUGe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 02:34:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54092 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1HUGe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 02:17:21 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19hwEhd2t5hTPjSNm5XN3e2+7h3Uftw7si2PDH2tv
-	4wKZtLAw1n1Xfm
-Subject: Re: [PATCH 1/3 v2] call_function_many: fix list delete vs add race
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Milton Miller <miltonm@bga.com>, Peter Zijlstra <peterz@infradead.org>,
-        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, JBeulich@novell.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110208193650.GG2146@linux.vnet.ibm.com>
-References: <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com> <ipi-list-reply@mdm.bga.com>
-	 <smp-call-function-list-race-fix-v2@mdm.bga.com>
-	 <20110201220026.GD2142@linux.vnet.ibm.com> <ipi-paul-reply@mdm.bga.com>
-	 <20110202041740.GB2129@linux.vnet.ibm.com>
-	 <1297066374.5739.38.camel@marge.simson.net>
-	 <20110208193650.GG2146@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 21 Aug 2011 08:17:11 +0200
-Message-ID: <1313907431.6394.26.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Sun, 21 Aug 2011 02:34:56 -0400
+Date: Sun, 21 Aug 2011 07:34:43 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC] weird crap with vdso on uml/i386
+Message-ID: <20110821063443.GH2203@ZenIV.linux.org.uk>
+References: <4E4D642F.3010909@nod.at>
+ <20110818191946.GW2203@ZenIV.linux.org.uk>
+ <20110819043120.GY2203@ZenIV.linux.org.uk>
+ <4E4E2427.9080602@nod.at>
+ <20110820011845.GC2203@ZenIV.linux.org.uk>
+ <4E4FD12F.70508@nod.at>
+ <20110820201406.GF2203@ZenIV.linux.org.uk>
+ <4E501F51.9060905@nod.at>
+ <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com>
+ <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-08 at 11:36 -0800, Paul E. McKenney wrote:
-> On Mon, Feb 07, 2011 at 09:12:54AM +0100, Mike Galbraith wrote:
-> > On Tue, 2011-02-01 at 20:17 -0800, Paul E. McKenney wrote:
-> > 
-> > FWIW, my red headed stepchild (.32 xen cluster beast) with..
-> >    smp-smp_call_function_many-fix-SMP-race (6dc1989)
-> >    smp-consolidate-writes-in-smp_call_function_interrupt (225c8e0)
-> >    smp-smp_call_function_many-fix-list-delete-vs-add-race (V2)
-> >    smp-smp_call_function_many-handle-concurrent-clearing-of-mask (V2)
-> >    smp-generic_smp_call_function_interrupt-additional-memory-order-tightening (below)
-> > ..has not experienced any IPI problems lately, nor have I been able to
-> > trigger anything beating up my box running normal x64_64 kernels.
-> > 
-> > That's not saying much since my IPI woes were only the concurrent
-> > clearing variety, just letting you know that these patches have received
-> > (and are receiving) hefty thumpage.
-> 
-> Very good, I have added your Tested-by to my patch.
+On Sat, Aug 20, 2011 at 05:40:03PM -0400, Andrew Lutomirski wrote:
 
-I'm still using your barrier changes.  Is it safe to drop them?  HA
-clusters falling over is _not_ something I want to risk resurrecting by
-dropping them just because they didn't go anywhere.
- 
-> 
-> 							Thanx, Paul
-> 
-> > > ------------------------------------------------------------------------
-> > > 
-> > > smp_call_function: additional memory-order tightening.
-> > > 
-> > > The csd_lock() and csd_unlock() interaction guarantees that the
-> > > smp_call_function_many() function sees the results of interactions
-> > > with prior incarnations of the callback, so the check is not needed.
-> > > Instead, tighter memory ordering is required in the companion
-> > > generic_smp_call_function_interrupt() function to ensure proper
-> > > interaction with partially initialized callbacks.
-> > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > diff --git a/kernel/smp.c b/kernel/smp.c
-> > > index 064bb6e..e091905 100644
-> > > --- a/kernel/smp.c
-> > > +++ b/kernel/smp.c
-> > > @@ -182,7 +182,7 @@ void generic_smp_call_function_interrupt(void)
-> > >  
-> > >  	/*
-> > >  	 * Ensure entry is visible on call_function_queue after we have
-> > > -	 * entered the IPI. See comment in smp_call_function_many.
-> > > +	 * entered the IPI. See comment in smp_call_function_many
-> > >  	 * If we don't have this, then we may miss an entry on the list
-> > >  	 * and never get another IPI to process it.
-> > >  	 */
-> > > @@ -209,13 +209,18 @@ void generic_smp_call_function_interrupt(void)
-> > >  		if (!cpumask_test_cpu(cpu, data->cpumask))
-> > >  			continue;
-> > >  
-> > > -		smp_rmb();
-> > > +		smp_mb(); /* If we see our bit set above, we need to see */
-> > > +			  /* all the processing associated with the prior */
-> > > +			  /* incarnation of this callback. */
-> > >  
-> > >  		if (atomic_read(&data->refs) == 0)
-> > >  			continue;
-> > >  
-> > > +		smp_rmb(); /* We need to read ->refs before we read either */
-> > > +			   /* ->csd.func and ->csd.info. */
-> > > +
-> > >  		func = data->csd.func;			/* for later warn */
-> > > -		data->csd.func(data->csd.info);
-> > > +		func(data->csd.info);
-> > >  
-> > >  		/*
-> > >  		 * If the cpu mask is not still set then func enabled
-> > 
-> > 
+> will cause iret (if iret happens) to restore the original rbp in rcx
+> (why? -- it seems okay if syscall is hit in __kernel_vsyscall but not
+> if something else does the syscall).  I don't see what saves rbp to
+> the stack frame.
 
+Far more interesting question is how the hell does that thing manage to
+work in face of syscall restarts?  As the matter of fact, how does it
+(and sysenter-based variant) play with ptrace() *and* restarts?
 
+Suppose we have a traced process.  foo6() is called and the thing it
+stopped before the sys_foo6() is reached kernel-side.  The sixth argument
+is on stack, ebp is set to user esp.  SYSENTER happens, we read the
+6th argument from userland stack and put it along with the rest into
+pt_regs.  tracer examines the arguments, modifies them (including the last
+one) and lets the tracee run free - e.g. detaches from the tracee.  
+
+What should happen if we happen to get a signal that would restart that
+sucker?  Granted, it's not going to happen with mmap() - it doesn't, AFAICS,
+do anything of that kind.  However, I wouldn't bet a dime on other 6-argument
+syscalls not stepping on that.  sendto() and recvfrom(), in particular...
+
+OK, we return to userland.  The sixth argument is placed into %ebp.  Linus'
+"pig and proud of that" trick works and we end up slapping userland
+%esp into %ebp and hitting SYSENTER again.  Only one problem, though -
+the sixth argument on user stack is completely unaffected by what tracer
+had done.  Unlike the rest of arguments, that *are* changed.
+
+We could deal with that in case of SYSENTER if we e.g. replaced that
+        jmp .Lenter_kernel
+with
+        jmp .Lrestart
+and added
+.Lrestart:
+	movl %ebp, (%esp)
+	jmp .Lenter_kernel
+but in case of SYSCALL it seems to be even messier...  Comments?
+
+... and there I thought that last year session of asm glue sniffing couldn't
+be topped by anything more unpleasant ;-/
