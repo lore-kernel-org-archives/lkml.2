@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1HUHER (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 03:04:17 -0400
-Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:42138 "EHLO
-	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901Ab1HUHEQ (ORCPT
+	id S1752383Ab1HUHKS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 03:10:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63166 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab1HUHKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 03:04:16 -0400
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Aug 2011 03:04:16 EDT
-Date: Sat, 20 Aug 2011 23:57:25 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Akshay Joshi <me@akshayjoshi.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: usbip: Fix braces and spaces to match coding style.
-Message-ID: <20110821065725.GB27006@haskell.muteddisk.com>
-Mail-Followup-To: Akshay Joshi <me@akshayjoshi.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1313611112-16083-1-git-send-email-me@akshayjoshi.com> <1313611112-16083-2-git-send-email-me@akshayjoshi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313611112-16083-2-git-send-email-me@akshayjoshi.com>
-User-Agent: Mutt/1.4.2.3i
+	Sun, 21 Aug 2011 03:10:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdYw96QD0sGOhA=osKYbnD6=MTqiAF=m5++BjM-s1Mn--w@mail.gmail.com>
+References: <1312978564-18069-1-git-send-email-linus.walleij@stericsson.com>
+ <20110817090123.GD1006@n2100.arm.linux.org.uk> <CACRpkdbJOrb5rhgG0Chamt-ApLQnV69MQ=bqBwKqO3KJPaFd0A@mail.gmail.com>
+ <CACRpkdYw96QD0sGOhA=osKYbnD6=MTqiAF=m5++BjM-s1Mn--w@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 21 Aug 2011 00:09:53 -0700
+X-Google-Sender-Auth: oJac7-3HNFlpf7da5cMpF70HAL4
+Message-ID: <CACxGe6tEOnUzFjKMqNfp10b8SyuJDDFzg0eiPzhKNNCY55LECw@mail.gmail.com>
+Subject: Re: [PATCH 00/19] GPIO exodus and cleanup
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lee Jones <lee.jones@linaro.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15:58 Wed 17 Aug     , Akshay Joshi wrote:
-> Fix brace positioning and spaces at the start of lines in order to
-> comply with the kernel coding style.
-> 
-> Signed-off-by: Akshay Joshi <me@akshayjoshi.com>
+On Fri, Aug 19, 2011 at 5:45 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Aug 17, 2011 at 11:37 AM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Wed, Aug 17, 2011 at 11:01 AM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>>> On Wed, Aug 10, 2011 at 02:16:04PM +0200, Linus Walleij wrote:
+>>>> The following patch set is rebased on top of Russell's
+>>>> 13 cleanup patches and can be finalized as soon as there
+>>>> is a branch in RMKs tree that can accumulate this work.
+>>>
+>>> If Grant acks the relevant ones, they can go to the patch system and
+>>> merged into that branch.
+>>
+>> Thanks that'd be smooth.
+>>
+>> Grant can you N/ACK the patches you consider relevant for
+>> the GPIO subsystem?
+>
+> Ping on this, on monday I'll pretend it's no big deal and pour them
+> into Russells patch tracker anyway, since he's managing more than
+> half of the kernels GPIO code in arch/arm/* anyway.
 
-Acked-by: matt mooney <mfm@muteddisk.com>
+If Russell is okay with it, then go ahead and merge it.  I'm being
+pretty liberal about GPIO driver moves.  I'm fine with them getting
+cleaned up after the drivers/gpio move.
 
-> ---
->  drivers/staging/usbip/stub_dev.c |    2 +-
->  drivers/staging/usbip/stub_rx.c  |    3 +--
->  2 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-> index 1dacdc0..77d6469 100644
-> --- a/drivers/staging/usbip/stub_dev.c
-> +++ b/drivers/staging/usbip/stub_dev.c
-> @@ -548,4 +548,4 @@ struct usb_driver stub_driver = {
->  	.id_table	= stub_table,
->  	.pre_reset	= stub_pre_reset,
->  	.post_reset	= stub_post_reset,
-> - };
-> +};
-> diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-> index 1c1957f..6b4e3e1 100644
-> --- a/drivers/staging/usbip/stub_rx.c
-> +++ b/drivers/staging/usbip/stub_rx.c
-> @@ -179,8 +179,7 @@ static int tweak_reset_device_cmd(struct urb *urb)
->  	 * longer unbinds. This allows the use of synchronous reset.
->  	 */
->  
-> -	if (usb_lock_device_for_reset(sdev->udev, sdev->interface)<0)
-> -	{
-> +	if (usb_lock_device_for_reset(sdev->udev, sdev->interface) < 0) {
->  		dev_err(&urb->dev->dev, "could not obtain lock to reset device\n");
->  		return 0;
->  	}
-> -- 
-> 1.7.5.4
-> 
+g.
