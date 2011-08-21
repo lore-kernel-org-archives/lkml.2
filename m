@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab1HUCb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 22:31:28 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48900 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab1HUCb1 (ORCPT
+	id S1755199Ab1HUCpM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 22:45:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:36040 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab1HUCpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 22:31:27 -0400
-Message-ID: <4E506DEA.1070601@gmail.com>
-Date: Sat, 20 Aug 2011 19:31:06 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: using mce_inject I get: RIP 10:<ffffffffa012c909> {ttm_bo_unref+0xf/0x45
- [ttm]}
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 20 Aug 2011 22:45:09 -0400
+From: Harvey Yang <harvey.huawei.yang@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Harvey Yang <harvey.huawei.yang@gmail.com>
+Subject: [PATCH 1/1] devtmpfs: Fix section mismatch warning
+Date: Sun, 21 Aug 2011 10:44:15 +0800
+Message-Id: <1313894655-3783-1-git-send-email-harvey.huawei.yang@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-not sure if I am running mce_test correctly, but during its routine of 
-testing things I do get a pause with everything, then the below shows up 
-in dmesg..:
+drivers/base/built-in.o(.text+0xe554): Section mismatch in reference f
+rom the function devtmpfsd() to the variable .init.data:setup_done
+The function devtmpfsd() references
+the variable __initdata setup_done.
+This is often because devtmpfsd lacks a __initdata
+annotation or the annotation of setup_done is wrong.
 
-http://fpaste.org/kMRd/
+"setup_done" is not used after init. but putting it into initdata section leads a section mismatch warning, so initialize it dynamically in __init function.
 
+Signed-off-by: Harvey Yang <harvey.huawei.yang@gmail.com>
+---
+ drivers/base/devtmpfs.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-[ 1810.670434] Triggering MCE exception on CPU 1
-[ 1810.670462] [Hardware Error]: CPU 1: Machine Check Exception: 6 Bank 
-4: b300000000000000
-[ 1810.670467] [Hardware Error]: RIP 73:<0000000012343434>
-[ 1810.670470] [Hardware Error]: TSC 38d1002c216
-[ 1810.670474] [Hardware Error]: PROCESSOR 0:6f6 TIME 1313892803 SOCKET 
-0 APIC 1
-[ 1810.670477] [Hardware Error]: Run the above through 'mcelog --ascii'
-[ 1810.670481] [Hardware Error]: Machine check: Processor context corrupt
-[ 1810.670483] [Hardware Error]: Fake kernel panic: Fatal Machine check
-[ 1810.670495] MCE exception done on CPU 1
-[ 1819.064721] Triggering MCE exception on CPU 1
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 33e1bed..d26b47b 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -376,7 +376,6 @@ int devtmpfs_mount(const char *mntdir)
+ 	return err;
+ }
+ 
+-static __initdata DECLARE_COMPLETION(setup_done);
+ 
+ static int handle(const char *name, mode_t mode, struct device *dev)
+ {
+@@ -430,6 +429,9 @@ out:
+  */
+ int __init devtmpfs_init(void)
+ {
++	struct compiletion setup_done;
++	init_compiletion(&setup_done);
++
+ 	int err = register_filesystem(&dev_fs_type);
+ 	if (err) {
+ 		printk(KERN_ERR "devtmpfs: unable to register devtmpfs "
+-- 
+1.7.2.5
 
-seems light of a pause, then everything resumes properly(music, etc..).
-Is this something that needs attention, or are these tests as extreme as 
-can be, and should simply be ignored?
-(Note: if there is a mce list somewhere let me know so I direct this to 
-the proper people)
-
-Justin P. Mattock
