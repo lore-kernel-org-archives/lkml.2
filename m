@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab1HUSK7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 14:10:59 -0400
-Received: from eastrmfepi104.cox.net ([68.230.241.200]:48720 "EHLO
-	eastrmfepi104.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1HUSK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 14:10:57 -0400
-X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Aug 2011 14:10:56 EDT
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020204.4E51348F.0092,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=mwl0/2xM3ubHJTXa6l4kGPt5l4r2ytuQtfJUKIGJKFg=
- c=1 sm=1 a=CmjYhwfhO2cA:10 a=G8Uczd0VNMoA:10 a=FM_I7UmzF_UA:10
- a=2LsrYPmY728A:10 a=IkcTkHD0fZMA:10 a=bk+B9dshyxwiY/VYwcWQxw==:17
- a=bk+B9dshyxwiY/VYwcWQxw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110821140238.S18EP.1464063.imail@eastrmwml34>
-Date: Sun, 21 Aug 2011 14:02:38 -0400
-From: FDV <nbnn101@cox.net>
-Reply-To: revrazaq@fastwebmail.it
-Subject: Mail back for retreival or call +2348051809752,  for you have
-    won $1 million dollars
+	id S1752206Ab1HUSQB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 14:16:01 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:52091 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab1HUSP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 14:15:59 -0400
+Date: Sun, 21 Aug 2011 14:15:47 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ext4_rename should dirty dir_bh with the correct
+ directory
+Message-ID: <20110821181547.GB19498@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Darrick J. Wong" <djwong@us.ibm.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20110817033544.GO20655@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110817033544.GO20655@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 16, 2011 at 08:35:44PM -0700, Darrick J. Wong wrote:
+> When ext4_rename performs a directory rename (move), dir_bh is a buffer that is
+> modified to update the '..' link in the directory being moved (old_inode).
+> However, ext4_handle_dirty_metadata is called with the old parent directory
+> inode (old_dir) and dir_bh, which is incorrect because dir_bh does not belong
+> to the parent inode.  Fix this error.
+> 
+> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+
+Added to the ext4 tree, thanks.
+
+						- Ted
