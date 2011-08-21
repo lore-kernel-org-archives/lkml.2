@@ -1,62 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab1HUBMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 21:12:47 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53847 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478Ab1HUBMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 21:12:46 -0400
-Date: Sun, 21 Aug 2011 02:12:40 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Dr. David Alan Gilbert" <linux@treblig.org>
-Cc: linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
-        dan.j.williams@intel.com, akpm@linux-foundation.org
-Subject: Re: [PATCH] Fix missing 'cnt' in ?: in dmatest
-Message-ID: <20110821011240.GG2203@ZenIV.linux.org.uk>
-References: <20110821005031.GB10377@gallifrey>
-MIME-Version: 1.0
+	id S1755087Ab1HUB3I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 21:29:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:39781 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab1HUB3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 21:29:06 -0400
+Date: Sun, 21 Aug 2011 03:28:44 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: George Spelvin <linux@horizon.com>
+Cc: davem@davemloft.net, mpm@selenic.com, dan@doxpara.com,
+        gerrit@erg.abdn.ac.uk, herbert@gondor.hengli.com.au,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 0/2] Improve sequence number generation.
+Message-ID: <20110821012844.GA15222@1wt.eu>
+References: <20110816103028.1360.qmail@science.horizon.com> <20110820233951.6428.qmail@science.horizon.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110821005031.GB10377@gallifrey>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110820233951.6428.qmail@science.horizon.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 21, 2011 at 01:50:31AM +0100, Dr. David Alan Gilbert wrote:
+Hi George,
 
-> (WTH is x=y?:z legal C anyway?)
+On Sat, Aug 20, 2011 at 07:39:51PM -0400, George Spelvin wrote:
+(...)
+> A few questions, all related to performance requirements:
+> * Should I worry about 32-bit x86 performance at all, since it's
+>   pretty unlikely that a 32-bit machine will be running traffic levels
+>   (1000+ connections/sec) where it matters?
 
-gccism.  It's not legal C; it's a gcc extension, and not a pretty one at
-that.  It's almost definitely a bug in this case - what used to be in the
-tree is equivalent to cnt > 0 ? cnt > 0 : 0, i.e. cnt > 0 ? 1 : 0, i.e.
-cnt > 0.  AFAICS, after your patch it does make sense.
+1000 connections per second is a moderately low load even for a
+32-bit machine. I'm used to play in the 10-100k/s range on 32-bit,
+depending on the usage pattern, I even reached 300k/s on an anti-ddos
+machine. So yes, performance matters a lot, especially when we risk
+to slow down one small operation that is done many times a second.
 
-> Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
-> 
-> ---
-> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-> index 765f5ff..1b0ec9d 100644
-> --- a/drivers/dma/dmatest.c
-> +++ b/drivers/dma/dmatest.c
-> @@ -572,7 +572,7 @@ static int dmatest_add_channel(struct dma_chan *chan)
->  	}
->  	if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
->  		cnt = dmatest_add_threads(dtc, DMA_PQ);
-> -		thread_count += cnt > 0 ?: 0;
-> +		thread_count += cnt > 0 ? cnt : 0;
->  	}
->  
->  	pr_info("dmatest: Started %u threads using %s\n",
-> 
-> -- 
->  -----Open up your eyes, open up your mind, open up your code -------   
-> / Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-> \ gro.gilbert @ treblig.org |                               | In Hex /
->  \ _________________________|_____ http://www.treblig.org   |_______/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> * Should I worry about 32-bit IPv6 performance, since that's even more
+>   unlikely to be running heavy loads on 32-bit hardware?
+
+On x86 you're probably right, but there are other very fast platforms
+such as ARM, which are used to build routers or appliances, and which
+are 32-bit and there it may matter.
+
+> * If yes, is this fast enough to be acceptable, or do I need to work
+>   harder to find more speed?
+
+I'd suggest that the most important is no performance regression. Probably
+that if you can bring something which brings back what we lost with MD5,
+your work would gain interest.
+
+> Willy, apparently you did some benchmarking of various hash functions.
+> Is that data available somewhere?  Even if not, just a brief description
+> of the methodology and assumptions would help to make sure I'm measuring
+> in a reasonable way.
+
+I'm copy-pasting here the memo I exchanged in private after my tests, there
+is nothing secret in it, so better post the whole explanation :
+
+-------------------------------------------------------------------------
+I did an ugly patch which consists in replacing calls to md5_transform()
+with sha_transform() in secure_ip_id(), secure_tcp_sequence_number(),
+secure_ipv4_port_ephemeral() on top of David's patches. I kept the same
+hashing method, without calling sha_init() and by filling the hash with
+net_secret, eg :
+
+@@ -104,28 +107,32 @@ __u32 secure_ipv6_id(const __be32 daddr[4])
+ __u32 secure_tcp_sequence_number(__be32 saddr, __be32 daddr,
+                                 __be16 sport, __be16 dport)
+ {
+-       u32 hash[MD5_DIGEST_WORDS];
++       u32 hash[SHA_DIGEST_WORDS];
++       u32 workspace[SHA_WORKSPACE_WORDS];
+
+        hash[0] = (__force u32)saddr;
+        hash[1] = (__force u32)daddr;
+        hash[2] = ((__force u16)sport << 16) + (__force u16)dport;
+-       hash[3] = net_secret[15];
++       hash[3] = net_secret[14];
++       hash[4] = net_secret[15];
+
+-       md5_transform(hash, net_secret);
++       sha_transform(hash, (const char *)net_secret, workspace);
+
+        return seq_scale(hash[0]);
+ }
+
+
+With this I could run tests on mainline (called "MD4" below), David's code
+("MD5") and the transform above ("SHA1"). The tests involved connecting
+from the test machine to an external HTTP server and retrieving an empty
+object. This test was followed by two other series, one on a server which
+immediately resets upon accept (to reproduce the SYN, SYN/ACK, ACK, RST
+sequence I'm used to encounter when setting up anti-DDoS filters), and
+a SYN, RST sequence caused by sending the traffic to a closed port, in
+order to more accurately observe the differences.
+
+I switch the test machine to an Atom N450 running in 64-bit mode in order
+to benefit from the SHA1 optimizations.
+
+Numbers are in connections per second.
+
+kernel   http   RST server   closed port
+-------+------+------------+------------
+ MD4     9610      7840       16950
+ MD5     9340      7560       16360
+ SHA1    9250      7280       15400
+
+In HTTP, performance drops by 2.8% when switching to MD5, and by 3.75
+when using SHA1 instead. With the reset server, MD5 takes a 3.6% hit
+and SHA1 7.15%. On the closed port test, which sees only SYN and RST
+packets, MD5 takes a 3.5% hit and SHA1 a 9.15% one.
+
+Note that the biggest hit was still the 2.6.35.11 -> 3.0-git upgrade,
+because HTTP gives me 10040 cps in 2.6.35.11. I think it's the compiler
+and not the kernel : I used to build 2.6.35 with gcc-3.4 but had to
+use a more recent toolchain (gcc 4.4) with 3.0 due to cmpxchg16b, and
+my experience with gcc has always been a noticeable performance loss
+with each new version, so that seems consistent...
+
+All in all, while the SHA1 cost becomes concerning, it could be used
+as an alternative to MD5 when we add a sysctl to select between
+performance and security.
+-------------------------------------------------------------------------
+
+Note that this wasn't the best machine for the test, but it was available
+and moreover it required little additional hardware to saturate it ;-)
+
+Best regards,
+Willy
+
