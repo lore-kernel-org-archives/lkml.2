@@ -1,32 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1HUCxt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 22:53:49 -0400
-Received: from antispam.ktu.edu.tr ([193.140.168.10]:64341 "EHLO
-	antispam.ktu.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab1HUCxq (ORCPT
+	id S1755445Ab1HUDET (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 23:04:19 -0400
+Received: from science.horizon.com ([71.41.210.146]:41676 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751532Ab1HUDEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 22:53:46 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Aug 2011 22:53:45 EDT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sun, 21 Aug 2011 03:46:54 +0100
-From: Irlandes Nacional de Loteria <info@irnl.com>
-To: undisclosed-recipients:;
-Subject: Re
-Reply-To: <irish_newsdept@07168.cn>
-Mail-Reply-To: <irish_newsdept@07168.cn>
-Message-ID: <ed1901d14d52dcee71a7916dd0861fb3@ktu.edu.tr>
-User-Agent: Roundcube Webmail/0.5.3
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: -26.00 points)
+	Sat, 20 Aug 2011 23:04:16 -0400
+Date: 20 Aug 2011 23:04:15 -0400
+Message-ID: <20110821030415.18106.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, w@1wt.eu
+Subject: Re: [PATCH 0/2] Improve sequence number generation.
+Cc: dan@doxpara.com, davem@davemloft.net, gerrit@erg.abdn.ac.uk,
+        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, netdev@vger.kernel.org
+In-Reply-To: <20110821012844.GA15222@1wt.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> * Should I worry about 32-bit IPv6 performance, since that's even more
+>>   unlikely to be running heavy loads on 32-bit hardware?
 
+> On x86 you're probably right, but there are other very fast platforms
+> such as ARM, which are used to build routers or appliances, and which
+> are 32-bit and there it may matter.
 
--- 
-Usted gano setecientos cincuenta mil libras Sterling. Enviar nombres, 
-edad, ocupacion, Pais.
+Thanks for the feedback.  Your point about routers is well-taken.
+It's particularly x86-32 which gives me fits, but I'll keep ARM
+performance in mind, too.
+
+>> * If yes, is this fast enough to be acceptable, or do I need to work
+>>   harder to find more speed?
+
+> I'd suggest that the most important is no performance regression. Probably
+> that if you can bring something which brings back what we lost with MD5,
+> your work would gain interest.
+
+Okay, I'll go back to the drawing board on performance.
+
+Damn, this is going to be tough.
+
+> I'm copy-pasting here the memo I exchanged in private after my tests, there
+> is nothing secret in it, so better post the whole explanation :
+
+Thank you very much.  It helps me figure out what the time budget is.
