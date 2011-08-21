@@ -1,117 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab1HUFxA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 01:53:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29017 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819Ab1HUFw6 convert rfc822-to-8bit (ORCPT
+	id S1752146Ab1HUGRW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 02:17:22 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53598 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750901Ab1HUGRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 01:52:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,258,1312182000"; 
-   d="scan'208";a="43468680"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Daniel Halperin <dhalperi@cs.washington.edu>,
-        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Sun, 21 Aug 2011 08:52:27 +0300
-Subject: RE: WARNING: at lib/iomap.c:43 0xffffffffa00ac458()
-Thread-Topic: WARNING: at lib/iomap.c:43 0xffffffffa00ac458()
-Thread-Index: AcxfTwPIPydSeHn+Q46aFkFjrtiu8AAdncww
-Message-ID: <4825B8A2C4E264489E57869F0DCFB2234456628564@hasmsx502.ger.corp.intel.com>
-References: <Pine.LNX.4.64.1108181259020.4357@boston.corp.fedex.com>
- <Pine.LNX.4.64.1108202327480.7271@boston.corp.fedex.com>
-In-Reply-To: <Pine.LNX.4.64.1108202327480.7271@boston.corp.fedex.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Sun, 21 Aug 2011 02:17:21 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19hwEhd2t5hTPjSNm5XN3e2+7h3Uftw7si2PDH2tv
+	4wKZtLAw1n1Xfm
+Subject: Re: [PATCH 1/3 v2] call_function_many: fix list delete vs add race
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Milton Miller <miltonm@bga.com>, Peter Zijlstra <peterz@infradead.org>,
+        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
+        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
+        npiggin@gmail.com, JBeulich@novell.com, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110208193650.GG2146@linux.vnet.ibm.com>
+References: <smp-call-function-move-writes@mdm.bga.com>
+	 <1296145360.15234.234.camel@laptop>
+	 <smp-call-function-list-race@mdm.bga.com>
+	 <smp-call-function-list-race-fix@mdm.bga.com> <ipi-list-reply@mdm.bga.com>
+	 <smp-call-function-list-race-fix-v2@mdm.bga.com>
+	 <20110201220026.GD2142@linux.vnet.ibm.com> <ipi-paul-reply@mdm.bga.com>
+	 <20110202041740.GB2129@linux.vnet.ibm.com>
+	 <1297066374.5739.38.camel@marge.simson.net>
+	 <20110208193650.GG2146@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 21 Aug 2011 08:17:11 +0200
+Message-ID: <1313907431.6394.26.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix is on the way:
-
-commit 4eb60d869fdad7acd098b53bfd1863c311d8933d
-Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Date:   Sat Aug 13 09:02:43 2011 -0700
-
-    Revert "iwlagn: sysfs couldn't find the priv pointer"
-
-    This reverts commit cc1a93e68f6c0d736b771f0746e8e4186f483fdc.
-
-    This fix introduced a bug: bad pointer in unload.
-
-    Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-    Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-And 
-
-commit 16a9d06c753abc44f66f88e03bbecb3f1e45d71b
-Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Date:   Sat Aug 13 09:02:44 2011 -0700
-
-    iwlagn: sysfs couldn't find the priv pointer
-
-    This bug has been introduced by:
-    d593411084a56124aa9d80aafa15db8463b2d8f7
-    Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-    Date:   Mon Jul 11 10:48:51 2011 +0300
-
-        iwlagn: simplify the bus architecture
-
-    Revert part of the buggy patch: dev_get_drvdata will now return
-    iwl_priv as it did before the patch.
-
-    Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-    Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-
-You can cherry-pick these and give it a try
-I removed Linus from this thread, since I am pretty sure he doesn't need to be on that one, and I guess he receives many mails... I may be wrong though...
-
+On Tue, 2011-02-08 at 11:36 -0800, Paul E. McKenney wrote:
+> On Mon, Feb 07, 2011 at 09:12:54AM +0100, Mike Galbraith wrote:
+> > On Tue, 2011-02-01 at 20:17 -0800, Paul E. McKenney wrote:
+> > 
+> > FWIW, my red headed stepchild (.32 xen cluster beast) with..
+> >    smp-smp_call_function_many-fix-SMP-race (6dc1989)
+> >    smp-consolidate-writes-in-smp_call_function_interrupt (225c8e0)
+> >    smp-smp_call_function_many-fix-list-delete-vs-add-race (V2)
+> >    smp-smp_call_function_many-handle-concurrent-clearing-of-mask (V2)
+> >    smp-generic_smp_call_function_interrupt-additional-memory-order-tightening (below)
+> > ..has not experienced any IPI problems lately, nor have I been able to
+> > trigger anything beating up my box running normal x64_64 kernels.
+> > 
+> > That's not saying much since my IPI woes were only the concurrent
+> > clearing variety, just letting you know that these patches have received
+> > (and are receiving) hefty thumpage.
 > 
-> I bisected it further and it came down to this commit. Reverting it
-> solves
-> the problem. Now I'm on linux-3.1.0-rc2
-> (bed8cad9593974a46de5c8aa3d2ee7c49c17182f) with the patch reverted and
-> system
-> is stable once again. modprobe -r iwlagn no longer hangs the system.
-> 
-> commit cc1a93e68f6c0d736b771f0746e8e4186f483fdc
-> Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-> Date:   Mon Aug 1 12:46:57 2011 -0700
-> 
->      iwlagn: sysfs couldn't find the priv pointer
-> 
->      This bug has been introduced by:
->      d593411084a56124aa9d80aafa15db8463b2d8f7
->      Author: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
->      Date:   Mon Jul 11 10:48:51 2011 +0300
-> 
->          iwlagn: simplify the bus architecture
-> 
->      Revert part of the buggy patch: dev_get_drvdata will now return
->      iwl_priv as it did before the patch.
-> 
->      Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
->      Tested-by: Daniel Halperin <dhalperi@cs.washington.edu>
->      Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
->      Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> 
----------------------------------------------------------------------
-Intel Israel (74) Limited
+> Very good, I have added your Tested-by to my patch.
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+I'm still using your barrier changes.  Is it safe to drop them?  HA
+clusters falling over is _not_ something I want to risk resurrecting by
+dropping them just because they didn't go anywhere.
+ 
+> 
+> 							Thanx, Paul
+> 
+> > > ------------------------------------------------------------------------
+> > > 
+> > > smp_call_function: additional memory-order tightening.
+> > > 
+> > > The csd_lock() and csd_unlock() interaction guarantees that the
+> > > smp_call_function_many() function sees the results of interactions
+> > > with prior incarnations of the callback, so the check is not needed.
+> > > Instead, tighter memory ordering is required in the companion
+> > > generic_smp_call_function_interrupt() function to ensure proper
+> > > interaction with partially initialized callbacks.
+> > > 
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > diff --git a/kernel/smp.c b/kernel/smp.c
+> > > index 064bb6e..e091905 100644
+> > > --- a/kernel/smp.c
+> > > +++ b/kernel/smp.c
+> > > @@ -182,7 +182,7 @@ void generic_smp_call_function_interrupt(void)
+> > >  
+> > >  	/*
+> > >  	 * Ensure entry is visible on call_function_queue after we have
+> > > -	 * entered the IPI. See comment in smp_call_function_many.
+> > > +	 * entered the IPI. See comment in smp_call_function_many
+> > >  	 * If we don't have this, then we may miss an entry on the list
+> > >  	 * and never get another IPI to process it.
+> > >  	 */
+> > > @@ -209,13 +209,18 @@ void generic_smp_call_function_interrupt(void)
+> > >  		if (!cpumask_test_cpu(cpu, data->cpumask))
+> > >  			continue;
+> > >  
+> > > -		smp_rmb();
+> > > +		smp_mb(); /* If we see our bit set above, we need to see */
+> > > +			  /* all the processing associated with the prior */
+> > > +			  /* incarnation of this callback. */
+> > >  
+> > >  		if (atomic_read(&data->refs) == 0)
+> > >  			continue;
+> > >  
+> > > +		smp_rmb(); /* We need to read ->refs before we read either */
+> > > +			   /* ->csd.func and ->csd.info. */
+> > > +
+> > >  		func = data->csd.func;			/* for later warn */
+> > > -		data->csd.func(data->csd.info);
+> > > +		func(data->csd.info);
+> > >  
+> > >  		/*
+> > >  		 * If the cpu mask is not still set then func enabled
+> > 
+> > 
+
 
