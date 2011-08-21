@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab1HTEE3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 00:04:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55493 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab1HTEE2 convert rfc822-to-8bit (ORCPT
+	id S1752664Ab1HTEOL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 00:14:11 -0400
+Received: from fep16.mx.upcmail.net ([62.179.121.36]:38482 "EHLO
+	fep16.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab1HTEOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 00:04:28 -0400
+	Sat, 20 Aug 2011 00:14:09 -0400
+X-Greylist: delayed 79737 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Aug 2011 00:14:09 EDT
+X-SourceIP: 115.184.65.217
+Reply-To: <upcaccount@admin.in.th>
+From: "E-Mail Account Maintenance" <info@hotmail.com>
+Subject: E-Mail Account Maintenance
+Date: Sun, 21 Aug 2011 09:43:50 +0530
 MIME-Version: 1.0
-In-Reply-To: <1312826703.5589.155.camel@localhost.localdomain>
-References: <1312826703.5589.155.camel@localhost.localdomain>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 20 Aug 2011 00:04:07 -0400
-Message-ID: <CAMjpGUeSTg_WYv7Pm2zaoRo0sLTzrPtwm_GobtXcuS7YAtQ3wg@mail.gmail.com>
-Subject: Re: Missing put_cpu() in arch/ia64/sn/kernel/sn2/sn_hwperf.c?
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jes@sgi.com,
-        tony.luck@intel.com, Julia Lawall <julia@diku.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110820041406.YDOI1505.viefep16-int.chello.at@edge05.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=jqrf5qXv5urL2URZ3a9OklEvUdrM81ZtB3GWlHLPCVk= c=1 sm=0 p=9S_0AAoY8tkA:10 a=Dyoqhi_TatcA:10 a=8uJ5MO_MQBgA:10 a=8EU9Q7FnrCoA:10 a=Cfj4BQAnxiAA:10 a=OAJ___Sp2ttQPlvN5BkA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 14:05, Thomas Meyer wrote:
->  Check for get/put_cpu() imbalances
->
->  The simplified semantic patch that makes this report is:
->
-> * get_cpu()
-> ... when != put_cpu()
-> ? get_cpu()
->
-> arch/blackfin/kernel/cplbinfo.c:89:9-10: WARNING: Possible missing put_cpu()!
-
-the get_cpu() is in the seq_operations.start while the put_cpu() is in
-the seq_operations.stop.  i believe this is OK and so this is a false
-positive for blackfin.
--mike
+  Willen wij u mededelen dat wij momenteel uitvoeren van gepland onderhouden upgrade van onze UPC webmail      
+        *User name:
+        *Wachtwoord: 
+        *Geboortedatum:
