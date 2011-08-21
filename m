@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1HUWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 18:36:27 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22463 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab1HUWgZ (ORCPT
+	id S1756099Ab1HUWgl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 18:36:41 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59349 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab1HUWg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 18:36:25 -0400
-Date: Mon, 22 Aug 2011 00:37:05 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Arnaud Lacombe <lacombar@gmail.com>
-cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-In-Reply-To: <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1108220033240.8284@swampdragon.chaosbits.net>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 21 Aug 2011 18:36:26 -0400
+Date: Sun, 21 Aug 2011 18:36:17 -0400
+Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
+Message-ID: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Oleg Nesterov <oleg@redhat.com>, bookjovi@gmail.com
+Cc: dhowells@redhat.com, roland@redhat.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+X-Spam-Score: -4.4 (----)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7LMakNQ017989
 
-On Sun, 21 Aug 2011, Arnaud Lacombe wrote:
+Concur.  The comment should be changed
+Neil
 
-> Hi,
-> 
-> On Fri, Aug 19, 2011 at 7:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > Reposting due to popular demand. Several other people are running
-> > into the same problem with all kinds of software.
-> >
-> > Only change is rebase against current master.
-> >
-> FWIW, couldn't this be made a boot option ?
-> 
-> That might help some distros, say Fedora, who actually ships
-> 2.6.40+x-branded kernels, or allow people to use no longer supported
-> distros with recent kernels.
-> 
-> About this last point, once functional, I intend to upgrade my trixbox
-> install (based on 2.6.18) to a 3.x-ish kernel, that might be fun...
-> 
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Just a random thought.
-Since this is purely to be backwards compatible with binary only software 
-that makes bad assumptions about the kernel version (as far as I can 
-tell at least), shouldn't we make it explicit from the beginning that this 
-will have a limited life time by adding it to 
-Documentation/feature-removal-schedule.txt with a removal date at 
-somewhere soon(ish) like 3.6 (or something) at day one?
-I can't imaging we'd want to support something like this forever going 
-forward... or..?
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+>On 08/21, Oleg Nesterov wrote:
+>>
+>> On 08/21, bookjovi@gmail.com wrote:
+>> >
+>> > For non-pipe case, limit 0 also means drop the coredump, so just put
+>> > the zero limit check at do_coredump function begining.
+>>
+>> Neil, what do you think? Should we change the code or the comment?
+>
+>Personally I think we should fix the comment. I think RLIMIT_CORE
+>doesn't apply in this case, limit == 1 check is very special. And
+>this is what linux always did, except between 725eae32 and 898b374a.
+>
+>
+>Oleg.
+>
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
