@@ -1,66 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1HUAui (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Aug 2011 20:50:38 -0400
-Received: from mx.treblig.org ([80.68.94.177]:39724 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab1HUAue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Aug 2011 20:50:34 -0400
-Date: Sun, 21 Aug 2011 01:50:31 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: linux-kernel@vger.kernel.org
-Cc: nicolas.ferre@atmel.com, dan.j.williams@intel.com,
-        akpm@linux-foundation.org
-Subject: [PATCH] Fix missing 'cnt' in ?: in dmatest
-Message-ID: <20110821005031.GB10377@gallifrey>
+	id S1754329Ab1HUBFr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Aug 2011 21:05:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35271 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751478Ab1HUBFq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Aug 2011 21:05:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.32.27-kvm-i386-20110114 (i686)
-X-Uptime: 01:41:43 up 184 days,  2:14,  1 user,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E4FA6D8.7030407@redhat.com>
+References: <1313806667-30495-1-git-send-email-liubo2009@cn.fujitsu.com> <4E4FA6D8.7030407@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 20 Aug 2011 18:04:51 -0700
+Message-ID: <CA+55aFzm67yfdnwu9ou6X6zf05DyiGvCD0ci8vZM97W+B_HMoQ@mail.gmail.com>
+Subject: Re: [PATCH v2] Btrfs: use do_div to avoid compile errors on 32bit box
+To: Josef Bacik <josef@redhat.com>
+Cc: Liu Bo <liubo2009@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, jwboyer@gmail.com, linux-btrfs@vger.kernel.org,
+        chris.mason@oracle.com, dave@jikos.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  On the latest tree my compiler has started giving the warning:
+On Sat, Aug 20, 2011 at 5:21 AM, Josef Bacik <josef@redhat.com> wrote:
+>
+> I think Linus was less complaining about how you're dividing here and
+> more about the fact that you are.  A divide by 2 is the same as a >> 1.
+>  I'll send a patch to fix this.  Thanks,
 
-drivers/dma/dmatest.c:575:28: warning: the omitted middle operand in ?: will always be ?true?, suggest explicit middle operand [-Wparentheses]
+Indeed. A single-bit 64-bit "double shift" may be a few cycles, but
+it's still pretty damn cheap. Especially when compared to a 64x32 bit
+divide. We absolutely don't want to do "do_div()" in order to divide
+by the constant 2.
 
-The following patch fixes the missing middle clause with the same
-fix that Nicolas Ferre used in the similar clauses.
-(There seems to have been a race between him fixing that and
-the extra clause going in a little later).
-
-I don't actually know the dmatest code/structures, nor do I own
-any hardware to test it on (assuming it needs a DMA engine);
- but this patch builds, the existing code is almost certainly
-wrong and the fix is the same as the corresponding lines above it.
-
-(WTH is x=y?:z legal C anyway?)
-
-Signed-off-by: Dr. David Alan Gilbert <linux@treblig.org>
-
----
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index 765f5ff..1b0ec9d 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -572,7 +572,7 @@ static int dmatest_add_channel(struct dma_chan *chan)
- 	}
- 	if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
- 		cnt = dmatest_add_threads(dtc, DMA_PQ);
--		thread_count += cnt > 0 ?: 0;
-+		thread_count += cnt > 0 ? cnt : 0;
- 	}
- 
- 	pr_info("dmatest: Started %u threads using %s\n",
-
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+                     Linus
