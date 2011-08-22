@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab1HVFGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 01:06:07 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34573 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab1HVFGD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 01:06:03 -0400
+	id S1752472Ab1HVFnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 01:43:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48323 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab1HVFnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 01:43:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,261,1312182000"; 
+   d="scan'208";a="42533091"
+Message-ID: <4E51EC8E.7040304@intel.com>
+Date: Mon, 22 Aug 2011 13:43:42 +0800
+From: Huang Ying <ying.huang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C2CD7600DD@HKMAIL01.nvidia.com>
-References: <1311834636-15940-1-git-send-email-wni@nvidia.com>
-	<20110821230511.GA4607@sortiz-mobl>
-	<6B4D417B830BC44B8026029FD256F7F1C2CD7600DD@HKMAIL01.nvidia.com>
-Date: Mon, 22 Aug 2011 13:06:02 +0800
-Message-ID: <CAN1soZzkmP=ckzAOJv59YfYtFU63nC9j-Oa+cM5z674yf0Mihw@mail.gmail.com>
-Subject: Re: [PATCH] mfd: tps6586x: add api to power off tps6586x
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Wei Ni <wni@nvidia.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "mike@compulab.co.il" <mike@compulab.co.il>,
-        Nitin Kumbhar <nkumbhar@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Pavel Ivanov <paivanof@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: APEI: Can not request iomem region for GARs
+References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
+In-Reply-To: <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 11:47 AM, Wei Ni <wni@nvidia.com> wrote:
-> Hi, Samuel
-> Thanks for your comments.
-> Please check the following lines with [Wei Ni]
->
-> Thanks
-> Wei.
->
->
->>-----Original Message-----
->>From: Samuel Ortiz [mailto:sameo@linux.intel.com]
->>Sent: Monday, August 22, 2011 7:05 AM
->>To: Wei Ni
->>Cc: mike@compulab.co.il; gking@nvidia.com; Nitin Kumbhar; linux-kernel@vger.kernel.org
->>Subject: Re: [PATCH] mfd: tps6586x: add api to power off tps6586x
+On 08/20/2011 05:48 AM, Bjorn Helgaas wrote:
+> On Tue, Aug 16, 2011 at 9:43 PM, Pavel Ivanov <paivanof@gmail.com> wrote:
+>> Ever since I switched from kernel 2.6.38 to 3.0 and later versions I
+>> always get the following error message on each boot:
 >>
->>Hi Wei,
+>> [    2.844242] APEI: Can not request iomem region
+>> <00000000bf7b522a-00000000bf7b522c> for GARs.
 >>
->>On Thu, Jul 28, 2011 at 02:30:36PM +0800, wni@nvidia.com wrote:
->>> +static struct i2c_client *tps6586x_i2c_client;
->>That's not vey nice. By doing so, you're preventing anyone to have more than
->>one of those chips in their boards.
-> [Wei Ni] oh yes, I didn’t consider this issue. We use i2c_register_board_info()
-> to register the tps6586x in the board file, but it didn't return the handle.
-> Do you have any ideas?
->>
->>
+>> If it was only in dmesg I wouldn't even notice it. But it's always
+>> printed on the console which is kind of annoying.
+>> I don't quite understand what this message is about and couldn't find
+>> anything on the internet. Does this message mean some error that I
+>> could fix? If no, is there any way I can suppress it (besides lowering
+>> the error level of messages printed on console, of course)?
+> 
+> [+cc Huang Ying, APEI author]
+> 
+> BIOS-e820: 00000000bf79e000 - 00000000bf7d0000 (ACPI NVS)
+> APEI: Can not request iomem region <00000000bf7b522a-00000000bf7b522c> for GARs.
+> 
+> This register is in the ACPI NVS region, which is type E820_NVS (not
+> E820_RESERVED), so e820_reserve_resources() reserves it as
+> IORESOURCE_BUSY.  My guess is that Huang tested this on machines where
+> the EINJ/ERST registers are in "reserved" regions, not ACPI NVS
+> regions.  The "reserved" regions are not marked IORESOURCE_BUSY.
+> 
+> Huang, when you fix this, please include something like the following
+> (mangled) patch so the error message is more consistent with other
+> resource messages.
 
-Since there's no parameter in pm_power_off(), invoking power off
-function is a known issue
-for i2c devices. And we can't get i2c client in board file.
+The patch looks good.  Can you resubmit it with changelog?
 
-Maybe we can add a LDO mapping in regulator driver. Since power-off
-function is always
-customized in board file. We can disable this regulator while
-power_off() is called. So even
-multiple PMICs is installed in one system, we only handle the real one
-to shutdown the
-whole system.
+> Could you also remove the ERST/EINJ/HEST "Table is not found"
+> messages?  As far as I can tell, these tables are optional, and
+> printing the message is confusing to users, e.g.,
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
 
-Samuel & Mark,
-Do you think that it's worth to do?
+Yes.  This seems confusing to them.  I will change this.
 
-Thanks
-Haojian
+Best Regards,
+Huang Ying
+
