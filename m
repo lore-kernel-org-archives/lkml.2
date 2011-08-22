@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab1HVQlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:41:01 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:7556 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1HVQk7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:40:59 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-160.messagelabs.com!1314031258!29367114!1
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Ryan Mallon <rmallon@gmail.com>, "axel.lin@gmail.com" <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 22 Aug 2011 11:40:57 -0500
-Subject: RE: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
-Thread-Topic: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
-Thread-Index: AcxgYs/UHTm9Vg2sTGSEO9pjUje5UgAhw9Rg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F388575258@AUSP01VMBX24.collaborationhost.net>
-References: <1313937545.13671.5.camel@phoenix> <4E5197B8.8020608@gmail.com>
- <4E519AC7.3030001@gmail.com>
- <CAF+7xWkezyMrnt-_0EVtNWtAB2v7pceATB8HEbdC8oqOY0camw@mail.gmail.com>
- <4E51A34C.6060207@gmail.com>
-In-Reply-To: <4E51A34C.6060207@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752121Ab1HVQlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:41:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24996 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab1HVQlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 12:41:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="40654352"
+Date: Mon, 22 Aug 2011 09:41:43 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Hans Petter Selasky <hselasky@c2i.net>
+Cc: Amit Blay <ablay@codeaurora.org>,
+        Tatyana Brokhman <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        Amit Blay <ablay@qualcomm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to
+ devio.c
+Message-ID: <20110822164143.GA7680@xanatos>
+References: <20110818224713.GA6738@xanatos>
+ <201108220956.51135.hselasky@c2i.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108220956.51135.hselasky@c2i.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 21, 2011 5:31 PM, Ryan Mallon wrote:
-> On 22/08/11 10:06, Axel Lin wrote:
->> 2011/8/22 Ryan Mallon<rmallon@gmail.com>:
->>> On 22/08/11 09:41, Ryan Mallon wrote:
->>>> On 22/08/11 00:39, Axel Lin wrote:
->>>>> ep93xx-fb.c uses interfaces from linux/module.h,
->>>>> so it should include that file.  This patch fixes below build errors.
->>>> What actually changed to make these files broken? Did some other header
->>>> previously include module.h for us? How many other drivers are broken?
->>>>
->>>> Anyway, the change is okay.
->>>>
->>>> Acked-by: Ryan Mallon<rmallon@gmail.com>
->>> Actually, having a second look at this it does not look right.
->>>
->>> drivers/video/ep93xx-fb.c includes linux/platform.h (as its first include),
->>> which includes linux/driver.h, which includes linux/module.h.
->>>
->>> Just tested on Linus' latest tree and both this driver and the ep93xx
->>> backlight driver build fine. What kernel version are you using?
->>>
->>> ~Ryan
->> hi Ryan,
->>
->> The patch is against linux-next tree.
->> I got build error for ep93xx-fb.c and ep93xx_bl.c on linux-next tree.
->> ( next-20110819 )
->
-> Ok, I see now. The change which caused the breakage is fdb697c: 
-> "include: replace linux/module.h with "struct module" wherever 
-> possible". How many other drivers got broken now that device.h does not 
-> include module.h?
+On Mon, Aug 22, 2011 at 09:56:51AM +0200, Hans Petter Selasky wrote:
+> Hi,
+> 
+> > 
+> > On Wed, Aug 17, 2011 at 09:06:03AM +0200, Hans Petter Selasky wrote:
+> > > I'm looking into implementing USB 3.0 streams support for FreeBSD and
+> > > would like to have a solution in Linux which is not too far apart, also
+> > > regarding API's for userspace.
+> > > 
+> > > I would suggest overloading the "unsigned int pipe", instead of breaking
+> > > existing API's by adding a new stream ID value. Also for LibUSB.
+> > > 
+> > > ./linux/usb.h:  unsigned int pipe;              /* (in) pipe information
+> > > */
+> > 
+> > I think this gets very close to breaking current API for usbfs.  What
+> > happens if some application is putting garbage in the upper bits of the
+> > pipe? 
+> 
+> I think this will never happen, because all USB applications I know about are 
+> taught to use a set of macros to create the "pipe" value, which by default 
+> zero these bits.
 
-Probably a lot...  Which is one of the reasons linux-next exists.. . ;-)
+Userspace programs aren't required to use the macros, so there is always
+a possibility that some program out there will be passing garbage.  If
+your argument had been "the kernel checks for garbage, and returns an
+error code if there is garbage, so therefore there can't be any programs
+that put garbage in the upper bits", then that would be a different
+story.
 
-Actually, Paul Gortmaker caused this breakage with the commit.  He should
-take a deeper look and see what it broke.  From his commit:
+> > Why do you think reusing the pipe variable would be a better solution?
+> > You're going to need a new IOCTL to enable streams anyway, so why not
+> > also have a new IOCTL for submitting an URB to an endpoint with streams
+> > enabled?
+> 
+> What I'm thinking is that you should try to integrate the streams 
+> functionality as much as possible, with existing API's, so that API's that do 
+> roughly the same are not duplicated. In FreeBSD 8/9 we have more free bits in 
+> the pipe variable, and I'll probably use that for the stream ID.
 
-    Most of the implicit dependencies on module.h being present by
-    these headers pulling it in have been now weeded out, so we can
-    finally make this change with hopefully minimal breakage.
+We'll try to coalesce the streams and non-streams functions in the
+kernel so they share as much code as possible.  I see adding a new call
+parameter in a new usbfs ioctl as the right way to share new
+functionality in KAPI, rather than overloading currently free bits.
+However, if you come from a hardware background, I can see where adding
+new functionality in "reserved" bits seems normal.
 
-Regards,
-Hartley
+> It's like 
+> IPv4 and IPv6, that you extend fields when required and not duplicate them. 
+> I'm just worried that intel will come up with yet-another way to transfer data 
+> in a few years, and then we'll have to wreck API's again.
+
+We're not wrecking APIs, we're just creating new ones.  New programs
+will have to do something different for streams (especially since
+they'll have to deal with out-of-order completions), so it's reasonable
+to ask them to call a different function in order to ensure we can use
+the full stream ID range.
+
+> So why not foresee 
+> that now and make 128-bits available for endpoint/stream/XXX addressing?
+
+We can't predict the future here.  Who knows whether they will come up
+with some completely different mechanism that doesn't involve streams?
+
+Besides, it would take a major rev of the USB spec (or at least a very
+careful errata) to add more stream ID bits, since the upper bits are
+reserved for specific host and device states.  Intel is not the only
+company behind USB, and it takes time to get spec changes through the
+USB-IF working groups.  Considering that it took them eight years to
+update the USB 2.0 spec to USB 3.0, I think it's safe to say the current
+stream ID range limitations will be around for several years.
+
+Sarah Sharp
