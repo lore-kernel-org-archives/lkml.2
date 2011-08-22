@@ -1,298 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1HVHMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 03:12:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19498 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab1HVHMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 03:12:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="40863848"
-Message-ID: <4E520149.3010802@intel.com>
-Date: Mon, 22 Aug 2011 15:12:09 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
-MIME-Version: 1.0
-To: Pavel Ivanov <paivanof@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: APEI: Can not request iomem region for GARs
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
-In-Reply-To: <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------090102040203000401060301"
+	id S1753579Ab1HVHOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 03:14:53 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:5446 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab1HVHOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 03:14:48 -0400
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+From: Tom _Lin <tom_lin@emc.com.tw>
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: =?ISO-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+In-Reply-To: <87bovi2d74.fsf@emc.com.tw>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw>
+	 <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw>
+	 <4E4E5F08.1030803@tudelft.nl>  <87bovi2d74.fsf@emc.com.tw>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Aug 2011 15:20:14 +0800
+Message-ID: <1313997614.2880.39.camel@ubuntu1010-Veriton-M275>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090102040203000401060301
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hi JJ
+On Mon, 2011-08-22 at 14:05 +0800, JJ Ding wrote:
+> Hi Éric,
+> 
+> Thanks for your comments, a few lines below:
+> 
+> On Fri, 19 Aug 2011 15:03:04 +0200, Éric Piel <E.A.B.Piel@tudelft.nl> wrote:
+> > Op 18-08-11 03:57, JJ Ding schreef:
+> > > v3 hardware's packet format is almost identical to v2 (one/three finger touch),
+> > > except when sensing two finger touch, the hardware sends 12 bytes of data.
+> > >
+> > > Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
+> > Hi,
+> > A couple of comments, in line.
+> > 
+> > :
+> > :
+> > > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> > > index ddd40eb..e13a719 100644
+> > > --- a/drivers/input/mouse/elantech.c
+> > > +++ b/drivers/input/mouse/elantech.c
+> > :
+> > > +/*
+> > > + * Interpret complete data packets and report absolute mode input events for
+> > > + * hardware version 3. (12 byte packets for two fingers)
+> > > + */
+> > > +static void elantech_report_absolute_v3(struct psmouse *psmouse,
+> > > +					int packet_type)
+> > > +{
+> > > +	struct input_dev *dev = psmouse->dev;
+> > > +	struct elantech_data *etd = psmouse->private;
+> > > +	unsigned char *packet = psmouse->packet;
+> > > +	unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+> > > +	unsigned int width = 0, pres = 0;
+> > > +
+> > > +	/* byte 0: n1  n0   .   .   .   .   R   L */
+> > > +	fingers = (packet[0]&  0xc0)>>  6;
+> > > +
+> > > +	switch (fingers) {
+> > > +	case 3:
+> > > +	case 1:
+> > > +		/*
+> > > +		 * byte 1:  .   .   .   .  x11 x10 x9  x8
+> > > +		 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+> > > +		 */
+> > > +		x1 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > > +		/*
+> > > +		 * byte 4:  .   .   .   .  y11 y10 y9  y8
+> > > +		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+> > > +		 */
+> > > +		y1 = etd->y_max - (((packet[4]&  0x0f)<<  8) | packet[5]);
+> > > +
+> > > +		if (fingers == 3&&  debounce(x1, y1))
+> > > +			return;
+> > > +
+> > > +		break;
+> > > +
+> > > +	case 2:
+> > > +		if (packet_type == PACKET_V3_HEAD) {
+> > > +			/*
+> > > +			 * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
+> > > +			 * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
+> > > +			 */
+> > > +			etd->prev_x = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > > +			/*
+> > > +			 * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
+> > > +			 * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
+> > > +			 */
+> > > +			etd->prev_y = etd->y_max -
+> > > +				(((packet[4]&  0x0f)<<  8) | packet[5]);
+> > > +			/*
+> > > +			 * wait for next packet
+> > > +			 */
+> > > +			return;
+> > > +		}
+> > > +
+> > > +		/* packet_type == PACKET_V3_TAIL */
+> > > +		x1 = etd->prev_x;
+> > > +		y1 = etd->prev_y;
+> > > +		x2 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > > +		y2 = etd->y_max - (((packet[4]&  0x0f)<<  8) | packet[5]);
+> > > +		break;
+> > > +	}
+> > You actually have three times the same formula, so you could simplify it:
+> > 
+> > if (fingers !=0 ) {
+> > 	/*
+> > 	 * byte 1:  .   .   .   .  x11 x10 x9  x8
+> > 	 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+> > 	 */
+> > 	x1 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > 	/*
+> > 	 * byte 4:  .   .   .   .  y11 y10 y9  y8
+> > 	 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+> > 	 */
+> > 	y1 = ((packet[4]&  0x0f)<<  8) | packet[5];
+> > }
+> > 
+> > if ((fingers == 3) && debounce(x1, y1))
+> > 	return;
+> we need one more line here, for fingers != 2 :
+> y1 = etd->y_max - y1;
+> > if (fingers == 2) {
+> > 	if (packet_type == PACKET_V3_HEAD)) {
+> > 		/* wait for next packet */
+> > 		etd->prev_x = x1;
+> > 		etd->prev_y = etd->y_max - y1;
+>                 etd->prev_y = y1;
+> > 		return;
+> > 	} else {
+> > 		/* packet_type == PACKET_V3_TAIL */
+> > 		x2 = etd->prev_x;
+> > 		y2 = etd->prev_y;
+> > 	}
+> > }
+> I like this compact version, but it seems to me this is not as straight
+> forward as the original switch case. I am OK with either. Is there
+> anyone who has more to say about this?
+Éric's version is compact but this is not straight forward as original
+code and does not improve more performances. Then other versions of
+"elantech_report_absolute" also needed to  modify the same style . so I
+prefer original style.
+> > 
+> > > +
+> > > +	pres = (packet[1]&  0xf0) | ((packet[4]&  0xf0)>>  4);
+> > > +	width = ((packet[0]&  0x30)>>  2) | ((packet[3]&  0x30)>>  4);
+> > What about the case of two fingers? Are pressure and width correct for 
+> > both fingers? In that case, maybe it should also be saved from 
+> > PACKET_V3_HEAD.
+> I am told (by our firmware guy) that pres and width are sent the same
+> value for two finger touch.
+> > 
+> > > +
+> > > +	input_report_key(dev, BTN_TOUCH, fingers != 0);
+> > > +	input_report_abs(dev, ABS_X, x1);
+> > > +	input_report_abs(dev, ABS_Y, y1);
+> > > +	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+> > > +	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+> > > +	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+> > > +	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
+> > > +	input_report_key(dev, BTN_LEFT, packet[0]&  0x01);
+> > > +	input_report_key(dev, BTN_RIGHT, packet[0]&  0x02);
+> > > +	input_report_abs(dev, ABS_PRESSURE, pres);
+> > > +	input_report_abs(dev, ABS_TOOL_WIDTH, width);
+> > > +
+> > > +	input_sync(dev);
+> > > +}
+> > > +
+> > :
+> > >
+> > >   /*
+> > >    * Set the appropriate event bits for the input subsystem
+> > >    */
+> > > -static void elantech_set_input_params(struct psmouse *psmouse)
+> > > +static int elantech_set_input_params(struct psmouse *psmouse)
+> > >   {
+> > >   	struct input_dev *dev = psmouse->dev;
+> > >   	struct elantech_data *etd = psmouse->private;
+> > >   	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0, y_2ft_max = 0;
+> > >
+> > > -	set_range(psmouse,&x_min,&y_min,&x_max,&y_max,&y_2ft_max);
+> > > +	if (set_range(psmouse,&x_min,&y_min,&x_max,&y_max,&y_2ft_max))
+> > > +		return -1;
+> > >
+> > >   	__set_bit(EV_KEY, dev->evbit);
+> > >   	__set_bit(EV_ABS, dev->evbit);
+> > > @@ -582,10 +739,26 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+> > >   		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> > >   		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> > >   		break;
+> > > +
+> > > +	case 3:
+> > > +		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+> > > +		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+> > > +		/* range of pressure and width is the same as v2 */
+> > > +		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+> > > +				     ETP_PMAX_V2, 0, 0);
+> > > +		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+> > > +				     ETP_WMAX_V2, 0, 0);
+> > > +		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> > Does v3 have the same limitation in MT about only reporting the edges of 
+> > the bounding box? Or are the two fingers always reported independently? 
+> > If that is so, you can drop this line :-)
+> I suppose it's the same as v2, but I have to comfirm with our firmware team.
+> I will ckeck this.
+> > 
+> > > +		input_mt_init_slots(dev, 2);
+> > > +		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> > > +		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> > > +		break;
+> > >   	}
+> > >
+> > 
+> > Cheers,
+> > Éric
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
-Hi, Pavel,
 
-Do you have time to try the patch attached with the mail?
-acpi_nvs.patch should go first.
-
-Best Regards,
-Huang Ying
-
-
---------------090102040203000401060301
-Content-Type: text/x-patch;
- name="acpi_nvs.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="acpi_nvs.patch"
-
-Subject: [PATCH] ACPI, Record ACPI NVS regions
-
-Some firmware will access memory in ACPI NVS region via APEI.  That
-is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-region.  The original resource conflict checking in APEI code will
-check memory/ioport accessed by APEI via general resource management
-mech.  But ACPI NVS region is marked as busy already, so that the
-false resource conflict will prevent APEI ERST/EINJ to work.
-
-To fix this, this patch record ACPI NVS regions, so that we can avoid
-request resources for memory region inside it.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/kernel/e820.c |    4 ++--
- drivers/acpi/Makefile  |    3 ++-
- drivers/acpi/nvs.c     |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/acpi.h   |   20 ++++++++++++++------
- 4 files changed, 64 insertions(+), 10 deletions(-)
-
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -713,7 +713,7 @@ void __init e820_mark_nosave_regions(uns
- }
- #endif
- 
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_ACPI
- /**
-  * Mark ACPI NVS memory region, so that we can save/restore it during
-  * hibernation and the subsequent resume.
-@@ -726,7 +726,7 @@ static int __init e820_mark_nvs_memory(v
- 		struct e820entry *ei = &e820.map[i];
- 
- 		if (ei->type == E820_NVS)
--			suspend_nvs_register(ei->addr, ei->size);
-+			acpi_nvs_register(ei->addr, ei->size);
- 	}
- 
- 	return 0;
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -20,11 +20,12 @@ obj-y				+= acpi.o \
- # All the builtin files are in the "acpi." module_param namespace.
- acpi-y				+= osl.o utils.o reboot.o
- acpi-y				+= atomicio.o
-+acpi-y				+= nvs.o
- 
- # sleep related files
- acpi-y				+= wakeup.o
- acpi-y				+= sleep.o
--acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o nvs.o
-+acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
- 
- 
- #
---- a/drivers/acpi/nvs.c
-+++ b/drivers/acpi/nvs.c
-@@ -15,6 +15,50 @@
- #include <linux/acpi_io.h>
- #include <acpi/acpiosxf.h>
- 
-+/* ACPI NVS regions, APEI may use it */
-+
-+struct nvs_region {
-+	__u64 phys_start;
-+	__u64 size;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(nvs_region_list);
-+
-+#ifdef CONFIG_ACPI_SLEEP
-+static int suspend_nvs_register(unsigned long start, unsigned long size);
-+#else
-+static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+{
-+	return 0;
-+}
-+#endif
-+
-+int acpi_nvs_register(__u64 start, __u64 size)
-+{
-+	struct nvs_region *region;
-+
-+	region = kmalloc(sizeof(*region), GFP_KERNEL);
-+	if (region)
-+		return -ENOMEM;
-+	region->phys_start = start;
-+	region->size = size;
-+	list_add_tail(&region->node, &nvs_region_list);
-+
-+	return suspend_nvs_register(start, size);
-+}
-+
-+int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
-+			     void *data)
-+{
-+	struct nvs_region *region;
-+
-+	list_for_each_entry(region, &nvs_region_list, node)
-+		func(region->phys_start, region->size, data);
-+}
-+
-+
-+#ifdef CONFIG_ACPI_SLEEP
- /*
-  * Platforms, like ACPI, may want us to save some memory used by them during
-  * suspend and to restore the contents of this memory during the subsequent
-@@ -41,7 +85,7 @@ static LIST_HEAD(nvs_list);
-  *	things so that the data from page-aligned addresses in this region will
-  *	be copied into separate RAM pages.
-  */
--int suspend_nvs_register(unsigned long start, unsigned long size)
-+static int suspend_nvs_register(unsigned long start, unsigned long size)
- {
- 	struct nvs_page *entry, *next;
- 
-@@ -159,3 +203,4 @@ void suspend_nvs_restore(void)
- 		if (entry->data)
- 			memcpy(entry->kaddr, entry->data, entry->size);
- }
-+#endif
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
- 					     u32 *mask, u32 req);
- extern void acpi_early_init(void);
- 
-+extern int acpi_nvs_register(__u64 start, __u64 size);
-+
-+extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+				    void *data);
-+
- #else	/* !CONFIG_ACPI */
- 
- #define acpi_disabled 1
-@@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
- {
- 	return -1;
- }
--#endif	/* !CONFIG_ACPI */
- 
--#ifdef CONFIG_ACPI_SLEEP
--int suspend_nvs_register(unsigned long start, unsigned long size);
--#else
--static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+static inline int acpi_nvs_register(__u64 start, __u64 size)
- {
- 	return 0;
- }
--#endif
-+
-+static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+					   void *data)
-+{
-+	return 0;
-+}
-+
-+#endif	/* !CONFIG_ACPI */
- 
- #endif	/*_LINUX_ACPI_H*/
-
---------------090102040203000401060301
-Content-Type: text/x-patch;
- name="nvs_exclude.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="nvs_exclude.patch"
-
-Subject: [BUGFIX] ACPI, APEI, Resolve false conflict between ACPI NVS and APEI
-
-Some firmware will access memory in ACPI NVS region via APEI.  That
-is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-region.  The original resource conflict checking in APEI code will
-check memory/ioport accessed by APEI via general resource management
-mech.  But ACPI NVS region is marked as busy already, so that the
-false resource conflict will prevent APEI ERST/EINJ to work.
-
-To fix this, this patch excludes ACPI NVS regions when APEI components
-request resources.  So that they will not conflict with ACPI NVS
-regions.
-
-Reported-by: Pavel Ivanov <paivanof@gmail.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/apei-base.c |   27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
-
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -449,8 +449,19 @@ int apei_resources_sub(struct apei_resou
- }
- EXPORT_SYMBOL_GPL(apei_resources_sub);
- 
-+static int apei_get_nvs_callback(__u64 start, __u64 size, void *data)
-+{
-+	struct apei_resources *resources = data;
-+	return apei_res_add(&resources->iomem, start, size);
-+}
-+
-+static int apei_get_nvs_resources(struct apei_resources *resources)
-+{
-+	return acpi_nvs_for_each_region(apei_get_nvs_callback, resources);
-+}
-+
- /*
-- * IO memory/port rersource management mechanism is used to check
-+ * IO memory/port resource management mechanism is used to check
-  * whether memory/port area used by GARs conflicts with normal memory
-  * or IO memory/port of devices.
-  */
-@@ -459,12 +470,24 @@ int apei_resources_request(struct apei_r
- {
- 	struct apei_res *res, *res_bak = NULL;
- 	struct resource *r;
-+	struct apei_resources nvs_resources;
- 	int rc;
- 
- 	rc = apei_resources_sub(resources, &apei_resources_all);
- 	if (rc)
- 		return rc;
- 
-+	/*
-+	 * Some firmware uses ACPI NVS region, that has been marked as
-+	 * busy, so exclude it from APEI resources to avoid false
-+	 * conflict.
-+	 */
-+	apei_resources_init(&nvs_resources);
-+	apei_get_nvs_resources(&nvs_resources);
-+	rc = apei_resources_sub(resources, &nvs_resources);
-+	if (rc)
-+		goto res_fini;
-+
- 	rc = -EINVAL;
- 	list_for_each_entry(res, &resources->iomem, list) {
- 		r = request_mem_region(res->start, res->end - res->start,
-@@ -511,6 +534,8 @@ err_unmap_iomem:
- 			break;
- 		release_mem_region(res->start, res->end - res->start);
- 	}
-+res_fini:
-+	apei_resources_fini(&nvs_resources);
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(apei_resources_request);
-
---------------090102040203000401060301--
