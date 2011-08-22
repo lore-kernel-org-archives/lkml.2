@@ -1,101 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1HVGIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 02:08:30 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47463 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159Ab1HVGI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 02:08:27 -0400
-Message-ID: <4E51F24F.1050503@oracle.com>
-Date: Sun, 21 Aug 2011 23:08:15 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752939Ab1HVGRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 02:17:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56328 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab1HVGRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 02:17:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-sh@vger.kernel.org
+Subject: [Replacement][PATCH 1/2 v2] PM: Use spinlock instead of mutex in clock management functions
+Date: Mon, 22 Aug 2011 08:18:48 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201108202131.19479.rjw@sisk.pl> <201108212109.30399.rjw@sisk.pl> <201108212110.45316.rjw@sisk.pl>
+In-Reply-To: <201108212110.45316.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <4E4F814B.5070202@gmail.com> <4E4F865B.2010608@gmail.com> <4E4FD48B.8030101@oracle.com> <4E4FE1B1.7010601@gmail.com>
-In-Reply-To: <4E4FE1B1.7010601@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E51F258.0095:SCFMA922111,ss=1,re=-4.000,fgs=0
+Message-Id: <201108220818.48725.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2011 09:32 AM, Marco Stornelli wrote:
-> Il 20/08/2011 17:36, Sunil Mushran ha scritto:
->> On 08/20/2011 03:03 AM, Marco Stornelli wrote:
->>> Il 20/08/2011 11:41, Marco Stornelli ha scritto:
->>>> Hi,
->>>>
->>>> Il 28/06/2011 17:33, Josef Bacik ha scritto:
->>>>> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.
->>>>> Turns out
->>>>> using fiemap in things like cp cause more problems than it solves, so
->>>>> lets try
->>>>> and give userspace an interface that doesn't suck. We need to match
->>>>> solaris
->>>>> here, and the definitions are
->>>>>
->>>>> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
->>>>> next hole greater than or equal to the supplied offset
->>>>> is returned. The definition of a hole is provided near
->>>>> the end of the DESCRIPTION.
->>>>>
->>>>> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
->>>>> start of the next non-hole file region greater than or
->>>>> equal to the supplied offset.
->>>>>
->>>>
->>>> I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and 
->>>> I've
->>>> got some doubts about the right behavior:
->>>>
->>>> 1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means
->>>> always the offset from the start of the file, right?
->>>>
->>>> 2) in case of a file with hole at the beginning and data at the 
->>>> end, if
->>>> I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file
->>>> because the idea is to search the *next* hole and we have always a
->>>> virtual hole at the end of the file, right?
->>>
->>> Just to be precise about this question: the alternative here, it's to
->>> return the same position because we are already in a hole.
->>
->> Yes, the offset is from the start of the file.
->>
->> And yes, same offset is ok. I think the word next should be
->> dropped from the definition. It is misleading.
->>
->
-> Thank. Yes the word "next" is not very clear. I re-read the proposal 
-> for the standard, actually it's seems to me that if we are in the last 
-> hole we should return the file size, if we are not in the last hole 
-> than it's ok the same offset - "....except that
-> if offset falls beyond the last byte not within a hole, then the file
-> offset may be set to the file size instead".
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Any proposal that differentiates between holes is wrong. It should not
-matter where the hole is.
+The lock member of struct pm_clk_data is of type struct mutex,
+which is a problem, because the suspend and resume routines
+defined in drivers/base/power/clock_ops.c cannot be executed
+with interrupts disabled for this reason.  Modify
+struct pm_clk_data so that its lock member is a spinlock.
 
-Think of it from the usage-pov.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-doff = 0;
-while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
-     hoff = lseek(SEEK_HOLE, doff);
-     read_offset = doff;
-     read_len = hoff -doff;
-     process();
-     doff = hoff;
-}
+The previous [1/2] in this series was on top of the branch at
 
-The goal is to make this as efficient as follows. Treating the last
-hole differently adds more code for no benefit.
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-domains
+
+but what is needed now is a version on top of the current mainline tree, which
+is this one.
+
+Thanks,
+Rafael
+
+---
+ drivers/base/power/clock_ops.c |   40 ++++++++++++++++++++++------------------
+ 1 file changed, 22 insertions(+), 18 deletions(-)
+
+Index: linux/drivers/base/power/clock_ops.c
+===================================================================
+--- linux.orig/drivers/base/power/clock_ops.c
++++ linux/drivers/base/power/clock_ops.c
+@@ -19,7 +19,7 @@
+ 
+ struct pm_clk_data {
+ 	struct list_head clock_list;
+-	struct mutex lock;
++	spinlock_t lock;
+ };
+ 
+ enum pce_status {
+@@ -73,9 +73,9 @@ int pm_clk_add(struct device *dev, const
+ 		}
+ 	}
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irq(&pcd->lock);
+ 	list_add_tail(&ce->node, &pcd->clock_list);
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irq(&pcd->lock);
+ 	return 0;
+ }
+ 
+@@ -83,8 +83,8 @@ int pm_clk_add(struct device *dev, const
+  * __pm_clk_remove - Destroy PM clock entry.
+  * @ce: PM clock entry to destroy.
+  *
+- * This routine must be called under the mutex protecting the PM list of clocks
+- * corresponding the the @ce's device.
++ * This routine must be called under the spinlock protecting the PM list of
++ * clocks corresponding the the @ce's device.
+  */
+ static void __pm_clk_remove(struct pm_clock_entry *ce)
+ {
+@@ -123,7 +123,7 @@ void pm_clk_remove(struct device *dev, c
+ 	if (!pcd)
+ 		return;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irq(&pcd->lock);
+ 
+ 	list_for_each_entry(ce, &pcd->clock_list, node) {
+ 		if (!con_id && !ce->con_id) {
+@@ -137,7 +137,7 @@ void pm_clk_remove(struct device *dev, c
+ 		}
+ 	}
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irq(&pcd->lock);
+ }
+ 
+ /**
+@@ -158,7 +158,7 @@ int pm_clk_init(struct device *dev)
+ 	}
+ 
+ 	INIT_LIST_HEAD(&pcd->clock_list);
+-	mutex_init(&pcd->lock);
++	spin_lock_init(&pcd->lock);
+ 	dev->power.subsys_data = pcd;
+ 	return 0;
+ }
+@@ -181,12 +181,12 @@ void pm_clk_destroy(struct device *dev)
+ 
+ 	dev->power.subsys_data = NULL;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irq(&pcd->lock);
+ 
+ 	list_for_each_entry_safe_reverse(ce, c, &pcd->clock_list, node)
+ 		__pm_clk_remove(ce);
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irq(&pcd->lock);
+ 
+ 	kfree(pcd);
+ }
+@@ -220,13 +220,14 @@ int pm_clk_suspend(struct device *dev)
+ {
+ 	struct pm_clk_data *pcd = __to_pcd(dev);
+ 	struct pm_clock_entry *ce;
++	unsigned long flags;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+ 	if (!pcd)
+ 		return 0;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irqsave(&pcd->lock, flags);
+ 
+ 	list_for_each_entry_reverse(ce, &pcd->clock_list, node) {
+ 		if (ce->status == PCE_STATUS_NONE)
+@@ -238,7 +239,7 @@ int pm_clk_suspend(struct device *dev)
+ 		}
+ 	}
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irqrestore(&pcd->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -251,13 +252,14 @@ int pm_clk_resume(struct device *dev)
+ {
+ 	struct pm_clk_data *pcd = __to_pcd(dev);
+ 	struct pm_clock_entry *ce;
++	unsigned long flags;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+ 	if (!pcd)
+ 		return 0;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irqsave(&pcd->lock, flags);
+ 
+ 	list_for_each_entry(ce, &pcd->clock_list, node) {
+ 		if (ce->status == PCE_STATUS_NONE)
+@@ -269,7 +271,7 @@ int pm_clk_resume(struct device *dev)
+ 		}
+ 	}
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irqrestore(&pcd->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -344,6 +346,7 @@ int pm_clk_suspend(struct device *dev)
+ {
+ 	struct pm_clk_data *pcd = __to_pcd(dev);
+ 	struct pm_clock_entry *ce;
++	unsigned long flags;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -351,12 +354,12 @@ int pm_clk_suspend(struct device *dev)
+ 	if (!pcd || !dev->driver)
+ 		return 0;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irqsave(&pcd->lock, flags);
+ 
+ 	list_for_each_entry_reverse(ce, &pcd->clock_list, node)
+ 		clk_disable(ce->clk);
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irqrestore(&pcd->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -369,6 +372,7 @@ int pm_clk_resume(struct device *dev)
+ {
+ 	struct pm_clk_data *pcd = __to_pcd(dev);
+ 	struct pm_clock_entry *ce;
++	unsigned long flags;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -376,12 +380,12 @@ int pm_clk_resume(struct device *dev)
+ 	if (!pcd || !dev->driver)
+ 		return 0;
+ 
+-	mutex_lock(&pcd->lock);
++	spin_lock_irqsave(&pcd->lock, flags);
+ 
+ 	list_for_each_entry(ce, &pcd->clock_list, node)
+ 		clk_enable(ce->clk);
+ 
+-	mutex_unlock(&pcd->lock);
++	spin_unlock_irqrestore(&pcd->lock, flags);
+ 
+ 	return 0;
+ }
 
