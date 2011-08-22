@@ -1,75 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1HVTx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 15:53:59 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:33449 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753362Ab1HVTx5 (ORCPT
+	id S1753554Ab1HVT4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 15:56:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17295 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab1HVT4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 15:53:57 -0400
-Date: Mon, 22 Aug 2011 12:53:55 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 22 (evm)
-Message-Id: <20110822125355.bb01d76b.rdunlap@xenotime.net>
-In-Reply-To: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 22 Aug 2011 15:56:52 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 22 Aug 2011 12:56:30 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>
+Date: Mon, 22 Aug 2011 12:56:28 -0700
+Subject: RE: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
+Thread-Topic: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from
+ DT
+Thread-Index: AcxbiefKFzWm5BqERUyNT4NTGHMQIQFeQ51g
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A3687@HQMAIL01.nvidia.com>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+In-Reply-To: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011 14:53:04 +1000 Stephen Rothwell wrote:
+Stephen Warren wrote at Monday, August 15, 2011 2:28 PM:
+> ...
+> This patch modifies Tegra's device tree support to remove the dependency
+> on harmony_pinmux_init(), thus making it completely board-independent.
 
-> Hi all,
+I had the good fortune of meeting Grant at LinuxCon last week and talked
+through this patchset a little (thanks!)
+
+The message I got from Grant was that the patches are basically OK. He
+did have a couple of concerns:
+
+* Does this cause the compiled DTB to blow up in size.
+
+The DTB goes from ~3-4K to ~8-9K with these patches added. While that
+is a large % increase, Grant said that as an absolute value, that size
+shouldn't be an issue.
+
+* There's lots of repetition in the .dts representation; can this be improved?
+
+We discussed enhancing the syntax a little, so that you can configure
+multiple pins/pingroups from a single node. In particular, the syntax
+in my patches was:
+
+ld0 {
+    nvidia,function = "displaya";
+    nvidia,pull-down;
+};
+ld1 {
+    nvidia,function = "displaya";
+    nvidia,pull-down;
+};
+
+Which we discussed enhancing to something like:
+
+ld0 {
+    additional-pins = "ld1", "ld2", ...;
+    nvidia,function = "displaya";
+    nvidia,pull-down;
+};
+
+or:
+
+meaningless-name { // typically would just use the pin name
+    pins = "ld0", "ld1", "ld2", ...;
+    nvidia,function = "displaya";
+    nvidia,pull-down;
+};
+
+* We also briefly discussed that dtc could be modified to support symbolic
+constants, so we could use named integers for the function names (perhaps
+pin names too). I'll look into how easy it is to modify dtc for this.
+
+I'll look into implementing these enhancements, and others discussed in
+this email thread, and repost.
+
+> ...
+> Stephen Warren (13):
+>   arm/tegra: Prep boards for gpio/pinmux conversion to pdevs
+>   arm/tegra: Avoid duplicate gpio/pinmux devices with dt
+>   arm/tegra: board-dt: Add AUXDATA for tegra-gpio and tegra-pinmux
+>   docs/dt: Document nvidia,tegra20-gpio's nvidia,enabled-gpios property
+>   arm/dt: Tegra: Add nvidia,gpios property to GPIO controller
+>   docs/dt: Document nvidia,tegra20-pinmux binding
+>   arm/dt: Tegra: Add pinmux node
+>   gpio/tegra: Convert to a platform device
+>   gpio/tegra: Add device tree support
+>   arm/tegra: Convert pinmux driver to a platform device
+>   arm/tegra: Add device tree support to pinmux driver
+>   arm/tegra: board-dt: Remove dependency on non-dt pinmux functions
+>   arm/tegra: Remove temporary gpio/pinmux registration workaround
 > 
-> [The kernel.org mirroring is a bit low today]
+>  .../devicetree/bindings/gpio/gpio_nvidia.txt       |   20 +
+>  .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |  294 ++++++++++++
+>  arch/arm/boot/dts/tegra-harmony.dts                |  483 ++++++++++++++++++++
+>  arch/arm/boot/dts/tegra-seaboard.dts               |  421 +++++++++++++++++
+>  arch/arm/boot/dts/tegra20.dtsi                     |    5 +
+>  arch/arm/mach-tegra/Makefile                       |    1 -
+>  arch/arm/mach-tegra/board-dt.c                     |   12 +-
+>  arch/arm/mach-tegra/board-harmony-pinmux.c         |    8 +
+>  arch/arm/mach-tegra/board-paz00-pinmux.c           |    8 +
+>  arch/arm/mach-tegra/board-seaboard-pinmux.c        |    9 +-
+>  arch/arm/mach-tegra/board-trimslice-pinmux.c       |    7 +
+>  arch/arm/mach-tegra/devices.c                      |   10 +
+>  arch/arm/mach-tegra/devices.h                      |    2 +
+>  arch/arm/mach-tegra/pinmux.c                       |  269 +++++++++++
+>  drivers/gpio/gpio-tegra.c                          |   57 ++-
+>  15 files changed, 1582 insertions(+), 24 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/pinmux/pinmux_nvidia.txt
 
-(on x86_64:)
+-- 
+nvpublic
 
-When CONFIG_EVM=y, CONFIG_CRYPTO_HASH2=m, CONFIG_TRUSTED_KEYS=m,
-CONFIG_ENCRYPTED_KEYS=m, the build fails with:
-
-(.text+0x378aa): undefined reference to `key_type_encrypted'
-evm_crypto.c:(.text+0x37992): undefined reference to `crypto_alloc_shash'
-evm_crypto.c:(.text+0x37a24): undefined reference to `crypto_shash_setkey'
-evm_crypto.c:(.text+0x37ad9): undefined reference to `crypto_shash_update'
-evm_crypto.c:(.text+0x37aeb): undefined reference to `crypto_shash_final'
-(.text+0x37b4b): undefined reference to `crypto_shash_update'
-(.text+0x37c61): undefined reference to `crypto_shash_update'
-(.text+0x37cb9): undefined reference to `crypto_shash_update'
-
-even though EVM (Kconfig) selects ENCRYPTED_KEYS and TRUSTED_KEYS..
-and even after I add "select CRYPTO_HASH2".
-
-Is this because EVM is bool and kconfig is confused about 'select's
-when a bool is selecting tristates?  Shouldn't the tristates become
-'y' instead of 'm' if they are selected by a bool that is 'y'?
-
-
-xconfig shows these symbol values:
-
-Symbol: EVM [=y]
-Type : boolean
-Prompt: EVM support
-Defined at security/integrity/evm/Kconfig:1
-Depends on: SECURITY [=y] && KEYS [=y] && TCG_TPM [=m]
-Location:
--> Security options
-Selects: CRYPTO_HMAC [=m] && CRYPTO_MD5 [=m] && CRYPTO_SHA1 [=m] && CRYPTO_HASH2 [=m] && ENCRYPTED_KEYS [=m] && TRUSTED_KEYS [=m]
-
-
-Hm, changing TCG_TPM to =y also changes TRUSTED_KEYS and ENCRYPTED_KEYS and
-lots of CRYPTO_ symbols from =m to =y.  There must be some kind of min/max
-symbol checking that is confused?
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
