@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1HVVVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:21:23 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36279 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753100Ab1HVVVT (ORCPT
+	id S1753845Ab1HVVWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:22:42 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:59135 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab1HVVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:21:19 -0400
-X-Sasl-enc: wVdeKMgg4J0kXQ9udhQ3+oDgYs5obQFo64kHGu73iHY8 1314048078
-Date: Mon, 22 Aug 2011 14:18:32 -0700
-From: Greg KH <greg@kroah.com>
-To: Bernhard Roth <br@pwrnet.de>
-Cc: nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        claudio@evidence.eu.com
-Subject: Re: [PATCH] atmel_serial: RS485: receiving enabled when sending data
-Message-ID: <20110822211832.GA8023@kroah.com>
-References: <4E492CFF.7040905@pwrnet.de>
+	Mon, 22 Aug 2011 17:22:40 -0400
+Message-ID: <4E52C890.1060600@oracle.com>
+Date: Mon, 22 Aug 2011 14:22:24 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E492CFF.7040905@pwrnet.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>	<4E4F814B.5070202@gmail.com>	<4E4F865B.2010608@gmail.com>	<4E4FD48B.8030101@oracle.com>	<4E4FE1B1.7010601@gmail.com>	<4E51F24F.1050503@oracle.com> <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com> <4E527C7F.9040807@oracle.com> <4E52984F.8050702@gmail.com>
+In-Reply-To: <4E52984F.8050702@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A02020B.4E52C89C.00CB,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 15, 2011 at 04:28:15PM +0200, Bernhard Roth wrote:
-> Hello!
-> 
-> By default the atmel_serial driver in RS485 mode disables receiving
-> data until all data in the send buffer has been sent. This flag
-> allows to receive data even whilst sending data. This is very useful
-> to
-> 
-> - check if the data has been sent correctly over the RS485 bus
-> - assure that no collision happened
-> - check for short circuits/termination issues on the RS485 bus
-> 
-> Usually this functionality is realized by hardware, wether
-> controlling the RX-Enable pin of the RS485 transceiver with RTS
-> (driver control signal) or pulling it LOW permanently. The present
-> atmel_serial driver makes this impossible, thus requiring following
-> patch.
-> 
-> Usage example:
-> 
->     struct serial_rs485     rs485;
-> 
->     memset(&rs485, 0, sizeof(rs485));
->     rs485.flags = SER_RS485_ENABLED | SER_RS485_RX_DURING_TX;
->     ioctl(fd, TIOCSRS485, &rs485);
-> 
-> 
-> 
-> 
-> atmel_serial: RS485: receiving enabled when sending data
-> 
-> By default the atmel_serial driver in RS485 mode disables receiving
-> data until
-> all data in the send buffer has been sent. This flag allows to receive data
-> even whilst sending data.
-> 
-> Signed-off-by: Bernhard Roth <br@pwrnet.de>
-> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-> ---
->  drivers/tty/serial/atmel_serial.c |   17 ++++++++++-------
->  include/linux/serial.h            |    1 +
->  2 files changed, 11 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/atmel_serial.c
-> b/drivers/tty/serial/atmel_serial.c
-> index af9b781..5f6c745 100644
-> --- a/drivers/tty/serial/atmel_serial.c
-> +++ b/drivers/tty/serial/atmel_serial.c
-> @@ -339,8 +339,9 @@ static void atmel_stop_tx(struct uart_port *port)
->      /* Disable interrupts */
->      UART_PUT_IDR(port, atmel_port->tx_done_mask);
-> 
-> -    if (atmel_port->rs485.flags & SER_RS485_ENABLED)
-> -        atmel_start_rx(port);
-> +    if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-> +        !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
-> +            atmel_start_rx(port);
+On 08/22/2011 10:56 AM, Marco Stornelli wrote:
+> Il 22/08/2011 17:57, Sunil Mushran ha scritto:
+>>
+>> The following test was used to test the early implementations.
+>> http://oss.oracle.com/~smushran/seek_data/
+>>
+>
+> Thank you very much!! I found another point. Your test fails with my 
+> implementation because here 
+> (http://www.austingroupbugs.net/view.php?id=415) says: "If whence is 
+> SEEK_DATA, the file offset shall be set to the smallest location of a 
+> byte not within a hole and not less than offset. It shall be an error 
+> if no such byte exists." So in this case I return ENXIO but the test 
+> expects another value. I have to say that there is a bit of confusion 
+> about the real behavior of this new feature :)
+>
 
-Can you fix your email client to not strip patches of tabs and resend
-this so that I can apply it?
+That's test 5.10, 5.12, 5.14. And it expects -ENXIO.
 
-thanks,
-
-greg k-h
+Which test is failing for you?
