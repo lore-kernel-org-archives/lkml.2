@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1HVPcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:32:24 -0400
-Received: from mail1.vodafone.ie ([213.233.128.43]:19242 "EHLO
-	mail1.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab1HVPcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:32:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: An4CAMx1Uk5tTHJJ/2dsb2JhbAAMNYRLl1GOJgEBBSMPAUYQCw0BCgICBRYLAgIJAwIBAgEPNgYNAQUCAQGHcaQhkQOBLIQMgRAEmD6ETIcC
-Message-ID: <4E527684.3020206@draigBrady.com>
-Date: Mon, 22 Aug 2011 16:32:20 +0100
-From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: Oleg Nesterov <oleg@redhat.com>, bookjovi@gmail.com, dhowells@redhat.com,
-        roland@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+	id S1753249Ab1HVPeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:34:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752594Ab1HVPeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:34:21 -0400
+Date: Mon, 22 Aug 2011 11:34:08 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: hch@infradead.org, peterz@infradead.org, davej@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
-References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
-In-Reply-To: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: hugetlb locking bug.
+Message-ID: <20110822153408.GG2270@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2011 11:36 PM, Neil Horman wrote:
-> Concur.  The comment should be changed
-> Neil
-> 
-> Oleg Nesterov <oleg@redhat.com> wrote:
-> 
->> On 08/21, Oleg Nesterov wrote:
->>>
->>> On 08/21, bookjovi@gmail.com wrote:
->>>>
->>>> For non-pipe case, limit 0 also means drop the coredump, so just put
->>>> the zero limit check at do_coredump function begining.
->>>
->>> Neil, what do you think? Should we change the code or the comment?
+On Fri, Apr 15, 2011 at 2:19 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >>
->> Personally I think we should fix the comment. I think RLIMIT_CORE
->> doesn't apply in this case, limit == 1 check is very special. And
->> this is what linux always did, except between 725eae32 and 898b374a.
+>> (Warning: whitespace damage and TOTALLY UNTESTED)
+>
+> Gaah. That won't work. Or rather, it probably may work, but while
+> working it will spam the logs with that
+> 
+>     WARN_ON(!(inode->i_state & I_NEW));
+> 
+> thing from unlock_new_inode.
+> 
+> So the sane thing to do would be apparently one of
+> 
+>  (a) ignore the whole thing, and just accept the false lockdep warning.
+> 
+>       which I'd be willing to do, but it might be hiding some real
+> ones, so we probably shouldn't.
+> 
+>  (b) just remove that WARN_ON(), and use the one-liner I suggested
+> 
+>  (c) extract the "set directory i_mutex key" logic into a new helper
+> function for the case of filesystems like hugetlbfs that don't want to
+> use unlock_new_inode() for one reason or another.
+> 
+> Personally, I don't have any really strong preferences and would
+> probably just go for (b) to keep the patch small and simple. Anybody?
 
-Sorry for jumping in late here.
-I would really like `ulimit -c 0` to completely disable core dumps,
-including not running core_pattern, as I also mentioned here:
-https://bugs.launchpad.net/ubuntu/+source/apport/+bug/62511
-I noticed this in a script where ctrl-\ was taking a long
-time to be registered as the core_pattern was run unconditionally.
+Sorry to revive an old thread, but we've seen this reported by something
+other than Dave's crazy fuzzer tool now [1].
 
-Testing on 2.6.38.8-34.fc15.x86_64 here shows the IMHO problematic behavior:
+It seems solution (a) wound up winning just because nobody chased it
+further.  Is that what we want to stick with, and just close similar
+reports as "false warning", or should option (c) eventually get
+implemented?
 
-# echo "|/bin/true" > /proc/sys/kernel/core_pattern
-# ulimit -c 0
-# cat
-^\Quit (core dumped)
+josh
 
-cheers,
-Pádraig.
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=730998
