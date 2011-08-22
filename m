@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1HVTMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 15:12:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33068 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab1HVTL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 15:11:57 -0400
-Date: Mon, 22 Aug 2011 22:09:36 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
-        ascardo@holoscopio.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zcache: fix possible sleep under lock
-Message-ID: <20110822190936.GA12248@shale.localdomain>
-References: <1314038869-8164-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	id S1753420Ab1HVTOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 15:14:06 -0400
+Received: from mail.kaapeli.fi ([84.20.139.148]:40537 "EHLO mail.kaapeli.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376Ab1HVTOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 15:14:05 -0400
+Message-ID: <4E52AA7B.3070708@iki.fi>
+Date: Mon, 22 Aug 2011 22:14:03 +0300
+From: Jyrki Kuoppala <jkp@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314038869-8164-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-media@vger.kernel.org, Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix to qt1010 tuner frequency selection (media/dvb), resend
+ as text-only
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 01:47:49PM -0500, Seth Jennings wrote:
-> zcache_new_pool() calls kmalloc() with GFP_KERNEL which has
-> __GFP_WAIT set.  However, zcache_new_pool() gets called on
-> a stack that holds the swap_lock spinlock, leading to a
-> possible sleep-with-lock situation. The lock is obtained
-> in enable_swap_info().
-> 
-> The patch replaces GFP_KERNEL with GFP_IOFS, which is
-> GFP_KERNEL & ~__GFP_WAIT.
-> 
+The patch fixes frequency selection for some UHF frequencies e.g. 
+channel 32 (562 MHz) on the qt1010 tuner. The tuner is used e.g. in the 
+MSI Mega Sky dvb-t stick ("MSI Mega Sky 55801 DVB-T USB2.0")
 
-You should use GFP_ATOMIC.  We don't want to do IO with the locks
-held.  The only reason GFP_IOFS exists is so that we can turn off
-io during suspend and resume.
+One example of problem reports of the bug this fixes can be read at 
+http://www.freak-search.com/de/thread/330303/linux-dvb_tuning_problem_with_some_frequencies_qt1010,_dvb
 
-regards,
-dan carpenter
+Applies to kernel versions 2.6.38.8, 2.6.39.4, 3.0.3 and 3.1-rc2.
+
+Signed-off-by: Jyrki Kuoppala <jkp@iki.fi>
+
+diff -upr linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c 
+linux-source-2.6.38/drivers/media/common/tuners/qt1010.c
+--- linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c 
+2011-03-15 03:20:32.000000000 +0200
++++ linux-source-2.6.38/drivers/media/common/tuners/qt1010.c	2011-08-21 
+23:16:38.209580365 +0300
+@@ -198,9 +198,10 @@ static int qt1010_set_params(struct dvb_
+
+  	/* 22 */
+  	if      (freq < 450000000) rd[15].val = 0xd0; /* 450 MHz */
+-	else if (freq < 482000000) rd[15].val = 0xd1; /* 482 MHz */
++	else if (freq < 482000000) rd[15].val = 0xd2; /* 482 MHz */
+  	else if (freq < 514000000) rd[15].val = 0xd4; /* 514 MHz */
+-	else if (freq < 546000000) rd[15].val = 0xd7; /* 546 MHz */
++	else if (freq < 546000000) rd[15].val = 0xd6; /* 546 MHz */
++	else if (freq < 578000000) rd[15].val = 0xd8; /* 578 MHz */
+  	else if (freq < 610000000) rd[15].val = 0xda; /* 610 MHz */
+  	else                       rd[15].val = 0xd0;
 
