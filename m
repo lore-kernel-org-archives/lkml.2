@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1HVSL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 14:11:59 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45719 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab1HVSL5 convert rfc822-to-8bit (ORCPT
+	id S1753058Ab1HVSNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 14:13:20 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56325 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752435Ab1HVSNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 14:11:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110822155529.GA4783@xanatos>
-References: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
-	<20110822155529.GA4783@xanatos>
-Date: Mon, 22 Aug 2011 23:41:53 +0530
-Message-ID: <CAFPAmTSx1d=A5r-6FR9=pcm-8eKer_+=5Bu_sevfs_Ni+cSxag@mail.gmail.com>
-Subject: Re: [PATCH] xhci: Redundant check for
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: sifram rajas <sifram.rajas@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Aug 2011 14:13:17 -0400
+Date: Mon, 22 Aug 2011 11:13:14 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        gregkh <greg@kroah.com>, an Abbott <abbotti@mev.co.uk>,
+        ori Hess <fmhess@users.sourceforge.net>
+Subject: [PATCH -next] staging: fix comedi build when COMEDI_PCI is not
+ enabled
+Message-Id: <20110822111314.bf7a526f.rdunlap@xenotime.net>
+In-Reply-To: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Thanks for replying back.
+Fix build when CONFIG_ISA_DMA_API is enabled but
+CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
+Fixes these build errors:
 
-Really sorry about your email address, Sarah.
+drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
+drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
+drivers/staging/comedi/drivers/ni_labpc.c: At top level:
+drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
+drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
 
-I think it was a typo. Ill take of emailing you at
-sarah.a.sharp@linux.intel.com in future, starting from this email.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Regards,
-Kautuk.
-
-
-On Mon, Aug 22, 2011 at 9:25 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
-> Hi Sifram,
->
->
-> On Mon, Aug 22, 2011 at 08:35:20AM -0700, sifram rajas wrote:
->> Hi Sarah,
->>
->> This patch is for linux-3.0.3.
->>
->> In the xhci_check_args() function in xhci.c, there is a redundant
->> check for xhci->devs.
->>
->> This is redundant because the struct xhci_hcd->devs is actually
->> defined as a static array
->> of pointers and is not a pointer to a pointer.
->
-> Your patch looks fine, and I'll apply it to my usb-next branch later
-> this week.
->
-> However, can you please send future patches to
-> sarah.a.sharp@linux.intel.com, not my intel.com address?  The intel.com
-> one runs through a horrible exchange server that converts tabs to spaces
-> and makes it impossible to apply patches.
->
-> Where did you find the intel.com email address?  I'm pretty sure the
-> MAINTAINERS file lists the linux.intel.com one, and I'd like to make
-> sure people aren't getting bad information.
->
-> Sarah Sharp
->
->> Signed-off-by: Sifram Rajas <sifram.rajas@gmail.com>
->> ---
->> drivers/usb/host/xhci.c |   3 +--
->>  1 files changed, 1 insertions(+), 2 deletions(-)
->>
->> diff a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
->> --- a/drivers/usb/host/xhci.c 2011-08-17 23:27:16.000000000 +0530
->> +++ b/drivers/usb/host/xhci.c 2011-08-22 20:43:34.250000000 +0530
->> @@ -945,8 +945,7 @@ static int xhci_check_args(struct usb_hc
->>               return -ENODEV;
->>
->>       if (check_virt_dev) {
->> -             if (!udev->slot_id || !xhci->devs
->> -                     || !xhci->devs[udev->slot_id]) {
->> +             if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
->>                       printk(KERN_DEBUG "xHCI %s called with unaddressed "
->>                                               "device\n", func);
->>                       return -EINVAL;
->>
->> Thanks,
->> Sifram Rajas.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+--- linux-next-20110822.orig/drivers/staging/comedi/drivers/ni_labpc.c
++++ linux-next-20110822/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -241,8 +241,10 @@ static int labpc_eeprom_write_insn(struc
+ 				   struct comedi_insn *insn,
+ 				   unsigned int *data);
+ static void labpc_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd);
+-#ifdef CONFIG_COMEDI_PCI
++#ifdef CONFIG_ISA_DMA_API
+ static unsigned int labpc_suggest_transfer_size(struct comedi_cmd cmd);
++#endif
++#ifdef CONFIG_COMEDI_PCI
+ static int labpc_find_device(struct comedi_device *dev, int bus, int slot);
+ #endif
+ static int labpc_dio_mem_callback(int dir, int port, int data,
