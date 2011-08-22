@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab1HVNUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:20:31 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:35594 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab1HVNU3 (ORCPT
+	id S1752521Ab1HVNXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:23:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51646 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab1HVNXR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:20:29 -0400
-Date: Mon, 22 Aug 2011 09:20:18 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Divy LeRay <divy@chelsio.com>, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] dma-debug: hash_bucket_find needs to allow for offsets
- within an entry (v2)
-Message-ID: <20110822132018.GB12337@hmsreliant.think-freely.org>
-References: <1311097278-30841-1-git-send-email-nhorman@tuxdriver.com>
- <20110808191354.GA22117@hmsreliant.think-freely.org>
- <20110810133158.GB7598@amd.com>
- <20110822104621.GA12337@hmsreliant.think-freely.org>
- <20110822124427.GE2079@amd.com>
+	Mon, 22 Aug 2011 09:23:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110822124427.GE2079@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.2 (-)
+In-Reply-To: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
+References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com>
+Date: Mon, 22 Aug 2011 09:23:16 -0400
+Message-ID: <CACV3sbL3j7qDPq=Dadnsw3HZCokF5V_tnGPhfocP-b1haQq_=g@mail.gmail.com>
+Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
+From: Jovi Zhang <bookjovi@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, dhowells@redhat.com, roland@redhat.com,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 02:44:27PM +0200, Roedel, Joerg wrote:
-> Hi Neil,
-> 
-> On Mon, Aug 22, 2011 at 06:46:21AM -0400, Neil Horman wrote:
-> 
-> > Hey, Jeorg, just wondering if you managed to get a look at this?
-> > Neil
-> 
-> It is not forgotten :) This is my first day back in office and I will
-> look into it today.
-> 
-Ah, apologies, I'm just getting back from vacation myself, and am trying to
-figure out where I left off with everything :)
-Neil
+Sorry, I should dig the problem more deeply.
+I will resend the patch for fix the comments. Thanks.
 
-> Joerg
-> 
-> -- 
-> AMD Operating System Research Center
-> 
-> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-> General Managers: Alberto Bozzo, Andrew Bowd
-> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-> 
-> 
+On Sun, Aug 21, 2011 at 6:36 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>
+> Concur.  The comment should be changed
+> Neil
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> >On 08/21, Oleg Nesterov wrote:
+> >>
+> >> On 08/21, bookjovi@gmail.com wrote:
+> >> >
+> >> > For non-pipe case, limit 0 also means drop the coredump, so just put
+> >> > the zero limit check at do_coredump function begining.
+> >>
+> >> Neil, what do you think? Should we change the code or the comment?
+> >
+> >Personally I think we should fix the comment. I think RLIMIT_CORE
+> >doesn't apply in this case, limit == 1 check is very special. And
+> >this is what linux always did, except between 725eae32 and 898b374a.
+> >
+> >
+> >Oleg.
+> >
+> >
