@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751087Ab1HVNwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:52:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16381 "EHLO mx1.redhat.com"
+	id S1751335Ab1HVNxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:53:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12888 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab1HVNwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:52:09 -0400
-From: Milan Broz <mbroz@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: dm-devel@redhat.com, kay.sievers@vrfy.org, ebiederm@xmission.com,
-        greg@kroah.com, Milan Broz <mbroz@redhat.com>
-Subject: [PATCH] kobj_uevent: Ignore if some listeners cannot handle message
-Date: Mon, 22 Aug 2011 15:51:34 +0200
-Message-Id: <1314021094-15453-1-git-send-email-mbroz@redhat.com>
-In-Reply-To: <4E4ECA5D.1020907@redhat.com>
-References: <4E4ECA5D.1020907@redhat.com>
+	id S1750818Ab1HVNxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:53:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,263,1312182000"; 
+   d="scan'208";a="43831941"
+Date: Mon, 22 Aug 2011 15:55:30 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Kyle Manna <kyle@kylemanna.com>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Fixes to twl4030-madc and add BeagleBoard support
+Message-ID: <20110822135530.GR4607@sortiz-mobl>
+References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
+ <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kobject_uevent() uses a multicast socket and should ignore
-if one of listeners cannot handle messages or nobody is
-listening at all.
+Hi Kyle,
 
-Easily reproducible when a process in system is cloned
-with CLONE_NEWNET flag.
+On Thu, Aug 11, 2011 at 10:33:11PM -0500, Kyle Manna wrote:
+> These patches add basic functionality to the twl4030-madc driver to make
+> it work on the BeagleBoard xM.
+> 
+> Version 2 adds fixes per Grazvydas Ignotas and the check for NULL pointer patch.
+> 
+> Kyle Manna (4):
+>   mfd: twl4030-madc: copy the device pointer
+>   mfd: twl4030-madc: turn on the MADC clock
+>   mfd: twl4030-madc: check for NULL pointer
+>   arm: BeagleBoard: add support for the twl4030-madc
+Tony, are you ok with the BeagleBoard changes ?
+The MFD ones look fine to me, I'd like to apply them.
 
-(See also http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/5256)
+Cheers,
+Samuel.
 
-Signed-off-by: Milan Broz <mbroz@redhat.com>
----
- lib/kobject_uevent.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index 70af0a7..ad72a03 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -282,7 +282,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 							    kobj_bcast_filter,
- 							    kobj);
- 			/* ENOBUFS should be handled in userspace */
--			if (retval == -ENOBUFS)
-+			if (retval == -ENOBUFS || retval == -ESRCH)
- 				retval = 0;
- 		} else
- 			retval = -ENOMEM;
 -- 
-1.7.6
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
