@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab1HVPDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:03:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46603 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752145Ab1HVPDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:03:41 -0400
-Date: Mon, 22 Aug 2011 11:03:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mina86@mina86.com>
-cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 4/4] usb: gadget: get rid of USB_GADGET_{DUAL,SUPER}SPEED
-In-Reply-To: <op.v0md7lep3l0zgt@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108221103070.2192-100000@iolanthe.rowland.org>
+	id S1752292Ab1HVPEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:04:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61699 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab1HVPEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:04:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,263,1312182000"; 
+   d="scan'208";a="9771708"
+Date: Mon, 22 Aug 2011 17:06:48 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Anand Gadiyar <gadiyar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH linux-next] mfd: omap-usb-host: add module.h and export.h
+ to fix build break
+Message-ID: <20110822150648.GA4607@sortiz-mobl>
+References: <1313767445-20033-1-git-send-email-gadiyar@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313767445-20033-1-git-send-email-gadiyar@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011, Michal Nazarewicz wrote:
+Hi Anand,
 
-> >> --- a/drivers/usb/gadget/inode.c
-> >> +++ b/drivers/usb/gadget/inode.c
-> > ...
-> >> @@ -1773,11 +1767,7 @@ gadgetfs_suspend (struct usb_gadget *gadget)
-> >>  }
-> >>
-> >>  static struct usb_gadget_driver gadgetfs_driver = {
-> >> -#ifdef	CONFIG_USB_GADGET_DUALSPEED
-> >>  	.max_speed	= USB_SPEED_HIGH,
-> >> -#else
-> >> -	.max_speed	= USB_SPEED_FULL,
-> >> -#endif
+On Fri, Aug 19, 2011 at 08:54:05PM +0530, Anand Gadiyar wrote:
+> linux-next as of 20110817 fails to build if these two headers
+> are not included. Including module.h is sufficient for now,
+> but add export.h for EXPORT_SYMBOL and THIS_MODULE in advance
+> to avoid a later build break.
 > 
-> > I'm not sure that a static definition is correct here.  The actual
-> > max_speed depends on what descriptors the userspace program sends.
-> > Take a look at the ep_config() routine.
-> 
-> Good catch.  I've changed it to:
-> 
-> if (dev->hs_config)
-> 	gadgetfs_driver.max_speed = USB_SPEED_HIGH;
-> else
-> 	gadgetfs_driver.max_speed = USB_SPEED_FULL;
-> 
-> just before usb_gadget_probe_driver(), which should do the trick.
+> Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+I applied a similar patch (without the +#include <linux/export.h>) from Ming
+Lei <tom.leiming@gmail.com>.
 
-Yes, that sounds like the right thing to do.
+Cheers,
+Samuel.
 
-Alan Stern
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
