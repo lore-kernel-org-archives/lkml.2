@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab1HVJ2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 05:28:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7456 "EHLO mga01.intel.com"
+	id S1756688Ab1HVJdY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 05:33:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15082 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab1HVJ2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 05:28:02 -0400
+	id S1751492Ab1HVJdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 05:33:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,262,1312182000"; 
-   d="scan'208";a="42602736"
-Date: Mon, 22 Aug 2011 11:30:03 +0200
+   d="scan'208";a="43768037"
+Date: Mon, 22 Aug 2011 11:35:18 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] mfd: Convert WM8400 to regmap API
-Message-ID: <20110822093003.GH4607@sortiz-mobl>
-References: <1312875269-26565-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+To: dahuang@nvidia.com
+Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com, mike@compulab.co.il,
+        xxie@nvidia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: add SMx slew rate setting
+Message-ID: <20110822093518.GI4607@sortiz-mobl>
+References: <1312886870-17451-1-git-send-email-dahuang@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312875269-26565-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1312886870-17451-1-git-send-email-dahuang@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hi Xin,
 
-On Tue, Aug 09, 2011 at 04:34:29PM +0900, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
+On Tue, Aug 09, 2011 at 06:47:50PM +0800, dahuang@nvidia.com wrote:
+> From: Xin Xie <xxie@nvidia.com>
 > 
-> This one also depends on regmap stuff in -next.
-So I suppose it would make sense for you to carry this one through the regmap
-tree:
-
+> Add output vlotage slew rate setting for SM0/SM1
+> 
+> Signed-off-by: Xin Xie <xxie@nvidia.com>
+> Signed-off-by: Danny Huang <dahuang@nvidia.com>
 Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+
+Liam, are you taking this one ?
 
 Cheers,
 Samuel.
