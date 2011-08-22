@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470Ab1HVFEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 01:04:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53440 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab1HVFEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 01:04:07 -0400
-Message-ID: <4E51E325.2050502@zytor.com>
-Date: Sun, 21 Aug 2011 22:03:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752621Ab1HVFGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 01:06:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34573 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab1HVFGD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 01:06:03 -0400
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
- crap with vdso on uml/i386)
-References: <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk> <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com> <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk> <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com> <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <20110822040759.GQ2203@ZenIV.linux.org.uk> <4E51D70A.1060001@zytor.com> <20110822042605.GR2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110822042605.GR2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C2CD7600DD@HKMAIL01.nvidia.com>
+References: <1311834636-15940-1-git-send-email-wni@nvidia.com>
+	<20110821230511.GA4607@sortiz-mobl>
+	<6B4D417B830BC44B8026029FD256F7F1C2CD7600DD@HKMAIL01.nvidia.com>
+Date: Mon, 22 Aug 2011 13:06:02 +0800
+Message-ID: <CAN1soZzkmP=ckzAOJv59YfYtFU63nC9j-Oa+cM5z674yf0Mihw@mail.gmail.com>
+Subject: Re: [PATCH] mfd: tps6586x: add api to power off tps6586x
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Wei Ni <wni@nvidia.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "mike@compulab.co.il" <mike@compulab.co.il>,
+        Nitin Kumbhar <nkumbhar@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2011 09:26 PM, Al Viro wrote:
-> On Sun, Aug 21, 2011 at 09:11:54PM -0700, H. Peter Anvin wrote:
->>> lack of point - the *only* CPU where it would matter would be K6-2, IIRC,
->>> and (again, IIRC) it had some differences in SYSCALL semantics compared to
->>> K7 (which supports SYSENTER as well).  Bugger if I remember what those
->>> differences might've been...  Some flag not cleared?
+On Mon, Aug 22, 2011 at 11:47 AM, Wei Ni <wni@nvidia.com> wrote:
+> Hi, Samuel
+> Thanks for your comments.
+> Please check the following lines with [Wei Ni]
+>
+> Thanks
+> Wei.
+>
+>
+>>-----Original Message-----
+>>From: Samuel Ortiz [mailto:sameo@linux.intel.com]
+>>Sent: Monday, August 22, 2011 7:05 AM
+>>To: Wei Ni
+>>Cc: mike@compulab.co.il; gking@nvidia.com; Nitin Kumbhar; linux-kernel@vger.kernel.org
+>>Subject: Re: [PATCH] mfd: tps6586x: add api to power off tps6586x
 >>
->> The most likely reason for a binary to execute a stray SYSCALL is
->> because they read it out of the vdso.  Totally daft, but we certainly
->> see a lot of stupid things as evidenced by the JIT thread earlier this
->> month.
-> 
-> Um...  What, blindly, no matter what surrounds it in there?  What will
-> happen to the same eager JIT when it steps on SYSENTER?
+>>Hi Wei,
+>>
+>>On Thu, Jul 28, 2011 at 02:30:36PM +0800, wni@nvidia.com wrote:
+>>> +static struct i2c_client *tps6586x_i2c_client;
+>>That's not vey nice. By doing so, you're preventing anyone to have more than
+>>one of those chips in their boards.
+> [Wei Ni] oh yes, I didn’t consider this issue. We use i2c_register_board_info()
+> to register the tps6586x in the board file, but it didn't return the handle.
+> Do you have any ideas?
+>>
+>>
 
-The JIT will have had to manage SYSENTER already.  It's not a change,
-whereas SYSCALL would be.  We could just try it, and see if anything
-breaks, of course.
+Since there's no parameter in pm_power_off(), invoking power off
+function is a known issue
+for i2c devices. And we can't get i2c client in board file.
 
-	-hpa
+Maybe we can add a LDO mapping in regulator driver. Since power-off
+function is always
+customized in board file. We can disable this regulator while
+power_off() is called. So even
+multiple PMICs is installed in one system, we only handle the real one
+to shutdown the
+whole system.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Samuel & Mark,
+Do you think that it's worth to do?
 
+Thanks
+Haojian
