@@ -1,49 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab1HVT3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 15:29:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50978 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753189Ab1HVT3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 15:29:19 -0400
-Date: Mon, 22 Aug 2011 12:28:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Thomas Moll <thomas.moll@sysgo.com>,
-        Chul Kim <chul.kim@idt.com>, <stable@kernel.org>
-Subject: Re: [PATCH] RapidIO: Fix use of non-compatible registers
-Message-Id: <20110822122807.5b558d65.akpm@linux-foundation.org>
-In-Reply-To: <1311703646-3453-1-git-send-email-alexandre.bounine@idt.com>
-References: <1311703646-3453-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1753517Ab1HVTbU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 15:31:20 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:40939 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753189Ab1HVTbP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 15:31:15 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: "wharms@bfs.de" <wharms@bfs.de>
+CC: Julia Lawall <julia@diku.dk>,
+        Pierre Louis Aublin <pierre-louis.aublin@inria.fr>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Aug 2011 12:29:23 -0700
+Subject: RE: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the
+ just-initialized value
+Thread-Topic: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the
+ just-initialized value
+Thread-Index: Acxg/wYbOAJialV/SHGECaX3rMPYYwAAVrjQ
+Message-ID: <477F20668A386D41ADCC57781B1F70430802DD7B8C@SC-VEXCH1.marvell.com>
+References: <1314021636-11528-4-git-send-email-julia@diku.dk>
+ <4E52638C.8080407@inria.fr> <Pine.LNX.4.64.1108221615450.10948@ask.diku.dk>
+ <477F20668A386D41ADCC57781B1F70430802DD7B7E@SC-VEXCH1.marvell.com>
+ <4E52A966.3090502@bfs.de>
+In-Reply-To: <4E52A966.3090502@bfs.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 14:07:26 -0400
-Alexandre Bounine <alexandre.bounine@idt.com> wrote:
-
-> Replace/remove use of RIO v.1.2 registers/bits that are not forward-compatible
-> with newer versions of RapidIO specification.
+> Am 22.08.2011 21:02, schrieb Bing Zhao:
+> > Hi Julia,
+> >
+> > Thanks for the patch.
+> >
+> >> -----Original Message-----
+> >> From: Julia Lawall [mailto:julia@diku.dk]
+> >> Sent: Monday, August 22, 2011 7:16 AM
+> >> To: Pierre Louis Aublin
+> >> Cc: Bing Zhao; kernel-janitors@vger.kernel.org; John W. Linville; linux-wireless@vger.kernel.org;
+> >> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> >> Subject: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the just-initialized value
+> >>
+> >> From: Julia Lawall <julia@diku.dk>
+> >>
+> >> Test the just-initialized value rather than some other one.
+> >>
+> >> The semantic match that finds this problem is as follows:
+> >> (http://coccinelle.lip6.fr/)
+> >>
+> >> // <smpl>
+> >> @r@
+> >> identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
+> >> statement S;
+> >> @@
+> >>
+> >> x = f(...);
+> >> (
+> >> if (\(x == NULL\|IS_ERR(x)\)) S
+> >> |
+> >> *if (\(y == NULL\|IS_ERR(y)\))
+> >>  { ... when != x
+> >>    return ...; }
+> >> )
+> >> // </smpl>
+> >>
+> >> Signed-off-by: Julia Lawall <julia@diku.dk>
+> >
+> > Acked-by: Bing Zhao <bzhao@marvell.com>
+> >
+> >
+> > Thanks,
+> > Bing
+> >
+> >>
+> >> ---
+> >>  drivers/net/wireless/mwifiex/scan.c |    4 ++--
+> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+> >> index b28241c..37ca2f9 100644
+> >> --- a/drivers/net/wireless/mwifiex/scan.c
+> >> +++ b/drivers/net/wireless/mwifiex/scan.c
+> >> @@ -1480,8 +1480,8 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv,
+> >>  		return -ENOMEM;
+> >>  	}
+> >>  	beacon_ie = kzalloc(ie_len, GFP_KERNEL);
+> >> -	if (!bss_desc) {
+> >> -		dev_err(priv->adapter->dev, " failed to alloc bss_desc\n");
+> >> +	if (!beacon_ie) {
+> >> +		dev_err(priv->adapter->dev, " failed to alloc beacon_ie\n");
+> >>  		return -ENOMEM;
+> >>  	}
+> >>  	memcpy(beacon_ie, ie_buf, ie_len);
+> > --
 > 
-> RapidIO specification v. 1.3 removed Write Port CSR, Doorbell CSR,
-> Mailbox CSR and Mailbox and Doorbell bits of the PEF CAR.
 > 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: Kumar Gala <galak@kernel.crashing.org>
-> Cc: Matt Porter <mporter@kernel.crashing.org>
-> Cc: Li Yang <leoli@freescale.com>
-> Cc: Thomas Moll <thomas.moll@sysgo.com>
-> Cc: Chul Kim <chul.kim@idt.com>
-> Cc: <stable@kernel.org>
+> this looks like a case for kmemdup()
 
-You did a cc:stable but provided no reason (that I can understand) for
-backporting the patch.  Please explain why the problem is sufficiently
-serious to warrant this action.
+Hi Walter,
+
+You are right. I believe there are some more cases where kmemdup can be used.
+
+Hi John,
+
+Please apply Julia's patch as I will send a separate patch later to address Walter's comment. Thanks.
+
+> 
+> just my 2 cents,
+
+Thanks a lot for your 2 cents.
+
+Bing
+
+> 
+> re,
+>  wh
+> 
+
