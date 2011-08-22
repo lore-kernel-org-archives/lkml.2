@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab1HVR0A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 13:26:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53401 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab1HVRZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 13:25:58 -0400
-Message-ID: <4E5290D6.5050406@zytor.com>
-Date: Mon, 22 Aug 2011 10:24:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752569Ab1HVR1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 13:27:34 -0400
+Received: from [85.183.114.52] ([85.183.114.52]:55566 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751275Ab1HVR1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 13:27:33 -0400
+X-Greylist: delayed 1134 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Aug 2011 13:27:33 EDT
+Date: Mon, 22 Aug 2011 19:09:16 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, akpm@linux-foundation.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, logfs@logfs.org,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH 3/4] string: introduce memchr_inv
+Message-ID: <20110822170916.GZ26160@logfs.org>
+References: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com> <1314030548-21082-4-git-send-email-akinobu.mita@gmail.com> <1314032270.32391.51.camel@jaguar>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        kernel-hardening@lists.openwall.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low addresses
-References: <20110812102954.GA3496@albatros> <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com> <20110816090540.GA7857@albatros> <20110822101730.GA3346@albatros>
-In-Reply-To: <20110822101730.GA3346@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1314032270.32391.51.camel@jaguar>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 03:17 AM, Vasiliy Kulikov wrote:
-> Hi Ingo, Peter, Thomas,
+On Mon, 22 August 2011 19:57:50 +0300, Pekka Enberg wrote:
+> On Tue, 2011-08-23 at 01:29 +0900, Akinobu Mita wrote:
+> > memchr_inv() is mainly used to check whether the whole buffer is filled
+> > with just a specified byte.
+> > 
+> > The function name and prototype are stolen from logfs and the
+> > implementation is from SLUB.
+> > 
+> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> > Cc: Christoph Lameter <cl@linux-foundation.org>
+> > Cc: Pekka Enberg <penberg@kernel.org>
+> > Cc: Matt Mackall <mpm@selenic.com>
+> > Cc: linux-mm@kvack.org
+> > Cc: Joern Engel <joern@logfs.org>
+> > Cc: logfs@logfs.org
+> > Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+> > Cc: Eric Dumazet <eric.dumazet@gmail.com>
 > 
-> On Tue, Aug 16, 2011 at 13:05 +0400, Vasiliy Kulikov wrote:
->> As the changes are not intrusive, we'd want to see this feature in the
->> upstream kernel.  If you know why the patch cannot be a part of the
->> upstream kernel - please tell me, I'll try to address the issues.
-> 
-> Any comments on the RFC?  Otherwise, may I resend it as a PATCH for
-> inclusion?
-> 
-> Thanks!
+> Acked-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Joern Engel <joern@logfs.org>
 
-Conceptually:
+Jörn
 
-I also have to admit to being somewhat skeptical to the concept on a
-littleendian architecture like x86.
-
-Code-wise:
-
-The code is horrific; it is full of open-coded magic numbers; it also
-puts a function called arch_get_unmapped_exec_area() in a generic file,
-which could best be described as "WTF" -- the arch_ prefix we use
-specifically to denote a per-architecture hook function.
-
-As such, your claim that the changes are not intrusive is plain false.
-
-	-hpa
+-- 
+He who knows that enough is enough will always have enough.
+-- Lao Tsu
