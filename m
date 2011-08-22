@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1HVSCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 14:02:45 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46146 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab1HVSCn (ORCPT
+	id S1752907Ab1HVSES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 14:04:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50339 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab1HVSEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 14:02:43 -0400
-Message-ID: <4E52984F.8050702@gmail.com>
-Date: Mon, 22 Aug 2011 19:56:31 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Mon, 22 Aug 2011 14:04:16 -0400
+Date: Mon, 22 Aug 2011 20:05:44 +0200
+From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jonathan McDowell <noodles@earth.li>,
+        Magnus Damm <damm@opensource.se>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] leds: add missing include of linux/module.h
+Message-ID: <20110822180544.GB2702@Boggieman>
+Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+References: <1313936407.13671.1.camel@phoenix>
 MIME-Version: 1.0
-To: Sunil Mushran <sunil.mushran@oracle.com>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>	<4E4F814B.5070202@gmail.com>	<4E4F865B.2010608@gmail.com>	<4E4FD48B.8030101@oracle.com>	<4E4FE1B1.7010601@gmail.com>	<4E51F24F.1050503@oracle.com> <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com> <4E527C7F.9040807@oracle.com>
-In-Reply-To: <4E527C7F.9040807@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1313936407.13671.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/08/2011 17:57, Sunil Mushran ha scritto:
->>> Any proposal that differentiates between holes is wrong. It should not
->>> matter where the hole is.
->>>
->>> Think of it from the usage-pov.
->>>
->>> doff = 0;
->>> while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
->>> hoff = lseek(SEEK_HOLE, doff);
->>> read_offset = doff;
->>> read_len = hoff -doff;
->>> process();
->>> doff = hoff;
->>> }
->>>
->>> The goal is to make this as efficient as follows. Treating the last
->>> hole differently adds more code for no benefit.
->>>
->> Mmmm.....It seems that Josef has to be clear in this point. However I
->> looked for the seek hole test in xfs test suite, but I didn't find
->> anything. Btrfs guys, how have you got tested the implementation? What
->> do you think about this corner case? Al, what do you think about it?
->
->
-> The following test was used to test the early implementations.
-> http://oss.oracle.com/~smushran/seek_data/
->
 
-Thank you very much!! I found another point. Your test fails with my 
-implementation because here 
-(http://www.austingroupbugs.net/view.php?id=415) says: "If whence is 
-SEEK_DATA, the file offset shall be set to the smallest location of a 
-byte not within a hole and not less than offset. It shall be an error if 
-no such byte exists." So in this case I return ENXIO but the test 
-expects another value. I have to say that there is a bit of confusion 
-about the real behavior of this new feature :)
+Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
 
-Marco
+On Sun, Aug 21, 2011 at 10:20:07PM +0800, Axel Lin wrote:
+> >From 157207e0166b05e33722c1c87bf3753ee22c94fa Mon Sep 17 00:00:00 2001
+> From: Axel Lin <axel.lin@gmail.com>
+> Date: Sun, 21 Aug 2011 22:14:44 +0800
+> Subject: [PATCH] leds: add missing include of linux/module.h
+> 
+> Add missing include of linux/module.h for drivers that
+> use interfaces from linux/module.h.  This patch fixes build errors.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Jonathan McDowell <noodles@earth.li>
+> Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+> Cc: Magnus Damm <damm@opensource.se>
+> ---
+> below is the build errors for leds-ams-delta.c.
+> I got similar buld errors for leds-hp6xx.c and leds-renesas-tpu.c.
+> 
+>   CC      drivers/leds/leds-ams-delta.o
+> drivers/leds/leds-ams-delta.c:116: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/leds/leds-ams-delta.c:133: error: expected declaration specifiers or '...' before string constant
+> drivers/leds/leds-ams-delta.c:133: warning: data definition has no type or storage class
+> drivers/leds/leds-ams-delta.c:133: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/leds/leds-ams-delta.c:133: warning: function declaration isn't a prototype
+> drivers/leds/leds-ams-delta.c:134: error: expected declaration specifiers or '...' before string constant
+> drivers/leds/leds-ams-delta.c:134: warning: data definition has no type or storage class
+> drivers/leds/leds-ams-delta.c:134: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/leds/leds-ams-delta.c:134: warning: function declaration isn't a prototype
+> drivers/leds/leds-ams-delta.c:135: error: expected declaration specifiers or '...' before string constant
+> drivers/leds/leds-ams-delta.c:135: warning: data definition has no type or storage class
+> drivers/leds/leds-ams-delta.c:135: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/leds/leds-ams-delta.c:135: warning: function declaration isn't a prototype
+> drivers/leds/leds-ams-delta.c:136: error: expected declaration specifiers or '...' before string constant
+> drivers/leds/leds-ams-delta.c:136: warning: data definition has no type or storage class
+> drivers/leds/leds-ams-delta.c:136: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
+> drivers/leds/leds-ams-delta.c:136: warning: function declaration isn't a prototype
+> make[2]: *** [drivers/leds/leds-ams-delta.o] Error 1
+> make[1]: *** [drivers/leds] Error 2
+> make: *** [drivers] Error 2
+> 
+>  drivers/leds/leds-ams-delta.c   |    1 +
+>  drivers/leds/leds-hp6xx.c       |    1 +
+>  drivers/leds/leds-renesas-tpu.c |    1 +
+>  3 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/leds/leds-ams-delta.c b/drivers/leds/leds-ams-delta.c
+> index b982603..8c00937 100644
+> --- a/drivers/leds/leds-ams-delta.c
+> +++ b/drivers/leds/leds-ams-delta.c
+> @@ -8,6 +8,7 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/platform_device.h>
+> diff --git a/drivers/leds/leds-hp6xx.c b/drivers/leds/leds-hp6xx.c
+> index e4ce1fd..bcfbd3a 100644
+> --- a/drivers/leds/leds-hp6xx.c
+> +++ b/drivers/leds/leds-hp6xx.c
+> @@ -10,6 +10,7 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/platform_device.h>
+> diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
+> index 5bfb40e1..d9a7d72 100644
+> --- a/drivers/leds/leds-renesas-tpu.c
+> +++ b/drivers/leds/leds-renesas-tpu.c
+> @@ -17,6 +17,7 @@
+>   * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+>   */
+>  
+> +#include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/spinlock.h>
+> -- 
+> 1.7.4.1
+> 
+> 
