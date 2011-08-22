@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1HVKHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:07:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42341 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab1HVKHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:07:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="40906221"
-Date: Mon, 22 Aug 2011 12:09:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd/tc3589x: add missing #ifdef around PM block
-Message-ID: <20110822100948.GK4607@sortiz-mobl>
-References: <1312915037-9716-1-git-send-email-linus.walleij@stericsson.com>
+	id S1756758Ab1HVKIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:08:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53827 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab1HVKIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:08:34 -0400
+Date: Mon, 22 Aug 2011 13:08:24 +0300
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Bryan Freed <bfreed@chromium.org>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: industrialio-core: Fix compiler warning
+Message-ID: <20110822100824.GA6671@maxin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312915037-9716-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+drivers/staging/iio/industrialio-core.c: In function
+'iio_device_add_event_sysfs':
+drivers/staging/iio/industrialio-core.c:914: warning: 'mask' may be
+used uninitialized in this function
 
-On Tue, Aug 09, 2011 at 08:37:17PM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The CONFIG_PM code was unconditionally compiled in despite
-> the dev_pm_ops only being included into the driver struct
-> if used. Fix this by adding the missing #ifdef.
-Patch applied, thanks.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+index 19819e7..83b5953 100644
+--- a/drivers/staging/iio/industrialio-core.c
++++ b/drivers/staging/iio/industrialio-core.c
+@@ -911,7 +911,7 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
+ 				      struct iio_chan_spec const *chan)
+ {
+ 
+-	int ret = 0, i, mask;
++	int ret = 0, i, mask = 0;
+ 	char *postfix;
+ 	if (!chan->event_mask)
+ 		return 0;
+@@ -944,6 +944,8 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
+ 			break;
+ 		default:
+ 			printk(KERN_INFO "currently unhandled type of event\n");
++			ret = -EINVAL;
++			goto error_ret;
+ 		}
+ 		ret = __iio_add_chan_devattr(postfix,
+ 					     NULL,
