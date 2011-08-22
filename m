@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1HVOWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:22:49 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:21425
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751983Ab1HVOWr (ORCPT
+	id S1753224Ab1HVOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:23:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab1HVOXI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:22:47 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Timur Tabi <timur@freescale.com>
-To: <kernel-janitors@vger.kernel.org>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <grant.likely@secretlab.ca>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <julia@diku.dk>
-Subject: [PATCH] [v2] sound/soc/fsl/fsl_dma.c: add missing of_node_put
-Date: Mon, 22 Aug 2011 09:22:41 -0500
-Message-ID: <1314022961-27513-1-git-send-email-timur@freescale.com>
-X-Mailer: git-send-email 1.7.3.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Mon, 22 Aug 2011 10:23:08 -0400
+Subject: Re: [RFC][PATCH 4/6] x86, nmi:  add in logic to handle multiple
+ events and unknown NMIs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
+Date: Mon, 22 Aug 2011 16:22:15 +0200
+In-Reply-To: <1313786266-9585-5-git-send-email-dzickus@redhat.com>
+References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
+	 <1313786266-9585-5-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314022935.24275.35.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_parse_phandle increments the reference count of np, so this should be
-decremented before trying the next possibility.
+On Fri, 2011-08-19 at 16:37 -0400, Don Zickus wrote:
+> @@ -260,6 +260,8 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+>         pr_emerg("Dazed and confused, but trying to continue\n");
+>  }
+>  
+> +DEFINE_PER_CPU(bool, swallow_nmi);
+> +
+>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  {
+>         unsigned char reason = 0;
+> @@ -271,8 +273,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>          * NMI can not be detected/processed on other CPUs.
+>          */
+>         handled = nmi_handle(NMI_LOCAL, regs);
+> -       if (handled)
+> +       if (handled) {
+> +               /*
+> +                * When handling multiple NMI events, we are not
+> +                * sure if the second NMI was dropped (because of
+> +                * too many NMIs), piggy-backed on the same NMI
+> +                * (perf) or is queued right behind this NMI.
+> +                * In the last case, we may accidentally get an
+> +                * unknown NMI because the event is already handled.
+> +                * Flag for this condition and swallow it later.
+> +                *
+> +                * FIXME: This detection has holes in it mainly
+> +                * because we can't tell _when_ the next NMI comes
+> +                * in.  A multi-handled NMI event followed by an 
+> +                * unknown NMI a second later, clearly should not
+> +                * be swallowed.
+> +                */
+> +               if (handled > 1)
+> +                       __this_cpu_write(swallow_nmi, true);
+> +               else
+> +                       __this_cpu_write(swallow_nmi, false);
+>                 return;
+> +       }
+>  
+>         /* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+>         raw_spin_lock(&nmi_reason_lock);
+> @@ -296,6 +318,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>         raw_spin_unlock(&nmi_reason_lock);
+>  
+>         unknown_nmi_error(reason, regs);
+> +
+> +       __this_cpu_write(swallow_nmi, false);
+>  } 
 
-Since we don't actually use np, we can decrement the reference count
-immediately.
-
-Reported-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Timur Tabi <timur@freescale.com>
----
- sound/soc/fsl/fsl_dma.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/sound/soc/fsl/fsl_dma.c b/sound/soc/fsl/fsl_dma.c
-index 6680c0b..b300f4b 100644
---- a/sound/soc/fsl/fsl_dma.c
-+++ b/sound/soc/fsl/fsl_dma.c
-@@ -877,10 +877,12 @@ static struct device_node *find_ssi_node(struct device_node *dma_channel_np)
- 		 * assume that device_node pointers are a valid comparison.
- 		 */
- 		np = of_parse_phandle(ssi_np, "fsl,playback-dma", 0);
-+		of_node_put(np);
- 		if (np == dma_channel_np)
- 			return ssi_np;
- 
- 		np = of_parse_phandle(ssi_np, "fsl,capture-dma", 0);
-+		of_node_put(np);
- 		if (np == dma_channel_np)
- 			return ssi_np;
- 	}
--- 
-1.7.3.4
-
-
+All writes, no reads... the actual dropping of NMIs got lost and now
+lives in patch 5 which purports to be about statistics only.
