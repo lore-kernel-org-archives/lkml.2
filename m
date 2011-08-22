@@ -1,76 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1HVQDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:03:46 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:25490 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1HVQDo (ORCPT
+	id S1753179Ab1HVQEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:04:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:6125 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab1HVQEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:03:44 -0400
-Date: Mon, 22 Aug 2011 12:02:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Mon, 22 Aug 2011 12:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:from:to:cc:subject:date:message-id:x-mailer:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=gp+nnLdVrBee/IwttTDcZ09ZgDNFwXyXh0u+spRXVQXsgSXJTOljiZOV0+3JFhN4Q
+	PtzQRtYQDjAYFGCMVzb0A==
+From: Michal Nazarewicz <mnazarewicz@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+Cc: "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@xenotime.net,
-        stefan.bader@canonical.com, JBeulich@novell.com
-Subject: [GIT PULL] (xen) stable/bug.fixes for 3.1-rc2
-Message-ID: <20110822160257.GI8944@dumpdata.com>
+Subject: [PATCHv4 0/4] Removing USB_GADGET_*SPEED macros
+Date: Mon, 22 Aug 2011 18:04:18 +0200
+Message-Id: <cover.1314028707.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4E527DBC.0061:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+From: Michal Nazarewicz <mina86@mina86.com>
 
-Please git pull:
+Michal Nazarewicz (4):
+  usb: Provide usb_speed_string() function
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug.fixes
+    Just a little helper.
 
-which has some patches that have been there since last week - but the LinuxCon
-interrupted my process a bit so sending it late.
+    Also removes some code duplication.
 
-The patches are based off git commit c00c8aa2d976e9ed1d12a57b42d6e9b27efb7abe:
-Konrad Rzeszutek Wilk (1):
-  xen/trace: Fix compile error when CONFIG_XEN_PRIVILEGED_GUEST is not set
+  usb: gadget: replace "is_dualspeed" with "max_speed"
 
-which you pulled in 3.1-rc1.
+    This replaces "is_dualspeed" with "max_speed" so that one
+    can encode in the field whether given UDC is super speed
+    as well.
 
-Anyhow, this git pull has two boring compile fixes, and then two exciting bug-fixes. The
-exciting bug-fixes are 1) Jan's fix to check the ceiling of our M2P table - we
-did it slowly and potentially could read userspace pages (oops!) to find out our frame
-numbers, being a potential security risk; 2) fix PVonHVM to work with older hypervisors
-that don't support callbacks - we have code that does it, but missed one case - leading
-to crashes with more than 4 VCPUs.
+    Without this change, we would have to add a "is_superspeed"
+    field since after removal of USB_GADGET_SUPERSPEED Kconfig
+    option current implementation of gadget_is_superspeed()
+    won't work.
 
- arch/x86/include/asm/xen/page.h |    4 ++--
- arch/x86/xen/Makefile           |    2 +-
- arch/x86/xen/enlighten.c        |    4 ++--
- arch/x86/xen/mmu.c              |   12 ++++++++----
- arch/x86/xen/smp.c              |    4 ++--
- 5 files changed, 15 insertions(+), 11 deletions(-)
+  usb: gadget: rename usb_gadget_driver::speed to max_speed
 
-Jan Beulich (1):
-      xen/x86: replace order-based range checking of M2P table by linear one
+    I don't have strong feelings about this patch, but the current
+    name of the usb_gadget_driver::speed field may lead to some
+    confusion.
 
-Jeremy Fitzhardinge (1):
-      xen/tracing: Fix tracing config option properly
+    Changing it to "max_speed" should be apparent that it describes
+    the maximum speed the gadget driver supports.
 
-Randy Dunlap (1):
-      xen: xen-selfballoon.c needs more header files
+    This comes in pair with usb_gadget::max_speed and
+    usb_composite_driver::max_speed.
 
-Stefano Stabellini (1):
-      xen: Do not enable PV IPIs when vector callback not present
+  usb: gadget: get rid of USB_GADGET_{DUAL,SUPER}SPEED
 
-P.S.
-If you look in the commits date, you will notice Stefano's patch (and the
-subsequent ones) being modified about 30 minutes ago - it did not have his SOB
-on it - so I updated it just now using 'git rebase'. Rest assured, the patches
-had been for some time in #linux-next:
-http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=shortlog;h=refs/heads/linux-next
+    Removes the USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED Kconfig
+    options.  In most cases, they were checked just for optimisation
+    (ie. if UDC was not dual speed, gadget drivers could skip some of
+    the logic) so in the end this change was just about deleting
+    #ifdefs.
+
+
+Making those changes has exposed problems with some UDC drivers,
+namely:
+
+$ g grep -A3 'max_speed.*[=!]=.*USB_SPEED_HIGH'
+drivers/usb/gadget/amd5536udc.c:                        || driver->max_speed != USB_SPEED_HIGH)
+drivers/usb/gadget/amd5536udc.c-                return -EINVAL;
+drivers/usb/gadget/amd5536udc.c-        if (!dev)
+drivers/usb/gadget/amd5536udc.c-                return -ENODEV;
+--
+drivers/usb/gadget/m66592-udc.c:                        || driver->max_speed != USB_SPEED_HIGH
+drivers/usb/gadget/m66592-udc.c-                        || !bind
+drivers/usb/gadget/m66592-udc.c-                        || !driver->setup)
+drivers/usb/gadget/m66592-udc.c-                return -EINVAL;
+--
+drivers/usb/gadget/net2272.c:       driver->max_speed != USB_SPEED_HIGH)
+drivers/usb/gadget/net2272.c-           return -EINVAL;
+drivers/usb/gadget/net2272.c-   if (!dev)
+drivers/usb/gadget/net2272.c-           return -ENODEV;
+--
+drivers/usb/gadget/net2280.c:                   || driver->max_speed != USB_SPEED_HIGH
+drivers/usb/gadget/net2280.c-                   || !bind || !driver->setup)
+drivers/usb/gadget/net2280.c-           return -EINVAL;
+drivers/usb/gadget/net2280.c-   if (!dev)
+--
+drivers/usb/gadget/r8a66597-udc.c:                      || driver->max_speed != USB_SPEED_HIGH
+drivers/usb/gadget/r8a66597-udc.c-                      || !bind
+drivers/usb/gadget/r8a66597-udc.c-                      || !driver->setup)
+drivers/usb/gadget/r8a66597-udc.c-              return -EINVAL;
+
+All those drivers require usb_gadget_driver::max_speed to be set to
+USB_SPEED_HIGH.  This basically means that gmidi (which sets it to
+USB_SPEED_FULL), g_ether and g_zero (which set it to USB_SPEED_SUPER)
+won't work with those UDCs:
+
+$ g grep -e '\.max_speed.*=.*USB_SPEED_SUPER' -e '\.max_speed.*=.*USB_SPEED_FULL'
+dummy_hcd.c:    dum->gadget.max_speed = USB_SPEED_SUPER;;
+ether.c:        .max_speed      = USB_SPEED_SUPER,
+gmidi.c:        .max_speed      = USB_SPEED_FULL,
+goku_udc.c:     dev->gadget.max_speed = USB_SPEED_FULL;
+omap_udc.c:     udc->gadget.max_speed = USB_SPEED_FULL;
+zero.c: .max_speed      = USB_SPEED_SUPER,
+
+So as far as I can tell, UDC drivers for those need to be fixed (but
+that's probably scope for another patchset).  Or am I missing
+something?
+
+
+Like before, this has been compile-tested only.
+
+
+ drivers/usb/Makefile                   |    3 ++
+ drivers/usb/common.c                   |   24 ++++++++++++++
+ drivers/usb/core/hub.c                 |   27 +++++----------
+ drivers/usb/gadget/Kconfig             |   30 -----------------
+ drivers/usb/gadget/amd5536udc.c        |   13 ++-----
+ drivers/usb/gadget/atmel_usba_udc.c    |   11 +++---
+ drivers/usb/gadget/ci13xxx_udc.c       |    9 +++--
+ drivers/usb/gadget/composite.c         |   31 ++---------------
+ drivers/usb/gadget/dbgp.c              |    2 +-
+ drivers/usb/gadget/dummy_hcd.c         |   15 ++++-----
+ drivers/usb/gadget/epautoconf.c        |    6 ++--
+ drivers/usb/gadget/file_storage.c      |   21 +++---------
+ drivers/usb/gadget/fsl_udc_core.c      |   55 +++++++++++--------------------
+ drivers/usb/gadget/fusb300_udc.c       |    2 +-
+ drivers/usb/gadget/gmidi.c             |   13 +------
+ drivers/usb/gadget/goku_udc.c          |    3 +-
+ drivers/usb/gadget/inode.c             |   17 +++-------
+ drivers/usb/gadget/langwell_udc.c      |   52 ++++++++++-------------------
+ drivers/usb/gadget/m66592-udc.c        |    4 +-
+ drivers/usb/gadget/mv_udc_core.c       |    2 +-
+ drivers/usb/gadget/net2272.c           |    8 ++--
+ drivers/usb/gadget/net2280.c           |    8 ++---
+ drivers/usb/gadget/omap_udc.c          |    1 +
+ drivers/usb/gadget/pch_udc.c           |    4 +-
+ drivers/usb/gadget/printer.c           |   55 ++++++--------------------------
+ drivers/usb/gadget/r8a66597-udc.c      |    4 +-
+ drivers/usb/gadget/s3c-hsotg.c         |   10 ++----
+ drivers/usb/gadget/s3c-hsudc.c         |    2 +-
+ drivers/usb/gadget/u_ether.c           |    7 ----
+ drivers/usb/gadget/udc-core.c          |   39 +++++++++++-----------
+ drivers/usb/misc/usbtest.c             |   21 +-----------
+ drivers/usb/musb/musb_gadget.c         |    2 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c |    2 +-
+ include/linux/usb/ch9.h                |   12 +++++++
+ include/linux/usb/gadget.h             |   29 ++++-------------
+ 35 files changed, 190 insertions(+), 354 deletions(-)
+ create mode 100644 drivers/usb/common.c
+
+-- 
+1.7.3.1
+
