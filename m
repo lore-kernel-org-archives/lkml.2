@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab1HVVGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:06:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54912 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751992Ab1HVVGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:06:45 -0400
-Date: Mon, 22 Aug 2011 17:06:43 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mina86@mina86.com>
-cc: Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
-In-Reply-To: <op.v0mro90r3l0zgt@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
+	id S1753707Ab1HVVLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:11:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58128 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab1HVVLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 17:11:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Rick Warner <rick@microway.com>
+Subject: Re: kernel oops and panic in acpi_atomic_read under 2.6.39.3.   call trace included
+Date: Mon, 22 Aug 2011 23:13:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, "Richard Houghton" <rhoughton@microway.com>,
+        "ACPI Devel Mailing List" <linux-acpi@vger.kernel.org>,
+        "Len Brown" <lenb@kernel.org>, "Matthew Garrett" <mjg59@srcf.ucam.org>
+References: <201108171751.51648.rick@microway.com> <201108222047.11086.rjw@sisk.pl> <201108221651.35654.rick@microway.com>
+In-Reply-To: <201108221651.35654.rick@microway.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108222313.26769.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011, Michal Nazarewicz wrote:
+Hi,
 
-> >> --- a/drivers/usb/Makefile
-> >> +++ b/drivers/usb/Makefile
-> >> @@ -51,3 +51,6 @@ obj-$(CONFIG_USB_MUSB_HDRC)	+= musb/
-> >>  obj-$(CONFIG_USB_RENESAS_USBHS)	+= renesas_usbhs/
-> >>  obj-$(CONFIG_USB_OTG_UTILS)	+= otg/
-> >>  obj-$(CONFIG_USB_GADGET)	+= gadget/
-> >> +
-> >> +obj-$(CONFIG_USB)		+= common.o
-> >> +obj-$(CONFIG_USB_GADGET)	+= common.o
-> >
-> > Will this cause problems?  For example, what if CONFIG_USB is Y and
-> > CONFIG_USB_GADGET is M?
+On Monday, August 22, 2011, Rick Warner wrote:
+...
+> Hi Rafael,
 > 
-> Hmm, I haven't thought about that.
+> Thanks for the off-list help in getting you this info.
 > 
-> > Also, it seems a little silly to have an entire kernel module devoted
-> > to a single, little function.
+> I had already rebuilt the kernel using the change I mentioned earlier (test on 
+> !&g->error_status_address) since the call trace I got.
 > 
-> Agreed.  And again, I haven't thought about compiling as a module which
-> would result in a major overkill.
+> I luckily still had a copy of the kernel and modules I built previously using 
+> just your patch, so I undid my change to the ghes.c source, leaving just your 
+> patch but not mine so it would match the ghes.ko module I ran on.  This is the 
+> output of gdb on that ghes.ko now:
 > 
-> > This is a symptom of the difficulty of
-> > sharing code between the host-side and gadget-side USB stacks.
+> (gdb) l *ghes_read_estatus+0x38
+> 0x258 is in ghes_read_estatus (drivers/acpi/apei/ghes.c:296).
+> warning: Source file is more recent than executable.
+> 291             int rc;
+> 292             if (!g)
+> 293                     return -EINVAL;
+> 294
+> 295             rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
+> 296             if (rc) {
+> 297                     if (!silent && printk_ratelimit())
+> 298                             pr_warning(FW_WARN GHES_PFX
+> 299     "Failed to read error status block address for hardware error source: 
+> %d.\n",
+> 300                                        g->header.source_id);
 > 
-> Agreed.
-> 
-> I'm open to any suggestions on how this could be solved.
-> 
-> Sticking the function to the header file as static inline seems
-> like bit... ”bloaty”.
-> 
-> If this is not easily solvable, I'll probably just drop this patch
-> for now.
+> The warning about the source being newer is because of the reverted change in 
+> the ghes.c source mentioned above.
 
-You could do:
+OK, since &buf_addr cannot be NULL, perhaps ghes is.  Please check if the
+appended patch makes a difference.
 
-	obj-$(CONFIG_USB_SUPPORT)  += common.o
+Thanks,
+Rafael
 
-which would build that subroutine into the main kernel whenever either 
-side of the USB stack is enabled.
+---
+ drivers/acpi/apei/ghes.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Alan Stern
-
+Index: linux/drivers/acpi/apei/ghes.c
+===================================================================
+--- linux.orig/drivers/acpi/apei/ghes.c
++++ linux/drivers/acpi/apei/ghes.c
+@@ -393,11 +393,16 @@ static void ghes_copy_tofrom_phys(void *
+ 
+ static int ghes_read_estatus(struct ghes *ghes, int silent)
+ {
+-	struct acpi_hest_generic *g = ghes->generic;
++	struct acpi_hest_generic *g;
+ 	u64 buf_paddr;
+ 	u32 len;
+ 	int rc;
+ 
++	if (!ghes || !ghes->generic)
++		return -EINVAL;
++
++	g = ghes->generic;
++
+ 	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
+ 	if (rc) {
+ 		if (!silent && printk_ratelimit())
