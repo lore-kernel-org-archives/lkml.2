@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab1HVLIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:08:13 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:11314 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab1HVLGP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 07:06:15 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
-        rydberg@euromail.se
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 8/9 v5] Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers on touchpad
-Date: Mon, 22 Aug 2011 19:06:02 +0800
-Message-Id: <1314011163-19098-9-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
-References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
-X-System-Of-Record: true
+	id S1756843Ab1HVLP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:15:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756837Ab1HVLPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 07:15:51 -0400
+Message-ID: <4E523A63.3060405@redhat.com>
+Date: Mon, 22 Aug 2011 13:15:47 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+MIME-Version: 1.0
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Q: /sys/block and I/O Schedulers
+References: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
+In-Reply-To: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
+X-Enigmail-Version: 1.2.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"4-finger scroll" is a gesture supported by some applications and
-operating systems.
+On 08/22/2011 12:10 PM, Ulrich Windl wrote:
+> I have a question: Reading the docs on I/O Schedulers, I had the
+> impression the docs wanted to tell me that only the low-level devices
+> (i.e. disks) use I/O Schedulers, while higher-level devices (like
+> multipaths, RAIDs, LVs, etc.) don't.
 
-"Resting thumb" is when a clickpad user rests a finger (e.g., a
-thumb), in a "click zone" (typically the bottom of the touchpad) in
-anticipation of click+move=select gestures.
+As you already found, low-level device has always real io scheduler.
 
-Thus, "4-finger scroll + resting thumb" is a 5-finger gesture.
-To allow userspace to detect this gesture, we send BTN_TOOL_QUINTTAP.
+Device-mapper use stacked device logic - IOW mapped device
+is stacked over some real device(s).
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
----
- drivers/input/input-mt.c |    1 +
- include/linux/input.h    |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+Remapping works on bio level, not on IO request level.
+Separate bios are simple remapped to low-level devices where
+io scheduler does its job.
 
-diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-index c48c81f..9150ee7 100644
---- a/drivers/input/input-mt.c
-+++ b/drivers/input/input-mt.c
-@@ -117,6 +117,7 @@ void input_mt_report_finger_count(struct input_dev *dev, int count)
- 	input_event(dev, EV_KEY, BTN_TOOL_DOUBLETAP, count == 2);
- 	input_event(dev, EV_KEY, BTN_TOOL_TRIPLETAP, count == 3);
- 	input_event(dev, EV_KEY, BTN_TOOL_QUADTAP, count == 4);
-+	input_event(dev, EV_KEY, BTN_TOOL_QUINTTAP, count == 5);
- }
- EXPORT_SYMBOL(input_mt_report_finger_count);
- 
-diff --git a/include/linux/input.h b/include/linux/input.h
-index 068784e..4de4b46 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -503,6 +503,7 @@ struct input_keymap_entry {
- #define BTN_TOOL_FINGER		0x145
- #define BTN_TOOL_MOUSE		0x146
- #define BTN_TOOL_LENS		0x147
-+#define BTN_TOOL_QUINTTAP	0x148	/* Five fingers on trackpad */
- #define BTN_TOUCH		0x14a
- #define BTN_STYLUS		0x14b
- #define BTN_STYLUS2		0x14c
--- 
-1.7.3.1
+There is one exception: dm-multipath which uses "request based" mapping,
+IOW it means it uses own scheduler on device-mapper level
+(But in old kernels it was on bio level as well,
+for more info see https://lkml.org/lkml/2008/2/15/411)
 
+> Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs
+> seem to use the I/O Scheduler
+
+LVs (e.g. linear mappings) do not use own scheduler. But /queue directory
+contains more attributes which need to be visible there.
+
+> My test was as simple as this: /sys/block # for d in *
+>> do echo $d: $(<$d/queue/scheduler) done
+
+Btw see "lsblk -t" - here you can see stacked devices with scheduler
+and topology info parsed from sysfs (in new util-linux).
+
+Milan
