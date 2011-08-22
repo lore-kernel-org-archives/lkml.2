@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab1HVK0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:26:51 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:51427 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756720Ab1HVK0o (ORCPT
+	id S1756788Ab1HVKab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:30:31 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:41738 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab1HVKa0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:26:44 -0400
-Subject: Re: [PATCH v2 35/43] unicore32: Use set_current_blocked() and
- block_sigmask()
-From: Matt Fleming <matt@console-pimps.org>
-To: gxt@mprc.pku.edu.cn
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <1313979346.2905.27.camel@epip-laptop>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-	 <1313772419-21951-36-git-send-email-matt@console-pimps.org>
-	 <1313979346.2905.27.camel@epip-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Aug 2011 11:26:36 +0100
-Message-ID: <1314008796.19751.28.camel@mfleming-mobl1.ger.corp.intel.com>
+	Mon, 22 Aug 2011 06:30:26 -0400
+Message-Id: <4E524B71020000A1000070C6@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Mon, 22 Aug 2011 12:28:33 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Antw: Q: /sys/block and I/O Schedulers
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-22 at 10:15 +0800, Guan Xuetao wrote:
-> Hi, Matt
-> Could you add me (and other relevant people) to the patch series, or at
-> least the main patches in the series, since the separated patch is hard
-> to understand, and can't be tested.
+>>> Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de> schrieb am 22.08.2011 um 12:10
+in Nachricht <4E522B1A.1E1 : 161 : 60728>:
+> Hi!
 > 
-> For signal patches, I can only test it by booting up the system, running
-> some commands, and perhaps, running lmbench or ltp.
-> Is there any testsuite specified to signal part?
+> I have a question: Reading the docs on I/O Schedulers, I had the impression 
+> the docs wanted to tell me that only the low-level devices (i.e. disks) use 
+> I/O Schedulers, while higher-level devices (like multipaths, RAIDs, LVs, 
+> etc.) don't.
+> 
+> Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs seem 
+> to use the I/O Scheduler, while RAID1 don't seem to do so. Also a disk in a 
+
+Forget the statement about RAID1; I just overlooked it in the list.
+
+> Xen DomU also uses an I/O Scheduler (in addition to those being used in Dom0 
+> for the same device already)
+> 
+> Is that correct, and if so, why is that? Is there a change to be seen in the 
+> future?
+> 
+> My test was as simple as this:
+> /sys/block # for d in *
+> > do
+> > echo $d: $(<$d/queue/scheduler)
+> > done
+> cciss!c0d0: noop anticipatory deadline [cfq]
+> dm-0: noop anticipatory deadline [cfq]
+> [...]
+> loop0: none
+> [...]
+> md4: none
+> sda: noop anticipatory deadline [cfq]
+> [...]
+> 
+> As I'm not subscribed to the list, I'd appreciate any CC: to my address. 
+> Thanks!
+> 
+> Regards,
+> Ulrich
 > 
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> 
-> Thanks Matt.
-> Guan Xuetao
 
-Hi Guan,
 
-Unfortunately there are too many maintainers to add directly to the Cc
-list. However, I did reply to the first patch in the series (the only
-other one that matters for arch maintainers) and added yourself and
-linux-arch, so hopefully the rest of the arch maintainers will find it
-there. But just to be complete, the link to the patch is here,
-
-	https://lkml.org/lkml/2011/8/19/409
-
-There isn't really a specific testsuite that I would recommend, though
-I'm pretty sure that LTP has some signal-related test cases. Booting up
-your system and running some commands (and perhaps interrupting them
-with Ctrl-C) should be good enough.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+ 
 
