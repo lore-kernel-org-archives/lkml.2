@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab1HVQgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:36:23 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:62031 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab1HVQgU (ORCPT
+	id S1751781Ab1HVQlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:41:01 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:7556 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1HVQk7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:36:20 -0400
+	Mon, 22 Aug 2011 12:40:59 -0400
 X-VirusChecked: Checked
 X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-11.tower-127.messagelabs.com!1314030955!25267367!36
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1314031258!29367114!1
 X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.180]
+X-Originating-IP: [216.166.12.97]
 From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Paul Mundt <lethal@linux-sh.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Date: Mon, 22 Aug 2011 11:36:15 -0500
+To: Ryan Mallon <rmallon@gmail.com>, "axel.lin@gmail.com" <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 22 Aug 2011 11:40:57 -0500
 Subject: RE: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
 Thread-Topic: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
-Thread-Index: AcxgEDxJpgOLQYwhTH29nx45IMhjQgA2Tqng
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F38857524B@AUSP01VMBX24.collaborationhost.net>
-References: <1313937545.13671.5.camel@phoenix>
-In-Reply-To: <1313937545.13671.5.camel@phoenix>
+Thread-Index: AcxgYs/UHTm9Vg2sTGSEO9pjUje5UgAhw9Rg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F388575258@AUSP01VMBX24.collaborationhost.net>
+References: <1313937545.13671.5.camel@phoenix> <4E5197B8.8020608@gmail.com>
+ <4E519AC7.3030001@gmail.com>
+ <CAF+7xWkezyMrnt-_0EVtNWtAB2v7pceATB8HEbdC8oqOY0camw@mail.gmail.com>
+ <4E51A34C.6060207@gmail.com>
+In-Reply-To: <4E51A34C.6060207@gmail.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7MGaXeG021694
 
-On Sunday, August 21, 2011 7:39 AM, Axel Lin wrote:
+On Sunday, August 21, 2011 5:31 PM, Ryan Mallon wrote:
+> On 22/08/11 10:06, Axel Lin wrote:
+>> 2011/8/22 Ryan Mallon<rmallon@gmail.com>:
+>>> On 22/08/11 09:41, Ryan Mallon wrote:
+>>>> On 22/08/11 00:39, Axel Lin wrote:
+>>>>> ep93xx-fb.c uses interfaces from linux/module.h,
+>>>>> so it should include that file.  This patch fixes below build errors.
+>>>> What actually changed to make these files broken? Did some other header
+>>>> previously include module.h for us? How many other drivers are broken?
+>>>>
+>>>> Anyway, the change is okay.
+>>>>
+>>>> Acked-by: Ryan Mallon<rmallon@gmail.com>
+>>> Actually, having a second look at this it does not look right.
+>>>
+>>> drivers/video/ep93xx-fb.c includes linux/platform.h (as its first include),
+>>> which includes linux/driver.h, which includes linux/module.h.
+>>>
+>>> Just tested on Linus' latest tree and both this driver and the ep93xx
+>>> backlight driver build fine. What kernel version are you using?
+>>>
+>>> ~Ryan
+>> hi Ryan,
+>>
+>> The patch is against linux-next tree.
+>> I got build error for ep93xx-fb.c and ep93xx_bl.c on linux-next tree.
+>> ( next-20110819 )
 >
-> ep93xx-fb.c uses interfaces from linux/module.h,
-> so it should include that file.  This patch fixes below build errors.
-> 
->   CC      drivers/video/ep93xx-fb.o
-> drivers/video/ep93xx-fb.c:120: error: expected ')' before 'int'
-> drivers/video/ep93xx-fb.c:122: error: expected ')' before string constant
-> drivers/video/ep93xx-fb.c:409: error: 'THIS_MODULE' undeclared here (not in a function)
-> drivers/video/ep93xx-fb.c:645: error: expected declaration specifiers or '...' before string constant
-> drivers/video/ep93xx-fb.c:645: warning: data definition has no type or storage class
-> drivers/video/ep93xx-fb.c:645: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-> drivers/video/ep93xx-fb.c:645: warning: function declaration isn't a prototype
-> drivers/video/ep93xx-fb.c:646: error: expected declaration specifiers or '...' before string constant
-> drivers/video/ep93xx-fb.c:646: warning: data definition has no type or storage class
-> drivers/video/ep93xx-fb.c:646: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
-> drivers/video/ep93xx-fb.c:646: warning: function declaration isn't a prototype
-> drivers/video/ep93xx-fb.c:647: error: expected declaration specifiers or '...' before string constant
-> drivers/video/ep93xx-fb.c:647: warning: data definition has no type or storage class
-> drivers/video/ep93xx-fb.c:647: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-> drivers/video/ep93xx-fb.c:647: warning: function declaration isn't a prototype
-> drivers/video/ep93xx-fb.c:649: error: expected declaration specifiers or '...' before string constant
-> drivers/video/ep93xx-fb.c:649: warning: data definition has no type or storage class
-> drivers/video/ep93xx-fb.c:649: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-> drivers/video/ep93xx-fb.c:649: warning: function declaration isn't a prototype
-> make[2]: *** [drivers/video/ep93xx-fb.o] Error 1
-> make[1]: *** [drivers/video] Error 2
-> make: *** [drivers] Error 2
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/video/ep93xx-fb.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
-> index 40e5f17..8133a9d 100644
-> --- a/drivers/video/ep93xx-fb.c
-> +++ b/drivers/video/ep93xx-fb.c
-> @@ -17,6 +17,7 @@
->   *
->   */
->  
-> +#include <linux/module.h>
->  #include <linux/platform_device.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/slab.h>
+> Ok, I see now. The change which caused the breakage is fdb697c: 
+> "include: replace linux/module.h with "struct module" wherever 
+> possible". How many other drivers got broken now that device.h does not 
+> include module.h?
 
-Same issue as the backlight driver...
+Probably a lot...  Which is one of the reasons linux-next exists.. . ;-)
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Actually, Paul Gortmaker caused this breakage with the commit.  He should
+take a deeper look and see what it broke.  From his commit:
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+    Most of the implicit dependencies on module.h being present by
+    these headers pulling it in have been now weeded out, so we can
+    finally make this change with hopefully minimal breakage.
+
+Regards,
+Hartley
