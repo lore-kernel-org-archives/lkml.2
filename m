@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab1HVVQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:16:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64944 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab1HVVQL (ORCPT
+	id S1753764Ab1HVVVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:21:23 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36279 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753100Ab1HVVVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:16:11 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
-References: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
-Date: Mon, 22 Aug 2011 23:16:07 +0200
+	Mon, 22 Aug 2011 17:21:19 -0400
+X-Sasl-enc: wVdeKMgg4J0kXQ9udhQ3+oDgYs5obQFo64kHGu73iHY8 1314048078
+Date: Mon, 22 Aug 2011 14:18:32 -0700
+From: Greg KH <greg@kroah.com>
+To: Bernhard Roth <br@pwrnet.de>
+Cc: nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        claudio@evidence.eu.com
+Subject: Re: [PATCH] atmel_serial: RS485: receiving enabled when sending data
+Message-ID: <20110822211832.GA8023@kroah.com>
+References: <4E492CFF.7040905@pwrnet.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0mv05vu3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E492CFF.7040905@pwrnet.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> +obj-$(CONFIG_USB)		+= common.o
->>>> +obj-$(CONFIG_USB_GADGET)	+= common.o
+On Mon, Aug 15, 2011 at 04:28:15PM +0200, Bernhard Roth wrote:
+> Hello!
+> 
+> By default the atmel_serial driver in RS485 mode disables receiving
+> data until all data in the send buffer has been sent. This flag
+> allows to receive data even whilst sending data. This is very useful
+> to
+> 
+> - check if the data has been sent correctly over the RS485 bus
+> - assure that no collision happened
+> - check for short circuits/termination issues on the RS485 bus
+> 
+> Usually this functionality is realized by hardware, wether
+> controlling the RX-Enable pin of the RS485 transceiver with RTS
+> (driver control signal) or pulling it LOW permanently. The present
+> atmel_serial driver makes this impossible, thus requiring following
+> patch.
+> 
+> Usage example:
+> 
+>     struct serial_rs485     rs485;
+> 
+>     memset(&rs485, 0, sizeof(rs485));
+>     rs485.flags = SER_RS485_ENABLED | SER_RS485_RX_DURING_TX;
+>     ioctl(fd, TIOCSRS485, &rs485);
+> 
+> 
+> 
+> 
+> atmel_serial: RS485: receiving enabled when sending data
+> 
+> By default the atmel_serial driver in RS485 mode disables receiving
+> data until
+> all data in the send buffer has been sent. This flag allows to receive data
+> even whilst sending data.
+> 
+> Signed-off-by: Bernhard Roth <br@pwrnet.de>
+> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+> ---
+>  drivers/tty/serial/atmel_serial.c |   17 ++++++++++-------
+>  include/linux/serial.h            |    1 +
+>  2 files changed, 11 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/atmel_serial.c
+> b/drivers/tty/serial/atmel_serial.c
+> index af9b781..5f6c745 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -339,8 +339,9 @@ static void atmel_stop_tx(struct uart_port *port)
+>      /* Disable interrupts */
+>      UART_PUT_IDR(port, atmel_port->tx_done_mask);
+> 
+> -    if (atmel_port->rs485.flags & SER_RS485_ENABLED)
+> -        atmel_start_rx(port);
+> +    if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
+> +        !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
+> +            atmel_start_rx(port);
 
->>> Will this cause problems?  For example, what if CONFIG_USB is Y and
->>> CONFIG_USB_GADGET is M?
+Can you fix your email client to not strip patches of tabs and resend
+this so that I can apply it?
 
->>> Also, it seems a little silly to have an entire kernel module devoted
->>> to a single, little function.
+thanks,
 
-On Mon, 22 Aug 2011 23:06:43 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
-> You could do:
->
-> 	obj-$(CONFIG_USB_SUPPORT)  += common.o
->
-> which would build that subroutine into the main kernel whenever either
-> side of the USB stack is enabled.
-
-OK.  I'll wait for any more possible comments and post changed version
-by the end of the week.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+greg k-h
