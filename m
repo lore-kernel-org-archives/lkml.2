@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1HVXpK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:45:10 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:52831 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab1HVXpH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:45:07 -0400
-Date: Mon, 22 Aug 2011 17:45:06 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-cc: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        torvalds@linux-foundation.org, mporter@ti.com
-Subject: Re: [PATCH] irq: always set IRQF_ONESHOT if no primary handler is
- specified
-In-Reply-To: <20110818213418.GA20509@legolas.emea.dhcp.ti.com>
-Message-ID: <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
-References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de> <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com> <4E4D4A5F.202@linutronix.de> <20110818213418.GA20509@legolas.emea.dhcp.ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754178Ab1HVXrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:47:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49971 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751668Ab1HVXre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 19:47:34 -0400
+Message-ID: <4E52EA50.6070105@zytor.com>
+Date: Mon, 22 Aug 2011 16:46:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Lutomirski <luto@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+References: <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com> <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com> <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org> <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com> <20110822144051.GD2946@aftab> <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com> <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com> <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+In-Reply-To: <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011, Felipe Balbi wrote:
-
-> On Thu, Aug 18, 2011 at 07:22:39PM +0200, Sebastian Andrzej Siewior wrote:
-> > Pantelis Antoniou wrote:
-> > 
-> > >Let me report that with this change Beagle board fails to boot,
-> > >hangs right on rootfs mount.
-> > 
-> > Can you provide some more information about the kind of the failure and
-> > used drivers?
-> > 
-> > >Users of BB should revert this until the offending driver(s) are fixed.
-> > Which is the offending driver?
+On 08/22/2011 04:27 PM, Linus Torvalds wrote:
+> On Mon, Aug 22, 2011 at 3:04 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> However, we could just issue a SIGILL or SIGSEGV at this point; the same
+>> way we would if we got an #UD or #GP fault; SIGILL/#UD would be
+>> consistent with Intel CPUs here.
 > 
-> I would guess it's the lack of threaded IRQ conversion on the
-> twl4030 driver. I have converted it but noone actually picked the series
-> [1].
+> Considering that this is not a remotely new issue, and that it has
+> been around for years without anybody even noticing, I'd really prefer
+> to just fix things going forwards rather than add any code to actively
+> break any possible unlucky legacy users.
 > 
-> http://marc.info/?i=1309427470-605-1-git-send-email-balbi@ti.com
+> So I think the "let's fix the vdso case for sysenter" + "let's remove
+> the 32-bit syscall vdso" is the right solution. If somebody has
+> hardcoded syscall instructions, or generates them dynamically with
+> some JIT, that's their problem. We'll continue to support it as well
+> as we ever have (read: "almost nobody will ever notice").
+> 
+> One thing we *could* do is to just say "we never restart a x86-32
+> 'syscall' instruction at all", and just make such a case return EINTR.
+> IOW, do something along the lines of the appended pseudo-patch.
+> 
+> Because returning -EINTR is always "almost correct".
+> 
 
-Just a data point: applying this series doesn't seem to fix the hang.
+I have to say it worries me from a potential security hole point of
+view, especially since it clearly isn't very well trod ground to begin
+with.  An almost-never-used path with access to the full system call
+suite is scarier than hell in that sense.
 
-Sebastian, Thomas, does commit f3637a5f2e2eb391ff5757bc83fb5de8f9726464 
-("irq: Always set IRQF_ONESHOT if no primary handler is specified") fix 
-anything, aside from a driver in staging?
+Keep in mind support for SYSCALL32 is already (vendor-)conditional.
 
+(The obvious solution of just putting the proper register frame back in
+its place would be okay except for totally breaking anything
+trace-on-exit as already hashed to death...)
 
-- Paul
+	-hpa
