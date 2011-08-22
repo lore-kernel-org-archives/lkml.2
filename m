@@ -1,102 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1HVV46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:56:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47780 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab1HVV45 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:56:57 -0400
-Subject: Re: [PATCH 3/4] string: introduce memchr_inv
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Joern Engel <joern@logfs.org>, logfs@logfs.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>, linux-arch@vger.kernel.org
-In-Reply-To: <20110822135218.f2d9f462.akpm@linux-foundation.org>
-References: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com>
-	 <1314030548-21082-4-git-send-email-akinobu.mita@gmail.com>
-	 <20110822135218.f2d9f462.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Aug 2011 23:56:51 +0200
-Message-ID: <1314050211.4791.4.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1754056Ab1HVWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 18:01:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34437 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab1HVWBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 18:01:05 -0400
+Date: Mon, 22 Aug 2011 14:51:51 -0700
+From: Greg KH <gregkh@suse.de>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
+ uevent
+Message-ID: <20110822215151.GA18397@suse.de>
+References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
+ <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+ <CACxGe6us1vaUgMmiZR-D9iSCQdw+vbVyZdBCkET_9p3AGyHwRQ@mail.gmail.com>
+ <4E4937A4.5070204@linutronix.de>
+ <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
+ <20110822214154.GB20451@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110822214154.GB20451@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 22 aoÃ»t 2011 Ã  13:52 -0700, Andrew Morton a Ã©crit :
-> On Tue, 23 Aug 2011 01:29:07 +0900
-> Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 
-> > memchr_inv() is mainly used to check whether the whole buffer is filled
-> > with just a specified byte.
+On Mon, Aug 22, 2011 at 02:41:54PM -0700, Sarah Sharp wrote:
+> On Mon, Aug 15, 2011 at 09:17:41AM -0600, Grant Likely wrote:
+> > On Mon, Aug 15, 2011 at 9:13 AM, Sebastian Andrzej Siewior
+> > <bigeasy@linutronix.de> wrote:
+> > > Grant Likely wrote:
+> > >>>
+> > >>> --- a/drivers/base/platform.c
+> > >>> +++ b/drivers/base/platform.c
+> > >>> @@ -614,7 +614,7 @@ static int platform_uevent(struct device *dev, struct
+> > >>> kobj_uevent_env *env)
+> > >>>               return rc;
+> > >>>
+> > >>>       add_uevent_var(env, "MODALIAS=%s%s", PLATFORM_MODULE_PREFIX,
+> > >>> -               (pdev->id_entry) ? pdev->id_entry->name : pdev->name);
+> > >>> +                       pdev->name);
+> > >>
+> > >> Yes, this looks like the right thing to do to me.  Also, I think the
+> > >> original code is suspect because it causes the uevent data to be
+> > >> different after binding a driver to a device.
+> > >
+> > > Why different? The code matches (pdev->name == id->name) or
+> > > (pdev->name ==  driver->name) so in both cases it should be equal to
+> > > pdev->name.
+> > >
+> > > Are you or Greg taking this?
 > > 
-> > The function name and prototype are stolen from logfs and the
-> > implementation is from SLUB.
-> > 
-> > ...
-> >
-> > +/**
-> > + * memchr_inv - Find a character in an area of memory.
-> > + * @s: The memory area
-> > + * @c: The byte to search for
-> > + * @n: The size of the area.
+> > This one is all Greg.
 > 
-> This text seems to be stolen from memchr().  I guess it's close enough.
-> 
-> > + * returns the address of the first character other than @c, or %NULL
-> > + * if the whole buffer contains just @c.
-> > + */
-> > +void *memchr_inv(const void *start, int c, size_t bytes)
-> > +{
-> > +	u8 value = c;
-> > +	u64 value64;
-> > +	unsigned int words, prefix;
-> > +
-> > +	if (bytes <= 16)
-> > +		return check_bytes8(start, value, bytes);
-> > +
-> > +	value64 = value | value << 8 | value << 16 | value << 24;
-> > +	value64 = (value64 & 0xffffffff) | value64 << 32;
-> > +	prefix = 8 - ((unsigned long)start) % 8;
-> > +
+> Greg, do you want to take this patch through your driver core tree, or
+> would you prefer to have it come through the xHCI tree?
 
-<snip>
+I'll take it in my driver-core tree separate, as the others don't depend
+on this one, right?
 
-> > +	if (prefix) {
-> > +		u8 *r = check_bytes8(start, value, prefix);
-> > +		if (r)
-> > +			return r;
-> > +		start += prefix;
-> > +		bytes -= prefix;
-> > +	}
-
-</snip>
-
-Please note Andrew the previous code just make sure 'start' is aligned
-on 8 bytes boundary. (It is suboptimal because if 'start' was already
-aligned, we call the slow check_bytes(start, value, 8))
-
-Code should probably do
-
-prefix = (unsigned long)start % 8;
-if (prefix) {
-	prefix = 8 - prefix;
-	r = check_bytes8(start, value, prefix);
-	...
-
-
-
-> > +
-> > +	words = bytes / 8;
-> > +
-> > +	while (words) {
-> > +		if (*(u64 *)start != value64)
-
-
-
+greg k-h
