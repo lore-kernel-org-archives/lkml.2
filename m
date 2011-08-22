@@ -1,45 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1HVXia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:38:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46209 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751589Ab1HVXi2 (ORCPT
+	id S1754431Ab1HVXoD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:44:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43074 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab1HVXoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:38:28 -0400
-Date: Mon, 22 Aug 2011 16:38:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vmscan: fix initial shrinker size handling
-Message-Id: <20110822163821.e746ab25.akpm@linux-foundation.org>
-In-Reply-To: <20110822232257.GT3162@dastard>
-References: <20110822101721.19462.63082.stgit@zurg>
-	<20110822232257.GT3162@dastard>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 22 Aug 2011 19:44:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4E52E986.8030405@jp.fujitsu.com>
+Date: Tue, 23 Aug 2011 08:43:02 +0900
+From: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.20) Gecko/20110804 Thunderbird/3.1.12
+MIME-Version: 1.0
+To: Wanlong Gao <wanlong.gao@gmail.com>
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chris.mason@oracle.com
+Subject: Re: [PATCH] btrfs:make btrfs_init_compress() return void
+References: <1314022940-6717-1-git-send-email-wanlong.gao@gmail.com>
+In-Reply-To: <1314022940-6717-1-git-send-email-wanlong.gao@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011 09:22:57 +1000
-Dave Chinner <david@fromorbit.com> wrote:
-
-> On Mon, Aug 22, 2011 at 02:17:21PM +0300, Konstantin Khlebnikov wrote:
-> > Shrinker function can returns -1, it means it cannot do anything without a risk of deadlock.
-> > For example prune_super() do this if it cannot grab superblock refrence, even if nr_to_scan=0.
-> > Currenly we interpret this like ULONG_MAX size shrinker, evaluate total_scan according this,
-> > and next time this shrinker can get really big pressure. Let's skip such shrinkers instead.
-> > 
-> > Also make total_scan signed, otherwise check (total_scan < 0) below never works.
+(2011/08/22 23:22), Wanlong Gao wrote:
+> From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 > 
-> I've got a patch set I am going to post out today that makes this
-> irrelevant.
+> Make btrfs_init_compress() return void, since it always return 0,
+> and no need to check return value.
+> 
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  fs/btrfs/compression.c |    3 +--
+>  fs/btrfs/compression.h |    2 +-
+>  fs/btrfs/super.c       |    7 ++-----
+>  3 files changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
+> index 8ec5d86..b2dbefa 100644
+> --- a/fs/btrfs/compression.c
+> +++ b/fs/btrfs/compression.c
+> @@ -731,7 +731,7 @@ struct btrfs_compress_op *btrfs_compress_op[] = {
+>  	&btrfs_lzo_compress,
+>  };
+>  
+> -int __init btrfs_init_compress(void)
+> +void __init btrfs_init_compress(void)
+>  {
+>  	int i;
+>  
+> @@ -741,7 +741,6 @@ int __init btrfs_init_compress(void)
+>  		atomic_set(&comp_alloc_workspace[i], 0);
+>  		init_waitqueue_head(&comp_workspace_wait[i]);
+>  	}
+> -	return 0;
+>  }
+>  
+>  /*
+> diff --git a/fs/btrfs/compression.h b/fs/btrfs/compression.h
+> index a12059f..9afb0a6 100644
+> --- a/fs/btrfs/compression.h
+> +++ b/fs/btrfs/compression.h
+> @@ -19,7 +19,7 @@
+>  #ifndef __BTRFS_COMPRESSION_
+>  #define __BTRFS_COMPRESSION_
+>  
+> -int btrfs_init_compress(void);
+> +void btrfs_init_compress(void);
+>  void btrfs_exit_compress(void);
+>  
+>  int btrfs_compress_pages(int type, struct address_space *mapping,
+> diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+> index 15634d4..31e9654 100644
+> --- a/fs/btrfs/super.c
+> +++ b/fs/btrfs/super.c
+> @@ -1238,9 +1238,7 @@ static int __init init_btrfs_fs(void)
+>  	if (err)
+>  		return err;
+>  
+> -	err = btrfs_init_compress();
+> -	if (err)
+> -		goto free_sysfs;
+> +	btrfs_init_compress();
+>  
+>  	err = btrfs_init_cachep();
+>  	if (err)
+> @@ -1281,8 +1279,7 @@ free_cachep:
+>  	btrfs_destroy_cachep();
+>  free_compress:
+>  	btrfs_exit_compress();
 
-Well, how serious is the bug?  If it's a non-issue then we can leave
-the fix until 3.1.  If it's a non-non-issue then we'd need a minimal
-patch to fix up 3.1 and 3.0.x.
+> -free_sysfs:
+> -	btrfs_exit_sysfs();
+> +
+
+Why remove btrfs_exit_sysfs()?
+
+ -Tsutomu
+
+>  	return err;
+>  }
+>  
 
