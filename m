@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab1HVUnD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:43:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29334 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233Ab1HVUnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:43:00 -0400
-Date: Mon, 22 Aug 2011 17:42:10 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 03/11] KVM: x86: retry non-page-table writing instruction
-Message-ID: <20110822204209.GA3490@amt.cnet>
-References: <4E4A10E8.5090705@cn.fujitsu.com>
- <4E4A113F.5090404@cn.fujitsu.com>
- <20110822195929.GA2662@amt.cnet>
- <4E52BA31.4030203@cn.fujitsu.com>
+	id S1753830Ab1HVUnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:43:41 -0400
+Received: from yuna.grokhost.net ([87.117.228.63]:55907 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab1HVUnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 16:43:39 -0400
+Message-ID: <4E52BF78.8060809@bootc.net>
+Date: Mon, 22 Aug 2011 21:43:36 +0100
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E52BA31.4030203@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Tejun Heo <tj@kernel.org>, linux1394-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire-sbp2: fix panic after rmmod with slow targets
+References: <1314017561-1976-1-git-send-email-bootc@bootc.net> <20110822163526.5b76d535@stein>
+In-Reply-To: <20110822163526.5b76d535@stein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 04:21:05AM +0800, Xiao Guangrong wrote:
-> On 08/23/2011 03:59 AM, Marcelo Tosatti wrote:
-> 
-> >> +	if (!vcpu->arch.mmu.direct_map && !mmu_is_nested(vcpu))
-> >> +		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-> > 
-> > Why write? 
-> > 
-> 
-> Since the fault is caused by page table written, and the 'gpa' can
-> be written after instruction is retied.
-> 
-> >> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
-> >> +
-> >> +	/*
-> >> +	 * The shadow pages have been zapped, then we call the page
-> >> +	 * fault path to change the mapping to writable.
-> >> +	 */
-> >> +	vcpu->arch.mmu.page_fault(vcpu, cr2, PFERR_WRITE_MASK, true);
-> > 
-> > I don't see why is this necessary. Just allowing the instruction to
-> > proceed should be enough?
-> > 
-> 
-> It used to avoid later VM-exit, since we will retry the instruction
-> but the mapped is still read-only. So we can it to let the mapping become
-> writable to avoid page fault again.
+On 22/08/2011 15:35, Stefan Richter wrote:
+> On Aug 22 Chris Boot wrote:
+>> If firewire-sbp2 starts a login to a target that doesn't complete ORBs
+>> in a timely manner (and has to retry the login), and the module is
+>> removed before the operation times out, you end up with a null-pointer
+>> dereference and a kernel panic.
+>>
+>> This happens because the code in sbp2_remove() just does a
+>> sbp2_target_put(), assuming it will be the last remaining reference. If
+>> there are jobs in the workqueue, this is not the case, and the module is
+>> successfully unloaded while references still exist.
+> The problem is not that sbp2_target_put()'s caller assumes that it is
+> putting the last reference.  sbp2_target_put()'s very purpose is to clean
+> up when, and only when, the last reference is gone.
 
-Its not like this case is performance sensitive. Usually optimizing
-things without the need for it leads to bad results. So please drop 
-this.
+Yes that's what I meant by my message, but I guess I wasn't clear 
+enough. I edited it a bit with the second revision, I hope it's a bit 
+clearer now.
+
+[snip]
+
+>> Signed-off-by: Chris Boot<bootc@bootc.net>
+>> ---
+>>   drivers/firewire/sbp2.c |    5 +++++
+>>   1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+>> index 41841a3..3867aaa 100644
+>> --- a/drivers/firewire/sbp2.c
+>> +++ b/drivers/firewire/sbp2.c
+>> @@ -1198,6 +1198,11 @@ static int sbp2_remove(struct device *dev)
+>>   {
+>>   	struct fw_unit *unit = fw_unit(dev);
+>>   	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
+>> +	struct sbp2_logical_unit *lu, *next;
+>> +
+>> +	list_for_each_entry_safe(lu, next,&tgt->lu_list, link) {
+>> +		cancel_delayed_work_sync(&lu->work);
+>> +	}
+>>
+>>   	sbp2_target_put(tgt);
+>>   	return 0;
+> list_for_each_entry() is sufficient here.  You are not changing the list
+> while you iterate over it.
+>
+> Would you please resend the patch with list_for_each_entry()?
+
+Done.
+
+> More importantly, I think the whole sbp2_target instance reference
+> counting can be removed with his work canceling in place.  But I have not
+> analyzed this fully yet, and I don't expect you to do this for me.  Though
+> if you like to do so, that would of course be welcome.
+
+If you don't mind I'll let you do that as I'm not yet familiar enough 
+with the kernel - only enough to be dangerous! :-)
+
+Chris
 
