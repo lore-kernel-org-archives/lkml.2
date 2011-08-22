@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1HVP0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:26:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21421 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab1HVP0Q (ORCPT
+	id S1753184Ab1HVP1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:27:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59890 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab1HVP1C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:26:16 -0400
-Date: Mon, 22 Aug 2011 11:23:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: greg@kroah.com, stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com
-Subject: Please back-port git commit 196cfe2ae8fcdc03b3c7d627e7dfe8c0ce7229f9
- and 89153b5cae9f40c224a5d321665a97bf14220c2c to 3.0.x
-Message-ID: <20110822152354.GA24763@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4E527495.0069:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Mon, 22 Aug 2011 11:27:02 -0400
+Subject: Re: [RFC][PATCH 2/6] x86, nmi: create new NMI handler routines
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
+Date: Mon, 22 Aug 2011 17:26:52 +0200
+In-Reply-To: <20110822152154.GB2067@redhat.com>
+References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
+	 <1313786266-9585-3-git-send-email-dzickus@redhat.com>
+	 <1314022429.24275.30.camel@twins> <20110822152154.GB2067@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314026812.24275.67.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Greg,
+On Mon, 2011-08-22 at 11:21 -0400, Don Zickus wrote:
+> 
+> Sure.  Well there are a few drivers that want to register.  Unless you
+> want to make a rule that all nmi handlers have to be built-in? 
 
-I've two patches that are in Linus's upstream kernel, but I neglected to
-put the stable@kernel.org on them (duh!). Both Fedora and Ubuntu are carrying
-those two patches - but it would be nice if other distros got them.
-
-The two patches are:
-
-commit 196cfe2ae8fcdc03b3c7d627e7dfe8c0ce7229f9
-Author: Stefan Bader <stefan.bader@canonical.com>
-Date:   Thu Jul 14 15:30:22 2011 +0200
-
-    xen-blkfront: Drop name and minor adjustments for emulated scsi devices
-
-commit 89153b5cae9f40c224a5d321665a97bf14220c2c
-Author: Stefan Bader <stefan.bader@canonical.com>
-Date:   Thu Jul 14 15:30:37 2011 +0200
-
-    xen-blkfront: Fix one off warning about name clash
-
-Please back-port them to 3.0.x kernel. Thank you!
-
+Well, I'm all for that, but I guess I'm going to loose that particular
+fight ;-)
