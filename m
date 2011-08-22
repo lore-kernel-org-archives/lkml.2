@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1HVPfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:35:25 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:38453 "EHLO
+	id S1751666Ab1HVPhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:37:04 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:37185 "EHLO
 	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1HVPfV (ORCPT
+	with ESMTP id S1750961Ab1HVPhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:35:21 -0400
+	Mon, 22 Aug 2011 11:37:00 -0400
 MIME-Version: 1.0
-Date: Mon, 22 Aug 2011 21:05:20 +0530
-Message-ID: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
-Subject: [PATCH] xhci: Redundant check for
+Date: Mon, 22 Aug 2011 21:06:59 +0530
+Message-ID: <CA+OjSzww54ogPKD4PuKR6=37fbTBwnWq5yw2NSTZM0pH1N8S1g@mail.gmail.com>
+Subject: [PATCH] xhci: Redundant check for xhci->devs[]
 From: sifram rajas <sifram.rajas@gmail.com>
-To: sarah.a.sharp@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: sarah.a.sharp@intel.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,18 +36,18 @@ drivers/usb/host/xhci.c |   3 +--
  1 files changed, 1 insertions(+), 2 deletions(-)
 
 diff a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
---- a/drivers/usb/host/xhci.c	2011-08-17 23:27:16.000000000 +0530
-+++ b/drivers/usb/host/xhci.c	2011-08-22 20:43:34.250000000 +0530
+--- a/drivers/usb/host/xhci.c   2011-08-17 23:27:16.000000000 +0530
++++ b/drivers/usb/host/xhci.c   2011-08-22 20:43:34.250000000 +0530
 @@ -945,8 +945,7 @@ static int xhci_check_args(struct usb_hc
- 		return -ENODEV;
+               return -ENODEV;
 
- 	if (check_virt_dev) {
--		if (!udev->slot_id || !xhci->devs
--			|| !xhci->devs[udev->slot_id]) {
-+		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
- 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
- 						"device\n", func);
- 			return -EINVAL;
+       if (check_virt_dev) {
+-               if (!udev->slot_id || !xhci->devs
+-                       || !xhci->devs[udev->slot_id]) {
++               if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
+                       printk(KERN_DEBUG "xHCI %s called with unaddressed "
+                                               "device\n", func);
+                       return -EINVAL;
 
 Thanks,
 Sifram Rajas.
