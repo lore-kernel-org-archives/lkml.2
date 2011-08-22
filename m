@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab1HVQDU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:03:20 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35513 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab1HVQDS (ORCPT
+	id S1753019Ab1HVQDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:03:46 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25490 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1HVQDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:03:18 -0400
-Date: Mon, 22 Aug 2011 12:02:59 -0400
+	Mon, 22 Aug 2011 12:03:44 -0400
+Date: Mon, 22 Aug 2011 12:02:57 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jens Axboe <jaxboe@fusionio.com>, axboe@kernel.dk,
+To: Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Cc: joe.jin@oracle.com
-Subject: [GIT PULL] (xen) stable/for-jens for your 3.1-rc2 bugfix branch
-Message-ID: <20110822160259.GB24763@dumpdata.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, rdunlap@xenotime.net,
+        stefan.bader@canonical.com, JBeulich@novell.com
+Subject: [GIT PULL] (xen) stable/bug.fixes for 3.1-rc2
+Message-ID: <20110822160257.GI8944@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E527DBD.0051:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-CT-RefId: str=0001.0A090202.4E527DBC.0061:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jens,
+Hey Linus,
 
-Please git pull the following branch:
+Please git pull:
 
- git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens
+ git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug.fixes
 
-I've two bug-fixes - on that just fixes indentation and comments and a more curious
-one: when instructing the backend to remove a mounted disk from a guest it would correctly
-refuse but also change the state as if it had removed it. Then when shutting down the guest,
-the guest would hang as the backend states was removed (ooops). The fix is in the backend to
-not remove (and move to the remove state) unless the frontend has really unmounted the disk.
+which has some patches that have been there since last week - but the LinuxCon
+interrupted my process a bit so sending it late.
 
-The two patches are based off git commit ea5e116162b7e0cf83a2b8a273440514404604de
+The patches are based off git commit c00c8aa2d976e9ed1d12a57b42d6e9b27efb7abe:
 Konrad Rzeszutek Wilk (1):
-    xen/blkback: Make description more obvious.
+  xen/trace: Fix compile error when CONFIG_XEN_PRIVILEGED_GUEST is not set
 
-which you pulled for 3.1-rcX (and is now in Linus's master).
+which you pulled in 3.1-rc1.
 
- drivers/block/xen-blkback/common.h |    2 +-
- drivers/block/xen-blkback/xenbus.c |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Anyhow, this git pull has two boring compile fixes, and then two exciting bug-fixes. The
+exciting bug-fixes are 1) Jan's fix to check the ceiling of our M2P table - we
+did it slowly and potentially could read userspace pages (oops!) to find out our frame
+numbers, being a potential security risk; 2) fix PVonHVM to work with older hypervisors
+that don't support callbacks - we have code that does it, but missed one case - leading
+to crashes with more than 4 VCPUs.
 
-Joe Jin (2):
-      xen-blkback: Don't disconnect backend until state switched to XenbusStateClosed.
-      xen-blkback: fixed indentation and comments
+ arch/x86/include/asm/xen/page.h |    4 ++--
+ arch/x86/xen/Makefile           |    2 +-
+ arch/x86/xen/enlighten.c        |    4 ++--
+ arch/x86/xen/mmu.c              |   12 ++++++++----
+ arch/x86/xen/smp.c              |    4 ++--
+ 5 files changed, 15 insertions(+), 11 deletions(-)
+
+Jan Beulich (1):
+      xen/x86: replace order-based range checking of M2P table by linear one
+
+Jeremy Fitzhardinge (1):
+      xen/tracing: Fix tracing config option properly
+
+Randy Dunlap (1):
+      xen: xen-selfballoon.c needs more header files
+
+Stefano Stabellini (1):
+      xen: Do not enable PV IPIs when vector callback not present
 
 P.S.
-I dropped a patch from the branch and when doing the 'git rebase' it modified the dates
-of the two patches - rest assured - they have been in #linux-next and been tested since
-at least seven days ago:
+If you look in the commits date, you will notice Stefano's patch (and the
+subsequent ones) being modified about 30 minutes ago - it did not have his SOB
+on it - so I updated it just now using 'git rebase'. Rest assured, the patches
+had been for some time in #linux-next:
 http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=shortlog;h=refs/heads/linux-next
