@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab1HVLHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:07:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60656 "EHLO
+	id S1756896Ab1HVLIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:08:13 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:11314 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756833Ab1HVLGP (ORCPT
+	with ESMTP id S1756832Ab1HVLGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 07:06:15 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -13,9 +13,9 @@ To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, chris@cnpbagwell.com,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 5/9 v5] Input: synaptics - decode AGM packet types
-Date: Mon, 22 Aug 2011 19:05:59 +0800
-Message-Id: <1314011163-19098-6-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 8/9 v5] Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers on touchpad
+Date: Mon, 22 Aug 2011 19:06:02 +0800
+Message-Id: <1314011163-19098-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
 References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
@@ -24,123 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Synaptics image sensor tracks 5 fingers, but can only report 2.
+"4-finger scroll" is a gesture supported by some applications and
+operating systems.
 
-The algorithm for choosing which 2 fingers to report and in which packet:
-  Touchpad maintains 5 slots, numbered 0 to 4
-  Initially all slots are empty
-  As new fingers are detected, assign them to the lowest available slots
-  The touchpad always reports:
-    SGM: lowest numbered non-empty slot
-    AGM: highest numbered non-empty slot, if there is one
+"Resting thumb" is when a clickpad user rests a finger (e.g., a
+thumb), in a "click zone" (typically the bottom of the touchpad) in
+anticipation of click+move=select gestures.
 
-In addition, these touchpads have a special AGM packet type which reports
-the number of fingers currently being tracked, and which finger is in
-each of the two slots.  Unfortunately, these "TYPE=2" packets are only used
-when more than 3 fingers are being tracked.  When less than 4 fingers
-are present, the 'w' value must be used to track how many fingers are
-present, and knowing which fingers are being reported is much more
-difficult, if not impossible.
+Thus, "4-finger scroll + resting thumb" is a 5-finger gesture.
+To allow userspace to detect this gesture, we send BTN_TOOL_QUINTTAP.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 Acked-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- drivers/input/mouse/synaptics.c |   38 +++++++++++++++++++++++++++++++-------
- drivers/input/mouse/synaptics.h |   14 +++++++++++++-
- 2 files changed, 44 insertions(+), 8 deletions(-)
+ drivers/input/input-mt.c |    1 +
+ include/linux/input.h    |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 232fa00..8a025a6 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -420,15 +420,39 @@ static void synaptics_pt_create(struct psmouse *psmouse)
-  *	Functions to interpret the absolute mode packets
-  ****************************************************************************/
- 
-+static void synaptics_mt_state_set(struct synaptics_mt_state *state, int count,
-+				   int sgm, int agm)
-+{
-+	state->count = count;
-+	state->sgm = sgm;
-+	state->agm = agm;
-+}
-+
- static void synaptics_parse_agm(const unsigned char buf[],
--				struct synaptics_data *priv)
-+				struct synaptics_data *priv,
-+				struct synaptics_hw_state *hw)
- {
- 	struct synaptics_hw_state *agm = &priv->agm;
-+	int agm_packet_type;
-+
-+	agm_packet_type = (buf[5] & 0x30) >> 4;
-+	switch (agm_packet_type) {
-+	case 1:
-+		/* Gesture packet: (x, y, z) half resolution */
-+		agm->w = hw->w;
-+		agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-+		agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
-+		agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-+		break;
- 
--	/* Gesture packet: (x, y, z) at half resolution */
--	agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
--	agm->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
--	agm->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-+	case 2:
-+		/* AGM-CONTACT packet: (count, sgm, agm) */
-+		synaptics_mt_state_set(&agm->mt_state, buf[1], buf[2], buf[4]);
-+		break;
-+
-+	default:
-+		break;
-+	}
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index c48c81f..9150ee7 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -117,6 +117,7 @@ void input_mt_report_finger_count(struct input_dev *dev, int count)
+ 	input_event(dev, EV_KEY, BTN_TOOL_DOUBLETAP, count == 2);
+ 	input_event(dev, EV_KEY, BTN_TOOL_TRIPLETAP, count == 3);
+ 	input_event(dev, EV_KEY, BTN_TOOL_QUADTAP, count == 4);
++	input_event(dev, EV_KEY, BTN_TOOL_QUINTTAP, count == 5);
  }
+ EXPORT_SYMBOL(input_mt_report_finger_count);
  
- static int synaptics_parse_hw_state(const unsigned char buf[],
-@@ -467,7 +491,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)
- 				|| SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c))
- 				&& hw->w == 2) {
--			synaptics_parse_agm(buf, priv);
-+			synaptics_parse_agm(buf, priv, hw);
- 			return 1;
- 		}
- 
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 0ea7616..20f57df 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -115,9 +115,18 @@
- #define SYN_REDUCED_FILTER_FUZZ		8
- 
- /*
-- * A structure to describe the state of the touchpad hardware (buttons and pad)
-+ * A structure to describe which internal touchpad finger slots are being
-+ * reported in raw packets.
-  */
-+struct synaptics_mt_state {
-+	int count;			/* num fingers being tracked */
-+	int sgm;			/* which slot is reported by sgm pkt */
-+	int agm;			/* which slot is reported by agm pkt*/
-+};
- 
-+/*
-+ * A structure to describe the state of the touchpad hardware (buttons and pad)
-+ */
- struct synaptics_hw_state {
- 	int x;
- 	int y;
-@@ -130,6 +139,9 @@ struct synaptics_hw_state {
- 	unsigned int down:1;
- 	unsigned char ext_buttons;
- 	signed char scroll;
-+
-+	/* As reported in last AGM-CONTACT packets */
-+	struct synaptics_mt_state mt_state;
- };
- 
- struct synaptics_data {
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 068784e..4de4b46 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -503,6 +503,7 @@ struct input_keymap_entry {
+ #define BTN_TOOL_FINGER		0x145
+ #define BTN_TOOL_MOUSE		0x146
+ #define BTN_TOOL_LENS		0x147
++#define BTN_TOOL_QUINTTAP	0x148	/* Five fingers on trackpad */
+ #define BTN_TOUCH		0x14a
+ #define BTN_STYLUS		0x14b
+ #define BTN_STYLUS2		0x14c
 -- 
 1.7.3.1
 
