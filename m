@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1HVTtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 15:49:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64081 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab1HVTtm (ORCPT
+	id S1753631Ab1HVTt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 15:49:56 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57665 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab1HVTtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 15:49:42 -0400
+	Mon, 22 Aug 2011 15:49:52 -0400
+Message-ID: <4E52B2D9.5070904@linux.vnet.ibm.com>
+Date: Mon, 22 Aug 2011 14:49:45 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Date: Mon, 22 Aug 2011 13:49:41 -0600
-Message-ID: <CAB2gnbWqq4qDh0qmK8tC1-q5KY2H0rf_fNX_kVcFUEM6ZhYo5w@mail.gmail.com>
-Subject: [PATCH 2/2] ceph: fix memory leak
-From: Noah Watkins <noahwatkins@gmail.com>
-To: ceph-devel@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, sage@newdream.net,
-        noahwatkins@gmail.com
-Content-Type: text/plain; charset=UTF-8
+To: Dan Carpenter <error27@gmail.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
+        ascardo@holoscopio.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: zcache: fix possible sleep under lock
+References: <1314038869-8164-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110822190936.GA12248@shale.localdomain>
+In-Reply-To: <20110822190936.GA12248@shale.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kfree does not clean up indirect allocations in
-ceph_fs_client and ceph_options (e.g. snapdir_name).
+On 08/22/2011 02:09 PM, Dan Carpenter wrote:
+> On Mon, Aug 22, 2011 at 01:47:49PM -0500, Seth Jennings wrote:
+>> zcache_new_pool() calls kmalloc() with GFP_KERNEL which has
+>> __GFP_WAIT set.  However, zcache_new_pool() gets called on
+>> a stack that holds the swap_lock spinlock, leading to a
+>> possible sleep-with-lock situation. The lock is obtained
+>> in enable_swap_info().
+>>
+>> The patch replaces GFP_KERNEL with GFP_IOFS, which is
+>> GFP_KERNEL & ~__GFP_WAIT.
+>>
+> 
+> You should use GFP_ATOMIC.  We don't want to do IO with the locks
+> held.  The only reason GFP_IOFS exists is so that we can turn off
+> io during suspend and resume.
+> 
+> regards,
+> dan carpenter
+> 
+Actually, should this be GFP_ATOMIC or GFP_NOWAIT?
 
-Signed-off-by: Noah Watkins <noahwatkins@gmail.com>
----
- fs/ceph/super.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index 733674d..788f5ad 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -824,8 +824,8 @@ static struct dentry *ceph_mount(struct
-file_system_type *fs_type,
- 	fsc = create_fs_client(fsopt, opt);
- 	if (IS_ERR(fsc)) {
- 		res = ERR_CAST(fsc);
--		kfree(fsopt);
--		kfree(opt);
-+		destroy_mount_options(fsopt);
-+		ceph_destroy_options(opt);
- 		goto out_final;
- 	}
-
--- 
-1.7.6
+--
+Seth
