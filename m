@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab1HVQcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:32:22 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:33501 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab1HVQcU (ORCPT
+	id S1752097Ab1HVQfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:35:12 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:54842 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1HVQfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:32:20 -0400
-Date: Mon, 22 Aug 2011 18:31:34 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        "Serge E. Hallyn" <serge@hallyn.com>, akpm@linux-foundation.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
- when reboot
-Message-ID: <20110822183134.10390b46@neptune.home>
-In-Reply-To: <20110822154448.GA8527@redhat.com>
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr>
-	<20110814161707.GB30846@redhat.com>
-	<20110814213642.GB13799@hallyn.com>
-	<20110815144744.GA9660@redhat.com>
-	<4E4DA461.8030006@free.fr>
-	<20110819152416.GA17034@redhat.com>
-	<4E524B73.3050704@free.fr>
-	<20110822154448.GA8527@redhat.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Aug 2011 12:35:09 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-127.messagelabs.com!1314030897!29125818!38
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.31]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 22 Aug 2011 11:35:04 -0500
+Subject: RE: [PATCH] backlight: ep93xx_bl: add missing include of
+ linux/module.h
+Thread-Topic: [PATCH] backlight: ep93xx_bl: add missing include of
+ linux/module.h
+Thread-Index: AcxgD3Mycs4btxLnQieZaNzZGb3iRAA2UzuA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F388575247@AUSP01VMBX24.collaborationhost.net>
+References: <1313937209.13671.3.camel@phoenix>
+In-Reply-To: <1313937209.13671.3.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7MGZIl1021687
 
-On Mon, 22 August 2011 Oleg Nesterov <oleg@redhat.com> wrote:
-> On 08/22, Daniel Lezcano wrote:
-> >
-> > If we pass the reason to the exit_code of the init process, that will be
-> > a bit weird as the process is signaled and did not exited  no ?
+On Sunday, August 21, 2011 7:33 AM, Axel Lin wrote:
+>
+> ep93xx_bl.c uses interfaces from linux/module.h,
+> so it should include that file. This patch fixes below build errors.
 > 
-> Just in case, you shouldn't change ->exit_code blindly. We should only
-> change it if init was a) SIGKILL'ed and b) pid_ns->reboot_cmd is set.
-> In this case we can assume that it was killed by sys_reboot.
+>   CC [M]  drivers/video/backlight/ep93xx_bl.o
+> drivers/video/backlight/ep93xx_bl.c:138: error: 'THIS_MODULE' undeclared here (not in a function)
+> drivers/video/backlight/ep93xx_bl.c:158: error: expected declaration specifiers or '...' before string constant
+> drivers/video/backlight/ep93xx_bl.c:158: warning: data definition has no type or storage class
+> drivers/video/backlight/ep93xx_bl.c:158: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+> drivers/video/backlight/ep93xx_bl.c:158: warning: function declaration isn't a prototype
+> drivers/video/backlight/ep93xx_bl.c:159: error: expected declaration specifiers or '...' before string constant
+> drivers/video/backlight/ep93xx_bl.c:159: warning: data definition has no type or storage class
+> drivers/video/backlight/ep93xx_bl.c:159: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+> drivers/video/backlight/ep93xx_bl.c:159: warning: function declaration isn't a prototype
+> drivers/video/backlight/ep93xx_bl.c:160: error: expected declaration specifiers or '...' before string constant
+> drivers/video/backlight/ep93xx_bl.c:160: warning: data definition has no type or storage class
+> drivers/video/backlight/ep93xx_bl.c:160: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/video/backlight/ep93xx_bl.c:160: warning: function declaration isn't a prototype
+> drivers/video/backlight/ep93xx_bl.c:161: error: expected declaration specifiers or '...' before string constant
+> drivers/video/backlight/ep93xx_bl.c:161: warning: data definition has no type or storage class
+> drivers/video/backlight/ep93xx_bl.c:161: warning: type defaults to 'int' in declaration of 'MODULE_ALIAS'
+> drivers/video/backlight/ep93xx_bl.c:161: warning: function declaration isn't a prototype
+> make[3]: *** [drivers/video/backlight/ep93xx_bl.o] Error 1
+> make[2]: *** [drivers/video/backlight] Error 2
+> make[1]: *** [drivers/video] Error 2
+> make: *** [drivers] Error 2
 > 
-> Now. I didn't really mean exit_state should be equal to sys_reboot's
-> cmd arg. I thought about something like
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/video/backlight/ep93xx_bl.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> 	swicth (reboot_cmd) {
-> 	case LINUX_REBOOT_CMD_RESTART:
-> 		code = SIGHUP;
-> 		break;
-> 	case LINUX_REBOOT_CMD_HALT:
-> 		code = SIGINT;	// doesn't really matter what we report
-> 		...
-> 	}
+> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+> index 9f1e389..b058291 100644
+> --- a/drivers/video/backlight/ep93xx_bl.c
+> +++ b/drivers/video/backlight/ep93xx_bl.c
+> @@ -11,7 +11,7 @@
+>   * BRIGHT, on the Cirrus EP9307, EP9312, and EP9315 processors.
+>   */
+>  
+> -
+> +#include <linux/module.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/fb.h>
 
-Isn't it possible to add the two cases to si_code possible values, e.g.
-CDL_RESTART, CDL_HALT (or CDL_SYS_RESTART, CDL_SYS_HALT to avoid possible
-confusion with CDL_STOPPED)?
+Ah.. This was due to commit 089f5643ba "include: replace linux/module.h with
+"struct module" wherever possible".
 
-Then on sys_reboot() flag container init and kill it (this way sys_reboot()
-preserves its "will not return on success for restart/halt" scematic)?
-Then container init would see CLD_KILLED replaced with matching reboot
-reason.
+Before that commit, including <linux/platform_device.h> would pull in <linux/device.h>
+which would then pull in <linux/module.h>.  Now any driver using the MODULE_ macros
+needs to include <linux/module.h> directly.
 
-> we know that init can't be killed by SIGHUP/SIGINT, and this can't be
-> confused with the case when init does exit(exit_code).
-> 
-> But in fact I do not not think that WIFSIGNALED() is that important.
-> init shouldn't exit anyway.
+Looks correct to me.
 
-Playing with the exit code is probably more problematic (maybe even more
-once a process can unshare PID_NS as then any process spawning children
-may see the exit codes with special meaning and mis-reporting the child
-as having failed when return code is non-zero).
-
-> > Furthermore, how to differentiate an application container (eg. a
-> > script) exiting with an error with the same value of a reboot reason ?
-> 
-> Well, I think it is better to fix the script than the kernel.
-
-IMHO this depends a lot on the point-of-view regarding pid_ns versus
-container where technically both may be the same though user might have
-completely different setup in mind.
-
-For container init should never exit by itself, for simple segmentation
-the basic script approach makes a lot of sense and gets invisible to parent
-once unshare(PID_NS) gets possible.
-
-> Daniel, I am not arguing. I agree that this looks like the hack anyway.
-> Just I think that other approaches are even worse imho. We should try
-> to make the kernel change as simple as possible.
-> 
-> 
-> > Wouldn't make sense to let the user to specify a signal via prctl where
-> > the si_code is filled with the reason ?
-> 
-> Sorry, I don't quite understand the idea...
-> 
-> And, iiuc, the point was to "fix" sys_reboot() so that we do not need
-> to mofify the distro/userspace?
-
-That's definitely the goal (not modify distro/userspace running inside
-container).
-
-Bruno
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
