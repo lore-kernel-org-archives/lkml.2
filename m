@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab1HVVPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:15:09 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:49742 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753034Ab1HVVPH (ORCPT
+	id S1753789Ab1HVVQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:16:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64944 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab1HVVQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:15:07 -0400
-X-Sasl-enc: dn0k1ena7EfkIRTAqdugzM3Hj19OiqFck71L+IK8nLQH 1314047706
-Date: Mon, 22 Aug 2011 14:14:46 -0700
-From: Greg KH <greg@kroah.com>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] drivers:misc: ti-st: fixes
-Message-ID: <20110822211446.GA26364@kroah.com>
-References: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
- <CABUK1agNHcS8zB2RKPRg0LO8WRe3Z72CWyO+V1UY9M_+V6VO9Q@mail.gmail.com>
- <CABUK1agSHWTYrRV-EKv4EYpz7Shscnp6azSh68kaUFWDtvrSMg@mail.gmail.com>
+	Mon, 22 Aug 2011 17:16:11 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
+References: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
+Date: Mon, 22 Aug 2011 23:16:07 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABUK1agSHWTYrRV-EKv4EYpz7Shscnp6azSh68kaUFWDtvrSMg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v0mv05vu3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 21, 2011 at 11:17:09AM -0500, Pavan Savoy wrote:
-> On Mon, Aug 15, 2011 at 12:03 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
-> > On Wed, Aug 10, 2011 at 10:18 AM,  <pavan_savoy@ti.com> wrote:
-> >> From: Pavan Savoy <pavan_savoy@ti.com>
-> 
-> greg,
-> 
-> Please review...
+>>>> +obj-$(CONFIG_USB)		+= common.o
+>>>> +obj-$(CONFIG_USB_GADGET)	+= common.o
 
-All applied now.
+>>> Will this cause problems?  For example, what if CONFIG_USB is Y and
+>>> CONFIG_USB_GADGET is M?
 
+>>> Also, it seems a little silly to have an entire kernel module devoted
+>>> to a single, little function.
+
+On Mon, 22 Aug 2011 23:06:43 +0200, Alan Stern <stern@rowland.harvard.edu>  
+wrote:
+> You could do:
+>
+> 	obj-$(CONFIG_USB_SUPPORT)  += common.o
+>
+> which would build that subroutine into the main kernel whenever either
+> side of the USB stack is enabled.
+
+OK.  I'll wait for any more possible comments and post changed version
+by the end of the week.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
