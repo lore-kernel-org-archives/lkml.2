@@ -1,126 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab1HVAGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 20:06:55 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51447 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab1HVAGx convert rfc822-to-8bit (ORCPT
+	id S1756166Ab1HVALX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 20:11:23 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37763 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab1HVALW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 20:06:53 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <4E519AC7.3030001@gmail.com>
-References: <1313937545.13671.5.camel@phoenix> <4E5197B8.8020608@gmail.com> <4E519AC7.3030001@gmail.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 22 Aug 2011 08:06:32 +0800
-Message-ID: <CAF+7xWkezyMrnt-_0EVtNWtAB2v7pceATB8HEbdC8oqOY0camw@mail.gmail.com>
-Subject: Re: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 21 Aug 2011 20:11:22 -0400
+Date: Mon, 22 Aug 2011 02:11:21 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
+Message-ID: <20110822001121.GN25996@one.firstfloor.org>
+References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com> <20110821231354.GL25996@one.firstfloor.org> <CACqU3MUAuMMC0c1Aesb3-oSzRXw4ddRYtjKDYovXewbCFL6dFg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACqU3MUAuMMC0c1Aesb3-oSzRXw4ddRYtjKDYovXewbCFL6dFg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/22 Ryan Mallon <rmallon@gmail.com>:
-> On 22/08/11 09:41, Ryan Mallon wrote:
->>
->> On 22/08/11 00:39, Axel Lin wrote:
->>>
->>> ep93xx-fb.c uses interfaces from linux/module.h,
->>> so it should include that file.  This patch fixes below build errors.
->>
->> What actually changed to make these files broken? Did some other header
->> previously include module.h for us? How many other drivers are broken?
->>
->> Anyway, the change is okay.
->>
->> Acked-by: Ryan Mallon <rmallon@gmail.com>
->
-> Actually, having a second look at this it does not look right.
->
-> drivers/video/ep93xx-fb.c includes linux/platform.h (as its first include),
-> which includes linux/driver.h, which includes linux/module.h.
->
-> Just tested on Linus' latest tree and both this driver and the ep93xx
-> backlight driver build fine. What kernel version are you using?
->
-> ~Ryan
+> It does not work if / on a ROM, unless you start using trampoline
+> partition, but this is starting to become really convoluted...
 
-hi Ryan,
+On a ROM you never change the kernel.
 
-The patch is against linux-next tree.
-I got build error for ep93xx-fb.c and ep93xx_bl.c on linux-next tree.
-( next-20110819 )
+Besides who uses ROMs now when there is flash?
 
-Regards,
-Axel
-
->
->
->>
->>>   CC      drivers/video/ep93xx-fb.o
->>> drivers/video/ep93xx-fb.c:120: error: expected ')' before 'int'
->>> drivers/video/ep93xx-fb.c:122: error: expected ')' before string constant
->>> drivers/video/ep93xx-fb.c:409: error: 'THIS_MODULE' undeclared here (not
->>> in a function)
->>> drivers/video/ep93xx-fb.c:645: error: expected declaration specifiers or
->>> '...' before string constant
->>> drivers/video/ep93xx-fb.c:645: warning: data definition has no type or
->>> storage class
->>> drivers/video/ep93xx-fb.c:645: warning: type defaults to 'int' in
->>> declaration of 'MODULE_DESCRIPTION'
->>> drivers/video/ep93xx-fb.c:645: warning: function declaration isn't a
->>> prototype
->>> drivers/video/ep93xx-fb.c:646: error: expected declaration specifiers or
->>> '...' before string constant
->>> drivers/video/ep93xx-fb.c:646: warning: data definition has no type or
->>> storage class
->>> drivers/video/ep93xx-fb.c:646: warning: type defaults to 'int' in
->>> declaration of 'MODULE_ALIAS'
->>> drivers/video/ep93xx-fb.c:646: warning: function declaration isn't a
->>> prototype
->>> drivers/video/ep93xx-fb.c:647: error: expected declaration specifiers or
->>> '...' before string constant
->>> drivers/video/ep93xx-fb.c:647: warning: data definition has no type or
->>> storage class
->>> drivers/video/ep93xx-fb.c:647: warning: type defaults to 'int' in
->>> declaration of 'MODULE_AUTHOR'
->>> drivers/video/ep93xx-fb.c:647: warning: function declaration isn't a
->>> prototype
->>> drivers/video/ep93xx-fb.c:649: error: expected declaration specifiers or
->>> '...' before string constant
->>> drivers/video/ep93xx-fb.c:649: warning: data definition has no type or
->>> storage class
->>> drivers/video/ep93xx-fb.c:649: warning: type defaults to 'int' in
->>> declaration of 'MODULE_LICENSE'
->>> drivers/video/ep93xx-fb.c:649: warning: function declaration isn't a
->>> prototype
->>> make[2]: *** [drivers/video/ep93xx-fb.o] Error 1
->>> make[1]: *** [drivers/video] Error 2
->>> make: *** [drivers] Error 2
->>>
->>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->>> ---
->>>  drivers/video/ep93xx-fb.c |    1 +
->>>  1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
->>> index 40e5f17..8133a9d 100644
->>> --- a/drivers/video/ep93xx-fb.c
->>> +++ b/drivers/video/ep93xx-fb.c
->>> @@ -17,6 +17,7 @@
->>>   *
->>>   */
->>>
->>> +#include<linux/module.h>
->>>  #include<linux/platform_device.h>
->>>  #include<linux/dma-mapping.h>
->>>  #include<linux/slab.h>
->>
->
->
+-Andi
