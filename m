@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1HVPeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:34:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab1HVPeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:34:21 -0400
-Date: Mon, 22 Aug 2011 11:34:08 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: hch@infradead.org, peterz@infradead.org, davej@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: hugetlb locking bug.
-Message-ID: <20110822153408.GG2270@zod.bos.redhat.com>
+	id S1753086Ab1HVPfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:35:25 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:38453 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1HVPfV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:35:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 22 Aug 2011 21:05:20 +0530
+Message-ID: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
+Subject: [PATCH] xhci: Redundant check for
+From: sifram rajas <sifram.rajas@gmail.com>
+To: sarah.a.sharp@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 15, 2011 at 2:19 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->>
->> (Warning: whitespace damage and TOTALLY UNTESTED)
->
-> Gaah. That won't work. Or rather, it probably may work, but while
-> working it will spam the logs with that
-> 
->     WARN_ON(!(inode->i_state & I_NEW));
-> 
-> thing from unlock_new_inode.
-> 
-> So the sane thing to do would be apparently one of
-> 
->  (a) ignore the whole thing, and just accept the false lockdep warning.
-> 
->       which I'd be willing to do, but it might be hiding some real
-> ones, so we probably shouldn't.
-> 
->  (b) just remove that WARN_ON(), and use the one-liner I suggested
-> 
->  (c) extract the "set directory i_mutex key" logic into a new helper
-> function for the case of filesystems like hugetlbfs that don't want to
-> use unlock_new_inode() for one reason or another.
-> 
-> Personally, I don't have any really strong preferences and would
-> probably just go for (b) to keep the patch small and simple. Anybody?
+Hi Sarah,
 
-Sorry to revive an old thread, but we've seen this reported by something
-other than Dave's crazy fuzzer tool now [1].
+This patch is for linux-3.0.3.
 
-It seems solution (a) wound up winning just because nobody chased it
-further.  Is that what we want to stick with, and just close similar
-reports as "false warning", or should option (c) eventually get
-implemented?
+In the xhci_check_args() function in xhci.c, there is a redundant
+check for xhci->devs.
 
-josh
+This is redundant because the struct xhci_hcd->devs is actually
+defined as a static array
+of pointers and is not a pointer to a pointer.
 
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=730998
+Signed-off-by: Sifram Rajas <sifram.rajas@gmail.com>
+---
+drivers/usb/host/xhci.c |   3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+--- a/drivers/usb/host/xhci.c	2011-08-17 23:27:16.000000000 +0530
++++ b/drivers/usb/host/xhci.c	2011-08-22 20:43:34.250000000 +0530
+@@ -945,8 +945,7 @@ static int xhci_check_args(struct usb_hc
+ 		return -ENODEV;
+
+ 	if (check_virt_dev) {
+-		if (!udev->slot_id || !xhci->devs
+-			|| !xhci->devs[udev->slot_id]) {
++		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
+ 			printk(KERN_DEBUG "xHCI %s called with unaddressed "
+ 						"device\n", func);
+ 			return -EINVAL;
+
+Thanks,
+Sifram Rajas.
