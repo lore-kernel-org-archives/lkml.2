@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab1HVVMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:12:55 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:33218 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1HVVMy (ORCPT
+	id S1753821Ab1HVVPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:15:09 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:49742 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753034Ab1HVVPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:12:54 -0400
-Date: Tue, 23 Aug 2011 00:10:36 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
-        ascardo@holoscopio.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: zcache: fix possible sleep under lock
-Message-ID: <20110822211035.GB12248@shale.localdomain>
-References: <1314038869-8164-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20110822190936.GA12248@shale.localdomain>
- <4E52B2D9.5070904@linux.vnet.ibm.com>
+	Mon, 22 Aug 2011 17:15:07 -0400
+X-Sasl-enc: dn0k1ena7EfkIRTAqdugzM3Hj19OiqFck71L+IK8nLQH 1314047706
+Date: Mon, 22 Aug 2011 14:14:46 -0700
+From: Greg KH <greg@kroah.com>
+To: Pavan Savoy <pavan_savoy@sify.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] drivers:misc: ti-st: fixes
+Message-ID: <20110822211446.GA26364@kroah.com>
+References: <1312989517-28604-1-git-send-email-pavan_savoy@ti.com>
+ <CABUK1agNHcS8zB2RKPRg0LO8WRe3Z72CWyO+V1UY9M_+V6VO9Q@mail.gmail.com>
+ <CABUK1agSHWTYrRV-EKv4EYpz7Shscnp6azSh68kaUFWDtvrSMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4E52B2D9.5070904@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABUK1agSHWTYrRV-EKv4EYpz7Shscnp6azSh68kaUFWDtvrSMg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 02:49:45PM -0500, Seth Jennings wrote:
-> Actually, should this be GFP_ATOMIC or GFP_NOWAIT?
+On Sun, Aug 21, 2011 at 11:17:09AM -0500, Pavan Savoy wrote:
+> On Mon, Aug 15, 2011 at 12:03 PM, Pavan Savoy <pavan_savoy@sify.com> wrote:
+> > On Wed, Aug 10, 2011 at 10:18 AM,  <pavan_savoy@ti.com> wrote:
+> >> From: Pavan Savoy <pavan_savoy@ti.com>
 > 
+> greg,
+> 
+> Please review...
 
-GFP_ATOMIC is sort of a good default answer.
+All applied now.
 
-GFP_NOWAIT is normally used when you want to do something really
-fast and if the allocation fails, you don't want to wait for it.
-So if memory is short, and you drop a packet?  Who cares!  TCP has
-error handling built in.  Other than that, GFP_NOWAIT is used a lot
-in the core kernel.
-
-You could be right that GFP_NOWAIT is fine here.  I don't know zcache
-well enough to say.  How bad is it if the allocation fails?
-
-regards,
-dan carpenter
