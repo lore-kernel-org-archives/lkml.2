@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1HVPTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:19:55 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34274 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1HVPTw (ORCPT
+	id S1752931Ab1HVPUY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:20:24 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:63610 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab1HVPUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:19:52 -0400
-Message-ID: <4E527394.4080900@lwfinger.net>
-Date: Mon, 22 Aug 2011 10:19:48 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Bing Zhao <bzhao@marvell.com>, kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the just-initialized
- value
-References: <1314021636-11528-4-git-send-email-julia@diku.dk>
-In-Reply-To: <1314021636-11528-4-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Aug 2011 11:20:19 -0400
+From: Wanlong Gao <wanlong.gao@gmail.com>
+To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: chris.mason@oracle.com, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH] btrfs:make close_ctree() return void
+Date: Mon, 22 Aug 2011 23:18:11 +0800
+Message-Id: <1314026291-8873-1-git-send-email-wanlong.gao@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 09:00 AM, Julia Lawall wrote:
-> From: Julia Lawall<julia@diku.dk>
->
-> Test the just-initialized value rather than some other one.
->
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> //<smpl>
-> @r@
-> identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
-> statement S;
-> @@
->
-> x = f(...);
-> (
-> if (\(x == NULL\|IS_ERR(x)\)) S
-> |
-> *if (\(y == NULL\|IS_ERR(y)\))
->   { ... when != x
->     return ...; }
-> )
-> //</smpl>
->
-> Signed-off-by: Julia Lawall<julia@diku.dk>
->
-> ---
->   drivers/net/wireless/mwifiex/scan.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-> index b28241c..d3111c9 100644
-> --- a/drivers/net/wireless/mwifiex/scan.c
-> +++ b/drivers/net/wireless/mwifiex/scan.c
-> @@ -1480,7 +1480,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv,
->   		return -ENOMEM;
->   	}
->   	beacon_ie = kzalloc(ie_len, GFP_KERNEL);
-> -	if (!bss_desc) {
-> +	if (!beacon_ie) {
->   		dev_err(priv->adapter->dev, " failed to alloc bss_desc\n");
->   		return -ENOMEM;
->   	}
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-The error message should also get the bss_desc => beacon_ie chang.
+Make close_ctree() return void since it always return 0, and fix
+the return value of btrfs_put_super() to consistent with VFS.
 
-Larry
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ fs/btrfs/disk-io.c |    4 +---
+ fs/btrfs/disk-io.h |    2 +-
+ fs/btrfs/super.c   |    5 +----
+ 3 files changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 07b3ac6..b2c15d4 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -2528,7 +2528,7 @@ int btrfs_commit_super(struct btrfs_root *root)
+ 	return ret;
+ }
+ 
+-int close_ctree(struct btrfs_root *root)
++void close_ctree(struct btrfs_root *root)
+ {
+ 	struct btrfs_fs_info *fs_info = root->fs_info;
+ 	int ret;
+@@ -2630,8 +2630,6 @@ int close_ctree(struct btrfs_root *root)
+ 	kfree(fs_info->dev_root);
+ 	kfree(fs_info->csum_root);
+ 	kfree(fs_info);
+-
+-	return 0;
+ }
+ 
+ int btrfs_buffer_uptodate(struct extent_buffer *buf, u64 parent_transid)
+diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
+index bec3ea4..4a191b2 100644
+--- a/fs/btrfs/disk-io.h
++++ b/fs/btrfs/disk-io.h
+@@ -47,7 +47,7 @@ int clean_tree_block(struct btrfs_trans_handle *trans,
+ struct btrfs_root *open_ctree(struct super_block *sb,
+ 			      struct btrfs_fs_devices *fs_devices,
+ 			      char *options);
+-int close_ctree(struct btrfs_root *root);
++void close_ctree(struct btrfs_root *root);
+ int write_ctree_super(struct btrfs_trans_handle *trans,
+ 		      struct btrfs_root *root, int max_mirrors);
+ struct buffer_head *btrfs_read_dev_super(struct block_device *bdev);
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 31e9654..e1d8d32 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -146,12 +146,9 @@ void __btrfs_std_error(struct btrfs_fs_info *fs_info, const char *function,
+ static void btrfs_put_super(struct super_block *sb)
+ {
+ 	struct btrfs_root *root = btrfs_sb(sb);
+-	int ret;
+ 
+-	ret = close_ctree(root);
++	close_ctree(root);
+ 	sb->s_fs_info = NULL;
+-
+-	(void)ret; /* FIXME: need to fix VFS to return error? */
+ }
+ 
+ enum {
+-- 
+1.7.4.1
+
