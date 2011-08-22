@@ -1,43 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1HVQ1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 12:27:22 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:62531 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab1HVQ1S (ORCPT
+	id S1753494Ab1HVQ17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 12:27:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59602 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab1HVQ1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 12:27:18 -0400
+	Mon, 22 Aug 2011 12:27:23 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH 0/4] debug-pagealloc improvements
-Date: Tue, 23 Aug 2011 01:29:04 +0900
-Message-Id: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH 2/4] debug-pagealloc: add support for highmem pages
+Date: Tue, 23 Aug 2011 01:29:06 +0900
+Message-Id: <1314030548-21082-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com>
+References: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series includes three improvements for the debug-pagealloc
-feature for no-architecture support (!ARCH_SUPPORTS_DEBUG_PAGEALLOC) and
-one introduction of the new string library function (memchr_inv).
+This adds support for highmem pages poisoning and verification to the
+debug-pagealloc feature for no-architecture support.
 
-Akinobu Mita (4):
-  debug-pagealloc: use plain __ratelimit() instead of
-    printk_ratelimit()
-  debug-pagealloc: add support for highmem pages
-  string: introduce memchr_inv
-  debug-pagealloc: use memchr_inv
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+---
+ mm/debug-pagealloc.c |   61 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 30 insertions(+), 31 deletions(-)
 
- fs/logfs/logfs.h       |    1 -
- fs/logfs/super.c       |   22 --------------
- include/linux/string.h |    1 +
- lib/string.c           |   54 +++++++++++++++++++++++++++++++++++
- mm/debug-pagealloc.c   |   73 +++++++++++++++++++++++------------------------
- mm/slub.c              |   47 +-----------------------------
- 6 files changed, 93 insertions(+), 105 deletions(-)
-
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index a4b6d70..5afe80c 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -1,5 +1,6 @@
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
++#include <linux/highmem.h>
+ #include <linux/page-debug-flags.h>
+ #include <linux/poison.h>
+ #include <linux/ratelimit.h>
+@@ -19,28 +20,25 @@ static inline bool page_poison(struct page *page)
+ 	return test_bit(PAGE_DEBUG_FLAG_POISON, &page->debug_flags);
+ }
+ 
+-static void poison_highpage(struct page *page)
+-{
+-	/*
+-	 * Page poisoning for highmem pages is not implemented.
+-	 *
+-	 * This can be called from interrupt contexts.
+-	 * So we need to create a new kmap_atomic slot for this
+-	 * application and it will need interrupt protection.
+-	 */
+-}
+-
+ static void poison_page(struct page *page)
+ {
+ 	void *addr;
+-
+-	if (PageHighMem(page)) {
+-		poison_highpage(page);
+-		return;
++	unsigned long flags;
++	bool highmem = PageHighMem(page);
++
++	if (highmem) {
++		local_irq_save(flags);
++		addr = kmap_atomic(page);
++	} else {
++		addr = page_address(page);
+ 	}
+ 	set_page_poison(page);
+-	addr = page_address(page);
+ 	memset(addr, PAGE_POISON, PAGE_SIZE);
++
++	if (highmem) {
++		kunmap_atomic(addr);
++		local_irq_restore(flags);
++	}
+ }
+ 
+ static void poison_pages(struct page *page, int n)
+@@ -88,26 +86,27 @@ static void check_poison_mem(unsigned char *mem, size_t bytes)
+ 	dump_stack();
+ }
+ 
+-static void unpoison_highpage(struct page *page)
+-{
+-	/*
+-	 * See comment in poison_highpage().
+-	 * Highmem pages should not be poisoned for now
+-	 */
+-	BUG_ON(page_poison(page));
+-}
+-
+ static void unpoison_page(struct page *page)
+ {
+-	if (PageHighMem(page)) {
+-		unpoison_highpage(page);
++	void *addr;
++	unsigned long flags;
++	bool highmem = PageHighMem(page);
++
++	if (!page_poison(page))
+ 		return;
++
++	if (highmem) {
++		local_irq_save(flags);
++		addr = kmap_atomic(page);
++	} else {
++		addr = page_address(page);
+ 	}
+-	if (page_poison(page)) {
+-		void *addr = page_address(page);
++	check_poison_mem(addr, PAGE_SIZE);
++	clear_page_poison(page);
+ 
+-		check_poison_mem(addr, PAGE_SIZE);
+-		clear_page_poison(page);
++	if (highmem) {
++		kunmap_atomic(addr);
++		local_irq_restore(flags);
+ 	}
+ }
+ 
 -- 
 1.7.4.4
 
