@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab1HVKab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:30:31 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:41738 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab1HVKa0 convert rfc822-to-8bit (ORCPT
+	id S1756805Ab1HVKjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:39:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33615 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756647Ab1HVKjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:30:26 -0400
-Message-Id: <4E524B71020000A1000070C6@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 22 Aug 2011 12:28:33 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Antw: Q: /sys/block and I/O Schedulers
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Mon, 22 Aug 2011 06:39:51 -0400
+From: Pelle Windestam <iceaway@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Pelle Windestam <iceaway@gmail.com>
+Subject: [PATCH 1/1] staging: comedi: changed local function prototype from extern to static.
+Date: Mon, 22 Aug 2011 12:39:45 +0200
+Message-Id: <1314009585-5025-1-git-send-email-iceaway@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de> schrieb am 22.08.2011 um 12:10
-in Nachricht <4E522B1A.1E1 : 161 : 60728>:
-> Hi!
-> 
-> I have a question: Reading the docs on I/O Schedulers, I had the impression 
-> the docs wanted to tell me that only the low-level devices (i.e. disks) use 
-> I/O Schedulers, while higher-level devices (like multipaths, RAIDs, LVs, 
-> etc.) don't.
-> 
-> Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs seem 
-> to use the I/O Scheduler, while RAID1 don't seem to do so. Also a disk in a 
+Changed local function prototype do_become_nonbusy(...) from extern to
+static, fixing the error from checkpatch.pl.
 
-Forget the statement about RAID1; I just overlooked it in the list.
+Signed-off-by: Pelle Windestam <iceaway@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-> Xen DomU also uses an I/O Scheduler (in addition to those being used in Dom0 
-> for the same device already)
-> 
-> Is that correct, and if so, why is that? Is there a change to be seen in the 
-> future?
-> 
-> My test was as simple as this:
-> /sys/block # for d in *
-> > do
-> > echo $d: $(<$d/queue/scheduler)
-> > done
-> cciss!c0d0: noop anticipatory deadline [cfq]
-> dm-0: noop anticipatory deadline [cfq]
-> [...]
-> loop0: none
-> [...]
-> md4: none
-> sda: noop anticipatory deadline [cfq]
-> [...]
-> 
-> As I'm not subscribed to the list, I'd appreciate any CC: to my address. 
-> Thanks!
-> 
-> Regards,
-> Ulrich
-> 
-> 
-
-
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index e90e3cc..d7b6a28 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -101,7 +101,7 @@ static int do_insn_ioctl(struct comedi_device *dev,
+ static int do_poll_ioctl(struct comedi_device *dev, unsigned int subd,
+ 			 void *file);
  
+-extern void do_become_nonbusy(struct comedi_device *dev,
++static void do_become_nonbusy(struct comedi_device *dev,
+ 			      struct comedi_subdevice *s);
+ static int do_cancel(struct comedi_device *dev, struct comedi_subdevice *s);
+ 
+@@ -1786,7 +1786,8 @@ done:
+ /*
+    This function restores a subdevice to an idle state.
+  */
+-void do_become_nonbusy(struct comedi_device *dev, struct comedi_subdevice *s)
++static void do_become_nonbusy(struct comedi_device *dev,
++			      struct comedi_subdevice *s)
+ {
+ 	struct comedi_async *async = s->async;
+ 
+-- 
+1.7.3.4
 
