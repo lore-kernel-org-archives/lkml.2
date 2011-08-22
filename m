@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab1HVWBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 18:01:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34437 "EHLO mx2.suse.de"
+	id S1754090Ab1HVWGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 18:06:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59356 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab1HVWBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 18:01:05 -0400
-Date: Mon, 22 Aug 2011 14:51:51 -0700
-From: Greg KH <gregkh@suse.de>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
- uevent
-Message-ID: <20110822215151.GA18397@suse.de>
-References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
- <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
- <CACxGe6us1vaUgMmiZR-D9iSCQdw+vbVyZdBCkET_9p3AGyHwRQ@mail.gmail.com>
- <4E4937A4.5070204@linutronix.de>
- <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
- <20110822214154.GB20451@xanatos>
+	id S1752138Ab1HVWGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 18:06:18 -0400
+Message-ID: <4E52D280.3010107@zytor.com>
+Date: Mon, 22 Aug 2011 15:04:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110822214154.GB20451@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+References: <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com> <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com> <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org> <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com> <20110822144051.GD2946@aftab> <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com> <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+In-Reply-To: <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 02:41:54PM -0700, Sarah Sharp wrote:
-> On Mon, Aug 15, 2011 at 09:17:41AM -0600, Grant Likely wrote:
-> > On Mon, Aug 15, 2011 at 9:13 AM, Sebastian Andrzej Siewior
-> > <bigeasy@linutronix.de> wrote:
-> > > Grant Likely wrote:
-> > >>>
-> > >>> --- a/drivers/base/platform.c
-> > >>> +++ b/drivers/base/platform.c
-> > >>> @@ -614,7 +614,7 @@ static int platform_uevent(struct device *dev, struct
-> > >>> kobj_uevent_env *env)
-> > >>>               return rc;
-> > >>>
-> > >>>       add_uevent_var(env, "MODALIAS=%s%s", PLATFORM_MODULE_PREFIX,
-> > >>> -               (pdev->id_entry) ? pdev->id_entry->name : pdev->name);
-> > >>> +                       pdev->name);
-> > >>
-> > >> Yes, this looks like the right thing to do to me.  Also, I think the
-> > >> original code is suspect because it causes the uevent data to be
-> > >> different after binding a driver to a device.
-> > >
-> > > Why different? The code matches (pdev->name == id->name) or
-> > > (pdev->name ==  driver->name) so in both cases it should be equal to
-> > > pdev->name.
-> > >
-> > > Are you or Greg taking this?
-> > 
-> > This one is all Greg.
+On 08/22/2011 02:52 PM, Andrew Lutomirski wrote:
 > 
-> Greg, do you want to take this patch through your driver core tree, or
-> would you prefer to have it come through the xHCI tree?
+> Even if it's ok, we still have to do *something* in the cstar entry
+> point -- I don't think there's any way to turn SYSCALL in
+> compatibility mode but leave it enabled in long mode.  So if we're
+> planning on killing off SYSCALL from outside the vdso, we could
+> probably get away with leaving it enabled in the vdso.
+> 
+> Unless, of course, there are 32-bit JITs that do things that they
+> shouldn't.  We could still make it work by rewriting the arguments
+> (including arg6 on the stack) from the syscall restart path, but that
+> may be more trouble than it's worth.
+> 
 
-I'll take it in my driver-core tree separate, as the others don't depend
-on this one, right?
+Hm, looks like you might be right; I thought leaving CSTAR at zero would
+take care of that, but it looks like that might not be true.
 
-greg k-h
+However, we could just issue a SIGILL or SIGSEGV at this point; the same
+way we would if we got an #UD or #GP fault; SIGILL/#UD would be
+consistent with Intel CPUs here.
+
+Yes, we could do an EIP check and issue SIGILL only if it isn't in the
+vdso, but after the crap from earlier this month I would be happier if
+we could avoid this potential problem entirely.  Borislav has a query in
+with his hardware folks, let's give them the chance to answer.
+
+	-hpa
+
