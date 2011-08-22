@@ -1,131 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1HVTbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 15:31:20 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:40939 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753189Ab1HVTbP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 15:31:15 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: "wharms@bfs.de" <wharms@bfs.de>
-CC: Julia Lawall <julia@diku.dk>,
-        Pierre Louis Aublin <pierre-louis.aublin@inria.fr>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Aug 2011 12:29:23 -0700
-Subject: RE: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the
- just-initialized value
-Thread-Topic: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the
- just-initialized value
-Thread-Index: Acxg/wYbOAJialV/SHGECaX3rMPYYwAAVrjQ
-Message-ID: <477F20668A386D41ADCC57781B1F70430802DD7B8C@SC-VEXCH1.marvell.com>
-References: <1314021636-11528-4-git-send-email-julia@diku.dk>
- <4E52638C.8080407@inria.fr> <Pine.LNX.4.64.1108221615450.10948@ask.diku.dk>
- <477F20668A386D41ADCC57781B1F70430802DD7B7E@SC-VEXCH1.marvell.com>
- <4E52A966.3090502@bfs.de>
-In-Reply-To: <4E52A966.3090502@bfs.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1753538Ab1HVTb2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 15:31:28 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51167 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab1HVTbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 15:31:17 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: ascardo@holoscopio.com, dan.magenheimer@oracle.com,
+        sjenning@linux.vnet.ibm.com, rdunlap@xenotime.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: zcache: fix possible sleep under lock
+Date: Mon, 22 Aug 2011 14:30:38 -0500
+Message-Id: <1314041438-19156-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Am 22.08.2011 21:02, schrieb Bing Zhao:
-> > Hi Julia,
-> >
-> > Thanks for the patch.
-> >
-> >> -----Original Message-----
-> >> From: Julia Lawall [mailto:julia@diku.dk]
-> >> Sent: Monday, August 22, 2011 7:16 AM
-> >> To: Pierre Louis Aublin
-> >> Cc: Bing Zhao; kernel-janitors@vger.kernel.org; John W. Linville; linux-wireless@vger.kernel.org;
-> >> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> >> Subject: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the just-initialized value
-> >>
-> >> From: Julia Lawall <julia@diku.dk>
-> >>
-> >> Test the just-initialized value rather than some other one.
-> >>
-> >> The semantic match that finds this problem is as follows:
-> >> (http://coccinelle.lip6.fr/)
-> >>
-> >> // <smpl>
-> >> @r@
-> >> identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
-> >> statement S;
-> >> @@
-> >>
-> >> x = f(...);
-> >> (
-> >> if (\(x == NULL\|IS_ERR(x)\)) S
-> >> |
-> >> *if (\(y == NULL\|IS_ERR(y)\))
-> >>  { ... when != x
-> >>    return ...; }
-> >> )
-> >> // </smpl>
-> >>
-> >> Signed-off-by: Julia Lawall <julia@diku.dk>
-> >
-> > Acked-by: Bing Zhao <bzhao@marvell.com>
-> >
-> >
-> > Thanks,
-> > Bing
-> >
-> >>
-> >> ---
-> >>  drivers/net/wireless/mwifiex/scan.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-> >> index b28241c..37ca2f9 100644
-> >> --- a/drivers/net/wireless/mwifiex/scan.c
-> >> +++ b/drivers/net/wireless/mwifiex/scan.c
-> >> @@ -1480,8 +1480,8 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv,
-> >>  		return -ENOMEM;
-> >>  	}
-> >>  	beacon_ie = kzalloc(ie_len, GFP_KERNEL);
-> >> -	if (!bss_desc) {
-> >> -		dev_err(priv->adapter->dev, " failed to alloc bss_desc\n");
-> >> +	if (!beacon_ie) {
-> >> +		dev_err(priv->adapter->dev, " failed to alloc beacon_ie\n");
-> >>  		return -ENOMEM;
-> >>  	}
-> >>  	memcpy(beacon_ie, ie_buf, ie_len);
-> > --
-> 
-> 
-> this looks like a case for kmemdup()
+zcache_new_pool() calls kmalloc() with GFP_KERNEL which has
+__GFP_WAIT set.  However, zcache_new_pool() gets called on
+a stack that holds the swap_lock spinlock, leading to a
+possible sleep-with-lock situation. The lock is obtained
+in enable_swap_info().
 
-Hi Walter,
+The patch replaces GFP_KERNEL with GFP_ATOMIC.
 
-You are right. I believe there are some more cases where kmemdup can be used.
+v2: replace with GFP_ATOMIC, not GFP_IOFS
 
-Hi John,
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Please apply Julia's patch as I will send a separate patch later to address Walter's comment. Thanks.
-
-> 
-> just my 2 cents,
-
-Thanks a lot for your 2 cents.
-
-Bing
-
-> 
-> re,
->  wh
-> 
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 855a5bb..cdf0128 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1668,7 +1668,7 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
+ 	if (cli == NULL)
+ 		goto out;
+ 	atomic_inc(&cli->refcount);
+-	pool = kmalloc(sizeof(struct tmem_pool), GFP_KERNEL);
++	pool = kmalloc(sizeof(struct tmem_pool), GFP_ATOMIC);
+ 	if (pool == NULL) {
+ 		pr_info("zcache: pool creation failed: out of memory\n");
+ 		goto out;
+-- 
+1.7.4.1
 
