@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1HVXrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:47:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49971 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab1HVXre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:47:34 -0400
-Message-ID: <4E52EA50.6070105@zytor.com>
-Date: Mon, 22 Aug 2011 16:46:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Lutomirski <luto@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-References: <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com> <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com> <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org> <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com> <20110822144051.GD2946@aftab> <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com> <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com> <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
-In-Reply-To: <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754383Ab1HVXrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:47:48 -0400
+Received: from lunge.queued.net ([173.255.254.236]:35435 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab1HVXro (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 19:47:44 -0400
+Date: Mon, 22 Aug 2011 16:47:40 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Leo Yan <leoy@marvell.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <hzhuang1@marvell.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH] ARM: mmp: map sram as MT_MEMORY rather than MT_DEVICE
+Message-ID: <20110822164740.5682541b@queued.net>
+In-Reply-To: <1313377794-26721-2-git-send-email-leoy@marvell.com>
+References: <1313377794-26721-1-git-send-email-leoy@marvell.com>
+	<1313377794-26721-2-git-send-email-leoy@marvell.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 04:27 PM, Linus Torvalds wrote:
-> On Mon, Aug 22, 2011 at 3:04 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> However, we could just issue a SIGILL or SIGSEGV at this point; the same
->> way we would if we got an #UD or #GP fault; SIGILL/#UD would be
->> consistent with Intel CPUs here.
-> 
-> Considering that this is not a remotely new issue, and that it has
-> been around for years without anybody even noticing, I'd really prefer
-> to just fix things going forwards rather than add any code to actively
-> break any possible unlucky legacy users.
-> 
-> So I think the "let's fix the vdso case for sysenter" + "let's remove
-> the 32-bit syscall vdso" is the right solution. If somebody has
-> hardcoded syscall instructions, or generates them dynamically with
-> some JIT, that's their problem. We'll continue to support it as well
-> as we ever have (read: "almost nobody will ever notice").
-> 
-> One thing we *could* do is to just say "we never restart a x86-32
-> 'syscall' instruction at all", and just make such a case return EINTR.
-> IOW, do something along the lines of the appended pseudo-patch.
-> 
-> Because returning -EINTR is always "almost correct".
-> 
+The sram code allocates memory with ioremap, which assumes MT_DEVICE
+for memory protections.  This explodes when we map sram for power
+management purposes and then attempt to execute it (jump_to_lp_sram)
+on the OLPC XO-1.75.  Instead, we want to specify MT_MEMORY, which
+doesn't set the L_PTE_XN bit.
 
-I have to say it worries me from a potential security hole point of
-view, especially since it clearly isn't very well trod ground to begin
-with.  An almost-never-used path with access to the full system call
-suite is scarier than hell in that sense.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/arm/mach-mmp/sram.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Keep in mind support for SYSCALL32 is already (vendor-)conditional.
+Eric, this patch is against the devel branch of your pxa tree.
 
-(The obvious solution of just putting the proper register frame back in
-its place would be okay except for totally breaking anything
-trace-on-exit as already hashed to death...)
+diff --git a/arch/arm/mach-mmp/sram.c b/arch/arm/mach-mmp/sram.c
+index 4304f95..ca4d3c1 100644
+--- a/arch/arm/mach-mmp/sram.c
++++ b/arch/arm/mach-mmp/sram.c
+@@ -21,6 +21,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/genalloc.h>
++#include <asm/mach/map.h>
+ 
+ #include <mach/sram.h>
+ 
+@@ -87,7 +88,8 @@ static int __devinit sram_probe(struct platform_device *pdev)
+ 
+ 	info->sram_phys   = (phys_addr_t)res->start;
+ 	info->sram_size   = resource_size(res);
+-	info->sram_virt   = ioremap(info->sram_phys, info->sram_size);
++	info->sram_virt   = __arm_ioremap(info->sram_phys, info->sram_size,
++					  MT_MEMORY);
+ 	info->pool_name	  = kstrdup(pdata->pool_name, GFP_KERNEL);
+ 	info->granularity = pdata->granularity;
+ 
+-- 
+1.7.2.5
 
-	-hpa
