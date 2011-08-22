@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab1HVKSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:18:12 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22667 "EHLO relay.sw.ru"
+	id S1755842Ab1HVKTC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:19:02 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34303 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756774Ab1HVKRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:17:40 -0400
-Subject: [PATCH 1/2] vmscan: fix initial shrinker size handling
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 22 Aug 2011 14:17:21 +0300
-Message-ID: <20110822101721.19462.63082.stgit@zurg>
-User-Agent: StGit/0.15
+	id S1752461Ab1HVKS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:18:57 -0400
+Message-ID: <4E522CE9.7050102@ti.com>
+Date: Mon, 22 Aug 2011 11:18:17 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Julia Lawall <julia@diku.dk>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Timur Tabi <timur@freescale.com>, Axel Lin <axel.lin@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 1/2] sound/soc/fsl/p1022_ds.c: add missing of_node_put
+References: <1313823721-16930-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1313823721-16930-1-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shrinker function can returns -1, it means it cannot do anything without a risk of deadlock.
-For example prune_super() do this if it cannot grab superblock refrence, even if nr_to_scan=0.
-Currenly we interpret this like ULONG_MAX size shrinker, evaluate total_scan according this,
-and next time this shrinker can get really big pressure. Let's skip such shrinkers instead.
+On 20/08/11 08:02, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> dma_channel_np has been accessed at this point, so decrease its reference
+> count before leaving the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> identifier x;
+> expression E1!=0,E2,E3,E4;
+> statement S;
+> iterator I;
+> @@
+> 
+> (
+> if (...) { ... when != of_node_put(x)
+>                when != x = E3
+>                when != E3 = x
+> *  return ...;
+>  }
+> ... when != x = E2
+>     when != I(...,x,...) S
+> if (...) { ... when != x = E4
+>  of_node_put(x); ... return ...; }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  sound/soc/fsl/p1022_ds.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/sound/soc/fsl/p1022_ds.c b/sound/soc/fsl/p1022_ds.c
+> index 8fa4d5f..fcb862e 100644
+> --- a/sound/soc/fsl/p1022_ds.c
+> +++ b/sound/soc/fsl/p1022_ds.c
+> @@ -297,8 +297,10 @@ static int get_dma_channel(struct device_node *ssi_np,
+>  	 * dai->platform name should already point to an allocated buffer.
+>  	 */
+>  	ret = of_address_to_resource(dma_channel_np, 0, &res);
+> -	if (ret)
+> +	if (ret) {
+> +		of_node_put(dma_channel_np);
+>  		return ret;
+> +	}
+>  	snprintf((char *)dai->platform_name, DAI_NAME_SIZE, "%llx.%s",
+>  		 (unsigned long long) res.start, dma_channel_np->name);
+>  
+> 
 
-Also make total_scan signed, otherwise check (total_scan < 0) below never works.
+Both
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- mm/vmscan.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 29b3612..f174561 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -248,14 +248,18 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		unsigned long long delta;
--		unsigned long total_scan;
--		unsigned long max_pass;
-+		long total_scan;
-+		long max_pass;
- 		int shrink_ret = 0;
- 		long nr;
- 		long new_nr;
- 		long batch_size = shrinker->batch ? shrinker->batch
- 						  : SHRINK_BATCH;
- 
-+		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
-+		if (max_pass <= 0)
-+			continue;
-+
- 		/*
- 		 * copy the current shrinker scan count into a local variable
- 		 * and zero it so that other concurrent shrinker invocations
-@@ -266,7 +270,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
- 		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
- 
- 		total_scan = nr;
--		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
- 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
- 		delta *= max_pass;
- 		do_div(delta, lru_pages + 1);
-
+Acked-by: Liam Girdwood <lrg@ti.com>
