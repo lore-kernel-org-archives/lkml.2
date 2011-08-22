@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1HVXoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:44:12 -0400
-Received: from claw.goop.org ([74.207.240.146]:48789 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754385Ab1HVXoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:44:03 -0400
-Message-ID: <4E52E9BF.3050904@goop.org>
-Date: Mon, 22 Aug 2011 16:43:59 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1754131Ab1HVXon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:44:43 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14774 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753740Ab1HVXok convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 19:44:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 22 Aug 2011 16:44:27 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>
+Date: Mon, 22 Aug 2011 16:44:15 -0700
+Subject: RE: [PATCH v2 1/4] gpio/tegra: Remove use of irq_to_gpio
+Thread-Topic: [PATCH v2 1/4] gpio/tegra: Remove use of irq_to_gpio
+Thread-Index: AcxYaNHJQ6Q3zVwcRIGQVSWeVwomXwAn8VZgAgchWXA=
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A377B@HQMAIL01.nvidia.com>
+References: <1313095404-27858-1-git-send-email-swarren@nvidia.com>
+ <CAMbhsRRGDAmYv3_EbJ+WVg0C7e3-FFcLCgq4W325ECKX06M6Hg@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF04AEA24E3D@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24E3D@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 07/15] x86: add xadd helper macro
-References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <41c1484d36a94613f86f33e15219d5fcd14b2343.1314054734.git.jeremy.fitzhardinge@citrix.com> <4E52E64D.5090309@zytor.com>
-In-Reply-To: <4E52E64D.5090309@zytor.com>
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 04:29 PM, H. Peter Anvin wrote:
-> On 08/22/2011 04:15 PM, Jeremy Fitzhardinge wrote:
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> Add a common xadd implementation.
->>
->> This has the side effect of generating a bad instruction if you try to
->> use it on a 64-bit value on a 32-bit system - but don't do that.
->>
-> It would be better to barf at that point, so we get the error with a C
-> line... also, there needs to be a default clause with
-> __compiletime_error() in it.
+Stephen Warren wrote at Friday, August 12, 2011 10:07 AM:
+> Colin Cross wrote at Thursday, August 11, 2011 2:54 PM:
+> > On Thu, Aug 11, 2011 at 1:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> > > irq_to_gpio is being removed. Replace the only use of that API by
+> > > the ARM Tegra sub-architecture.
+> > >
+> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > > ---
+> > > This series is the irq_to_gpio patches I posted last week, rebased to ToT,
+> > > plus removing Tegra's custom gpio_to_irq.
+> > >
+> > > This series was tested against next-20110811 on Harmony, by playing audio
+> > > and plugging/unplugging headphones. Headphone detection relies on using a
+> > > GPIO as an IRQ, and hence on gpio_to_irq.
+> >
+> > This whole series looks good to me:
+> > Acked-by: Colin Cross <ccross@android.com>
+> 
+> Grant, Does this series look OK to you? Russell asked me to add it to the
+> ARM patch system once you'd Ack'd it.
+> 
+> Thanks.
 
-OK, but the "standard of care" here is the old "calling undefined
-function" link error; getting a bad asm instruction is a little more
-helpful, in a sense.  But agreed on the default: case.  I'll see if I
-can fix up xadd and cmpxchg to fail better as well.
+Russell, I've uploaded these to the ARM patch system as 7052..7055.
 
-> There are a few additional xadd users which should be converted unless
-> I'm mistaken:
->
-> rwsem_atomic_update() in asm/rwsem.h.
->
-> atomic_add_return() in asm/atomic.h.
->
-> atomic64_add_return() in asm/atomic64_64.h.
->
-> atom_asr() in asm/uv/uv_bau.h (*VOMIT* - the UV people have created a
-> whole different type in private code...)
->
+Note that I didn't wait for Grant's Ack, since Colin Ack'd them, and
+Grant said in another thread that he's being very liberal in allowing
+GPIO rework changes; I hope this is OK!
 
-Yeah, I hadn't done a full xadd audit.  I'll take a look.
+-- 
+nvpublic
 
-    J
