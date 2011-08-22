@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab1HVKma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:42:30 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:48965 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751539Ab1HVKmY (ORCPT
+	id S1756817Ab1HVKnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:43:46 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47601 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab1HVKnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:42:24 -0400
-Date: Mon, 22 Aug 2011 13:42:21 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Felipe Balbi <balbi@ti.com>, Michal Nazarewicz <mnazarewicz@google.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 3/4] usb: gadget: rename usb_gadget_driver::speed to
- max_speed
-Message-ID: <20110822104220.GR26191@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110819233133.GD13317@legolas.emea.dhcp.ti.com>
- <Pine.LNX.4.44L0.1108192225120.18944-100000@netrider.rowland.org>
+	Mon, 22 Aug 2011 06:43:43 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pa4xkLBhPDIhDLv1"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1108192225120.18944-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110822101655.GF24151@htj.dyndns.org>
+References: <CAL7bfHgeQ72uC_7TRmrwz+2d=CsqN2tMKDXfA0oig0ORqka8Fw@mail.gmail.com>
+	<20110822101655.GF24151@htj.dyndns.org>
+Date: Mon, 22 Aug 2011 15:43:42 +0500
+Message-ID: <CAL7bfHgzNj5z0w8rOYWqrKw71gQecNOmdFhyjsswz3J09VmKWw@mail.gmail.com>
+Subject: Re: Flashcache, Block cache Linux kernel module
+From: Ali Erturk TURKER <turkerali@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Tejun,
 
---Pa4xkLBhPDIhDLv1
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2011-08-22, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> Can you please cc linux-kernel@vger.kernel.org when replying?
+>
+> On Sun, Aug 21, 2011 at 08:15:21PM +0500, Ali Erturk TURKER wrote:
+>> I don't want to take your time so let me tell you my kind request. As
+>> you may know, there is 3rd party
+>> linux kernel module called "Flashcache"
+>> (https://github.com/facebook/flashcache) which is used by facebook
+>> for block level caching of data on mechanical disks using SSD drives
+>> to speed up mysql performance. This
+>> module is licensed GNU GPLV2
+>> (https://github.com/facebook/flashcache/blob/master/LICENSE) but
+>> lives outside the Linus' tree, therefore distros do not ship this
+>> module. I believe this feature is very valuable to
+>> many users like me, is there a way to merge it to the mainline?
+>
+> Hmmm... mainlining stuff takes work and I don't think anyone has
+> pushed flashcache for mainline inclusion yet.  Also, bcache seems more
+> complete and focused on mainlining, so I think that one is more likely
+> to make it to mainline.  Have no idea when that would happen tho.
+>
+> Thanks.
+>
+> --
+> tejun
+>
 
-Hi,
+It doesn't matter whether it is a white or black cat as long as it
+cathes mice :-)
 
-On Fri, Aug 19, 2011 at 10:34:29PM -0400, Alan Stern wrote:
-> On Sat, 20 Aug 2011, Felipe Balbi wrote:
->=20
-> > On Sat, Aug 20, 2011 at 12:33:01AM +0200, Michal Nazarewicz wrote:
-> > > From: Michal Nazarewicz <mina86@mina86.com>
-> > >=20
-> > > This commit renames the =E2=80=9Cspeed=E2=80=9D	field of the usb_gadg=
-et_driver
-> > > structure to =E2=80=9Cmax_speed=E2=80=9D.  This is so that to make it=
- more
-> > > apparent that the field represents the maximum speed gadget
-> > > driver can support.
-> > >=20
-> > > This also make the field look more like fields with the same
-> > > name in usb_gadget and usb_composite_driver structures.  All
-> > > of those represent the *maximal* speed given entity supports.
-> > >=20
-> > > After this commit, there are the following fields in various
-> > > structures:
-> > > * usb_gadget::speed - the current connection speed,
-> > > * usb_gadget::max_speed - maximal speed UDC supports,
-> >=20
-> > this will be handled inside the UDC itself, so why do you need to expose
-> > it ?
->=20
-> I wondered about this too.  It turns out that sometimes the gadget
-> driver really does need to know about the maximum speed supported by
-> the UDC hardware and driver.
->=20
-> For example, suppose the gadget driver and the UDC both support high
-> speed, but the gadget is currently plugged into a USB-1.1 controller
-> and therefore running only at full speed.  Then the gadget driver has
-> to respond to the Get-Device-Qualifier and Get-Other-Speed-Config
-> requests by sending the appropriate descriptors.  But if the UDC
-> doesn't support high speed operation then the gadget driver has to
-> respond to those requests with a STALL.
+I've mentioned flashcache since it has proven itself (since facebook
+uses it), but you are the boss here. Hope one of them becomes
+available soon and we'll enjoy the party.
 
-aa, good point :-)
-
---=20
-balbi
-
---Pa4xkLBhPDIhDLv1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOUjKMAAoJEAv8Txj19kN19mQH/1E6ju1X4Efnxnr5ubuLlaDb
-MrND17Rw1AyI4oBkyW/phFu8mmsyd+IBo1ITyvZHIOdtCTNnEbU7+QIJShemvIYK
-vpDx//nTVdYuUGUjpv/udnuXOV+YG37OL5CxgwKgZLj5dS/UJnvdSqwHpDJp+B98
-STBkxVkj55v0TuxzQSgmb82HFG04hUBSunvyySliviXIaqLXScKCYKpXiC5JlrxD
-Bx6VLzyuHIo43jhVygG3WCuZYiZ/jd/P45GtSUn+L8iszYKiGz/Jck+QYCA5I/nE
-JPoKMznTxKBxrVKpuFXfuhJHQlVSnFE/YTgtJSF0mnl87K2SvawS1QLPUGjRxOQ=
-=fsYo
------END PGP SIGNATURE-----
-
---Pa4xkLBhPDIhDLv1--
+Regards,
+Ali Erturk TURKER
