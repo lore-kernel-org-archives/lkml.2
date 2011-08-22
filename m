@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab1HVLGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:06:43 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:11303 "EHLO
+	id S1756854Ab1HVLGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:06:51 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60653 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810Ab1HVLGN (ORCPT
+	with ESMTP id S1756811Ab1HVLGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 07:06:13 -0400
+	Mon, 22 Aug 2011 07:06:14 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
         rydberg@euromail.se
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, chris@cnpbagwell.com,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/9 v5] Input: synaptics - refactor initialization of abs position axes
-Date: Mon, 22 Aug 2011 19:05:57 +0800
-Message-Id: <1314011163-19098-4-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 0/9 v5] Synaptics image sensor support
+Date: Mon, 22 Aug 2011 19:05:54 +0800
+Message-Id: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
-References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
----
- drivers/input/mouse/synaptics.c |   44 +++++++++++++++++---------------------
- 1 files changed, 20 insertions(+), 24 deletions(-)
+Hello,
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index e966894..30d05fd 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -712,39 +712,38 @@ static psmouse_ret_t synaptics_process_byte(struct psmouse *psmouse)
- /*****************************************************************************
-  *	Driver initialization/cleanup functions
-  ****************************************************************************/
-+static void set_abs_position_params(struct input_dev *dev,
-+				    struct synaptics_data *priv, int x_code,
-+				    int y_code)
-+{
-+	int x_min = priv->x_min ?: XMIN_NOMINAL;
-+	int x_max = priv->x_max ?: XMAX_NOMINAL;
-+	int y_min = priv->y_min ?: YMIN_NOMINAL;
-+	int y_max = priv->y_max ?: YMAX_NOMINAL;
-+	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
-+			SYN_REDUCED_FILTER_FUZZ : 0;
-+
-+	input_set_abs_params(dev, x_code, x_min, x_max, fuzz, 0);
-+	input_set_abs_params(dev, y_code, y_min, y_max, fuzz, 0);
-+	input_abs_set_res(dev, x_code, priv->x_res);
-+	input_abs_set_res(dev, y_code, priv->y_res);
-+}
-+
- static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- {
- 	int i;
--	int fuzz = SYN_CAP_REDUCED_FILTERING(priv->ext_cap_0c) ?
--			SYN_REDUCED_FILTER_FUZZ : 0;
- 
- 	__set_bit(INPUT_PROP_POINTER, dev->propbit);
- 
- 	__set_bit(EV_ABS, dev->evbit);
--	input_set_abs_params(dev, ABS_X,
--			     priv->x_min ?: XMIN_NOMINAL,
--			     priv->x_max ?: XMAX_NOMINAL,
--			     fuzz, 0);
--	input_set_abs_params(dev, ABS_Y,
--			     priv->y_min ?: YMIN_NOMINAL,
--			     priv->y_max ?: YMAX_NOMINAL,
--			     fuzz, 0);
-+	set_abs_position_params(dev, priv, ABS_X, ABS_Y);
- 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
- 
- 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)) {
- 		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 		input_mt_init_slots(dev, 2);
--		input_set_abs_params(dev, ABS_MT_POSITION_X,
--				     priv->x_min ?: XMIN_NOMINAL,
--				     priv->x_max ?: XMAX_NOMINAL,
--				     fuzz, 0);
--		input_set_abs_params(dev, ABS_MT_POSITION_Y,
--				     priv->y_min ?: YMIN_NOMINAL,
--				     priv->y_max ?: YMAX_NOMINAL,
--				     fuzz, 0);
--
--		input_abs_set_res(dev, ABS_MT_POSITION_X, priv->x_res);
--		input_abs_set_res(dev, ABS_MT_POSITION_Y, priv->y_res);
-+		set_abs_position_params(dev, priv, ABS_MT_POSITION_X,
-+					ABS_MT_POSITION_Y);
- 	}
- 
- 	if (SYN_CAP_PALMDETECT(priv->capabilities))
-@@ -777,9 +776,6 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
- 	__clear_bit(REL_X, dev->relbit);
- 	__clear_bit(REL_Y, dev->relbit);
- 
--	input_abs_set_res(dev, ABS_X, priv->x_res);
--	input_abs_set_res(dev, ABS_Y, priv->y_res);
--
- 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
- 		/* Clickpads report only left button */
+----
+For v5:
+  Patch 4:
+     Per Dmitry: Add up, down, right, middle, and extended button reporting.
+----
+
+This patch set (against next) is intended to add support for synaptics
+"image sensor" touchpads.
+
+Patches 1-3 clean up the current driver slightly and prepare for the image
+sensor patches which follow.
+
+Patches 4-7 add 3 finger support for image sensor touchpads.
+Image sensors do not suffer from the finger tracking issues that plagued
+the earlier "profile sensors", and which required the invention of "semi-mt"
+(Semi-mt reports a bounding box around two fingers instead of the fingers
+themselves).  Instead, the image sensors report the actual positions of two
+fingers using the same "Advanced Gesture Mode".  This driver uses two MT-B slots
+to report these two fingers to userspace.  In addition, it will also report
+the total number of fingers using BTN_TOOL_*TAP EV_KEY events.  This behavior
+is documented in the multi-touch-protocol document.
+
+Userspace drivers should be aware that the number of fingers reported via
+BTN_TOOL_*TAP can be greater than the total number MT-B slots with non-negative
+track_ids.  Upon opening the device node, userspace should query the maximum
+values supported ABS_MT_SLOT, and note the number of supported BTN_TOOL_*TAP
+events.
+
+Patches 7-8 add 4 and 5 finger support.
+In fact, the image sensor touchpads actually track 5 fingers while reporting
+just 2 finger positions.  These patches add support for properly tracking the
+reported slots through 4 and 5 finger transitions, while always reporting two of
+them via 2 MT-B slots.  In addition, a new event, EV_KEY/BTN_TOOL_QUINTTAP, is
+added to the event subsystem to allow reporting up to 5 fingers.
+
+These patches are similar to, and inspired by, a similar patchset recently
+submitted by Derek Foreman and Daniel Stone.  However, it is not directly built
+upon, nor is it compatible with, those patches.
+
+Thanks,
+Daniel
+
+Daniel Kurtz (9):
+  Input: synaptics - refactor y inversion
+  Input: synaptics - refactor agm packet parsing
+  Input: synaptics - refactor initialization of abs position axes
+  Input: synaptics - add image sensor support
+  Input: synaptics - decode AGM packet types
+  Input: mt - document devices reporting more touches than slots
+  Input: synaptics - process finger (<=3) transitions
+  Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers on touchpad
+  Input: synaptics - process finger (<=5) transitions
+
+ Documentation/input/multi-touch-protocol.txt |   14 +
+ drivers/input/input-mt.c                     |    1 +
+ drivers/input/mouse/synaptics.c              |  527 +++++++++++++++++++++++---
+ drivers/input/mouse/synaptics.h              |   27 ++-
+ include/linux/input.h                        |    1 +
+ 5 files changed, 519 insertions(+), 51 deletions(-)
+
 -- 
 1.7.3.1
 
