@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab1HVXon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:44:43 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14774 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740Ab1HVXok convert rfc822-to-8bit (ORCPT
+	id S1754292Ab1HVXpK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:45:10 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:52831 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab1HVXpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:44:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 22 Aug 2011 16:44:27 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>
-Date: Mon, 22 Aug 2011 16:44:15 -0700
-Subject: RE: [PATCH v2 1/4] gpio/tegra: Remove use of irq_to_gpio
-Thread-Topic: [PATCH v2 1/4] gpio/tegra: Remove use of irq_to_gpio
-Thread-Index: AcxYaNHJQ6Q3zVwcRIGQVSWeVwomXwAn8VZgAgchWXA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A377B@HQMAIL01.nvidia.com>
-References: <1313095404-27858-1-git-send-email-swarren@nvidia.com>
- <CAMbhsRRGDAmYv3_EbJ+WVg0C7e3-FFcLCgq4W325ECKX06M6Hg@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24E3D@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24E3D@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Aug 2011 19:45:07 -0400
+Date: Mon, 22 Aug 2011 17:45:06 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+cc: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        torvalds@linux-foundation.org, mporter@ti.com
+Subject: Re: [PATCH] irq: always set IRQF_ONESHOT if no primary handler is
+ specified
+In-Reply-To: <20110818213418.GA20509@legolas.emea.dhcp.ti.com>
+Message-ID: <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
+References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de> <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com> <4E4D4A5F.202@linutronix.de> <20110818213418.GA20509@legolas.emea.dhcp.ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Friday, August 12, 2011 10:07 AM:
-> Colin Cross wrote at Thursday, August 11, 2011 2:54 PM:
-> > On Thu, Aug 11, 2011 at 1:43 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > > irq_to_gpio is being removed. Replace the only use of that API by
-> > > the ARM Tegra sub-architecture.
-> > >
-> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > > ---
-> > > This series is the irq_to_gpio patches I posted last week, rebased to ToT,
-> > > plus removing Tegra's custom gpio_to_irq.
-> > >
-> > > This series was tested against next-20110811 on Harmony, by playing audio
-> > > and plugging/unplugging headphones. Headphone detection relies on using a
-> > > GPIO as an IRQ, and hence on gpio_to_irq.
-> >
-> > This whole series looks good to me:
-> > Acked-by: Colin Cross <ccross@android.com>
+On Fri, 19 Aug 2011, Felipe Balbi wrote:
+
+> On Thu, Aug 18, 2011 at 07:22:39PM +0200, Sebastian Andrzej Siewior wrote:
+> > Pantelis Antoniou wrote:
+> > 
+> > >Let me report that with this change Beagle board fails to boot,
+> > >hangs right on rootfs mount.
+> > 
+> > Can you provide some more information about the kind of the failure and
+> > used drivers?
+> > 
+> > >Users of BB should revert this until the offending driver(s) are fixed.
+> > Which is the offending driver?
 > 
-> Grant, Does this series look OK to you? Russell asked me to add it to the
-> ARM patch system once you'd Ack'd it.
+> I would guess it's the lack of threaded IRQ conversion on the
+> twl4030 driver. I have converted it but noone actually picked the series
+> [1].
 > 
-> Thanks.
+> http://marc.info/?i=1309427470-605-1-git-send-email-balbi@ti.com
 
-Russell, I've uploaded these to the ARM patch system as 7052..7055.
+Just a data point: applying this series doesn't seem to fix the hang.
 
-Note that I didn't wait for Grant's Ack, since Colin Ack'd them, and
-Grant said in another thread that he's being very liberal in allowing
-GPIO rework changes; I hope this is OK!
+Sebastian, Thomas, does commit f3637a5f2e2eb391ff5757bc83fb5de8f9726464 
+("irq: Always set IRQF_ONESHOT if no primary handler is specified") fix 
+anything, aside from a driver in staging?
 
--- 
-nvpublic
 
+- Paul
