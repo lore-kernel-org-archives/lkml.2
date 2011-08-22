@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1HVChN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 22:37:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40638 "EHLO smtps.tip.net.au"
+	id S1756697Ab1HVCi5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 22:38:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:32926 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab1HVChL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 22:37:11 -0400
-Date: Mon, 22 Aug 2011 12:37:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: linux-next: manual merge of the pm tree with the s390 tree
-Message-Id: <20110822123705.d947c6a2548082168df9c86a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752319Ab1HVCix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 22:38:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
+In-Reply-To: <20110819152335.GA19489@redhat.com>
+References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com> <20110819152335.GA19489@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 22 Aug 2011 09:54:50 +0930
+Message-ID: <87hb5a5m3x.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Fri, 19 Aug 2011 18:23:35 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Sat, Aug 13, 2011 at 11:51:01AM +0300, Sasha Levin wrote:
+> > The MAC of a virtio-net device is located at the first field of the device
+> > specific header. This header is located at offset 20 if the device doesn't
+> > support MSI-X or offset 24 if it does.
+> > 
+> > Current code in virtnet_probe() used to probe the MAC before checking for
+> > MSI-X, which means that the read was always made from offset 20 regardless
+> > of whether MSI-X in enabled or not.
+> > 
+> > This patch moves the MAC probe to after the detection of whether MSI-X is
+> > enabled. This way the MAC will be read from offset 24 if the device indeed
+> > supports MSI-X.
+> > 
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > Cc: virtualization@lists.linux-foundation.org
+> > Cc: netdev@vger.kernel.org
+> > Cc: kvm@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> I am not sure I see a bug in virtio: the config pace layout simply
+> changes as msix is enabled and disabled (and if you look at the latest
+> draft, also on whether 64 bit features are enabled).
+> It doesn't depend on msix capability being present in device.
+> 
+> The spec seems to be explicit enough:
+> 	If MSI-X is enabled for the device, two additional fields immediately
+> 	follow this header.
+> 
+> So I'm guessing the bug is in kvm tools which assume
+> same layout for when msix is enabled and disabled.
+> qemu-kvm seems to do the right thing so the device
+> seems to get the correct mac.
 
-Today's linux-next merge of the pm tree got a conflict in
-arch/s390/include/asm/thread_info.h between commit 5f67c275efe7 ("[S390]
-fix _TIF_SINGLE_STEP definition") from the s390 tree and commit
-c9ff4d7b50c4 ("freezer: remove now unused TIF_FREEZE") from the pm tree.
+So, the config space moves once MSI-X is enabled?  In which case, it
+should say "ONCE MSI-X is enabled..."
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/s390/include/asm/thread_info.h
-index f9a9a10,589708a..0000000
---- a/arch/s390/include/asm/thread_info.h
-+++ b/arch/s390/include/asm/thread_info.h
-@@@ -117,8 -116,7 +116,7 @@@ static inline struct thread_info *curre
-  #define _TIF_SIE		(1<<TIF_SIE)
-  #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
-  #define _TIF_31BIT		(1<<TIF_31BIT)
- -#define _TIF_SINGLE_STEP	(1<<TIF_FREEZE)
- +#define _TIF_SINGLE_STEP	(1<<TIF_SINGLE_STEP)
-- #define _TIF_FREEZE		(1<<TIF_FREEZE)
-  
-  #ifdef CONFIG_64BIT
-  #define is_32bit_task()		(test_thread_flag(TIF_31BIT))
+Thanks,
+Rusty.
