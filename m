@@ -1,136 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1HVUjI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:39:08 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53771 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab1HVUjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:39:02 -0400
-Subject: [GIT PULL] target fixes for v3.1-rc3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Aug 2011 13:38:53 -0700
-Message-ID: <1314045533.12514.32.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753695Ab1HVUnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:43:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29334 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab1HVUnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 16:43:00 -0400
+Date: Mon, 22 Aug 2011 17:42:10 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 03/11] KVM: x86: retry non-page-table writing instruction
+Message-ID: <20110822204209.GA3490@amt.cnet>
+References: <4E4A10E8.5090705@cn.fujitsu.com>
+ <4E4A113F.5090404@cn.fujitsu.com>
+ <20110822195929.GA2662@amt.cnet>
+ <4E52BA31.4030203@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E52BA31.4030203@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Aug 23, 2011 at 04:21:05AM +0800, Xiao Guangrong wrote:
+> On 08/23/2011 03:59 AM, Marcelo Tosatti wrote:
+> 
+> >> +	if (!vcpu->arch.mmu.direct_map && !mmu_is_nested(vcpu))
+> >> +		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+> > 
+> > Why write? 
+> > 
+> 
+> Since the fault is caused by page table written, and the 'gpa' can
+> be written after instruction is retied.
+> 
+> >> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
+> >> +
+> >> +	/*
+> >> +	 * The shadow pages have been zapped, then we call the page
+> >> +	 * fault path to change the mapping to writable.
+> >> +	 */
+> >> +	vcpu->arch.mmu.page_fault(vcpu, cr2, PFERR_WRITE_MASK, true);
+> > 
+> > I don't see why is this necessary. Just allowing the instruction to
+> > proceed should be enough?
+> > 
+> 
+> It used to avoid later VM-exit, since we will retry the instruction
+> but the mapped is still read-only. So we can it to let the mapping become
+> writable to avoid page fault again.
 
-The following is the current set of pending target fixes for -rc3 that
-address a number of issues with -rc1 target code.  These fixes have been
-stewing in lio-core-2.6.git for the last two weeks, and have been
-re-posted to the list last week for additional review.
-
-Note that the series was rebased this morning to include a missing bit
-in one of the existing patches, but other than this minor item the
-current series remains unchanged and has been seeing a fair amount of
-testing from users over the last week.
-
-This series includes the following major fixes:
-
-*) Make INQUIRY return 'non connected' status to address breakge with
-   certain initiators (reported + extra fix by Roland)
-*) Fix write payload exception handling with ->new_cmd_map
-*) Fix CDB emulation handling for WRITE_SAME
-*) Fix CDB emulation handling for SYNCHRONIZE_CACHE zero LBA + range   
-   breakage
-*) Fix multiple se_task handling bug (reported by Chris Boot)
-*) Fix task SGL chaining breakage with transport_allocate_data_tasks
-
-At this point there is still two outstanding issues not addressed in
-this series related to some recent NAA IEEE Registered Extended
-designator format breakage reported with VMFS, and breakage with LUN
-discovery in tcm_fc(fcoe).  These bugs are still being discussed and
-addressed, and will be sent out in a seperate series for -rc4.
-
-The series is available directly here:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git 3.1-rc-fixes
-
-This tree is also available from kernel.org mirrors at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.1-rc-fixes
-
-The series has been made against the following upstream HEAD:
-
-commit 93ee7a9340d64f20295aacc3fb6a22b759323280
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Aug 14 15:09:08 2011 -0700
-
-    Linux 3.1-rc2
-
-Thanks!
-
---nab
-
-Chris Boot (1):
-  iscsi-target: Implement iSCSI target IPv6 address printing.
-
-Dan Carpenter (3):
-  iscsi-target: remove duplicate return
-  iscsi-target: forever loop bug in iscsit_attach_ooo_cmdsn()
-  iscsi-target: Fix iscsit_allocate_se_cmd_for_tmr failure path bugs
-
-Jesper Juhl (1):
-  iscsi-target: Fix leak on failure in iscsi_copy_param_list()
-
-Julia Lawall (1):
-  target: Convert target_core_rd.c to use use BUG_ON
-
-Nicholas Bellinger (10):
-  target: Change TCM_NON_EXISTENT_LUN response to ASC=LOGICAL UNIT NOT
-    SUPPORTED
-  target: Make standard INQUIRY return 'not connected' for
-    tpg_virt_lun0
-  target: Fix write payload exception handling with ->new_cmd_map
-  target: Add WRITE_SAME (10) parsing and refactor passthrough checks
-  target: Fix WRITE_SAME usage with transport_get_size
-  target: Remove duplicate task completions in
-    transport_emulate_control_cdb
-  target: Fix SYNCHRONIZE_CACHE zero LBA + range breakage
-  target: Add missing DATA_SG_IO transport_cmd_get_valid_sectors check
-  target: Fix task count > 1 handling breakage and use max_sector page
-    alignment
-  target: Fix task SGL chaining breakage with
-    transport_allocate_data_tasks
-
-Roland Dreier (4):
-  target: Print subpage too for unhandled MODE SENSE pages
-  tcm_fc: init/exit functions should not be protected by "#ifdef
-    MODULE"
-  target: Make locking in transport_deregister_session() IRQ safe
-  target: Convert acl_node_lock to be IRQ-disabling
-
-Thomas Meyer (1):
-  target: Use ERR_CAST inlined function
-
- drivers/target/iscsi/iscsi_target.c            |    1 -
- drivers/target/iscsi/iscsi_target_configfs.c   |    4 +-
- drivers/target/iscsi/iscsi_target_erl1.c       |    2 +-
- drivers/target/iscsi/iscsi_target_login.c      |   16 +--
- drivers/target/iscsi/iscsi_target_parameters.c |   43 ++---
- drivers/target/iscsi/iscsi_target_util.c       |    4 +-
- drivers/target/target_core_cdb.c               |   57 ++++---
- drivers/target/target_core_device.c            |   48 +++++-
- drivers/target/target_core_fabric_configfs.c   |    2 +-
- drivers/target/target_core_pr.c                |    8 +-
- drivers/target/target_core_rd.c                |   24 +--
- drivers/target/target_core_tpg.c               |   64 ++++----
- drivers/target/target_core_transport.c         |  206 ++++++++++++++----------
- drivers/target/tcm_fc/tfc_conf.c               |    6 +-
- include/target/target_core_fabric_ops.h        |    6 +
- 15 files changed, 275 insertions(+), 216 deletions(-)
-
--- 
-1.7.6
-
+Its not like this case is performance sensitive. Usually optimizing
+things without the need for it leads to bad results. So please drop 
+this.
 
