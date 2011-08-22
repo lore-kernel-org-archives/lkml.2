@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab1HVCel (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 22:34:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58064 "EHLO mail.zytor.com"
+	id S1756620Ab1HVChN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 22:37:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40638 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab1HVCej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 22:34:39 -0400
-Message-ID: <4E51C026.7000702@zytor.com>
-Date: Sun, 21 Aug 2011 19:34:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
- crap with vdso on uml/i386)
-References: <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk> <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com> <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk> <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com> <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com> <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
-In-Reply-To: <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751972Ab1HVChL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 22:37:11 -0400
+Date: Mon, 22 Aug 2011 12:37:05 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: manual merge of the pm tree with the s390 tree
+Message-Id: <20110822123705.d947c6a2548082168df9c86a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2011 07:26 PM, Andrew Lutomirski wrote:
-> 
-> Which still leaves the question of how to fix it.  Restarting via an
-> int 0x80-based helper might be the only option that leaves everything
-> fully functional.
-> 
+Hi Rafael,
 
-The issue is that we don't represent the entire state ... we represent
-only one metalevel of it, currently the "cooked" one.  The problem is
-that we need the "raw" one as well, and in order to have *both* we need
-to know the entry mechanism.
+Today's linux-next merge of the pm tree got a conflict in
+arch/s390/include/asm/thread_info.h between commit 5f67c275efe7 ("[S390]
+fix _TIF_SINGLE_STEP definition") from the s390 tree and commit
+c9ff4d7b50c4 ("freezer: remove now unused TIF_FREEZE") from the pm tree.
 
-We need that IN EITHER CASE.
-
-This is reasonably straightforward... we can carry the entry mechanism
-forward inside the kernel, and fix it up in the IRET path.
-
-The *really* big issue is what we drop as the sigcontext since this is
-an ABI carried out to userspace.  We could just say "it's currently
-totally broken for SYSCALL" and just change it to drop the raw state,
-but which has the potential for breaking unknown programs, *or* we could
-add a bit of state (presumably by reclaiming one of the padding fields
-around cs and ss) ... which *also* has the potential for breaking programs.
-
-Right now, SYSCALL -> signal -> restart *is broken*, however, so there
-is also the option of just doing nothing in this case, I guess.
-	
-	-hpa
-
-
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/s390/include/asm/thread_info.h
+index f9a9a10,589708a..0000000
+--- a/arch/s390/include/asm/thread_info.h
++++ b/arch/s390/include/asm/thread_info.h
+@@@ -117,8 -116,7 +116,7 @@@ static inline struct thread_info *curre
+  #define _TIF_SIE		(1<<TIF_SIE)
+  #define _TIF_POLLING_NRFLAG	(1<<TIF_POLLING_NRFLAG)
+  #define _TIF_31BIT		(1<<TIF_31BIT)
+ -#define _TIF_SINGLE_STEP	(1<<TIF_FREEZE)
+ +#define _TIF_SINGLE_STEP	(1<<TIF_SINGLE_STEP)
+- #define _TIF_FREEZE		(1<<TIF_FREEZE)
+  
+  #ifdef CONFIG_64BIT
+  #define is_32bit_task()		(test_thread_flag(TIF_31BIT))
