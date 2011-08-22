@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1HVNQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:16:25 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47368 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1HVNQY (ORCPT
+	id S1752537Ab1HVNQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:16:46 -0400
+Received: from yuna.grokhost.net ([87.117.228.63]:38795 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab1HVNQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:16:24 -0400
-Date: Mon, 22 Aug 2011 14:16:21 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: possible circular locking dependency detected
- 3.1.0-rc2-00190-g3210d19
-Message-ID: <20110822131621.GS2203@ZenIV.linux.org.uk>
-References: <4E51CFD8.2090508@gmail.com>
- <CA+5PVA6KUMDEygjxrqwvpRDNfJ3WobUs7rwyP+pZrX9-atZUgw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA6KUMDEygjxrqwvpRDNfJ3WobUs7rwyP+pZrX9-atZUgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Aug 2011 09:16:45 -0400
+X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Aug 2011 09:16:44 EDT
+From: Chris Boot <bootc@bootc.net>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: Chris Boot <bootc@bootc.net>
+Subject: [PATCH] firewire-sbp2: fix panic after rmmod with slow targets
+Date: Mon, 22 Aug 2011 14:07:16 +0100
+Message-Id: <1314018436-9329-1-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 09:09:14AM -0400, Josh Boyer wrote:
+If firewire-sbp2 starts a login to a target that doesn't complete ORBs
+in a timely manner (and has to retry the login), and the module is
+removed before the operation times out, you end up with a null-pointer
+dereference and a kernel panic.
 
-> We've had a report of this on 3.0.1 as well.  Slightly different
-> scenario and fs, but the locks in question are the same.
-> https://bugzilla.redhat.com/show_bug.cgi?id=730998
-> 
-> It seems that with CONFIG_PROVE_LOCKING on, might_fault will always
-> attempt to grab mm->mmap_sem.  The common flow here is that getdents
-> calls filldir, which calls copy_to_user, which is what is calling
-> might_fault.
-> 
-> Beyond that, I'm a bit over my head at the moment because I don't know
-> if the VFS is right and we just need some more lockdep annotations or
-> if there really is a problem.
+This happens because the code in sbp2_remove() just does a
+sbp2_target_put(), assuming it will be the last remaining reference. If
+there are jobs in the workqueue, this is not the case, and the module is
+successfully unloaded while references still exist.
 
-Don't grab ->i_mutex in ->evict_inode().  Why are you doing that, anyway?
+This patch cancels pending work for each unit in sbp2_remove(), which
+hopefully means there are no extra references around that prevent us
+from unloading. This fixes my crash.
+
+Signed-off-by: Chris Boot <bootc@bootc.net>
+---
+ drivers/firewire/sbp2.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 41841a3..3867aaa 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1198,6 +1198,11 @@ static int sbp2_remove(struct device *dev)
+ {
+ 	struct fw_unit *unit = fw_unit(dev);
+ 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
++	struct sbp2_logical_unit *lu, *next;
++
++	list_for_each_entry_safe(lu, next, &tgt->lu_list, link) {
++		cancel_delayed_work_sync(&lu->work);
++	}
+ 
+ 	sbp2_target_put(tgt);
+ 	return 0;
+-- 
+1.7.5.4
+
