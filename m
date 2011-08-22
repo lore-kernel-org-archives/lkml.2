@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1HVALX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 20:11:23 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:37763 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab1HVALW (ORCPT
+	id S1756206Ab1HVAPq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 20:15:46 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:47275 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752257Ab1HVAPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 20:11:22 -0400
-Date: Mon, 22 Aug 2011 02:11:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-Message-ID: <20110822001121.GN25996@one.firstfloor.org>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org> <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com> <20110821231354.GL25996@one.firstfloor.org> <CACqU3MUAuMMC0c1Aesb3-oSzRXw4ddRYtjKDYovXewbCFL6dFg@mail.gmail.com>
+	Sun, 21 Aug 2011 20:15:45 -0400
+Subject: RFC: dynamic debug enhancements?
+From: Joe Perches <joe@perches.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 21 Aug 2011 17:15:43 -0700
+Message-ID: <1313972143.11178.55.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACqU3MUAuMMC0c1Aesb3-oSzRXw4ddRYtjKDYovXewbCFL6dFg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It does not work if / on a ROM, unless you start using trampoline
-> partition, but this is starting to become really convoluted...
+Hey Jason.
 
-On a ROM you never change the kernel.
+I recently went through drivers/media and updated
+lots of calls to pr_<level>.
 
-Besides who uses ROMs now when there is flash?
+A common pattern for debugging there and elsewhere
+treewide is the use of macros like:
 
--Andi
+#define dprintk(level, fmt, ...)			\
+do {							\
+	if (level > [some_modparam_var])		\
+		pr_debug(fmt, ##__VA_ARGS__);		\
+} while (0)
+
+and
+
+#define dprintk(mask, fmt, ...)				\
+do {							\
+	if (mask & [some_modparam_var])			\
+		pr_debug(fmt, ##__VA_ARGS__);		\
+} while (0)
+
+It might be useful to have standardized calls
+like pr_debug_level and pr_debug_mask instead
+of multiple hand-rolled variants treewide.
+
+Another common thing was the use of various
+__FILE__, __func__, __LINE__ outputs.
+
+I think __FILE__ is not particularly useful and
+can reasonably be replaced by KBUILD_MODNAME.
+
+Perhaps it would be good to have options to
+enable these outputs with specific controls
+for dynamic_debug uses.
+
+Maybe something like using a define similar to
+pr_fmt for what options are preselected for
+various ddebug outputs like:
+
+#define DYNAMIC_DEBUG_DEFAULT_FLAGS 		\
+	(_DPRINTK_FLAGS_INCL_MODNAME |		\
+	 _DPRINTK_FLAGS_INCL_FUNCNAME |		\
+	 _DPRINTK_FLAGS_INCL_LINENO)
+
+
