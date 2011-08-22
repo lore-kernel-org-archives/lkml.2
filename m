@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab1HVOAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:00:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48321 "EHLO mgw2.diku.dk"
+	id S1752633Ab1HVOAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:00:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48315 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab1HVOAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751821Ab1HVOAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 10:00:43 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Matt Mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] drivers/staging/usbip/userspace/libsrc/vhci_driver.c: test the just-initialized value
-Date: Mon, 22 Aug 2011 16:00:33 +0200
-Message-Id: <1314021636-11528-1-git-send-email-julia@diku.dk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: kernel-janitors@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] drivers/usb/host/ohci-omap3.c: test the just-initialized value
+Date: Mon, 22 Aug 2011 16:00:35 +0200
+Message-Id: <1314021636-11528-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,20 +45,20 @@ if (\(x == NULL\|IS_ERR(x)\)) S
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/staging/usbip/userspace/libsrc/vhci_driver.c |    2 +-
+ drivers/usb/host/ohci-omap3.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-index abbc285..2697877 100644
---- a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-@@ -133,7 +133,7 @@ static int check_usbip_device(struct sysfs_class_device *cdev)
- 			     strlen(vhci_driver->hc_device->path))) {
- 			/* found usbip device */
- 			usbip_cdev = calloc(1, sizeof(*usbip_cdev));
--			if (!cdev) {
-+			if (!usbip_cdev) {
- 				dbg("calloc failed");
- 				return -1;
- 			}
+diff --git a/drivers/usb/host/ohci-omap3.c b/drivers/usb/host/ohci-omap3.c
+index 6048f2f..853ad8d 100644
+--- a/drivers/usb/host/ohci-omap3.c
++++ b/drivers/usb/host/ohci-omap3.c
+@@ -149,7 +149,7 @@ static int __devinit ohci_hcd_omap3_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource_byname(pdev,
+ 				IORESOURCE_MEM, "ohci");
+-	if (!ret) {
++	if (!res) {
+ 		dev_err(dev, "UHH OHCI get resource failed\n");
+ 		return -ENOMEM;
+ 	}
 
