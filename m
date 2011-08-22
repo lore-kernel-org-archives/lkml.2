@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab1HVOin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:38:43 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59427
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753079Ab1HVOij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:38:39 -0400
-Date: Mon, 22 Aug 2011 10:38:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] xen-blkback: sync I/O after backend disconnected
-Message-ID: <20110822143829.GA2056@infradead.org>
-References: <4E48A6A6.4040706@oracle.com>
- <20110815144610.GA3707@infradead.org>
- <4E4A149E.5080608@oracle.com>
+	id S1753204Ab1HVOjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:39:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22507 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752934Ab1HVOjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 10:39:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="40974051"
+Date: Mon, 22 Aug 2011 16:41:06 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Subject: Re: [PATCH v2 0/2] MFD: MAX8997 Driver Update
+Message-ID: <20110822144106.GU4607@sortiz-mobl>
+References: <1313653056-27263-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E4A149E.5080608@oracle.com>
+In-Reply-To: <1313653056-27263-1-git-send-email-myungjoo.ham@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 02:56:30PM +0800, Joe Jin wrote:
-> On 08/15/11 22:46, Christoph Hellwig wrote:
-> > On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
-> >> When backend disconnect, sync IO requests to the disk.
-> > 
-> > Care to explain why?
+Hi,
+
+On Thu, Aug 18, 2011 at 04:37:34PM +0900, MyungJoo Ham wrote:
+> This patchset does:
 > 
-> When backend disconnect, I think we'd better flush all dirty data 
-> to the disk ASAP.
-
-Then please state this in the commit log, and even better the code
-also.
-
-> > Also you'll just need a sync_blockdev, fsync_bdev does far to many
-> > things that don't make any sense when you don't have a file system
-> > mounted on a device.
-> > 
+> 1. Bugfix on IRQ handling
+> 	The current version does not initialize IRQ handling part properly.
+> 	This patch adds max8997-irq init and allows to handle interrupts
+> 	correctly.
 > 
-> xen-blkback support physical device and loopback file, so I think
-> here should be fsync_bdev()? 
+> 2. Suspend-to-RAM Wakeup Source
+> 	The current version is missing wakeup-source feature.
+> 
+> Changes from v1:
+> - Removed a patch from the patchset.
+> (v2 is basically a "resubmit" without the undesired part)
+> 
+> MyungJoo Ham (2):
+>   MFD: MAX8997: IRQ Handling Bugfix
+>   MFD: MAX8997: Support Wake-up from Suspend
+Thanks, both patches (I took patch #2 second version) applied.
 
-No, and in fact sync_blockdev is also wrong when thinking about it.
-blkback always submits bios directly to the device, so flushing any
-kernel caches won't do you any help.  The only thing that might make
-sense to flush would be the disk write cache using a blkdev_issue_flush.
+Cheers,
+Samuel.
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
