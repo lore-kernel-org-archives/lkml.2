@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab1HVRY6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 13:24:58 -0400
-Received: from mail.kaapeli.fi ([84.20.139.148]:34494 "EHLO mail.kaapeli.fi"
+	id S1752800Ab1HVR0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 13:26:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53401 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab1HVRY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 13:24:56 -0400
-X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Aug 2011 13:24:55 EDT
-Message-ID: <4E528FAE.5060801@iki.fi>
-Date: Mon, 22 Aug 2011 20:19:42 +0300
-From: Jyrki Kuoppala <jkp@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752254Ab1HVRZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 13:25:58 -0400
+Message-ID: <4E5290D6.5050406@zytor.com>
+Date: Mon, 22 Aug 2011 10:24:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: linux-media@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH] Fix to qt1010 tuner frequency selection (media/dvb)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        kernel-hardening@lists.openwall.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low addresses
+References: <20110812102954.GA3496@albatros> <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com> <20110816090540.GA7857@albatros> <20110822101730.GA3346@albatros>
+In-Reply-To: <20110822101730.GA3346@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixes frequency selection for some UHF frequencies e.g. 
-channel 32 (562 MHz) on the qt1010 tuner. The tuner is used e.g. in the 
-MSI Mega Sky dvb-t stick ("MSI Mega Sky 55801 DVB-T USB2.0")
+On 08/22/2011 03:17 AM, Vasiliy Kulikov wrote:
+> Hi Ingo, Peter, Thomas,
+> 
+> On Tue, Aug 16, 2011 at 13:05 +0400, Vasiliy Kulikov wrote:
+>> As the changes are not intrusive, we'd want to see this feature in the
+>> upstream kernel.  If you know why the patch cannot be a part of the
+>> upstream kernel - please tell me, I'll try to address the issues.
+> 
+> Any comments on the RFC?  Otherwise, may I resend it as a PATCH for
+> inclusion?
+> 
+> Thanks!
 
-One example of problem reports of the bug this fixes can be read at 
-http://www.freak-search.com/de/thread/330303/linux-dvb_tuning_problem_with_some_frequencies_qt1010,_dvb
+Conceptually:
 
-Applies to kernel versions 2.6.38.8, 2.6.39.4, 3.0.3 and 3.1-rc2.
+I also have to admit to being somewhat skeptical to the concept on a
+littleendian architecture like x86.
 
-Signed-off-by: Jyrki Kuoppala <jkp@iki.fi>
+Code-wise:
 
-diff -upr linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c 
-linux-source-2.6.38/drivers/media/common/tuners/qt1010.c
---- linux-source-2.6.38.orig/drivers/media/common/tuners/qt1010.c    
-2011-03-15 03:20:32.000000000 +0200
-+++ linux-source-2.6.38/drivers/media/common/tuners/qt1010.c    
-2011-08-21 23:16:38.209580365 +0300
-@@ -198,9 +198,10 @@ static int qt1010_set_params(struct dvb_
+The code is horrific; it is full of open-coded magic numbers; it also
+puts a function called arch_get_unmapped_exec_area() in a generic file,
+which could best be described as "WTF" -- the arch_ prefix we use
+specifically to denote a per-architecture hook function.
 
-      /* 22 */
-      if      (freq < 450000000) rd[15].val = 0xd0; /* 450 MHz */
--    else if (freq < 482000000) rd[15].val = 0xd1; /* 482 MHz */
-+    else if (freq < 482000000) rd[15].val = 0xd2; /* 482 MHz */
-      else if (freq < 514000000) rd[15].val = 0xd4; /* 514 MHz */
--    else if (freq < 546000000) rd[15].val = 0xd7; /* 546 MHz */
-+    else if (freq < 546000000) rd[15].val = 0xd6; /* 546 MHz */
-+    else if (freq < 578000000) rd[15].val = 0xd8; /* 578 MHz */
-      else if (freq < 610000000) rd[15].val = 0xda; /* 610 MHz */
-      else                       rd[15].val = 0xd0;
+As such, your claim that the changes are not intrusive is plain false.
 
-
+	-hpa
