@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab1HVJyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 05:54:09 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:58731 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab1HVJyD (ORCPT
+	id S932079Ab1HVJyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 05:54:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45932 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab1HVJyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 05:54:03 -0400
+Date: Mon, 22 Aug 2011 11:53:57 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, Jens Axboe <axboe@kernel.dk>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Subject: Re: [PATCH 04/16] freezer: implement and use
+ kthread_freezable_should_stop()
+Message-ID: <20110822095357.GC24151@htj.dyndns.org>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org>
+ <1313763382-12341-5-git-send-email-tj@kernel.org>
+ <20110821191421.GA9793@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-	<CACqU3MWgZG_jGs+26X05nXUpbihASU7JXaBct=ZBnR7SEWLc+w@mail.gmail.com>
-Date: Mon, 22 Aug 2011 17:54:00 +0800
-Message-ID: <CAM_iQpWH=euPRVbcSH+L0p0sv2Cck6oazreaSjR5FS7x74iXRg@mail.gmail.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110821191421.GA9793@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 6:28 AM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Fri, Aug 19, 2011 at 7:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> From: Andi Kleen <ak@linux.intel.com>
->>
->> Reposting due to popular demand. Several other people are running
->> into the same problem with all kinds of software.
->>
->> Only change is rebase against current master.
->>
-> FWIW, couldn't this be made a boot option ?
+Hey, Oleg.
 
-A boot parameter to change kernel version sounds odd.
+On Sun, Aug 21, 2011 at 09:14:21PM +0200, Oleg Nesterov wrote:
+> But. can't __refrigerator() race with thaw_process() in this case?
+> 
+> > +bool __refrigerator(bool check_kthr_stop)
+> >  {
+> >  	/* Hmm, should we be allowed to suspend when there are realtime
+> >  	   processes around? */
+> > @@ -50,7 +51,8 @@ bool __refrigerator(void)
+> >
+> >  	for (;;) {
+> >  		set_current_state(TASK_UNINTERRUPTIBLE);
+> > -		if (!frozen(current))
+> > +		if (!frozen(current) ||
+> > +		    (check_kthr_stop && kthread_should_stop()))
+> >  			break;
+> 
+> OK, but then we do
+> 
+> 	current->flags &= ~PF_FREEZING;
+> 
+> since PF_FROZEN wasn't cleared this can race with
+> 
+> 	p->flags &= ~PF_FROZEN;
+> 
+> No?
 
->
-> That might help some distros, say Fedora, who actually ships
-> 2.6.40+x-branded kernels, or allow people to use no longer supported
-> distros with recent kernels.
->
-> About this last point, once functional, I intend to upgrade my trixbox
-> install (based on 2.6.18) to a 3.x-ish kernel, that might be fun...
->
+Indeed, I removed PF_FREEZING and moved PF_FROZEN to __refrigerator()
+in later patches, so it's already gone.  Patches could have been
+sequenced better, I suppose.  But, sequencing fixes for different
+races was already pretty challenging.  :)
 
-Then a Kconfig option would help.
+Thanks.
+
+-- 
+tejun
