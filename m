@@ -1,107 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab1HVKJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:09:32 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:28839 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab1HVKJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:09:24 -0400
-Message-ID: <4E522AD0.7030907@bfs.de>
-Date: Mon, 22 Aug 2011 12:09:20 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 2/2] arch/powerpc/platforms/powermac/setup.c: add missing
- of_node_put
-References: <1313943001-12884-2-git-send-email-julia@diku.dk>
-In-Reply-To: <1313943001-12884-2-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932111Ab1HVKKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:10:47 -0400
+Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:54383 "EHLO
+	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab1HVKKn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:10:43 -0400
+Message-Id: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Mon, 22 Aug 2011 12:10:34 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+Subject: Q: /sys/block and I/O Schedulers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
+I have a question: Reading the docs on I/O Schedulers, I had the impression the docs wanted to tell me that only the low-level devices (i.e. disks) use I/O Schedulers, while higher-level devices (like multipaths, RAIDs, LVs, etc.) don't.
 
-Am 21.08.2011 18:10, schrieb Julia Lawall:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> np is initialized to the result of calling a function that calls
-> of_node_get, so of_node_put should be called before the pointer is dropped.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e,e1,e2;
-> @@
-> 
-> * e = \(of_find_node_by_type\|of_find_node_by_name\)(...)
->   ... when != of_node_put(e)
->       when != true e == NULL
->       when != e2 = e
->   e = e1
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  arch/powerpc/platforms/powermac/setup.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/powermac/setup.c b/arch/powerpc/platforms/powermac/setup.c
-> index 96580b1..970ea1d 100644
-> --- a/arch/powerpc/platforms/powermac/setup.c
-> +++ b/arch/powerpc/platforms/powermac/setup.c
-> @@ -494,11 +494,15 @@ static int __init pmac_declare_of_platform_devices(void)
->  		return -1;
->  
->  	np = of_find_node_by_name(NULL, "valkyrie");
-> -	if (np)
-> +	if (np) {
->  		of_platform_device_create(np, "valkyrie", NULL);
-> +		of_node_put(np);
-> +	}
->  	np = of_find_node_by_name(NULL, "platinum");
-> -	if (np)
-> +	if (np) {
->  		of_platform_device_create(np, "platinum", NULL);
-> +		of_node_put(np);
-> +	}
->          np = of_find_node_by_type(NULL, "smu");
->          if (np) {
->  		of_platform_device_create(np, "smu", NULL);
-> 
+Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs seem to use the I/O Scheduler, while RAID1 don't seem to do so. Also a disk in a Xen DomU also uses an I/O Scheduler (in addition to those being used in Dom0 for the same device already)
 
+Is that correct, and if so, why is that? Is there a change to be seen in the future?
 
-hi,
-it seems save to call of_node_put(np) with np==NULL, i assume the same is true
-for of_platform_device_create().
+My test was as simple as this:
+/sys/block # for d in *
+> do
+> echo $d: $(<$d/queue/scheduler)
+> done
+cciss!c0d0: noop anticipatory deadline [cfq]
+dm-0: noop anticipatory deadline [cfq]
+[...]
+loop0: none
+[...]
+md4: none
+sda: noop anticipatory deadline [cfq]
+[...]
 
-so the code collapses to:
+As I'm not subscribed to the list, I'd appreciate any CC: to my address. Thanks!
 
-_test_node(char *name)
-{
- struct device_node *np;
- np = of_find_node_by_name(NULL, name);
- of_platform_device_create(np, name, NULL);
- of_node_put(np);
- return NULL?:0:1;
-}
-
-maybe there is already something like find_node() ?
-
-re,
- wh
-
-
+Regards,
+Ulrich
 
 
