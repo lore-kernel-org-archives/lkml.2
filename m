@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab1HVNDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:03:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49542 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1HVNDd (ORCPT
+	id S1752344Ab1HVNFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:05:47 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:36919 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751506Ab1HVNFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:03:33 -0400
-Message-ID: <4E5253A3.20306@gmail.com>
-Date: Mon, 22 Aug 2011 07:03:31 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Mon, 22 Aug 2011 09:05:45 -0400
+Date: Mon, 22 Aug 2011 16:05:40 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Per Forlin <per.forlin@stericsson.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH v3] usb: musb: ux500: optimize DMA callback routine
+Message-ID: <20110822130538.GN30398@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1313571820-5777-1-git-send-email-per.forlin@stericsson.com>
 MIME-Version: 1.0
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH -tip v3 5/5] perf script: add option resolving vmlinux
- path
-References: <20110811120555.5900.23642.stgit@linux3> <20110811120638.5900.72007.stgit@linux3>
-In-Reply-To: <20110811120638.5900.72007.stgit@linux3>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dPW7zu3hTOhZvCDO"
+Content-Disposition: inline
+In-Reply-To: <1313571820-5777-1-git-send-email-per.forlin@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2011 06:06 AM, Akihiro Nagai wrote:
-> Add the option get the path of [kernel.kallsyms].
-> Specify '--show-kernel-path' option to use this function.
-> This patch enables other applications to use this output easily.
-> 
-> Without --show-kernel-path  option
-> 
-> # perf script -f ip,dso
-> ffffffff81467612 irq_return ([kernel.kallsyms])
-> ffffffff81467612 irq_return ([kernel.kallsyms])
->     7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-> [snip]
-> 
-> With --show-kernel-path option
-> 
-> # perf script -f ip,dso --show-kernel-path
-> ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
-> ffffffff81467612 irq_return (/lib/modules/3.0.0+/build/vmlinux)
->     7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-> [snip]
-> 
-> Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
-> 
->  tools/perf/Documentation/perf-script.txt |    3 +++
->  tools/perf/builtin-script.c              |    2 ++
->  tools/perf/util/map.c                    |    9 ++++++---
->  tools/perf/util/symbol.h                 |    1 +
->  4 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-> index ee4d477..5383671 100644
-> --- a/tools/perf/Documentation/perf-script.txt
-> +++ b/tools/perf/Documentation/perf-script.txt
-> @@ -188,6 +188,9 @@ OPTIONS
->  	CPUs are specified with -: 0-2. Default is to report samples on all
->  	CPUs.
->  
-> +--show-kernel-path::
-> +	Try to resolve the path of [kernel.kallsyms]
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-record[1], linkperf:perf-script-perl[1],
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 78797b3..ba5d3bb 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -1095,6 +1095,8 @@ static const struct option options[] = {
->  		     "addr,offs",
->  		     parse_output_fields),
->  	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-> +	OPT_BOOLEAN('\0', "show-kernel-path", &symbol_conf.show_kernel_path,
-> +		    "Show the path of [kernel.kallsyms]"),
->  
->  	OPT_END()
->  };
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index 530a5ea..6ba4909 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -204,9 +204,12 @@ void map__print_dsoname(struct map *self)
->  {
->  	const char *dsoname;
->  
-> -	if (self && self->dso && self->dso->name)
-> -		dsoname = self->dso->name;
-> -	else
-> +	if (self && self->dso && (self->dso->name || self->dso->long_name)) {
-> +		if (symbol_conf.show_kernel_path && self->dso->long_name)
-> +			dsoname = self->dso->long_name;
-> +		else if (self->dso->name)
-> +			dsoname = self->dso->name;
-> +	} else
->  		dsoname = "[unknown]";
->  
->  	printf("%s", dsoname);
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 554b2fe..3a63c92 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -69,6 +69,7 @@ struct strlist;
->  struct symbol_conf {
->  	unsigned short	priv_size;
->  	bool		try_vmlinux_path,
-> +			show_kernel_path,
->  			use_modules,
->  			sort_by_name,
->  			show_nr_samples,
-> 
 
-Acked-By: David Ahern <dsahern@gmail.com>
+--dPW7zu3hTOhZvCDO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Wed, Aug 17, 2011 at 11:03:40AM +0200, Per Forlin wrote:
+> From: Per Forlin <per.forlin@linaro.org>
+>=20
+> Skip the use of work queue and call musb_dma_completion() directly from
+> DMA callback context.
+>=20
+> Here follows measurements on a Snowball board with ondemand governor acti=
+ve.
+>=20
+> Performance using work queue:
+> (105 MB) copied, 6.23758 s, 16.8 MB/s
+> (105 MB) copied, 5.7151 s, 18.3 MB/s
+> (105 MB) copied, 5.83583 s, 18.0 MB/s
+> (105 MB) copied, 5.93611 s, 17.7 MB/s
+>=20
+> Performance without work queue
+> (105 MB) copied, 5.62173 s, 18.7 MB/s
+> (105 MB) copied, 5.61811 s, 18.7 MB/s
+> (105 MB) copied, 5.57817 s, 18.8 MB/s
+> (105 MB) copied, 5.58549 s, 18.8 MB/s
+>=20
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+
+thanks a lot :-) applied.
+
+--=20
+balbi
+
+--dPW7zu3hTOhZvCDO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOUlQiAAoJEAv8Txj19kN11tUH/iY/03udh1mEDuNGlWsuTik0
+AjqeEcKZ131i3T383ABXCAEVcrHBelVRIKGMNatfRn72MmZjPSN4+9Ji5/riUkDw
+aVYPJusTLJXx8G91+1bJmOI1uOMoMzAnhDdWyfPe8P6XNMaLcfMcvFL6RS+8MXLG
+q1ye5rIX4mh6mu1+Zemk1+w0XtKcyVRmQ/1ecrLyVYf9KhjP4TC3d2DYEljbG0tJ
+hkfBe/b82x3/TyaLHu3Y75/P9V5l0EY6pCdYpZn9iQEr/S57Jc3Qdn49sMJ6dg8b
+irlDX6LN+c5W9+NfaR8SI2ojC8VRiyRNipVmhs8+TsCHpPX2WGFYENupiPRYCxU=
+=xEQM
+-----END PGP SIGNATURE-----
+
+--dPW7zu3hTOhZvCDO--
