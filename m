@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab1HVSax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 14:30:53 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:39810 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752376Ab1HVSau (ORCPT
+	id S1753160Ab1HVSbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 14:31:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42458 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751275Ab1HVSbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 14:30:50 -0400
-Date: Mon, 22 Aug 2011 11:30:47 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] power_supply: fix sysfs format warning
-Message-Id: <20110822113047.b84e56e2.rdunlap@xenotime.net>
-In-Reply-To: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 22 Aug 2011 14:31:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
+References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 22 Aug 2011 11:30:33 -0700
+Message-ID: <CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
+Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
+To: Andi Kleen <andi@firstfloor.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Fri, Aug 19, 2011 at 4:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Reposting due to popular demand. Several other people are running
+> into the same problem with all kinds of software.
 
-Fix format warning:
+I have heard this several times now, but nobody actually ever says
+*what* is broken.
 
-drivers/power/power_supply_sysfs.c:82: warning: format '%d' expects type 'int', but argument 4 has type 'ssize_t'
+The Fedora people seem to have done the 2.6.40 thing without any
+actual reason, for example (the two programs they claim were broken
+were things that they had already fixed in rawhide, afaik).
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/power/power_supply_sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm not at all interested in these kinds of "all kinds of software" reports.
 
---- linux-next-20110822.orig/drivers/power/power_supply_sysfs.c
-+++ linux-next-20110822/drivers/power/power_supply_sysfs.c
-@@ -78,7 +78,7 @@ static ssize_t power_supply_show_propert
- 			dev_dbg(dev, "driver has no data for `%s' property\n",
- 				attr->attr.name);
- 		else if (ret != -ENODEV)
--			dev_err(dev, "driver failed to report `%s' property: %d\n",
-+			dev_err(dev, "driver failed to report `%s' property: %zd\n",
- 				attr->attr.name, ret);
- 		return ret;
- 	}
+Details. Examples. Name the f&*cking names already. Shame them publicly.
+
+                         Linus
