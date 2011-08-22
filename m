@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab1HVGIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 02:08:17 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:54153 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab1HVGIP (ORCPT
+	id S1753435Ab1HVGIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 02:08:30 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47463 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab1HVGI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 02:08:15 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz1458Kzz1202hzz8275dhz2dh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Jason Liu <jason.hui@linaro.org>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>,
-        <patches@linaro.org>
-Subject: [PATCH] mtd: mxc_nand: Add mx53 NFC driver support
-Date: Mon, 22 Aug 2011 14:13:17 +0800
-Message-ID: <1313993597-25189-1-git-send-email-jason.hui@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 22 Aug 2011 02:08:27 -0400
+Message-ID: <4E51F24F.1050503@oracle.com>
+Date: Sun, 21 Aug 2011 23:08:15 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <4E4F814B.5070202@gmail.com> <4E4F865B.2010608@gmail.com> <4E4FD48B.8030101@oracle.com> <4E4FE1B1.7010601@gmail.com>
+In-Reply-To: <4E4FE1B1.7010601@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4E51F258.0095:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has already been tested with Samsung NAND: K9LAG08U0M
-on MX53EVK board, ubi/ubifs has already been tested OK too.
+On 08/20/2011 09:32 AM, Marco Stornelli wrote:
+> Il 20/08/2011 17:36, Sunil Mushran ha scritto:
+>> On 08/20/2011 03:03 AM, Marco Stornelli wrote:
+>>> Il 20/08/2011 11:41, Marco Stornelli ha scritto:
+>>>> Hi,
+>>>>
+>>>> Il 28/06/2011 17:33, Josef Bacik ha scritto:
+>>>>> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.
+>>>>> Turns out
+>>>>> using fiemap in things like cp cause more problems than it solves, so
+>>>>> lets try
+>>>>> and give userspace an interface that doesn't suck. We need to match
+>>>>> solaris
+>>>>> here, and the definitions are
+>>>>>
+>>>>> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
+>>>>> next hole greater than or equal to the supplied offset
+>>>>> is returned. The definition of a hole is provided near
+>>>>> the end of the DESCRIPTION.
+>>>>>
+>>>>> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
+>>>>> start of the next non-hole file region greater than or
+>>>>> equal to the supplied offset.
+>>>>>
+>>>>
+>>>> I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and 
+>>>> I've
+>>>> got some doubts about the right behavior:
+>>>>
+>>>> 1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means
+>>>> always the offset from the start of the file, right?
+>>>>
+>>>> 2) in case of a file with hole at the beginning and data at the 
+>>>> end, if
+>>>> I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file
+>>>> because the idea is to search the *next* hole and we have always a
+>>>> virtual hole at the end of the file, right?
+>>>
+>>> Just to be precise about this question: the alternative here, it's to
+>>> return the same position because we are already in a hole.
+>>
+>> Yes, the offset is from the start of the file.
+>>
+>> And yes, same offset is ok. I think the word next should be
+>> dropped from the definition. It is misleading.
+>>
+>
+> Thank. Yes the word "next" is not very clear. I re-read the proposal 
+> for the standard, actually it's seems to me that if we are in the last 
+> hole we should return the file size, if we are not in the last hole 
+> than it's ok the same offset - "....except that
+> if offset falls beyond the last byte not within a hole, then the file
+> offset may be set to the file size instead".
 
-Signed-off-by: Jason Liu <jason.hui@linaro.org>
----
-No change. Just resend this patch per Artem request.
----
- drivers/mtd/nand/mxc_nand.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Any proposal that differentiates between holes is wrong. It should not
+matter where the hole is.
 
-diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
-index 90df34c..a3f1b50 100644
---- a/drivers/mtd/nand/mxc_nand.c
-+++ b/drivers/mtd/nand/mxc_nand.c
-@@ -41,7 +41,7 @@
- 
- #define nfc_is_v21()		(cpu_is_mx25() || cpu_is_mx35())
- #define nfc_is_v1()		(cpu_is_mx31() || cpu_is_mx27() || cpu_is_mx21())
--#define nfc_is_v3_2()		cpu_is_mx51()
-+#define nfc_is_v3_2()		(cpu_is_mx51() || cpu_is_mx53())
- #define nfc_is_v3()		nfc_is_v3_2()
- 
- /* Addresses for NFC registers */
--- 
-1.7.4.1
+Think of it from the usage-pov.
 
+doff = 0;
+while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
+     hoff = lseek(SEEK_HOLE, doff);
+     read_offset = doff;
+     read_len = hoff -doff;
+     process();
+     doff = hoff;
+}
+
+The goal is to make this as efficient as follows. Treating the last
+hole differently adds more code for no benefit.
 
