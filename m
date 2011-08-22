@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab1HVOgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:36:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61229 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab1HVOgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:36:41 -0400
-Message-ID: <4E526975.4080106@redhat.com>
-Date: Mon, 22 Aug 2011 17:36:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 02/11] KVM: x86: tag the instructions which are used to
- write page table
-References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1117.1030608@cn.fujitsu.com> <20110822143235.GA4797@amt.cnet>
-In-Reply-To: <20110822143235.GA4797@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752980Ab1HVOie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:38:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58240 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab1HVOic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 10:38:32 -0400
+Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
+References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Aug 2011 16:38:33 +0200
+Message-ID: <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 05:32 PM, Marcelo Tosatti wrote:
-> On Tue, Aug 16, 2011 at 02:41:27PM +0800, Xiao Guangrong wrote:
-> >  The idea is from Avi:
-> >  | tag instructions that are typically used to modify the page tables, and
-> >  | drop shadow if any other instruction is used.
-> >  | The list would include, I'd guess, and, or, bts, btc, mov, xchg, cmpxchg,
-> >  | and cmpxchg8b.
-> >
-> >  This patch is used to tag the instructions and in the later path, shadow page
-> >  is dropped if it is written by other instructions
->
-> What is the advantage of doing this again? What is the point of
-> dropping shadow if the instruction is emulated?
->
+Le lundi 22 août 2011 à 16:23 +0200, Jiri Olsa a écrit :
+> The generation of the perf data file fails when using pipe
+> as the output file descriptor.
+> 
+> When record command generates the data header, several files are put
+> inside and the file size is stored ahead of the file contents itself.
+> 
+> The problem is that debugfs files cannot be stat-ed for size so we
+> need to read the whole file, count the size and update the file size
+> via seek&write (pwrite call).
+> This cannot be done for pipes, since it's not allowed to seek on it.
+> 
+> The attached patch changes current behaviour for pipes to get the
+> file size first and write correct data within the first pass.
+> For other than pipe files, the current behaviour stands.
+> 
+> This issue was caught when running the script command:
+> 
+> 	# perf script  syscall-counts ls
+> 
+> since it connects record and report via pipe.
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/util/trace-event-info.c |   81 +++++++++++++++++++++++++++++++-----
+>  1 files changed, 70 insertions(+), 11 deletions(-)
+> 
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index 3403f81..62ab9a2 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -59,6 +59,7 @@ unsigned int page_size;
+>  
+>  static const char *output_file = "trace.info";
+>  static int output_fd;
+> +static int output_is_pipe;
+>  
+>  struct event_list {
+>  	struct event_list *next;
+> @@ -183,20 +184,59 @@ int bigendian(void)
+>  	return *ptr == 0x01020304;
+>  }
+>  
+> +static off_t get_file_size(int fd)
+> +{
+> +	off_t size = 0;
+> +	char buf[BUFSIZ];
+> +	int r;
+> +
+> +	do {
+> +		r = read(fd, buf, BUFSIZ);
+> +		if (r > 0)
+> +			size += r;
+> +	} while (r > 0);
+> +
+> +	if (lseek(fd, 0, SEEK_SET))
+> +		die("seek failed");
+> +
+> +	return size;
+> +}
 
-So it won't be emulated again; the assumption is that if you addl into a 
-page, it isn't a pagetable.
+This part makes no sense :
 
--- 
-error compiling committee.c: too many arguments to function
+If fd is a pipe, you'll call die("seek failed")
+
+If it's not a pipe, you can try lseek(fd, 0, SEEK_END)+lseek(fd, 0,
+SEEK_SET) or fstat(fd, &st) instead of the read() loop.
+
+
 
