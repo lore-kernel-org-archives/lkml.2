@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab1HVPvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:51:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49049 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab1HVPvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:51:13 -0400
+	id S1752207Ab1HVPzc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:55:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52137 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab1HVPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:55:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="40639523"
+Date: Mon, 22 Aug 2011 08:55:29 -0700
+From: Sarah Sharp <sarah.a.sharp@intel.com>
+To: sifram rajas <sifram.rajas@gmail.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xhci: Redundant check for
+Message-ID: <20110822155529.GA4783@xanatos>
+References: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
 MIME-Version: 1.0
-Date: Mon, 22 Aug 2011 23:51:11 +0800
-Message-ID: <CAHq9w0JEe6+cqNTSOAQQZgVvtLdF-X6ic-3PZi14gVvunLQ-4g@mail.gmail.com>
-Subject: a oops about orphan inode
-From: awp47 <awp47.swjtu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi ,all
-recently, I meet a oops in a old kernel(2.6.5-suse9).
-General process are:
-1.mount a block device: mount -t ext3 -o data=journal /dev/device
-/some, it return ok.
-2.in userspace, execute the rm commond, and the rm will call sys_unlink():
-2.1.sys_unlink() will call path_lookup(), it will call
-ext3_lookup()->ext3_read_inode(), it's get a inode from
-   disk, but it's inode->i_nlink and inode->i_mode are both 0, so it's
-a bad inode(make_bad_inode()).
-2.2.after lookup path, sys_unlink() will call
-vfs_unlink()->ext3_unlink(), in ext3_unlink() it will find the bad
-   inode, and put it in orphan inode list both memory and disk.
-2.3.after vfs_unlink(), sys_unlink() will call
-iput()->ext3_delete_inode(), in ext3_delete_inode() it will check
-   the inode, if it is bad, it will goto end(don't remove orphan inode
-from the memory and disk list)
-3.umount the block device, at this time, kernel oops in
-ext3_put_super(): J_ASSERT(list_empty(&sbi->s_orphan));
+Hi Sifram,
 
-can somebody tell me, how to deal with bad inode in kernel? if we get
-a bad inode from disk, it will don't remove
-from orphan inode list?
 
-I checked the newest stable kernel 3.0.3. ext3_read_inode() change
-into ext3_iget(): if we get a bad inode, it will
-call iget_failed(), it will mark inode as bad(make_bad_inode) and call
-iput(), at last will call ext3_evict_inode. now
-in ext3_evict_inode also checked inode, if it is bad, don't remove
-from orphan inode list.
+On Mon, Aug 22, 2011 at 08:35:20AM -0700, sifram rajas wrote:
+> Hi Sarah,
+> 
+> This patch is for linux-3.0.3.
+> 
+> In the xhci_check_args() function in xhci.c, there is a redundant
+> check for xhci->devs.
+> 
+> This is redundant because the struct xhci_hcd->devs is actually
+> defined as a static array
+> of pointers and is not a pointer to a pointer.
+
+Your patch looks fine, and I'll apply it to my usb-next branch later
+this week.
+
+However, can you please send future patches to
+sarah.a.sharp@linux.intel.com, not my intel.com address?  The intel.com
+one runs through a horrible exchange server that converts tabs to spaces
+and makes it impossible to apply patches.
+
+Where did you find the intel.com email address?  I'm pretty sure the
+MAINTAINERS file lists the linux.intel.com one, and I'd like to make
+sure people aren't getting bad information.
+
+Sarah Sharp
+
+> Signed-off-by: Sifram Rajas <sifram.rajas@gmail.com>
+> ---
+> drivers/usb/host/xhci.c |   3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> --- a/drivers/usb/host/xhci.c	2011-08-17 23:27:16.000000000 +0530
+> +++ b/drivers/usb/host/xhci.c	2011-08-22 20:43:34.250000000 +0530
+> @@ -945,8 +945,7 @@ static int xhci_check_args(struct usb_hc
+>  		return -ENODEV;
+> 
+>  	if (check_virt_dev) {
+> -		if (!udev->slot_id || !xhci->devs
+> -			|| !xhci->devs[udev->slot_id]) {
+> +		if (!udev->slot_id || !xhci->devs[udev->slot_id]) {
+>  			printk(KERN_DEBUG "xHCI %s called with unaddressed "
+>  						"device\n", func);
+>  			return -EINVAL;
+> 
+> Thanks,
+> Sifram Rajas.
