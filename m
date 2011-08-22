@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1HVVk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:40:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51293 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753860Ab1HVVk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:40:27 -0400
-Date: Mon, 22 Aug 2011 14:39:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 2/2] vmscan: use atomic-long for shrinker batching
-Message-Id: <20110822143954.18c1539c.akpm@linux-foundation.org>
-In-Reply-To: <20110822101727.19462.55289.stgit@zurg>
-References: <20110822101721.19462.63082.stgit@zurg>
-	<20110822101727.19462.55289.stgit@zurg>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753975Ab1HVVmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:42:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38350 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751649Ab1HVVl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 17:41:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,265,1312182000"; 
+   d="scan'208";a="41235802"
+Date: Mon, 22 Aug 2011 14:41:54 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
+ uevent
+Message-ID: <20110822214154.GB20451@xanatos>
+References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
+ <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+ <CACxGe6us1vaUgMmiZR-D9iSCQdw+vbVyZdBCkET_9p3AGyHwRQ@mail.gmail.com>
+ <4E4937A4.5070204@linutronix.de>
+ <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011 14:17:27 +0300
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
-
-> Use atomic-long operations instead of looping around cmpxchg().
+On Mon, Aug 15, 2011 at 09:17:41AM -0600, Grant Likely wrote:
+> On Mon, Aug 15, 2011 at 9:13 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+> > Grant Likely wrote:
+> >>>
+> >>> --- a/drivers/base/platform.c
+> >>> +++ b/drivers/base/platform.c
+> >>> @@ -614,7 +614,7 @@ static int platform_uevent(struct device *dev, struct
+> >>> kobj_uevent_env *env)
+> >>>               return rc;
+> >>>
+> >>>       add_uevent_var(env, "MODALIAS=%s%s", PLATFORM_MODULE_PREFIX,
+> >>> -               (pdev->id_entry) ? pdev->id_entry->name : pdev->name);
+> >>> +                       pdev->name);
+> >>
+> >> Yes, this looks like the right thing to do to me.  Also, I think the
+> >> original code is suspect because it causes the uevent data to be
+> >> different after binding a driver to a device.
+> >
+> > Why different? The code matches (pdev->name == id->name) or
+> > (pdev->name ==  driver->name) so in both cases it should be equal to
+> > pdev->name.
+> >
+> > Are you or Greg taking this?
 > 
+> This one is all Greg.
 
-Seems nice.
+Greg, do you want to take this patch through your driver core tree, or
+would you prefer to have it come through the xHCI tree?
 
-> diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
-> index 790651b..ac6b8ee 100644
-> --- a/include/linux/shrinker.h
-> +++ b/include/linux/shrinker.h
-> @@ -34,7 +34,7 @@ struct shrinker {
->  
->  	/* These are for internal use */
->  	struct list_head list;
-> -	long nr;	/* objs pending delete */
-> +	atomic_long_t nr_in_batch; /* objs pending delete */
->  };
-
-This makes shrinker.h have a dependency on atomic.h.  shrinker.h is a
-strange thing that doesn't include its own dependent header files - the
-shrinker.h includer is responsible for that.  And they both need
-fixups, for safety's sake:
-
- include/linux/fs.h |    2 +-
- include/linux/mm.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
---- a/include/linux/mm.h~vmscan-use-atomic-long-for-shrinker-batching-fix
-+++ a/include/linux/mm.h
-@@ -10,6 +10,7 @@
- #include <linux/mmzone.h>
- #include <linux/rbtree.h>
- #include <linux/prio_tree.h>
-+#include <linux/atomic.h>
- #include <linux/debug_locks.h>
- #include <linux/mm_types.h>
- #include <linux/range.h>
---- a/include/linux/fs.h~vmscan-use-atomic-long-for-shrinker-batching-fix
-+++ a/include/linux/fs.h
-@@ -394,8 +394,8 @@ struct inodes_stat_t {
- #include <linux/semaphore.h>
- #include <linux/fiemap.h>
- #include <linux/rculist_bl.h>
--#include <linux/shrinker.h>
- #include <linux/atomic.h>
-+#include <linux/shrinker.h>
- 
- #include <asm/byteorder.h>
- 
-_
-
+Sarah Sharp
