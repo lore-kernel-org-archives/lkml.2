@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab1HVOAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:00:46 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48312 "EHLO mgw2.diku.dk"
+	id S1752854Ab1HVOBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:01:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48328 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751769Ab1HVOAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:00:43 -0400
+	id S1752238Ab1HVOAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 10:00:45 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Robert Love <robert.w.love@intel.com>
+To: Bing Zhao <bzhao@marvell.com>
 Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] drivers/scsi/fcoe/fcoe.c: add missing test
-Date: Mon, 22 Aug 2011 16:00:34 +0200
-Message-Id: <1314021636-11528-2-git-send-email-julia@diku.dk>
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the just-initialized value
+Date: Mon, 22 Aug 2011 16:00:36 +0200
+Message-Id: <1314021636-11528-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,8 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-The initializations of both fcoe_nport_scsi_transport and
-fcoe_vport_scsi_transport can fail, so test both of them.
+Test the just-initialized value rather than some other one.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -46,20 +46,20 @@ if (\(x == NULL\|IS_ERR(x)\)) S
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/fcoe/fcoe.c |    2 +-
+ drivers/net/wireless/mwifiex/scan.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-index ba710e3..921b636 100644
---- a/drivers/scsi/fcoe/fcoe.c
-+++ b/drivers/scsi/fcoe/fcoe.c
-@@ -1096,7 +1096,7 @@ static int __init fcoe_if_init(void)
- 	fcoe_vport_scsi_transport =
- 		fc_attach_transport(&fcoe_vport_fc_functions);
- 
--	if (!fcoe_nport_scsi_transport) {
-+	if (!fcoe_nport_scsi_transport || !fcoe_vport_scsi_transport) {
- 		printk(KERN_ERR "fcoe: Failed to attach to the FC transport\n");
- 		return -ENODEV;
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index b28241c..d3111c9 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1480,7 +1480,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv,
+ 		return -ENOMEM;
+ 	}
+ 	beacon_ie = kzalloc(ie_len, GFP_KERNEL);
+-	if (!bss_desc) {
++	if (!beacon_ie) {
+ 		dev_err(priv->adapter->dev, " failed to alloc bss_desc\n");
+ 		return -ENOMEM;
  	}
 
