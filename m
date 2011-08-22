@@ -1,185 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1HVGDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 02:03:39 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41594 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab1HVGDh convert rfc822-to-8bit (ORCPT
+	id S1752834Ab1HVGIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 02:08:17 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:54153 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab1HVGIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 02:03:37 -0400
+	Mon, 22 Aug 2011 02:08:15 -0400
+X-SpamScore: -3
+X-BigFish: VS-3(zz1458Kzz1202hzz8275dhz2dh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Jason Liu <jason.hui@linaro.org>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>,
+        <patches@linaro.org>
+Subject: [PATCH] mtd: mxc_nand: Add mx53 NFC driver support
+Date: Mon, 22 Aug 2011 14:13:17 +0800
+Message-ID: <1313993597-25189-1-git-send-email-jason.hui@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-In-Reply-To: <1313975049.2393.8.camel@offbook>
-References: <1313975049.2393.8.camel@offbook>
-Date: Mon, 22 Aug 2011 02:03:36 -0400
-Message-ID: <CACqU3MVMGSSK_h-epgwzEdmKPeQrrymLmT2gTr8VNZ5Wi9EQ7w@mail.gmail.com>
-Subject: Re: [PATCH v2] kconfig: handle SIGINT in menuconfig
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: dave@gnu.org
-Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This has already been tested with Samsung NAND: K9LAG08U0M
+on MX53EVK board, ubi/ubifs has already been tested OK too.
 
-On Sun, Aug 21, 2011 at 9:04 PM, Davidlohr Bueso <dave@gnu.org> wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
->
-> I recently got bitten in the ass when pressing Ctrl-C and lost all my current configuration changes. This patch captures SIGINT and allows the user to save any changes.
-> Some code refactoring was made in order to handle the exit behavior.
->
-Looks mostly good, I'll give it a try to see if we did not miss corner-case.
+Signed-off-by: Jason Liu <jason.hui@linaro.org>
+---
+No change. Just resend this patch per Artem request.
+---
+ drivers/mtd/nand/mxc_nand.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-I never S.O.B. anything explicitly, please do not add my signature
-without my consent. That said, here it is:
+diff --git a/drivers/mtd/nand/mxc_nand.c b/drivers/mtd/nand/mxc_nand.c
+index 90df34c..a3f1b50 100644
+--- a/drivers/mtd/nand/mxc_nand.c
++++ b/drivers/mtd/nand/mxc_nand.c
+@@ -41,7 +41,7 @@
+ 
+ #define nfc_is_v21()		(cpu_is_mx25() || cpu_is_mx35())
+ #define nfc_is_v1()		(cpu_is_mx31() || cpu_is_mx27() || cpu_is_mx21())
+-#define nfc_is_v3_2()		cpu_is_mx51()
++#define nfc_is_v3_2()		(cpu_is_mx51() || cpu_is_mx53())
+ #define nfc_is_v3()		nfc_is_v3_2()
+ 
+ /* Addresses for NFC registers */
+-- 
+1.7.4.1
 
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
 
-:-)
-
-Thanks,
- - Arnaud
-
-> ---
->  scripts/kconfig/mconf.c |   86 ++++++++++++++++++++++++++++------------------
->  1 files changed, 52 insertions(+), 34 deletions(-)
->
-> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-> index 820d2b6..19e200d 100644
-> --- a/scripts/kconfig/mconf.c
-> +++ b/scripts/kconfig/mconf.c
-> @@ -15,6 +15,7 @@
->  #include <stdarg.h>
->  #include <stdlib.h>
->  #include <string.h>
-> +#include <signal.h>
->  #include <unistd.h>
->  #include <locale.h>
->
-> @@ -272,6 +273,7 @@ static struct menu *current_menu;
->  static int child_count;
->  static int single_menu_mode;
->  static int show_all_options;
-> +static int saved_x, saved_y;
->
->  static void conf(struct menu *menu);
->  static void conf_choice(struct menu *menu);
-> @@ -792,9 +794,54 @@ static void conf_save(void)
->        }
->  }
->
-> +static int handle_exit(void)
-> +{
-> +       int res;
-> +
-> +       dialog_clear();
-> +       if (conf_get_changed())
-> +               res = dialog_yesno(NULL,
-> +                                  _("Do you wish to save your new configuration ?\n"
-> +                                    "<ESC><ESC> to continue."),
-> +                                  6, 60);
-> +       else
-> +               res = -1;
-> +
-> +       end_dialog(saved_x, saved_y);
-> +
-> +       switch (res) {
-> +       case 0:
-> +               if (conf_write(filename)) {
-> +                       fprintf(stderr, _("\n\n"
-> +                                         "Error while writing of the configuration.\n"
-> +                                         "Your configuration changes were NOT saved."
-> +                                         "\n\n"));
-> +                       return 1;
-> +               }
-> +               /* fall through */
-> +       case -1:
-> +               printf(_("\n\n"
-> +                        "*** End of the configuration.\n"
-> +                        "*** Execute 'make' to start the build or try 'make help'."
-> +                        "\n\n"));
-> +               res = 0;
-> +               break;
-> +       default:
-> +               fprintf(stderr, _("\n\n"
-> +                                 "Your configuration changes were NOT saved."
-> +                                 "\n\n"));
-> +       }
-> +
-> +       return res;
-> +}
-> +
-> +static void sig_handler(int signo)
-> +{
-> +       exit(handle_exit());
-> +}
-> +
->  int main(int ac, char **av)
->  {
-> -       int saved_x, saved_y;
->        char *mode;
->        int res;
->
-> @@ -802,6 +849,8 @@ int main(int ac, char **av)
->        bindtextdomain(PACKAGE, LOCALEDIR);
->        textdomain(PACKAGE);
->
-> +       signal(SIGINT, sig_handler);
-> +
->        conf_parse(av[1]);
->        conf_read(NULL);
->
-> @@ -823,40 +872,9 @@ int main(int ac, char **av)
->        set_config_filename(conf_get_configname());
->        do {
->                conf(&rootmenu);
-> -               dialog_clear();
-> -               if (conf_get_changed())
-> -                       res = dialog_yesno(NULL,
-> -                                          _("Do you wish to save your "
-> -                                            "new configuration?\n"
-> -                                            "<ESC><ESC> to continue."),
-> -                                          6, 60);
-> -               else
-> -                       res = -1;
-> +               res = handle_exit();
->        } while (res == KEY_ESC);
-> -       end_dialog(saved_x, saved_y);
-> -
-> -       switch (res) {
-> -       case 0:
-> -               if (conf_write(filename)) {
-> -                       fprintf(stderr, _("\n\n"
-> -                               "Error while writing of the configuration.\n"
-> -                               "Your configuration changes were NOT saved."
-> -                               "\n\n"));
-> -                       return 1;
-> -               }
-> -               /* fall through */
-> -       case -1:
-> -               printf(_("\n\n"
-> -                       "*** End of the configuration.\n"
-> -                       "*** Execute 'make' to start the build or try 'make help'."
-> -                       "\n\n"));
-> -               break;
-> -       default:
-> -               fprintf(stderr, _("\n\n"
-> -                       "Your configuration changes were NOT saved."
-> -                       "\n\n"));
-> -       }
->
-> -       return 0;
-> +       return res;
->  }
->
-> --
-> 1.7.4.1
->
->
->
->
