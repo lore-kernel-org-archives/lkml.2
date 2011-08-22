@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab1HVEMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 00:12:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38972 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770Ab1HVEMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 00:12:19 -0400
-Message-ID: <4E51D70A.1060001@zytor.com>
-Date: Sun, 21 Aug 2011 21:11:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1751874Ab1HVEO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 00:14:57 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:55218 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab1HVEOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 00:14:55 -0400
+X-Greylist: delayed 764 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Aug 2011 00:14:55 EDT
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reply-To: konrad.wilk@oracle.com
+Organization: Oracle
+To: Daniel Kiper <dkiper@net-space.pl>
+Subject: Re: [PATCH 1/4] xen: Take into account Xen control interface changes since Xen Ver. 4.1
+Date: Sun, 21 Aug 2011 23:56:50 -0400
+User-Agent: KMail/1.13.5 (Linux/3.0.0; KDE/4.5.5; i686; ; )
+Cc: ian.campbell@citrix.com, vgoyal@redhat.com, horms@verge.net.au,
+        olaf@aepfle.de, kexec@lists.infradead.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+References: <20110821135139.GB17323@router-fw-old.local.net-space.pl>
+In-Reply-To: <20110821135139.GB17323@router-fw-old.local.net-space.pl>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
- crap with vdso on uml/i386)
-References: <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com> <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com> <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk> <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com> <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk> <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com> <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <20110822040759.GQ2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110822040759.GQ2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108212356.50589.konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2011 09:07 PM, Al Viro wrote:
-> On Sun, Aug 21, 2011 at 06:41:16PM -0700, Linus Torvalds wrote:
->> On Sun, Aug 21, 2011 at 6:16 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>>
->>> Is that ability a part of userland ABI or are we declaring that hopelessly
->>> wrong and require to go through the function in vdso32? ?Linus?
->>
->> If people are using syscall directly, we're pretty much stuck. No
->> amount of "that's hopelessly wrong" will ever matter. We don't break
->> existing binaries.
+> xc_interface_open() receive three arguments instead of void and returns
+> pointer to xc_interface type instead of int since Xen Ver. 4.1. Take into
+> account that and allow kexec-tools compilation with all versions of Xen.
 > 
-> There's a funny part, though - such binary won't work on 32bit kernel.
-> AFAICS, we never set MSR_*STAR on 32bit kernels (and native 32bit vdso
-> doesn't provide a SYSCALL-based variant).
+> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+> ---
+>  kexec/crashdump-xen.c |   15 ++++++++++++++-
+>  1 files changed, 14 insertions(+), 1 deletions(-)
 > 
-> So if we really consider such SYSCALL outside of vdso32 kosher, shouldn't
-> we do something with entry_32.S as well?  I don't think it's worth doing,
-> TBH...
+> diff --git a/kexec/crashdump-xen.c b/kexec/crashdump-xen.c
+> index b347764..9dfabf8 100644
+> --- a/kexec/crashdump-xen.c
+> +++ b/kexec/crashdump-xen.c
+> @@ -126,19 +126,32 @@ unsigned long xen_architecture(struct crash_elf_info 
+*elf_info)
+>  {
+>  	unsigned long machine = elf_info->machine;
+>  #ifdef HAVE_LIBXENCTRL
+> -	int xc, rc;
+> +	int rc;
+>  	xen_capabilities_info_t capabilities;
+> +#ifdef XENCTRL_HAS_XC_INTERFACE
+> +	xc_interface *xc;
+> +#else
+> +	int xc;
+> +#endif
+
+Where is the #endif for HAVE_LIBXENCTRL?
+
+>  
+>  	if (!xen_present())
+>  		goto out;
+>  
+>  	memset(capabilities, '0', XEN_CAPABILITIES_INFO_LEN);
+>  
+> +#ifdef XENCTRL_HAS_XC_INTERFACE
+> +	xc = xc_interface_open(NULL, NULL, 0);
+> +	if ( !xc ) {
+> +		fprintf(stderr, "failed to open xen control interface.\n");
+> +		goto out;
+> +	}
+> +#else
+>  	xc = xc_interface_open();
+>  	if ( xc == -1 ) {
+>  		fprintf(stderr, "failed to open xen control interface.\n");
+>  		goto out;
+>  	}
+> +#endif
+>  
+>  	rc = xc_version(xc, XENVER_capabilities, &capabilities[0]);
+>  	if ( rc == -1 ) {
+> -- 
+> 1.5.6.5
 > 
-> Again, I very much hope that binaries with such stray SYSCALL simply do
-> not exist.  In theory it's possible to write one, but...
-> 
-> IIRC, the reason we never had SYSCALL support in 32bit kernel was the utter
-> lack of point - the *only* CPU where it would matter would be K6-2, IIRC,
-> and (again, IIRC) it had some differences in SYSCALL semantics compared to
-> K7 (which supports SYSENTER as well).  Bugger if I remember what those
-> differences might've been...  Some flag not cleared?
-
-The most likely reason for a binary to execute a stray SYSCALL is
-because they read it out of the vdso.  Totally daft, but we certainly
-see a lot of stupid things as evidenced by the JIT thread earlier this
-month.
-
-In that sense, a "safe" thing would be to drop use of SYSCALL for 32-bit
-processes... I just sent Borislav a query about the cost.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
