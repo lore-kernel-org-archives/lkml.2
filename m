@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab1HVPUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:20:24 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:63610 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab1HVPUT (ORCPT
+	id S1753137Ab1HVPUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:20:36 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:59615 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752977Ab1HVPUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:20:19 -0400
-From: Wanlong Gao <wanlong.gao@gmail.com>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: chris.mason@oracle.com, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH] btrfs:make close_ctree() return void
-Date: Mon, 22 Aug 2011 23:18:11 +0800
-Message-Id: <1314026291-8873-1-git-send-email-wanlong.gao@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Mon, 22 Aug 2011 11:20:30 -0400
+Subject: Re: [PATCH 14/14] [media] gspca: Use current logging styles
+From: Joe Perches <joe@perches.com>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110822105003.0002ef3c@tele>
+References: <cover.1313966088.git.joe@perches.com>
+	 <9927bff9b5f212dcbe867a9f882e53ed80bd9a0f.1313966090.git.joe@perches.com>
+	 <20110822105003.0002ef3c@tele>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Aug 2011 08:20:28 -0700
+Message-ID: <1314026428.18461.10.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+On Mon, 2011-08-22 at 10:50 +0200, Jean-Francois Moine wrote:
+> On Sun, 21 Aug 2011 15:56:57 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > Add pr_fmt.
+> > Convert usb style logging macros to pr_<level>.
+> > Remove now unused old usb style logging macros.
+> Hi Joe,
 
-Make close_ctree() return void since it always return 0, and fix
-the return value of btrfs_put_super() to consistent with VFS.
+Hello Jean-Francois.
 
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- fs/btrfs/disk-io.c |    4 +---
- fs/btrfs/disk-io.h |    2 +-
- fs/btrfs/super.c   |    5 +----
- 3 files changed, 3 insertions(+), 8 deletions(-)
+> Sorry, but I do not see the advantages of your patch.
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 07b3ac6..b2c15d4 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -2528,7 +2528,7 @@ int btrfs_commit_super(struct btrfs_root *root)
- 	return ret;
- }
- 
--int close_ctree(struct btrfs_root *root)
-+void close_ctree(struct btrfs_root *root)
- {
- 	struct btrfs_fs_info *fs_info = root->fs_info;
- 	int ret;
-@@ -2630,8 +2630,6 @@ int close_ctree(struct btrfs_root *root)
- 	kfree(fs_info->dev_root);
- 	kfree(fs_info->csum_root);
- 	kfree(fs_info);
--
--	return 0;
- }
- 
- int btrfs_buffer_uptodate(struct extent_buffer *buf, u64 parent_transid)
-diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
-index bec3ea4..4a191b2 100644
---- a/fs/btrfs/disk-io.h
-+++ b/fs/btrfs/disk-io.h
-@@ -47,7 +47,7 @@ int clean_tree_block(struct btrfs_trans_handle *trans,
- struct btrfs_root *open_ctree(struct super_block *sb,
- 			      struct btrfs_fs_devices *fs_devices,
- 			      char *options);
--int close_ctree(struct btrfs_root *root);
-+void close_ctree(struct btrfs_root *root);
- int write_ctree_super(struct btrfs_trans_handle *trans,
- 		      struct btrfs_root *root, int max_mirrors);
- struct buffer_head *btrfs_read_dev_super(struct block_device *bdev);
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 31e9654..e1d8d32 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -146,12 +146,9 @@ void __btrfs_std_error(struct btrfs_fs_info *fs_info, const char *function,
- static void btrfs_put_super(struct super_block *sb)
- {
- 	struct btrfs_root *root = btrfs_sb(sb);
--	int ret;
- 
--	ret = close_ctree(root);
-+	close_ctree(root);
- 	sb->s_fs_info = NULL;
--
--	(void)ret; /* FIXME: need to fix VFS to return error? */
- }
- 
- enum {
--- 
-1.7.4.1
+The primary current advantage is style standardization
+both in code and dmesg output.
+
+Future changes to printk.h will reduce object sizes
+by centralizing the prefix to a singleton and
+emitting it only in pr_<level>.
+
+> For gspca, the source files are bigger, and the only visible change is
+> the display of the real module name instead of the name defined by hand
+> (this change may have been done just in gspca.h).
+
+No, not really. gspca.h is not the first #include
+for all sources.
+
+Using #define pr_fmt before any #include avoids
+possible redefinition of the pr_<level> prefix.
+
+$ grep -rP --include=*.[ch] -l "gspca\.h" drivers/media | \
+	xargs grep -m1 "#\s*include"
+
+> Also, I think that defining 'pr_fmt' in each source file is not a good
+> idea...
+
+That's temporary for another year or so.
+After changes to printk are introduced, all
+of the uses of
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+could/should be removed.
+
+cheers, Joe
+
 
