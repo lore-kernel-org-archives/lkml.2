@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab1HVSf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 14:35:56 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:39790 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab1HVSfx (ORCPT
+	id S1753271Ab1HVSgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 14:36:16 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:36456 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753182Ab1HVSgP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 14:35:53 -0400
-Date: Mon, 22 Aug 2011 11:35:44 -0700 (PDT)
-Message-Id: <20110822.113544.28950168095176936.davem@davemloft.net>
-To: jun.kondo@ctc-g.co.jp
-Cc: linux-kernel@vger.kernel.org, omega-g1@ctc-g.co.jp, notsuki@redhat.com,
-        motokazu.kozaki@hp.com, htaira@redhat.com, netdev@vger.kernel.org,
-        tomohiko.takahashi@ctc-g.co.jp, kotaro.sakai@ctc-g.co.jp,
-        ken.sugawara@ctc-g.co.jp
-Subject: Re: [omega-g1:11072] Re: [PATCH] net: configurable sysctl
- parameter "net.core.tcp_lowat" for sk_stream_min_wspace()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E51A3F0.5010500@ctc-g.co.jp>
-References: <4E4E2CCD.6050809@ctc-g.co.jp>
-	<20110819.024326.598275465899000817.davem@davemloft.net>
-	<4E51A3F0.5010500@ctc-g.co.jp>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 22 Aug 2011 14:36:15 -0400
+Date: Mon, 22 Aug 2011 20:36:24 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Joe Perches <joe@perches.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/14] [media] gspca: Use current logging styles
+Message-ID: <20110822203624.7a382ef5@tele>
+In-Reply-To: <1314026428.18461.10.camel@Joe-Laptop>
+References: <cover.1313966088.git.joe@perches.com>
+	<9927bff9b5f212dcbe867a9f882e53ed80bd9a0f.1313966090.git.joe@perches.com>
+	<20110822105003.0002ef3c@tele>
+	<1314026428.18461.10.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 22 Aug 2011 11:35:47 -0700 (PDT)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
-Date: Mon, 22 Aug 2011 09:33:52 +0900
+On Mon, 22 Aug 2011 08:20:28 -0700
+Joe Perches <joe@perches.com> wrote:
 
-> is it (really) network problem ?
-> or is wmem not enough free to write?
+> The primary current advantage is style standardization
+> both in code and dmesg output.
+> 
+> Future changes to printk.h will reduce object sizes
+> by centralizing the prefix to a singleton and
+> emitting it only in pr_<level>.
 
-Oh yes you can indeed make this determination, by using the socket
-timeouts via the SO_RCVTIMEO and SO_SNDTIMEO socket options.
+Hi Joe,
 
-Timeouts, when hit, will return -EINTR, whereas lack of buffer space
-on a non-blocking socket will return -EAGAIN.
+OK, I did not see that you started such changes a long time ago!
 
-I think you simply are unaware of the facilities available in the BSD
-socket API.
+Thanks and good luck!
+
+Acked-by: Jean-Francois Moine <moinejf@free.fr>
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
