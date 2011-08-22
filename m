@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab1HVXNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:13:55 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:34798 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751589Ab1HVXNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:13:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAC/iUk55LIxD/2dsb2JhbABBqB54gUABAQQBOhwjBQsIAxguFCUDIROHcbVPDoY6BJtQiE0
-Date: Tue, 23 Aug 2011 09:13:48 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Jan Kara <jack@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
-Message-ID: <20110822231348.GS3162@dastard>
-References: <201108112329.23043.rjw@sisk.pl>
- <201108112331.13241.rjw@sisk.pl>
- <20110815122218.GB6971@quack.suse.cz>
- <201108152009.13776.rjw@sisk.pl>
- <20110815205807.GC16369@quack.suse.cz>
- <20110816000916.GH26978@dastard>
- <20110822130045.GC11264@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110822130045.GC11264@atrey.karlin.mff.cuni.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754227Ab1HVXPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:15:47 -0400
+Received: from claw.goop.org ([74.207.240.146]:48652 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754223Ab1HVXP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 19:15:27 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/15] x86/cmpxchg: move 32-bit __cmpxchg_wrong_size to match 64 bit.
+Date: Mon, 22 Aug 2011 16:15:06 -0700
+Message-Id: <a3dfa9aa0cd77ec7d0a289a680436f7848be9c97.1314054734.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1314054734.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1314054734.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 03:00:45PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > >   What's exactly the problem? Memory preallocation enters direct reclaim
-> > > and that deadlocks in the filesystem?
-> > 
-> > Well, that's one possible manifestation. The problem is that the
-> > current hibernate code still assumes that sys_sync() results in an
-> > idle filesystem that will not change after the call if nothing is
-> > dirty.
-> > 
-> > The result is that when the large memory allocation occurs for the
-> > hibernate image (after the sys_sync() call) then the shrink_slab()
-> > tends to be called. The XFS shrinkers are capable of dirtying inodes
-> > and the backing buffers of inodes that are in the reclaimable state.
-> > But those buffers cannot be flushed to disk because hibernate has
-> > already frozen the xfsbufd threads, so the shrinker doing inode
-> > reclaim hangs up on locks waiting for the buffers to be written.
-> > This either leads to deadlock or hibernate image allocation failure.
-> > 
-> > Far worse, IMO, is the case where is -doesn't- deadlock, because the
-> > filesystem state can still changing after the allocation has
-> > finished due to async metadata IO completions. That has the
-> > potential to cause filesystem corruption as after resume the on-disk
-> > state may not match what is written from memory to the hibernate
-> > image.
-> > 
-> > The problem really isn't XFS specific, nor is it new - the fact is
-> > that any filesystem that has registered a shrinker or can do async
-> > work in the background post-sync is vulnerable to this problem. It's
-> 
-> Should we avoid calling shrinkers while hibernating?
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-If you like getting random OOM problems when hibernating, then go
-for it.  Besides, shrinkers are used for more than just filesystems,
-so you might find you screw entire classes of users by doing this
-(eg everyone using intel graphics and 3D).
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/include/asm/cmpxchg_32.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> Or put BUG_ON()s into filesystem shrinkers so that this can not
-> happen?
-
-Definitely not. If your concern is filesystem shrinkers and you want
-a large hammer to hit the problem with then do your hibernate
-image allocation wih GFP_NOFS and the filesystem shrinkers will
-abort without doing anything.
-
-Cheers,
-
-Dave.
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 8d53b16..0ef9b82 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -9,6 +9,7 @@
+  */
+ 
+ extern void __xchg_wrong_size(void);
++extern void __cmpxchg_wrong_size(void);
+ 
+ /*
+  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+@@ -84,8 +85,6 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
+ 		     : "memory");
+ }
+ 
+-extern void __cmpxchg_wrong_size(void);
+-
+ /*
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+  * store NEW in MEM.  Return the initial value in MEM.  Success is
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.6
+
