@@ -1,63 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1HVUjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:39:00 -0400
-Received: from yuna.grokhost.net ([87.117.228.63]:45460 "EHLO
-	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab1HVUi6 (ORCPT
+	id S1753796Ab1HVUjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:39:08 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53771 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab1HVUjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:38:58 -0400
-From: Chris Boot <bootc@bootc.net>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: Chris Boot <bootc@bootc.net>
-Subject: [PATCH] firewire-sbp2: fix panic after rmmod with slow targets
-Date: Mon, 22 Aug 2011 21:38:38 +0100
-Message-Id: <1314045518-50629-1-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20110822163526.5b76d535@stein>
-References: <20110822163526.5b76d535@stein>
+	Mon, 22 Aug 2011 16:39:02 -0400
+Subject: [GIT PULL] target fixes for v3.1-rc3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Aug 2011 13:38:53 -0700
+Message-ID: <1314045533.12514.32.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If firewire-sbp2 starts a login to a target that doesn't complete ORBs
-in a timely manner (and has to retry the login), and the module is
-removed before the operation times out, you end up with a null-pointer
-dereference and a kernel panic.
+Hi Linus,
 
-This happens because the code in sbp2_remove() just does a
-sbp2_target_put(), assuming there are no remaining references to the
-target. If there are jobs in the workqueue, this is not the case, and
-the module is successfully unloaded while references still exist.
+The following is the current set of pending target fixes for -rc3 that
+address a number of issues with -rc1 target code.  These fixes have been
+stewing in lio-core-2.6.git for the last two weeks, and have been
+re-posted to the list last week for additional review.
 
-This patch cancels pending work for each unit in sbp2_remove(), which
-hopefully means there are no extra references around that prevent us
-from unloading. This fixes my crash.
+Note that the series was rebased this morning to include a missing bit
+in one of the existing patches, but other than this minor item the
+current series remains unchanged and has been seeing a fair amount of
+testing from users over the last week.
 
-Signed-off-by: Chris Boot <bootc@bootc.net>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: <linux1394-devel@lists.sourceforge.net>
----
- drivers/firewire/sbp2.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+This series includes the following major fixes:
 
-diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index 41841a3..26397ec 100644
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -1198,6 +1198,11 @@ static int sbp2_remove(struct device *dev)
- {
- 	struct fw_unit *unit = fw_unit(dev);
- 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
-+	struct sbp2_logical_unit *lu, *next;
-+
-+	list_for_each_entry(lu, next, &tgt->lu_list, link) {
-+		cancel_delayed_work_sync(&lu->work);
-+	}
- 
- 	sbp2_target_put(tgt);
- 	return 0;
+*) Make INQUIRY return 'non connected' status to address breakge with
+   certain initiators (reported + extra fix by Roland)
+*) Fix write payload exception handling with ->new_cmd_map
+*) Fix CDB emulation handling for WRITE_SAME
+*) Fix CDB emulation handling for SYNCHRONIZE_CACHE zero LBA + range   
+   breakage
+*) Fix multiple se_task handling bug (reported by Chris Boot)
+*) Fix task SGL chaining breakage with transport_allocate_data_tasks
+
+At this point there is still two outstanding issues not addressed in
+this series related to some recent NAA IEEE Registered Extended
+designator format breakage reported with VMFS, and breakage with LUN
+discovery in tcm_fc(fcoe).  These bugs are still being discussed and
+addressed, and will be sent out in a seperate series for -rc4.
+
+The series is available directly here:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git 3.1-rc-fixes
+
+This tree is also available from kernel.org mirrors at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.1-rc-fixes
+
+The series has been made against the following upstream HEAD:
+
+commit 93ee7a9340d64f20295aacc3fb6a22b759323280
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Sun Aug 14 15:09:08 2011 -0700
+
+    Linux 3.1-rc2
+
+Thanks!
+
+--nab
+
+Chris Boot (1):
+  iscsi-target: Implement iSCSI target IPv6 address printing.
+
+Dan Carpenter (3):
+  iscsi-target: remove duplicate return
+  iscsi-target: forever loop bug in iscsit_attach_ooo_cmdsn()
+  iscsi-target: Fix iscsit_allocate_se_cmd_for_tmr failure path bugs
+
+Jesper Juhl (1):
+  iscsi-target: Fix leak on failure in iscsi_copy_param_list()
+
+Julia Lawall (1):
+  target: Convert target_core_rd.c to use use BUG_ON
+
+Nicholas Bellinger (10):
+  target: Change TCM_NON_EXISTENT_LUN response to ASC=LOGICAL UNIT NOT
+    SUPPORTED
+  target: Make standard INQUIRY return 'not connected' for
+    tpg_virt_lun0
+  target: Fix write payload exception handling with ->new_cmd_map
+  target: Add WRITE_SAME (10) parsing and refactor passthrough checks
+  target: Fix WRITE_SAME usage with transport_get_size
+  target: Remove duplicate task completions in
+    transport_emulate_control_cdb
+  target: Fix SYNCHRONIZE_CACHE zero LBA + range breakage
+  target: Add missing DATA_SG_IO transport_cmd_get_valid_sectors check
+  target: Fix task count > 1 handling breakage and use max_sector page
+    alignment
+  target: Fix task SGL chaining breakage with
+    transport_allocate_data_tasks
+
+Roland Dreier (4):
+  target: Print subpage too for unhandled MODE SENSE pages
+  tcm_fc: init/exit functions should not be protected by "#ifdef
+    MODULE"
+  target: Make locking in transport_deregister_session() IRQ safe
+  target: Convert acl_node_lock to be IRQ-disabling
+
+Thomas Meyer (1):
+  target: Use ERR_CAST inlined function
+
+ drivers/target/iscsi/iscsi_target.c            |    1 -
+ drivers/target/iscsi/iscsi_target_configfs.c   |    4 +-
+ drivers/target/iscsi/iscsi_target_erl1.c       |    2 +-
+ drivers/target/iscsi/iscsi_target_login.c      |   16 +--
+ drivers/target/iscsi/iscsi_target_parameters.c |   43 ++---
+ drivers/target/iscsi/iscsi_target_util.c       |    4 +-
+ drivers/target/target_core_cdb.c               |   57 ++++---
+ drivers/target/target_core_device.c            |   48 +++++-
+ drivers/target/target_core_fabric_configfs.c   |    2 +-
+ drivers/target/target_core_pr.c                |    8 +-
+ drivers/target/target_core_rd.c                |   24 +--
+ drivers/target/target_core_tpg.c               |   64 ++++----
+ drivers/target/target_core_transport.c         |  206 ++++++++++++++----------
+ drivers/target/tcm_fc/tfc_conf.c               |    6 +-
+ include/target/target_core_fabric_ops.h        |    6 +
+ 15 files changed, 275 insertions(+), 216 deletions(-)
+
 -- 
-1.7.5.4
+1.7.6
+
 
