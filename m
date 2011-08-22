@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab1HVXPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:15:39 -0400
-Received: from claw.goop.org ([74.207.240.146]:48625 "EHLO claw.goop.org"
+	id S1754451Ab1HVXPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:15:43 -0400
+Received: from claw.goop.org ([74.207.240.146]:48626 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab1HVXP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754202Ab1HVXP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 19:15:26 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 08/15] x86/ticketlock: use xadd helper
-Date: Mon, 22 Aug 2011 16:15:04 -0700
-Message-Id: <82e514016e787feec5568851cafd3234a7b9d307.1314054734.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 09/15] x86/cmpxchg: linux/alternative.h has LOCK_PREFIX
+Date: Mon, 22 Aug 2011 16:15:05 -0700
+Message-Id: <42b443a0f873c24fa6444f25ed7fa69dca5c45bb.1314054734.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
@@ -28,31 +28,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
+Not linux/bitops.h.
+
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/cmpxchg_32.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 4857dee..05fd59e 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -71,14 +71,7 @@ static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spin
- {
- 	register struct __raw_tickets tickets = { .tail = 1 };
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 284a6e8..8d53b16 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -1,7 +1,7 @@
+ #ifndef _ASM_X86_CMPXCHG_32_H
+ #define _ASM_X86_CMPXCHG_32_H
  
--	if (sizeof(lock->tickets.head) == sizeof(u8))
--		asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
--			      : "+r" (tickets), "+m" (lock->tickets)
--			      : : "memory", "cc");
--	else
--		asm volatile (LOCK_PREFIX "xaddl %0, %1\n"
--			     : "+r" (tickets), "+m" (lock->tickets)
--			     : : "memory", "cc");
-+	xadd(&lock->tickets, tickets);
+-#include <linux/bitops.h> /* for LOCK_PREFIX */
++#include <asm/alternative.h> /* Provides LOCK_PREFIX */
  
- 	return tickets;
- }
+ /*
+  * Note: if you use set64_bit(), __cmpxchg64(), or their variants, you
 -- 
 1.7.6
 
