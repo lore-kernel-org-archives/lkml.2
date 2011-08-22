@@ -1,24 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1HVXVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:21:51 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:34203 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab1HVXVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:21:48 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 23 Aug 2011 01:21:35 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Chris Boot <bootc@bootc.net>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [v3] firewire-sbp2: fix panic after rmmod with slow
- targets
-Message-ID: <20110823012135.61aaf27d@stein>
-In-Reply-To: <1314053771-29944-1-git-send-email-bootc@bootc.net>
-References: <811318C8-1FD9-4E67-8346-13CFB69A0AF8@bootc.net>
-	<1314053771-29944-1-git-send-email-bootc@bootc.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	id S1754421Ab1HVXWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:22:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36380 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754288Ab1HVXWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 19:22:02 -0400
+Date: Tue, 23 Aug 2011 09:21:50 +1000
+From: NeilBrown <neilb@suse.de>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jamie Lokier <jamie@shareable.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Sylvain Rochet <gradator@gradator.net>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: PROBLEM: 2.6.35.7 to 3.0 Inotify events missing
+Message-ID: <20110823092150.366d8899@notabene.brown>
+In-Reply-To: <20110822172239.GA15960@fieldses.org>
+References: <20101018223540.GA20730@gradator.net>
+	<20110819230344.GA24784@gradator.net>
+	<20110819233756.GI11512@jl-vm1.vm.bytemark.co.uk>
+	<20110820012943.GD2203@ZenIV.linux.org.uk>
+	<20110820030335.GA14899@jl-vm1.vm.bytemark.co.uk>
+	<20110821170714.GB9296@fieldses.org>
+	<20110821202058.GF14899@jl-vm1.vm.bytemark.co.uk>
+	<20110822090751.029de688@notabene.brown>
+	<20110822172239.GA15960@fieldses.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -26,26 +32,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 22 Chris Boot wrote:
-> --- a/drivers/firewire/sbp2.c
-> +++ b/drivers/firewire/sbp2.c
-> @@ -1198,6 +1198,11 @@ static int sbp2_remove(struct device *dev)
->  {
->  	struct fw_unit *unit = fw_unit(dev);
->  	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
-> +	struct sbp2_logical_unit *lu;
-> +
-> +	list_for_each_entry(lu, &tgt->lu_list, link) {
-> +		cancel_delayed_work_sync(&lu->work);
-> +	}
->  
->  	sbp2_target_put(tgt);
->  	return 0;
+On Mon, 22 Aug 2011 13:22:39 -0400 "J. Bruce Fields" <bfields@fieldses.org>
+wrote:
 
-Thanks.  I reproduced the bug, applied your patch, and confirmed that the
-patch fixes the bug.  Committed to linux1394-2.6.git but without the
-curly braces.
--- 
-Stefan Richter
--=====-==-== =--- =-===
-http://arcgraph.de/sr/
+> On Mon, Aug 22, 2011 at 09:07:51AM +1000, NeilBrown wrote:
+> > One is to use bind mounts. i.e. I effectively do
+> >     mount --bind $HOME/.config $HOME/.config
+> > and ask for events from the newly created vfsmnt.
+> > This will not catch changes made through file descriptors that were opened
+> > before I did the mount, or through hard links from some other directory
+> > tree.  But for a particular use-case that might not be a problem.
+> 
+> I'm missing what the extra vfsmount gets you here.  The problems seem
+> just the same as if you don't have one.
+> 
+> Oh, wait, I see, it's that the file descriptors are associated with
+> vfsmounts, not just dentries.  Hm.
+
+"Hm" might be right.  writes have a 'struct file', but mkdir and rename etc
+just get an inode.
+So to be able to notify based on vfsmnt, mkdirat - for examine - would need
+to pass the path to vfs_mkdir rather than path.dentry->d_inode, and vfs_mkdir
+would have to pass that path to fsnotify_mkdir.  So more intrusive that I
+imagined, but still quite do-able.... if it were thought to be useful.
+
+NeilBrown
+
