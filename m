@@ -1,125 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1HVKTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:19:44 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:49832 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752461Ab1HVKTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:19:37 -0400
-Subject: Re: [PATCH 01/43] signal: Add block_sigmask() for adding sigmask
- to current->blocked
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-arch@vger.kernel.org
-In-Reply-To: <1313772419-21951-2-git-send-email-matt@console-pimps.org>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-	 <1313772419-21951-2-git-send-email-matt@console-pimps.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Aug 2011 11:19:22 +0100
-Message-ID: <1314008362.19751.22.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S1756756Ab1HVKV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:21:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40708 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461Ab1HVKVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:21:49 -0400
+Message-ID: <4E522D90.6080805@ti.com>
+Date: Mon, 22 Aug 2011 11:21:04 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Julia Lawall <julia@diku.dk>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sound/soc/mxs/mxs-saif.c: add missing kfree
+References: <1313820761-12042-3-git-send-email-julia@diku.dk> <20110820134439.GA2266@pengutronix.de> <Pine.LNX.4.64.1108201718200.30651@ask.diku.dk> <65EE16ACC360FA4D99C96DC085B3F7722212DF@039-SN1MPN1-001.039d.mgd.msft.net> <Pine.LNX.4.64.1108211318060.4072@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1108211318060.4072@ask.diku.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding linux-arch to Cc so arch maintainers will hopefully see this)
-
-On Fri, 2011-08-19 at 17:46 +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
+On 21/08/11 12:18, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> This patch abstracts the code sequence for adding a signal handler's
-> sa_mask to current->blocked because the sequence is identical for all
-> architectures. Furthermore, in the past some architectures actually
-> got this code wrong, so introduce a wrapper that all architectures can
-> use.
+> Move the test on pdev->id before the kzalloc to avoid requiring kfree when
+> the test fails.  This fix was suggested by Wolfram Sang.
 > 
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/kernel/signal.c |    6 +-----
->  include/linux/signal.h   |    1 +
->  kernel/signal.c          |   21 +++++++++++++++++++++
->  3 files changed, 23 insertions(+), 5 deletions(-)
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
 > 
-> diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-> index 54ddaeb2..46a01bd 100644
-> --- a/arch/x86/kernel/signal.c
-> +++ b/arch/x86/kernel/signal.c
-> @@ -682,7 +682,6 @@ static int
->  handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
->  		struct pt_regs *regs)
->  {
-> -	sigset_t blocked;
->  	int ret;
->  
->  	/* Are we from a system call? */
-> @@ -733,10 +732,7 @@ handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
->  	 */
->  	regs->flags &= ~X86_EFLAGS_TF;
->  
-> -	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
-> -	if (!(ka->sa.sa_flags & SA_NODEFER))
-> -		sigaddset(&blocked, sig);
-> -	set_current_blocked(&blocked);
-> +	block_sigmask(ka, sig);
->  
->  	tracehook_signal_handler(sig, info, ka, regs,
->  				 test_thread_flag(TIF_SINGLESTEP));
-> diff --git a/include/linux/signal.h b/include/linux/signal.h
-> index a822300..7987ce74 100644
-> --- a/include/linux/signal.h
-> +++ b/include/linux/signal.h
-> @@ -254,6 +254,7 @@ extern void set_current_blocked(const sigset_t *);
->  extern int show_unhandled_signals;
->  
->  extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka, struct pt_regs *regs, void *cookie);
-> +extern void block_sigmask(struct k_sigaction *ka, int signr);
->  extern void exit_signals(struct task_struct *tsk);
->  
->  extern struct kmem_cache *sighand_cachep;
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 291c970..7a08164 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2314,6 +2314,27 @@ relock:
->  	return signr;
+> // <smpl>
+> @@
+> identifier x;
+> expression E1!=0,E2,E3,E4;
+> statement S;
+> iterator I;
+> @@
+> 
+> (
+> if (...) { ... when != kfree(x)
+>                when != x = E3
+>                when != E3 = x
+> *  return ...;
 >  }
->  
-> +/**
-> + * block_sigmask - add @ka's signal mask to current->blocked
-> + * @ka: action for @signr
-> + * @signr: signal that has been successfully delivered
-> + *
-> + * This function should be called when a signal has succesfully been
-> + * delivered. It adds the mask of signals for @ka to current->blocked
-> + * so that they are blocked during the execution of the signal
-> + * handler. In addition, @signr will be blocked unless %SA_NODEFER is
-> + * set in @ka->sa.sa_flags.
-> + */
-> +void block_sigmask(struct k_sigaction *ka, int signr)
-> +{
-> +	sigset_t blocked;
-> +
-> +	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
-> +	if (!(ka->sa.sa_flags & SA_NODEFER))
-> +		sigaddset(&blocked, signr);
-> +	set_current_blocked(&blocked);
-> +}
-> +
->  /*
->   * It could be that complete_signal() picked us to notify about the
->   * group-wide signal. Other threads should be notified now to take
+> ... when != x = E2
+>     when != I(...,x,...) S
+> if (...) { ... when != x = E4
+>  kfree(x); ... return ...; }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+>
 
-
-
+Acked-by: Liam Girdwood <lrg@ti.com>
