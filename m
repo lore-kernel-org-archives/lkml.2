@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab1HVRmz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 13:42:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab1HVRmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 13:42:53 -0400
-Date: Mon, 22 Aug 2011 19:39:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        "Serge E. Hallyn" <serge@hallyn.com>, akpm@linux-foundation.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
-	when reboot
-Message-ID: <20110822173949.GA13242@redhat.com>
-References: <1313094241-3674-1-git-send-email-daniel.lezcano@free.fr> <20110814161707.GB30846@redhat.com> <20110814213642.GB13799@hallyn.com> <20110815144744.GA9660@redhat.com> <4E4DA461.8030006@free.fr> <20110819152416.GA17034@redhat.com> <4E524B73.3050704@free.fr> <20110822154448.GA8527@redhat.com> <20110822183134.10390b46@neptune.home>
+	id S1752756Ab1HVSCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 14:02:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46146 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab1HVSCn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 14:02:43 -0400
+Message-ID: <4E52984F.8050702@gmail.com>
+Date: Mon, 22 Aug 2011 19:56:31 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110822183134.10390b46@neptune.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sunil Mushran <sunil.mushran@oracle.com>
+CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>	<4E4F814B.5070202@gmail.com>	<4E4F865B.2010608@gmail.com>	<4E4FD48B.8030101@oracle.com>	<4E4FE1B1.7010601@gmail.com>	<4E51F24F.1050503@oracle.com> <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com> <4E527C7F.9040807@oracle.com>
+In-Reply-To: <4E527C7F.9040807@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Bruno Prémont wrote:
+Il 22/08/2011 17:57, Sunil Mushran ha scritto:
+>>> Any proposal that differentiates between holes is wrong. It should not
+>>> matter where the hole is.
+>>>
+>>> Think of it from the usage-pov.
+>>>
+>>> doff = 0;
+>>> while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
+>>> hoff = lseek(SEEK_HOLE, doff);
+>>> read_offset = doff;
+>>> read_len = hoff -doff;
+>>> process();
+>>> doff = hoff;
+>>> }
+>>>
+>>> The goal is to make this as efficient as follows. Treating the last
+>>> hole differently adds more code for no benefit.
+>>>
+>> Mmmm.....It seems that Josef has to be clear in this point. However I
+>> looked for the seek hole test in xfs test suite, but I didn't find
+>> anything. Btrfs guys, how have you got tested the implementation? What
+>> do you think about this corner case? Al, what do you think about it?
 >
-> On Mon, 22 August 2011 Oleg Nesterov <oleg@redhat.com> wrote:
-> > On 08/22, Daniel Lezcano wrote:
-> > >
-> > > If we pass the reason to the exit_code of the init process, that will be
-> > > a bit weird as the process is signaled and did not exited  no ?
-> >
-> > Just in case, you shouldn't change ->exit_code blindly. We should only
-> > change it if init was a) SIGKILL'ed and b) pid_ns->reboot_cmd is set.
-> > In this case we can assume that it was killed by sys_reboot.
-> >
-> > Now. I didn't really mean exit_state should be equal to sys_reboot's
-> > cmd arg. I thought about something like
-> >
-> > 	swicth (reboot_cmd) {
-> > 	case LINUX_REBOOT_CMD_RESTART:
-> > 		code = SIGHUP;
-> > 		break;
-> > 	case LINUX_REBOOT_CMD_HALT:
-> > 		code = SIGINT;	// doesn't really matter what we report
-> > 		...
-> > 	}
 >
-> Isn't it possible to add the two cases to si_code possible values, e.g.
-> CDL_RESTART, CDL_HALT (or CDL_SYS_RESTART, CDL_SYS_HALT
-
-How? You should change do_wait() paths then. Even if we could, personally
-I'd strongly object ;) Look, you have the very specific problem. The kernel
-can't do everything to make everyone happy. There is tradeoff.
-
-But if you really meant siginfo->si_code, I do not understand at all what
-you actually mean. This info is not preserved when the task exits.
-
-> to avoid possible
-> confusion with CDL_STOPPED)?
-
-How it is possible to confuse this with CDL_STOPPED?
-
-> Then on sys_reboot() flag container init and kill it (this way sys_reboot()
-> preserves its "will not return on success for restart/halt" scematic)?
-
-This is what I suggested...
-
-> Then container init would see CLD_KILLED replaced with matching reboot
-> reason.
-
-For what? its parent need this info, not container init. I guess I got
-lost completely.
-
-> Playing with the exit code is probably more problematic
-
-OK, then please do something else. I do not pretend I really understand
-what do you really need to solve your problem. But please do not forget
-the kernel is already very complex and full of misc hacks ;)
-
-> > And, iiuc, the point was to "fix" sys_reboot() so that we do not need
-> > to mofify the distro/userspace?
+> The following test was used to test the early implementations.
+> http://oss.oracle.com/~smushran/seek_data/
 >
-> That's definitely the goal (not modify distro/userspace running inside
-> container).
 
-In this case I do not understand how prctl() can help.
+Thank you very much!! I found another point. Your test fails with my 
+implementation because here 
+(http://www.austingroupbugs.net/view.php?id=415) says: "If whence is 
+SEEK_DATA, the file offset shall be set to the smallest location of a 
+byte not within a hole and not less than offset. It shall be an error if 
+no such byte exists." So in this case I return ENXIO but the test 
+expects another value. I have to say that there is a bit of confusion 
+about the real behavior of this new feature :)
 
-
-But please do not try to convince me, this is simply unnecessary ;)
-
-Oleg.
-
+Marco
