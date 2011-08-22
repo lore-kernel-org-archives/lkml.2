@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1HVU3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:29:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34951 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab1HVU3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:29:47 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=W4pQ5Nb2e1IA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=3uKURUYvAroH6azE7yEA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2 3/5] trace: Add per_cpu ring buffer control files
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+	id S1753653Ab1HVUaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:30:01 -0400
+Received: from vostochny.stro.at ([78.47.22.85]:42484 "EHLO vostochny.stro.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab1HVU3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 16:29:51 -0400
+Date: Mon, 22 Aug 2011 22:31:02 +0200
+From: maximilian attems <max@stro.at>
+To: Mike Waychison <mikew@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Andrew G. Morgan" <agm@google.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Eric Northup <digitaleric@google.com>,
+        Eric Paris <eparis@parisplace.org>, klibc@zytor.com,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1313531179-9323-4-git-send-email-vnagarnaik@google.com>
-References: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
-	 <1313531179-9323-4-git-send-email-vnagarnaik@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 22 Aug 2011 16:29:41 -0400
-Message-ID: <1314044981.15704.140.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH v3] kinit: Add drop_capabilities support.
+Message-ID: <20110822203102.GA22687@stro.at>
+References: <CABV1ukEiHm2kHwLxFzAdSVix3Kuc1gvgHPZxU3OZ6M_E7DMgWQ@mail.gmail.com>
+ <20110803163046.29085.89618.stgit@mike2.sea.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110803163046.29085.89618.stgit@mike2.sea.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-16 at 14:46 -0700, Vaibhav Nagarnaik wrote:
-> Add a debugfs entry under per_cpu/ folder for each cpu called
-> buffer_size_kb to control the ring buffer size for each CPU
-> independently.
+On Wed, 03 Aug 2011, Mike Waychison wrote:
+
+> This patch adds the ability to kinit to allow the dropping of POSIX
+> capabilities.
 > 
-> If the global file buffer_size_kb is used to set size, the individual
-> ring buffers will be adjusted to the given size. The buffer_size_kb will
-> report the common size to maintain backward compatibility.
+> kinit is modified by this change, such that it understands the new
+> kernel command line "drop_capabilities=" that specifies a comma
+> separated list of capability names that should be dropped before
+> switching over to the next init in the boot strap (typically on the root
+> disk).
 > 
-> If the buffer_size_kb file under the per_cpu/ directory is used to
-> change buffer size for a specific CPU, only the size of the respective
-> ring buffer is updated. When tracing/buffer_size_kb is read, it reports
-> 'X' to indicate that sizes of per_cpu ring buffers are not equivalent.
+> Dropping of capabilities happens in three parts.  We explicitly drop the
+> capability from init's inherited masks.  We also drop the capability
+> from the bounding set using PR_CAPBSET_DROP so that later setuid execs
+> are bounded.  Lastly, we drop the capabilities from the bset and
+> inherited masks exposed at /proc/sys/kernel/usermodehelper if available
+> (introduced in Linux v3.0.0).
 > 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> In all paths, we treat errors as fatal, as we do not want to continue to
+> boot if there was a problem dropping capabilities.  We fail because the
+> new drop_capabilities= option on the command line mandates enforcement
+> of a security policy, and we should err on the side of caution if we
+> ever fail to satisfy the administrator's intention.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+> v3
+>     - Removed special handling of dropping CAP_SETPCAP now that we are
+>       only dropping the capability from the inherited mask as suggested
+>       by Andrew Morgan.
+> v2
+>     - Only drop from the inherited capabilities mask.  Only this mask
+>       was required as per Andrew Morgan.  This also allows us to
+>       continue having capabilities to call run-init later on, allowing
+>       the following:
+>     - Moved dropping of capabilities out of run-init and into kinit.
+>       This was required to ensure access to the proc filesystem, which
+>       is required for manipulating the masks the kernel uses when
+>       spawning new tasks on the kernel's behalf via the
+>       call_usermodehelper() routine.
+>     - Fixed paths to the usermodehelper settings files.
+>     - Fixed sscanf to allow for a newline character when reading the
+>       usermodehelper capability mask settings.
+>     - Fixed the return check of the write to the usermodehelper files.
+>       These proc files return 0 on successful write(2).
+>     - Added a format atttribute to the fail() wrapper for better
+>       compiler warnings.
+>     - Removed kernel version check.  The boot will now always fail if we
+>       could not manipulate the usermodehelper settings.
+>     - Sent as a single patch as capset/capget are now in klibc master.
+> ---
 
-This patch wasn't tested against any of the latency tracers being
-enabled or hot plug:
+Should appear shortly on:
+http://git.kernel.org/?p=libs/klibc/klibc.git;a=summary
+Applied and pushed. Thank you!
 
-
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c: In function 'ring_buffer_swap_cpu':
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c:3761:14: error: 'struct ring_buffer' has no member named 'pages'
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c:3761:33: error: 'struct ring_buffer' has no member named 'pages'
-  CC      kernel/trace/trace_syscalls.o
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c: In function 'rb_cpu_notify':
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c:4136:4: error: too few arguments to function 'rb_allocate_cpu_buffer'
-/home/rostedt/work/autotest/nobackup/linux-test.git/kernel/trace/ring_buffer.c:1066:1: note: declared here
-
-
--- Steve
-
-
+-- 
+maks
