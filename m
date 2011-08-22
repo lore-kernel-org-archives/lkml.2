@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab1HVPD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:03:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63719 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab1HVPDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:03:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,263,1312182000"; 
-   d="scan'208";a="42742381"
-Date: Mon, 22 Aug 2011 17:05:23 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, oleg@redhat.com, Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        wwang <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 02/16] freezer: don't unnecessarily set PF_NOFREEZE
- explicitly
-Message-ID: <20110822150523.GZ4607@sortiz-mobl>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org>
- <1313763382-12341-3-git-send-email-tj@kernel.org>
+	id S1752355Ab1HVPDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:03:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46603 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752145Ab1HVPDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:03:41 -0400
+Date: Mon, 22 Aug 2011 11:03:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 4/4] usb: gadget: get rid of USB_GADGET_{DUAL,SUPER}SPEED
+In-Reply-To: <op.v0md7lep3l0zgt@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108221103070.2192-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313763382-12341-3-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Mon, 22 Aug 2011, Michal Nazarewicz wrote:
 
-On Fri, Aug 19, 2011 at 04:16:08PM +0200, Tejun Heo wrote:
-> Some drivers set PF_NOFREEZE in their kthread functions which is
-> completely unnecessary and racy - some part of freezer code doesn't
-> consider cases where PF_NOFREEZE is set asynchronous to freezer
-> operations.
+> >> --- a/drivers/usb/gadget/inode.c
+> >> +++ b/drivers/usb/gadget/inode.c
+> > ...
+> >> @@ -1773,11 +1767,7 @@ gadgetfs_suspend (struct usb_gadget *gadget)
+> >>  }
+> >>
+> >>  static struct usb_gadget_driver gadgetfs_driver = {
+> >> -#ifdef	CONFIG_USB_GADGET_DUALSPEED
+> >>  	.max_speed	= USB_SPEED_HIGH,
+> >> -#else
+> >> -	.max_speed	= USB_SPEED_FULL,
+> >> -#endif
 > 
-> In general, there's no reason to allow setting PF_NOFREEZE explicitly.
-> Remove them and change the documentation to note that setting
-> PF_NOFREEZE directly isn't allowed.
+> > I'm not sure that a static definition is correct here.  The actual
+> > max_speed depends on what descriptors the userspace program sends.
+> > Take a look at the ep_config() routine.
+> 
+> Good catch.  I've changed it to:
+> 
+> if (dev->hs_config)
+> 	gadgetfs_driver.max_speed = USB_SPEED_HIGH;
+> else
+> 	gadgetfs_driver.max_speed = USB_SPEED_FULL;
+> 
+> just before usb_gadget_probe_driver(), which should do the trick.
 
-For the mfd parts:
+Yes, that sounds like the right thing to do.
 
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+Alan Stern
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
