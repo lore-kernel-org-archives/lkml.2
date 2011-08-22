@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab1HVE2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 00:28:31 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56694 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab1HVE2a (ORCPT
+	id S1752748Ab1HVE2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 00:28:47 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50686 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab1HVE2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 00:28:30 -0400
-Date: Sun, 21 Aug 2011 21:28:22 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: chase.douglas@canonical.com, rydberg@euromail.se,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 4/9 v4] Input: synaptics - add image sensor support
-Message-ID: <20110822042822.GA23010@core.coreip.homeip.net>
-References: <1313666888-18939-1-git-send-email-djkurtz@chromium.org>
- <1313666888-18939-5-git-send-email-djkurtz@chromium.org>
- <20110819222203.GC5146@core.coreip.homeip.net>
- <CAGS+omCZSjJoESSvimLEpj9Mwr3d9Vn78e1ZLk-NWEdgQbxNKw@mail.gmail.com>
+	Mon, 22 Aug 2011 00:28:45 -0400
+Date: Sun, 21 Aug 2011 21:28:39 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Mark Fasheh <mfasheh@suse.com>, kernel-janitors@vger.kernel.org,
+        Wengang Wang <wen.gang.wang@oracle.com>, Tao Ma <boyu.mt@taobao.com>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/ocfs2/dlm/dlmlock.c: free kmem_cache_zalloc'd data
+ using kmem_cache_free
+Message-ID: <20110822042838.GE31134@noexit.corp.google.com>
+Mail-Followup-To: Julia Lawall <julia@diku.dk>,
+	Mark Fasheh <mfasheh@suse.com>, kernel-janitors@vger.kernel.org,
+	Wengang Wang <wen.gang.wang@oracle.com>,
+	Tao Ma <boyu.mt@taobao.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org
+References: <1310227479-14472-1-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGS+omCZSjJoESSvimLEpj9Mwr3d9Vn78e1ZLk-NWEdgQbxNKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1310227479-14472-1-git-send-email-julia@diku.dk>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 20, 2011 at 03:07:41PM +0800, Daniel Kurtz wrote:
-> On Sat, Aug 20, 2011 at 6:22 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Daniel,
-> >
-> > On Thu, Aug 18, 2011 at 07:28:03PM +0800, Daniel Kurtz wrote:
-> >> @@ -558,6 +626,11 @@ static void synaptics_process_packet(struct psmouse *psmouse)
-> >>       if (synaptics_parse_hw_state(psmouse->packet, priv, &hw))
-> >>               return;
-> >>
-> >> +     if (SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) {
-> >> +             synaptics_image_sensor_process(psmouse, &hw);
-> >> +             return;
-> >> +     }
-> >> +
-> >
-> > So what about the rest of the SYnaptics processing (wheel, additional
-> > buttons, etc)?  Are we sure that touchpads with image sensors will never
-> > implement them?
-> >
-> > --
-> > Dmitry
-> >
+this patch is now in the fixes branch of ocfs2.git.
+
+On Sat, Jul 09, 2011 at 06:04:39PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> All image sensors that I am aware of are clickpads, with one button
-> integrated under the pad, which is reported as the middle button.
+> Memory allocated using kmem_cache_zalloc should be freed using
+> kmem_cache_free, not kfree.
 > 
-> We could report right, middle, up, down, and ext_buttons (scroll is
-> not possible, since w=2;buf[1] is used for x for devices that send agm
-> packets).
-> However, I have no way of knowing if this added complexity is
-> necessary
-
-I would prefer us supporting full protocol so if some vendor does add
-additional buttons we have everything in place.
-
-> , nor any way of testing it.
-
-As long as your case still works I think it will be good enough.
-
-Thanks.
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression x,e,e1,e2;
+> @@
+> 
+> x = kmem_cache_zalloc(e1,e2)
+> ... when != x = e
+> ?-kfree(x)
+> +kmem_cache_free(e1,x)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  fs/ocfs2/dlm/dlmlock.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff -u -p a/fs/ocfs2/dlm/dlmlock.c b/fs/ocfs2/dlm/dlmlock.c
+> --- a/fs/ocfs2/dlm/dlmlock.c
+> +++ b/fs/ocfs2/dlm/dlmlock.c
+> @@ -440,7 +440,7 @@ struct dlm_lock * dlm_new_lock(int type,
+>  		/* zero memory only if kernel-allocated */
+>  		lksb = kzalloc(sizeof(*lksb), GFP_NOFS);
+>  		if (!lksb) {
+> -			kfree(lock);
+> +			kmem_cache_free(dlm_lock_cache, lock);
+>  			return NULL;
+>  		}
+>  		kernel_allocated = 1;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Dmitry
+
+Life's Little Instruction Book #43
+
+	"Never give up on somebody.  Miracles happen every day."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
