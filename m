@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab1HVNxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:53:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12888 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab1HVNxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:53:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,263,1312182000"; 
-   d="scan'208";a="43831941"
-Date: Mon, 22 Aug 2011 15:55:30 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Kyle Manna <kyle@kylemanna.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        Keerthy <j-keerthy@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Fixes to twl4030-madc and add BeagleBoard support
-Message-ID: <20110822135530.GR4607@sortiz-mobl>
-References: <CANOLnOPB=wFMPwqGbu9ufh__iM7TquUx3-o95R=gyJcae+gENg@mail.gmail.com>
- <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313119995-15382-1-git-send-email-kyle@kylemanna.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751553Ab1HVNzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:55:05 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:37673 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750863Ab1HVNzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:55:04 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] ARM: vexpress: Use wfi macro in platform_do_lowpower.
+Date: Mon, 22 Aug 2011 09:54:19 -0400
+Message-Id: <1314021259-31710-1-git-send-email-nbowler@elliptictech.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <CAHkRjk6Fq+1b_uM+DFACS1QVd7B6_1XhqRw-27i88U1VyvLk+Q@mail.gmail.com>
+References: <CAHkRjk6Fq+1b_uM+DFACS1QVd7B6_1XhqRw-27i88U1VyvLk+Q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kyle,
+Current Versatile Express CPU hotplug code includes a hardcoded WFI
+instruction, in ARM encoding.  When the kernel is compiled in Thumb-2
+mode, this is invalid and causes the machine to hang hard when a CPU
+is offlined.
 
-On Thu, Aug 11, 2011 at 10:33:11PM -0500, Kyle Manna wrote:
-> These patches add basic functionality to the twl4030-madc driver to make
-> it work on the BeagleBoard xM.
-> 
-> Version 2 adds fixes per Grazvydas Ignotas and the check for NULL pointer patch.
-> 
-> Kyle Manna (4):
->   mfd: twl4030-madc: copy the device pointer
->   mfd: twl4030-madc: turn on the MADC clock
->   mfd: twl4030-madc: check for NULL pointer
->   arm: BeagleBoard: add support for the twl4030-madc
-Tony, are you ok with the BeagleBoard changes ?
-The MFD ones look fine to me, I'd like to apply them.
+Using the wfi macro (which uses the appropriate assembler mnemonic)
+causes the correct instruction to be emitted in either case.  As a
+consequence of this change, an apparently vestigial "cc" clobber is
+dropped from the asm (the macro uses "memory" only).
 
-Cheers,
-Samuel.
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+---
+ arch/arm/mach-vexpress/hotplug.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
+OK.  If this version is acceptable, I'll follow up with patches for the
+other platforms.
+
+diff --git a/arch/arm/mach-vexpress/hotplug.c b/arch/arm/mach-vexpress/hotplug.c
+index ea4cbfb..3668cf9 100644
+--- a/arch/arm/mach-vexpress/hotplug.c
++++ b/arch/arm/mach-vexpress/hotplug.c
+@@ -13,6 +13,7 @@
+ #include <linux/smp.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/system.h>
+ 
+ extern volatile int pen_release;
+ 
+@@ -62,13 +63,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+ 	 * code will have already disabled interrupts
+ 	 */
+ 	for (;;) {
+-		/*
+-		 * here's the WFI
+-		 */
+-		asm(".word	0xe320f003\n"
+-		    :
+-		    :
+-		    : "memory", "cc");
++		wfi();
+ 
+ 		if (pen_release == cpu) {
+ 			/*
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.3.4
+
