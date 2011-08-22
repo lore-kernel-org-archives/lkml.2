@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752320Ab1HVEPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 00:15:08 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:55228 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab1HVEPB (ORCPT
+	id S1752651Ab1HVEPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 00:15:31 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:47560 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750905Ab1HVEP2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 00:15:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reply-To: konrad.wilk@oracle.com
-Organization: Oracle
-To: Daniel Kiper <dkiper@net-space.pl>
-Subject: Re: [PATCH 4/4] kexec/arch/i386: Add get_memory_ranges_xen() function
-Date: Mon, 22 Aug 2011 00:01:24 -0400
-User-Agent: KMail/1.13.5 (Linux/3.0.0; KDE/4.5.5; i686; ; )
-Cc: ian.campbell@citrix.com, vgoyal@redhat.com, horms@verge.net.au,
-        olaf@aepfle.de, kexec@lists.infradead.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-References: <20110821135459.GE17323@router-fw-old.local.net-space.pl>
-In-Reply-To: <20110821135459.GE17323@router-fw-old.local.net-space.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108220001.24399.konrad.wilk@oracle.com>
+	Mon, 22 Aug 2011 00:15:28 -0400
+Date: Sun, 21 Aug 2011 21:15:25 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH] cgroups: update documentation on task moving
+ restriction
+Message-Id: <20110821211525.26e793c9.rdunlap@xenotime.net>
+In-Reply-To: <CALdu-PC5_J2-Ss6se8LnoWDf5Ltt3Y9__RXKyTZUXvgBmv60Tg@mail.gmail.com>
+References: <4E4C7E16.9090905@cn.fujitsu.com>
+	<CALdu-PC5_J2-Ss6se8LnoWDf5Ltt3Y9__RXKyTZUXvgBmv60Tg@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> get_memory_ranges_sysfs() and get_memory_ranges_proc_iomem()
-> are unreliable under Xen. Proper machine memory map could be
-> obtained under Xen by calling __HYPERVISOR_memory_op hypercall
-> with XENMEM_machine_memory_map argument. get_memory_ranges_xen()
-> does that. It is implemented using ioctl() or libxenctrl interface.
-> This solution is compatible with 3.x and 4.x Xen versions.
-> 
-> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
-> ---
->  configure.ac                       |    3 +
->  kexec/arch/i386/kexec-x86-common.c |  203 
-++++++++++++++++++++++++++++++++++--
->  2 files changed, 197 insertions(+), 9 deletions(-)
-> 
-> diff --git a/configure.ac b/configure.ac
-> index 172a52a..0d09bba 100644
-> --- a/configure.ac
-> +++ b/configure.ac
-> @@ -157,6 +157,9 @@ if test "$with_xen" = yes ; then
->  	AC_CHECK_HEADER(xenctrl.h,
->  		AC_CHECK_LIB(xenctrl, xc_version, ,
->  		AC_MSG_NOTICE([Xen support disabled])))
-> +	if test "$ac_cv_lib_xenctrl_xc_version" = yes ; then
-> +		AC_CHECK_FUNCS(xc_get_machine_memory_map)
-> +	fi
->  fi
->  
->  dnl ---Sanity checks
-> diff --git a/kexec/arch/i386/kexec-x86-common.c b/kexec/arch/i386/kexec-x86-
-common.c
-> index 8f59c6c..609d35d 100644
-> --- a/kexec/arch/i386/kexec-x86-common.c
-> +++ b/kexec/arch/i386/kexec-x86-common.c
-> @@ -17,6 +17,10 @@
->   * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
->   */
->  
-> +#define _XOPEN_SOURCE	600
-> +#define _BSD_SOURCE
-> +
-> +#include <fcntl.h>
->  #include <stddef.h>
->  #include <stdio.h>
->  #include <errno.h>
-> @@ -24,12 +28,29 @@
->  #include <string.h>
->  #include <limits.h>
->  #include <stdlib.h>
-> +#include <stdio.h>
-> +#include <sys/ioctl.h>
-> +#include <sys/mman.h>
-> +#include <sys/stat.h>
-> +#include <unistd.h>
->  #include "../../kexec.h"
->  #include "../../kexec-syscall.h"
->  #include "../../firmware_memmap.h"
->  #include "../../crashdump.h"
->  #include "kexec-x86.h"
->  
-> +#ifdef HAVE_LIBXENCTRL
-> +#ifdef HAVE_XC_GET_MACHINE_MEMORY_MAP
-> +#include <xenctrl.h>
-> +#else
-> +#define __XEN_TOOLS__	1
-> +#include <x86/x86-linux.h>
-> +#include <xen/xen.h>
-> +#include <xen/memory.h>
-> +#include <xen/sys/privcmd.h>
-> +#endif /* HAVE_XC_GET_MACHINE_MEMORY_MAP */
-> +#endif /* HAVE_LIBXENCTRL */
-> +
->  static struct memory_range memory_range[MAX_MEMORY_RANGES];
->  
->  /**
-> @@ -129,6 +150,172 @@ static int get_memory_ranges_sysfs(struct memory_range 
-**range, int *ranges)
->  	return 0;
->  }
->  
-> +#ifdef HAVE_LIBXENCTRL
-> +static unsigned e820_to_kexec_type(uint32_t type)
-> +{
-> +	switch (type) {
-> +		case E820_RAM:
-> +			return RANGE_RAM;
-> +		case E820_ACPI:
-> +			return RANGE_ACPI;
-> +		case E820_NVS:
-> +			return RANGE_ACPI_NVS;
-> +		case E820_RESERVED:
+On Thu, 18 Aug 2011 00:44:35 -0700 Paul Menage wrote:
 
-For E820_UNUSABLE you want to do that too?
-
-> +		default:
-> +			return RANGE_RESERVED;
-
-Or should E820_UNUSABLE returne its own type of RANGE?
+> On Wed, Aug 17, 2011 at 7:51 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> > - ns cgroup has been removed.
+> > - it's true moving a task to another cgroup can fail.
+> >
+> > Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 > 
+> Acked-by: Paul Menage <paul@paulmenage.org>
+
+Applied, thanks.
+
+
+> > ---
+> >  Documentation/cgroups/cgroups.txt |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+> > index cd67e90..9c452ef 100644
+> > --- a/Documentation/cgroups/cgroups.txt
+> > +++ b/Documentation/cgroups/cgroups.txt
+> > @@ -454,8 +454,8 @@ mounted hierarchy, to remove a task from its current cgroup you must
+> >  move it into a new cgroup (possibly the root cgroup) by writing to the
+> >  new cgroup's tasks file.
+> >
+> > -Note: If the ns cgroup is active, moving a process to another cgroup can
+> > -fail.
+> > +Note: Due to some restrictions enforced by some cgroup subsystems, moving
+> > +a process to another cgroup can fail.
+> >
+> >  2.3 Mounting hierarchies by name
+> >  --------------------------------
+> > --
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
