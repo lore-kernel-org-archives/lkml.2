@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab1HVKKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:10:47 -0400
-Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:54383 "EHLO
-	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab1HVKKn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:10:43 -0400
-Message-Id: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 22 Aug 2011 12:10:34 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-Subject: Q: /sys/block and I/O Schedulers
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756745Ab1HVKLg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:11:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15894 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753084Ab1HVKLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:11:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,262,1312182000"; 
+   d="scan'208";a="42632387"
+Date: Mon, 22 Aug 2011 12:13:30 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Robert Schwebel <rsc@pengutronix.de>
+Subject: Re: [PATCH] mfd wm8350: rename static gpio_set_debounce()
+Message-ID: <20110822101330.GL4607@sortiz-mobl>
+References: <20110810080549.GX31404@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110810080549.GX31404@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Sascha,
 
-I have a question: Reading the docs on I/O Schedulers, I had the impression the docs wanted to tell me that only the low-level devices (i.e. disks) use I/O Schedulers, while higher-level devices (like multipaths, RAIDs, LVs, etc.) don't.
+On Wed, Aug 10, 2011 at 10:05:49AM +0200, Sascha Hauer wrote:
+> 
+> The kernel already has a function with this name declared
+> in asm-generic/gpio.h. So if this header leaks into wm8350/gpio.c
+> we get
+> 
+> drivers/mfd/wm8350-gpio.c:40:12: error: conflicting types for 'gpio_set_debounce'
+> include/asm-generic/gpio.h:156:12: note: previous declaration of 'gpio_set_debounce' was here
+> 
+> Fix this by adding a wm8350_ prefix to the function.
+Thanks for the fix, I applied this patch to both of my branches.
+I'll send a pull request for the MFD fixes soon.
 
-Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs seem to use the I/O Scheduler, while RAID1 don't seem to do so. Also a disk in a Xen DomU also uses an I/O Scheduler (in addition to those being used in Dom0 for the same device already)
+Cheers,
+Samuel.
 
-Is that correct, and if so, why is that? Is there a change to be seen in the future?
-
-My test was as simple as this:
-/sys/block # for d in *
-> do
-> echo $d: $(<$d/queue/scheduler)
-> done
-cciss!c0d0: noop anticipatory deadline [cfq]
-dm-0: noop anticipatory deadline [cfq]
-[...]
-loop0: none
-[...]
-md4: none
-sda: noop anticipatory deadline [cfq]
-[...]
-
-As I'm not subscribed to the list, I'd appreciate any CC: to my address. Thanks!
-
-Regards,
-Ulrich
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
