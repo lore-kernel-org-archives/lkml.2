@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1HVNa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:30:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55412 "EHLO mx1.redhat.com"
+	id S1752752Ab1HVNa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:30:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36451 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab1HVNa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:30:26 -0400
-Date: Mon, 22 Aug 2011 15:27:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, dhowells@redhat.com,
-        roland@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coredump: fix pipe coredump when core limit is 0
-Message-ID: <20110822132716.GA28333@redhat.com>
-References: <48dnn9u5x3e4qoh8meht42xk.1313966177259@email.android.com> <CACV3sbL3j7qDPq=Dadnsw3HZCokF5V_tnGPhfocP-b1haQq_=g@mail.gmail.com>
+	id S1752700Ab1HVNaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:30:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,263,1312182000"; 
+   d="scan'208";a="42702664"
+Date: Mon, 22 Aug 2011 15:32:54 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Balaji T K <balajitk@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] mfd: twl6030-irq: Make sure to call request_irq before
+ using the irq_num
+Message-ID: <20110822133254.GP4607@sortiz-mobl>
+References: <1313047260.27089.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACV3sbL3j7qDPq=Dadnsw3HZCokF5V_tnGPhfocP-b1haQq_=g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1313047260.27089.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22, Jovi Zhang wrote:
->
-> I will resend the patch for fix the comments.
+Hi Axel,
 
-Yes, please ;)
+On Thu, Aug 11, 2011 at 03:21:00PM +0800, Axel Lin wrote:
+> I was trying to fix the error handling part because in the case of
+> request_irq failure, it should call kthread_stop instead of free_irq.
+> But it seems more reasonable to do request_irq before calling kthread_run.
+I don't have the hardware, but that makes sense to me.
+Unless some from TI NACK this patch, I'm applying it.
 
-While at it, could you add something like
+Cheers,
+Samuel.
 
-	* See umh_pipe_setup() which sets RLIMIT_CORE = 1.
-
-at the start of this comment? Unless you know how the code works
-it is not obvious where this "1" comes from.
-
-Oleg.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
