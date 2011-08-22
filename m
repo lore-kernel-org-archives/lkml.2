@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab1HVKIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:08:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53827 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab1HVKIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:08:34 -0400
-Date: Mon, 22 Aug 2011 13:08:24 +0300
-From: "Maxin B. John" <maxin.john@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Bryan Freed <bfreed@chromium.org>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: iio: industrialio-core: Fix compiler warning
-Message-ID: <20110822100824.GA6671@maxin>
+	id S1756771Ab1HVKJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:09:32 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:28839 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753084Ab1HVKJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:09:24 -0400
+Message-ID: <4E522AD0.7030907@bfs.de>
+Date: Mon, 22 Aug 2011 12:09:20 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Julia Lawall <julia@diku.dk>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 2/2] arch/powerpc/platforms/powermac/setup.c: add missing
+ of_node_put
+References: <1313943001-12884-2-git-send-email-julia@diku.dk>
+In-Reply-To: <1313943001-12884-2-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/staging/iio/industrialio-core.c: In function
-'iio_device_add_event_sysfs':
-drivers/staging/iio/industrialio-core.c:914: warning: 'mask' may be
-used uninitialized in this function
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
-index 19819e7..83b5953 100644
---- a/drivers/staging/iio/industrialio-core.c
-+++ b/drivers/staging/iio/industrialio-core.c
-@@ -911,7 +911,7 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
- 				      struct iio_chan_spec const *chan)
- {
- 
--	int ret = 0, i, mask;
-+	int ret = 0, i, mask = 0;
- 	char *postfix;
- 	if (!chan->event_mask)
- 		return 0;
-@@ -944,6 +944,8 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
- 			break;
- 		default:
- 			printk(KERN_INFO "currently unhandled type of event\n");
-+			ret = -EINVAL;
-+			goto error_ret;
- 		}
- 		ret = __iio_add_chan_devattr(postfix,
- 					     NULL,
+
+Am 21.08.2011 18:10, schrieb Julia Lawall:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> np is initialized to the result of calling a function that calls
+> of_node_get, so of_node_put should be called before the pointer is dropped.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e,e1,e2;
+> @@
+> 
+> * e = \(of_find_node_by_type\|of_find_node_by_name\)(...)
+>   ... when != of_node_put(e)
+>       when != true e == NULL
+>       when != e2 = e
+>   e = e1
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  arch/powerpc/platforms/powermac/setup.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/powermac/setup.c b/arch/powerpc/platforms/powermac/setup.c
+> index 96580b1..970ea1d 100644
+> --- a/arch/powerpc/platforms/powermac/setup.c
+> +++ b/arch/powerpc/platforms/powermac/setup.c
+> @@ -494,11 +494,15 @@ static int __init pmac_declare_of_platform_devices(void)
+>  		return -1;
+>  
+>  	np = of_find_node_by_name(NULL, "valkyrie");
+> -	if (np)
+> +	if (np) {
+>  		of_platform_device_create(np, "valkyrie", NULL);
+> +		of_node_put(np);
+> +	}
+>  	np = of_find_node_by_name(NULL, "platinum");
+> -	if (np)
+> +	if (np) {
+>  		of_platform_device_create(np, "platinum", NULL);
+> +		of_node_put(np);
+> +	}
+>          np = of_find_node_by_type(NULL, "smu");
+>          if (np) {
+>  		of_platform_device_create(np, "smu", NULL);
+> 
+
+
+hi,
+it seems save to call of_node_put(np) with np==NULL, i assume the same is true
+for of_platform_device_create().
+
+so the code collapses to:
+
+_test_node(char *name)
+{
+ struct device_node *np;
+ np = of_find_node_by_name(NULL, name);
+ of_platform_device_create(np, name, NULL);
+ of_node_put(np);
+ return NULL?:0:1;
+}
+
+maybe there is already something like find_node() ?
+
+re,
+ wh
+
+
+
+
