@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab1HVOie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:38:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58240 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1HVOic (ORCPT
+	id S1753158Ab1HVOin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:38:43 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59427
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753079Ab1HVOij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:38:32 -0400
-Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
-References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Aug 2011 16:38:33 +0200
-Message-ID: <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Aug 2011 10:38:39 -0400
+Date: Mon, 22 Aug 2011 10:38:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] xen-blkback: sync I/O after backend disconnected
+Message-ID: <20110822143829.GA2056@infradead.org>
+References: <4E48A6A6.4040706@oracle.com>
+ <20110815144610.GA3707@infradead.org>
+ <4E4A149E.5080608@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E4A149E.5080608@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 22 août 2011 à 16:23 +0200, Jiri Olsa a écrit :
-> The generation of the perf data file fails when using pipe
-> as the output file descriptor.
+On Tue, Aug 16, 2011 at 02:56:30PM +0800, Joe Jin wrote:
+> On 08/15/11 22:46, Christoph Hellwig wrote:
+> > On Mon, Aug 15, 2011 at 12:55:02PM +0800, Joe Jin wrote:
+> >> When backend disconnect, sync IO requests to the disk.
+> > 
+> > Care to explain why?
 > 
-> When record command generates the data header, several files are put
-> inside and the file size is stored ahead of the file contents itself.
-> 
-> The problem is that debugfs files cannot be stat-ed for size so we
-> need to read the whole file, count the size and update the file size
-> via seek&write (pwrite call).
-> This cannot be done for pipes, since it's not allowed to seek on it.
-> 
-> The attached patch changes current behaviour for pipes to get the
-> file size first and write correct data within the first pass.
-> For other than pipe files, the current behaviour stands.
-> 
-> This issue was caught when running the script command:
-> 
-> 	# perf script  syscall-counts ls
-> 
-> since it connects record and report via pipe.
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/util/trace-event-info.c |   81 +++++++++++++++++++++++++++++++-----
->  1 files changed, 70 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-> index 3403f81..62ab9a2 100644
-> --- a/tools/perf/util/trace-event-info.c
-> +++ b/tools/perf/util/trace-event-info.c
-> @@ -59,6 +59,7 @@ unsigned int page_size;
->  
->  static const char *output_file = "trace.info";
->  static int output_fd;
-> +static int output_is_pipe;
->  
->  struct event_list {
->  	struct event_list *next;
-> @@ -183,20 +184,59 @@ int bigendian(void)
->  	return *ptr == 0x01020304;
->  }
->  
-> +static off_t get_file_size(int fd)
-> +{
-> +	off_t size = 0;
-> +	char buf[BUFSIZ];
-> +	int r;
-> +
-> +	do {
-> +		r = read(fd, buf, BUFSIZ);
-> +		if (r > 0)
-> +			size += r;
-> +	} while (r > 0);
-> +
-> +	if (lseek(fd, 0, SEEK_SET))
-> +		die("seek failed");
-> +
-> +	return size;
-> +}
+> When backend disconnect, I think we'd better flush all dirty data 
+> to the disk ASAP.
 
-This part makes no sense :
+Then please state this in the commit log, and even better the code
+also.
 
-If fd is a pipe, you'll call die("seek failed")
+> > Also you'll just need a sync_blockdev, fsync_bdev does far to many
+> > things that don't make any sense when you don't have a file system
+> > mounted on a device.
+> > 
+> 
+> xen-blkback support physical device and loopback file, so I think
+> here should be fsync_bdev()? 
 
-If it's not a pipe, you can try lseek(fd, 0, SEEK_END)+lseek(fd, 0,
-SEEK_SET) or fstat(fd, &st) instead of the read() loop.
-
-
+No, and in fact sync_blockdev is also wrong when thinking about it.
+blkback always submits bios directly to the device, so flushing any
+kernel caches won't do you any help.  The only thing that might make
+sense to flush would be the disk write cache using a blkdev_issue_flush.
 
