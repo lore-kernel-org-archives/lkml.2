@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab1HVNGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:06:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51602 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1HVNGe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:06:34 -0400
+	id S1752275Ab1HVNHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:07:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61096 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636Ab1HVNHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:07:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="40948877"
+Date: Mon, 22 Aug 2011 15:09:52 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Karl Komierowski <karl.komierowski@stericsson.com>,
+        Kalle Komierowski <kalle.komierowski@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd/ab8500-gpadc: refactor GPADC API, add raw access
+Message-ID: <20110822130952.GN4607@sortiz-mobl>
+References: <1312981783-19117-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <20110822043107.GB23010@core.coreip.homeip.net>
-References: <1313812912-2848-1-git-send-email-martinez.javier@gmail.com>
- <1313812912-2848-2-git-send-email-martinez.javier@gmail.com> <20110822043107.GB23010@core.coreip.homeip.net>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Mon, 22 Aug 2011 09:06:18 -0400
-Message-ID: <CAAwP0s08h9P4BkYWxsa068s7QPu=vcHgt6uczcBxs1rH56-FkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch
- screen support
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Kevin McNeely <kev@cypress.com>, Henrik Rydberg <rydberg@euromail.se>,
-        Srikar <ext-srikar.1.bhavanarayana@nokia.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312981783-19117-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 12:31 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Javier,
->
+Hi Linus,
 
-Hi Dmitry,
+On Wed, Aug 10, 2011 at 03:09:43PM +0200, Linus Walleij wrote:
+> From: Karl Komierowski <karl.komierowski@stericsson.com>
+> 
+> Refactor the GPADC interface to avoid bugs in calling code:
+> 
+> - ab8500_gpadc_[convert|read_raw|ad_to_voltage] clarifies
+>   each functions use case, *convert wraps *read_raw, and we
+>   can access raw ADC values properly.
+> - Renamed gpadc function arguments from "input" to "channel" to
+>   clarify use, so we don't get confused again.
 
-Thank you very much for the review.
+Ok, thanks for the clarification.
+Patch applied now.
 
->
-> Still reading through the patches, but have one question:
->
->
-> Why do we need to get gpio/irq from platform data instead of having
-> board code set up controllers appropriately and use IRQ either from I2C
-> client structure or from SPI?
->
-> Thanks.
->
-> --
-> Dmitry
->
-
-The original author of this driver is Kevin McNeely (cc'ed in this
-patch submission).
-I've only added multi-touch protocol type B support (which was a
-requirement for upstream acceptance) and resubmit the patch-set.
-
-I think he will better answer your questions about the driver design.
-
-Kevin?
-
-Best regards,
+Cheers,
+Samuel.
 
 -- 
-Javier Martínez Canillas
-(+34) 682 39 81 69
-Barcelona, Spain
+Intel Open Source Technology Centre
+http://oss.intel.com/
