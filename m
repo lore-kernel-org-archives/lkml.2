@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab1HVL3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:29:48 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:32891 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1HVL3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 07:29:43 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E523F8D.8080902@cam.ac.uk>
-Date: Mon, 22 Aug 2011 12:37:49 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
+	id S1751519Ab1HVLa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:30:28 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:59620 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751055Ab1HVLaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 07:30:22 -0400
+Date: Mon, 22 Aug 2011 13:30:04 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Wanlong Gao <wanlong.gao@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hjk@hansjkoch.de, gregkh@suse.de,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH v2] drivers:uio:change the goto label to consistent with
+ others
+Message-ID: <20110822113004.GB14373@local>
+References: <1313813528-30913-1-git-send-email-wanlong.gao@gmail.com>
+ <1313813528-30913-2-git-send-email-wanlong.gao@gmail.com>
 MIME-Version: 1.0
-To: "Maxin B. John" <maxin.john@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Bryan Freed <bfreed@chromium.org>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: industrialio-core: Fix compiler warning
-References: <20110822100824.GA6671@maxin>
-In-Reply-To: <20110822100824.GA6671@maxin>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1313813528-30913-2-git-send-email-wanlong.gao@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/11 11:08, Maxin B. John wrote:
-> drivers/staging/iio/industrialio-core.c: In function
-> 'iio_device_add_event_sysfs':
-> drivers/staging/iio/industrialio-core.c:914: warning: 'mask' may be
-> used uninitialized in this function
-Thanks for the patch.  It's actually a driver bug if this occurs.
-We could have had a WARN_ON to let userspace know about the bug and
-indeed taken the error route you suggest but
-the relevant code has actually undergone a rewrite anyway so the
-bit you are fixing doesn't exist any more anyway.
+On Sat, Aug 20, 2011 at 12:12:08PM +0800, Wanlong Gao wrote:
+> From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> 
+> sorry for v1's typo mistake.
+> Thanks
+> 
+> Remove one *goto* label in uio.c.
 
-See http://git.kernel.org/?p=linux/kernel/git/jic23/iio-blue.git;a=summary
-For our current dev tree (eats babies and includes all sorts of stuff
-that hasn't been reviewed yet - so beware).  
+Nice, that makes it a bit cleaner.
 
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+Thanks,
+Hans
+
+> 
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
+
 > ---
-> diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
-> index 19819e7..83b5953 100644
-> --- a/drivers/staging/iio/industrialio-core.c
-> +++ b/drivers/staging/iio/industrialio-core.c
-> @@ -911,7 +911,7 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
->  				      struct iio_chan_spec const *chan)
->  {
+>  drivers/uio/uio.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index d2efe82..c89f12a 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -750,14 +750,13 @@ static int uio_major_init(void)
 >  
-> -	int ret = 0, i, mask;
-> +	int ret = 0, i, mask = 0;
->  	char *postfix;
->  	if (!chan->event_mask)
->  		return 0;
-> @@ -944,6 +944,8 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
->  			break;
->  		default:
->  			printk(KERN_INFO "currently unhandled type of event\n");
-> +			ret = -EINVAL;
-> +			goto error_ret;
->  		}
->  		ret = __iio_add_chan_devattr(postfix,
->  					     NULL,
-
+>  	uio_major = MAJOR(uio_dev);
+>  	uio_cdev = cdev;
+> -	result = 0;
+> -out:
+> -	return result;
+> +	return 0;
+>  out_put:
+>  	kobject_put(&cdev->kobj);
+>  out_unregister:
+>  	unregister_chrdev_region(uio_dev, UIO_MAX_DEVICES);
+> -	goto out;
+> +out:
+> +	return result;
+>  }
+>  
+>  static void uio_major_cleanup(void)
+> -- 
+> 1.7.4.1
+> 
+> 
