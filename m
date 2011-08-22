@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1HVOg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:36:26 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50050 "EHLO mgw2.diku.dk"
+	id S1752990Ab1HVOgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:36:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61229 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271Ab1HVOgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:36:24 -0400
-Date: Mon, 22 Aug 2011 16:36:16 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Robert Love <robert.w.love@intel.com>, kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>, devel@open-fcoe.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] drivers/scsi/fcoe/fcoe.c: add missing test
-In-Reply-To: <alpine.LNX.2.00.1108221632130.9774@swampdragon.chaosbits.net>
-Message-ID: <Pine.LNX.4.64.1108221636030.10948@ask.diku.dk>
-References: <1314021636-11528-2-git-send-email-julia@diku.dk>
- <alpine.LNX.2.00.1108221632130.9774@swampdragon.chaosbits.net>
+	id S1750818Ab1HVOgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 10:36:41 -0400
+Message-ID: <4E526975.4080106@redhat.com>
+Date: Mon, 22 Aug 2011 17:36:37 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 02/11] KVM: x86: tag the instructions which are used to
+ write page table
+References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1117.1030608@cn.fujitsu.com> <20110822143235.GA4797@amt.cnet>
+In-Reply-To: <20110822143235.GA4797@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011, Jesper Juhl wrote:
+On 08/22/2011 05:32 PM, Marcelo Tosatti wrote:
+> On Tue, Aug 16, 2011 at 02:41:27PM +0800, Xiao Guangrong wrote:
+> >  The idea is from Avi:
+> >  | tag instructions that are typically used to modify the page tables, and
+> >  | drop shadow if any other instruction is used.
+> >  | The list would include, I'd guess, and, or, bts, btc, mov, xchg, cmpxchg,
+> >  | and cmpxchg8b.
+> >
+> >  This patch is used to tag the instructions and in the later path, shadow page
+> >  is dropped if it is written by other instructions
+>
+> What is the advantage of doing this again? What is the point of
+> dropping shadow if the instruction is emulated?
+>
 
-> On Mon, 22 Aug 2011, Julia Lawall wrote:
-> 
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > The initializations of both fcoe_nport_scsi_transport and
-> > fcoe_vport_scsi_transport can fail, so test both of them.
-> > 
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @r@
-> > identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
-> > statement S;
-> > @@
-> > 
-> > x = f(...);
-> > (
-> > if (\(x == NULL\|IS_ERR(x)\)) S
-> > |
-> > *if (\(y == NULL\|IS_ERR(y)\))
-> >  { ... when != x
-> >    return ...; }
-> > )
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> >  drivers/scsi/fcoe/fcoe.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
-> > index ba710e3..921b636 100644
-> > --- a/drivers/scsi/fcoe/fcoe.c
-> > +++ b/drivers/scsi/fcoe/fcoe.c
-> > @@ -1096,7 +1096,7 @@ static int __init fcoe_if_init(void)
-> >  	fcoe_vport_scsi_transport =
-> >  		fc_attach_transport(&fcoe_vport_fc_functions);
-> >  
-> > -	if (!fcoe_nport_scsi_transport) {
-> > +	if (!fcoe_nport_scsi_transport || !fcoe_vport_scsi_transport) {
-> >  		printk(KERN_ERR "fcoe: Failed to attach to the FC transport\n");
-> >  		return -ENODEV;
-> >  	}
-> > 
-> 
-> I only took a quick look, so I may have overlooked something, so bear with 
-> me.
-> 
-> fc_attach_transport() allocates memory with kzalloc. If either call fails 
-> the other may have succeeded and we'll leak the memory allocated to one of 
-> them.
-> 
-> Shouldn't we be kfree()'ing the two variables before the 'return -ENODEV'?
+So it won't be emulated again; the assumption is that if you addl into a 
+page, it isn't a pagetable.
 
-It seems reasonable.
+-- 
+error compiling committee.c: too many arguments to function
 
-julia
