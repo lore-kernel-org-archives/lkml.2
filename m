@@ -1,130 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab1HVUSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:18:04 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52602 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab1HVUSB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:18:01 -0400
+	id S1753794Ab1HVUSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:18:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40042 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753746Ab1HVUSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 16:18:20 -0400
+Message-ID: <4E52B96B.8040404@zytor.com>
+Date: Mon, 22 Aug 2011 13:17:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110822125355.bb01d76b.rdunlap@xenotime.net>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-	<20110822125355.bb01d76b.rdunlap@xenotime.net>
-Date: Mon, 22 Aug 2011 16:18:00 -0400
-Message-ID: <CACqU3MVRvGJTRwSmvimGi-js=CvS9Uyq6K7cA8+6vfH1tdnS6Q@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 22 (evm)
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        kernel-hardening@lists.openwall.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low addresses
+References: <20110812102954.GA3496@albatros> <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com> <20110816090540.GA7857@albatros> <20110822101730.GA3346@albatros> <4E5290D6.5050406@zytor.com> <20110822201418.GA3176@albatros>
+In-Reply-To: <20110822201418.GA3176@albatros>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Aug 22, 2011 at 3:53 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Mon, 22 Aug 2011 14:53:04 +1000 Stephen Rothwell wrote:
->
->> Hi all,
+On 08/22/2011 01:14 PM, Vasiliy Kulikov wrote:
+> 
+>> Code-wise:
 >>
->> [The kernel.org mirroring is a bit low today]
->
-> (on x86_64:)
->
-> When CONFIG_EVM=y, CONFIG_CRYPTO_HASH2=m, CONFIG_TRUSTED_KEYS=m,
-> CONFIG_ENCRYPTED_KEYS=m, the build fails with:
->
-> (.text+0x378aa): undefined reference to `key_type_encrypted'
-> evm_crypto.c:(.text+0x37992): undefined reference to `crypto_alloc_shash'
-> evm_crypto.c:(.text+0x37a24): undefined reference to `crypto_shash_setkey'
-> evm_crypto.c:(.text+0x37ad9): undefined reference to `crypto_shash_update'
-> evm_crypto.c:(.text+0x37aeb): undefined reference to `crypto_shash_final'
-> (.text+0x37b4b): undefined reference to `crypto_shash_update'
-> (.text+0x37c61): undefined reference to `crypto_shash_update'
-> (.text+0x37cb9): undefined reference to `crypto_shash_update'
->
-> even though EVM (Kconfig) selects ENCRYPTED_KEYS and TRUSTED_KEYS..
-> and even after I add "select CRYPTO_HASH2".
->
-> Is this because EVM is bool and kconfig is confused about 'select's
-> when a bool is selecting tristates?  Shouldn't the tristates become
-> 'y' instead of 'm' if they are selected by a bool that is 'y'?
->
-hum, I'd say that it should:
+>> The code is horrific; it is full of open-coded magic numbers;
+> 
+> Agreed, the magic needs macro definition and comments.
+> 
+>> it also
+>> puts a function called arch_get_unmapped_exec_area() in a generic file,
+>> which could best be described as "WTF" -- the arch_ prefix we use
+>> specifically to denote a per-architecture hook function.
+> 
+> Agreed.  But I'd want to leave it in mm/mmap.c as it's likely be used by
+> other archs - the changes are bitness specific, not arch specific.  Is
+> it OK if I do this?
+> 
+> #ifndef HAVE_ARCH_UNMAPPED_EXEC_AREA
+> void *arch_get_unmapped_exec_area(...)
+> {
+>     ...
+> }
+> #endif
+> 
 
-% cat Kconfig
-config MOD
-        bool
-        default y
-        option modules
+Only if this is really an architecture-specific function overridden in
+specific architectures.  I'm not so sure that applies here.
+Furthermore, I'm not even all that sure what this function *does*.
 
-config B
-        tristate "B"
-        default m
+	-hpa
 
-config A
-        tristate "A"
-        default y
-        select B
-
-% make alldefconfig
-scripts/kconfig/conf --alldefconfig Kconfig
-#
-# configuration written to .config
-#
-
-% cat .config
-#
-# Automatically generated file; DO NOT EDIT.
-# Linux Kernel Configuration
-#
-CONFIG_MOD=y
-CONFIG_B=y
-CONFIG_A=y
-
-now, if A defaults to 'm', we have:
-
-% cat .config
-#
-# Automatically generated file; DO NOT EDIT.
-# Linux Kernel Configuration
-#
-CONFIG_MOD=y
-CONFIG_B=m
-CONFIG_A=m
-
-Could you please produce a reduced testcase showing the problem ?
-
-Thanks,
- - Arnaud
-
->
-> xconfig shows these symbol values:
->
-> Symbol: EVM [=y]
-> Type : boolean
-> Prompt: EVM support
-> Defined at security/integrity/evm/Kconfig:1
-> Depends on: SECURITY [=y] && KEYS [=y] && TCG_TPM [=m]
-> Location:
-> -> Security options
-> Selects: CRYPTO_HMAC [=m] && CRYPTO_MD5 [=m] && CRYPTO_SHA1 [=m] && CRYPTO_HASH2 [=m] && ENCRYPTED_KEYS [=m] && TRUSTED_KEYS [=m]
->
->
-> Hm, changing TCG_TPM to =y also changes TRUSTED_KEYS and ENCRYPTED_KEYS and
-> lots of CRYPTO_ symbols from =m to =y.  There must be some kind of min/max
-> symbol checking that is confused?
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
