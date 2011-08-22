@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab1HVXoD (ORCPT <rfc822;w@1wt.eu>);
+	id S1754562Ab1HVXoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:44:12 -0400
+Received: from claw.goop.org ([74.207.240.146]:48789 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754385Ab1HVXoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 19:44:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43074 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab1HVXoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 19:44:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4E52E986.8030405@jp.fujitsu.com>
-Date: Tue, 23 Aug 2011 08:43:02 +0900
-From: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.20) Gecko/20110804 Thunderbird/3.1.12
+Message-ID: <4E52E9BF.3050904@goop.org>
+Date: Mon, 22 Aug 2011 16:43:59 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Wanlong Gao <wanlong.gao@gmail.com>
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chris.mason@oracle.com
-Subject: Re: [PATCH] btrfs:make btrfs_init_compress() return void
-References: <1314022940-6717-1-git-send-email-wanlong.gao@gmail.com>
-In-Reply-To: <1314022940-6717-1-git-send-email-wanlong.gao@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 07/15] x86: add xadd helper macro
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <41c1484d36a94613f86f33e15219d5fcd14b2343.1314054734.git.jeremy.fitzhardinge@citrix.com> <4E52E64D.5090309@zytor.com>
+In-Reply-To: <4E52E64D.5090309@zytor.com>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/08/22 23:22), Wanlong Gao wrote:
-> From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> 
-> Make btrfs_init_compress() return void, since it always return 0,
-> and no need to check return value.
-> 
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  fs/btrfs/compression.c |    3 +--
->  fs/btrfs/compression.h |    2 +-
->  fs/btrfs/super.c       |    7 ++-----
->  3 files changed, 4 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-> index 8ec5d86..b2dbefa 100644
-> --- a/fs/btrfs/compression.c
-> +++ b/fs/btrfs/compression.c
-> @@ -731,7 +731,7 @@ struct btrfs_compress_op *btrfs_compress_op[] = {
->  	&btrfs_lzo_compress,
->  };
->  
-> -int __init btrfs_init_compress(void)
-> +void __init btrfs_init_compress(void)
->  {
->  	int i;
->  
-> @@ -741,7 +741,6 @@ int __init btrfs_init_compress(void)
->  		atomic_set(&comp_alloc_workspace[i], 0);
->  		init_waitqueue_head(&comp_workspace_wait[i]);
->  	}
-> -	return 0;
->  }
->  
->  /*
-> diff --git a/fs/btrfs/compression.h b/fs/btrfs/compression.h
-> index a12059f..9afb0a6 100644
-> --- a/fs/btrfs/compression.h
-> +++ b/fs/btrfs/compression.h
-> @@ -19,7 +19,7 @@
->  #ifndef __BTRFS_COMPRESSION_
->  #define __BTRFS_COMPRESSION_
->  
-> -int btrfs_init_compress(void);
-> +void btrfs_init_compress(void);
->  void btrfs_exit_compress(void);
->  
->  int btrfs_compress_pages(int type, struct address_space *mapping,
-> diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-> index 15634d4..31e9654 100644
-> --- a/fs/btrfs/super.c
-> +++ b/fs/btrfs/super.c
-> @@ -1238,9 +1238,7 @@ static int __init init_btrfs_fs(void)
->  	if (err)
->  		return err;
->  
-> -	err = btrfs_init_compress();
-> -	if (err)
-> -		goto free_sysfs;
-> +	btrfs_init_compress();
->  
->  	err = btrfs_init_cachep();
->  	if (err)
-> @@ -1281,8 +1279,7 @@ free_cachep:
->  	btrfs_destroy_cachep();
->  free_compress:
->  	btrfs_exit_compress();
+On 08/22/2011 04:29 PM, H. Peter Anvin wrote:
+> On 08/22/2011 04:15 PM, Jeremy Fitzhardinge wrote:
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+>> Add a common xadd implementation.
+>>
+>> This has the side effect of generating a bad instruction if you try to
+>> use it on a 64-bit value on a 32-bit system - but don't do that.
+>>
+> It would be better to barf at that point, so we get the error with a C
+> line... also, there needs to be a default clause with
+> __compiletime_error() in it.
 
-> -free_sysfs:
-> -	btrfs_exit_sysfs();
-> +
+OK, but the "standard of care" here is the old "calling undefined
+function" link error; getting a bad asm instruction is a little more
+helpful, in a sense.  But agreed on the default: case.  I'll see if I
+can fix up xadd and cmpxchg to fail better as well.
 
-Why remove btrfs_exit_sysfs()?
+> There are a few additional xadd users which should be converted unless
+> I'm mistaken:
+>
+> rwsem_atomic_update() in asm/rwsem.h.
+>
+> atomic_add_return() in asm/atomic.h.
+>
+> atomic64_add_return() in asm/atomic64_64.h.
+>
+> atom_asr() in asm/uv/uv_bau.h (*VOMIT* - the UV people have created a
+> whole different type in private code...)
+>
 
- -Tsutomu
+Yeah, I hadn't done a full xadd audit.  I'll take a look.
 
->  	return err;
->  }
->  
-
+    J
