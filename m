@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1HVLGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:06:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60653 "EHLO
+	id S1756877Ab1HVLHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:07:01 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60676 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab1HVLGO (ORCPT
+	with ESMTP id S1756849Ab1HVLGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 07:06:14 -0400
+	Mon, 22 Aug 2011 07:06:18 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: chase.douglas@canonical.com, dmitry.torokhov@gmail.com,
         rydberg@euromail.se
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         olofj@chromium.org, chris@cnpbagwell.com,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 0/9 v5] Synaptics image sensor support
-Date: Mon, 22 Aug 2011 19:05:54 +0800
-Message-Id: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 6/9 v5] Input: mt - document devices reporting more touches than slots
+Date: Mon, 22 Aug 2011 19:06:00 +0800
+Message-Id: <1314011163-19098-7-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
+References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Some devices are capable of identifying and/or tracking more contacts than
+they can report to the driver.  Document how a driver should handle this,
+and what userspace should expect.
 
-----
-For v5:
-  Patch 4:
-     Per Dmitry: Add up, down, right, middle, and extended button reporting.
-----
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ Documentation/input/multi-touch-protocol.txt |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-This patch set (against next) is intended to add support for synaptics
-"image sensor" touchpads.
-
-Patches 1-3 clean up the current driver slightly and prepare for the image
-sensor patches which follow.
-
-Patches 4-7 add 3 finger support for image sensor touchpads.
-Image sensors do not suffer from the finger tracking issues that plagued
-the earlier "profile sensors", and which required the invention of "semi-mt"
-(Semi-mt reports a bounding box around two fingers instead of the fingers
-themselves).  Instead, the image sensors report the actual positions of two
-fingers using the same "Advanced Gesture Mode".  This driver uses two MT-B slots
-to report these two fingers to userspace.  In addition, it will also report
-the total number of fingers using BTN_TOOL_*TAP EV_KEY events.  This behavior
-is documented in the multi-touch-protocol document.
-
-Userspace drivers should be aware that the number of fingers reported via
-BTN_TOOL_*TAP can be greater than the total number MT-B slots with non-negative
-track_ids.  Upon opening the device node, userspace should query the maximum
-values supported ABS_MT_SLOT, and note the number of supported BTN_TOOL_*TAP
-events.
-
-Patches 7-8 add 4 and 5 finger support.
-In fact, the image sensor touchpads actually track 5 fingers while reporting
-just 2 finger positions.  These patches add support for properly tracking the
-reported slots through 4 and 5 finger transitions, while always reporting two of
-them via 2 MT-B slots.  In addition, a new event, EV_KEY/BTN_TOOL_QUINTTAP, is
-added to the event subsystem to allow reporting up to 5 fingers.
-
-These patches are similar to, and inspired by, a similar patchset recently
-submitted by Derek Foreman and Daniel Stone.  However, it is not directly built
-upon, nor is it compatible with, those patches.
-
-Thanks,
-Daniel
-
-Daniel Kurtz (9):
-  Input: synaptics - refactor y inversion
-  Input: synaptics - refactor agm packet parsing
-  Input: synaptics - refactor initialization of abs position axes
-  Input: synaptics - add image sensor support
-  Input: synaptics - decode AGM packet types
-  Input: mt - document devices reporting more touches than slots
-  Input: synaptics - process finger (<=3) transitions
-  Input: add BTN_TOOL_QUINTTAP for reporting 5 fingers on touchpad
-  Input: synaptics - process finger (<=5) transitions
-
- Documentation/input/multi-touch-protocol.txt |   14 +
- drivers/input/input-mt.c                     |    1 +
- drivers/input/mouse/synaptics.c              |  527 +++++++++++++++++++++++---
- drivers/input/mouse/synaptics.h              |   27 ++-
- include/linux/input.h                        |    1 +
- 5 files changed, 519 insertions(+), 51 deletions(-)
-
+diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
+index 71536e7..543101c 100644
+--- a/Documentation/input/multi-touch-protocol.txt
++++ b/Documentation/input/multi-touch-protocol.txt
+@@ -65,6 +65,20 @@ the full state of each initiated contact has to reside in the receiving
+ end.  Upon receiving an MT event, one simply updates the appropriate
+ attribute of the current slot.
+ 
++Some devices identify and/or track more contacts than they can report to the
++driver.  A driver for such a device should associate one type B slot with each
++contact that is reported by the hardware.  Whenever the identity of the
++contact associated with a slot changes, the driver should invalidate that
++slot by changing its ABS_MT_TRACKING_ID.  If the hardware signals that it is
++tracking more contacts than it is currently reporting, the driver should use
++a BTN_TOOL_*TAP event to inform userspace of the total number of contacts
++being tracked by the hardware at that moment.  The driver should do this by
++explicitly sending the corresponding BTN_TOOL_*TAP event and setting
++use_count to false when calling input_mt_report_pointer_emulation().
++The driver should only advertise as many slots as the hardware can report.
++Userspace can detect that a driver can report more total contacts than slots
++by noting that the largest supported BTN_TOOL_*TAP event is larger than the
++total number of type B slots reported in the absinfo for the ABS_MT_SLOT axis.
+ 
+ Protocol Example A
+ ------------------
 -- 
 1.7.3.1
 
