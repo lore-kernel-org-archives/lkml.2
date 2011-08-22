@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab1HVEG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 00:06:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50875 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733Ab1HVEGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 00:06:25 -0400
-Message-ID: <4E51D597.3060800@zytor.com>
-Date: Sun, 21 Aug 2011 21:05:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>, Borislav Petkov <bp@amd64.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
+	id S1751390Ab1HVEIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 00:08:17 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43512 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab1HVEIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 00:08:16 -0400
+Date: Mon, 22 Aug 2011 05:07:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        mingo@redhat.com, Richard Weinberger <richard@nod.at>,
         user-mode-linux-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
 Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
  crap with vdso on uml/i386)
-References: <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk> <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com> <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk> <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com> <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com> <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
-In-Reply-To: <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-ID: <20110822040759.GQ2203@ZenIV.linux.org.uk>
+References: <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com>
+ <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
+ <20110821063443.GH2203@ZenIV.linux.org.uk>
+ <20110821084230.GI2203@ZenIV.linux.org.uk>
+ <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com>
+ <20110821144352.GJ2203@ZenIV.linux.org.uk>
+ <20110821164124.GL2203@ZenIV.linux.org.uk>
+ <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com>
+ <20110822011645.GM2203@ZenIV.linux.org.uk>
+ <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav,
+On Sun, Aug 21, 2011 at 06:41:16PM -0700, Linus Torvalds wrote:
+> On Sun, Aug 21, 2011 at 6:16 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Is that ability a part of userland ABI or are we declaring that hopelessly
+> > wrong and require to go through the function in vdso32? ?Linus?
+> 
+> If people are using syscall directly, we're pretty much stuck. No
+> amount of "that's hopelessly wrong" will ever matter. We don't break
+> existing binaries.
 
-We're tracking down an issue with the way system call arguments are
-handled on 32 bits.  We have a solution for SYSENTER but not SYSCALL;
-fixing SYSCALL "properly" appears to be very difficult at best.
+There's a funny part, though - such binary won't work on 32bit kernel.
+AFAICS, we never set MSR_*STAR on 32bit kernels (and native 32bit vdso
+doesn't provide a SYSCALL-based variant).
 
-So the question is: how much overhead would it be to simply fall back to
-int $0x80 or some other legacy-style domain crossing instruction for
-32-bit system calls on AMD64 processors?  We don't ever use SYSCALL in
-legacy mode, so native i386 kernels are unaffected.
+So if we really consider such SYSCALL outside of vdso32 kosher, shouldn't
+we do something with entry_32.S as well?  I don't think it's worth doing,
+TBH...
 
-	-hpa
+Again, I very much hope that binaries with such stray SYSCALL simply do
+not exist.  In theory it's possible to write one, but...
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+IIRC, the reason we never had SYSCALL support in 32bit kernel was the utter
+lack of point - the *only* CPU where it would matter would be K6-2, IIRC,
+and (again, IIRC) it had some differences in SYSCALL semantics compared to
+K7 (which supports SYSENTER as well).  Bugger if I remember what those
+differences might've been...  Some flag not cleared?
