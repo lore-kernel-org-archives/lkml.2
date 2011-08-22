@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1HVWtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 18:49:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50676 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754220Ab1HVWtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 18:49:52 -0400
-Date: Mon, 22 Aug 2011 22:49:43 GMT
-From: tip-bot for Zhao Jin <cronozhj@gmail.com>
-Message-ID: <tip-54f6de81be44e889d66c144fc449fefe586aa3b8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        cronozhj@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cronozhj@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <4E4FB5A9.700@gmail.com>
-References: <4E4FB5A9.700@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, mm, trivial: Rmove unnecessary get_order in free_thread_info
-Git-Commit-ID: 54f6de81be44e889d66c144fc449fefe586aa3b8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Mon, 22 Aug 2011 22:49:44 +0000 (UTC)
+	id S1753560Ab1HVW4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 18:56:19 -0400
+Received: from yuna.grokhost.net ([87.117.228.63]:36542 "EHLO
+	yuna.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1HVW4R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 18:56:17 -0400
+From: Chris Boot <bootc@bootc.net>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: Chris Boot <bootc@bootc.net>
+Subject: [PATCH] [v3] firewire-sbp2: fix panic after rmmod with slow targets
+Date: Mon, 22 Aug 2011 23:56:11 +0100
+Message-Id: <1314053771-29944-1-git-send-email-bootc@bootc.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <811318C8-1FD9-4E67-8346-13CFB69A0AF8@bootc.net>
+References: <811318C8-1FD9-4E67-8346-13CFB69A0AF8@bootc.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  54f6de81be44e889d66c144fc449fefe586aa3b8
-Gitweb:     http://git.kernel.org/tip/54f6de81be44e889d66c144fc449fefe586aa3b8
-Author:     Zhao Jin <cronozhj@gmail.com>
-AuthorDate: Sat, 20 Aug 2011 21:24:57 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 22 Aug 2011 15:37:31 -0700
+If firewire-sbp2 starts a login to a target that doesn't complete ORBs
+in a timely manner (and has to retry the login), and the module is
+removed before the operation times out, you end up with a null-pointer
+dereference and a kernel panic.
 
-x86, mm, trivial: Rmove unnecessary get_order in free_thread_info
+This happens because the code in sbp2_remove() just does a
+sbp2_target_put(), assuming there are no remaining references to the
+target. If there are jobs in the workqueue, this is not the case, and
+the module is successfully unloaded while references still exist.
 
-Because THREAD_SIZE is defined as PAGE_SIZE << THREAD_ORDER on x86, the
-call of get_order(THREAD_SIZE) can be replaced with THREAD_ORDER.
+This patch cancels pending work for each unit in sbp2_remove(), which
+hopefully means there are no extra references around that prevent us
+from unloading. This fixes my crash.
 
-Signed-off-by: Zhao Jin <cronozhj@gmail.com>
-Link: http://lkml.kernel.org/r/4E4FB5A9.700@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Chris Boot <bootc@bootc.net>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: <linux1394-devel@lists.sourceforge.net>
 ---
- arch/x86/kernel/process.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/firewire/sbp2.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e7e3b01..b9b3b1a 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -49,7 +49,7 @@ void free_thread_xstate(struct task_struct *tsk)
- void free_thread_info(struct thread_info *ti)
+diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
+index 41841a3..260dd23 100644
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1198,6 +1198,11 @@ static int sbp2_remove(struct device *dev)
  {
- 	free_thread_xstate(ti->task);
--	free_pages((unsigned long)ti, get_order(THREAD_SIZE));
-+	free_pages((unsigned long)ti, THREAD_ORDER);
- }
+ 	struct fw_unit *unit = fw_unit(dev);
+ 	struct sbp2_target *tgt = dev_get_drvdata(&unit->device);
++	struct sbp2_logical_unit *lu;
++
++	list_for_each_entry(lu, &tgt->lu_list, link) {
++		cancel_delayed_work_sync(&lu->work);
++	}
  
- void arch_task_cache_init(void)
+ 	sbp2_target_put(tgt);
+ 	return 0;
+-- 
+1.7.5.4
+
