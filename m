@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab1HVUGJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:06:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37394 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682Ab1HVUGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:06:07 -0400
-Message-ID: <4E52B692.2030601@ti.com>
-Date: Mon, 22 Aug 2011 21:05:38 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1753737Ab1HVUG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:06:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39467 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753723Ab1HVUG1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 16:06:27 -0400
 MIME-Version: 1.0
-To: Timur Tabi <timur@freescale.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+In-Reply-To: <20110822151305.GV2203@ZenIV.linux.org.uk>
+References: <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
+ <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com>
+ <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
+ <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org>
+ <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com>
+ <20110822144051.GD2946@aftab> <20110822151305.GV2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 22 Aug 2011 13:05:34 -0700
+Message-ID: <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "julia@diku.dk" <julia@diku.dk>
-Subject: Re: [PATCH] [v2] sound/soc/fsl/fsl_dma.c: add missing of_node_put
-References: <1314022961-27513-1-git-send-email-timur@freescale.com>
-In-Reply-To: <1314022961-27513-1-git-send-email-timur@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        "mingo@redhat.com" <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/11 15:22, Timur Tabi wrote:
-> of_parse_phandle increments the reference count of np, so this should be
-> decremented before trying the next possibility.
-> 
-> Since we don't actually use np, we can decrement the reference count
-> immediately.
-> 
-> Reported-by: Julia Lawall <julia@diku.dk>
-> Signed-off-by: Timur Tabi <timur@freescale.com>
+On Mon, Aug 22, 2011 at 8:13 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> In __kernel_vsyscall() the problem is possible to deal with; there we control
+> the code around that sucker.  It's SYSCALL in 32bit binary outside of
+> vdso32 that causes real PITA...
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+I just checked. 'syscall' (at least on x86-64) is definitely called
+outside of __kernel_vsyscall in all the normal cases. It's part of the
+fundamental ABI, after all. We don't use "int 0x80" there.
 
-> ---
->  sound/soc/fsl/fsl_dma.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/sound/soc/fsl/fsl_dma.c b/sound/soc/fsl/fsl_dma.c
-> index 6680c0b..b300f4b 100644
-> --- a/sound/soc/fsl/fsl_dma.c
-> +++ b/sound/soc/fsl/fsl_dma.c
-> @@ -877,10 +877,12 @@ static struct device_node *find_ssi_node(struct device_node *dma_channel_np)
->  		 * assume that device_node pointers are a valid comparison.
->  		 */
->  		np = of_parse_phandle(ssi_np, "fsl,playback-dma", 0);
-> +		of_node_put(np);
->  		if (np == dma_channel_np)
->  			return ssi_np;
->  
->  		np = of_parse_phandle(ssi_np, "fsl,capture-dma", 0);
-> +		of_node_put(np);
->  		if (np == dma_channel_np)
->  			return ssi_np;
->  	}
+But on x86-32, I think we might be better off. There, we only have
+'sysenter', and can perhaps use my suggested "just use int 0x80
+instead of the jump back to the sysenter instruction" trick. Plus
+people *will* be using __kernel_vsyscall, since on x86-32 you aren't
+guaranteed to have a CPU that supports sysenter to begin with.
 
+Or am I missing something else?
+
+                    Linus
