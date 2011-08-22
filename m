@@ -1,74 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1HWBCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 21:02:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60063 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab1HWBCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 21:02:08 -0400
-Date: Tue, 23 Aug 2011 02:01:46 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110823010146.GY2203@ZenIV.linux.org.uk>
-References: <20110822144051.GD2946@aftab>
- <20110822151305.GV2203@ZenIV.linux.org.uk>
- <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
- <4E52B7F8.3050002@zytor.com>
- <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
- <4E52D280.3010107@zytor.com>
- <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
- <20110823000314.GW2203@ZenIV.linux.org.uk>
- <4E52EF2A.8060608@zytor.com>
- <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+	id S1754782Ab1HWBFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 21:05:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754577Ab1HWBFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 21:05:42 -0400
+Date: Mon, 22 Aug 2011 19:28:54 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 07/11] KVM: MMU: fast prefetch spte on invlpg path
+Message-ID: <20110822222854.GA2497@amt.cnet>
+References: <4E4A10E8.5090705@cn.fujitsu.com>
+ <4E4A11DA.3050605@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+In-Reply-To: <4E4A11DA.3050605@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 05:22:07PM -0700, Linus Torvalds wrote:
+On Tue, Aug 16, 2011 at 02:44:42PM +0800, Xiao Guangrong wrote:
+> Fast prefetch spte for the unsync shadow page on invlpg path
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    4 +---
+>  arch/x86/kvm/mmu.c              |   38 +++++++++++++++-----------------------
+>  arch/x86/kvm/paging_tmpl.h      |   30 ++++++++++++++++++------------
+>  arch/x86/kvm/x86.c              |    4 ++--
+>  4 files changed, 36 insertions(+), 40 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 58ea3a7..927ba73 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -460,7 +460,6 @@ struct kvm_arch {
+>  	unsigned int n_requested_mmu_pages;
+>  	unsigned int n_max_mmu_pages;
+>  	unsigned int indirect_shadow_pages;
+> -	atomic_t invlpg_counter;
+>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>  	/*
+>  	 * Hash table of struct kvm_mmu_page.
+> @@ -754,8 +753,7 @@ int fx_init(struct kvm_vcpu *vcpu);
+>  
+>  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
+>  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+> -		       const u8 *new, int bytes,
+> -		       bool guest_initiated);
+> +		       const u8 *new, int bytes);
+>  int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn);
+>  int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
+>  void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index ed3e778..f6de2fc 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -3530,8 +3530,7 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
+>  }
+>  
+>  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+> -		       const u8 *new, int bytes,
+> -		       bool guest_initiated)
+> +		       const u8 *new, int bytes)
+>  {
+>  	gfn_t gfn = gpa >> PAGE_SHIFT;
+>  	union kvm_mmu_page_role mask = { .word = 0 };
+> @@ -3540,7 +3539,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  	LIST_HEAD(invalid_list);
+>  	u64 entry, gentry, *spte;
+>  	unsigned pte_size, page_offset, misaligned, quadrant, offset;
+> -	int level, npte, invlpg_counter, r, flooded = 0;
+> +	int level, npte, r, flooded = 0;
+>  	bool remote_flush, local_flush, zap_page;
+>  
+>  	/*
+> @@ -3555,19 +3554,16 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  
+>  	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
+>  
+> -	invlpg_counter = atomic_read(&vcpu->kvm->arch.invlpg_counter);
+> -
+>  	/*
+>  	 * Assume that the pte write on a page table of the same type
+>  	 * as the current vcpu paging mode since we update the sptes only
+>  	 * when they have the same mode.
+>  	 */
+> -	if ((is_pae(vcpu) && bytes == 4) || !new) {
+> +	if (is_pae(vcpu) && bytes == 4) {
+>  		/* Handle a 32-bit guest writing two halves of a 64-bit gpte */
+> -		if (is_pae(vcpu)) {
+> -			gpa &= ~(gpa_t)7;
+> -			bytes = 8;
+> -		}
+> +		gpa &= ~(gpa_t)7;
+> +		bytes = 8;
+> +
+>  		r = kvm_read_guest(vcpu->kvm, gpa, &gentry, min(bytes, 8));
+>  		if (r)
+>  			gentry = 0;
+> @@ -3593,22 +3589,18 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  	 */
+>  	mmu_topup_memory_caches(vcpu);
+>  	spin_lock(&vcpu->kvm->mmu_lock);
+> -	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+> -		gentry = 0;
+>  	kvm_mmu_free_some_pages(vcpu);
+>  	++vcpu->kvm->stat.mmu_pte_write;
+>  	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+> -	if (guest_initiated) {
+> -		if (gfn == vcpu->arch.last_pt_write_gfn
+> -		    && !last_updated_pte_accessed(vcpu)) {
+> -			++vcpu->arch.last_pt_write_count;
+> -			if (vcpu->arch.last_pt_write_count >= 3)
+> -				flooded = 1;
+> -		} else {
+> -			vcpu->arch.last_pt_write_gfn = gfn;
+> -			vcpu->arch.last_pt_write_count = 1;
+> -			vcpu->arch.last_pte_updated = NULL;
+> -		}
+> +	if (gfn == vcpu->arch.last_pt_write_gfn
+> +	    && !last_updated_pte_accessed(vcpu)) {
+> +		++vcpu->arch.last_pt_write_count;
+> +		if (vcpu->arch.last_pt_write_count >= 3)
+> +			flooded = 1;
+> +	} else {
+> +		vcpu->arch.last_pt_write_gfn = gfn;
+> +		vcpu->arch.last_pt_write_count = 1;
+> +		vcpu->arch.last_pte_updated = NULL;
+>  	}
+>  
+>  	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 7862c05..bdc2241 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -670,20 +670,27 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+>  {
+>  	struct kvm_shadow_walk_iterator iterator;
+>  	struct kvm_mmu_page *sp;
+> -	gpa_t pte_gpa = -1;
+>  	int level;
+>  	u64 *sptep;
+>  
+>  	vcpu_clear_mmio_info(vcpu, gva);
+>  
+> -	spin_lock(&vcpu->kvm->mmu_lock);
+> +	/*
+> +	 * No need to check return value here, rmap_can_add() can
+> +	 * help us to skip pte prefetch later.
+> +	 */
+> +	mmu_topup_memory_caches(vcpu);
+>  
+> +	spin_lock(&vcpu->kvm->mmu_lock);
+>  	for_each_shadow_entry(vcpu, gva, iterator) {
+>  		level = iterator.level;
+>  		sptep = iterator.sptep;
+>  
+>  		sp = page_header(__pa(sptep));
+>  		if (is_last_spte(*sptep, level)) {
+> +			pt_element_t gpte;
+> +			gpa_t pte_gpa;
+> +
+>  			if (!sp->unsync)
+>  				break;
+>  
+> @@ -692,22 +699,21 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+>  
+>  			if (mmu_page_zap_pte(vcpu->kvm, sp, sptep))
+>  				kvm_flush_remote_tlbs(vcpu->kvm);
+> +
+> +			if (rmap_can_add(vcpu))
+> +				break;
 
-> You guys seem to positively _want_ to make this a bigger issue than it
-> is. As far as I can tell, nobody has ever even noticed this problem
-> before, and we already have a trivial fix ("don't do it then") for the
-> case Al actually did notice.
+if (!rmap_can_add(vcpu))
+        break;
 
-I'm not sure.   What I've noticed was complete weirdness in uml, apparently
-dependent on SYSCALL vs. SYSENTER or int 0x80.  With following round of
-RTFS and finding what looks like an ugly issue with restarts.
+?
 
-What I don't understand at all is how the hell do we manage to avoid much
-more obvious breakage all the time we ptrace a 32bit task.  Look:
-__kernel_vsyscall() is
-        push    %ebp
-        movl    %ecx, %ebp
-        syscall
-        movl    $__USER32_DS, %ecx
-        movl    %ecx, %ss
-        movl    %ebp, %ecx
-        popl    %ebp
+> +
+> +			if (kvm_read_guest_atomic(vcpu->kvm, pte_gpa, &gpte,
+> +						  sizeof(pt_element_t)))
+> +				break;
+> +
+> +			FNAME(update_pte)(vcpu, sp, sptep, &gpte);
+>  		}
+>  
+>  		if (!is_shadow_present_pte(*sptep) || !sp->unsync_children)
+>  			break;
 
-now, what is going to happen to %ebp if we go through IRET path, for any
-reason?  From my reading it appears that right after that IRET we'll have
-ebp containing arg6.  I.e. what we'd pushed on stack.  Now, popl %ebp
-will bring the same value back.  Not a problem.  But what about
-movl %ebp, %ecx?  Again, I'm talking about the case when we have no
-restart at all - just an strace(1) tracing a process.
-
-AFAICS, in that case we ought to have %ecx == %ebp after return from
-__kernel_vsyscall().  Which would blow the things up _very_ fast.
-
-So what the hell am I missing here?
