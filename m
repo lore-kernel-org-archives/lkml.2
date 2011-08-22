@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827Ab1HVKtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:49:36 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:33168 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab1HVKt3 (ORCPT
+	id S1756829Ab1HVK5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:57:04 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50268 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab1HVK4z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:49:29 -0400
-Message-ID: <4E523430.1070003@linux.vnet.ibm.com>
-Date: Mon, 22 Aug 2011 06:49:20 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+	Mon, 22 Aug 2011 06:56:55 -0400
 MIME-Version: 1.0
-To: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        James Morris <jmorris@namei.org>
-Subject: tpm: suppress durations sysfs output if not set
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4E51F24F.1050503@oracle.com>
+References: <1309275199-10801-1-git-send-email-josef@redhat.com>
+	<4E4F814B.5070202@gmail.com>
+	<4E4F865B.2010608@gmail.com>
+	<4E4FD48B.8030101@oracle.com>
+	<4E4FE1B1.7010601@gmail.com>
+	<4E51F24F.1050503@oracle.com>
+Date: Mon, 22 Aug 2011 12:56:54 +0200
+Message-ID: <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com>
+Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Sunil Mushran <sunil.mushran@oracle.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suppress the output of durations if they were not read during driver 
-initialization.
-This is similar to other sysfs entries that return nothing if for some 
-reason sending the commands to the TPM fails.
+2011/8/22 Sunil Mushran <sunil.mushran@oracle.com>:
+> On 08/20/2011 09:32 AM, Marco Stornelli wrote:
+>>
+>> Il 20/08/2011 17:36, Sunil Mushran ha scritto:
+>>>
+>>> On 08/20/2011 03:03 AM, Marco Stornelli wrote:
+>>>>
+>>>> Il 20/08/2011 11:41, Marco Stornelli ha scritto:
+>>>>>
+>>>>> Hi,
+>>>>>
+>>>>> Il 28/06/2011 17:33, Josef Bacik ha scritto:
+>>>>>>
+>>>>>> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.
+>>>>>> Turns out
+>>>>>> using fiemap in things like cp cause more problems than it solves, so
+>>>>>> lets try
+>>>>>> and give userspace an interface that doesn't suck. We need to match
+>>>>>> solaris
+>>>>>> here, and the definitions are
+>>>>>>
+>>>>>> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
+>>>>>> next hole greater than or equal to the supplied offset
+>>>>>> is returned. The definition of a hole is provided near
+>>>>>> the end of the DESCRIPTION.
+>>>>>>
+>>>>>> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
+>>>>>> start of the next non-hole file region greater than or
+>>>>>> equal to the supplied offset.
+>>>>>>
+>>>>>
+>>>>> I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and I've
+>>>>> got some doubts about the right behavior:
+>>>>>
+>>>>> 1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means
+>>>>> always the offset from the start of the file, right?
+>>>>>
+>>>>> 2) in case of a file with hole at the beginning and data at the end, if
+>>>>> I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file
+>>>>> because the idea is to search the *next* hole and we have always a
+>>>>> virtual hole at the end of the file, right?
+>>>>
+>>>> Just to be precise about this question: the alternative here, it's to
+>>>> return the same position because we are already in a hole.
+>>>
+>>> Yes, the offset is from the start of the file.
+>>>
+>>> And yes, same offset is ok. I think the word next should be
+>>> dropped from the definition. It is misleading.
+>>>
+>>
+>> Thank. Yes the word "next" is not very clear. I re-read the proposal for
+>> the standard, actually it's seems to me that if we are in the last hole we
+>> should return the file size, if we are not in the last hole than it's ok the
+>> same offset - "....except that
+>> if offset falls beyond the last byte not within a hole, then the file
+>> offset may be set to the file size instead".
+>
+> Any proposal that differentiates between holes is wrong. It should not
+> matter where the hole is.
+>
+> Think of it from the usage-pov.
+>
+> doff = 0;
+> while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
+>    hoff = lseek(SEEK_HOLE, doff);
+>    read_offset = doff;
+>    read_len = hoff -doff;
+>    process();
+>    doff = hoff;
+> }
+>
+> The goal is to make this as efficient as follows. Treating the last
+> hole differently adds more code for no benefit.
+>
+>
 
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Mmmm.....It seems that Josef has to be clear in this point. However I
+looked for the seek hole test in xfs test suite, but I didn't find
+anything. Btrfs guys, how have you got tested the implementation? What
+do you think about this corner case? Al, what do you think about it?
 
----
-  drivers/char/tpm/tpm.c |    3 +++
-  1 file changed, 3 insertions(+)
-
-Index: linux-2.6/drivers/char/tpm/tpm.c
-===================================================================
---- linux-2.6.orig/drivers/char/tpm/tpm.c
-+++ linux-2.6/drivers/char/tpm/tpm.c
-@@ -963,6 +963,9 @@ ssize_t tpm_show_durations(struct device
-  {
-      struct tpm_chip *chip = dev_get_drvdata(dev);
-
-+    if (chip->vendor.duration[TPM_LONG] == 0)
-+        return 0;
-+
-      return sprintf(buf, "%d %d %d [%s]\n",
-                 jiffies_to_usecs(chip->vendor.duration[TPM_SHORT]),
-                 jiffies_to_usecs(chip->vendor.duration[TPM_MEDIUM]),
+Marco
