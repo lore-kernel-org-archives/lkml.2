@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1HVOvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 10:51:20 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42514 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752574Ab1HVOvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 10:51:15 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>,
-        "Felipe Balbi" <balbi@ti.com>, linux-usb@vger.kernel.org,
+	id S1752829Ab1HVOwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 10:52:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636Ab1HVOwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 10:52:24 -0400
+Date: Mon, 22 Aug 2011 16:52:10 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 4/4] usb: gadget: get rid of
- USB_GADGET_{DUAL,SUPER}SPEED
-References: <Pine.LNX.4.44L0.1108200932190.26680-100000@netrider.rowland.org>
-Date: Mon, 22 Aug 2011 16:51:11 +0200
+Subject: Re: [PATCH] perf, tool, record: Fix the header generation for pipe
+Message-ID: <20110822145210.GA8694@jolsa.brq.redhat.com>
+References: <1314022997-9217-1-git-send-email-jolsa@redhat.com>
+ <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0md7lep3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108200932190.26680-100000@netrider.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1314023913.2307.63.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sat, 20 Aug 2011, Michal Nazarewicz wrote:
->> --- a/drivers/usb/gadget/dummy_hcd.c
->> +++ b/drivers/usb/gadget/dummy_hcd.c
->> @@ -985,7 +985,7 @@ static int dummy_udc_probe (struct platform_device  
->> *pdev)
->>
->>  	dum->gadget.name = gadget_name;
->>  	dum->gadget.ops = &dummy_ops;
->> -	dum->gadget.max_speed = USB_SPEED_SUPER;;
->> +	dum->gadget.max_speed = USB_SPEED_SUPER;
+On Mon, Aug 22, 2011 at 04:38:33PM +0200, Eric Dumazet wrote:
+> Le lundi 22 août 2011 à 16:23 +0200, Jiri Olsa a écrit :
+> > The generation of the perf data file fails when using pipe
+> > as the output file descriptor.
+> > 
+> > When record command generates the data header, several files are put
+> > inside and the file size is stored ahead of the file contents itself.
+> > 
+> > The problem is that debugfs files cannot be stat-ed for size so we
+> > need to read the whole file, count the size and update the file size
+> > via seek&write (pwrite call).
+> > This cannot be done for pipes, since it's not allowed to seek on it.
+> > 
+> > The attached patch changes current behaviour for pipes to get the
+> > file size first and write correct data within the first pass.
+> > For other than pipe files, the current behaviour stands.
+> > 
+> > This issue was caught when running the script command:
+> > 
+> > 	# perf script  syscall-counts ls
+> > 
+> > since it connects record and report via pipe.
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  tools/perf/util/trace-event-info.c |   81 +++++++++++++++++++++++++++++++-----
+> >  1 files changed, 70 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> > index 3403f81..62ab9a2 100644
+> > --- a/tools/perf/util/trace-event-info.c
+> > +++ b/tools/perf/util/trace-event-info.c
+> > @@ -59,6 +59,7 @@ unsigned int page_size;
+> >  
+> >  static const char *output_file = "trace.info";
+> >  static int output_fd;
+> > +static int output_is_pipe;
+> >  
+> >  struct event_list {
+> >  	struct event_list *next;
+> > @@ -183,20 +184,59 @@ int bigendian(void)
+> >  	return *ptr == 0x01020304;
+> >  }
+> >  
+> > +static off_t get_file_size(int fd)
+> > +{
+> > +	off_t size = 0;
+> > +	char buf[BUFSIZ];
+> > +	int r;
+> > +
+> > +	do {
+> > +		r = read(fd, buf, BUFSIZ);
+> > +		if (r > 0)
+> > +			size += r;
+> > +	} while (r > 0);
+> > +
+> > +	if (lseek(fd, 0, SEEK_SET))
+> > +		die("seek failed");
+> > +
+> > +	return size;
+> > +}
+> 
+> This part makes no sense :
+> 
+> If fd is a pipe, you'll call die("seek failed")
+> 
+> If it's not a pipe, you can try lseek(fd, 0, SEEK_END)+lseek(fd, 0,
+> SEEK_SET) or fstat(fd, &st) instead of the read() loop.
 
-On Sat, 20 Aug 2011 15:41:17 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
-> You might as well get this right in patch 2/4.  Then this hunk
-> wouldn't be needed.
+- fd is always file.. the descriptor, which might be pipe, is in output_fd variable
+  but, maybe the die call is not necessary.. this should not fail
 
-Sorry about that, I've fixuped the wrong commit
+- the record_file function is called only on debugfs or procfs files:
+	events/header_page
+	events/header_event
+	events/**/format
+	printk_formats
+	/proc/kallsyms
 
->> --- a/drivers/usb/gadget/inode.c
->> +++ b/drivers/usb/gadget/inode.c
-> ...
->> @@ -1773,11 +1767,7 @@ gadgetfs_suspend (struct usb_gadget *gadget)
->>  }
->>
->>  static struct usb_gadget_driver gadgetfs_driver = {
->> -#ifdef	CONFIG_USB_GADGET_DUALSPEED
->>  	.max_speed	= USB_SPEED_HIGH,
->> -#else
->> -	.max_speed	= USB_SPEED_FULL,
->> -#endif
+so I think I need to read the whole file as in current code.
 
-> I'm not sure that a static definition is correct here.  The actual
-> max_speed depends on what descriptors the userspace program sends.
-> Take a look at the ep_config() routine.
-
-Good catch.  I've changed it to:
-
-if (dev->hs_config)
-	gadgetfs_driver.max_speed = USB_SPEED_HIGH;
-else
-	gadgetfs_driver.max_speed = USB_SPEED_FULL;
-
-just before usb_gadget_probe_driver(), which should do the trick.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+thanks,
+jirka
