@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab1HVPNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:13:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58773 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab1HVPNo (ORCPT
+	id S1752667Ab1HVPTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:19:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34274 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1HVPTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:13:44 -0400
-Date: Mon, 22 Aug 2011 16:13:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Andrew Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110822151305.GV2203@ZenIV.linux.org.uk>
-References: <20110822011645.GM2203@ZenIV.linux.org.uk>
- <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
- <4E51B56F.3080301@zytor.com>
- <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com>
- <20110822020737.GP2203@ZenIV.linux.org.uk>
- <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
- <4E51D597.3060800@zytor.com>
- <20110822095336.GB25949@kernel.org>
- <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com>
- <20110822144051.GD2946@aftab>
+	Mon, 22 Aug 2011 11:19:52 -0400
+Message-ID: <4E527394.4080900@lwfinger.net>
+Date: Mon, 22 Aug 2011 10:19:48 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110822144051.GD2946@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <julia@diku.dk>
+CC: Bing Zhao <bzhao@marvell.com>, kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: test the just-initialized
+ value
+References: <1314021636-11528-4-git-send-email-julia@diku.dk>
+In-Reply-To: <1314021636-11528-4-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 04:40:51PM +0200, Borislav Petkov wrote:
+On 08/22/2011 09:00 AM, Julia Lawall wrote:
+> From: Julia Lawall<julia@diku.dk>
+>
+> Test the just-initialized value rather than some other one.
+>
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> //<smpl>
+> @r@
+> identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
+> statement S;
+> @@
+>
+> x = f(...);
+> (
+> if (\(x == NULL\|IS_ERR(x)\)) S
+> |
+> *if (\(y == NULL\|IS_ERR(y)\))
+>   { ... when != x
+>     return ...; }
+> )
+> //</smpl>
+>
+> Signed-off-by: Julia Lawall<julia@diku.dk>
+>
+> ---
+>   drivers/net/wireless/mwifiex/scan.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+> index b28241c..d3111c9 100644
+> --- a/drivers/net/wireless/mwifiex/scan.c
+> +++ b/drivers/net/wireless/mwifiex/scan.c
+> @@ -1480,7 +1480,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv,
+>   		return -ENOMEM;
+>   	}
+>   	beacon_ie = kzalloc(ie_len, GFP_KERNEL);
+> -	if (!bss_desc) {
+> +	if (!beacon_ie) {
+>   		dev_err(priv->adapter->dev, " failed to alloc bss_desc\n");
+>   		return -ENOMEM;
+>   	}
 
-> Just to make sure I'm grokking this correctly - we want to use int $0x80
-> only for the SYSCALL variant in __kernel_vsyscall, right? Not for all
-> 32-bit syscalls on a 64-bit kernel.
+The error message should also get the bss_desc => beacon_ie chang.
 
-Um...  The problem is, syscall restart with SYSCALL insn is badly broken;
-we end up with arg2 (expected by SYSCALL in %ebp) overwritten with arg6
-by IRET path.  With obvious nasty results.
-
-In __kernel_vsyscall() the problem is possible to deal with; there we control
-the code around that sucker.  It's SYSCALL in 32bit binary outside of
-vdso32 that causes real PITA...
+Larry
