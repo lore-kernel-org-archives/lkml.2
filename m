@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab1HVLP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 07:15:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1679 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab1HVLPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 07:15:51 -0400
-Message-ID: <4E523A63.3060405@redhat.com>
-Date: Mon, 22 Aug 2011 13:15:47 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+	id S1751360Ab1HVLWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 07:22:07 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:57850 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751022Ab1HVLWA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 07:22:00 -0400
+Date: Mon, 22 Aug 2011 14:21:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v6] usb: gadget: storage: make FSG_NUM_BUFFERS variable
+ size
+Message-ID: <20110822112153.GA30398@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1313781687-13955-1-git-send-email-per.forlin@linaro.org>
 MIME-Version: 1.0
-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Q: /sys/block and I/O Schedulers
-References: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
-In-Reply-To: <4E52473A020000A1000070BC@gwsmtp1.uni-regensburg.de>
-X-Enigmail-Version: 1.2.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <1313781687-13955-1-git-send-email-per.forlin@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 12:10 PM, Ulrich Windl wrote:
-> I have a question: Reading the docs on I/O Schedulers, I had the
-> impression the docs wanted to tell me that only the low-level devices
-> (i.e. disks) use I/O Schedulers, while higher-level devices (like
-> multipaths, RAIDs, LVs, etc.) don't.
 
-As you already found, low-level device has always real io scheduler.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Device-mapper use stacked device logic - IOW mapped device
-is stacked over some real device(s).
+Hi,
 
-Remapping works on bio level, not on IO request level.
-Separate bios are simple remapped to low-level devices where
-io scheduler does its job.
+On Fri, Aug 19, 2011 at 09:21:27PM +0200, Per Forlin wrote:
+> FSG_NUM_BUFFERS is set to 2 as default.
+> Usually 2 buffers are enough to establish a good buffering pipeline.
+> The number may be increased in order to compensate a for bursty VFS
+> behaviour.
+>=20
+> Here follows a description of system that may require more than
+> 2 buffers.
+>  * CPU ondemand governor active
+>  * latency cost for wake up and/or frequency change
+>  * DMA for IO
+>=20
+> Use case description.
+>  * Data transfer from MMC via VFS to USB.
+>  * DMA shuffles data from MMC and to USB.
+>  * The CPU wakes up every now and then to pass data in and out from VFS,
+>    which cause the bursty VFS behaviour.
+>=20
+> Test set up
+>  * Running dd on the host reading from the mass storage device
+>  * cmdline: dd if=3D/dev/sdb of=3D/dev/null bs=3D4k count=3D$((256*100))
+>  * Caches are dropped on the host and on the device before each run
+>=20
+> Measurements on a Snowball board with ondemand_governor active.
+>=20
+> FSG_NUM_BUFFERS 2
+> 104857600 bytes (105 MB) copied, 5.62173 s, 18.7 MB/s
+> 104857600 bytes (105 MB) copied, 5.61811 s, 18.7 MB/s
+> 104857600 bytes (105 MB) copied, 5.57817 s, 18.8 MB/s
+>=20
+> FSG_NUM_BUFFERS 4
+> 104857600 bytes (105 MB) copied, 5.26839 s, 19.9 MB/s
+> 104857600 bytes (105 MB) copied, 5.2691 s, 19.9 MB/s
+> 104857600 bytes (105 MB) copied, 5.2711 s, 19.9 MB/s
+>=20
+> There may not be one optimal number for all boards. This is why
+> the number is added to Kconfig. If selecting USB_GADGET_DEBUG_FILES
+> this value may be set by a module parameter as well.
+>=20
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
 
-There is one exception: dm-multipath which uses "request based" mapping,
-IOW it means it uses own scheduler on device-mapper level
-(But in old kernels it was on bio level as well,
-for more info see https://lkml.org/lkml/2008/2/15/411)
+applied, thanks.
 
-> Using the SLES11 SP1 kernel (2.6.32.43-0.4-xen), I found out that LVs
-> seem to use the I/O Scheduler
+--=20
+balbi
 
-LVs (e.g. linear mappings) do not use own scheduler. But /queue directory
-contains more attributes which need to be visible there.
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> My test was as simple as this: /sys/block # for d in *
->> do echo $d: $(<$d/queue/scheduler) done
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Btw see "lsblk -t" - here you can see stacked devices with scheduler
-and topology info parsed from sysfs (in new util-linux).
+iQEcBAEBAgAGBQJOUjvRAAoJEAv8Txj19kN1gAAIAJ7EY2l+E0ucdMc5iAXEP6Y/
+5NtnAOyA9Qec1OZO0+CcgPJpbYLTj49WFD161F8UqIMOYPVyCtasK5OG4uIKMQOY
+o6CoCGAWFTzpvCyw6ZhQsa9hilUNVTKD5Ti1AehvyrZRmBIf+pOB/7zEUFQeU0Hj
+6f1v2jImjnK6TckW+QBAu94rdpWT4+BA9V7HbRcg2W+VmkK2T4VdEzRFvPHUfYA1
+oMg3KxkOl8qo5ZEh9WgIU4o7j53cd4xKd/vUprNbJ19Iy9rH0JZazxDAZQAOnr1m
+aJbQZzT9SwpGhjYaCWrWRIP7rR8aYF77lO8h9inPSk5A0BwcTq9WpwWlgAXN1qY=
+=qbpZ
+-----END PGP SIGNATURE-----
 
-Milan
+--UugvWAfsgieZRqgk--
