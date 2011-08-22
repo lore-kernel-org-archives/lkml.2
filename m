@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab1HVPX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 11:23:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab1HVPX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 11:23:26 -0400
-Date: Mon, 22 Aug 2011 11:23:18 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
-Subject: Re: [RFC][PATCH 2/6] x86, nmi: create new NMI handler routines
-Message-ID: <20110822152318.GC2067@redhat.com>
-References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
- <1313786266-9585-3-git-send-email-dzickus@redhat.com>
- <1314022580.24275.33.camel@twins>
+	id S1752945Ab1HVPYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 11:24:47 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45708 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1HVPYp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 11:24:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314022580.24275.33.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110822135604.GU2203@ZenIV.linux.org.uk>
+References: <4E51CFD8.2090508@gmail.com>
+	<CA+5PVA6KUMDEygjxrqwvpRDNfJ3WobUs7rwyP+pZrX9-atZUgw@mail.gmail.com>
+	<20110822131621.GS2203@ZenIV.linux.org.uk>
+	<20110822132713.GT2203@ZenIV.linux.org.uk>
+	<CA+5PVA5NE1Om9SK-UoA-RBH56RP-MLrNdiMVAVQx8LFaBdxaYg@mail.gmail.com>
+	<20110822135604.GU2203@ZenIV.linux.org.uk>
+Date: Mon, 22 Aug 2011 11:24:44 -0400
+Message-ID: <CA+5PVA65eUx36JMgbBoEKy9FwBzasBehc_OGqsThgns9=oGdLA@mail.gmail.com>
+Subject: Re: INFO: possible circular locking dependency detected 3.1.0-rc2-00190-g3210d19
+From: Josh Boyer <jwboyer@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 04:16:20PM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-08-19 at 16:37 -0400, Don Zickus wrote:
-> > +static struct nmiaction *__free_nmi(unsigned int type, const char *name)
-> > +{
-> > +       struct nmi_desc *desc = nmi_to_desc(type);
-> > +       struct nmiaction *n, **np = &(desc->head);
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&desc->lock, flags);
-> > +
-> ...
-> > +
-> > +       spin_unlock_irqrestore(&desc->lock, flags);
-> > +       synchronize_rcu();
-> > +       return *np;
-> > +}
-> 
-> > +void unregister_nmi_handler(unsigned int type, const char *name)
-> > +{
-> > +       kfree(__free_nmi(type, name));
-> > +}
-> 
-> This code is weird.. why not have the kfree() in __free_nmi(), also why
-> use sync_rcu() and not use kfree_rcu()?
+On Mon, Aug 22, 2011 at 9:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Aug 22, 2011 at 09:33:34AM -0400, Josh Boyer wrote:
+>
+>> So the lockdep report in the RHBZ (which now that I look at it
+>> probably isn't the same as this report) seems to be doing a readdir
+>> while find is trying to mmap, which is calling into
+>> hugetlbfs_file_mmap and throwing the same deadlock warning.  Is that
+>> like the scenario you are describing above?
+>
+> Lockdep records the first trace that leads to locks taken in this
+> order.  readdir() seems to be the first thing to step on i_mutex
+> and mmap_sem (not too surprisingly, come to think of that - directory
+> reads happening earlier in the boot than regular file writes).
+>
+> So when it reports i_mutex taken under mmap_sem, readdir gets mentioned
+> by lockdep.  Often leading to comments along the lines of "but this
+> inode is not a directory at all; shouldn't we relax the rules for
+> non-directories?"  Nope; the same ordering very much applies to regular
+> files.  With s/readdir/write/.
+>
+> The bottom line is: don't take i_mutex while holding mmap_sem.  Really.
 
-It's a mixture of copying the notifier code and not fully understanding
-the rcu options out there.  I'll look into kfree_rcu and try to clean this
-up.
+OK, thanks.
 
-> 
-> > +EXPORT_SYMBOL_GPL(unregister_nmi_handler); 
-> 
-> *g*, so binary modules can register an NMI handler, but can't unregister
-> it..?
+It seems this particular hugetlbfs issue was reported a while ago here:
 
-heh.  I suck.  Sorry about that.
+https://lkml.org/lkml/2011/4/15/272
 
-Cheers,
-Don
+I'll go poke that thread a bit.  That just leaves the ext4 evict case,
+which hopefully Ted can answer.
 
+josh
