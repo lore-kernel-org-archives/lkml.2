@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab1HVBIM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 21:08:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59449 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab1HVBIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 21:08:10 -0400
-Message-ID: <4E51AC19.4010208@cn.fujitsu.com>
-Date: Mon, 22 Aug 2011 09:08:41 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1756365Ab1HVBJZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 21:09:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35673 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752709Ab1HVBJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Aug 2011 21:09:24 -0400
 MIME-Version: 1.0
-To: rolando.martins@gmail.com
-CC: containers@lists.linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: cpuset.sched_relax_domain_level problem
-References: <CABcS5h13R0omxkZW_aJaza9FynbKSc=CVaYDkHMvJ64nAnWPvw@mail.gmail.com>
-In-Reply-To: <CABcS5h13R0omxkZW_aJaza9FynbKSc=CVaYDkHMvJ64nAnWPvw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-22 09:07:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-22 09:07:09,
-	Serialize complete at 2011-08-22 09:07:09
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com>
+References: <20110820011845.GC2203@ZenIV.linux.org.uk> <4E4FD12F.70508@nod.at>
+ <20110820201406.GF2203@ZenIV.linux.org.uk> <4E501F51.9060905@nod.at>
+ <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com>
+ <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
+ <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk>
+ <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com>
+ <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk>
+ <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 21 Aug 2011 18:09:00 -0700
+Message-ID: <CA+55aFztZ=r5wa0x26KJQxvZOaQq8s2v3u50wCyJcA-Sc4g8gQ@mail.gmail.com>
+Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
+ crap with vdso on uml/i386)
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        mingo@redhat.com, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Cc's
+On Sun, Aug 21, 2011 at 5:44 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>
+> Which suggests an easy-ish fix: if sysenter is used or if syscall is
+> entered from the EIP is is supposed to be entered from, then just
+> change ip in the argument save to point to the int 0x80 instruction.
 
-Rolando Martins wrote:
-> Hi,
-> I am testing kernel 3.0.3 and I am unable to "echo 3 >
-> cpuset.sched_relax_domain_level".
-> I was able to do it in 2.6.39.
-> 
-> Any clues?
-> 
+Indeed. Just add an "int 0x80" instruction to the vsyscall thing, and
+you'd be done.
 
-I think it's because your machine doesn't support level 3.
+In fact, just replace the
 
-This commit made the change:
+  jmp .Lenter_kernel
 
-commit 60495e7760d8ee364695006af37309b0755e0e17
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Thu Apr 7 14:10:04 2011 +0200
+with
 
-    sched: Dynamic sched_domain::level
-    
-    Remove the SD_LV_ enum and use dynamic level assignments.
+  int 0x80
+
+and you'd be pretty much all done, no?
+
+(Ok, that's probably a huge over-simplification, but perhaps "close
+enough" to true that it would be workable)
+
+                     Linus
