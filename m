@@ -1,104 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab1HVCCF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 22:02:05 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50067 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756550Ab1HVCCB convert rfc822-to-8bit (ORCPT
+	id S1756676Ab1HVCGO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 22:06:14 -0400
+Received: from science.horizon.com ([71.41.210.146]:42432 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756656Ab1HVCGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 22:02:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E51B56F.3080301@zytor.com>
-References: <20110820201406.GF2203@ZenIV.linux.org.uk> <4E501F51.9060905@nod.at>
- <CAObL_7FoPHu6AKneswjEmiU4UBjUuKpYahakOaTNXM3=ZCpYaA@mail.gmail.com>
- <CAObL_7H8E1fde-d_Kfjrg2mQ5PdAp9X=fVRTqXJKzzYmQ1vAQQ@mail.gmail.com>
- <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk>
- <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com>
- <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk>
- <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com>
- <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
- <4E51B56F.3080301@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sun, 21 Aug 2011 22:01:40 -0400
-X-Google-Sender-Auth: GJgoCtSBBZKPKbWIVXIKDkHB13g
-Message-ID: <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com>
-Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
- crap with vdso on uml/i386)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, mingo@redhat.com,
-        Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 21 Aug 2011 22:06:10 -0400
+Date: 21 Aug 2011 22:06:08 -0400
+Message-ID: <20110822020608.11889.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, tytso@mit.edu
+Subject: Re: [PATCH 0/2] Improve sequence number generation.
+Cc: dan@doxpara.com, davem@davemloft.net, gerrit@erg.abdn.ac.uk,
+        herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, netdev@vger.kernel.org, w@1wt.eu
+In-Reply-To: <20110821032753.GA8992@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 21, 2011 at 9:48 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/21/2011 06:41 PM, Linus Torvalds wrote:
->> If people are using syscall directly, we're pretty much stuck. No
->> amount of "that's hopelessly wrong" will ever matter. We don't break
->> existing binaries.
->>
->> That said, I'd *hope* that everybody uses the vdso32, simply because
->> user programs are not supposed to know which CPU they are running on
->> and if that CPU even *supports* the syscall instruction. In which case
->> it may be possible that we can play games with the vdso thing. But
->> that really would be conditional on "nobody ever reports a failure".
->
-> I think we found that out with the vsyscall emulation issue last cycle.
->  It works, so it will have been used, somewhere...
->
->> But if that's possible, maybe we can increment the RIP by 2 for
->> 'syscall', and slip an "'int 0x80" after the syscall instruction in
->> the vdso there? Resulting in the same pseudo-solution I suggested for
->> sysenter...
->
-> I think we have the above problem.
->
-> The problem here is that the syscall state is actually more complex than
-> we retain: the entire state is given by (entry point, register state);
-> with that amount of state we have all the information needed to *either*
-> extract the syscall arguments *or* the register contents.  Without
-> those, we can only represent one of the two possible metalevels (right
-> now we represent the higher-level metalevel, the argument vector), but
-> we need both for different usages.
+> Here's a random thought --- it won't help on anything other than
+> modern x86's, but who's to say we have to use the same algorithm on
+> all platforms?
 
-My understanding of the problem is the following:
+We absolutely do not.  With 15 64-bit registers, there are a lot more
+efficient algorithms available than x86-32.
 
- 1. The SYSCALL 32-bit calling convention puts arg2 in ebp and arg6 on
-the stack.
+Here are my current timing experiments trying to find an efficient
+hash for that case.  Timings are for 100,000 iterations, so these are
+generally in the 100-200 cycles range per operation.
 
- 2. The int 0x80 convention is different: arg2 is in ecx.
+This is 32-bit code, even though it's running on 64-bit machines.
 
- 3. We're worried that pt_regs-using compat syscalls might want the
-regs to appear to match the actual arguments (why?)
 
- 4. ptrace expects the "registers" when SYSCALL happens to match the
-int 0x80 convention.  (This is, IMO, sick.)
+The first 3 are various MD5 implementations (standard, with the k[]
+constants in an external array, with the input and K values scheduled
+separately so it's a 64-word linear fetch while running).
 
- 5. Syscall restart with the SYSCALL instruction must switch to
-userspace and back to the kernel for reasons I don't understand that
-presumably involve signal delivery.
+Then are three similar variants of two-at-a-time MD5 computation.
+The lines reporting 0 time are the second outputs.
 
- 6. Existing ABI requires that the kernel not clobber syscall
-arguments (except, of course, when ptrace or syscall restart
-explicitly change those arguments).
+The last two MD5 timings (9 and 10) are the current half_md4_transform
+and twothirdsMD4Transform.  Those are the timing figures to match,
+or preferably beat.
 
-So we're sort of screwed.  arg2 must be in ecx to keep ptrace happy
-but SYSCALL clobbers ecx, so arg2 cannot be preserved.
+ChaCha is 8 rounds, and simply not fast enough.
 
-So here are three strawman ideas:
+The Skein192 (to be renamed; it's NOT approved by the designers!) is a
+36-round, 6x32-bit variant of the SHA-3 candidate Skein.  0 is C code,
+1 and 2 are rolled up assembly variants, 3 and 4 are unrolled assembly,
+and 5 is unrolled assembly that also drops the tweak words.  (Which is
+hardly important if we're only hashing one block.)
 
-a) Change #4.  Maybe it's too late to do this, though.
+That, as you can see, is about half the time of MD5 and competitive with
+the 2/3 MD4.  And probably considerably more secure.  (It's basically a
+secure 192-bit hash with zero margin; I could maybe shave another couple
+of rounds and still have 128-bit security.)
 
-b) When SYSCALL happens, change RIP to point two bytes past an int
-0x80 instruction in the vdso.  Make the next instruction there be a
-"ret" that returns to the instruction after the original syscall.
-Patch the stack in the kernel.
+Shabal is a supposedly-fast SHA-3 candidate that made it to round 2,
+just to see what the timing is like.  The second line is a half-size
+variant that works on 8 as opposed to 16 words at a time.
 
-c) Disable syscall restart when SYSCALL happens from somewhere outside the vdso.
+2.4 GHz Phenom, hot cache:
+MD5 (& half MD4) implementations:
+ 0:  36912577 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 1:  36937728 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 2:  37354723 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 3:  58866027 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 4:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 5:  96074375 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 6:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 7: 101722571 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 8:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 9:  12321905 cycles  b4b721c6 5635b583 b06c6474 c9871bee
+10:  18038018 cycles  336f8820 5565aa9b 0133a23a 0b62780f
 
---Andy
+ChaCha implementations:
+ 0:  37345090 cycles  751ddf6a 6977b031 60730a4f c1e2d89e
+ 1:  30782411 cycles  d5fec2fe a8937844 33da9645 cbff3484
+
+Skein192 implementations:
+ 0:  30343213 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 1:  22137253 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 2:  22439643 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 3:  18189990 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 4:  19025781 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 5:  17335443 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+
+Shabal implementations:
+ 0: 177585782 cycles  6c192c71 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+ 1:  88048716 cycles  51e5dab0 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+
+
+2.4 GHz Phenom, "cool cache": Run each of the 20 code paths once, then repeat 100,000 times.
+MD5 (& half MD4) implementations:
+ 0:  43746107 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 1:  43682485 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 2:  43554706 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 3:  65376283 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 4:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 5: 105050654 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 6:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 7: 109949761 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 8:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 9:  19284802 cycles  b4b721c6 5635b583 b06c6474 c9871bee
+10:  24359312 cycles  336f8820 5565aa9b 0133a23a 0b62780f
+
+ChaCha implementations:
+ 0:  46379423 cycles  751ddf6a 6977b031 60730a4f c1e2d89e
+ 1:  38641131 cycles  d5fec2fe a8937844 33da9645 cbff3484
+
+Skein192 implementations:
+ 0:  38125833 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 1:  31800936 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 2:  29010869 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 3:  25627838 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 4:  25913924 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 5:  24318110 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+
+Shabal implementations:
+ 0: 185723030 cycles  6c192c71 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+ 1:  92834811 cycles  51e5dab0 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+
+
+2.67 GHz i7 (Xeon W3520), hot cache:
+MD5 (& half MD4) implementations:
+ 0:  36919956 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 1:  37156578 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 2:  35044283 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 3:  61506553 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 4:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 5:  97228616 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 6:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 7: 102025434 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 8:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 9:  11890788 cycles  b4b721c6 5635b583 b06c6474 c9871bee
+10:  19542853 cycles  336f8820 5565aa9b 0133a23a 0b62780f
+
+ChaCha implementations:
+ 0:  32864931 cycles  751ddf6a 6977b031 60730a4f c1e2d89e
+ 1:  28502254 cycles  d5fec2fe a8937844 33da9645 cbff3484
+
+Skein192 implementations:
+ 0:  28894544 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 1:  25963843 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 2:  26394942 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 3:  22960214 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 4:  22458045 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 5:  21020691 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+
+Shabal implementations:
+ 0: 107339671 cycles  6c192c71 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+ 1:  52250187 cycles  51e5dab0 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+
+
+2.67 GHz i7 (Xeon W3520), cool cache:
+MD5 (& half MD4) implementations:
+ 0:  38680693 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 1:  37812504 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 2:  35577261 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 3:  60584516 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 4:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 5:  96525869 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 6:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 7:  98360974 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 8:         0 cycles  16d174cf 10a7082f e1a2b897 3faddc63
+ 9:  13622987 cycles  b4b721c6 5635b583 b06c6474 c9871bee
+10:  20895171 cycles  336f8820 5565aa9b 0133a23a 0b62780f
+
+ChaCha implementations:
+ 0:  34210571 cycles  751ddf6a 6977b031 60730a4f c1e2d89e
+ 1:  29135985 cycles  d5fec2fe a8937844 33da9645 cbff3484
+
+Skein192 implementations:
+ 0:  29621108 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 1:  27885244 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 2:  26022084 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 3:  22360719 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 4:  24639107 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+ 5:  21072150 cycles  646ce01c 7f2228dd 229a336d 033748b5 0de3a665 c79cf4f7
+
+Shabal implementations:
+ 0: 105186652 cycles  6c192c71 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
+ 1:  57009351 cycles  51e5dab0 ed0912f7 ec4513bb c8f03710 8e4e71b2 5200adff f4f40b0c 81ab7e54
