@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab1HVNrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:47:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55587 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1HVNri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:47:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: sdharia@codeaurora.org
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-Date: Mon, 22 Aug 2011 15:47:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
-        "Kenneth Heitke" <kheitke@codeaurora.org>,
-        "David Brown" <davidb@codeaurora.org>, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, rdunlap@xenotime.net,
-        rmk+kernel@arm.linux.org.uk, john.stultz@linaro.org,
-        akpm@linux-foundation.org, ohad@wizery.com, gregkh@suse.de,
-        stefanr@s5r6.in-berlin.de, lethal@linux-sh.org, linville@tuxdriver.com,
-        zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org> <1313724284.19990.136.camel@finisterre.wolfsonmicro.main> <bd22ca4871ed2ce80b881a36dac5061c.squirrel@www.codeaurora.org>
-In-Reply-To: <bd22ca4871ed2ce80b881a36dac5061c.squirrel@www.codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108221547.14657.arnd@arndb.de>
-X-Provags-ID: V02:K0:T+dZw7WcMXl0OzSxV2SBgae7719J6lHuQVp4vEspend
- iKH9RHnQs1Pipve/hg/l9TgusNlfSd6sSP5LfgbREwRMJZMffs
- HjCzI/duwL8lxzI0A7vMdWyN0PqjD23+7LRVBlEF5y3pxcjcHH
- Et6xaIZATBiu/LxShR91DH8i3OvRxy4ODJYw2gX9PO5BQ9J75r
- 6bMincJt61egS0QjK2s+A==
+	id S1751087Ab1HVNwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:52:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab1HVNwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:52:09 -0400
+From: Milan Broz <mbroz@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: dm-devel@redhat.com, kay.sievers@vrfy.org, ebiederm@xmission.com,
+        greg@kroah.com, Milan Broz <mbroz@redhat.com>
+Subject: [PATCH] kobj_uevent: Ignore if some listeners cannot handle message
+Date: Mon, 22 Aug 2011 15:51:34 +0200
+Message-Id: <1314021094-15453-1-git-send-email-mbroz@redhat.com>
+In-Reply-To: <4E4ECA5D.1020907@redhat.com>
+References: <4E4ECA5D.1020907@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 August 2011, Sagar Dharia wrote:
-> Another suggestion about probe is having callback to notify when the
-> device is ready-to-use after driver probe powers it up. I will change the
-> framework accordingly to have this done.
+kobject_uevent() uses a multicast socket and should ignore
+if one of listeners cannot handle messages or nobody is
+listening at all.
 
-Is this actually needed? If the driver is responsible for powering up the
-device, maybe it's enough to have a simple exported function from the
-framework that blocks until the device has been probed, using a
-'completion' or a similar wait_event() based primitive for waiting for
-the device:
+Easily reproducible when a process in system is cloned
+with CLONE_NEWNET flag.
 
-1. The bus driver creates the struct slim_device in one of the three ways
-   mentioned and does init_completion().
-2. The probe function of the driver ensures that the regulators/clocks/...
-   are set up correctly and then calls wait_for_completion()
-3. When the device shows up on the bus, the slimbus layer calls complete().
+(See also http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/5256)
 
-Steps 2 and 3 can happen in any order.
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+---
+ lib/kobject_uevent.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	Arnd
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index 70af0a7..ad72a03 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -282,7 +282,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 							    kobj_bcast_filter,
+ 							    kobj);
+ 			/* ENOBUFS should be handled in userspace */
+-			if (retval == -ENOBUFS)
++			if (retval == -ENOBUFS || retval == -ESRCH)
+ 				retval = 0;
+ 		} else
+ 			retval = -ENOMEM;
+-- 
+1.7.6
+
