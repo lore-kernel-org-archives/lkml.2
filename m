@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1HVViv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 17:38:51 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:45921 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751668Ab1HVVir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 17:38:47 -0400
-Message-ID: <4E52CC63.5070201@nod.at>
-Date: Mon, 22 Aug 2011 23:38:43 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: x86@kernel.org, rostedt@goodmis.org, jbaron@redhat.com,
-        akpm@linux-foundation.org, rusty@rustcorp.com.au, vapier@gentoo.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: [RFC] UML/x86_64 module loader
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1753951Ab1HVVk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 17:40:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51293 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753860Ab1HVVk1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 17:40:27 -0400
+Date: Mon, 22 Aug 2011 14:39:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 2/2] vmscan: use atomic-long for shrinker batching
+Message-Id: <20110822143954.18c1539c.akpm@linux-foundation.org>
+In-Reply-To: <20110822101727.19462.55289.stgit@zurg>
+References: <20110822101721.19462.63082.stgit@zurg>
+	<20110822101727.19462.55289.stgit@zurg>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, 22 Aug 2011 14:17:27 +0300
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-UserModeLinux is using the arch specific module functions from 
-arch/x86/kernel/module.c.
-On i386 this works perfectly fine but on x86_64 it causes problems.
+> Use atomic-long operations instead of looping around cmpxchg().
+> 
 
-apply_relocate_add() assumes modules compiled with -mcmodel=kernel 
-because the kernel lives in the negative 2GiB of the address space.
-This assumption is not true for UML.
-On an UML instance with more than 512MiB of memory no modules can be 
-loaded because vmalloc() locates the module near the 2GiB limit and the
-ELF relocations causes an overflow. (Detected by "if ((s64)val != *(s32 
-*)loc)" in apply_relocate_add()).
+Seems nice.
 
-Now I'm not sure how to fix this.
-Mostly because I'm not a module loader nor an ELF expert. 8-)
+> diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
+> index 790651b..ac6b8ee 100644
+> --- a/include/linux/shrinker.h
+> +++ b/include/linux/shrinker.h
+> @@ -34,7 +34,7 @@ struct shrinker {
+>  
+>  	/* These are for internal use */
+>  	struct list_head list;
+> -	long nr;	/* objs pending delete */
+> +	atomic_long_t nr_in_batch; /* objs pending delete */
+>  };
 
-Is there an easy way to adjust the current x86_64 module loader to deal 
-with UML "positive" relocations?
+This makes shrinker.h have a dependency on atomic.h.  shrinker.h is a
+strange thing that doesn't include its own dependent header files - the
+shrinker.h includer is responsible for that.  And they both need
+fixups, for safety's sake:
 
-Thanks,
-//richard
+ include/linux/fs.h |    2 +-
+ include/linux/mm.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-P.s: Just removing the overflow-check does not fix the problem. ;-)
+--- a/include/linux/mm.h~vmscan-use-atomic-long-for-shrinker-batching-fix
++++ a/include/linux/mm.h
+@@ -10,6 +10,7 @@
+ #include <linux/mmzone.h>
+ #include <linux/rbtree.h>
+ #include <linux/prio_tree.h>
++#include <linux/atomic.h>
+ #include <linux/debug_locks.h>
+ #include <linux/mm_types.h>
+ #include <linux/range.h>
+--- a/include/linux/fs.h~vmscan-use-atomic-long-for-shrinker-batching-fix
++++ a/include/linux/fs.h
+@@ -394,8 +394,8 @@ struct inodes_stat_t {
+ #include <linux/semaphore.h>
+ #include <linux/fiemap.h>
+ #include <linux/rculist_bl.h>
+-#include <linux/shrinker.h>
+ #include <linux/atomic.h>
++#include <linux/shrinker.h>
+ 
+ #include <asm/byteorder.h>
+ 
+_
+
