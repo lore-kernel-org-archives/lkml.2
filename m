@@ -1,71 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab1HVFnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 01:43:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48323 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab1HVFnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 01:43:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,261,1312182000"; 
-   d="scan'208";a="42533091"
-Message-ID: <4E51EC8E.7040304@intel.com>
-Date: Mon, 22 Aug 2011 13:43:42 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Iceowl/1.0b2 Icedove/3.1.11
+	id S1752895Ab1HVGDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 02:03:22 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:8172 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab1HVGDT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 02:03:19 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: =?utf-8?Q?=C3=89ric?= Piel <E.A.B.Piel@tudelft.nl>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH 6/6] Input: elantech - add v3 hardware support
+In-Reply-To: <4E4E5F08.1030803@tudelft.nl>
+References: <1313632629-23603-1-git-send-email-jj_ding@emc.com.tw> <1313632629-23603-7-git-send-email-jj_ding@emc.com.tw> <4E4E5F08.1030803@tudelft.nl>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 22 Aug 2011 14:05:35 +0800
+Message-ID: <87bovi2d74.fsf@emc.com.tw>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Pavel Ivanov <paivanof@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: APEI: Can not request iomem region for GARs
-References: <CAG1a4rs4Cr1z50gGuK9SLE6aOvibE1sdV_GSLPv+gqYC8g+ORQ@mail.gmail.com> <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
-In-Reply-To: <CAErSpo4FfBoGDUquoLNsJ9=z-M-x6NQgP8xJL_VqEXpsL2H5PA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2011 05:48 AM, Bjorn Helgaas wrote:
-> On Tue, Aug 16, 2011 at 9:43 PM, Pavel Ivanov <paivanof@gmail.com> wrote:
->> Ever since I switched from kernel 2.6.38 to 3.0 and later versions I
->> always get the following error message on each boot:
->>
->> [    2.844242] APEI: Can not request iomem region
->> <00000000bf7b522a-00000000bf7b522c> for GARs.
->>
->> If it was only in dmesg I wouldn't even notice it. But it's always
->> printed on the console which is kind of annoying.
->> I don't quite understand what this message is about and couldn't find
->> anything on the internet. Does this message mean some error that I
->> could fix? If no, is there any way I can suppress it (besides lowering
->> the error level of messages printed on console, of course)?
+Hi Éric,
+
+Thanks for your comments, a few lines below:
+
+On Fri, 19 Aug 2011 15:03:04 +0200, Éric Piel <E.A.B.Piel@tudelft.nl> wrote:
+> Op 18-08-11 03:57, JJ Ding schreef:
+> > v3 hardware's packet format is almost identical to v2 (one/three finger touch),
+> > except when sensing two finger touch, the hardware sends 12 bytes of data.
+> >
+> > Signed-off-by: JJ Ding<jj_ding@emc.com.tw>
+> Hi,
+> A couple of comments, in line.
 > 
-> [+cc Huang Ying, APEI author]
+> :
+> :
+> > diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+> > index ddd40eb..e13a719 100644
+> > --- a/drivers/input/mouse/elantech.c
+> > +++ b/drivers/input/mouse/elantech.c
+> :
+> > +/*
+> > + * Interpret complete data packets and report absolute mode input events for
+> > + * hardware version 3. (12 byte packets for two fingers)
+> > + */
+> > +static void elantech_report_absolute_v3(struct psmouse *psmouse,
+> > +					int packet_type)
+> > +{
+> > +	struct input_dev *dev = psmouse->dev;
+> > +	struct elantech_data *etd = psmouse->private;
+> > +	unsigned char *packet = psmouse->packet;
+> > +	unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+> > +	unsigned int width = 0, pres = 0;
+> > +
+> > +	/* byte 0: n1  n0   .   .   .   .   R   L */
+> > +	fingers = (packet[0]&  0xc0)>>  6;
+> > +
+> > +	switch (fingers) {
+> > +	case 3:
+> > +	case 1:
+> > +		/*
+> > +		 * byte 1:  .   .   .   .  x11 x10 x9  x8
+> > +		 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+> > +		 */
+> > +		x1 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > +		/*
+> > +		 * byte 4:  .   .   .   .  y11 y10 y9  y8
+> > +		 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+> > +		 */
+> > +		y1 = etd->y_max - (((packet[4]&  0x0f)<<  8) | packet[5]);
+> > +
+> > +		if (fingers == 3&&  debounce(x1, y1))
+> > +			return;
+> > +
+> > +		break;
+> > +
+> > +	case 2:
+> > +		if (packet_type == PACKET_V3_HEAD) {
+> > +			/*
+> > +			 * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
+> > +			 * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
+> > +			 */
+> > +			etd->prev_x = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > +			/*
+> > +			 * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
+> > +			 * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
+> > +			 */
+> > +			etd->prev_y = etd->y_max -
+> > +				(((packet[4]&  0x0f)<<  8) | packet[5]);
+> > +			/*
+> > +			 * wait for next packet
+> > +			 */
+> > +			return;
+> > +		}
+> > +
+> > +		/* packet_type == PACKET_V3_TAIL */
+> > +		x1 = etd->prev_x;
+> > +		y1 = etd->prev_y;
+> > +		x2 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> > +		y2 = etd->y_max - (((packet[4]&  0x0f)<<  8) | packet[5]);
+> > +		break;
+> > +	}
+> You actually have three times the same formula, so you could simplify it:
 > 
-> BIOS-e820: 00000000bf79e000 - 00000000bf7d0000 (ACPI NVS)
-> APEI: Can not request iomem region <00000000bf7b522a-00000000bf7b522c> for GARs.
+> if (fingers !=0 ) {
+> 	/*
+> 	 * byte 1:  .   .   .   .  x11 x10 x9  x8
+> 	 * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+> 	 */
+> 	x1 = ((packet[1]&  0x0f)<<  8) | packet[2];
+> 	/*
+> 	 * byte 4:  .   .   .   .  y11 y10 y9  y8
+> 	 * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+> 	 */
+> 	y1 = ((packet[4]&  0x0f)<<  8) | packet[5];
+> }
 > 
-> This register is in the ACPI NVS region, which is type E820_NVS (not
-> E820_RESERVED), so e820_reserve_resources() reserves it as
-> IORESOURCE_BUSY.  My guess is that Huang tested this on machines where
-> the EINJ/ERST registers are in "reserved" regions, not ACPI NVS
-> regions.  The "reserved" regions are not marked IORESOURCE_BUSY.
+> if ((fingers == 3) && debounce(x1, y1))
+> 	return;
+we need one more line here, for fingers != 2 :
+y1 = etd->y_max - y1;
+> if (fingers == 2) {
+> 	if (packet_type == PACKET_V3_HEAD)) {
+> 		/* wait for next packet */
+> 		etd->prev_x = x1;
+> 		etd->prev_y = etd->y_max - y1;
+                etd->prev_y = y1;
+> 		return;
+> 	} else {
+> 		/* packet_type == PACKET_V3_TAIL */
+> 		x2 = etd->prev_x;
+> 		y2 = etd->prev_y;
+> 	}
+> }
+I like this compact version, but it seems to me this is not as straight
+forward as the original switch case. I am OK with either. Is there
+anyone who has more to say about this?
 > 
-> Huang, when you fix this, please include something like the following
-> (mangled) patch so the error message is more consistent with other
-> resource messages.
-
-The patch looks good.  Can you resubmit it with changelog?
-
-> Could you also remove the ERST/EINJ/HEST "Table is not found"
-> messages?  As far as I can tell, these tables are optional, and
-> printing the message is confusing to users, e.g.,
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
-
-Yes.  This seems confusing to them.  I will change this.
-
-Best Regards,
-Huang Ying
-
+> > +
+> > +	pres = (packet[1]&  0xf0) | ((packet[4]&  0xf0)>>  4);
+> > +	width = ((packet[0]&  0x30)>>  2) | ((packet[3]&  0x30)>>  4);
+> What about the case of two fingers? Are pressure and width correct for 
+> both fingers? In that case, maybe it should also be saved from 
+> PACKET_V3_HEAD.
+I am told (by our firmware guy) that pres and width are sent the same
+value for two finger touch.
+> 
+> > +
+> > +	input_report_key(dev, BTN_TOUCH, fingers != 0);
+> > +	input_report_abs(dev, ABS_X, x1);
+> > +	input_report_abs(dev, ABS_Y, y1);
+> > +	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+> > +	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+> > +	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+> > +	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
+> > +	input_report_key(dev, BTN_LEFT, packet[0]&  0x01);
+> > +	input_report_key(dev, BTN_RIGHT, packet[0]&  0x02);
+> > +	input_report_abs(dev, ABS_PRESSURE, pres);
+> > +	input_report_abs(dev, ABS_TOOL_WIDTH, width);
+> > +
+> > +	input_sync(dev);
+> > +}
+> > +
+> :
+> >
+> >   /*
+> >    * Set the appropriate event bits for the input subsystem
+> >    */
+> > -static void elantech_set_input_params(struct psmouse *psmouse)
+> > +static int elantech_set_input_params(struct psmouse *psmouse)
+> >   {
+> >   	struct input_dev *dev = psmouse->dev;
+> >   	struct elantech_data *etd = psmouse->private;
+> >   	unsigned int x_min = 0, y_min = 0, x_max = 0, y_max = 0, y_2ft_max = 0;
+> >
+> > -	set_range(psmouse,&x_min,&y_min,&x_max,&y_max,&y_2ft_max);
+> > +	if (set_range(psmouse,&x_min,&y_min,&x_max,&y_max,&y_2ft_max))
+> > +		return -1;
+> >
+> >   	__set_bit(EV_KEY, dev->evbit);
+> >   	__set_bit(EV_ABS, dev->evbit);
+> > @@ -582,10 +739,26 @@ static void elantech_set_input_params(struct psmouse *psmouse)
+> >   		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> >   		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> >   		break;
+> > +
+> > +	case 3:
+> > +		input_set_abs_params(dev, ABS_X, x_min, x_max, 0, 0);
+> > +		input_set_abs_params(dev, ABS_Y, y_min, y_max, 0, 0);
+> > +		/* range of pressure and width is the same as v2 */
+> > +		input_set_abs_params(dev, ABS_PRESSURE, ETP_PMIN_V2,
+> > +				     ETP_PMAX_V2, 0, 0);
+> > +		input_set_abs_params(dev, ABS_TOOL_WIDTH, ETP_WMIN_V2,
+> > +				     ETP_WMAX_V2, 0, 0);
+> > +		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+> Does v3 have the same limitation in MT about only reporting the edges of 
+> the bounding box? Or are the two fingers always reported independently? 
+> If that is so, you can drop this line :-)
+I suppose it's the same as v2, but I have to comfirm with our firmware team.
+I will ckeck this.
+> 
+> > +		input_mt_init_slots(dev, 2);
+> > +		input_set_abs_params(dev, ABS_MT_POSITION_X, x_min, x_max, 0, 0);
+> > +		input_set_abs_params(dev, ABS_MT_POSITION_Y, y_min, y_max, 0, 0);
+> > +		break;
+> >   	}
+> >
+> 
+> Cheers,
+> Éric
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
