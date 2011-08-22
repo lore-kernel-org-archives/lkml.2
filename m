@@ -1,114 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab1HVK5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 06:57:04 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:50268 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab1HVK4z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 06:56:55 -0400
+	id S1756835Ab1HVK7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 06:59:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42296 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756797Ab1HVK7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 06:59:44 -0400
+Message-ID: <4E52368D.4050301@ti.com>
+Date: Mon, 22 Aug 2011 11:59:25 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <4E51F24F.1050503@oracle.com>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
-	<4E4F814B.5070202@gmail.com>
-	<4E4F865B.2010608@gmail.com>
-	<4E4FD48B.8030101@oracle.com>
-	<4E4FE1B1.7010601@gmail.com>
-	<4E51F24F.1050503@oracle.com>
-Date: Mon, 22 Aug 2011 12:56:54 +0200
-Message-ID: <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com>
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Sunil Mushran <sunil.mushran@oracle.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: soc-core: use GFP_KERNEL flag for kmalloc  in snd_soc_cnew
+References: <1313809425.4691.3.camel@phoenix>
+In-Reply-To: <1313809425.4691.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/22 Sunil Mushran <sunil.mushran@oracle.com>:
-> On 08/20/2011 09:32 AM, Marco Stornelli wrote:
->>
->> Il 20/08/2011 17:36, Sunil Mushran ha scritto:
->>>
->>> On 08/20/2011 03:03 AM, Marco Stornelli wrote:
->>>>
->>>> Il 20/08/2011 11:41, Marco Stornelli ha scritto:
->>>>>
->>>>> Hi,
->>>>>
->>>>> Il 28/06/2011 17:33, Josef Bacik ha scritto:
->>>>>>
->>>>>> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.
->>>>>> Turns out
->>>>>> using fiemap in things like cp cause more problems than it solves, so
->>>>>> lets try
->>>>>> and give userspace an interface that doesn't suck. We need to match
->>>>>> solaris
->>>>>> here, and the definitions are
->>>>>>
->>>>>> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
->>>>>> next hole greater than or equal to the supplied offset
->>>>>> is returned. The definition of a hole is provided near
->>>>>> the end of the DESCRIPTION.
->>>>>>
->>>>>> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
->>>>>> start of the next non-hole file region greater than or
->>>>>> equal to the supplied offset.
->>>>>>
->>>>>
->>>>> I'm implementing the SEEK_DATA/SEEK_HOLE management for pramfs and I've
->>>>> got some doubts about the right behavior:
->>>>>
->>>>> 1) when we use SEEK_DATA/SEEK_HOLE, the offset used in lseek means
->>>>> always the offset from the start of the file, right?
->>>>>
->>>>> 2) in case of a file with hole at the beginning and data at the end, if
->>>>> I do lseek(fd, 0, SEEK_HOLE) I should receive the end of the file
->>>>> because the idea is to search the *next* hole and we have always a
->>>>> virtual hole at the end of the file, right?
->>>>
->>>> Just to be precise about this question: the alternative here, it's to
->>>> return the same position because we are already in a hole.
->>>
->>> Yes, the offset is from the start of the file.
->>>
->>> And yes, same offset is ok. I think the word next should be
->>> dropped from the definition. It is misleading.
->>>
->>
->> Thank. Yes the word "next" is not very clear. I re-read the proposal for
->> the standard, actually it's seems to me that if we are in the last hole we
->> should return the file size, if we are not in the last hole than it's ok the
->> same offset - "....except that
->> if offset falls beyond the last byte not within a hole, then the file
->> offset may be set to the file size instead".
->
-> Any proposal that differentiates between holes is wrong. It should not
-> matter where the hole is.
->
-> Think of it from the usage-pov.
->
-> doff = 0;
-> while ((doff = lseek(SEEK_DATA, doff)) != -ENXIO) {
->    hoff = lseek(SEEK_HOLE, doff);
->    read_offset = doff;
->    read_len = hoff -doff;
->    process();
->    doff = hoff;
-> }
->
-> The goal is to make this as efficient as follows. Treating the last
-> hole differently adds more code for no benefit.
->
->
+On 20/08/11 04:03, Axel Lin wrote:
+> GFP_ATOMIC is not needed here, use GFP_KERNEL instead.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/soc-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+> index ae93aa8..b6d8716 100644
+> --- a/sound/soc/soc-core.c
+> +++ b/sound/soc/soc-core.c
+> @@ -1913,7 +1913,7 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
+>  
+>  	if (prefix) {
+>  		name_len = strlen(long_name) + strlen(prefix) + 2;
+> -		name = kmalloc(name_len, GFP_ATOMIC);
+> +		name = kmalloc(name_len, GFP_KERNEL);
+>  		if (!name)
+>  			return NULL;
+>  
 
-Mmmm.....It seems that Josef has to be clear in this point. However I
-looked for the seek hole test in xfs test suite, but I didn't find
-anything. Btrfs guys, how have you got tested the implementation? What
-do you think about this corner case? Al, what do you think about it?
-
-Marco
+Acked-by: Liam Girdwood <lrg@ti.com>
