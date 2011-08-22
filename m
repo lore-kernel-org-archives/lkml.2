@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1HVNfp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:35:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65046 "EHLO mx1.redhat.com"
+	id S1752743Ab1HVNiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:38:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44791 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab1HVNfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:35:42 -0400
-Date: Mon, 22 Aug 2011 15:32:44 +0200
+	id S1752457Ab1HVNip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 09:38:45 -0400
+Date: Mon, 22 Aug 2011 15:35:40 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: bookjovi@gmail.com
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] coredump: fix wrong comments on core limits of pipe
-	coredump case
-Message-ID: <20110822133244.GA28449@redhat.com>
-References: <1314048011-2824-1-git-send-email-bookjovi@gmail.com>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH 2/3] vfork: make it killable
+Message-ID: <20110822133540.GA28724@redhat.com>
+References: <20110727163159.GA23785@redhat.com> <20110729192358.GB31717@mtj.dyndns.org> <20110812175550.GA7484@redhat.com> <20110812175629.GC7484@redhat.com> <1313786038.19751.2.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1314048011-2824-1-git-send-email-bookjovi@gmail.com>
+In-Reply-To: <1313786038.19751.2.camel@mfleming-mobl1.ger.corp.intel.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah, I thought you are going to re-do this patch...
-
-On 08/22, bookjovi@gmail.com wrote:
+On 08/19, Matt Fleming wrote:
 >
-> Only core limit 1 can skip dump in ispipe case, not 0.
+> On Fri, 2011-08-12 at 19:56 +0200, Oleg Nesterov wrote:
+> > Make vfork() killable.
+> >
+> > Change do_fork(CLONE_VFORK) to do wait_for_completion_killable().
+> > If it fails we do not return to the user-mode and never touch ->mm
+> > shared with our child.
+> >
+> > However, in this case we should clear child->vfork_done before
+> > return, we use task_lock() in do_fork()->wait_for_vfork_done()
+> > and complete_vfork_done() to serialize with each other.
+>
+> It's probably worth updating the comment above task_lock() in
+> include/linux/sched.h, to say that it is now used to protect
+> ->vfork_done.
 
-Yes, but this is (almost) internal hack we use to avoid the recursive
-crashes.
+OK, added
 
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -2163,7 +2163,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
->  			 * we're not writing to the file system, but we use
->  			 * cprm.limit of 1 here as a speacial value. Any
->  			 * non-1 limit gets set to RLIM_INFINITY below, but
-> -			 * a limit of 0 skips the dump.  This is a consistent
-> +			 * a limit of 1 skips the dump.  This is a consistent
+	@@ -2335,7 +2335,7 @@ static inline int thread_group_empty(struct task_struct *p)
+	  * Protects ->fs, ->files, ->mm, ->group_info, ->comm, keyring
+	  * subscriptions and synchronises with wait4().  Also used in procfs.  Also
+	  * pins the final release of task.io_context.  Also protects ->cpuset and
+	- * ->cgroup.subsys[].
+	+ * ->cgroup.subsys[]. And ->vfork_done.
+	  *
+	  * Nests both inside and outside of read_lock(&tasklist_lock).
+	  * It must not be nested with write_lock_irq(&tasklist_lock),
 
-I'd suggest to simple remove the "skips the dump" part.
-
-To me, we can also remove the "Note that we use task_tgid_vnr" part,
-but feel free to ignore. Every user of task_tgid_vnr() could have the
-same comment.
+to this patch, and pushed 1-4 into ptrace branch.
 
 Oleg.
 
