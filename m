@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1HVNdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 09:33:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33421 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab1HVNdf convert rfc822-to-8bit (ORCPT
+	id S1752732Ab1HVNev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 09:34:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56813 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab1HVNes convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 09:33:35 -0400
+	Mon, 22 Aug 2011 09:34:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110822132713.GT2203@ZenIV.linux.org.uk>
-References: <4E51CFD8.2090508@gmail.com>
-	<CA+5PVA6KUMDEygjxrqwvpRDNfJ3WobUs7rwyP+pZrX9-atZUgw@mail.gmail.com>
-	<20110822131621.GS2203@ZenIV.linux.org.uk>
-	<20110822132713.GT2203@ZenIV.linux.org.uk>
-Date: Mon, 22 Aug 2011 09:33:34 -0400
-Message-ID: <CA+5PVA5NE1Om9SK-UoA-RBH56RP-MLrNdiMVAVQx8LFaBdxaYg@mail.gmail.com>
-Subject: Re: INFO: possible circular locking dependency detected 3.1.0-rc2-00190-g3210d19
-From: Josh Boyer <jwboyer@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110822095336.GB25949@kernel.org>
+References: <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk>
+ <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com>
+ <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com>
+ <4E51B56F.3080301@zytor.com> <CAObL_7HLDD=FVSN58W7a0g0R--8x7OVrQVCBxWD1DirVZxRn2w@mail.gmail.com>
+ <20110822020737.GP2203@ZenIV.linux.org.uk> <CAObL_7HY7qFUoqtNju42=BHTR8WuuW-cL_cQh_uUfx_7gFfHRg@mail.gmail.com>
+ <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 22 Aug 2011 09:34:27 -0400
+X-Google-Sender-Auth: UzNXHJ9ldROwQ8huxRmDYUFP4Ok
+Message-ID: <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 9:27 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Aug 22, 2011 at 02:16:21PM +0100, Al Viro wrote:
->> On Mon, Aug 22, 2011 at 09:09:14AM -0400, Josh Boyer wrote:
->>
->> > We've had a report of this on 3.0.1 as well.  Slightly different
->> > scenario and fs, but the locks in question are the same.
->> > https://bugzilla.redhat.com/show_bug.cgi?id=730998
->> >
->> > It seems that with CONFIG_PROVE_LOCKING on, might_fault will always
->> > attempt to grab mm->mmap_sem.  The common flow here is that getdents
->> > calls filldir, which calls copy_to_user, which is what is calling
->> > might_fault.
->> >
->> > Beyond that, I'm a bit over my head at the moment because I don't know
->> > if the VFS is right and we just need some more lockdep annotations or
->> > if there really is a problem.
->>
->> Don't grab ->i_mutex in ->evict_inode().  Why are you doing that, anyway?
+On Mon, Aug 22, 2011 at 5:53 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> Note, BTW, that readdir() is a red herring here; there is a much more
-> relevant reason for that ranking.  Namely, write() doing copy_from_user()
-> when the file we are writing into has i_mutex held by us.  That can fault
-> and in this case we have a non-directory inode.  While you can't have
-> directory mmapped, regular files can be mmapped just fine.
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+>
+>> Borislav,
+>>
+>> We're tracking down an issue with the way system call arguments are
+>> handled on 32 bits.  We have a solution for SYSENTER but not
+>> SYSCALL; fixing SYSCALL "properly" appears to be very difficult at
+>> best.
+>>
+>> So the question is: how much overhead would it be to simply fall
+>> back to int $0x80 or some other legacy-style domain crossing
+>> instruction for 32-bit system calls on AMD64 processors?  We don't
+>> ever use SYSCALL in legacy mode, so native i386 kernels are
+>> unaffected.
+>
+> Last i measured INT80 and SYSCALL costs they were pretty close to
+> each other on AMD CPUs - closer than on Intel.
 
-So the lockdep report in the RHBZ (which now that I look at it
-probably isn't the same as this report) seems to be doing a readdir
-while find is trying to mmap, which is calling into
-hugetlbfs_file_mmap and throwing the same deadlock warning.  Is that
-like the scenario you are describing above?
+>From memory, SYSCALL in 64-bit mode on Sandy Bridge is much faster
+than int 0xcc, which is presumably about the same speed as int 0x80.
+That's because SYSCALL is blazingly fast (<30 ns for a whole system
+call) and int is slower.
 
-josh
+--Andy
+
+>
+> Also, most installations are either pure 32-bit or dominantly 64-bit,
+> the significantly mixed-mode case is dwindling.
+>
+> Unifying some more in this area would definitely simplify things ...
+>
+> Thanks,
+>
+>        Ingo
+>
