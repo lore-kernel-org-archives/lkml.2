@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1HVCi5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 22:38:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:32926 "EHLO ozlabs.org"
+	id S1756678Ab1HVCiz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 22:38:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:45333 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab1HVCix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751972Ab1HVCix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 21 Aug 2011 22:38:53 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio-net: Read MAC only after initializing MSI-X
-In-Reply-To: <20110819152335.GA19489@redhat.com>
-References: <1313225461-24458-1-git-send-email-levinsasha928@gmail.com> <20110819152335.GA19489@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: [PULL] lguest fix, virtio documentation
+In-Reply-To: <1313419712.3004.1.camel@sasha>
+References: <87sjp37au3.fsf@rustcorp.com.au> <1313419712.3004.1.camel@sasha>
 User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 22 Aug 2011 09:54:50 +0930
-Message-ID: <87hb5a5m3x.fsf@rustcorp.com.au>
+Date: Mon, 22 Aug 2011 09:42:47 +0930
+Message-ID: <87k4a65mo0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Aug 2011 18:23:35 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Sat, Aug 13, 2011 at 11:51:01AM +0300, Sasha Levin wrote:
-> > The MAC of a virtio-net device is located at the first field of the device
-> > specific header. This header is located at offset 20 if the device doesn't
-> > support MSI-X or offset 24 if it does.
+On Mon, 15 Aug 2011 17:48:32 +0300, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Mon, 2011-08-15 at 10:25 +0930, Rusty Russell wrote:
+> > [ This adds a text copy of the virtio draft spec to the kernel source,
+> >   which should make it easier for people to find and read.  The master
+> >   is still the lyx document on my server, so I'll keep it in sync. ]
 > > 
-> > Current code in virtnet_probe() used to probe the MAC before checking for
-> > MSI-X, which means that the read was always made from offset 20 regardless
-> > of whether MSI-X in enabled or not.
+> > The following changes since commit 91d85ea6786107aa2837bef3e957165ad7c8b823:
 > > 
-> > This patch moves the MAC probe to after the detection of whether MSI-X is
-> > enabled. This way the MAC will be read from offset 24 if the device indeed
-> > supports MSI-X.
+> >   Merge branch 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging (2011-08-13 18:37:28 -0700)
 > > 
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > Cc: virtualization@lists.linux-foundation.org
-> > Cc: netdev@vger.kernel.org
-> > Cc: kvm@vger.kernel.org
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > are available in the git repository at:
+> > 
+> >   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git master
+> > 
+> > Rusty Russell (2):
+> >       virtio: Add text copy of spec to Documentation/virtual.
 > 
-> I am not sure I see a bug in virtio: the config pace layout simply
-> changes as msix is enabled and disabled (and if you look at the latest
-> draft, also on whether 64 bit features are enabled).
-> It doesn't depend on msix capability being present in device.
-> 
-> The spec seems to be explicit enough:
-> 	If MSI-X is enabled for the device, two additional fields immediately
-> 	follow this header.
-> 
-> So I'm guessing the bug is in kvm tools which assume
-> same layout for when msix is enabled and disabled.
-> qemu-kvm seems to do the right thing so the device
-> seems to get the correct mac.
+> The "Device Status" paragraph says FAILED is 8, while it should be 0x80.
 
-So, the config space moves once MSI-X is enabled?  In which case, it
-should say "ONCE MSI-X is enabled..."
+They're 1-based bit numbers.  But since everyone makes this mistake,
+I've changed them *all* to values rather than bit numbers.
 
-Thanks,
+Thanks!
 Rusty.
