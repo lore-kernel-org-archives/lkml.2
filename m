@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1HVUwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 16:52:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51606 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753884Ab1HVUwe (ORCPT
+	id S1751802Ab1HVUz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 16:55:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38644 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086Ab1HVUzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 16:52:34 -0400
-Date: Mon, 22 Aug 2011 13:52:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Joern Engel <joern@logfs.org>, logfs@logfs.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 3/4] string: introduce memchr_inv
-Message-Id: <20110822135218.f2d9f462.akpm@linux-foundation.org>
-In-Reply-To: <1314030548-21082-4-git-send-email-akinobu.mita@gmail.com>
-References: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com>
-	<1314030548-21082-4-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 22 Aug 2011 16:55:55 -0400
+Message-ID: <4E52C252.9060904@canonical.com>
+Date: Mon, 22 Aug 2011 13:55:46 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, chris@cnpbagwell.com
+Subject: Re: [PATCH 4/9 v5] Input: synaptics - add image sensor support
+References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org> <1314011163-19098-5-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1314011163-19098-5-git-send-email-djkurtz@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011 01:29:07 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
-
-> memchr_inv() is mainly used to check whether the whole buffer is filled
-> with just a specified byte.
+On 08/22/2011 04:05 AM, Daniel Kurtz wrote:
+> Synaptics makes (at least) two kinds of touchpad sensors:
+>  * Older pads use a profile sensor that could only infer the location
+>    of individual fingers based on the projection of their profiles
+>    onto row and column sensors.
+>  * Newer pads use an image sensor that can track true finger position
+>    using a two-dimensional sensor grid.
 > 
-> The function name and prototype are stolen from logfs and the
-> implementation is from SLUB.
+> Both sensor types support an "Advanced Gesture Mode":
+>  When multiple fingers are detected, the touchpad sends alternating
+>  "Advanced Gesture Mode" (AGM) and "Simple Gesture Mode" (SGM)
+>  packets.
+>  The AGM packets have w=2, and contain reduced resolution finger data
+>  The SGM packets have w={0,1} and contain full resolution finger data
 > 
-> ...
->
-> +/**
-> + * memchr_inv - Find a character in an area of memory.
-> + * @s: The memory area
-> + * @c: The byte to search for
-> + * @n: The size of the area.
+> Profile sensors try to report the "upper" (larger y value) finger in
+> the SGM packet, and the lower (smaller y value) in the AGM packet.
+> However, due to the nature of the profile sensor, they easily get
+> confused when fingers cross, and can start reporting the x-coordinate
+> of one with the y-coordinate of the other.  Thus, for profile
+> sensors, "semi-mt" was created, which reports a "bounding box"
+> created by pairing min and max coordinates of the two pairs of
+> reported fingers.
+> 
+> Image sensors can report the actual coordinates of two of the fingers
+> present.  This patch detects if the touchpad is an image sensor and
+> reports finger data using the MT-B protocol.
+> 
+> NOTE: This patch only adds partial support for 2-finger gestures.
+>       The proper interpretation of the slot contents when more than
+>       two fingers are present is left to later patches.  Also,
+>       handling of 'number of fingers' transitions is incomplete.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-This text seems to be stolen from memchr().  I guess it's close enough.
+It's fine with me. It adds a bit of asymmetry in packet processing
+between mt and non-mt trackpads. This could be reworked by splitting
+synaptics_process_packet() up into an mt case function (which is what
+synaptics_image_sensor_process() is), and a non-mt case function. I
+think that would be nice, but not a big deal so:
 
-> + * returns the address of the first character other than @c, or %NULL
-> + * if the whole buffer contains just @c.
-> + */
-> +void *memchr_inv(const void *start, int c, size_t bytes)
-> +{
-> +	u8 value = c;
-> +	u64 value64;
-> +	unsigned int words, prefix;
-> +
-> +	if (bytes <= 16)
-> +		return check_bytes8(start, value, bytes);
-> +
-> +	value64 = value | value << 8 | value << 16 | value << 24;
-> +	value64 = (value64 & 0xffffffff) | value64 << 32;
-> +	prefix = 8 - ((unsigned long)start) % 8;
-> +
-> +	if (prefix) {
-> +		u8 *r = check_bytes8(start, value, prefix);
-> +		if (r)
-> +			return r;
-> +		start += prefix;
-> +		bytes -= prefix;
-> +	}
-> +
-> +	words = bytes / 8;
-> +
-> +	while (words) {
-> +		if (*(u64 *)start != value64)
-
-OK, problem.  This will explode if passed a misaligned address on
-certain (non-x86) architectures.  This is nasty because people will
-develop and test code on x86 and it works.  Much later, the
-alpha/ia64/etc guys discover the problem.
-
-One fix would be to use get_unaligned().  This might be slow on some
-architectures, I don't know.  Another fix is to restrict the caller's
-alignment freedom; document this and add a runtime WARN_ON().
-
-> +			return check_bytes8(start, value, 8);
-> +		start += 8;
-> +		words--;
-> +	}
-> +
-> +	return check_bytes8(start, value, bytes % 8);
-> +}
-> +EXPORT_SYMBOL(memchr_inv);
-
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
