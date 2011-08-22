@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab1HVXQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 19:16:57 -0400
-Received: from claw.goop.org ([74.207.240.146]:48625 "EHLO claw.goop.org"
+	id S1754516Ab1HVXQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 19:16:53 -0400
+Received: from claw.goop.org ([74.207.240.146]:48626 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab1HVXP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754241Ab1HVXP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Aug 2011 19:15:27 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -14,472 +14,60 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 12/15] x86/cmpxchg: unify cmpxchg into cmpxchg.h
-Date: Mon, 22 Aug 2011 16:15:08 -0700
-Message-Id: <5e3b917225ba6f736d2e148f008a67600248436e.1314054734.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 00/12] x86: Ticket lock cleanup
+Date: Mon, 22 Aug 2011 16:14:56 -0700
+Message-Id: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1314054734.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314054734.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Everything that's actually common between 32 and 64-bit is moved into
-cmpxchg.h.
 
-The common variants are derived from the 64-bit versions, so they
-will emit 64-bit instructions if given 64-bit arguments, which will
-be bad instructions on a 32-bit target.  Don't do that.
+Hi all,
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/cmpxchg.h    |  133 +++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cmpxchg_32.h |  113 -------------------------------
- arch/x86/include/asm/cmpxchg_64.h |  131 ------------------------------------
- 3 files changed, 133 insertions(+), 244 deletions(-)
+This is a repost of the ticketlock cleanup I posted for the last mergewindow.
 
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index b771cdb..76375ba 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -1,6 +1,128 @@
- #ifndef ASM_X86_CMPXCHG_H
- #define ASM_X86_CMPXCHG_H
- 
-+#include <asm/alternative.h> /* Provides LOCK_PREFIX */
-+
-+extern void __xchg_wrong_size(void);
-+extern void __cmpxchg_wrong_size(void);
-+
-+/*
-+ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-+ * Since this is generally used to protect other memory information, we
-+ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-+ * information around.
-+ */
-+#define __xchg(x, ptr, size)						\
-+({									\
-+	__typeof(*(ptr)) __x = (x);					\
-+	switch (size) {							\
-+	case 1:								\
-+	{								\
-+		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
-+		asm volatile("xchgb %0,%1"				\
-+			     : "=q" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 2:								\
-+	{								\
-+		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
-+		asm volatile("xchgw %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 4:								\
-+	{								\
-+		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
-+		asm volatile("xchgl %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 8:								\
-+	{								\
-+		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
-+		asm volatile("xchgq %0,%1"				\
-+			     : "=r" (__x), "+m" (*__ptr)		\
-+			     : "0" (__x)				\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	default:							\
-+		__xchg_wrong_size();					\
-+	}								\
-+	__x;								\
-+})
-+
-+#define xchg(ptr, v)							\
-+	__xchg((v), (ptr), sizeof(*ptr))
-+
-+/*
-+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-+ * store NEW in MEM.  Return the initial value in MEM.  Success is
-+ * indicated by comparing RETURN with OLD.
-+ */
-+#define __raw_cmpxchg(ptr, old, new, size, lock)			\
-+({									\
-+	__typeof__(*(ptr)) __ret;					\
-+	__typeof__(*(ptr)) __old = (old);				\
-+	__typeof__(*(ptr)) __new = (new);				\
-+	switch (size) {							\
-+	case 1:								\
-+	{								\
-+		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
-+		asm volatile(lock "cmpxchgb %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "q" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 2:								\
-+	{								\
-+		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
-+		asm volatile(lock "cmpxchgw %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 4:								\
-+	{								\
-+		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
-+		asm volatile(lock "cmpxchgl %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	case 8:								\
-+	{								\
-+		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
-+		asm volatile(lock "cmpxchgq %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__ptr)		\
-+			     : "r" (__new), "0" (__old)			\
-+			     : "memory");				\
-+		break;							\
-+	}								\
-+	default:							\
-+		__cmpxchg_wrong_size();					\
-+	}								\
-+	__ret;								\
-+})
-+
-+#define __cmpxchg(ptr, old, new, size)					\
-+	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
-+
-+#define __sync_cmpxchg(ptr, old, new, size)				\
-+	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
-+
-+#define __cmpxchg_local(ptr, old, new, size)				\
-+	__raw_cmpxchg((ptr), (old), (new), (size), "")
-+
- #ifdef CONFIG_X86_32
- # include "cmpxchg_32.h"
- #else
-@@ -8,6 +130,17 @@
- #endif
- 
- 
-+#ifdef __HAVE_ARCH_CMPXCHG
-+#define cmpxchg(ptr, old, new)						\
-+	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+
-+#define sync_cmpxchg(ptr, old, new)					\
-+	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
-+
-+#define cmpxchg_local(ptr, old, new)					\
-+	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
-+#endif
-+
- #define xadd(ptr, inc)							\
- 	do {								\
- 		switch (sizeof(*(ptr))) {				\
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 0ef9b82..3b573f6 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -1,62 +1,11 @@
- #ifndef _ASM_X86_CMPXCHG_32_H
- #define _ASM_X86_CMPXCHG_32_H
- 
--#include <asm/alternative.h> /* Provides LOCK_PREFIX */
--
- /*
-  * Note: if you use set64_bit(), __cmpxchg64(), or their variants, you
-  *       you need to test for the feature in boot_cpu_data.
-  */
- 
--extern void __xchg_wrong_size(void);
--extern void __cmpxchg_wrong_size(void);
--
--/*
-- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-- * Since this is generally used to protect other memory information, we
-- * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-- * information around.
-- */
--#define __xchg(x, ptr, size)						\
--({									\
--	__typeof(*(ptr)) __x = (x);					\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile("xchgb %0,%1"				\
--			     : "=q" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile("xchgw %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__xchg_wrong_size();					\
--	}								\
--	__x;								\
--})
--
--#define xchg(ptr, v)							\
--	__xchg((v), (ptr), sizeof(*ptr))
--
- /*
-  * CMPXCHG8B only writes to the target if we had the previous
-  * value in registers, otherwise it acts as a read and gives us the
-@@ -85,70 +34,8 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
- 		     : "memory");
- }
- 
--/*
-- * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-- * store NEW in MEM.  Return the initial value in MEM.  Success is
-- * indicated by comparing RETURN with OLD.
-- */
--#define __raw_cmpxchg(ptr, old, new, size, lock)			\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	__typeof__(*(ptr)) __old = (old);				\
--	__typeof__(*(ptr)) __new = (new);				\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile(lock "cmpxchgb %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "q" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile(lock "cmpxchgw %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile(lock "cmpxchgl %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__cmpxchg_wrong_size();					\
--	}								\
--	__ret;								\
--})
--
--#define __cmpxchg(ptr, old, new, size)					\
--	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
--
--#define __sync_cmpxchg(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
--
--#define __cmpxchg_local(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "")
--
- #ifdef CONFIG_X86_CMPXCHG
- #define __HAVE_ARCH_CMPXCHG 1
--
--#define cmpxchg(ptr, old, new)						\
--	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define sync_cmpxchg(ptr, old, new)					\
--	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define cmpxchg_local(ptr, old, new)					\
--	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
- #endif
- 
- #ifdef CONFIG_X86_CMPXCHG64
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index aeaa610..9d6c147 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -1,66 +1,6 @@
- #ifndef _ASM_X86_CMPXCHG_64_H
- #define _ASM_X86_CMPXCHG_64_H
- 
--#include <asm/alternative.h> /* Provides LOCK_PREFIX */
--
--extern void __xchg_wrong_size(void);
--extern void __cmpxchg_wrong_size(void);
--
--/*
-- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
-- * Since this is generally used to protect other memory information, we
-- * use "asm volatile" and "memory" clobbers to prevent gcc from moving
-- * information around.
-- */
--#define __xchg(x, ptr, size)						\
--({									\
--	__typeof(*(ptr)) __x = (x);					\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile("xchgb %0,%1"				\
--			     : "=q" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile("xchgw %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 8:								\
--	{								\
--		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile("xchgq %0,%1"				\
--			     : "=r" (__x), "+m" (*__ptr)		\
--			     : "0" (__x)				\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__xchg_wrong_size();					\
--	}								\
--	__x;								\
--})
--
--#define xchg(ptr, v)							\
--	__xchg((v), (ptr), sizeof(*ptr))
--
- static inline void set_64bit(volatile u64 *ptr, u64 val)
- {
- 	*ptr = val;
-@@ -68,77 +8,6 @@ static inline void set_64bit(volatile u64 *ptr, u64 val)
- 
- #define __HAVE_ARCH_CMPXCHG 1
- 
--/*
-- * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-- * store NEW in MEM.  Return the initial value in MEM.  Success is
-- * indicated by comparing RETURN with OLD.
-- */
--#define __raw_cmpxchg(ptr, old, new, size, lock)			\
--({									\
--	__typeof__(*(ptr)) __ret;					\
--	__typeof__(*(ptr)) __old = (old);				\
--	__typeof__(*(ptr)) __new = (new);				\
--	switch (size) {							\
--	case 1:								\
--	{								\
--		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile(lock "cmpxchgb %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "q" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 2:								\
--	{								\
--		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile(lock "cmpxchgw %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 4:								\
--	{								\
--		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile(lock "cmpxchgl %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	case 8:								\
--	{								\
--		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile(lock "cmpxchgq %2,%1"			\
--			     : "=a" (__ret), "+m" (*__ptr)		\
--			     : "r" (__new), "0" (__old)			\
--			     : "memory");				\
--		break;							\
--	}								\
--	default:							\
--		__cmpxchg_wrong_size();					\
--	}								\
--	__ret;								\
--})
--
--#define __cmpxchg(ptr, old, new, size)					\
--	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
--
--#define __sync_cmpxchg(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
--
--#define __cmpxchg_local(ptr, old, new, size)				\
--	__raw_cmpxchg((ptr), (old), (new), (size), "")
--
--#define cmpxchg(ptr, old, new)						\
--	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define sync_cmpxchg(ptr, old, new)					\
--	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
--
--#define cmpxchg_local(ptr, old, new)					\
--	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
--
- #define cmpxchg64(ptr, o, n)						\
- ({									\
- 	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
+The main differences are:
+ - put "asm volatiles" into the locked unlock path
+ - tidy up xadd helper to put it into a common place
+ - clean up the rest of cmpxchg.h to remove most of the 32/64 duplication
+
+The main downside of the 32/64 cmpxchg/xadd duplication is that passing a 64-bit param
+to cmpxchg/xadd on a 32-bit system will generate a bad instruction rather than a link
+error, but I don't think that's a huge issue.
+
+As a bonus, I added some cmpxchg_flag() variants, which return a bool rather than
+the old value, which saves the caller from having to do it (since cmpxchg itself
+sets the flags).  This is useful since many callers of cmpxchg() only care whether
+it worked without actually getting the old value.
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (12):
+  x86/ticketlock: clean up types and accessors
+  x86/ticketlock: convert spin loop to C
+  x86/ticketlock: Use C for __ticket_spin_unlock
+  x86/ticketlock: make large and small ticket versions of spin_lock the
+    same
+  x86/ticketlock: make __ticket_spin_lock common
+  x86/ticketlock: make __ticket_spin_trylock common
+  x86: add xadd helper macro
+  x86/ticketlock: use xadd helper
+  x86/cmpxchg: linux/alternative.h has LOCK_PREFIX
+  x86/cmpxchg: move 32-bit __cmpxchg_wrong_size to match 64 bit.
+  x86/cmpxchg: move 64-bit set64_bit() to match 32-bit
+  x86/cmpxchg: unify cmpxchg into cmpxchg.h
+
+ arch/x86/include/asm/cmpxchg.h        |  165 +++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/cmpxchg_32.h     |  114 -----------------------
+ arch/x86/include/asm/cmpxchg_64.h     |  131 --------------------------
+ arch/x86/include/asm/spinlock.h       |  140 +++++++++------------------
+ arch/x86/include/asm/spinlock_types.h |   22 ++++-
+ 5 files changed, 232 insertions(+), 340 deletions(-)
+
 -- 
 1.7.6
 
