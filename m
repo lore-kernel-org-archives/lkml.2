@@ -1,123 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab1HVAbS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Aug 2011 20:31:18 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43804 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139Ab1HVAbP (ORCPT
+	id S1756244Ab1HVAeL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Aug 2011 20:34:11 -0400
+Received: from mx-s.ctc-g.co.jp ([131.248.58.2]:46872 "EHLO
+	mx-s.ctc.ctc-g.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1HVAeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Aug 2011 20:31:15 -0400
-Message-ID: <4E51A34C.6060207@gmail.com>
-Date: Mon, 22 Aug 2011 10:31:08 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: axel.lin@gmail.com
-CC: linux-kernel@vger.kernel.org,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-fbdev@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] video: ep93xx-fb: add missing include of linux/module.h
-References: <1313937545.13671.5.camel@phoenix> <4E5197B8.8020608@gmail.com> <4E519AC7.3030001@gmail.com> <CAF+7xWkezyMrnt-_0EVtNWtAB2v7pceATB8HEbdC8oqOY0camw@mail.gmail.com>
-In-Reply-To: <CAF+7xWkezyMrnt-_0EVtNWtAB2v7pceATB8HEbdC8oqOY0camw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Aug 2011 20:34:08 -0400
+Date: Mon, 22 Aug 2011 09:33:52 +0900
+From: "Jun.Kondo" <jun.kondo@ctc-g.co.jp>
+Subject: Re: [omega-g1:11072] Re: [PATCH] net: configurable sysctl parameter
+ "net.core.tcp_lowat" for sk_stream_min_wspace()
+In-reply-to: <20110819.024326.598275465899000817.davem@davemloft.net>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, omega-g1@ctc-g.co.jp, notsuki@redhat.com,
+        motokazu.kozaki@hp.com, htaira@redhat.com, netdev@vger.kernel.org,
+        tomohiko.takahashi@ctc-g.co.jp, kotaro.sakai@ctc-g.co.jp,
+        ken.sugawara@ctc-g.co.jp
+Reply-to: jun.kondo@ctc-g.co.jp
+Message-id: <4E51A3F0.5010500@ctc-g.co.jp>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+X-post-Received: by post01.ctc-g.co.jp (CTC-GN 2006/10/01) id 62D5A74DB;	Mon,
+ 22 Aug 2011 09:33:52 +0900 (JST)
+X-vs: by localhost.is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 42A8F5BEF0;
+	Mon, 22 Aug 2011 09:33:52 +0900 (JST)
+X-vs: by is01.ctc-g.co.jp (CTC-GN mail 2009/02/01) id 35B845BC14;	Mon,
+ 22 Aug 2011 09:33:52 +0900 (JST)
+References: <4E48B0C3.2010203@ctc-g.co.jp>
+ <20110814.224714.2061635645365376268.davem@davemloft.net>
+ <4E4E2CCD.6050809@ctc-g.co.jp>
+ <20110819.024326.598275465899000817.davem@davemloft.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; ja; rv:1.9.2.12)
+ Gecko/20101027 Thunderbird/3.1.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/11 10:06, Axel Lin wrote:
-> 2011/8/22 Ryan Mallon<rmallon@gmail.com>:
->> On 22/08/11 09:41, Ryan Mallon wrote:
->>> On 22/08/11 00:39, Axel Lin wrote:
->>>> ep93xx-fb.c uses interfaces from linux/module.h,
->>>> so it should include that file.  This patch fixes below build errors.
->>> What actually changed to make these files broken? Did some other header
->>> previously include module.h for us? How many other drivers are broken?
->>>
->>> Anyway, the change is okay.
->>>
->>> Acked-by: Ryan Mallon<rmallon@gmail.com>
->> Actually, having a second look at this it does not look right.
->>
->> drivers/video/ep93xx-fb.c includes linux/platform.h (as its first include),
->> which includes linux/driver.h, which includes linux/module.h.
->>
->> Just tested on Linus' latest tree and both this driver and the ep93xx
->> backlight driver build fine. What kernel version are you using?
->>
->> ~Ryan
-> hi Ryan,
+By using this patch, we want to prevent "timeout occured over the network that is low throughput but available".
+
+But in the current implementation, both blocking and non-blocking,
+user processes can't recognize the reason in detail
+when failed to write to socket buffer, we think.
+
+is it (really) network problem ?
+or is wmem not enough free to write?
+
+As stated above, we think it is difficult for user processes to handle timeout of writing socket buffer,
+when wmem is configured large value.(to ensure high throughput over the high ralency network, like 3G).
+
+
+(2011/08/19 18:43), David Miller wrote:
+> From: "Jun.Kondo"<jun.kondo@ctc-g.co.jp>
+> Date: Fri, 19 Aug 2011 18:28:45 +0900
 >
-> The patch is against linux-next tree.
-> I got build error for ep93xx-fb.c and ep93xx_bl.c on linux-next tree.
-> ( next-20110819 )
+>> You suggested to use non-blocking writes, but we think
+>> we have to rewrite the Apache code if doing so.
+>> That is, we have to make a modification to Apache that
+>> depends on the architecture.
+>> By using this patch, it can be handled by changing the
+>> configuration a little bit on the kernel side for such
+>> applications that it is difficult to do so on application
+>> side.
+> The kernel provides the facilities necessary to achieve your
+> goals.  It is a userspace problem.
+>
 
-Ok, I see now. The change which caused the breakage is fdb697c: 
-"include: replace linux/module.h with "struct module" wherever 
-possible". How many other drivers got broken now that device.h does not 
-include module.h?
 
-~Ryan
-
-
->>>>    CC      drivers/video/ep93xx-fb.o
->>>> drivers/video/ep93xx-fb.c:120: error: expected ')' before 'int'
->>>> drivers/video/ep93xx-fb.c:122: error: expected ')' before string constant
->>>> drivers/video/ep93xx-fb.c:409: error: 'THIS_MODULE' undeclared here (not
->>>> in a function)
->>>> drivers/video/ep93xx-fb.c:645: error: expected declaration specifiers or
->>>> '...' before string constant
->>>> drivers/video/ep93xx-fb.c:645: warning: data definition has no type or
->>>> storage class
->>>> drivers/video/ep93xx-fb.c:645: warning: type defaults to 'int' in
->>>> declaration of 'MODULE_DESCRIPTION'
->>>> drivers/video/ep93xx-fb.c:645: warning: function declaration isn't a
->>>> prototype
->>>> drivers/video/ep93xx-fb.c:646: error: expected declaration specifiers or
->>>> '...' before string constant
->>>> drivers/video/ep93xx-fb.c:646: warning: data definition has no type or
->>>> storage class
->>>> drivers/video/ep93xx-fb.c:646: warning: type defaults to 'int' in
->>>> declaration of 'MODULE_ALIAS'
->>>> drivers/video/ep93xx-fb.c:646: warning: function declaration isn't a
->>>> prototype
->>>> drivers/video/ep93xx-fb.c:647: error: expected declaration specifiers or
->>>> '...' before string constant
->>>> drivers/video/ep93xx-fb.c:647: warning: data definition has no type or
->>>> storage class
->>>> drivers/video/ep93xx-fb.c:647: warning: type defaults to 'int' in
->>>> declaration of 'MODULE_AUTHOR'
->>>> drivers/video/ep93xx-fb.c:647: warning: function declaration isn't a
->>>> prototype
->>>> drivers/video/ep93xx-fb.c:649: error: expected declaration specifiers or
->>>> '...' before string constant
->>>> drivers/video/ep93xx-fb.c:649: warning: data definition has no type or
->>>> storage class
->>>> drivers/video/ep93xx-fb.c:649: warning: type defaults to 'int' in
->>>> declaration of 'MODULE_LICENSE'
->>>> drivers/video/ep93xx-fb.c:649: warning: function declaration isn't a
->>>> prototype
->>>> make[2]: *** [drivers/video/ep93xx-fb.o] Error 1
->>>> make[1]: *** [drivers/video] Error 2
->>>> make: *** [drivers] Error 2
->>>>
->>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->>>> ---
->>>>   drivers/video/ep93xx-fb.c |    1 +
->>>>   1 files changed, 1 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/video/ep93xx-fb.c b/drivers/video/ep93xx-fb.c
->>>> index 40e5f17..8133a9d 100644
->>>> --- a/drivers/video/ep93xx-fb.c
->>>> +++ b/drivers/video/ep93xx-fb.c
->>>> @@ -17,6 +17,7 @@
->>>>    *
->>>>    */
->>>>
->>>> +#include<linux/module.h>
->>>>   #include<linux/platform_device.h>
->>>>   #include<linux/dma-mapping.h>
->>>>   #include<linux/slab.h>
->>
-
+-- 
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+近藤　潤
+v 伊藤忠テクノソリューションズ株式会社(CTC)
+v システム技術第1部　技術第4課
+v 個人:03-6757-2144
+v FAX:03-5800-2256
+v
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
