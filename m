@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab1HWRVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:21:22 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:59911 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290Ab1HWRVP (ORCPT
+	id S1755665Ab1HWRVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 13:21:33 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:37586 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755531Ab1HWRVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:21:15 -0400
-Date: Tue, 23 Aug 2011 11:21:14 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Felipe Balbi <balbi@ti.com>
-cc: linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Tue, 23 Aug 2011 13:21:16 -0400
+Date: Tue, 23 Aug 2011 20:21:12 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Michal Nazarewicz <mnazarewicz@google.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        torvalds@linux-foundation.org, mporter@ti.com,
-        Kevin Hilman <khilman@ti.com>, "Govindraj.R" <govindraj.raja@ti.com>
-Subject: Re: [PATCH] tty: omap-serial: fix boot hang by converting to use a
- threaded IRQ handler (was Re: [PATCH] irq: always set IRQF_ONESHOT if no
- primary handler is specified)
-In-Reply-To: <20110823091257.GE1341@legolas.emea.dhcp.ti.com>
-Message-ID: <alpine.DEB.2.00.1108231120110.17575@utopia.booyaka.com>
-References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de> <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com> <4E4D4A5F.202@linutronix.de> <20110818213418.GA20509@legolas.emea.dhcp.ti.com> <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
- <alpine.DEB.2.00.1108222306300.28226@utopia.booyaka.com> <20110823091257.GE1341@legolas.emea.dhcp.ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+Message-ID: <20110823172111.GD10996@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110823145759.GM1341@legolas.emea.dhcp.ti.com>
+ <Pine.LNX.4.44L0.1108231141400.2069-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1108231141400.2069-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Felipe Balbi wrote:
 
-> if you're not running on a slow bus, you should use top half to check if
-> IRQs are really from this device.
+--Hf61M2y+wYpnELGG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think this applies in this case, since the IRQ isn't shared 
-between different hardware devices - it's shared for the purposes of a 
-software hack.
+Hi,
 
+On Tue, Aug 23, 2011 at 11:43:44AM -0400, Alan Stern wrote:
+> > if they are both part of the of the same configuration, full speed.
+> > Otherwise Audio won't work. If they are part of different
+> > configurations, then maximum_speed will be defined by the chosen config,
+> > no ?
+>=20
+> No.  The speed has to be chosen first, when the gadget connects to the=20
+> host.  The config isn't chosen until later, after the host retrieves=20
+> the various descriptors and decides among them.
 
-- Paul
+true
+
+> > I stand with the fact that if they are part of the same configuration,
+> > there's no way around it, storage will have to come down to full speed.
+> > Unless I'm missing something.
+>=20
+> What if they are in different configurations?
+
+then you use the fastest speed between both configurations?
+
+--=20
+balbi
+
+--Hf61M2y+wYpnELGG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOU+GHAAoJEAv8Txj19kN1F74H/A64XQeHnk+rkVTr5o1tiMfB
+0El68iegkgFda1NGQMsiNgSjU6Jcl9JmqFHJevGt0EMItBetHN38Fh0yF59WZ0rT
+buouxglYU83Jr+w1hVkX/wZbXTHlhpe1D3PzE3T4etHAUdgHhIde0YWT8YSTInul
+UM/7l6EnLRRi1Osw/uzp1ytJv2imFKyUEadtFLiC5AYgoCK3ygv9aX/a0mbCYE71
+EhKUH6A/BKJGMmlMT1qhK5GezbsDgjSUZmqrnfknLlb3NPUvfNmofI60vaoWljBr
+Z5pNDY4uP7cR5puHgWoqNv8h6fgQ2QdaUnHaQ77TsIw2FybRJWR7ZQ2BN3LFuVI=
+=wd5d
+-----END PGP SIGNATURE-----
+
+--Hf61M2y+wYpnELGG--
