@@ -1,196 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1HWBFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 21:05:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37933 "EHLO mx1.redhat.com"
+	id S1754771Ab1HWBHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 21:07:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58554 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577Ab1HWBFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 21:05:42 -0400
-Date: Mon, 22 Aug 2011 19:28:54 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 07/11] KVM: MMU: fast prefetch spte on invlpg path
-Message-ID: <20110822222854.GA2497@amt.cnet>
-References: <4E4A10E8.5090705@cn.fujitsu.com>
- <4E4A11DA.3050605@cn.fujitsu.com>
+	id S1751719Ab1HWBHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 21:07:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,266,1312182000"; 
+   d="scan'208";a="41294027"
+Date: Tue, 23 Aug 2011 09:07:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
+Message-ID: <20110823010721.GB7332@localhost>
+References: <20110816022006.348714319@intel.com>
+ <20110816022329.190706384@intel.com>
+ <20110819020637.GA13597@redhat.com>
+ <20110819025406.GA13365@localhost>
+ <20110819190037.GJ18656@redhat.com>
+ <20110821034657.GA30747@localhost>
+ <20110822172230.GB17833@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E4A11DA.3050605@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110822172230.GB17833@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 16, 2011 at 02:44:42PM +0800, Xiao Guangrong wrote:
-> Fast prefetch spte for the unsync shadow page on invlpg path
+On Tue, Aug 23, 2011 at 01:22:30AM +0800, Vivek Goyal wrote:
+> On Sun, Aug 21, 2011 at 11:46:58AM +0800, Wu Fengguang wrote:
+> > On Sat, Aug 20, 2011 at 03:00:37AM +0800, Vivek Goyal wrote:
+> > > On Fri, Aug 19, 2011 at 10:54:06AM +0800, Wu Fengguang wrote:
+> > > > Hi Vivek,
+> > > > 
+> > > > > > +		base_rate = bdi->dirty_ratelimit;
+> > > > > > +		pos_ratio = bdi_position_ratio(bdi, dirty_thresh,
+> > > > > > +					       background_thresh, nr_dirty,
+> > > > > > +					       bdi_thresh, bdi_dirty);
+> > > > > > +		if (unlikely(pos_ratio == 0)) {
+> > > > > > +			pause = MAX_PAUSE;
+> > > > > > +			goto pause;
+> > > > > >  		}
+> > > > > > +		task_ratelimit = (u64)base_rate *
+> > > > > > +					pos_ratio >> RATELIMIT_CALC_SHIFT;
+> > > > > 
+> > > > > Hi Fenguaang,
+> > > > > 
+> > > > > I am little confused here. I see that you have already taken pos_ratio
+> > > > > into account in bdi_update_dirty_ratelimit() and wondering why to take
+> > > > > that into account again in balance_diry_pages().
+> > > > > 
+> > > > > We calculated the pos_rate and balanced_rate and adjusted the
+> > > > > bdi->dirty_ratelimit accordingly in bdi_update_dirty_ratelimit().
+> > > > 
+> > > > Good question. There are some inter-dependencies in the calculation,
+> > > > and the dependency chain is the opposite to the one in your mind:
+> > > > balance_dirty_pages() used pos_ratio in the first place, so that
+> > > > bdi_update_dirty_ratelimit() have to use pos_ratio in the calculation
+> > > > of the balanced dirty rate, too.
+> > > > 
+> > > > Let's return to how the balanced dirty rate is estimated. Please pay
+> > > > special attention to the last paragraphs below the "......" line.
+> > > > 
+> > > > Start by throttling each dd task at rate
+> > > > 
+> > > >         task_ratelimit = task_ratelimit_0                               (1)
+> > > >                          (any non-zero initial value is OK)
+> > > > 
+> > > > After 200ms, we measured
+> > > > 
+> > > >         dirty_rate = # of pages dirtied by all dd's / 200ms
+> > > >         write_bw   = # of pages written to the disk / 200ms
+> > > > 
+> > > > For the aggressive dd dirtiers, the equality holds
+> > > > 
+> > > >         dirty_rate == N * task_rate
+> > > >                    == N * task_ratelimit
+> > > >                    == N * task_ratelimit_0                              (2)
+> > > > Or     
+> > > >         task_ratelimit_0 = dirty_rate / N                               (3)
+> > > > 
+> > > > Now we conclude that the balanced task ratelimit can be estimated by
+> > > > 
+> > > >         balanced_rate = task_ratelimit_0 * (write_bw / dirty_rate)      (4)
+> > > > 
+> > > > Because with (2) and (3), (4) yields the desired equality (1):
+> > > > 
+> > > >         balanced_rate == (dirty_rate / N) * (write_bw / dirty_rate)
+> > > >                       == write_bw / N
+> > > 
+> > > Hi Fengguang,
+> > > 
+> > > Following is my understanding. Please correct me where I got it wrong.
+> > > 
+> > > Ok, I think I follow till this point. I think what you are saying is
+> > > that following is our goal in a stable system.
+> > > 
+> > > 	task_ratelimit = write_bw/N				(6)
+> > > 
+> > > So we measure the write_bw of a bdi over a period of time and use that
+> > > as feedback loop to modify bdi->dirty_ratelimit which inturn modifies
+> > > task_ratelimit and hence we achieve the balance. So we will start with
+> > > some arbitrary task limit say task_ratelimit_0, and modify that limit
+> > > over a period of time based on our feedback loop to achieve a balanced
+> > > system. And following seems to be the formula.
+> > > 					    write_bw
+> > > 	task_ratelimit = task_ratelimit_0 * ------- 		(7)
+> > > 					    dirty_rate
+> > > 
+> > > Now I also understand that by using (2) and (3), you proved that
+> > > how (7) will lead to (6) and that is our deisred goal. 
+> > 
+> > That's right.
+> > 
+> > > > 
+> > > > .............................................................................
+> > > > 
+> > > > Now let's revisit (1). Since balance_dirty_pages() chooses to execute
+> > > > the ratelimit
+> > > > 
+> > > >         task_ratelimit = task_ratelimit_0
+> > > >                        = dirty_ratelimit * pos_ratio                    (5)
+> > > > 
+> > > 
+> > > So balance_drity_pages() chose to take into account pos_ratio() also
+> > > because for various reason like just taking into account only bandwidth
+> > > variation as feedback was not sufficient. So we also took pos_ratio
+> > > into account which in-trun is dependent on gloabal dirty pages and per
+> > > bdi dirty_pages/rate.
+> > 
+> > That's right so far. balance_drity_pages() needs to do dirty position
+> > control, so used formula (5).
+> > 
+> > > So we refined the formula for calculating a tasks's effective rate
+> > > over a period of time to following.
+> > > 					    write_bw
+> > > 	task_ratelimit = task_ratelimit_0 * ------- * pos_ratio		(9)
+> > > 					    dirty_rate
+> > > 
+> > 
+> > That's not true. It should still be formula (7) when
+> > balance_drity_pages() considers pos_ratio.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    4 +---
->  arch/x86/kvm/mmu.c              |   38 +++++++++++++++-----------------------
->  arch/x86/kvm/paging_tmpl.h      |   30 ++++++++++++++++++------------
->  arch/x86/kvm/x86.c              |    4 ++--
->  4 files changed, 36 insertions(+), 40 deletions(-)
+> Why it is not true? If I do some math, it sounds right. Let me summarize
+> my understanding again.
+
+Ah sorry! (9) actually holds true, as made clear by your below reasoning.
+
+> - In a steady state stable system, we want dirty_bw = write_bw, IOW.
+>  
+>   dirty_bw/write_bw = 1  		(1)
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 58ea3a7..927ba73 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -460,7 +460,6 @@ struct kvm_arch {
->  	unsigned int n_requested_mmu_pages;
->  	unsigned int n_max_mmu_pages;
->  	unsigned int indirect_shadow_pages;
-> -	atomic_t invlpg_counter;
->  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
->  	/*
->  	 * Hash table of struct kvm_mmu_page.
-> @@ -754,8 +753,7 @@ int fx_init(struct kvm_vcpu *vcpu);
->  
->  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
->  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
-> -		       const u8 *new, int bytes,
-> -		       bool guest_initiated);
-> +		       const u8 *new, int bytes);
->  int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn);
->  int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
->  void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index ed3e778..f6de2fc 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -3530,8 +3530,7 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
->  }
->  
->  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
-> -		       const u8 *new, int bytes,
-> -		       bool guest_initiated)
-> +		       const u8 *new, int bytes)
->  {
->  	gfn_t gfn = gpa >> PAGE_SHIFT;
->  	union kvm_mmu_page_role mask = { .word = 0 };
-> @@ -3540,7 +3539,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  	LIST_HEAD(invalid_list);
->  	u64 entry, gentry, *spte;
->  	unsigned pte_size, page_offset, misaligned, quadrant, offset;
-> -	int level, npte, invlpg_counter, r, flooded = 0;
-> +	int level, npte, r, flooded = 0;
->  	bool remote_flush, local_flush, zap_page;
->  
->  	/*
-> @@ -3555,19 +3554,16 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  
->  	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
->  
-> -	invlpg_counter = atomic_read(&vcpu->kvm->arch.invlpg_counter);
-> -
->  	/*
->  	 * Assume that the pte write on a page table of the same type
->  	 * as the current vcpu paging mode since we update the sptes only
->  	 * when they have the same mode.
->  	 */
-> -	if ((is_pae(vcpu) && bytes == 4) || !new) {
-> +	if (is_pae(vcpu) && bytes == 4) {
->  		/* Handle a 32-bit guest writing two halves of a 64-bit gpte */
-> -		if (is_pae(vcpu)) {
-> -			gpa &= ~(gpa_t)7;
-> -			bytes = 8;
-> -		}
-> +		gpa &= ~(gpa_t)7;
-> +		bytes = 8;
-> +
->  		r = kvm_read_guest(vcpu->kvm, gpa, &gentry, min(bytes, 8));
->  		if (r)
->  			gentry = 0;
-> @@ -3593,22 +3589,18 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  	 */
->  	mmu_topup_memory_caches(vcpu);
->  	spin_lock(&vcpu->kvm->mmu_lock);
-> -	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
-> -		gentry = 0;
->  	kvm_mmu_free_some_pages(vcpu);
->  	++vcpu->kvm->stat.mmu_pte_write;
->  	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
-> -	if (guest_initiated) {
-> -		if (gfn == vcpu->arch.last_pt_write_gfn
-> -		    && !last_updated_pte_accessed(vcpu)) {
-> -			++vcpu->arch.last_pt_write_count;
-> -			if (vcpu->arch.last_pt_write_count >= 3)
-> -				flooded = 1;
-> -		} else {
-> -			vcpu->arch.last_pt_write_gfn = gfn;
-> -			vcpu->arch.last_pt_write_count = 1;
-> -			vcpu->arch.last_pte_updated = NULL;
-> -		}
-> +	if (gfn == vcpu->arch.last_pt_write_gfn
-> +	    && !last_updated_pte_accessed(vcpu)) {
-> +		++vcpu->arch.last_pt_write_count;
-> +		if (vcpu->arch.last_pt_write_count >= 3)
-> +			flooded = 1;
-> +	} else {
-> +		vcpu->arch.last_pt_write_gfn = gfn;
-> +		vcpu->arch.last_pt_write_count = 1;
-> +		vcpu->arch.last_pte_updated = NULL;
->  	}
->  
->  	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 7862c05..bdc2241 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -670,20 +670,27 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->  {
->  	struct kvm_shadow_walk_iterator iterator;
->  	struct kvm_mmu_page *sp;
-> -	gpa_t pte_gpa = -1;
->  	int level;
->  	u64 *sptep;
->  
->  	vcpu_clear_mmio_info(vcpu, gva);
->  
-> -	spin_lock(&vcpu->kvm->mmu_lock);
-> +	/*
-> +	 * No need to check return value here, rmap_can_add() can
-> +	 * help us to skip pte prefetch later.
-> +	 */
-> +	mmu_topup_memory_caches(vcpu);
->  
-> +	spin_lock(&vcpu->kvm->mmu_lock);
->  	for_each_shadow_entry(vcpu, gva, iterator) {
->  		level = iterator.level;
->  		sptep = iterator.sptep;
->  
->  		sp = page_header(__pa(sptep));
->  		if (is_last_spte(*sptep, level)) {
-> +			pt_element_t gpte;
-> +			gpa_t pte_gpa;
-> +
->  			if (!sp->unsync)
->  				break;
->  
-> @@ -692,22 +699,21 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->  
->  			if (mmu_page_zap_pte(vcpu->kvm, sp, sptep))
->  				kvm_flush_remote_tlbs(vcpu->kvm);
-> +
-> +			if (rmap_can_add(vcpu))
-> +				break;
+>   If we can achieve above then that means we are throttling tasks at
+>   just right rate.
+> 
+> Or
+> -  dirty_bw  == write_bw
+>    N * task_ratelimit == write_bw
+>    task_ratelimit =  write_bw/N         (2)
+> 
+>   So as long as we can come up with a system where balance_dirty_pages()
+>   calculates task_ratelimit to be write_bw/N, we should be fine.
 
-if (!rmap_can_add(vcpu))
-        break;
+Right.
 
-?
+> - But this does not take care of imbalances. So if system goes out of
+>   balance before feedback loop kicks in and dirty rate shoots up, then
+>   cache size will grow and number of dirty pages will shoot up. Hence
+>   we brought in the notion of position ratio where we also vary a 
+>   tasks's dirty ratelimit based on number of dirty pages. So our
+>   effective formula became.
+> 
+>   task_ratelimit = write_bw/N * pos_ratio     (3)
+> 
+>   So as long as we meet (3), we should reach to stable state.
 
-> +
-> +			if (kvm_read_guest_atomic(vcpu->kvm, pte_gpa, &gpte,
-> +						  sizeof(pt_element_t)))
-> +				break;
-> +
-> +			FNAME(update_pte)(vcpu, sp, sptep, &gpte);
->  		}
->  
->  		if (!is_shadow_present_pte(*sptep) || !sp->unsync_children)
->  			break;
+Right.
 
+> -  But here N is unknown in advance so balance_drity_pages() can not make
+>    use of this formula directly. But write_bw and dirty_bw from previous
+>    200ms are known. So following can replace (3).
+> 
+> 				       write_bw
+>    task_ratelimit = task_ratelimit_0 * --------- * pos_ratio      (4)
+> 					dirty_bw	
+> 
+>    dirty_bw = task_ratelimit_0 * N                (5)
+> 
+>    Substitute (5) in (4)
+> 
+>    task_ratelimit = write_bw/N * pos_ratio      (6)
+> 
+>    (6) is same as (3) which has been derived from (4) and that means at any
+>    given point of time (4) can be used by balance_drity_pages() to calculate
+>    a tasks's throttling rate.
+
+Right. Sorry what's in my mind was
+
+                                       write_bw
+    balanced_rate = task_ratelimit_0 * --------
+                                       dirty_bw        
+
+    task_ratelimit = balanced_rate * pos_ratio
+
+which is effective the same to your combined equation (4).
+
+> - Now going back to (4). Because we have a feedback loop where we
+>   continuously update a previous number based on feedback, we can track
+>   previous value in bdi->dirty_ratelimit.
+> 
+> 				       write_bw
+>    task_ratelimit = task_ratelimit_0 * --------- * pos_ratio 
+> 					dirty_bw	
+> 
+>    Or
+> 
+>    task_ratelimit = bdi->dirty_ratelimit * pos_ratio         (7)
+> 
+>    where
+> 					    write_bw	
+>   bdi->dirty_ratelimit = task_ratelimit_0 * ---------
+> 					    dirty_bw
+
+Right.
+
+>   Because task_ratelimit_0 is initial value to begin with and we will
+>   keep on coming with new value every 200ms, we should be able to write
+>   above as follows.
+> 
+> 						      write_bw
+>   bdi->dirty_ratelimit_n = bdi->dirty_ratelimit_n-1 * --------  (8)
+> 						      dirty_bw
+> 
+>   Effectively we start with an initial value of task_ratelimit_0 and
+>   then keep on updating it based on rate change feedback every 200ms.
+
+Right.
+
+>   To summarize,
+> 
+>   We need to achieve (3) for a balanced system. Because we don't know the
+>   value of N in advance, we can use (4) to achieve effect of (3). So we
+>   start with a default value of task_ratelimit_0 and update that every
+>   200ms based on how write and dirty rate on device is changing (8). We also
+>   further refine that rate by pos_ratio so that any variations in number
+>   of dirty pages due to temporary imbalances in the system can be
+>   accounted for (7).
+> 
+> I see that you also use (7). I think only contention point is how
+> (8) is perceived. So can you please explain why do you think that
+> above calculation or (9) is wrong.
+
+There is no contention point and (9) is right..Sorry it's my fault.
+We are well aligned in the above reasoning :)
+
+> I can kind of understand that you have done various adjustments to keep the
+> task_ratelimit and bdi->dirty_ratelimit relatively stable. Just that
+> I am not able to understand your calculations in updating bdi->dirty_ratelimit.  
+
+You mean the below chunk of code? Which is effectively the same as this _one_
+line of code
+
+        bdi->dirty_ratelimit = balanced_rate;
+
+except for doing some tricks (conditional update and limiting step size) to
+stabilize bdi->dirty_ratelimit:
+
+        unsigned long base_rate = bdi->dirty_ratelimit;
+
+        /*
+         * Use a different name for the same value to distinguish the concepts.
+         * Only the relative value of
+         *     (pos_rate - base_rate) = (pos_ratio - 1) * base_rate
+         * will be used below, which reflects the direction and size of dirty
+         * position error.
+         */
+        pos_rate = (u64)base_rate * pos_ratio >> RATELIMIT_CALC_SHIFT;
+
+        /*
+         * dirty_ratelimit will follow balanced_rate iff pos_rate is on the
+         * same side of dirty_ratelimit, too.
+         * For example,
+         * - (base_rate > balanced_rate) => dirty rate is too high
+         * - (base_rate > pos_rate)      => dirty pages are above setpoint
+         * so lowering base_rate will help meet both the position and rate
+         * control targets. Otherwise, don't update base_rate if it will only
+         * help meet the rate target. After all, what the users ultimately feel
+         * and care are stable dirty rate and small position error.  This
+         * update policy can also prevent dirty_ratelimit from being driven
+         * away by possible systematic errors in balanced_rate.
+         *
+         * |base_rate - pos_rate| is also used to limit the step size for
+         * filtering out the sigular points of balanced_rate, which keeps
+         * jumping around randomly and can even leap far away at times due to
+         * the small 200ms estimation period of dirty_rate (we want to keep
+         * that period small to reduce time lags).
+         */
+        delta = 0;
+        if (base_rate < balanced_rate) {
+                if (base_rate < pos_rate)
+                        delta = min(balanced_rate, pos_rate) - base_rate;
+        } else {
+                if (base_rate > pos_rate)
+                        delta = base_rate - max(balanced_rate, pos_rate);
+        }
+       
+        /*
+         * Don't pursue 100% rate matching. It's impossible since the balanced
+         * rate itself is constantly fluctuating. So decrease the track speed
+         * when it gets close to the target. Helps eliminate pointless tremors.
+         */
+        delta >>= base_rate / (8 * delta + 1);
+        /*
+         * Limit the tracking speed to avoid overshooting.
+         */
+        delta = (delta + 7) / 8;
+
+        if (base_rate < balanced_rate)
+                base_rate += delta;
+        else   
+                base_rate -= delta;
+
+        bdi->dirty_ratelimit = max(base_rate, 1UL);
+
+Thanks,
+Fengguang
