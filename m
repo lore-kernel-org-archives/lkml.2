@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab1HWCoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 22:44:09 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57187 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab1HWCoF convert rfc822-to-8bit (ORCPT
+	id S1754974Ab1HWDAJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 23:00:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40443 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754956Ab1HWDAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 22:44:05 -0400
+	Mon, 22 Aug 2011 23:00:06 -0400
+Date: Tue, 23 Aug 2011 03:59:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823025944.GB2203@ZenIV.linux.org.uk>
+References: <4E52B7F8.3050002@zytor.com>
+ <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+ <4E52D280.3010107@zytor.com>
+ <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+ <20110823000314.GW2203@ZenIV.linux.org.uk>
+ <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk>
+ <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <CA+55aFygGyi8HRr8wNVDw5xk46D5QDOhis18u2qV-9+h0-4ReA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
-References: <1313768318-7960-1-git-send-email-maxim.patlasov@gmail.com>
-	<1313768318-7960-2-git-send-email-maxim.patlasov@gmail.com>
-Date: Tue, 23 Aug 2011 10:44:03 +0800
-X-Google-Sender-Auth: 6Ota6B9h_Yyur_HR91KiDCcqcxU
-Message-ID: <CANejiEWadFK9GdXSwKgzNoj1Da_4QTUidTp-6FGkBtZwhbKvfw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] CFQ: fix handling 'deep' cfqq
-From: Shaohua Li <shli@kernel.org>
-To: Maxim Patlasov <maxim.patlasov@gmail.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFygGyi8HRr8wNVDw5xk46D5QDOhis18u2qV-9+h0-4ReA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/19 Maxim Patlasov <maxim.patlasov@gmail.com>:
-> The patch re-works changes introduced by commit
-> 8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07 to make decision about
-> idle/noidle behaviour on seeky&deep cfqq-s more precise.
->
-> The problems found in that former patch:
->
-> 1. "the queue delivers all requests before half its slice is used" is too
-> pessimistic estimation. It can be demonstrated by aio-stress on a commodity
-> server with single slow SATA hdd that the estimate provides so many false
-> positives to degrade performance significantly (up to 35% as compared with
-> pristine 3.1.0-rc2 w/o that patch).
->
-> 2. There is a time gap between marking cfqq as 'deep' and 'idle_window' in
-> cfq_update_idle_window() and clearing these bits in cfq_select_queue(). Till
-> these bits are cleared there may be pretty many cfqq-s marked as 'deep' and
-> 'idle_window'. This effectively disables preemption becasue CFQ usually
-> allows it only between SYNC_NOIDLE_WORKLOAD cfqq-s. It can be demostrated by
-> slightly modified aio-stress (adding 1 msec think-time) that this problem may
-> chews up to 30% of performance on fast h/w raids (as compared with setting
-> slice_idle=0 or noop scheduler).
->
-> 3. It's possible that a task was preempted in the middle of dispatch round.
-> Then, condition "the queue delivers all requests before half its slice is used"
-> will be checked for shallow queue. In such cases CFQ will regard slow disk as
-> fast.
->
-> 4. It's possible that the queue at the moment of marking a task as "deep" was
-> much deeper than four requests. Then the fact that the queue haven't delivered
-> all requests quickly doesn't imply that the disk is slow. In such cases CFQ
-> may regard fast disk as slow.
->
-> An aproach suggested here avoids performance degradations mentioned above.
-> With this patch applied, the performance on slow hdd is the same as it used
-> to be before 8e1ac6655104bc6e1e79d67e2df88cc8fa9b6e07, and, on fast h/w-raids,
-> it's roughly the same as for noop scheduler or CFQ with slice_idle=0.
-idle is a usual cause of cfq performance issue. did you have test in
-disk without NCQ?
-And did you test if this will hurt the performance of Vivek's original problem?
+On Mon, Aug 22, 2011 at 06:59:48PM -0700, Linus Torvalds wrote:
 
-snip
-> +       if (cfq_cfqq_deep_early(cfqq) && cfqq->n_dispatched >= CFQQ_DEEP_THR) {
-> +               if (cfqq->first_dispatch == jiffies)
-> +                       cfqd->cfq_disk_looks_fast++;
-> +               else
-> +                       cfqd->cfq_disk_looks_slow++;
-> +
-jiffies is too coarse here. A disk with NCQ can dispatch several
-requests within one jiffy.
+> And the system call restart should actually work fine too, because at
+> syscall entry we save %ebp *both* in the slot for ebp and ecx when we
+> enter the first time. So the second time, we'll re-load the third
+> argument from ebp again, but that's fine - it's still going to be the
+> right value. Yes? No?
+> 
+> However, I note that the cstar entrypont has a comment about not saving ebp:
+> 
+>  * %ebp Arg2    [note: not saved in the stack frame, should not be touched]
+> 
+> which sounds odd. Why don't we save it? If we take a signal handler
+> there, don't we want %ebp on the kernel stack in pt_regs, in order to
+> do everything right?
 
-Thanks,
-Shaohua
+That's exactly because it's callee-saved.  amd64 doesn't build full
+pt_regs on stack; there's a part built always (5 words needed for iret
+to work + syscall number + rdi + rsi + rdx + rcx + rax + r8--r11) and
+the rest of registers is not saved in regular cases.  Reason: as long
+as what we are calling follows amd64 ABI, we are guaranteed that
+values of rsp/rbp/rbx/r12--r15 will not change.  So we don't waste
+cycles and stack space unless we need to.  Which is to say,
+	* in fork/clone/vfork - there we want full pt_regs to copy it into
+child's pt_regs.
+	* in {rt_,}sigreturn - we don't care about the current contents of
+those registers, but we want to set them.  Thus the full pt_regs on stack,
+filled by sys_{rt_,}sigreturn() and these extra registers filled with
+values from pt_regs.
+	* execve() - we want all registers reset to know state after
+sys_execve(), so it fills the full pt_regs and we get the extra regs filled
+out of it.
+	* sigaltstack() - there full pt_regs is an overkill, but we do want
+userland sp.
+	* signal delivery - we want these registers preserved across the
+duration of handler and we can't depend on handler following ABI.  So we
+fill the entire pt_regs, and copy it into sigcontext, to be eventually
+picked up by sigreturn and reconstruct the entire state.
+	* ptrace - we want to be able to read/modify *all* these guys.
+So we fill the entire pt_regs, let ptrace play with it and read extra regs
+back.  NOTE: ia32_cstar_tracesys() takes pains to prevent buggering ebp
+there - we read the arg6 into r9, then swap it with ebp for duration of
+that stuff.  So ptrace will see arg6 in regs.bp, but when it's time
+to go into syscall the (possibly modified) value will end in r9.  Which
+is how it's passed to C functions, so we are fine, but it'll be really
+lost before we reach the userland.  However, on the way *OUT* we are not
+that nice, and SETREGS/POKEUSER hitting us there will end up modifying
+ebp.  Which will play hell on __kernel_vsyscall()...
+
+Hell, you have done something very similar on alpha yourself...  As for
+ebp, it doesn't make any sense to save it on stack - ia32_cstar_entry()
+itself takes care of not stomping on it just fine and IRET path
+(int_ret_from_sys_call) modifies rbp only if explicitly asked to do so...
+Which is most likely where it hits the fan for uml.  Normally it wouldn't
+hurt to ask PTRACE_PUTREGS to put into ebp the value we just got from
+PTRACE_GETREGS.  However, it *does* hurt when it happens on the second
+stop per syscall - i.e. when we are on the way out.  I'm not 100% sure
+that this is what's going on (it's using PTRACE_SYSEMU, which is supposed
+to avoid the second stop completely), but it looks like what I'm seeing...
