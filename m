@@ -1,49 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab1HWJ2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 05:28:14 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab1HWJ2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 05:28:12 -0400
+	id S1755247Ab1HWJcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 05:32:12 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:10169 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754463Ab1HWJcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 05:32:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnkDANhwU055LIxDgWdsb2JhbAA5CKghFQEBFiYlgUABAQQBJxMcIxAIAw4HAy4UJQMhE4dxt0sOgxyDHgSkJQ
+Date: Tue, 23 Aug 2011 19:32:05 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, khlebnikov@openvz.org
+Subject: Re: [PATCH 08/13] list: add a new LRU list type
+Message-ID: <20110823093205.GZ3162@dastard>
+References: <1314089786-20535-1-git-send-email-david@fromorbit.com>
+ <1314089786-20535-9-git-send-email-david@fromorbit.com>
+ <20110823092056.GE21492@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20051.29353.630250.758016@pilspetsen.it.uu.se>
-Date: Tue, 23 Aug 2011 11:28:09 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: linux-acpi@vger.kernel.org
-Subject: [PATCH] correct register_hotplug_dock_device() prototype for CONFIG_ACPI_DOCK=n
-Cc: linux-kernel@vger.kernel.org
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Disposition: inline
+In-Reply-To: <20110823092056.GE21492@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got the following compiling kernel 3.1-rc3 on x86_64 with CONFIG_ACPI_DOCK=n:
+On Tue, Aug 23, 2011 at 05:20:56AM -0400, Christoph Hellwig wrote:
+> On Tue, Aug 23, 2011 at 06:56:21PM +1000, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > Several subsystems use the same construct for LRU lists - a list
+> > head, a spin lock and and item count. They also use exactly the same
+> > code for adding and removing items from the LRU. Create a generic
+> > type for these LRU lists.
+> > 
+> > This is the beginning of generic, node aware LRUs for shrinkers to
+> > work with.
+> 
+> Why list_lru vs the more natural sounding lru_list?
 
-drivers/ata/libata-acpi.c: In function 'ata_acpi_associate':
-drivers/ata/libata-acpi.c:266:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
-drivers/ata/libata-acpi.c:275:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
+because the mmzone.h claimed that namespace:
 
-The two versions of register_hotplug_dock_device() in acpi_drivers.h,
-depending on CONFIG_ACPI_DOCK, differ in whether the 2nd parameter is
-const or not.  The dummy version for !DOCK lacked the const, causing
-the warning.  Trivially fixed by adding the const.
+enum lru_list {
+        LRU_INACTIVE_ANON = LRU_BASE,
+        LRU_ACTIVE_ANON = LRU_BASE + LRU_ACTIVE,
+        LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
+        LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
+        LRU_UNEVICTABLE,
+        NR_LRU_LISTS
+};
 
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
----
+and it is widely spewed through the mm code. I didn't really feel
+like having to clean that mess up first....
 
---- linux-3.1-rc3/include/acpi/acpi_drivers.h.~1~	2011-08-23 10:42:23.000000000 +0200
-+++ linux-3.1-rc3/include/acpi/acpi_drivers.h	2011-08-23 11:06:50.000000000 +0200
-@@ -144,7 +144,7 @@ static inline void unregister_dock_notif
- {
- }
- static inline int register_hotplug_dock_device(acpi_handle handle,
--					       struct acpi_dock_ops *ops,
-+					       const struct acpi_dock_ops *ops,
- 					       void *context)
- {
- 	return -ENODEV;
+> > diff --git a/lib/Makefile b/lib/Makefile
+> > index d5d175c..a08212f 100644
+> > --- a/lib/Makefile
+> > +++ b/lib/Makefile
+> > @@ -12,7 +12,8 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+> >  	 idr.o int_sqrt.o extable.o prio_tree.o \
+> >  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+> >  	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+> > -	 is_single_threaded.o plist.o decompress.o find_next_bit.o
+> > +	 is_single_threaded.o plist.o decompress.o find_next_bit.o \
+> > +	 list_lru.o
+> 
+> Di we finally fix the issues with lib-y objects beeing discarded despite
+> modules relying on the exports?
+
+Don't care. The list_lru code is used by the VFs, so it will always
+be built in....
+
+> > +int
+> > +list_lru_add(
+> > +	struct list_lru	*lru,
+> > +	struct list_head *item)
+> > +{
+> 
+> What about some kerneldoc comments for the helpers?
+
+Yup, to be done.
+
+> 
+> > +		ret = isolate(item, &lru->lock, cb_arg);
+> > +		switch (ret) {
+> > +		case 0:	/* item removed from list */
+> > +			lru->nr_items--;
+> > +			removed++;
+> > +			break;
+> > +		case 1: /* item referenced, give another pass */
+> > +			list_move_tail(item, &lru->list);
+> > +			break;
+> > +		case 2: /* item cannot be locked, skip */
+> > +			break;
+> > +		case 3: /* item not freeable, lock dropped */
+> > +			goto restart;
+> 
+> I think the isolate callback returns shoud have symbolic names, i.e.
+> and enum lru_isolate or similar.
+
+Will do.
+
+> 
+> > +int
+> > +list_lru_init(
+> > +	struct list_lru	*lru)
+> > +{
+> > +	spin_lock_init(&lru->lock);
+> > +	INIT_LIST_HEAD(&lru->list);
+> > +	lru->nr_items = 0;
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(list_lru_init);
+> 
+> This one doesn't need a return value.
+
+No, not yet. I'll kill it.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
