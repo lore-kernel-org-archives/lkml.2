@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab1HWOcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:32:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab1HWOcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:32:18 -0400
-Date: Tue, 23 Aug 2011 16:29:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kurz <gkurz@fr.ibm.com>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
-	when reboot
-Message-ID: <20110823142914.GA22593@redhat.com>
-References: <20110815144744.GA9660@redhat.com> <4E4DA461.8030006@free.fr> <20110819152416.GA17034@redhat.com> <4E524B73.3050704@free.fr> <20110822154448.GA8527@redhat.com> <20110822183134.10390b46@neptune.home> <20110822173949.GA13242@redhat.com> <20110822211716.7c141d5c@neptune.home> <20110823133302.GA19582@redhat.com> <1314108566.3465.29.camel@bahia.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314108566.3465.29.camel@bahia.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754812Ab1HWOc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:32:29 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40411 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754397Ab1HWOcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:32:20 -0400
+Date: Tue, 23 Aug 2011 07:32:17 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20110823073217.d2794369.rdunlap@xenotime.net>
+In-Reply-To: <20110823154811.527ae4929dd2078e694fe32a@canb.auug.org.au>
+References: <20110823154811.527ae4929dd2078e694fe32a@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23, Greg Kurz wrote:
->
-> On Tue, 2011-08-23 at 15:33 +0200, Oleg Nesterov wrote:
-> > [...]
-> > At least now I understand why did you mention si_code/CLD before. You
-> > meant waitid(). I thought you were talking about the death-notifications
-> > which can't report CLD_ you need.
-> >
-> > I strongly object. We shouldn't uglify wait_task_zombie() to solve the
-> > very specific problem.
-> >
-> > And once again. sub_init->parent does wiat(&status) and sees
-> > WIFSIGNALED() && WTERMSIG(status) == SIGHUP. This can only mean that
-> > sys_reboot(LINUX_REBOOT_CMD_RESTART) was called. It _can not_ be really
-> > killed by SIGHUP, it must be CMD_RESTART.
-> >
-> > Why this can't work? Why do you want the additional complications?
-> >
->
-> I don't see either what could go wrong with you approach.
+On Tue, 23 Aug 2011 15:48:11 +1000 Stephen Rothwell wrote:
 
-Thanks ;)
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+> 
+> kernel/cred.c: In function 'prepare_kernel_cred':
+> kernel/cred.c:657:2: error: 'tgcred' undeclared (first use in this function)
+> 
+> Caused by commit 012146d0728f ("CRED: Fix prepare_kernel_cred() to
+> provide a new thread_group_cred struct").  CONFIG_KEYS is not set in this
+> build ...
+> 
+> Please, please build test with and without CONFIG settings that affect
+> your changes.
+> 
+> I discovered this after releaseing linux-next for today.
 
-Just in case... instead of WIFSIGNALED/WTERMSIG we can also report
-the exit code in the upper bits. I mean,
+This one also causes UML (defconfig) builds to fail today.
 
-	switch (reboot_cmd) {
-	case LINUX_REBOOT_CMD_RESTART:
-		code = 1 << 16;
-		break;
-	case LINUX_REBOOT_CMD_HALT:
-		code = 2 << 16;
-		break;
-	}
-
-this can't be confused with the normal exit(code), just the parent
-should be careful, I am not sure this can't confuse WIFEXITED/WEXITSTATUS
-user-space macroses.
-
-wait(&status) takes "int *", we have a room for additional info, and
-wait_task_zombie() simply copies exit_code.
-
-Oleg.
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
