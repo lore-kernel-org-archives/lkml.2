@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab1HWLQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 07:16:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60909 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab1HWLQH (ORCPT
+	id S1753199Ab1HWLSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 07:18:41 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:33889 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1HWLSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 07:16:07 -0400
-Date: Tue, 23 Aug 2011 12:15:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 02/16] ARM: LPAE: Cast the dma_addr_t argument to
-	unsigned long in dma_to_virt
-Message-ID: <20110823111559.GI19622@n2100.arm.linux.org.uk>
-References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com> <1312988619-16804-3-git-send-email-catalin.marinas@arm.com> <20110813143358.GO4775@n2100.arm.linux.org.uk>
+	Tue, 23 Aug 2011 07:18:38 -0400
+Date: Tue, 23 Aug 2011 14:18:24 +0300
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: Jiandong Zheng <jdzheng@broadcom.com>
+Cc: Scott Branden <sbranden@broadcom.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] arm: mach-bcmring: fix build error in core.c
+Message-ID: <20110823111824.GA2806@maxin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110813143358.GO4775@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 03:33:58PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Aug 10, 2011 at 04:03:25PM +0100, Catalin Marinas wrote:
-> > This is to avoid a compiler warning when invoking the __bus_to_virt()
-> > macro. The dma_to_virt() function gets addresses within the 32-bit
-> > range.
-> 
-> Ok.
+CC      arch/arm/mach-bcmring/core.o
+arch/arm/mach-bcmring/core.c: In function 'bcmring_init_timer':
+arch/arm/mach-bcmring/core.c:238: error: implicit declaration of
+function 'sp804_clockevents_register'
+make[1]: *** [arch/arm/mach-bcmring/core.o] Error 1
+make: *** [arch/arm/mach-bcmring] Error 2
 
-I haven't noticed anything happening with this patch yet...
+Please let me know your comments on this fix:
+
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/arch/arm/mach-bcmring/core.c b/arch/arm/mach-bcmring/core.c
+index 43eadbc..430da12 100644
+--- a/arch/arm/mach-bcmring/core.c
++++ b/arch/arm/mach-bcmring/core.c
+@@ -235,7 +235,7 @@ void __init bcmring_init_timer(void)
+ 	 */
+ 	bcmring_clocksource_init();
+ 
+-	sp804_clockevents_register(TIMER0_VA_BASE, IRQ_TIMER0, "timer0");
++	sp804_clockevents_init(TIMER0_VA_BASE, IRQ_TIMER0, "timer0");
+ }
+ 
+ struct sys_timer bcmring_timer = {
