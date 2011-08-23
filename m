@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab1HWVe6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:34:58 -0400
-Received: from smtprelay-b11.telenor.se ([62.127.194.20]:47378 "EHLO
-	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab1HWVev (ORCPT
+	id S1755093Ab1HWVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:39:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60482 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751886Ab1HWVjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:34:51 -0400
-X-Greylist: delayed 1295 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Aug 2011 17:34:51 EDT
-X-SENDER-IP: [85.230.168.63]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al5wALwXVE5V5qg/PGdsb2JhbABCiRKeUgsBAQEBNzKBQAEBBAE6HBMBDwULCANGFCUKGhMZh1gCvT8OhVtfBJg0i2E
-X-IronPort-AV: E=Sophos;i="4.68,271,1312149600"; 
-   d="scan'208";a="1754878989"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Tue, 23 Aug 2011 23:15:10 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Daniel Kurtz <djkurtz@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org, chris@cnpbagwell.com
-Subject: Re: [PATCH 4/9 v5] Input: synaptics - add image sensor support
-Message-ID: <20110823211510.GA17729@polaris.bitmath.org>
-References: <1314011163-19098-1-git-send-email-djkurtz@chromium.org>
- <1314011163-19098-5-git-send-email-djkurtz@chromium.org>
- <4E52C252.9060904@canonical.com>
- <201108221405.15767.dmitry.torokhov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108221405.15767.dmitry.torokhov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Aug 2011 17:39:22 -0400
+Date: Tue, 23 Aug 2011 14:39:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Amerigo Wang <amwang@redhat.com>,
+        gregkh@suse.de, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH -next] drivers/base/inode.c: let vmstat_text be optional
+Message-Id: <20110823143912.0691d442.akpm@linux-foundation.org>
+In-Reply-To: <20110804152211.ea10e3e7.rdunlap@xenotime.net>
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>
+	<20110804152211.ea10e3e7.rdunlap@xenotime.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Henrik, you commented a few times on the earlier patches, are you happy
-> with this version?
 
-Yep, the code is very clear. One could only wish the hardware sucked
-less, but that is life. Thanks Daniel for your effort.
+> Subject: [PATCH -next] drivers/base/inode.c: let vmstat_text be optional
 
-    Acked-by: Henrik Rydberg <rydberg@euromail.se>
+The patch-against-next thing always disturbs me.  It implies that the
+patch is only needed in linux-next, but often that's wrong.  So I have
+to go off and work out what kernel it really is applicable to.
 
-on all nine patches.
+And that's OK, it keeps me healthy.  But two minds are better than one,
+and if the originator has already worked this out, they should state it
+explicitly, please.
 
-Cheers,
-Henrik
+On Thu, 4 Aug 2011 15:22:11 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> vmstat_text is only available when PROC_FS or SYSFS is enabled.
+> This causes build errors in drivers/base/node.c when they are
+> both disabled:
+> 
+> drivers/built-in.o: In function `node_read_vmstat':
+> node.c:(.text+0x10e28f): undefined reference to `vmstat_text'
+> 
+> Rather than litter drivers/base/node.c with #ifdef/#endif around
+> the affected lines of code, add macros for optional sysdev
+> attributes so that those lines of code will be ignored, without
+> using #ifdef/#endif in the .c file(s).  I.e., the ifdeffery
+> is done only in a header file with sysdev_create_file_optional()
+> and sysdev_remove_file_optional().
+> 
+> --- linux-next-20110804.orig/include/linux/vmstat.h
+> +++ linux-next-20110804/include/linux/vmstat.h
+> @@ -258,6 +258,8 @@ static inline void refresh_zone_stat_thr
+>  
+>  #endif		/* CONFIG_SMP */
+>  
+> +#if defined(CONFIG_PROC_FS) || defined(CONFIG_SYSFS)
+>  extern const char * const vmstat_text[];
+> +#endif
+>
+
+The ifdef around the declaration isn't needed, really.  If we remove
+it then a build-time error becomes a link-time (or even moddep-time) error,
+which is a bit of a pain.  But it's less painful than having ifdefs
+around squillions of declarations.
+
+
