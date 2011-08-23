@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab1HWWCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:02:17 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39355 "EHLO e4.ny.us.ibm.com"
+	id S1755583Ab1HWWGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:06:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32893 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103Ab1HWWCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:02:11 -0400
-Date: Tue, 23 Aug 2011 15:01:58 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH v2 0/3] make vfork killable
-Message-ID: <20110823220158.GA28444@count0.beaverton.ibm.com>
-References: <20110727163159.GA23785@redhat.com>
- <20110729192358.GB31717@mtj.dyndns.org>
- <20110812175550.GA7484@redhat.com>
- <20110813161814.GE4254@htj.dyndns.org>
+	id S1751886Ab1HWWGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 18:06:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: try_to_freeze() called with IRQs disabled on ARM
+Date: Wed, 24 Aug 2011 00:08:31 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <20110823151936.GM9232@opensource.wolfsonmicro.com> <20110823154329.GF3895@n2100.arm.linux.org.uk>
+In-Reply-To: <20110823154329.GF3895@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110813161814.GE4254@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108240008.31936.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 13, 2011 at 06:18:14PM +0200, Tejun Heo wrote:
-> Hello, Oleg.
-> 
-> On Fri, Aug 12, 2011 at 07:55:50PM +0200, Oleg Nesterov wrote:
-> > > an alternative approach
-> > > could be handling vfork waiting as a type of job control stop.
+On Tuesday, August 23, 2011, Russell King - ARM Linux wrote:
+> On Tue, Aug 23, 2011 at 04:19:36PM +0100, Mark Brown wrote:
+> > The recent series of commits reworking the freezer appear to have
+> > caused serious issues on ARM.  The kernel constantly complains that
+> > try_to_freeze() is bring called with interrupts disabled:
 > > 
-> > Well, I didn't see the code, but to be honest this doesn't look
-> > like a good idea to me. Firstly, personally I do not think this
-> > has something to do with the job control stop.
+> > [   75.380000] BUG: sleeping function called from invalid context at include/linux/freezer.h:44
+> > [   75.380000] in_atomic(): 0, irqs_disabled(): 128, pid: 1517, name: Xorg
+> > [   75.380000] no locks held by Xorg/1517.
+> > [   75.380000] [<c0014308>] (unwind_backtrace+0x0/0x12c) from
+> > [<c0464400>] (dump_stack+0x20/0x24)
+> > [   75.380000] [<c0464400>] (dump_stack+0x20/0x24) from [<c0022b80>]
+> > (__might_sleep+0xfc/0x11c)
+> > [   75.380000] [<c0022b80>] (__might_sleep+0xfc/0x11c) from [<c0011520>]
+> > (do_signal+0x94/0x230)
+> > [   75.380000] [<c0011520>] (do_signal+0x94/0x230) from [<c00116e4>]
+> > (do_notify_resume+0x28/0x6c)
+> > [   75.380000] [<c00116e4>] (do_notify_resume+0x28/0x6c) from
+> > [<c000eaf8>] (work_pending+0x24/0x28)
 > > 
-> > And, to me sys_restart_syscall() looks like the very natural
-> > approach, and simple.
+> > and the boot runs very slowly.  Reverting the series merged in 56f0be
+> > appears to resolve the issue, though looking at the changes I'd expect
+> > there's some underlying bug here that just doesn't trigger very often.
+> > I don't really have the bandwidth to understand what's gone wrong right
+> > now but should be able to run tests if you've got anything you'd like
+> > looking atl.
 > 
-> I've been playing with this and it does a bit further than
-> implementation simplicity.  Currently, we have three different modes
-> of stopping a task.
+> The signal handling is rather yucky, and it seems it needs to run with
+> IRQs enabled - but we run it with IRQs disabled.
 > 
-> * Regular job control and ptrace.
-> * vfork wait.
-> * cgroup freeze.
+> There's horrible issues in there.  One such issue is the syscall restart
+> handling.  Here's an example:
 > 
-> Currently, all three behave differently and the latter two use
-> UNINTERRUPTIBLE sleep causing rather nasty problems.  If we want to
-> fix the UNINTERRUPTIBLE sleep problem, we end up introducing a new
-> user visible state no matter which way we go - ie. a task will be in a
-> state which isn't UNINTERRUPTIBLE sleep but still behave differently
-> in terms of signal delivery and job control.
+> 	sys_ppoll
+> 	...
+> 	receives signal
+> 	returns ERESTARTNOHAND (restart syscall if no handler)
 > 
-> What's needed is this different state of being stopped which reponds
-> to all kernel's desires (killing and ptracing) but stays stopped
-> regardless of what the user requests.
+> On the exit path, we notice that we have TIF_SIGPENDING set.  So we call
+> do_notify_resume() and eventually do_signal().  At this point, 'syscall'
+> is set.
 > 
-> There's multiple ways to implement this and forced syscall restart is
-> one way to achieve it - ie. while the stop condition is pending,
-> syscall is forced to be restarted after interruption and re-enter
-> stop.  The downside is that that wouldn't work with cgroup freeze at
-> all - there's no syscall to restart.
+> The first thing do_signal() does is fiddle with the stack to fake a
+> restart.  If we don't gain a signal here, everything is fine and we
+> return.  So far so good.
 > 
-> So, what I'm proposing is to basically add another job control state
-> which is similar to process group stop but controlled by other
-> parameters like vfork wait condition or control group frozen state.
+> Lets say for the sake of argument that we've run do_signal() with IRQs
+> enabled.  Now, a scheduling event has come along and set TIF_NEED_RESCHED.
+> 
+> So, having returned from do_notify_resume(), we disable interrupts, reload
+> the work mask, and notice that TIF_NEED_RESCHED is set.  We now switch
+> away from this thread and do something else.
+> 
+> While something else is running, lets say a SIGHUP is sent to our process,
+> and there's a handler installed.
+> 
+> When we switch back, we again disable interrupts, reload the work mask,
+> and notice this time that TIF_SIGPENDING is again set.  So, just like
+> last time, we call do_notify_resume() and eventually do_signal().  This
+> time, syscall is false.
+> 
+> So we obtain the signal, save the current state, and set userspace up to
+> call the handler.
+> 
+> The state which we've saved though is the state required for the syscall
+> restart - but that's wrong, because the return code said 'restart if
+> no handler' and we're now invoking a handler.
+> 
+> What should happen is that the syscall is not restarted, and -EINTR is
+> returned instead.
+> 
+> What has this got to do with the issue you raise?  Having interrupts
+> off during signal handling helps to avoid this problem by ensuring that
+> we can't get resched events if there's a signal with no handler present.
+> Enabling interrupts for do_signal opens that race up.
+> 
+> Now, having interrupts disabled for writing to the processes stack is
+> technically bad news (although in the last 18 or so years its never
+> caused a problem.)  That said, we really should enable interrupts
+> before calling handle_signal() - which should be safe from the above
+> race.
+> 
+> But... without serious amounts of rework of the signal handling code
+> to avoid the above race I don't see how we can allow try_to_freeze()
+> to run with IRQs enabled and still have race-free syscall restarting.
 
-Are you proposing one new jobctl state for vfork and another for
-the cgroup freezer?
+I'm not sure if it's necessary to call try_to_freeze() from do_signal().
+At least x86 doesn't do that.
 
-> This allows these stops to be handled in a way very similar to already
-> esablished job control states including interaction with ptrace.
-
-Interesting. So long as shells and ptracers in containers would not see
-jobctl traps/events triggered by tasks outside the container it sounds
-fine.
-
-Cheers,
-	-Matt Helsley
+Rafael
