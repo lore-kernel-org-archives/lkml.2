@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab1HWWmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:42:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46846 "EHLO
+	id S1756051Ab1HWWmr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:42:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54029 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935Ab1HWWmV (ORCPT
+	with ESMTP id S1755932Ab1HWWmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:42:21 -0400
+	Tue, 23 Aug 2011 18:42:19 -0400
 From: Mark Einon <mark.einon@gmail.com>
 To: gregkh@suse.de
 Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 8/8] staging: et131x: Update tx trans_start on device close to prevent tx_timeout
-Date: Tue, 23 Aug 2011 23:40:40 +0100
-Message-Id: <1314139240-869-9-git-send-email-mark.einon@gmail.com>
+Subject: [PATCH 7/8] [RESEND] staging: et131x: Fix free IRQ from IRQ context warning after tx_timeout
+Date: Tue, 23 Aug 2011 23:40:39 +0100
+Message-Id: <1314139240-869-8-git-send-email-mark.einon@gmail.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1314139240-869-1-git-send-email-mark.einon@gmail.com>
 References: <1312321621-2695-1-git-send-email-mark.einon@gmail.com>
@@ -22,64 +22,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updating the tx trans_start before closing the device prevents a possible tx_timeout occuring during the closing process.
-Tested on an ET1310 device.
+When a tx timeout occured, et131x_tx_timeout closed and re-opened the device to fix.
+As et131x_close called free_irq(), bad things ensued (see warning trace below), namely a
+storm of errors and warnings.
+Fixed by replacing the close() and open() calls with just the relevant functions previously
+called from these.
+Verified on an ET-1310 device.
 
 Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x_netdev.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
 
+----------
+Aug  2 21:26:08 msilap kernel: [ 6484.816024] ------------[ cut here ]------------
+Aug  2 21:26:08 msilap kernel: [ 6484.816039] WARNING: at /home/mark/Source/staging-2.6/net/sched/sch_generic.c:255 dev_watchdog+0xf0/0x150()
+Aug  2 21:26:08 msilap kernel: [ 6484.816045] Hardware name: MS-1727
+Aug  2 21:26:08 msilap kernel: [ 6484.816050] NETDEV WATCHDOG: eth1 (et131x): transmit queue 0 timed out
+Aug  2 21:26:08 msilap kernel: [ 6484.816054] Modules linked in: et131x(C) aes_generic tcp_lp fuse nouveau ttm drm_kms_helper drm i2c_algo_bit sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf uinput arc4 iwlagn snd_hda_codec_hdmi mac80211 sdhci_pci sdhci snd_hda_codec_realtek cfg80211 snd_hda_intel snd_hda_codec mmc_core snd_hwdep firewire_ohci firewire_core jmb38x_ms snd_seq snd_seq_device snd_pcm mxm_wmi ir_lirc_codec lirc_dev ir_sony_decoder i2c_i801 ir_jvc_decoder ir_rc6_decoder rc_rc6_mce i7core_edac edac_core snd_timer pcspkr rfkill r8169 mii i2c_core video ir_rc5_decoder memstick iTCO_wdt iTCO_vendor_support ir_nec_decoder ene_ir rc_core joydev microcode wmi snd crc_itu_t soundcore snd_page_alloc [last unloaded: et131x]
+Aug  2 21:26:08 msilap kernel: [ 6484.816163] Pid: 0, comm: kworker/0:1 Tainted: G         C  3.0.0-rc6+ #21
+Aug  2 21:26:08 msilap kernel: [ 6484.816167] Call Trace:
+Aug  2 21:26:08 msilap kernel: [ 6484.816171]  <IRQ>  [<ffffffff8103caf4>] warn_slowpath_common+0x85/0x9d
+Aug  2 21:26:08 msilap kernel: [ 6484.816189]  [<ffffffff8103cbaf>] warn_slowpath_fmt+0x46/0x48
+Aug  2 21:26:08 msilap kernel: [ 6484.816196]  [<ffffffff813aa6fb>] ? netif_tx_lock+0x4a/0x7b
+Aug  2 21:26:08 msilap kernel: [ 6484.816203]  [<ffffffff813aa86f>] dev_watchdog+0xf0/0x150
+Aug  2 21:26:08 msilap kernel: [ 6484.816211]  [<ffffffff810497b6>] run_timer_softirq+0x1a9/0x279
+Aug  2 21:26:08 msilap kernel: [ 6484.816218]  [<ffffffff813aa77f>] ? netif_tx_unlock+0x53/0x53
+Aug  2 21:26:08 msilap kernel: [ 6484.816226]  [<ffffffff810429d7>] __do_softirq+0xd5/0x1a4
+Aug  2 21:26:08 msilap kernel: [ 6484.816234]  [<ffffffff810079ed>] ? paravirt_read_tsc+0x9/0xd
+Aug  2 21:26:08 msilap kernel: [ 6484.816245]  [<ffffffff8144561c>] call_softirq+0x1c/0x26
+Aug  2 21:26:08 msilap kernel: [ 6484.816251]  [<ffffffff81003b9f>] do_softirq+0x46/0x83
+Aug  2 21:26:08 msilap kernel: [ 6484.816257]  [<ffffffff81042ca2>] irq_exit+0x52/0x9b
+Aug  2 21:26:08 msilap kernel: [ 6484.816265]  [<ffffffff81445749>] smp_apic_timer_interrupt+0x7c/0x8a
+Aug  2 21:26:08 msilap kernel: [ 6484.816273]  [<ffffffff814450d3>] apic_timer_interrupt+0x13/0x20
+Aug  2 21:26:08 msilap kernel: [ 6484.816278]  <EOI>  [<ffffffff810079ed>] ? paravirt_read_tsc+0x9/0xd
+Aug  2 21:26:08 msilap kernel: [ 6484.816291]  [<ffffffff8124ad87>] ? intel_idle+0xd1/0xf8
+Aug  2 21:26:08 msilap kernel: [ 6484.816297]  [<ffffffff8124ad69>] ? intel_idle+0xb3/0xf8
+Aug  2 21:26:08 msilap kernel: [ 6484.816306]  [<ffffffff8136a767>] cpuidle_idle_call+0xe2/0x160
+Aug  2 21:26:08 msilap kernel: [ 6484.816315]  [<ffffffff81001293>] cpu_idle+0xaa/0xcc
+Aug  2 21:26:08 msilap kernel: [ 6484.816323]  [<ffffffff81436b4e>] start_secondary+0x248/0x24f
+Aug  2 21:26:08 msilap kernel: [ 6484.816329] ---[ end trace 10ae1b2c6bae932f ]---
+Aug  2 21:26:08 msilap kernel: [ 6484.816337] et131x 0000:02:00.0: Send stuck - reset.  tcb->WrIndex 0, flags 0x00000000
+Aug  2 21:26:08 msilap kernel: [ 6484.816344] ------------[ cut here ]------------
+Aug  2 21:26:08 msilap kernel: [ 6484.816353] WARNING: at /home/mark/Source/staging-2.6/kernel/irq/manage.c:1131 __free_irq+0x58/0x192()
+Aug  2 21:26:08 msilap kernel: [ 6484.816358] Hardware name: MS-1727
+Aug  2 21:26:08 msilap kernel: [ 6484.816362] Trying to free IRQ 16 from IRQ context!
+Aug  2 21:26:08 msilap kernel: [ 6484.816365] Modules linked in: et131x(C) aes_generic tcp_lp fuse nouveau ttm drm_kms_helper drm i2c_algo_bit sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf uinput arc4 iwlagn snd_hda_codec_hdmi mac80211 sdhci_pci sdhci snd_hda_codec_realtek cfg80211 snd_hda_intel snd_hda_codec mmc_core snd_hwdep firewire_ohci firewire_core jmb38x_ms snd_seq snd_seq_device snd_pcm mxm_wmi ir_lirc_codec lirc_dev ir_sony_decoder i2c_i801 ir_jvc_decoder ir_rc6_decoder rc_rc6_mce i7core_edac edac_core snd_timer pcspkr rfkill r8169 mii i2c_core video ir_rc5_decoder memstick iTCO_wdt iTCO_vendor_support ir_nec_decoder ene_ir rc_core joydev microcode wmi snd crc_itu_t soundcore snd_page_alloc [last unloaded: et131x]
+Aug  2 21:26:08 msilap kernel: [ 6484.816459] Pid: 0, comm: kworker/0:1 Tainted: G        WC  3.0.0-rc6+ #21
+Aug  2 21:26:08 msilap kernel: [ 6484.816464] Call Trace:
+Aug  2 21:26:08 msilap kernel: [ 6484.816467]  <IRQ>  [<ffffffff8103caf4>] warn_slowpath_common+0x85/0x9d
+Aug  2 21:26:08 msilap kernel: [ 6484.816480]  [<ffffffff8103cbaf>] warn_slowpath_fmt+0x46/0x48
+Aug  2 21:26:08 msilap kernel: [ 6484.816488]  [<ffffffff81092276>] __free_irq+0x58/0x192
+Aug  2 21:26:08 msilap kernel: [ 6484.816496]  [<ffffffff8109240e>] free_irq+0x5e/0x77
+Aug  2 21:26:08 msilap kernel: [ 6484.816506]  [<ffffffffa00bf58e>] et131x_close+0x4b/0x5e [et131x]
+Aug  2 21:26:08 msilap kernel: [ 6484.816516]  [<ffffffffa00bf64d>] et131x_tx_timeout+0xac/0xc7 [et131x]
+Aug  2 21:26:08 msilap kernel: [ 6484.816523]  [<ffffffff813aa883>] dev_watchdog+0x104/0x150
+Aug  2 21:26:08 msilap kernel: [ 6484.816530]  [<ffffffff810497b6>] run_timer_softirq+0x1a9/0x279
+Aug  2 21:26:08 msilap kernel: [ 6484.816537]  [<ffffffff813aa77f>] ? netif_tx_unlock+0x53/0x53
+Aug  2 21:26:08 msilap kernel: [ 6484.816544]  [<ffffffff810429d7>] __do_softirq+0xd5/0x1a4
+Aug  2 21:26:08 msilap kernel: [ 6484.816552]  [<ffffffff810079ed>] ? paravirt_read_tsc+0x9/0xd
+Aug  2 21:26:08 msilap kernel: [ 6484.816560]  [<ffffffff8144561c>] call_softirq+0x1c/0x26
+Aug  2 21:26:08 msilap kernel: [ 6484.816566]  [<ffffffff81003b9f>] do_softirq+0x46/0x83
+Aug  2 21:26:08 msilap kernel: [ 6484.816572]  [<ffffffff81042ca2>] irq_exit+0x52/0x9b
+Aug  2 21:26:08 msilap kernel: [ 6484.816580]  [<ffffffff81445749>] smp_apic_timer_interrupt+0x7c/0x8a
+Aug  2 21:26:08 msilap kernel: [ 6484.816588]  [<ffffffff814450d3>] apic_timer_interrupt+0x13/0x20
+Aug  2 21:26:08 msilap kernel: [ 6484.816592]  <EOI>  [<ffffffff810079ed>] ? paravirt_read_tsc+0x9/0xd
+Aug  2 21:26:08 msilap kernel: [ 6484.816604]  [<ffffffff8124ad87>] ? intel_idle+0xd1/0xf8
+Aug  2 21:26:08 msilap kernel: [ 6484.816610]  [<ffffffff8124ad69>] ? intel_idle+0xb3/0xf8
+Aug  2 21:26:08 msilap kernel: [ 6484.816617]  [<ffffffff8136a767>] cpuidle_idle_call+0xe2/0x160
+Aug  2 21:26:08 msilap kernel: [ 6484.816625]  [<ffffffff81001293>] cpu_idle+0xaa/0xcc
+Aug  2 21:26:08 msilap kernel: [ 6484.816632]  [<ffffffff81436b4e>] start_secondary+0x248/0x24f
+---
+ drivers/staging/et131x/et1310_phy.c    |    1 -
+ drivers/staging/et131x/et131x_netdev.c |   23 +++++++++++++++++++++--
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
+index 2c6898f..c845c27 100644
+--- a/drivers/staging/et131x/et1310_phy.c
++++ b/drivers/staging/et131x/et1310_phy.c
+@@ -732,7 +732,6 @@ void et131x_mii_check(struct et131x_adapter *adapter,
+ 	u32 mdi_mdix;
+ 	u32 masterslave;
+ 	u32 polarity;
+-	unsigned long flags;
+ 
+ 	if (bmsr_ints & MI_BMSR_LINK_STATUS) {
+ 		if (bmsr & MI_BMSR_LINK_STATUS) {
 diff --git a/drivers/staging/et131x/et131x_netdev.c b/drivers/staging/et131x/et131x_netdev.c
-index 70a0da3..7555a24 100644
+index 37e1069..70a0da3 100644
 --- a/drivers/staging/et131x/et131x_netdev.c
 +++ b/drivers/staging/et131x/et131x_netdev.c
-@@ -153,7 +153,7 @@ int et131x_open(struct net_device *netdev)
- 	result = request_irq(netdev->irq, et131x_isr, IRQF_SHARED,
- 					netdev->name, netdev);
- 	if (result) {
--		dev_err(&adapter->pdev->dev, "c ould not register IRQ %d\n",
-+		dev_err(&adapter->pdev->dev, "could not register IRQ %d\n",
- 			netdev->irq);
- 		return result;
- 	}
-@@ -182,6 +182,9 @@ int et131x_close(struct net_device *netdev)
- {
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
+@@ -478,9 +478,28 @@ void et131x_tx_timeout(struct net_device *netdev)
+ 				tcb->index,
+ 				tcb->flags);
  
-+	/* Save the timestamp for the TX watchdog, prevent a timeout */
-+	netdev->trans_start = jiffies;
+-			et131x_close(netdev);
+-			et131x_open(netdev);
++			adapter->net_stats.tx_errors++;
+ 
++			/* perform reset */
++			/* First thing is to stop the queue */
++			netif_stop_queue(netdev);
 +
- 	/* First thing is to stop the queue */
- 	netif_stop_queue(netdev);
- 
-@@ -449,6 +452,10 @@ void et131x_tx_timeout(struct net_device *netdev)
- 	struct tcb *tcb;
- 	unsigned long flags;
- 
-+	/* If the device is closed, ignore the timeout */
-+	if (~(adapter->flags & fMP_ADAPTER_INTERRUPT_IN_USE));
-+		return;
++			/* Stop the Tx and Rx DMA engines */
++			et131x_rx_dma_disable(adapter);
++			et131x_tx_dma_disable(adapter);
 +
- 	/* Any nonrecoverable hardware error?
- 	 * Checks adapter->flags for any failure in phy reading
- 	 */
-@@ -685,12 +692,12 @@ struct net_device *et131x_device_alloc(void)
- 		return NULL;
++			/* Disable device interrupts */
++			et131x_disable_interrupts(adapter);
++
++			/* Enable the Tx and Rx DMA engines (if not already enabled) */
++			et131x_rx_dma_enable(adapter);
++			et131x_tx_dma_enable(adapter);
++
++			/* Enable device interrupts */
++			et131x_enable_interrupts(adapter);
++
++			/* We're ready to move some data, so start the queue */
++			netif_start_queue(netdev);
+ 			return;
+ 		}
  	}
- 
--	/* Setup the function registration table (and other data) for a
-+	/*
-+	 * Setup the function registration table (and other data) for a
- 	 * net_device
- 	 */
--
- 	netdev->watchdog_timeo = ET131X_TX_TIMEOUT;
--	netdev->netdev_ops = &et131x_netdev_ops;
-+	netdev->netdev_ops     = &et131x_netdev_ops;
- 
- 	/* netdev->ethtool_ops        = &et131x_ethtool_ops; */
- 
 -- 
 1.7.6
 
