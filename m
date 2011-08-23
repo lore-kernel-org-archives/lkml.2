@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab1HWIQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:16:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56901 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754576Ab1HWIQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:16:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,267,1312182000"; 
-   d="scan'208";a="44117967"
-Subject: RE: [PATCH] DMA: PL330: add missing header
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Boojin Kim <boojin.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>
-In-Reply-To: <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
-References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com>
-	 <1314081133.22120.19.camel@vkoul-udesk3>
-	 <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 13:45:42 +0530
-Message-ID: <1314087342.22120.100.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754721Ab1HWIQy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:16:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34945 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab1HWIQw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:16:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
+References: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
+Date: Tue, 23 Aug 2011 16:16:51 +0800
+Message-ID: <CAJxxZ0ME9vKgLHbFA1ZmuYRwfNvQaojDLhgBbeMa9qcoWj7-7Q@mail.gmail.com>
+Subject: Re: [PATCH v2] spi:spi_bfin5xx: SPI SSEL deasserted too early in soft
+ irq mode.
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 16:19 +0900, Boojin Kim wrote:
-> Koul, Vinod wrote:
-> > Sent: Tuesday, August 23, 2011 3:32 PM
-> > To: Boojin Kim
-> > Cc: linux-kernel@vger.kernel.org; Kukjin Kim
-> > Subject: Re: [PATCH] DMA: PL330: add missing header
-> >
-> > On Tue, 2011-08-23 at 14:57 +0900, Boojin Kim wrote:
-> > > This patch fixup below build error
-> > >
-> > > drivers/dma/pl330.c: In function 'pl330_prep_slave_sg':
-> > > drivers/dma/pl330.c:603: error: implicit declaration of function
-> > 'for_each_sg'
-> > > drivers/dma/pl330.c:603: error: expected ';' before '{' token
-> > > drivers/dma/pl330.c:581: warning: unused variable 'flags'
-> > > drivers/dma/pl330.c: In function 'pl330_probe':
-> > > drivers/dma/pl330.c:720: warning: comparison of distinct pointer
-> > types lacks a cast
-> > > make[2]: *** [drivers/dma/pl330.o] Error 1
-> > >
-> > > Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
-> > > ---
-> > >  drivers/dma/pl330.c |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> > > index 00eee59..fcad90c 100644
-> > > --- a/drivers/dma/pl330.c
-> > > +++ b/drivers/dma/pl330.c
-> > > @@ -17,6 +17,7 @@
-> > >  #include <linux/interrupt.h>
-> > >  #include <linux/amba/bus.h>
-> > >  #include <linux/amba/pl330.h>
-> > > +#include <linux/scatterlist.h>
-> > >
-> > >  #define NR_DEFAULT_DESC	16
-> > >
-> > Where tree is this error reported? scatterlist.h is already added to
-> > the
-> > dmaengine.h
-> Oops, I founded it just now in your tree.
-> OK, please kindly drop this.
-> As a note, since happens build error with latest mainline v3.1-rc3 so that 
-> should be merged for v3.1.
-Russell had fixed compilation of pl330 driver, and was supposed to send
-the fix to Linus as part of his fixes. If thats not done I can send it
-for next -rc
+Hi Grant,
+
+Any comments?
 
 
--- 
-~Vinod
+Sonic Zhang
 
+On Fri, Aug 12, 2011 at 10:48 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> Poll the FIFO till it is empty before deassert SSEL in pump_transfers in
+> soft irq mode. No polling is necessary in interrupt mode and error handling.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> ---
+>  drivers/spi/spi-bfin5xx.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
+> index b8d25f2..7e03e7d 100644
+> --- a/drivers/spi/spi-bfin5xx.c
+> +++ b/drivers/spi/spi-bfin5xx.c
+> @@ -587,6 +587,7 @@ static void bfin_spi_pump_transfers(unsigned long data)
+>        if (message->state == DONE_STATE) {
+>                dev_dbg(&drv_data->pdev->dev, "transfer: all done!\n");
+>                message->status = 0;
+> +               bfin_spi_flush(drv_data);
+>                bfin_spi_giveback(drv_data);
+>                return;
+>        }
+> @@ -870,8 +871,10 @@ static void bfin_spi_pump_transfers(unsigned long data)
+>                message->actual_length += drv_data->len_in_bytes;
+>                /* Move to next transfer of this msg */
+>                message->state = bfin_spi_next_transfer(drv_data);
+> -               if (drv_data->cs_change)
+> +               if (drv_data->cs_change) {
+> +                       bfin_spi_flush(drv_data);
+>                        bfin_spi_cs_deactive(drv_data, chip);
+> +               }
+>        }
+>
+>        /* Schedule next transfer tasklet */
+> --
+> 1.7.0.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
