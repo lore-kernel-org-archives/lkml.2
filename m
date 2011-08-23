@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1HWU4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:56:35 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35364 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab1HWU43 (ORCPT
+	id S1755046Ab1HWU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:58:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52618 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab1HWU6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:56:29 -0400
-Date: Tue, 23 Aug 2011 22:56:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110823205616.GA15295@aftab>
-References: <4E52EF2A.8060608@zytor.com>
- <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
- <20110823010146.GY2203@ZenIV.linux.org.uk>
- <20110823011312.GZ2203@ZenIV.linux.org.uk>
- <20110823021717.GA2203@ZenIV.linux.org.uk>
- <20110823061531.GC2203@ZenIV.linux.org.uk>
- <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
- <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
- <20110823162251.GC13138@aftab>
- <4E53FC6E.1030807@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E53FC6E.1030807@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Aug 2011 16:58:20 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/1] perf probe: Fix regression of variable finder
+Date: Tue, 23 Aug 2011 17:58:05 -0300
+Message-Id: <1314133085-25374-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1314133085-25374-1-git-send-email-acme@infradead.org>
+References: <1314133085-25374-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 03:15:58PM -0400, H. Peter Anvin wrote:
-> Right, but if you had said the difference had disappeared on current AMD
-> silicon it would be much less of an issue.  That's why I wanted to find
-> that bit out from you.
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Yeah, I dug this out in the APM, btw.
+Fix to call convert_variable() if previous call does not fail.
 
-But no, I don't think the difference has disappeared - to the contrary,
-AFAICT, the intention is for SYSCALL to be the fastest way to do
-syscalls on x86 due to diminished number of segment checks etc. INT80
-is legacy, slower, etc. I believe Andy measured a similar situation on
-Sandy Bridge with SYSCALL having latencies in the tens of nsecs range
-and INT80 being much slower. Ingo also measured a similar situation
-where the latency gap between the two on Intel is even bigger.
+To call convert_variable, it ensures "ret" is 0. However, since
+"ret" has the return value of synthesize_perf_probe_arg() which
+always returns positive value if it succeeded, perf probe doesn't
+call convert_variable(). This will cause a SEGV when we add an
+event with arguments.
 
-So, the only problem left now is what we're going
-to do with cases similar to what Al conjured up:
-http://marc.info/?l=linux-kernel&m=131412271112461&w=2
+This has to be fixed as it ensures "ret" is greater than 0
+(or not negative).
 
-I don't know, maybe the most cowardly approach is to issue a warning and
-shrug with the shoulders, or do some asm magic... Also, do we care at
-all, how relevant is a case like that?
+This regression has been introduced by my previous patch, f182e3e1.
 
-Hmmm.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20110820053922.3286.65805.stgit@fedora15
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-finder.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 555fc38..5d73262 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -659,7 +659,7 @@ static int find_variable(Dwarf_Die *sc_die, struct probe_finder *pf)
+ 		if (!die_find_variable_at(&pf->cu_die, pf->pvar->var, 0, &vr_die))
+ 			ret = -ENOENT;
+ 	}
+-	if (ret == 0)
++	if (ret >= 0)
+ 		ret = convert_variable(&vr_die, pf);
+ 
+ 	if (ret < 0)
 -- 
-Regards/Gruss,
-Boris.
+1.6.2.5
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
