@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab1HWIQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:16:54 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34945 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab1HWIQw convert rfc822-to-8bit (ORCPT
+	id S1754798Ab1HWIRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:17:35 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:43518 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab1HWIRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:16:52 -0400
+	Tue, 23 Aug 2011 04:17:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
-References: <1313117333-26763-1-git-send-email-sonic.adi@gmail.com>
-Date: Tue, 23 Aug 2011 16:16:51 +0800
-Message-ID: <CAJxxZ0ME9vKgLHbFA1ZmuYRwfNvQaojDLhgBbeMa9qcoWj7-7Q@mail.gmail.com>
-Subject: Re: [PATCH v2] spi:spi_bfin5xx: SPI SSEL deasserted too early in soft
- irq mode.
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Sonic Zhang <sonic.zhang@analog.com>
+In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
+References: <cover.1312538034.git.viresh.kumar@st.com>
+Date: Tue, 23 Aug 2011 10:17:31 +0200
+Message-ID: <CACRpkdY6KW+tv7H==b15xJyeLp9HCqp9ROBhON0A8JnJDUn8Kg@mail.gmail.com>
+Subject: Re: [PATCH V3 00/20] dmaengine/amba-pl08x updates
+From: Linus Walleij <linus.walleij@linaro.org>
+To: vinod.koul@intel.com, Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
+        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
+        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
+        viresh.linux@gmail.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, alim.akhtar@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Fri, Aug 5, 2011 at 12:02 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
 
-Any comments?
+> This patchset contains patches for ARM's pl08x DMA controller driver.
+> Main changes introduced by this patchset are:
+> - Formatting fixes
+> - Logical Fixes
+> - Support for Peripheral as flow controller
+> - Support for sg_len to be greater than 1 for slave transfers
+> - Schedule tasklet for error interrupts
+> - remove pl08x_pre_boundary() routine
+> - support for runtime PM
+> - etc
 
+I've now tested this patchset:
 
-Sonic Zhang
+patch 3/20 fails to apply cleanly, need rebase on top of Russell's
+fix for dma-mapping.h inclusion. It's a trivial fix.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-On Fri, Aug 12, 2011 at 10:48 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
->
-> Poll the FIFO till it is empty before deassert SSEL in pump_transfers in
-> soft irq mode. No polling is necessary in interrupt mode and error handling.
->
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> ---
->  drivers/spi/spi-bfin5xx.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-> index b8d25f2..7e03e7d 100644
-> --- a/drivers/spi/spi-bfin5xx.c
-> +++ b/drivers/spi/spi-bfin5xx.c
-> @@ -587,6 +587,7 @@ static void bfin_spi_pump_transfers(unsigned long data)
->        if (message->state == DONE_STATE) {
->                dev_dbg(&drv_data->pdev->dev, "transfer: all done!\n");
->                message->status = 0;
-> +               bfin_spi_flush(drv_data);
->                bfin_spi_giveback(drv_data);
->                return;
->        }
-> @@ -870,8 +871,10 @@ static void bfin_spi_pump_transfers(unsigned long data)
->                message->actual_length += drv_data->len_in_bytes;
->                /* Move to next transfer of this msg */
->                message->state = bfin_spi_next_transfer(drv_data);
-> -               if (drv_data->cs_change)
-> +               if (drv_data->cs_change) {
-> +                       bfin_spi_flush(drv_data);
->                        bfin_spi_cs_deactive(drv_data, chip);
-> +               }
->        }
->
->        /* Schedule next transfer tasklet */
-> --
-> 1.7.0.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Vinod could you apply all patches except for 16/18 which has some
+discussion going on, so we get some rotation in -next? The rest of
+Viresh:s patches are really nice stuff to have.
+
+I will test on the PB11MPcore in the next few days.
+
+Yours,
+Linus Walleij
