@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab1HWSCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 14:02:04 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52948 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1HWSB6 (ORCPT
+	id S1754948Ab1HWSFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:05:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45237 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab1HWSEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 14:01:58 -0400
-Message-ID: <4E53EB01.7080905@gmail.com>
-Date: Tue, 23 Aug 2011 11:01:37 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Tue, 23 Aug 2011 14:04:55 -0400
+Date: Tue, 23 Aug 2011 19:04:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Lutomirski <luto@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823180418.GJ2203@ZenIV.linux.org.uk>
+References: <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk>
+ <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk>
+ <20110823061531.GC2203@ZenIV.linux.org.uk>
+ <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
+ <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
+ <CA+55aFwozG02mX5hrjNo4k4i2X2=yNf_dgEnBvv8brYb1q9fDg@mail.gmail.com>
+ <20110823173317.GI2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tony.luck@intel.com
-Subject: Re: using mce_inject I get: RIP 10:<ffffffffa012c909> {ttm_bo_unref+0xf/0x45
- [ttm]}
-References: <4E506DEA.1070601@gmail.com> <20110821221602.GK25996@one.firstfloor.org>
-In-Reply-To: <20110821221602.GK25996@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823173317.GI2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2011 03:16 PM, Andi Kleen wrote:
-> On Sat, Aug 20, 2011 at 07:31:06PM -0700, Justin P. Mattock wrote:
->> not sure if I am running mce_test correctly, but during its routine of
->> testing things I do get a pause with everything, then the below shows up
->> in dmesg..:
->
-> The message is expected, but there should be no noticeable
-> pause.
->
-> -Andi
+On Tue, Aug 23, 2011 at 06:33:17PM +0100, Al Viro wrote:
+> 	* SYSCALL is not terminally broken wrt restarts.  My apologies for
+> misreading what was going on.
+> 	* SYSENTER with Linus' patch does work just fine wrt restarts + ptrace
+> 	* SYSCALL is losing ptrace-made changes to arguments when it restarts.
+> Might or might not be a problem for somebody.
 
-o.k. I have reset the kernel to 2.6.36 and ran the test program in
-init 3(since radeon is crapped out with that kernel). anyways
-with 2.6.36 I can see the cursor on the bottom left blinking throught 
-the whole tests telling me there is no pause(all timeouts given, give no 
-pause).
-with the current in init 3 I see the cursor pause for 2/3 seconds.
+BTW, that one (irrelevant to UML even if we do end up coping with SYSCALL
+there) might be worth spelling it out:
 
-I will start a bisct on this, but need some help on how to proceed 
-properly i.g. I get an error with gcc building:
+tracer:
+	ptrace(tracee, PTRACE_SYSCALL);
+tracee:
+	recvfrom(..., &addrlen);
+tracer:
+	ptrace(tracee, PTRACE_POKEUSER, EBP, &len2);
+	ptrace(tracee, PTRACE_DETACH, 0, 0);
+tracee:
+	completes recvfrom(), using &len2 instead of the &addrlen
 
-   LD      init/built-in.o
-   VDSO    arch/x86/vdso/vdso.so.dbg
-gcc: error: elf_x86_64: No such file or directory
-   VDSO    arch/x86/vdso/vdso32-int80.so.dbg
-gcc: error: elf_i386: No such file or directory
-   VDSO    arch/x86/vdso/vdso32-syscall.so.dbg
-gcc: error: elf_i386: No such file or directory
-   VDSO    arch/x86/vdso/vdso32-sysenter.so.dbg
-gcc: error: elf_i386: No such file or directory
-   CC      kernel/trace/trace.o
+That works just fine, regardless of the way syscall is entered; yes, including
+SYSCALL - there we take care to handle ptrace on the way in.  However, if it's
+SYSCALL and (ex-)tracee takes a restart, the second time around we'll have the
+original value of 6th argument used.  Changes made by POKEUSER are lost.
 
-its easily fixable, but not sure its a good idea due to bisect going 
-through commits(afraid I might go astray with the bisect if I add any 
-patches).
-
-Justin P. Mattock
-
-
+It's not a problem with int 0x80 or SYSENTER (now, with int 0x80 instead of
+jmp).  It's probably not going to be a real issue for anyone, but I pity the
+poor bastard stuck with debugging that if it *does* become someone's problem.
