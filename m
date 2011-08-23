@@ -1,67 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab1HWVLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:11:08 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41555 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab1HWVLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:11:00 -0400
-Date: Tue, 23 Aug 2011 23:10:47 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110823211047.GC15295@aftab>
-References: <20110823010146.GY2203@ZenIV.linux.org.uk>
- <20110823011312.GZ2203@ZenIV.linux.org.uk>
- <20110823021717.GA2203@ZenIV.linux.org.uk>
- <20110823061531.GC2203@ZenIV.linux.org.uk>
- <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
- <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
- <20110823162251.GC13138@aftab>
- <4E53FC6E.1030807@zytor.com>
- <20110823205616.GA15295@aftab>
- <4E54163B.6080205@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E54163B.6080205@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755586Ab1HWVLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab1HWVLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 17:11:30 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: <x86@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>, ying.huang@intel.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: [V2][PATCH 4/6] x86, nmi:  add in logic to handle multiple events and unknown NMIs
+Date: Tue, 23 Aug 2011 17:11:04 -0400
+Message-Id: <1314133866-30915-5-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1314133866-30915-1-git-send-email-dzickus@redhat.com>
+References: <1314133866-30915-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 05:06:03PM -0400, H. Peter Anvin wrote:
-> On 08/23/2011 01:56 PM, Borislav Petkov wrote:
-> > 
-> > But no, I don't think the difference has disappeared - to the contrary,
-> > AFAICT, the intention is for SYSCALL to be the fastest way to do
-> > syscalls on x86 due to diminished number of segment checks etc. INT80
-> > is legacy, slower, etc. I believe Andy measured a similar situation on
-> > Sandy Bridge with SYSCALL having latencies in the tens of nsecs range
-> > and INT80 being much slower. Ingo also measured a similar situation
-> > where the latency gap between the two on Intel is even bigger.
-> > 
-> 
-> Sandy Bridge doesn't have SYSCALL32 at all.  It has SYSENTER and SYSCALL64.
+Previous patches allow the NMI subsystem to process multipe NMI events
+in one NMI.  As previously discussed this can cause issues when an event
+triggered another NMI but is processed in the current NMI.  This causes the
+next NMI to go unprocessed and become an 'unknown' NMI.
 
-Yeah, I was talking about SYSCALL in general.
+Having this print 'unknown' NMI to the console would be inaccurate and
+scare users.  As a result I have copied the 'skip unknown' NMI logic
+developed by Robert Richter (and simplfied a little because we can
+track _all_ NMIs better instead of just the perf ones) to the main
+NMI handling routine.
 
+It is fairly simple, if when processing an NMI, the nmi_handle routine returns
+more than one event handled, then set a flag for future use.  This flag just
+says there might be a possible unknown NMI.  If an unknown NMI does come in,
+then it is skipped (swallowed).  Otherwise just clear the flag on the next NMI
+if it has events processed.
+
+The algorithm isn't 100% accurate but for most loads we have seen in perf it
+captures a large majority of unknown NMIs.  Under high workloads there still
+is the chance that unknown NMIs can trigger because you can time it just right
+such that you are generating NMIs as fast as you can process them and go four
+or five NMIs before seeing the unknown NMI.
+
+Without involving the concept of time when tracking these 'possible' NMIs,
+we may never be 100% reliable.  The idea with time being that back-to-back
+NMIs immediately follow each other.  Anything more than a micro second or so
+on modern machines between when the first NMI finished to when the second one
+starts, probably indicates a completely new event.
+
+V2:
+  - forgot to add the 'read' code for swallow_nmi (went into next patch)
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/kernel/nmi.c |   29 +++++++++++++++++++++++++++--
+ 1 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 91595d5..d9296bf 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -267,6 +267,8 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 	pr_emerg("Dazed and confused, but trying to continue\n");
+ }
+ 
++DEFINE_PER_CPU(bool, swallow_nmi);
++
+ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ {
+ 	unsigned char reason = 0;
+@@ -278,8 +280,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	 * NMI can not be detected/processed on other CPUs.
+ 	 */
+ 	handled = nmi_handle(NMI_LOCAL, regs);
+-	if (handled)
++	if (handled) {
++		/*
++		 * When handling multiple NMI events, we are not
++		 * sure if the second NMI was dropped (because of
++		 * too many NMIs), piggy-backed on the same NMI
++		 * (perf) or is queued right behind this NMI.
++		 * In the last case, we may accidentally get an
++		 * unknown NMI because the event is already handled.
++		 * Flag for this condition and swallow it later.
++		 *
++		 * FIXME: This detection has holes in it mainly
++		 * because we can't tell _when_ the next NMI comes
++		 * in.  A multi-handled NMI event followed by an 
++		 * unknown NMI a second later, clearly should not
++		 * be swallowed.
++		 */
++		if (handled > 1)
++			__this_cpu_write(swallow_nmi, true);
++		else
++			__this_cpu_write(swallow_nmi, false);
+ 		return;
++	}
+ 
+ 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+ 	raw_spin_lock(&nmi_reason_lock);
+@@ -302,7 +324,10 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	}
+ 	raw_spin_unlock(&nmi_reason_lock);
+ 
+-	unknown_nmi_error(reason, regs);
++	if (!__this_cpu_read(swallow_nmi))
++		unknown_nmi_error(reason, regs);
++
++	__this_cpu_write(swallow_nmi, false);
+ }
+ 
+ dotraplinkage notrace __kprobes void
 -- 
-Regards/Gruss,
-Boris.
+1.7.6
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
