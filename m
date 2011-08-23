@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1HWApJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 20:45:09 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38310 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab1HWAoq (ORCPT
+	id S1754655Ab1HWArF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 20:47:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55724 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab1HWArC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 20:44:46 -0400
-X-Sasl-enc: C8sWugYNNEdiddWQWZqxQW3M3kJ2++6J8MJn1R+q5v6u 1314060285
-Date: Mon, 22 Aug 2011 17:38:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] libfs: fix simple_attr_write on 32bit machine
-Message-ID: <20110823003814.GB5982@kroah.com>
-References: <1310187626-2371-1-git-send-email-akinobu.mita@gmail.com>
+	Mon, 22 Aug 2011 20:47:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310187626-2371-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110822125355.bb01d76b.rdunlap@xenotime.net>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822125355.bb01d76b.rdunlap@xenotime.net>
+Date: Mon, 22 Aug 2011 20:47:00 -0400
+Message-ID: <CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 02:00:26PM +0900, Akinobu Mita wrote:
-> Assume that /sys/kernel/debug/dummy64 is debugfs file created by
-> debugfs_create_x64().
-> 
-> 	# cd /sys/kernel/debug
-> 	# echo 0x1234567812345678 > dummy64
-> 	# cat dummy64
-> 	0x0000000012345678
-> 
-> 	# echo 0x80000000 > dummy64
-> 	# cat dummy64
-> 	0xffffffff80000000
-> 
-> The value more than INT_MAX cannot be written to the debugfs file
-> created by debugfs_create_u64 or debugfs_create_x64 on 32bit machine.
-> Because simple_attr_write() uses simple_strtol() for the conversion.
-> 
-> To fix this, use simple_strtoll() instead.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Hi,
 
-Do we have any debugfs files that need this change in the tree now for
-3.1 or newer?
+On Mon, Aug 22, 2011 at 3:53 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Mon, 22 Aug 2011 14:53:04 +1000 Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> [The kernel.org mirroring is a bit low today]
+>
+> (on x86_64:)
+>
+> When CONFIG_EVM=y, CONFIG_CRYPTO_HASH2=m, CONFIG_TRUSTED_KEYS=m,
+> CONFIG_ENCRYPTED_KEYS=m, the build fails with:
+>
+You did not provide the value of CONFIG_TCG_TPM, I'll assume it was
+'m'. That said, correct me if I'm wrong, but we currently have:
 
-thanks,
+menuconfig TCG_TPM
+        tristate "TPM Hardware Support"
 
-greg k-h
+[...]
+
+config EVM
+        boolean "EVM support"
+        depends on SECURITY && KEYS && TCG_TPM
+
+which seems terribly broken to me... How can you have a built-in
+feature, which depends on another potentially-not-built-in feature ?
+
+If you change EVM to 'tristate', you will see that you are not allowed
+to make it built-in if TCG_TPM is not built-in.
+
+ - Arnaud
+
+> (.text+0x378aa): undefined reference to `key_type_encrypted'
+> evm_crypto.c:(.text+0x37992): undefined reference to `crypto_alloc_shash'
+> evm_crypto.c:(.text+0x37a24): undefined reference to `crypto_shash_setkey'
+> evm_crypto.c:(.text+0x37ad9): undefined reference to `crypto_shash_update'
+> evm_crypto.c:(.text+0x37aeb): undefined reference to `crypto_shash_final'
+> (.text+0x37b4b): undefined reference to `crypto_shash_update'
+> (.text+0x37c61): undefined reference to `crypto_shash_update'
+> (.text+0x37cb9): undefined reference to `crypto_shash_update'
+>
+> even though EVM (Kconfig) selects ENCRYPTED_KEYS and TRUSTED_KEYS..
+> and even after I add "select CRYPTO_HASH2".
+>
+> Is this because EVM is bool and kconfig is confused about 'select's
+> when a bool is selecting tristates?  Shouldn't the tristates become
+> 'y' instead of 'm' if they are selected by a bool that is 'y'?
+>
+>
+> xconfig shows these symbol values:
+>
+> Symbol: EVM [=y]
+> Type : boolean
+> Prompt: EVM support
+> Defined at security/integrity/evm/Kconfig:1
+> Depends on: SECURITY [=y] && KEYS [=y] && TCG_TPM [=m]
+> Location:
+> -> Security options
+> Selects: CRYPTO_HMAC [=m] && CRYPTO_MD5 [=m] && CRYPTO_SHA1 [=m] && CRYPTO_HASH2 [=m] && ENCRYPTED_KEYS [=m] && TRUSTED_KEYS [=m]
+>
+>
+> Hm, changing TCG_TPM to =y also changes TRUSTED_KEYS and ENCRYPTED_KEYS and
+> lots of CRYPTO_ symbols from =m to =y.  There must be some kind of min/max
+> symbol checking that is confused?
+>
+there is definitively an underlying min/max, but I would not point
+finger too fast.
+
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
