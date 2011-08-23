@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1HWCIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 22:08:43 -0400
-Received: from lunge.queued.net ([173.255.254.236]:60762 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab1HWCIm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 22:08:42 -0400
-Date: Mon, 22 Aug 2011 19:08:38 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Leo Yan <leoy@marvell.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <hzhuang1@marvell.com>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: Re: [PATCH] ARM: mmp: map sram as MT_MEMORY rather than MT_DEVICE
-Message-ID: <20110822190838.3e03c3ec@debxo>
-In-Reply-To: <CAMPhdO-cttCzdm_gh=KdNqqPYQOgPBNS57DtPduPahpkP2rk0g@mail.gmail.com>
-References: <1313377794-26721-1-git-send-email-leoy@marvell.com>
-	<1313377794-26721-2-git-send-email-leoy@marvell.com>
-	<20110822164740.5682541b@queued.net>
-	<CAMPhdO-cttCzdm_gh=KdNqqPYQOgPBNS57DtPduPahpkP2rk0g@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1754896Ab1HWCJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 22:09:23 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44581 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752888Ab1HWCJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 22:09:22 -0400
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <20110822174958.73dd96c7.rdunlap@xenotime.net>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	 <20110822125355.bb01d76b.rdunlap@xenotime.net>
+	 <CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	 <20110822174958.73dd96c7.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Aug 2011 22:09:18 -0400
+Message-ID: <1314065358.3225.44.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011 08:07:41 +0800
-Eric Miao <eric.y.miao@gmail.com> wrote:
+On Mon, 2011-08-22 at 17:49 -0700, Randy Dunlap wrote:
+> On Mon, 22 Aug 2011 20:47:00 -0400 Arnaud Lacombe wrote:
+> 
+> > Hi,
+> > 
+> > On Mon, Aug 22, 2011 at 3:53 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > > On Mon, 22 Aug 2011 14:53:04 +1000 Stephen Rothwell wrote:
+> > >
+> > >> Hi all,
+> > >>
+> > >> [The kernel.org mirroring is a bit low today]
+> > >
+> > > (on x86_64:)
+> > >
+> > > When CONFIG_EVM=y, CONFIG_CRYPTO_HASH2=m, CONFIG_TRUSTED_KEYS=m,
+> > > CONFIG_ENCRYPTED_KEYS=m, the build fails with:
+> > >
+> > You did not provide the value of CONFIG_TCG_TPM, I'll assume it was
+> > 'm'. That said, correct me if I'm wrong, but we currently have:
+> 
+> Yes, it was 'm'.
+> 
+> > menuconfig TCG_TPM
+> >         tristate "TPM Hardware Support"
+> > 
+> > [...]
+> > 
+> > config EVM
+> >         boolean "EVM support"
+> >         depends on SECURITY && KEYS && TCG_TPM
+> > 
+> > which seems terribly broken to me... How can you have a built-in
+> > feature, which depends on another potentially-not-built-in feature ?
+> 
+> Yup.
 
-> On Tue, Aug 23, 2011 at 7:47 AM, Andres Salomon <dilinger@queued.net>
-> wrote:
-> > The sram code allocates memory with ioremap, which assumes MT_DEVICE
-> > for memory protections.  This explodes when we map sram for power
-> > management purposes and then attempt to execute it (jump_to_lp_sram)
-> > on the OLPC XO-1.75.  Instead, we want to specify MT_MEMORY, which
-> > doesn't set the L_PTE_XN bit.
-> >
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  arch/arm/mach-mmp/sram.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> >
-> > Eric, this patch is against the devel branch of your pxa tree.
-> >
-> > diff --git a/arch/arm/mach-mmp/sram.c b/arch/arm/mach-mmp/sram.c
-> > index 4304f95..ca4d3c1 100644
-> > --- a/arch/arm/mach-mmp/sram.c
-> > +++ b/arch/arm/mach-mmp/sram.c
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/err.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/genalloc.h>
-> > +#include <asm/mach/map.h>
-> >
-> >  #include <mach/sram.h>
-> >
-> > @@ -87,7 +88,8 @@ static int __devinit sram_probe(struct
-> > platform_device *pdev)
-> >
-> >        info->sram_phys   = (phys_addr_t)res->start;
-> >        info->sram_size   = resource_size(res);
-> > -       info->sram_virt   = ioremap(info->sram_phys,
-> > info->sram_size);
-> > +       info->sram_virt   = __arm_ioremap(info->sram_phys,
-> > info->sram_size,
-> > +                                         MT_MEMORY);
-> 
-> I doubt MT_MEMORY is intended for use with __arm_ioremap(). There
-> could be other way around to the L_PTE_XN bit.
-> 
-> One other way I'm actually thinking of is to add the SRAM mapping to
-> mmp_map_io(). The difference of SRAM offset/size may result the
-> separation of mmp_map_io() into {pxa168,pxa910,mmp2}_map_io()
-> if necessary.
-> 
+Easy, different use cases. The TPM has been around and used for a while,
+not requiring it to be built-in.  EVM, a new use case, requires it to be
+built-in.
 
-I guess I don't follow.  I think you're talking about adding it to the
-standard_io_desc array, but that would require having it pre-mapped and
-knowing the virtual address.  Or were you planning to ioremap it?
+> > If you change EVM to 'tristate', you will see that you are not allowed
+> > to make it built-in if TCG_TPM is not built-in.
+> 
+> Right.
+
+The TPM, crypto, trusted and encrypted keys are tristate.  Like the
+LSMs, EVM is boolean, which when selected using 'make xconfig', converts
+the tristates to built-in.  The tristate/boolean mismatches aren't
+corrected, when .config is edited directly.
+
+Mimi
+
+> >  - Arnaud
+> > 
+> > > (.text+0x378aa): undefined reference to `key_type_encrypted'
+> > > evm_crypto.c:(.text+0x37992): undefined reference to `crypto_alloc_shash'
+> > > evm_crypto.c:(.text+0x37a24): undefined reference to `crypto_shash_setkey'
+> > > evm_crypto.c:(.text+0x37ad9): undefined reference to `crypto_shash_update'
+> > > evm_crypto.c:(.text+0x37aeb): undefined reference to `crypto_shash_final'
+> > > (.text+0x37b4b): undefined reference to `crypto_shash_update'
+> > > (.text+0x37c61): undefined reference to `crypto_shash_update'
+> > > (.text+0x37cb9): undefined reference to `crypto_shash_update'
+> > >
+> > > even though EVM (Kconfig) selects ENCRYPTED_KEYS and TRUSTED_KEYS..
+> > > and even after I add "select CRYPTO_HASH2".
+> > >
+> > > Is this because EVM is bool and kconfig is confused about 'select's
+> > > when a bool is selecting tristates?  Shouldn't the tristates become
+> > > 'y' instead of 'm' if they are selected by a bool that is 'y'?
+> > >
+> > >
+> > > xconfig shows these symbol values:
+> > >
+> > > Symbol: EVM [=y]
+> > > Type : boolean
+> > > Prompt: EVM support
+> > > Defined at security/integrity/evm/Kconfig:1
+> > > Depends on: SECURITY [=y] && KEYS [=y] && TCG_TPM [=m]
+> > > Location:
+> > > -> Security options
+> > > Selects: CRYPTO_HMAC [=m] && CRYPTO_MD5 [=m] && CRYPTO_SHA1 [=m] && CRYPTO_HASH2 [=m] && ENCRYPTED_KEYS [=m] && TRUSTED_KEYS [=m]
+> > >
+> > >
+> > > Hm, changing TCG_TPM to =y also changes TRUSTED_KEYS and ENCRYPTED_KEYS and
+> > > lots of CRYPTO_ symbols from =m to =y.  There must be some kind of min/max
+> > > symbol checking that is confused?
+> > >
+> > there is definitively an underlying min/max, but I would not point
+> > finger too fast.
+> 
+> 
+> Thanks for your help.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+
