@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1HWTxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 15:53:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:37801 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061Ab1HWTxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 15:53:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=fBoMjfzS8Ry1m6bwDMCEskbjKKPPbWofVp87mJSYk5YwNgqlE5mkrxg6c8D4GhMIe
-	kHTb/G+G9ZiqOMIuoa4dg==
+	id S1756061Ab1HWTxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 15:53:55 -0400
+Received: from claw.goop.org ([74.207.240.146]:50729 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755862Ab1HWTxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 15:53:49 -0400
+Message-ID: <4E540548.4080402@goop.org>
+Date: Tue, 23 Aug 2011 12:53:44 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110822213347.GF2507@redhat.com>
-References: <1313740111-27446-1-git-send-email-walken@google.com>
-	<20110822213347.GF2507@redhat.com>
-Date: Tue, 23 Aug 2011 12:52:56 -0700
-Message-ID: <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
-Subject: Re: [PATCH] thp: tail page refcounting fix
-From: Michel Lespinasse <walken@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home>
+In-Reply-To: <alpine.DEB.2.00.1108231355380.26421@router.home>
+X-Enigmail-Version: 1.2
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea,
-
-On Mon, Aug 22, 2011 at 2:33 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> So this solution:
+On 08/23/2011 12:01 PM, Christoph Lameter wrote:
+> On Mon, 22 Aug 2011, Jeremy Fitzhardinge wrote:
 >
-> 1) should allow the working set estimation code to keep doing its
-> get_page_unless_zero() without any change (you'll still have to modify
-> it to check if you got a THP page etc... but you won't risk to get any
-> tail page anymore). Maybe it still needs some non trivial thought
-> about the changes but not anymore about tail pages refcounting screwups.
+>> Most callers of cmpxchg() direcly compare RETURN with OLD to see if it was
+>> successful.  This results in unnecessary conditional comparisons
+>> and conditionals since the cmpxchg instruction directly sets the flags
+>> to indicate success/failure.
+>> Add cmpxchg_flag() variants which return a boolean flag directly indicating
+>> success.  Unfortunately an asm() statement can't directly export status
+>> status flags, but sete isn't too bad.
+> And so what happens through this patch is that a cmp with a value that is
+> likely in a register is replaced by a sete. Is there really a benefit?
+
+There's definitely a benefit for functions which return a bool resulting
+from cmpxchg, which occurs in a few places.
+
+> What I wish we would have is the actual use of the processor flag.
 >
-> 2) no change to all existing get_page_unless_zero() is required, so
-> this should fix the radix tree speculative page lookup too.
+> if (cmpxchg_flags(....)) {
+> }
 >
-> 3) no RCU new feature is needed
+> where the cmpxchg is followed immediately by a jump. I tried in the past
+> to pass a goto label to cmpxchg but that did not work.
 
-Adding Paul McKenney so he won't spend too much time on RCU cookie
-feature until there is a firmer user...
+Yes, that would ideal.  The closest you can get is asm goto(), but the
+syntax for that would be awful; something like:
 
-> 4) get_page was actually called by direct-io as my debug
-> instrumentation I wrote to test these changes noticed it so I fixed
-> that too
+#define cmpxchg_jump(ptr, old, new, fail)\
+	asm goto (...)
 
-Looks like this scheme will work. I'm off in Yosemite for a few days
-with my family, but I should be able to review this more thoroughly on
-Thursday.
 
->From a few-minutes look, I have a few minor concerns:
-- When splitting THP pages, the old tail refcount will be visible as
-the _mapcount for a short while after PageTail is cleared; not clear
-yet to me if there are unintended side effects to that;
-- (not a concern, but an opportunity) when splitting pages, there are
-two atomic adds to the tail _count field, while we know the initial
-value is 0. Why not just one straight assignment ? Similarly, the
-adjustments to page head count could be added into a local variable
-and the page head count could be updated once after all tail pages
-have been split off.
-- Not sure if we could/should add assertions to make sure people call
-the right get_page variant.
+:
+:
 
-The other question I have is about the use of the pagemap.h RCU
-protocol for eventual page count stability. With your proposal, this
-would now affect only head pages, so THP splitting is fine :) . I'm
-not sure who else might use that protocol, but it looks like we should
-either make all get_pages_unless_zero call sites follow it (if the
-protocol matters to someone) or none (if the protocol turns out to be
-obsolete).
+again:
+	old = *thingp;
+	new = frobulate(old);
+	cmpxchg_jump(thingp, old, new, again);
+	/* worked */
 
-Sorry for the incomplete reply, I'll have a better one by Thursday :)
 
-Thanks,
+Would this be useful enough?
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Also, cmpxchg_flag() is limited to arch/x86; I hadn't looked into what
+it would take to make it a generic part of the cmpxchg API for the rest
+of the kernel.
+
+    J
