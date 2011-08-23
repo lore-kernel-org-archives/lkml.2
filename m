@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab1HWUPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:15:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36214 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755813Ab1HWUPl convert rfc822-to-8bit (ORCPT
+	id S1756101Ab1HWUSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:18:24 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:47903 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755813Ab1HWUSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:15:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="41105299"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Aug 2011 13:15:40 -0700
-Subject: RE: using mce_inject I get: RIP 10:<ffffffffa012c909>
- {ttm_bo_unref+0xf/0x45 [ttm]}
-Thread-Topic: using mce_inject I get: RIP 10:<ffffffffa012c909>
- {ttm_bo_unref+0xf/0x45 [ttm]}
-Thread-Index: Acxhvsv6lIikFZZ6SOyb+5J71AXZKwAEhJ4w
-Message-ID: <987664A83D2D224EAE907B061CE93D5301EA5B717B@orsmsx505.amr.corp.intel.com>
-References: <4E506DEA.1070601@gmail.com>
- <20110821221602.GK25996@one.firstfloor.org> <4E53EB01.7080905@gmail.com>
-In-Reply-To: <4E53EB01.7080905@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Aug 2011 16:18:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=ooNZKZeMpG3hV85PtkooGQ/IlAfscV7myHGAFPgplYcQBEqYCdKDQFCIECaWD0Ei2
+	G6ArDZKnaViTTWXAPMCiA==
+Date: Tue, 23 Aug 2011 13:18:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] oom: skip frozen tasks
+In-Reply-To: <20110823073101.6426.77745.stgit@zurg>
+Message-ID: <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com>
+References: <20110823073101.6426.77745.stgit@zurg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> its easily fixable, but not sure its a good idea due to bisect going 
-> through commits(afraid I might go astray with the bisect if I add any 
-> patches).
+On Tue, 23 Aug 2011, Konstantin Khlebnikov wrote:
 
-Rather than fixing a bad build - you can try moving to a nearby commit
-(use "gitk" to get a view of the structure around the commit that git
-bisect suggested).  In the early stages of a bisection, it doesn't really
-matter much if you build the mid-point that bisect provided, or some
-nearby on - just be sure to mark good/bad the commit you actually built.
+> All frozen tasks are unkillable, and if one of them has TIF_MEMDIE
+> we must kill something else to avoid deadlock. After this patch
+> select_bad_process() will skip frozen task before checking TIF_MEMDIE.
+> 
 
--Tony
+The caveat is that if the task in the refrigerator is not OOM_DISABLE and 
+there are no other eligible tasks (system wide, in the cpuset, or in the 
+memcg) to kill, then the machine will panic as a result of this when, in 
+the past, we would simply issue the SIGKILL and keep looping in the page 
+allocator until it is thawed.
 
+So you may actually be trading a stall waiting for this thread to thaw for 
+what would now be a panic, and that's not clearly better to me.
