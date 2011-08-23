@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab1HWNJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 09:09:58 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:40080 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755345Ab1HWNJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755420Ab1HWNKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 09:10:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40024 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755342Ab1HWNJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Aug 2011 09:09:49 -0400
-X-ASG-Debug-ID: 1314104988-03d6a50f471b830001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E53A699.6050602@fusionio.com>
-Date: Tue, 23 Aug 2011 15:09:45 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+Date: Tue, 23 Aug 2011 14:09:30 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 03/16] ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead
+ of PGDIR_*
+Message-ID: <20110823130930.GA17397@e102109-lin.cambridge.arm.com>
+References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+ <1312988619-16804-4-git-send-email-catalin.marinas@arm.com>
+ <20110823111533.GH19622@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>, <joe.jin@oracle.com>
-Subject: Re: [GIT PULL] (xen) stable/for-jens for your 3.1-rc2 bugfix branch
-References: <20110822160259.GB24763@dumpdata.com>
-X-ASG-Orig-Subj: Re: [GIT PULL] (xen) stable/for-jens for your 3.1-rc2 bugfix branch
-In-Reply-To: <20110822160259.GB24763@dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1314104988
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.72597
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823111533.GH19622@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-22 18:02, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
+On Tue, Aug 23, 2011 at 12:15:33PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Aug 10, 2011 at 04:03:26PM +0100, Catalin Marinas wrote:
+> > @@ -183,7 +183,7 @@ static int __init consistent_init(void)
+> >  		}
+> >  
+> >  		consistent_pte[i++] = pte;
+> > -		base += (1 << PGDIR_SHIFT);
+> > +		base += (1 << PMD_SHIFT);
 > 
-> Please git pull the following branch:
+> Please replace with PMD_SIZE.
 > 
->  git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens
-> 
-> I've two bug-fixes - on that just fixes indentation and comments and a
-> more curious one: when instructing the backend to remove a mounted
-> disk from a guest it would correctly refuse but also change the state
-> as if it had removed it. Then when shutting down the guest, the guest
-> would hang as the backend states was removed (ooops). The fix is in
-> the backend to not remove (and move to the remove state) unless the
-> frontend has really unmounted the disk.
+> Once combined with the "fixup! ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*"
+> patch (and once whatever "fixup!" is done) this can be submitted to the
+> patch system.
 
-Thanks, pulled.
+I send this one (with the folded fix-ups) and the other type casting to
+your patch system (the "fixup!" is generated with git commit --fixup and
+git rebase -i --autosquash does the folding automatically).
 
 -- 
-Jens Axboe
-
+Catalin
