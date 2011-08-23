@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab1HWSiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 14:38:22 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:12833
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752684Ab1HWSiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 14:38:18 -0400
-X-SpamScore: -8
-X-BigFish: VS-8(zz1b0bM98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4E53F392.1080702@freescale.com>
-Date: Tue, 23 Aug 2011 13:38:10 -0500
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	id S1755379Ab1HWSlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:41:40 -0400
+Received: from void.printf.net ([89.145.121.20]:48560 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752684Ab1HWSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 14:41:34 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
+References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
+Date: Tue, 23 Aug 2011 14:41:05 -0400
+In-Reply-To: <1314123334-23133-1-git-send-email-swarren@nvidia.com> (Stephen
+	Warren's message of "Tue, 23 Aug 2011 12:15:33 -0600")
+Message-ID: <m2ippo2cou.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <kernel-janitors@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/9] arch/powerpc/sysdev/ehv_pic.c: add missing kfree
-References: <1312802283-9107-8-git-send-email-julia@diku.dk>
-In-Reply-To: <1312802283-9107-8-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall wrote:
-> At this point, ehv_pic has been allocated but not stored anywhere, so it
-> should be freed before leaving the function.
+Hi Stephen,
 
-Acked-by: Timur Tabi <timur@freescale.com>
+On Tue, Aug 23 2011, Stephen Warren wrote:
+> From: Grant Likely <grant.likely@secretlab.ca>
+>
+> Add hooks to read gpio configuration out of the device tree node.
+>
+> [grant.likely: Rewrite of original patch from John Bonesio]
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> [swarren: Fixed tegra_sdhci_get_ro() to retrieve pdata correctly]
+> [swarren: Reworked to avoid #ifdef CONFIG_OF]
+> [swarren: Reworked binding based on fsl-imx-esdhc.txt]
+> [swarren: Documented binding]
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Theoretically, these two patches should be merged in order in one place,
+> since the 2nd logically depends on the first. However, it's really just
+> a documentation dependency, so I think it's fine to merge them into the
+> MMC and DT trees separately and let them meet in linux-next.
+>
+>  .../devicetree/bindings/mmc/nvidia-sdhci.txt       |   25 ++++++++++
+>  drivers/mmc/host/sdhci-tegra.c                     |   51 +++++++++++++++----
+>  2 files changed, 65 insertions(+), 11 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
 
-FYI, Ashish is no longer with Freescale, so I've taken over maintainership of
-ehv_pic.
+Okay, I've pushed this patch [1/2] to mmc-next for 3.2.
 
+Thanks,
+
+- Chris.
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
