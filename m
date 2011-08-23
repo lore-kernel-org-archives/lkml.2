@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab1HWNaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 09:30:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37285 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab1HWNaN (ORCPT
+	id S1755412Ab1HWNb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 09:31:56 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:42189 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890Ab1HWNbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 09:30:13 -0400
-Date: Tue, 23 Aug 2011 17:30:09 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Dima Zavin <dima@android.com>
-Subject: Re: [PATCH] pda_power: fix build error if !CONFIG_USB_OTG_UTILS
-Message-ID: <20110823133009.GB1352@oksana.dev.rtsoft.ru>
-References: <1314102873.16518.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1314102873.16518.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Aug 2011 09:31:51 -0400
+Message-Id: <20110823133143.153017933@de.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 23 Aug 2011 15:29:44 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [patch 3/3] use direct ktime path for s390 clockevent device
+References: <20110823132941.744407154@de.ibm.com>
+Content-Disposition: inline; filename=clockevent-feat-ktime-s390.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 08:34:33PM +0800, Axel Lin wrote:
-> commit 9ad63986c606c60e2e916b1b96f22991f966d9cc
-> "pda_power: Add support for using otg transceiver events"
-> introduces below build error if !CONFIG_USB_OTG_UTILS.
-> 
->   CC      drivers/power/pda_power.o
-> drivers/power/pda_power.c: In function 'pda_power_probe':
-> drivers/power/pda_power.c:322: error: 'otg_is_usb_online' undeclared (first use in this function)
-> drivers/power/pda_power.c:322: error: (Each undeclared identifier is reported only once
-> drivers/power/pda_power.c:322: error: for each function it appears in.)
-> drivers/power/pda_power.c:325: error: 'otg_is_ac_online' undeclared (first use in this function)
-> drivers/power/pda_power.c:371: error: 'otg_handle_notification' undeclared (first use in this function)
-> make[2]: *** [drivers/power/pda_power.o] Error 1
-> make[1]: *** [drivers/power] Error 2
-> make: *** [drivers] Error 2
-> 
-> This patch adds #ifdef CONFIG_USB_OTG_UTILS guards at necessary places to fix
-> build errors.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Applied, thanks!
+The clock comparator on s390 uses the same format as the TOD clock.
+If the value in the clock comparator is smaller than the current TOD
+value an interrupt is pending. Use the CLOCK_EVT_FEAT_KTIME feature
+to get the unmodified ktime of the next clockevent expiration and
+use it to program the clock comparator without querying the TOD clock.
 
-Dima,
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ arch/s390/kernel/time.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-I wonder if it is possible to get rid of most #ifdefs by moving
-the pda_power's USB_OTG stuff into a function?
+Index: linux-clockevents/arch/s390/kernel/time.c
+===================================================================
+--- linux-clockevents.orig/arch/s390/kernel/time.c	2011-05-31 12:30:48.082228487 +0200
++++ linux-clockevents/arch/s390/kernel/time.c	2011-08-23 15:16:03.219640374 +0200
+@@ -109,10 +109,14 @@
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ }
+ 
+-static int s390_next_event(unsigned long delta,
++static int s390_next_ktime(ktime_t expires,
+ 			   struct clock_event_device *evt)
+ {
+-	S390_lowcore.clock_comparator = get_clock() + delta;
++	s64 nsecs;
++
++	nsecs = ktime_to_ns(ktime_sub(expires, ktime_get_monotonic_offset()));
++	do_div(nsecs, 125);
++	S390_lowcore.clock_comparator = TOD_UNIX_EPOCH + (nsecs << 9);
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ 	return 0;
+ }
+@@ -137,14 +141,15 @@
+ 	cpu = smp_processor_id();
+ 	cd = &per_cpu(comparators, cpu);
+ 	cd->name		= "comparator";
+-	cd->features		= CLOCK_EVT_FEAT_ONESHOT;
++	cd->features		= CLOCK_EVT_FEAT_ONESHOT |
++				  CLOCK_EVT_FEAT_KTIME;
+ 	cd->mult		= 16777;
+ 	cd->shift		= 12;
+ 	cd->min_delta_ns	= 1;
+ 	cd->max_delta_ns	= LONG_MAX;
+ 	cd->rating		= 400;
+ 	cd->cpumask		= cpumask_of(cpu);
+-	cd->set_next_event	= s390_next_event;
++	cd->set_next_ktime	= s390_next_ktime;
+ 	cd->set_mode		= s390_set_mode;
+ 
+ 	clockevents_register_device(cd);
 
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
