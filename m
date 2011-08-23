@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab1HWPV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:21:26 -0400
-Received: from ironclad.mail.utexas.edu ([146.6.25.7]:41645 "EHLO
-	ironclad.mail.utexas.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab1HWPVW (ORCPT
+	id S1755022Ab1HWPZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:25:20 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37805 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754221Ab1HWPZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:21:22 -0400
-X-IronPort-MID: 121131828
-X-Utexas-Seen-Inbound: true
-Date: Tue, 23 Aug 2011 10:11:49 -0500
-From: Kumar Appaiah <a.kumar@alumni.iitm.ac.in>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>,
-        Kumar Appaiah <a.kumar@alumni.iitm.ac.in>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] thinkpad-acpi: minor grammatical fixes to documentation
-Message-ID: <20110823151149.GA7495@bluemoon.ece.utexas.edu>
+	Tue, 23 Aug 2011 11:25:16 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HG_eycsVM1nmJDb69_waY026KuwC8zKhQ9XhGxQkxDlKlXP
+ Plu8xnwfbcuCPFuR7Grut_0oX.i_Coj0IqcsjcjqI.BRKz73VTmni1vZM8V7
+ .41Ft5wzX_GLMWW1LmXHIHGphAtBQlw1YXjcepwQ70jf58nBXq1x9DqQ6At_
+ a.arOhVAywdFNzJ_T4olDUlE2h3BCWDpM_8TwGvZVy4g6SeW.z4zXC2ZpZCg
+ ryMP15dw4GTOIR8kfSNuE2tXyQ_mEkG5Rg5xjSJy7m.HE1Y4kDu4beQmKe7y
+ JlRulGveZprI2CtDLA5FfVuX.qfNFhR.bDb5JbqnkaeB1hPRIBP2PyfhuSrZ
+ Fr3Dc7S6Z40AHmHL.UVQJMVYMQfIFYXM1k2d0raCXvbtmjA--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 23 Aug 2011 10:25:12 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Shaohua Li <shaohua.li@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>, penberg@kernel.org,
+        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [patch 2/2]slub: add a type for slab partial list position
+In-Reply-To: <1314059823.29510.19.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1108231023470.21267@router.home>
+References: <1314059823.29510.19.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-OS: Linux aceslinc 2.6.32-bpo.5-amd64 x86_64
-X-Operating-System: Linux aceslinc 2.6.32-bpo.5-amd64 x86_64
-X-Editor: GNU Emacs 24.0.50.1
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds minor grammatical fixes to the description of the
-keys in the thinkpad-acpi documentation.
+On Tue, 23 Aug 2011, Shaohua Li wrote:
 
-Signed-off-by: Kumar Appaiah <a.kumar@alumni.iitm.ac.in>
----
- Documentation/laptops/thinkpad-acpi.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Adding slab to partial list head/tail is sensentive to performance.
+> So adding a type to document it to avoid we get it wrong.
 
-diff --git a/Documentation/laptops/thinkpad-acpi.txt b/Documentation/laptops/thinkpad-acpi.txt
-index 6181548..b73dcea 100644
---- a/Documentation/laptops/thinkpad-acpi.txt
-+++ b/Documentation/laptops/thinkpad-acpi.txt
-@@ -411,9 +411,9 @@ event	code	Key		Notes
- 
- 0x1004	0x03	FN+F4		Sleep button (ACPI sleep button
- 				semantics, i.e. sleep-to-RAM).
--				It is always generate some kind
-+				It always generates some kind
- 				of event, either the hot key
--				event or a ACPI sleep button
-+				event or an ACPI sleep button
- 				event. The firmware may
- 				refuse to generate further FN+F4
- 				key presses until a S3 or S4 ACPI
--- 
-1.7.2.5
+I think that if you want to make it more descriptive then using the stats
+values (DEACTIVATE_TO_TAIL/HEAD) would avoid having to introduce an
+additional enum and it would also avoid the if statement in the stat call.
+
