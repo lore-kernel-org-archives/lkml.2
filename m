@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab1HWCAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 22:00:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54740 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752888Ab1HWCAq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 22:00:46 -0400
+	id S1754882Ab1HWCF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 22:05:59 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51487 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab1HWCF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 22:05:57 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: separate priority boosting from REQ_META
+References: <4E4E6238.3080808@fusionio.com>
+	<20110820174137.GA27243@infradead.org> <4E5146C1.508@fusionio.com>
+	<20110821181935.GA28979@infradead.org> <4E515057.7040802@fusionio.com>
+	<20110822165221.GB7257@infradead.org>
+Date: Tue, 23 Aug 2011 11:05:48 +0900
+In-Reply-To: <20110822165221.GB7257@infradead.org> (Christoph Hellwig's
+	message of "Mon, 22 Aug 2011 12:52:21 -0400")
+Message-ID: <87r54cg9vn.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20110823011312.GZ2203@ZenIV.linux.org.uk>
-References: <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
- <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
- <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
- <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com>
- <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
- <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 22 Aug 2011 18:59:48 -0700
-Message-ID: <CA+55aFygGyi8HRr8wNVDw5xk46D5QDOhis18u2qV-9+h0-4ReA@mail.gmail.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 6:13 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Hello,
+
+
+Christoph Hellwig <hch@infradead.org> writes:
+> Add a new REQ_PRIO to let requests preempt others in the cfq I/O schedule,
+> and lave REQ_META purely for marking requests as metadata in blktrace.
 >
-> *UGH*.  OK,
->        1) I'm an idiot; int_ret_from_sys_call does *not* usually step on
-> rbp (it's callee-saved).  So normally ebp is left as is on the way out,
-> which is why we don't see stuff getting buggered left, right and center.
+> All existing callers of REQ_META except for XFS are updated to also
+> set REQ_PRIO for now.
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+>
 
-Check.
+snipped...
 
-And the system call restart should actually work fine too, because at
-syscall entry we save %ebp *both* in the slot for ebp and ecx when we
-enter the first time. So the second time, we'll re-load the third
-argument from ebp again, but that's fine - it's still going to be the
-right value. Yes? No?
+> Index: linux-2.6/include/linux/blk_types.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/blk_types.h	2011-08-22 04:25:50.373473791 +0200
+> +++ linux-2.6/include/linux/blk_types.h	2011-08-22 04:26:44.443473870 +0200
+> @@ -124,6 +124,7 @@ enum rq_flag_bits {
+>  
+>  	__REQ_SYNC,		/* request is sync (sync write or read) */
+>  	__REQ_META,		/* metadata io request */
+> +	__REQ_PRIO,
 
-However, I note that the cstar entrypont has a comment about not saving ebp:
+It'd be better if it's commented too, IMHO.
 
- * %ebp Arg2    [note: not saved in the stack frame, should not be touched]
 
-which sounds odd. Why don't we save it? If we take a signal handler
-there, don't we want %ebp on the kernel stack in pt_regs, in order to
-do everything right?
+>  	__REQ_DISCARD,		/* request to discard sectors */
+>  	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
+>  
+> @@ -161,13 +162,14 @@ enum rq_flag_bits {
+>  #define REQ_FAILFAST_DRIVER	(1 << __REQ_FAILFAST_DRIVER)
+>  #define REQ_SYNC		(1 << __REQ_SYNC)
+>  #define REQ_META		(1 << __REQ_META)
+> +#define REQ_PRIO		(1 << __REQ_PRIO)
+>  #define REQ_DISCARD		(1 << __REQ_DISCARD)
+>  #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
+>  
+>  #define REQ_FAILFAST_MASK \
+>  	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+>  #define REQ_COMMON_MASK \
+> -	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
+> +	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_PRIO | REQ_DISCARD | \
+>  	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
+>  #define REQ_CLONE_MASK		REQ_COMMON_MASK
+>  
 
-Now I'm *really* confused.
+I think you need to include REQ_META into REQ_COMMON_MASK in order to
+track those requests using blktrace.
 
-                       Linus
+Thanks.
