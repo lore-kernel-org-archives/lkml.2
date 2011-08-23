@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab1HWSAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 14:00:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56326 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751997Ab1HWSA0 (ORCPT
+	id S1755055Ab1HWSCE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:02:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52948 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab1HWSB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 14:00:26 -0400
-Date: Tue, 23 Aug 2011 14:00:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Michal Nazarewicz <mnazarewicz@google.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
-In-Reply-To: <20110823172111.GD10996@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1108231350460.2069-100000@iolanthe.rowland.org>
+	Tue, 23 Aug 2011 14:01:58 -0400
+Message-ID: <4E53EB01.7080905@gmail.com>
+Date: Tue, 23 Aug 2011 11:01:37 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tony.luck@intel.com
+Subject: Re: using mce_inject I get: RIP 10:<ffffffffa012c909> {ttm_bo_unref+0xf/0x45
+ [ttm]}
+References: <4E506DEA.1070601@gmail.com> <20110821221602.GK25996@one.firstfloor.org>
+In-Reply-To: <20110821221602.GK25996@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Felipe Balbi wrote:
+On 08/21/2011 03:16 PM, Andi Kleen wrote:
+> On Sat, Aug 20, 2011 at 07:31:06PM -0700, Justin P. Mattock wrote:
+>> not sure if I am running mce_test correctly, but during its routine of
+>> testing things I do get a pause with everything, then the below shows up
+>> in dmesg..:
+>
+> The message is expected, but there should be no noticeable
+> pause.
+>
+> -Andi
 
-> Hi,
-> 
-> On Tue, Aug 23, 2011 at 11:43:44AM -0400, Alan Stern wrote:
-> > > if they are both part of the of the same configuration, full speed.
-> > > Otherwise Audio won't work. If they are part of different
-> > > configurations, then maximum_speed will be defined by the chosen config,
-> > > no ?
-> > 
-> > No.  The speed has to be chosen first, when the gadget connects to the 
-> > host.  The config isn't chosen until later, after the host retrieves 
-> > the various descriptors and decides among them.
-> 
-> true
-> 
-> > > I stand with the fact that if they are part of the same configuration,
-> > > there's no way around it, storage will have to come down to full speed.
-> > > Unless I'm missing something.
-> > 
-> > What if they are in different configurations?
-> 
-> then you use the fastest speed between both configurations?
+o.k. I have reset the kernel to 2.6.36 and ran the test program in
+init 3(since radeon is crapped out with that kernel). anyways
+with 2.6.36 I can see the cursor on the bottom left blinking throught 
+the whole tests telling me there is no pause(all timeouts given, give no 
+pause).
+with the current in init 3 I see the cursor pause for 2/3 seconds.
 
-I simply don't know.  It's a difficult problem.
+I will start a bisct on this, but need some help on how to proceed 
+properly i.g. I get an error with gcc building:
 
-For the time being, perhaps the best answer is to use the _lowest_ 
-max_speed value among all the function drivers.  It's the simplest 
-answer and most likely to be correct most of the time.
+   LD      init/built-in.o
+   VDSO    arch/x86/vdso/vdso.so.dbg
+gcc: error: elf_x86_64: No such file or directory
+   VDSO    arch/x86/vdso/vdso32-int80.so.dbg
+gcc: error: elf_i386: No such file or directory
+   VDSO    arch/x86/vdso/vdso32-syscall.so.dbg
+gcc: error: elf_i386: No such file or directory
+   VDSO    arch/x86/vdso/vdso32-sysenter.so.dbg
+gcc: error: elf_i386: No such file or directory
+   CC      kernel/trace/trace.o
 
-If anybody ever does want to put together a composite gadget that runs
-faster than full speed but still provides a midi function ... well,
-they'll just have to update the midi gadget driver.
+its easily fixable, but not sure its a good idea due to bisect going 
+through commits(afraid I might go astray with the bisect if I add any 
+patches).
 
-(Actually that's a bogus example.  It turns out that gmidi.c doesn't 
-support the composite framework.  Oh well.)
+Justin P. Mattock
 
-Alan Stern
 
