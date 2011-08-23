@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1HWQY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:24:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53670 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab1HWQYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:24:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bryan Donlan <bdonlan@gmail.com>
-Subject: Re: contention on long-held spinlock
-Date: Tue, 23 Aug 2011 18:24:48 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ortwin =?iso-8859-1?q?Gl=FCck?= <odi@odi.ch>, linux-kernel@vger.kernel.org,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        linux-scsi@vger.kernel.org
-References: <4E4E2B2A.40100@odi.ch> <CAF_S4t_5qfx1H+nm+fvYd24k4ezF__JDFLvg6gv_so8SeVqKvA@mail.gmail.com>
-In-Reply-To: <CAF_S4t_5qfx1H+nm+fvYd24k4ezF__JDFLvg6gv_so8SeVqKvA@mail.gmail.com>
+	id S1755102Ab1HWQ1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:27:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51597 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753448Ab1HWQ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:27:31 -0400
+Date: Tue, 23 Aug 2011 09:16:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: USB patch backlog now caught up on
+Message-ID: <20110823161631.GA13699@suse.de>
+References: <20110822231144.GA23359@kroah.com>
+ <CA+5PVA7McP1gLLYOkKhpSw1RcqjdS02j3qenwRihL5rMv3696g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108231824.48512.arnd@arndb.de>
-X-Provags-ID: V02:K0:Y8TR6PJssY6dqASJzgjQZgYFtgpPyhxTfmHz2ZC79Ys
- EOcceuGK+UmWZw+/MXQgDGeq6HXJR6XDtkSYVHsHhLVmqwNGtY
- vOUWjlu9K7+4xcqM2pwlXIvEQBSKmQZAFgmPP+HVvbQAW8N004
- FgnYxjz6nRI2PhtqGXY5vku1Vh9YcuaSyTBPOy7b05vqAXsY23
- KqT4n7pHRT3/9OLxdYsMw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7McP1gLLYOkKhpSw1RcqjdS02j3qenwRihL5rMv3696g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 August 2011, Bryan Donlan wrote:
-> That's what mutexes are for. Note, however, that interrupt handlers
-> cannot use mutexes as they cannot sleep, nor can they wait for lock
-> holders which may themselves sleep.
+On Tue, Aug 23, 2011 at 07:49:45AM -0400, Josh Boyer wrote:
+> On Mon, Aug 22, 2011 at 7:11 PM, Greg KH <greg@kroah.com> wrote:
+> > Hi all,
+> >
+> > I've now caught up on all of the pending USB patches that I had in my
+> > email queues.
+> >
+> > If you have sent a USB patch[1] that I have not acknoloweged as being
+> > applied to any of my trees, that you think is still relevant, please
+> > resend it as I obviously messed up somewhere and lost it.
+> 
+> This patch was posted and Ack-ed a while ago:
+> 
+> https://patchwork.kernel.org/patch/1028062/
 
-I agree that there is probably some other bug that needs to be fixed
-in the driver, but for testing it may well be worth replacing
-the spinlock with a mutex and the request_irq with request_threaded_irq.
-A threaded IRQ is slower than a normal one but does allow mutexes.
+Someone care to email it to me so I can apply it?
 
-	Arnd
+thanks,
+
+greg k-h
