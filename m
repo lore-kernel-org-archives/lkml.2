@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1HWUnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:43:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51717 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab1HWUnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:43:33 -0400
+	id S1754745Ab1HWUpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:45:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39692 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791Ab1HWUpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 16:45:40 -0400
+Message-ID: <4E541154.6090805@zytor.com>
+Date: Tue, 23 Aug 2011 13:45:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <20110823185020.GA11302@kroah.com>
-References: <1312321621-2695-1-git-send-email-mark.einon@gmail.com>
-	<20110823185020.GA11302@kroah.com>
-Date: Tue, 23 Aug 2011 21:43:31 +0100
-Message-ID: <CANK3SE2un_SP3DCkXJiBA5GukgDAoR0DN0JmM6AN6R0pR=1eow@mail.gmail.com>
-Subject: Re: [PATCH 5/5] staging: et131x: Fix free IRQ from IRQ context
- warning after tx_timeout
-From: Mark Einon <mark.einon@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home> <4E540548.4080402@goop.org>
+In-Reply-To: <4E540548.4080402@goop.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 August 2011 19:50, Greg KH <greg@kroah.com> wrote:
-> On Tue, Aug 02, 2011 at 10:47:01PM +0100, Mark Einon wrote:
->> When a tx timeout occured, et131x_tx_timeout closed and re-opened the device to fix.
->> As et131x_close called free_irq(), bad things ensued (see warning trace below), namely a
->> storm of errors and warnings.
->> Fixed by replacing the close() and open() calls with just the relevant functions previously
->> called from these.
->> Verified on an ET-1310 device.
->>
->> Signed-off-by: Mark Einon <mark.einon@gmail.com>
->
-> This patch breaks the build :(
->
-> Care to resend this one, and any other patch you have sent me but I
-> didn't apply yet, again, as I have now applied all et131x patches in my
-> queue.
+On 08/23/2011 12:53 PM, Jeremy Fitzhardinge wrote:
+> 
+> Yes, that would ideal.  The closest you can get is asm goto(), but the
+> syntax for that would be awful; something like:
+> 
+> #define cmpxchg_jump(ptr, old, new, fail)\
+> 	asm goto (...)
+> 
+> 
+> :
+> :
+> 
+> again:
+> 	old = *thingp;
+> 	new = frobulate(old);
+> 	cmpxchg_jump(thingp, old, new, again);
+> 	/* worked */
+> 
+> Would this be useful enough?
+> 
 
-Hi Greg,
+Actually there is a trick:
 
-I seem to have some difficulty updating my staging-next branch at the
-moment, this method worked a few days ago. Am I doing something
-idiotic, or is the issue with the remote?
-The file refs/heads/staging-next contains
-4024bc73b1d1d8f82518b67b0996cb7b870dd1d4, which git doesn't seem to
-like.
+static inline bool ....
+{
+	asm goto(... yes);
+no:
+	return false;
+yes:
+	return true;
+}
 
-[mark@msilap staging-2.6]$ git checkout staging-next
-Already on 'staging-next'
-[mark@msilap staging-2.6]$ git pull
-remote: error: refs/heads/staging-next does not point to a valid object!
-remote: Counting objects: 21, done.
-remote: Compressing objects: 100% (12/12), done.
-remote: Total 14 (delta 12), reused 2 (delta 2)
-Unpacking objects: 100% (14/14), done.
->From git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
-   fcb8ce5..20cc799  staging-linus -> origin/staging-linus
-Your configuration specifies to merge with the ref 'staging-next'
-from the remote, but no such ref was fetched.
+... which makes syntax a heckuva lot less awkward.
 
-Cheers,
-
-  Mark
+	-hpa
