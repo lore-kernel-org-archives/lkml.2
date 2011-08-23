@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab1HWVSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:18:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35755 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab1HWVSI (ORCPT
+	id S1755839Ab1HWVSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:18:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45251 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753108Ab1HWVSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:18:08 -0400
-Date: Tue, 23 Aug 2011 22:17:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110823211744.GL2203@ZenIV.linux.org.uk>
-References: <20110823010146.GY2203@ZenIV.linux.org.uk>
- <20110823011312.GZ2203@ZenIV.linux.org.uk>
- <20110823021717.GA2203@ZenIV.linux.org.uk>
- <20110823061531.GC2203@ZenIV.linux.org.uk>
- <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
- <20110823164849.GF2203@ZenIV.linux.org.uk>
- <4E53FCF7.7060703@zytor.com>
- <CA+55aFyQTgXD6WeKJLvfOdsgqon=vhnhZ-h9oVpGF1uwQZkdDQ@mail.gmail.com>
- <20110823194103.GK2203@ZenIV.linux.org.uk>
- <CA+55aFzECeh_xRC=sF7qG_nc3bREqUNXXGmzcLHi4vndFvE6cg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzECeh_xRC=sF7qG_nc3bREqUNXXGmzcLHi4vndFvE6cg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Aug 2011 17:18:37 -0400
+Date: Tue, 23 Aug 2011 14:18:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        cpufreq@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH 0/3 RFC] Fix /proc/stat idle/iowait statistics for
+ tickless kernel
+Message-Id: <20110823141820.178b27c9.akpm@linux-foundation.org>
+In-Reply-To: <20110817115925.GB7482@tiehlicka.suse.cz>
+References: <20110802170249.GA23698@tiehlicka.suse.cz>
+	<cover.1312544541.git.mhocko@suse.cz>
+	<20110817115925.GB7482@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 12:43:28PM -0700, Linus Torvalds wrote:
-> On Tue, Aug 23, 2011 at 12:41 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > And it's not cheap - doing that on each syscall will be unpleasant...
-> > Frankly, I'd rather stopped telling the uml userland about vdso in such
-> > setups. ?And anything that plays with SYSCALL outside of vdso... <shrug>
-> > we already have a "don't run it native on 32bit", adding "don't run
-> > it on 32bit uml on amd64 host" is not too serious. ?At least for now...
-> 
-> I do agree that the solution might well be to just stop using the
-> non-int80 vdsos for UML. That may just solve everything in practice.
+On Wed, 17 Aug 2011 13:59:25 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-SYSENTER works fine, actually...  And we can easily check if we have an
-affected SYSCALL, simply by forking a child, tracing it into a syscall
-and doing POKEUSER to ebp on the second stop (i.e. on the way out).
-If the value ends up in ecx after __kernel_vsyscall(), we have SYSCALL-based
-variant on amd64 host, if it's lost completely - it's SYSENTER, if it shows
-up in ebp - int 0x80.
+> Nobody interested or it just slipped through?
+
+I was asleep on a beach at the time, am catching up now.
+
+The patchset is a bit confusing, with an afterthough followup patch. 
+Please redo it all and send a v2 series?
+
+Then I'll queue it up and will periodically harrass Thomas with it, so
+there's no point in hiding ;)
