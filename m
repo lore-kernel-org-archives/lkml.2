@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1HWLxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 07:53:19 -0400
-Received: from d1.icnet.pl ([212.160.220.21]:56584 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab1HWLxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 07:53:15 -0400
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Aug 2011 07:53:15 EDT
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 3.1-rc3] gpio/omap: fix build error with certain OMAP1 configs
-Date: Tue, 23 Aug 2011 13:42:24 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>
+	id S1754156Ab1HWL5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 07:57:55 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:39458 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab1HWL5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 07:57:51 -0400
+Message-ID: <4E5395B9.9010005@landley.net>
+Date: Tue, 23 Aug 2011 06:57:45 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Greg Ungerer <gerg@snapgear.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>, gerg@uclinux.org
+Subject: Re: m68k with mmu doesn't compile after 66d857b08b8c3ed
+References: <4E5008A1.8070105@landley.net> <CAMuHMdWfpZdwqtPgQKJHYVWRLKMXOeaMWV-mTBQxpE12XNTg_g@mail.gmail.com> <4E51CF9A.7060407@snapgear.com>
+In-Reply-To: <4E51CF9A.7060407@snapgear.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108231342.25101.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With commit f64ad1a0e21a, "gpio/omap: cleanup _set_gpio_wakeup(), remove 
-ifdefs", access to build time conditionally omitted 'suspend_wakeup' 
-member of the 'gpio_bank' structure has been placed unconditionally in 
-function _set_gpio_wakeup(), which is always built. This resulted in the 
-driver compilation broken for certain OMAP1, i.e., non-OMAP16xx, 
-configurations.
+On 08/21/2011 10:40 PM, Greg Ungerer wrote:
+>> JFYI, it builds fine for all "actual m68ks" (with MMU) I'm interested in.
+>> And I guess Greg will say the same for Coldfire and "actual m68ks"
+>> without
+>> MMU...
+> 
+> Yes :-)
+> And from time to time I build all the defconfigs (so both MMU and
+> non-MMU) in arch/m68k/configs/. I thought they all worked on 3.0
+> if using an appropriate tool chain.
 
-Really required or not in previously excluded cases, define this 
-structure member unconditionally as a fix.
+Sorry, building fine now.  As I replied earlier, my .config got
+truncated in the move from 2.6.39 to 3.0.  My bad.
 
-Tested with a custom OMAP1510 only configuration.
-
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
----
- drivers/gpio/gpio-omap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- git/drivers/gpio/gpio-omap.c.orig	2011-08-22 08:34:02.000000000 +0200
-+++ git/drivers/gpio/gpio-omap.c	2011-08-23 12:47:36.000000000 +0200
-@@ -34,8 +34,8 @@ struct gpio_bank {
- 	u16 irq;
- 	u16 virtual_irq_start;
- 	int method;
--#if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
- 	u32 suspend_wakeup;
-+#if defined(CONFIG_ARCH_OMAP16XX) || defined(CONFIG_ARCH_OMAP2PLUS)
- 	u32 saved_wakeup;
- #endif
- 	u32 non_wakeup_gpios;
+Rob
