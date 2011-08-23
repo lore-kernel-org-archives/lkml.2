@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab1HWQHC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:07:02 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:38418 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab1HWQG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:06:57 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: gregkh@suse.de
-Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: [PATCH] staging: zcache: fix highmem crash on 32-bit
-Date: Tue, 23 Aug 2011 11:06:30 -0500
-Message-Id: <1314115590-20942-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754802Ab1HWQH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:07:56 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40380 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab1HWQHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:07:49 -0400
+Date: Tue, 23 Aug 2011 18:07:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/7] VFS: Add generic_file_llseek_size
+Message-ID: <20110823160745.GR25996@one.firstfloor.org>
+References: <1314046152-2175-1-git-send-email-andi@firstfloor.org> <1314046152-2175-5-git-send-email-andi@firstfloor.org> <201108231451.56191.arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108231451.56191.arnd@arndb.de>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 966b9016a1, zcache_put_page() was modified to pass
-page_address(page) instead of the actual page pointer. In
-combination with the function signature changes to tmem_put()
-and zcache_pampd_create(), zcache_pampd_create() tries to (re)derive
-the page structure from the virtual address.  However, if the
-original page is a high memory page (or any unmapped page),
-this virt_to_page() fails because the page_address() in
-zcache_put_page() returned NULL.
+On Tue, Aug 23, 2011 at 02:51:56PM +0200, Arnd Bergmann wrote:
+> On Monday 22 August 2011, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Add a generic_file_llseek variant to the VFS that allows passing in
+> > the current file size, instead of always using inode->i_size.
+> > This can be used to eliminate some cut'n'paste seek code in ext4.
+> > 
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> Ah, very nice. I think you can use the same trick to remove duplication
+> in default_llseek by always setting the limit to MAX_LFS_FILESIZE.
 
-This patch changes zcache_put_page() and zcache_get_page() to pass
-the page structure instead of the page's virtual address, which
-may or may not exist.
+Not in this patchkit, but some other time perhaps.
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- drivers/staging/zcache/zcache-main.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 855a5bb..a3f5162 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1158,7 +1158,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
- 	size_t clen;
- 	int ret;
- 	unsigned long count;
--	struct page *page = virt_to_page(data);
-+	struct page *page = (struct page *)(data);
- 	struct zcache_client *cli = pool->client;
- 	uint16_t client_id = get_client_id_from_client(cli);
- 	unsigned long zv_mean_zsize;
-@@ -1227,7 +1227,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
- 	int ret = 0;
- 
- 	BUG_ON(is_ephemeral(pool));
--	zv_decompress(virt_to_page(data), pampd);
-+	zv_decompress((struct page *)(data), pampd);
- 	return ret;
- }
- 
-@@ -1539,7 +1539,7 @@ static int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 		goto out;
- 	if (!zcache_freeze && zcache_do_preload(pool) == 0) {
- 		/* preload does preempt_disable on success */
--		ret = tmem_put(pool, oidp, index, page_address(page),
-+		ret = tmem_put(pool, oidp, index, (char *)(page),
- 				PAGE_SIZE, 0, is_ephemeral(pool));
- 		if (ret < 0) {
- 			if (is_ephemeral(pool))
-@@ -1572,7 +1572,7 @@ static int zcache_get_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- 	pool = zcache_get_pool_by_id(cli_id, pool_id);
- 	if (likely(pool != NULL)) {
- 		if (atomic_read(&pool->obj_count) > 0)
--			ret = tmem_get(pool, oidp, index, page_address(page),
-+			ret = tmem_get(pool, oidp, index, (char *)(page),
- 					&size, 0, is_ephemeral(pool));
- 		zcache_put_pool(pool);
- 	}
--- 
-1.7.4.1
-
+-Andi
