@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab1HWNGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 09:06:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50021 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab1HWNGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 09:06:02 -0400
-From: Abhilash K V <abhilash.kv@ti.com>
-To: <netdev@vger.kernel.org>
-CC: <wg@grandegger.com>, <linux-kernel@vger.kernel.org>,
-        <=linux-omap@vger.kernel.org>, Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH] can: ti_hecc: Fix uninitialized spinlock in probe
-Date: Tue, 23 Aug 2011 18:35:57 +0530
-Message-ID: <1314104757-16462-1-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755350Ab1HWNJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 09:09:50 -0400
+Received: from buzon.uach.mx ([148.229.1.4]:64347 "EHLO buzon.uach.mx"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754988Ab1HWNJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 09:09:43 -0400
+Date: Tue, 23 Aug 2011 14:09:40 +0100
+From: a214844@uach.mx
+Subject: Western Union Money Transfer
+Reply-to: sir.darrongibson@gncn.net
+Message-id: <f673ef305789.4e53b4a4@uach.mx>
+MIME-version: 1.0
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-3.04 (built Jul 15 2005)
+Content-type: text/plain; charset=us-ascii
+Content-language: en
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+X-Accept-Language: en
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In ti_hecc_probe(), the spinlock  priv->mbx_lock is not
-inited, causing a spinlock lockup BUG.
 
-Acked-by: Anant Gole <anantgole@ti.com>
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
----
- drivers/net/can/ti_hecc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/can/ti_hecc.c b/drivers/net/can/ti_hecc.c
-index 0b19a17..a812492 100644
---- a/drivers/net/can/ti_hecc.c
-+++ b/drivers/net/can/ti_hecc.c
-@@ -923,6 +923,7 @@ static int ti_hecc_probe(struct platform_device *pdev)
- 	priv->can.do_get_state = ti_hecc_get_state;
- 	priv->can.ctrlmode_supported = CAN_CTRLMODE_3_SAMPLES;
+Dear value costumer:
+
+Greetings to you, by the power resting on me.
+I was advised to send your first payment of US$6,000 
+to you as instructed by G-20 Committee and Mr. David Cameron 
+The British Prime Minister and will keep sending you US$6,000 
+twice a week (Tuesdays and Fridays) until the payment
+of (US$420,000) is completed.
+
+And here is the payment information below:
+(MTCN NUMBER):633-806-8536
  
-+	spin_lock_init(&priv->mbx_lock);
- 	ndev->irq = irq->start;
- 	ndev->flags |= IFF_ECHO;
- 	platform_set_drvdata(pdev, ndev);
--- 
-1.6.2.4
+SENDER'S NAME: Mr. Maxwell Stanner
+AMOUNT: US$6,000 dollars
+ 
+To process your funds do forward your details to
+Western Union Money Transfer agent Mr. Darron Gibson
+ Your; (Full Names) and (Mobile Number) via Email to:
 
+Mr. Darron Gibson
+E-mail:sir.darrongibson@gncn.net 
+D/L Number: +44 (0) 702 403 4679
+Fax Number: +44 (0) 844 774 4502
+ 
+Your cooperation will be appreciated
+
+Best Regards,
+Mrs. Bogumila Wronska
+Espinoza Vega Oscar
