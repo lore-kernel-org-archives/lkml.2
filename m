@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab1HWUUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:20:33 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35775 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753486Ab1HWUU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:20:26 -0400
-X-Sasl-enc: e9qqmqHc79pbc3odwdFX+khSCQGsAT+JM6fiJaakBLQJ 1314130826
-Date: Tue, 23 Aug 2011 13:18:47 -0700
-From: Greg KH <greg@kroah.com>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: add Realtek rts5139 card reader driver
-Message-ID: <20110823201847.GE25977@kroah.com>
-References: <1313044402-12445-1-git-send-email-kengyu@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313044402-12445-1-git-send-email-kengyu@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756113Ab1HWU03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:26:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43135 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752130Ab1HWU01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 16:26:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,270,1312182000"; 
+   d="scan'208";a="41644043"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: hpa@zytor.com
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
+        tglx@linutronix.de, sfr@canb.auug.org.au, hpa@linux.intel.com,
+        rjw@sisk.pl
+In-Reply-To: <4E53FBBB.7030008@zytor.com>
+Subject: [PATCH] x86: remove some noise from boot log when starting cpus
+Date: Tue, 23 Aug 2011 13:26:26 -0700
+Message-Id: <4e540cf271396b4c4@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 11, 2011 at 02:33:21PM +0800, Keng-Yu Lin wrote:
-> Realtek RTS5139 USB card reader driver supporting SD, MMC, MS and XD.
-> 
-> Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
-> ---
->  drivers/staging/Kconfig                    |    2 +
->  drivers/staging/Makefile                   |    1 +
->  drivers/staging/rts5139/Kconfig            |    7 +
+Printing the "start_ip" for every secondary cpu is very noisy on a large
+system - and doesn't add any value. Drop this message.
 
-Ok, WTF is going on here?
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-You just resent a patch that I got previously from RealTek, with their
-proper authorship information on it, yet you do not have that authorship
-on this patch at all.
+---
 
-You do NOT just blindly strip off the proper authorship information from
-a patch.  That's wrong and can get you in lots of trouble.
-
-Please go work with your managers to fix your development proceedures as
-they are deeply broken if this is something that they are allowing you
-to send out.
-
-Ugh, this makes me mad...
-
-greg k-h
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 9f548cb..fe5fb7a 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -734,8 +734,6 @@ do_rest:
+ 	 * the targeted processor.
+ 	 */
+ 
+-	printk(KERN_DEBUG "smpboot cpu %d: start_ip = %lx\n", cpu, start_ip);
+-
+ 	atomic_set(&init_deasserted, 0);
+ 
+ 	if (get_uv_system_type() != UV_NON_UNIQUE_APIC) {
