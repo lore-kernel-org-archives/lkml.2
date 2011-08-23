@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab1HWWQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:16:50 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48908 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab1HWWQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:16:44 -0400
-Date: Wed, 24 Aug 2011 00:16:31 +0200
-From: Richard <rz@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Q40 interrupts (and genirq)
-Message-ID: <20110823221631.GA6827@rz>
-References: <CAMuHMdV1bpFDkLyDsdkzgvQg6_C1Jf=hwR=VOVBObB19mhH6yA@mail.gmail.com>
+	id S1755876Ab1HWWQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:16:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32946 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754712Ab1HWWQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 18:16:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] fs / ext3: Always unlock updates in ext3_freeze()
+Date: Wed, 24 Aug 2011 00:18:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201108112329.23043.rjw@sisk.pl> <20110822130045.GC11264@atrey.karlin.mff.cuni.cz> <20110822231348.GS3162@dastard>
+In-Reply-To: <20110822231348.GS3162@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdV1bpFDkLyDsdkzgvQg6_C1Jf=hwR=VOVBObB19mhH6yA@mail.gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108240018.32189.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
-
-> I'm a bit puzzled by the Q40 interrupt architecture.
+On Tuesday, August 23, 2011, Dave Chinner wrote:
+> On Mon, Aug 22, 2011 at 03:00:45PM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > >   What's exactly the problem? Memory preallocation enters direct reclaim
+> > > > and that deadlocks in the filesystem?
+> > > 
+> > > Well, that's one possible manifestation. The problem is that the
+> > > current hibernate code still assumes that sys_sync() results in an
+> > > idle filesystem that will not change after the call if nothing is
+> > > dirty.
+> > > 
+> > > The result is that when the large memory allocation occurs for the
+> > > hibernate image (after the sys_sync() call) then the shrink_slab()
+> > > tends to be called. The XFS shrinkers are capable of dirtying inodes
+> > > and the backing buffers of inodes that are in the reclaimable state.
+> > > But those buffers cannot be flushed to disk because hibernate has
+> > > already frozen the xfsbufd threads, so the shrinker doing inode
+> > > reclaim hangs up on locks waiting for the buffers to be written.
+> > > This either leads to deadlock or hibernate image allocation failure.
+> > > 
+> > > Far worse, IMO, is the case where is -doesn't- deadlock, because the
+> > > filesystem state can still changing after the allocation has
+> > > finished due to async metadata IO completions. That has the
+> > > potential to cause filesystem corruption as after resume the on-disk
+> > > state may not match what is written from memory to the hibernate
+> > > image.
+> > > 
+> > > The problem really isn't XFS specific, nor is it new - the fact is
+> > > that any filesystem that has registered a shrinker or can do async
+> > > work in the background post-sync is vulnerable to this problem. It's
+> > 
+> > Should we avoid calling shrinkers while hibernating?
 > 
-> arch/m68k/q40/q40ints.c says:
+> If you like getting random OOM problems when hibernating, then go
+> for it.  Besides, shrinkers are used for more than just filesystems,
+> so you might find you screw entire classes of users by doing this
+> (eg everyone using intel graphics and 3D).
 > 
->  * Q40 IRQs are defined as follows:
->  *            3,4,5,6,7,10,11,14,15 : ISA dev IRQs
+> > Or put BUG_ON()s into filesystem shrinkers so that this can not
+> > happen?
 > 
-> Yep, that's _9_ interrupts.
+> Definitely not. If your concern is filesystem shrinkers and you want
+> a large hammer to hit the problem with then do your hibernate
+> image allocation wih GFP_NOFS and the filesystem shrinkers will
+> abort without doing anything.
 
-11 conflicts with q40_irq_startup() but I am not quite sure at the moment which
-one is right. Iirc some of the irqs are shared/indistinguishable as sources but were
-still defined both separately just in case the number is needed.
+I think we can do that, actually.
 
-> In the "new" interrupt code, by Roman Zippel, all interrupts sources are handled
-> through q40_irq_handler().
-> Only autovector IRQs IRQ_AUTO_2 and IRQ_AUTO_4 are enabled.
-> 
-> In the old (pre-2006) interrupt code, only internal (master) and ISA interrupts
-> go through q40_irq2_handler on IRQ_AUTO_2.
-> Q40_IRQ_SAMPLE goes via both IRQ_AUTO_4 and IRQ_AUTO_6.
-> 
-> Why doesn't the new code use IRQ_AUTO_6? Does the new code work?
-
-iirc IRQ_AUTO_6 was needed for some very early versions of the master chip,
-should work without. 
-
-I will need to verify this points but don't have the HW manual right here.
-
-> For the genirq conversion, I was first thinking about using a custom
-> chain-alike flow handler.
-> But it looks like this is not possible, as the Q40 handler remaps
-> autovector interrupts to
-> conflicting numbers (it handles IRQ_AUTO_4 = 4, but ISA interrupt 4 is also 4).
-> So if the custom flow handler would call generic_handle_irq(4) for ISA
-> interrupt 4,
-> it would recurse into the flow handler set up for autovector IRQ 4 :-(
-
-The numbers are equal but they mean different things at different stages 
-of abstraction/translation/mapping which is normally no concern as long as 
-it is clear at which stage it is. 
-
-Perhaps the new algorithm would need an extra flag to keep track of what it
-is dealing with. 
-What are the problems you are trying to solve with the new handler?
-
-For the Q40, IRQ_AUTO_4 should be translated to "34   : sample int (10/20 KHz periodic timer)"
-IRQ_AUTO_2 needs further decoding before it can be decided what should be handled. 
-It can be any of the ISA irqs or one of 32,33.
-
-So as long as ISA drivers can use the numbers 1-15 and the Q40 specific
-drivers 32-34 nothing there should not be a problem
-
-> Changing the numbers is not trivial, as ISA assumes interrupts 1-15 everywhere.
-
-indeed, would be a major incovenience.
-
-
-Richard
-
----
-Name and OpenPGP keys available from pgp key servers
-
+Thanks,
+Rafael
