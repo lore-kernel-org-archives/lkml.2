@@ -1,55 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab1HWIRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:17:35 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43518 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab1HWIRc (ORCPT
+	id S1754613Ab1HWIXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:23:36 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56166 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab1HWIXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:17:32 -0400
+	Tue, 23 Aug 2011 04:23:34 -0400
+Date: Tue, 23 Aug 2011 09:23:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Boojin Kim <boojin.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+Subject: Re: [PATCH] DMA: PL330: add missing header
+Message-ID: <20110823082319.GA19622@n2100.arm.linux.org.uk>
+References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com> <1314081133.22120.19.camel@vkoul-udesk3> <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com> <1314087342.22120.100.camel@vkoul-udesk3>
 MIME-Version: 1.0
-In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
-References: <cover.1312538034.git.viresh.kumar@st.com>
-Date: Tue, 23 Aug 2011 10:17:31 +0200
-Message-ID: <CACRpkdY6KW+tv7H==b15xJyeLp9HCqp9ROBhON0A8JnJDUn8Kg@mail.gmail.com>
-Subject: Re: [PATCH V3 00/20] dmaengine/amba-pl08x updates
-From: Linus Walleij <linus.walleij@linaro.org>
-To: vinod.koul@intel.com, Viresh Kumar <viresh.kumar@st.com>
-Cc: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
-        viresh.linux@gmail.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, alim.akhtar@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314087342.22120.100.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 12:02 PM, Viresh Kumar <viresh.kumar@st.com> wrote:
+On Tue, Aug 23, 2011 at 01:45:42PM +0530, Koul, Vinod wrote:
+> Russell had fixed compilation of pl330 driver, and was supposed to send
+> the fix to Linus as part of his fixes. If thats not done I can send it
+> for next -rc
 
-> This patchset contains patches for ARM's pl08x DMA controller driver.
-> Main changes introduced by this patchset are:
-> - Formatting fixes
-> - Logical Fixes
-> - Support for Peripheral as flow controller
-> - Support for sg_len to be greater than 1 for slave transfers
-> - Schedule tasklet for error interrupts
-> - remove pl08x_pre_boundary() routine
-> - support for runtime PM
-> - etc
-
-I've now tested this patchset:
-
-patch 3/20 fails to apply cleanly, need rebase on top of Russell's
-fix for dma-mapping.h inclusion. It's a trivial fix.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Vinod could you apply all patches except for 16/18 which has some
-discussion going on, so we get some rotation in -next? The rest of
-Viresh:s patches are really nice stuff to have.
-
-I will test on the PB11MPcore in the next few days.
-
-Yours,
-Linus Walleij
+That was for amba-pl08x.c, not pl330.c
