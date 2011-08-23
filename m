@@ -1,108 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1HWC1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 22:27:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22287 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab1HWC1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 22:27:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="40807038"
-Subject: Re: linux-next: boot test failure (net tree)
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: David Miller <davem@davemloft.net>
-Cc: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>
-Date: Mon, 22 Aug 2011 19:26:56 -0700
-In-Reply-To: <20110822.191348.2099822249437201579.davem@davemloft.net>
-References: <20110822113032.15087c2e190e2b0c3ee7dfb8@canb.auug.org.au>
-	 <20110823114011.a059aea0138b75bfa7eed1ce@canb.auug.org.au>
-	 <20110823114129.ceb18da164bf7df3c145941b@canb.auug.org.au>
-	 <20110822.191348.2099822249437201579.davem@davemloft.net>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-vI3u4LL8ZvB8+NGeDtWS"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1314066417.2128.215.camel@jtkirshe-mobl>
-Mime-Version: 1.0
+	id S1754836Ab1HWCcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 22:32:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:36360 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab1HWCcl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 22:32:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1314065358.3225.44.camel@localhost.localdomain>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822125355.bb01d76b.rdunlap@xenotime.net>
+	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
+	<20110822174958.73dd96c7.rdunlap@xenotime.net>
+	<1314065358.3225.44.camel@localhost.localdomain>
+Date: Mon, 22 Aug 2011 22:32:39 -0400
+Message-ID: <CACqU3MVxmHJ6p8gvMWjoMbZddeuGEv7bazdg3MSH=RfM5jeHGQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 22 (evm)
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-vI3u4LL8ZvB8+NGeDtWS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 22, 2011 at 10:09 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2011-08-22 at 17:49 -0700, Randy Dunlap wrote:
+>> On Mon, 22 Aug 2011 20:47:00 -0400 Arnaud Lacombe wrote:
+>>
+>> > Hi,
+>> >
+>> > On Mon, Aug 22, 2011 at 3:53 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> > > On Mon, 22 Aug 2011 14:53:04 +1000 Stephen Rothwell wrote:
+>> > >
+>> > >> Hi all,
+>> > >>
+>> > >> [The kernel.org mirroring is a bit low today]
+>> > >
+>> > > (on x86_64:)
+>> > >
+>> > > When CONFIG_EVM=y, CONFIG_CRYPTO_HASH2=m, CONFIG_TRUSTED_KEYS=m,
+>> > > CONFIG_ENCRYPTED_KEYS=m, the build fails with:
+>> > >
+>> > You did not provide the value of CONFIG_TCG_TPM, I'll assume it was
+>> > 'm'. That said, correct me if I'm wrong, but we currently have:
+>>
+>> Yes, it was 'm'.
+>>
+>> > menuconfig TCG_TPM
+>> >         tristate "TPM Hardware Support"
+>> >
+>> > [...]
+>> >
+>> > config EVM
+>> >         boolean "EVM support"
+>> >         depends on SECURITY && KEYS && TCG_TPM
+>> >
+>> > which seems terribly broken to me... How can you have a built-in
+>> > feature, which depends on another potentially-not-built-in feature ?
+>>
+>> Yup.
+>
+> Easy, different use cases. The TPM has been around and used for a while,
+> not requiring it to be built-in.  EVM, a new use case, requires it to be
+> built-in.
+>
+sorry, I think I misunderstood that last sentence. I assumed the 'it'
+was referring to EVM, while taken in context with the previous
+sentence, it might as well refers to TPM, in which case you want EVM
+to 'depends on TCG_TPM = y'.
 
-On Mon, 2011-08-22 at 19:13 -0700, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 23 Aug 2011 11:41:29 +1000
->=20
-> > On Tue, 23 Aug 2011 11:40:11 +1000 Stephen Rothwell <sfr@canb.auug.org.=
-au> wrote:
-> >>
-> >> On Mon, 22 Aug 2011 11:30:32 +1000 Stephen Rothwell <sfr@canb.auug.org=
-.au> wrote:
-> >> >
-> >> > Here's what I am applying as a merge fixup to the net tree today so =
-that
-> >> > my ppc64_defconfig builds actually build more or less the same set o=
-f
-> >> > drivers as before this rearrangement.
-> >>=20
-> >> And this today:
-> >=20
-> > And this:
->=20
-> I'm starting to get uncomfortable with this whole situation, and I
-> feel more and more that these new kconfig guards are not tenable.
->=20
-> Changing defconfig files might fix the "automated test boot with
-> defconfig" case but it won't fix the case of someone trying to
-> automate a build and boot using a different, existing, config file.
-> It ought to work too, and I do know people really do this.
->=20
-> And just the fact that we would have to merge all of these defconfig chan=
-ges
-> through the networking tree is evidence of how it's really not reasonable
-> to be doing things this way.
->=20
-> Jeff, I think we need to revert the dependencies back to what they were
-> before the drivers/net moves.  Could you prepare a patch which does that?
->=20
+ - Arnaud
 
-I was just finishing up those patches (not including any defconfig
-changes) and started looking at a patch to fix/resolve the issues that
-Stephen is seeing.
-
-Let me see what I can come up with tonight to resolve this.
-
---=-vI3u4LL8ZvB8+NGeDtWS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOUw/wAAoJECTsCADr/EWU9q4H/3UFk+821Pdb0/jiVN0ve+ea
-IAyxA4WfWT/9y4wW3FSoWGc2YXZygmtYMcSXxqMw4FTFeQbrvFNNRMG0pmklmnwM
-dc6EQtjP2Zj23jGe4B/a06/XzsJj8ebsoR7/JW8cWrD3Nhcz8+pSxL9hij2tu/ML
-JCZkmLMyYr5RjBZ6yE8f2ahIuAc/OKKlrrb7xyQz0f/Wgqt29Jif+EgSjlOIyVHO
-/ud++xCdDbv/rdLEK8gpAiaxoTh+YhopPkt8cXQc6y77AF8L9pvSQ9s3BNerBzJo
-ZxpQz1LBlM4K6femZzfAVUpSv0Y/37nwmLDcQoITkc700UinJEjxnsJ64QWHphs=
-=ZIWS
------END PGP SIGNATURE-----
-
---=-vI3u4LL8ZvB8+NGeDtWS--
-
+>> > If you change EVM to 'tristate', you will see that you are not allowed
+>> > to make it built-in if TCG_TPM is not built-in.
+>>
+>> Right.
+>
+> The TPM, crypto, trusted and encrypted keys are tristate.  Like the
+> LSMs, EVM is boolean, which when selected using 'make xconfig', converts
+> the tristates to built-in.  The tristate/boolean mismatches aren't
+> corrected, when .config is edited directly.
+>
+> Mimi
+>
+>> >  - Arnaud
+>> >
+>> > > (.text+0x378aa): undefined reference to `key_type_encrypted'
+>> > > evm_crypto.c:(.text+0x37992): undefined reference to `crypto_alloc_shash'
+>> > > evm_crypto.c:(.text+0x37a24): undefined reference to `crypto_shash_setkey'
+>> > > evm_crypto.c:(.text+0x37ad9): undefined reference to `crypto_shash_update'
+>> > > evm_crypto.c:(.text+0x37aeb): undefined reference to `crypto_shash_final'
+>> > > (.text+0x37b4b): undefined reference to `crypto_shash_update'
+>> > > (.text+0x37c61): undefined reference to `crypto_shash_update'
+>> > > (.text+0x37cb9): undefined reference to `crypto_shash_update'
+>> > >
+>> > > even though EVM (Kconfig) selects ENCRYPTED_KEYS and TRUSTED_KEYS..
+>> > > and even after I add "select CRYPTO_HASH2".
+>> > >
+>> > > Is this because EVM is bool and kconfig is confused about 'select's
+>> > > when a bool is selecting tristates?  Shouldn't the tristates become
+>> > > 'y' instead of 'm' if they are selected by a bool that is 'y'?
+>> > >
+>> > >
+>> > > xconfig shows these symbol values:
+>> > >
+>> > > Symbol: EVM [=y]
+>> > > Type : boolean
+>> > > Prompt: EVM support
+>> > > Defined at security/integrity/evm/Kconfig:1
+>> > > Depends on: SECURITY [=y] && KEYS [=y] && TCG_TPM [=m]
+>> > > Location:
+>> > > -> Security options
+>> > > Selects: CRYPTO_HMAC [=m] && CRYPTO_MD5 [=m] && CRYPTO_SHA1 [=m] && CRYPTO_HASH2 [=m] && ENCRYPTED_KEYS [=m] && TRUSTED_KEYS [=m]
+>> > >
+>> > >
+>> > > Hm, changing TCG_TPM to =y also changes TRUSTED_KEYS and ENCRYPTED_KEYS and
+>> > > lots of CRYPTO_ symbols from =m to =y.  There must be some kind of min/max
+>> > > symbol checking that is confused?
+>> > >
+>> > there is definitively an underlying min/max, but I would not point
+>> > finger too fast.
+>>
+>>
+>> Thanks for your help.
+>>
+>> ---
+>> ~Randy
+>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
