@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab1HWOc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:32:29 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:40411 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754397Ab1HWOcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:32:20 -0400
-Date: Tue, 23 Aug 2011 07:32:17 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20110823073217.d2794369.rdunlap@xenotime.net>
-In-Reply-To: <20110823154811.527ae4929dd2078e694fe32a@canb.auug.org.au>
-References: <20110823154811.527ae4929dd2078e694fe32a@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754683Ab1HWOhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:37:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16139 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab1HWOhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:37:12 -0400
+Date: Tue, 23 Aug 2011 10:36:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110823143621.GA15820@redhat.com>
+References: <20110806094526.733282037@intel.com>
+ <1312811193.10488.33.camel@twins>
+ <20110808141128.GA22080@localhost>
+ <1312814501.10488.41.camel@twins>
+ <20110808230535.GC7176@localhost>
+ <1313154259.6576.42.camel@twins>
+ <20110812142020.GB17781@localhost>
+ <1314027488.24275.74.camel@twins>
+ <20110823034042.GC7332@localhost>
+ <1314093660.8002.24.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314093660.8002.24.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011 15:48:11 +1000 Stephen Rothwell wrote:
+On Tue, Aug 23, 2011 at 12:01:00PM +0200, Peter Zijlstra wrote:
+> On Tue, 2011-08-23 at 11:40 +0800, Wu Fengguang wrote:
+> > - not a factor at all for updating balanced_rate (whether or not we do (2))
+> >   well, in this concept: the balanced_rate formula inherently does not
+> >   derive the balanced_rate_(i+1) from balanced_rate_i. Rather it's
+> >   based on the ratelimit executed for the past 200ms:
+> > 
+> >           balanced_rate_(i+1) = task_ratelimit_200ms * bw_ratio
+> 
+> Ok, this is where it all goes funny..
 
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
-> 
-> kernel/cred.c: In function 'prepare_kernel_cred':
-> kernel/cred.c:657:2: error: 'tgcred' undeclared (first use in this function)
-> 
-> Caused by commit 012146d0728f ("CRED: Fix prepare_kernel_cred() to
-> provide a new thread_group_cred struct").  CONFIG_KEYS is not set in this
-> build ...
-> 
-> Please, please build test with and without CONFIG settings that affect
-> your changes.
-> 
-> I discovered this after releaseing linux-next for today.
+Exactly. This is where it gets confusing and is bone of contention.
 
-This one also causes UML (defconfig) builds to fail today.
+> 
+> So if you want completely separated feedback loops I would expect
+> something like:
+> 
+> 	balance_rate_(i+1) = balance_rate_(i) * bw_ratio   ; every 200ms
+> 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I agree. This makes sense. IOW.
+						      write_bw
+bdi->dirty_ratelimit_n = bdi->dirty_ratelimit_(n-1) * -------
+						      dirty_rate
+
+> The former is a complete feedback loop, expressing the new value in the
+> old value (*) with bw_ratio as feedback parameter; if we throttled too
+> much, the dirty_rate will have dropped and the bw_ratio will be <1
+> causing the balance_rate to drop increasing the dirty_rate, and vice
+> versa.
+
+I think you meant.
+
+"if we throttled too much, the dirty_rate will have dropped and the bw_ratio
+ will be >1 causing the balance_rate to increase hence increasing the
+ dirty_rate, and vice versa."
+
+> 
+> (*) which is the form I expected and why I thought your primary feedback
+> loop looked like: rate_(i+1) = rate_(i) * pos_ratio * bw_ratio
+> 
+> With the above balance_rate is an independent variable that tracks the
+> write bandwidth. Now possibly you'd want a low-pass filter on that since
+> your bw_ratio is a bit funny in the head, but that's another story.
+> 
+> Then when you use the balance_rate to actually throttle tasks you apply
+> your secondary control steering the dirty page count, yielding:
+> 
+> 	task_rate = balance_rate * pos_ratio
+> 
+> >   and task_ratelimit_200ms happen to can be estimated from
+> > 
+> >           task_ratelimit_200ms ~= balanced_rate_i * pos_ratio
+> 
+> >   We may alternatively record every task_ratelimit executed in the
+> >   past 200ms and average them all to get task_ratelimit_200ms. In this
+> >   way we take the "superfluous" pos_ratio out of sight :) 
+> 
+> Right, so I'm not at all sure that makes sense, its not immediately
+> evident that <task_ratelimit> ~= balance_rate * pos_ratio. Nor is it
+> clear to me why your primary feedback loop uses task_ratelimit_200ms at
+> all. 
+> 
+
+We I thought that this is evident that.
+
+task_ratelimit = balanced_rate * pos_ratio
+
+What is not evident to me is following.
+
+balanced_rate_(i+1) = task_ratelimit_200ms * pos_ratio.
+
+Instead, like you, I also thought that following is more obivious.
+
+balanced_rate_(i+1) = balanced_rate_(i) * pos_ratio
+
+Thanks
+Vivek
