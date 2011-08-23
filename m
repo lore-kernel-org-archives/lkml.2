@@ -1,110 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1HWL70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 07:59:26 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42392 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1HWL7V convert rfc822-to-8bit (ORCPT
+	id S1754352Ab1HWMLq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 08:11:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40719 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1HWMLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 07:59:21 -0400
+	Tue, 23 Aug 2011 08:11:38 -0400
+Date: Tue, 23 Aug 2011 15:10:13 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: khugepaged: inconsistent lock {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W}
+ usage
+Message-ID: <20110823121013.GB3554@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-In-Reply-To: <20110823114931.GC3162@dastard>
-References: <CAHFgRy_7XQkoU3uY72Eve_X-FfXOuUm2Ydhyheo4bf53P3K=zQ@mail.gmail.com>
-	<CA+5PVA47Pa14Sk5-VZuQhXk1db6KK13_3uSk1QMKVwsZyPmj_A@mail.gmail.com>
-	<20110823114931.GC3162@dastard>
-Date: Tue, 23 Aug 2011 07:59:20 -0400
-Message-ID: <CA+5PVA4bLOSOQ=Pvt25xY=8L_b07XnM-8UetHOxnbtgtY0o4_Q@mail.gmail.com>
-Subject: Re: 3.1.0-rc3 -- INFO: possible circular locking dependency detected
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KsGdsel6WgEHnImy"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 7:49 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Aug 23, 2011 at 07:35:00AM -0400, Josh Boyer wrote:
->> On Tue, Aug 23, 2011 at 12:39 AM, Miles Lane <miles.lane@gmail.com> wrote:
->> > [ INFO: possible circular locking dependency detected ]
->> > 3.1.0-rc3 #2
->> > -------------------------------------------------------
->> > dconf-service/1836 is trying to acquire lock:
->> >  (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff8116df1a>]
->> > ext4_evict_inode+0x88/0x32b
->> >
->> >  but task is already holding lock:
->> >  (&mm->mmap_sem){++++++}, at: [<ffffffff810d4393>] sys_munmap+0x36/0x5b
->> >
->> > which lock already depends on the new lock.
->> >
->> > the existing dependency chain (in reverse order) is:
->> >
->> > -> #1 (&mm->mmap_sem){++++++}:
->> >       [<ffffffff8106933a>] lock_acquire+0x129/0x14e
->> >       [<ffffffff810cddbd>] might_fault+0x68/0x8b
->> >       [<ffffffff810fcf5e>] filldir+0x6a/0xc2
->> >       [<ffffffff811651a1>] call_filldir+0x91/0xb8
->> >       [<ffffffff811654bf>] ext4_readdir+0x1af/0x510
->> >       [<ffffffff810fd1a4>] vfs_readdir+0x76/0xac
->> >       [<ffffffff810fd2b6>] sys_getdents+0x79/0xc9
->> >       [<ffffffff814162fb>] system_call_fastpath+0x16/0x1b
->> >
->> > -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
->> >       [<ffffffff81068b10>] __lock_acquire+0xa5e/0xd52
->> >       [<ffffffff8106933a>] lock_acquire+0x129/0x14e
->> >       [<ffffffff8140f1a2>] __mutex_lock_common+0x64/0x413
->> >       [<ffffffff8140f5b0>] mutex_lock_nested+0x16/0x18
->> >       [<ffffffff8116df1a>] ext4_evict_inode+0x88/0x32b
->> >       [<ffffffff81102d8a>] evict+0x94/0x14e
->> >       [<ffffffff81102fd0>] iput+0x18c/0x195
->> >       [<ffffffff810ffdd4>] dentry_kill+0x11e/0x140
->> >       [<ffffffff8110019b>] dput+0xd4/0xe4
->> >       [<ffffffff810efac3>] fput+0x1a5/0x1bd
->> >       [<ffffffff810d3214>] remove_vma+0x37/0x5f
->> >       [<ffffffff810d4239>] do_munmap+0x2ed/0x306
->> >       [<ffffffff810d43a1>] sys_munmap+0x44/0x5b
->> >       [<ffffffff814162fb>] system_call_fastpath+0x16/0x1b
->> >
->> > other info that might help us debug this:
->> >
->> >  Possible unsafe locking scenario:
->> >
->> >       CPU0                    CPU1
->> >       ----                    ----
->> >  lock(&mm->mmap_sem);
->> >                               lock(&sb->s_type->i_mutex_key);
->> >                               lock(&mm->mmap_sem);
->> >  lock(&sb->s_type->i_mutex_key);
->> >
->> >  *** DEADLOCK ***
->>
->> This one was reported yesterday: https://lkml.org/lkml/2011/8/21/163
->> and we're hoping Ted (or someone else from the ext4 camp) can comment
->> on why ext4_evict_inode is holding i_mutex.
->
-> Actually, the problem has nothing to do with ext4. the problem is
-> that remove_vma() is holding the mmap_sem while calling fput(). The
-> correct locking order is i_mutex->mmap_sem, as documented in
-> mm/filemap.c:
->
->  *  ->i_mutex                   (generic_file_buffered_write)
->  *    ->mmap_sem                (fault_in_pages_readable->do_page_fault)
->
->
-> The way remove_vma() calls fput() also triggers lockdep reports in
-> XFS and it will do so with any filesystem that takes an inode
-> specific lock in it's evict() processing. IOWs, remove_vma() needs
-> fixing, not ext4....
 
-Er... ok.  So the remove_vma code hasn't changed since 2008.  We're
-only seeing this issue now because the debugging code has improved,
-or?
+--KsGdsel6WgEHnImy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-At any rate, the proposed solution is to make remove_vma drop mmap_sem
-before calling fput, or make it not call fput, or?
+Hello,
 
-josh
+[12027.382589] =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+[12027.382594] [ INFO: inconsistent lock state ]
+[12027.382600] 3.1.0-rc3-dbg-00548-gba7b8dc #692
+[12027.382603] ---------------------------------
+[12027.382607] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+[12027.382614] khugepaged/552 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[12027.382619]  (&sb->s_type->i_mutex_key#9){+.+.?.}, at: [<ffffffff811c11f=
+7>] ext4_evict_inode+0xb0/0x51d
+[12027.382640] {RECLAIM_FS-ON-W} state was registered at:
+[12027.382644]   [<ffffffff81071f8b>] mark_held_locks+0xc3/0xef
+[12027.382655]   [<ffffffff810725a8>] lockdep_trace_alloc+0x9b/0xbd
+[12027.382663]   [<ffffffff810ff580>] kmem_cache_alloc+0x2a/0x1a4
+[12027.382671]   [<ffffffff8111d972>] __d_alloc+0x22/0x164
+[12027.382679]   [<ffffffff8111dd5d>] d_alloc+0x19/0x7a
+[12027.382686]   [<ffffffff811132f9>] d_alloc_and_lookup+0x27/0x66
+[12027.382695]   [<ffffffff81113dc8>] do_lookup+0x1df/0x2e9
+[12027.382702]   [<ffffffff81114566>] link_path_walk+0x1b3/0x738
+[12027.382709]   [<ffffffff81115499>] path_lookupat+0x57/0x5ee
+[12027.382717]   [<ffffffff81115a53>] do_path_lookup+0x23/0x9f
+[12027.382724]   [<ffffffff81116f75>] user_path_at+0x54/0x91
+[12027.382731]   [<ffffffff8110dc46>] vfs_fstatat+0x3f/0x69
+[12027.382738]   [<ffffffff8110dca1>] vfs_stat+0x16/0x18
+[12027.382745]   [<ffffffff8110dd87>] sys_newstat+0x15/0x2e
+[12027.382751]   [<ffffffff814965d2>] system_call_fastpath+0x16/0x1b
+[12027.382761] irq event stamp: 9401171
+[12027.382765] hardirqs last  enabled at (9401171): [<ffffffff810cee07>] fr=
+ee_hot_cold_page+0x168/0x181
+[12027.382776] hardirqs last disabled at (9401170): [<ffffffff810cecfd>] fr=
+ee_hot_cold_page+0x5e/0x181
+[12027.382785] softirqs last  enabled at (9399656): [<ffffffff81045555>] __=
+do_softirq+0x261/0x2ff
+[12027.382795] softirqs last disabled at (9399635): [<ffffffff81497abc>] ca=
+ll_softirq+0x1c/0x30
+[12027.382805]=20
+[12027.382805] other info that might help us debug this:
+[12027.382809]  Possible unsafe locking scenario:
+[12027.382811]=20
+[12027.382814]        CPU0
+[12027.382817]        ----
+[12027.382819]   lock(&sb->s_type->i_mutex_key);
+[12027.382826]   <Interrupt>
+[12027.382829]     lock(&sb->s_type->i_mutex_key);
+[12027.382835]=20
+[12027.382836]  *** DEADLOCK ***
+[12027.382838]=20
+[12027.382842] 2 locks held by khugepaged/552:
+[12027.382846]  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810d6465>] shr=
+ink_slab+0x37/0x3d0
+[12027.382862]  #1:  (&type->s_umount_key#16){+++++.}, at: [<ffffffff8110c5=
+12>] grab_super_passive+0x52/0x76
+[12027.382880]=20
+[12027.382881] stack backtrace:
+[12027.382887] Pid: 552, comm: khugepaged Not tainted 3.1.0-rc3-dbg-00548-g=
+ba7b8dc #692
+[12027.382891] Call Trace:
+[12027.382902]  [<ffffffff81486180>] print_usage_bug+0x28f/0x2a0
+[12027.382913]  [<ffffffff8100cb2a>] ? save_stack_trace+0x27/0x44
+[12027.382922]  [<ffffffff8106ee4e>] ? print_irq_inversion_bug+0x1cd/0x1cd
+[12027.382929]  [<ffffffff8106fa1e>] mark_lock+0x2eb/0x53a
+[12027.382937]  [<ffffffff81070321>] __lock_acquire+0x6b4/0x164b
+[12027.382945]  [<ffffffff8106d318>] ? __bfs+0x23/0x1c7
+[12027.382952]  [<ffffffff8106f62c>] ? check_irq_usage+0x99/0xab
+[12027.382960]  [<ffffffff810711df>] ? __lock_acquire+0x1572/0x164b
+[12027.382968]  [<ffffffff811c11f7>] ? ext4_evict_inode+0xb0/0x51d
+[12027.382975]  [<ffffffff8107186e>] lock_acquire+0x138/0x1ac
+[12027.382982]  [<ffffffff811c11f7>] ? ext4_evict_inode+0xb0/0x51d
+[12027.382990]  [<ffffffff811c11f7>] ? ext4_evict_inode+0xb0/0x51d
+[12027.382998]  [<ffffffff8148e953>] mutex_lock_nested+0x5e/0x325
+[12027.383005]  [<ffffffff811c11f7>] ? ext4_evict_inode+0xb0/0x51d
+[12027.383013]  [<ffffffff81120013>] ? evict+0x64/0x15c
+[12027.383022]  [<ffffffff81256185>] ? do_raw_spin_lock+0x6b/0x122
+[12027.383030]  [<ffffffff811c11f7>] ext4_evict_inode+0xb0/0x51d
+[12027.383038]  [<ffffffff811c1147>] ? ext4_da_writepages+0x6df/0x6df
+[12027.383045]  [<ffffffff81120050>] evict+0xa1/0x15c
+[12027.383051]  [<ffffffff81120137>] dispose_list+0x2c/0x38
+[12027.383059]  [<ffffffff811211c6>] prune_icache_sb+0x28c/0x29b
+[12027.383067]  [<ffffffff8110c60b>] prune_super+0xd5/0x140
+[12027.383074]  [<ffffffff810d6624>] shrink_slab+0x1f6/0x3d0
+[12027.383083]  [<ffffffff810d9448>] do_try_to_free_pages+0x1ae/0x330
+[12027.383091]  [<ffffffff810d979b>] try_to_free_pages+0x110/0x241
+[12027.383099]  [<ffffffff810ce50a>] __alloc_pages_nodemask+0x4d2/0x801
+[12027.383108]  [<ffffffff814902ea>] ? _raw_spin_unlock_irqrestore+0x56/0x74
+[12027.383116]  [<ffffffff81102510>] khugepaged_alloc_hugepage+0x50/0xdd
+[12027.383127]  [<ffffffff8105dc32>] ? __init_waitqueue_head+0x46/0x46
+[12027.383134]  [<ffffffff81102aa1>] khugepaged+0x82/0xff5
+[12027.383141]  [<ffffffff8148cadd>] ? schedule+0x353/0xa7e
+[12027.383150]  [<ffffffff8105dc32>] ? __init_waitqueue_head+0x46/0x46
+[12027.383157]  [<ffffffff81102a1f>] ? khugepaged_defrag_store+0x57/0x57
+[12027.383164]  [<ffffffff8105d3e6>] kthread+0x9a/0xa2
+[12027.383173]  [<ffffffff814979c4>] kernel_thread_helper+0x4/0x10
+[12027.383181]  [<ffffffff8102d6d6>] ? finish_task_switch+0x76/0xf0
+[12027.383188]  [<ffffffff814907b8>] ? retint_restore_args+0x13/0x13
+[12027.383196]  [<ffffffff8105d34c>] ? __init_kthread_worker+0x53/0x53
+[12027.383203]  [<ffffffff814979c0>] ? gs_change+0x13/0x13
+
+
+	Sergey
+
+--KsGdsel6WgEHnImy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk5TmKUACgkQfKHnntdSXjQFGQQAkRjlZO/acTyaKoYCPwRdvx9U
+86JOw6Cc+8vm9EHosBXG2L/b2Wq0GtkWKuzpwjJCb9OZe30HzMWWCKXn4GxQxYe9
+m8iQUP+wNzvEwLBTsHW/HOtKgJlXsKj+IzqDlH8f0OQLQ7tozWzyTjJQ0iGxkon9
+m8Bw9UulJ7gK2ncZxqQ=
+=Ryum
+-----END PGP SIGNATURE-----
+
+--KsGdsel6WgEHnImy--
