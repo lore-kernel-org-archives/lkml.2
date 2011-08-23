@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1HWABA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 20:01:00 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:61383 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753814Ab1HWAA7 (ORCPT
+	id S1754277Ab1HWADy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 20:03:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52741 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab1HWADw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 20:00:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJPsUk55LIxD/2dsb2JhbABBqCF4gUABAQU6HCMQCAMOCi4UJQMhE70sDoY6BKQh
-Date: Tue, 23 Aug 2011 10:00:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vmscan: fix initial shrinker size handling
-Message-ID: <20110823000054.GW3162@dastard>
-References: <20110822101721.19462.63082.stgit@zurg>
- <20110822232257.GT3162@dastard>
- <20110822163821.e746ab25.akpm@linux-foundation.org>
+	Mon, 22 Aug 2011 20:03:52 -0400
+Date: Tue, 23 Aug 2011 01:03:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823000314.GW2203@ZenIV.linux.org.uk>
+References: <4E51D597.3060800@zytor.com>
+ <20110822095336.GB25949@kernel.org>
+ <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com>
+ <20110822144051.GD2946@aftab>
+ <20110822151305.GV2203@ZenIV.linux.org.uk>
+ <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
+ <4E52B7F8.3050002@zytor.com>
+ <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+ <4E52D280.3010107@zytor.com>
+ <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110822163821.e746ab25.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 04:38:21PM -0700, Andrew Morton wrote:
-> On Tue, 23 Aug 2011 09:22:57 +1000
-> Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > On Mon, Aug 22, 2011 at 02:17:21PM +0300, Konstantin Khlebnikov wrote:
-> > > Shrinker function can returns -1, it means it cannot do anything without a risk of deadlock.
-> > > For example prune_super() do this if it cannot grab superblock refrence, even if nr_to_scan=0.
-> > > Currenly we interpret this like ULONG_MAX size shrinker, evaluate total_scan according this,
-> > > and next time this shrinker can get really big pressure. Let's skip such shrinkers instead.
-> > > 
-> > > Also make total_scan signed, otherwise check (total_scan < 0) below never works.
-> > 
-> > I've got a patch set I am going to post out today that makes this
-> > irrelevant.
-> 
-> Well, how serious is the bug?  If it's a non-issue then we can leave
-> the fix until 3.1.  If it's a non-non-issue then we'd need a minimal
-> patch to fix up 3.1 and 3.0.x.
+On Mon, Aug 22, 2011 at 04:27:51PM -0700, Linus Torvalds wrote:
 
-I'm pretty sure it's a non-issue. I'm pretty sure all of the
-shrinkers return a count >= 0 rather than -1 when passed nr_to_scan
-== 0 (i.e.  they skip the GFP_NOFS checking), so getting a max_pass
-of -1 isn't going to happen very often....
+> So I think the "let's fix the vdso case for sysenter" + "let's remove
+> the 32-bit syscall vdso" is the right solution. If somebody has
+> hardcoded syscall instructions, or generates them dynamically with
+> some JIT, that's their problem. We'll continue to support it as well
+> as we ever have (read: "almost nobody will ever notice").
 
-And with total_scan being unsigned, the negative check is followed
-by a "if (total_scan > max_pass * 2)" check, which will catch
-numbers that would have gone negative anyway because max_pass won't
-be negative....
+Umm...  Maybe, but I really wonder if it would be better to do this:
+	* check if %ecx is the right one for vdso32 entry.  If it isn't,
+act as we act now (and possibly warn).  If it is, increment it by 4.
+	* slap 0x90, 0x90, 0xcd, 0x80 right after that syscall insn -
+i.e. nop/nop/int 0x80.  Followed by what we currently do there.
 
-So, grotty code but I don't think there is even a problem that can
-be tripped right now.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+	Those who do syscall insn in 32bit mode outside of vdso will get
+what they currently get.  __kernel_vsyscall() will keep working and do
+that without restart problems.  And the price is comparison + branch not
+taken + addition for that path...
