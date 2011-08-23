@@ -1,45 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab1HWPZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:25:20 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37805 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754221Ab1HWPZQ (ORCPT
+	id S1755323Ab1HWP0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:26:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37544 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab1HWP0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:25:16 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: HG_eycsVM1nmJDb69_waY026KuwC8zKhQ9XhGxQkxDlKlXP
- Plu8xnwfbcuCPFuR7Grut_0oX.i_Coj0IqcsjcjqI.BRKz73VTmni1vZM8V7
- .41Ft5wzX_GLMWW1LmXHIHGphAtBQlw1YXjcepwQ70jf58nBXq1x9DqQ6At_
- a.arOhVAywdFNzJ_T4olDUlE2h3BCWDpM_8TwGvZVy4g6SeW.z4zXC2ZpZCg
- ryMP15dw4GTOIR8kfSNuE2tXyQ_mEkG5Rg5xjSJy7m.HE1Y4kDu4beQmKe7y
- JlRulGveZprI2CtDLA5FfVuX.qfNFhR.bDb5JbqnkaeB1hPRIBP2PyfhuSrZ
- Fr3Dc7S6Z40AHmHL.UVQJMVYMQfIFYXM1k2d0raCXvbtmjA--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 23 Aug 2011 10:25:12 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Shaohua Li <shaohua.li@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, penberg@kernel.org,
-        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [patch 2/2]slub: add a type for slab partial list position
-In-Reply-To: <1314059823.29510.19.camel@sli10-conroe>
-Message-ID: <alpine.DEB.2.00.1108231023470.21267@router.home>
-References: <1314059823.29510.19.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 23 Aug 2011 11:26:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=Lp9vleqceQf/OTyyUK3QixUx8VEIo7lpZJawPdai+VeEHzavWd3Ta8uo83NX0OqiH
+	bPxDjOB99XufpmZuIU9HA==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+References: <op.v0n67imkvgw7ix@mnazarewicz-glaptop>
+ <Pine.LNX.4.44L0.1108231030270.2069-100000@iolanthe.rowland.org>
+ <20110823145759.GM1341@legolas.emea.dhcp.ti.com>
+ <op.v0n9l9h9vgw7ix@mnazarewicz-glaptop>
+ <20110823151105.GP1341@legolas.emea.dhcp.ti.com>
+Date: Tue, 23 Aug 2011 17:26:24 +0200
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Message-ID: <op.v0oaia2bvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <20110823151105.GP1341@legolas.emea.dhcp.ti.com>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Shaohua Li wrote:
+> On Tue, Aug 23, 2011 at 05:07:11PM +0200, Michal Nazarewicz wrote:
+>> If you look at config_buf() in composite.c, you'll notice that composite
+>> just skips functions that do not support current speed.  This means,  
+>> that if a connection uses high speed but given function can handle only
+>> full speed, it won't be included in the descriptors.
+>>
+>> config_buf() is called from config_desc() which similarly, iterates over
+>> configurations skipping the ones that do not support given speed.
+>>
+>> Configuration is defined to support given speed if at least one function
+>> that is added to that configuration supports that speed (see
+>> usb_add_function()).
 
-> Adding slab to partial list head/tail is sensentive to performance.
-> So adding a type to document it to avoid we get it wrong.
+On Tue, 23 Aug 2011 17:11:06 +0200, Felipe Balbi <balbi@ti.com> wrote:
+> I'm trying to think if this is really what we want. This might mean
+> $current_config will be different depending if we connect it to SS, HS
+> or FS hubs.
 
-I think that if you want to make it more descriptive then using the stats
-values (DEACTIVATE_TO_TAIL/HEAD) would avoid having to introduce an
-additional enum and it would also avoid the if statement in the stat call.
+What do you mean by $current_config?  The bConfigurationValue will be
+the same for "the same" configuration regardless of speed but different
+configurations may be available for different speeds and "the same"
+configuration in various speeds might have different functions.
 
+So just for the sake of having something concrete, let's say we have:
+
+Configuration #1 with
+   function A supporting FS and HS and
+   function B supporting FS only.
+Configuration #2 with
+   function B supporting FS only.
+Configuration #3 with
+   function A supporting FS and HS and
+   function C supporting HS only (dunno if that makes sense).
+
+When connected to FS hub, we will return the following:
+
+Configuration #1: A, B
+Configuration #2: B
+Configuration #3: A
+
+When connect to HS hub, we will return the following:
+
+Configuration #1: A
+Configuration #3: A, C
+
+And similarly to bConfigurationValue, the interface IDs may have holes in
+them.
+
+Whether that's what we want, I don't know...  But if I understand
+composite.c correctly, that's how it is implemented now.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
