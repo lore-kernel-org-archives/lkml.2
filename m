@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1HWHYC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 03:24:02 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61948 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab1HWHYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 03:24:00 -0400
-Subject: [PATCH] CRED: fix build error due to 'tgcred' undeclared
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 15:23:51 +0800
-Message-ID: <1314084231.5033.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753583Ab1HWHbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 03:31:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:43558 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701Ab1HWHbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 03:31:07 -0400
+Subject: [PATCH] oom: skip frozen tasks
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Date: Tue, 23 Aug 2011 11:31:01 +0300
+Message-ID: <20110823073101.6426.77745.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CONFIG_KEYS guard for tgcred to fix below build error
-if CONFIG_KEYS is not configured.
+All frozen tasks are unkillable, and if one of them has TIF_MEMDIE
+we must kill something else to avoid deadlock. After this patch
+select_bad_process() will skip frozen task before checking TIF_MEMDIE.
 
-  CC      kernel/cred.o
-kernel/cred.c: In function 'prepare_kernel_cred':
-kernel/cred.c:657: error: 'tgcred' undeclared (first use in this function)
-kernel/cred.c:657: error: (Each undeclared identifier is reported only once
-kernel/cred.c:657: error: for each function it appears in.)
-make[1]: *** [kernel/cred.o] Error 1
-make: *** [kernel] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- kernel/cred.c |    2 ++
+ mm/oom_kill.c |    2 ++
  1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/cred.c b/kernel/cred.c
-index bb2c0f5..5791612 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -654,11 +654,13 @@ struct cred *prepare_kernel_cred(struct task_struct *daemon)
- 	if (!new)
- 		return NULL;
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 626303b..931ab20 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -138,6 +138,8 @@ static bool oom_unkillable_task(struct task_struct *p,
+ 		return true;
+ 	if (p->flags & PF_KTHREAD)
+ 		return true;
++	if (p->flags & PF_FROZEN)
++		return true;
  
-+#ifdef CONFIG_KEYS
- 	tgcred = kmalloc(sizeof(*tgcred), GFP_KERNEL);
- 	if (!tgcred) {
- 		kmem_cache_free(cred_jar, new);
- 		return NULL;
- 	}
-+#endif
- 
- 	kdebug("prepare_kernel_cred() alloc %p", new);
- 
--- 
-1.7.4.1
-
-
+ 	/* When mem_cgroup_out_of_memory() and p is not member of the group */
+ 	if (mem && !task_in_mem_cgroup(p, mem))
 
