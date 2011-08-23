@@ -1,110 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab1HWPrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:47:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39929 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab1HWPrE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:47:04 -0400
-Date: Tue, 23 Aug 2011 16:43:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Message-ID: <20110823154329.GF3895@n2100.arm.linux.org.uk>
-References: <20110823151936.GM9232@opensource.wolfsonmicro.com>
+	id S1752840Ab1HWPwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:52:14 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:43393 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752435Ab1HWPwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 11:52:03 -0400
+Date: Tue, 23 Aug 2011 08:37:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jan =?iso-8859-1?Q?H=2E_Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, Dipankar Sarma <dipankar@in.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] rcu: More rcu-variants for list manipulation
+Message-ID: <20110823153707.GA2424@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1313503666-13726-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <1313503666-13726-2-git-send-email-schnhrr@cs.tu-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110823151936.GM9232@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1313503666-13726-2-git-send-email-schnhrr@cs.tu-berlin.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 04:19:36PM +0100, Mark Brown wrote:
-> The recent series of commits reworking the freezer appear to have
-> caused serious issues on ARM.  The kernel constantly complains that
-> try_to_freeze() is bring called with interrupts disabled:
+On Tue, Aug 16, 2011 at 04:07:45PM +0200, Jan H. Schönherr wrote:
+> From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
 > 
-> [   75.380000] BUG: sleeping function called from invalid context at include/linux/freezer.h:44
-> [   75.380000] in_atomic(): 0, irqs_disabled(): 128, pid: 1517, name: Xorg
-> [   75.380000] no locks held by Xorg/1517.
-> [   75.380000] [<c0014308>] (unwind_backtrace+0x0/0x12c) from
-> [<c0464400>] (dump_stack+0x20/0x24)
-> [   75.380000] [<c0464400>] (dump_stack+0x20/0x24) from [<c0022b80>]
-> (__might_sleep+0xfc/0x11c)
-> [   75.380000] [<c0022b80>] (__might_sleep+0xfc/0x11c) from [<c0011520>]
-> (do_signal+0x94/0x230)
-> [   75.380000] [<c0011520>] (do_signal+0x94/0x230) from [<c00116e4>]
-> (do_notify_resume+0x28/0x6c)
-> [   75.380000] [<c00116e4>] (do_notify_resume+0x28/0x6c) from
-> [<c000eaf8>] (work_pending+0x24/0x28)
+> This commit introduces __list_link() and some more *_rcu variants of some
+> list manipulation functions:
 > 
-> and the boot runs very slowly.  Reverting the series merged in 56f0be
-> appears to resolve the issue, though looking at the changes I'd expect
-> there's some underlying bug here that just doesn't trigger very often.
-> I don't really have the bandwidth to understand what's gone wrong right
-> now but should be able to run tests if you've got anything you'd like
-> looking atl.
+> * __list_link()
+> 
+>   Takes two list elements and link them via their next/prev pointers.
+> 
+> * __list_link_rcu()
+> 
+>   RCU-aware counterpart to __list_link().
+> 
+> * __list_splice_rcu(), list_splice_tail_init_rcu()
+> 
+>   RCU-aware non-blocking splicing.
+> 
+>   The existing rcu-splice function allows concurrent readers on the
+>   list to be spliced that are not from the destination list. Therefore,
+>   it has to block to get these readers off the list before the splicing
+>   can be done. The new functions forbid this and can, thus, work without
+>   blocking.
 
-The signal handling is rather yucky, and it seems it needs to run with
-IRQs enabled - but we run it with IRQs disabled.
+The code looks good to me, just a couple of changes needed in comments.
+With those changes:
 
-There's horrible issues in there.  One such issue is the syscall restart
-handling.  Here's an example:
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-	sys_ppoll
-	...
-	receives signal
-	returns ERESTARTNOHAND (restart syscall if no handler)
+> Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+> 
+> ---
+> Changes since v2:
+> - merged __list_link() from a dropped patch
+> - dropped list_add_tail_nobackref() again
+> 
+> Changes since v1:
+> - added comments
+> - added list_add_tail_nobackref()
+> ---
+>  include/linux/list.h    |   12 +++++++
+>  include/linux/rculist.h |   74 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 86 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/list.h b/include/linux/list.h
+> index cc6d2aa..0a7b057 100644
+> --- a/include/linux/list.h
+> +++ b/include/linux/list.h
+> @@ -21,6 +21,18 @@
+>  #define LIST_HEAD(name) \
+>  	struct list_head name = LIST_HEAD_INIT(name)
+> 
+> +/*
+> + * Link two list entries by making the prev/next entries
+> + * point to each other.
+> + *
 
-On the exit path, we notice that we have TIF_SIGPENDING set.  So we call
-do_notify_resume() and eventually do_signal().  At this point, 'syscall'
-is set.
+Concurrent readers and writers are forbidden, right?
 
-The first thing do_signal() does is fiddle with the stack to fake a
-restart.  If we don't gain a signal here, everything is fine and we
-return.  So far so good.
+> + * This is only for internal list manipulation.
+> + */
+> +static inline void __list_link(struct list_head *prev, struct list_head *next)
+> +{
+> +	next->prev = prev;
+> +	prev->next = next;
+> +}
+> +
+>  static inline void INIT_LIST_HEAD(struct list_head *list)
+>  {
+>  	list->next = list;
+> diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+> index d079290..a9be1e0 100644
+> --- a/include/linux/rculist.h
+> +++ b/include/linux/rculist.h
+> @@ -25,6 +25,29 @@
+>  #define list_next_rcu(list)	(*((struct list_head __rcu **)(&(list)->next)))
+> 
+>  /*
+> + * Link two list entries by making the prev/next entries
+> + * point to each other.
+> + *
+> + * The next pointer of @prev is assigned RCU-aware. So, this
+> + * function is primarily intended to publish new nodes starting
+> + * at @next within the RCU-protected list @prev.
+> + *
+> + * This is only for internal list manipulation, when everything
+> + * else, i. e. a link from the nodes given by @next back to the
+> + * list of @prev, is already set up.
+> + *
+> + * Concurrent readers are basically allowed, concurrent writers
+> + * are forbidden.
 
-Lets say for the sake of argument that we've run do_signal() with IRQs
-enabled.  Now, a scheduling event has come along and set TIF_NEED_RESCHED.
+"Concurrent readers are basically allowed" means that readers are
+allowed in the list pointed to by prev, but not within the list
+pointed to by next, right?  (I could imagine some strange situations
+where it might be safe to have concurrent readers in the list
+pointed to by next, but they are all rather strange, so probably
+best to prohibit it.)
 
-So, having returned from do_notify_resume(), we disable interrupts, reload
-the work mask, and notice that TIF_NEED_RESCHED is set.  We now switch
-away from this thread and do something else.
+> + */
+> +static inline void __list_link_rcu(struct list_head *prev,
+> +					struct list_head *next)
+> +{
+> +	rcu_assign_pointer(list_next_rcu(prev), next);
+> +	next->prev = prev;
+> +}
+> +
+> +
+> +/*
+>   * Insert a new entry between two known consecutive entries.
+>   *
+>   * This is only for internal list manipulation where we know
+> @@ -158,6 +181,57 @@ static inline void list_replace_rcu(struct list_head *old,
+>  	old->prev = LIST_POISON2;
+>  }
+> 
+> +/*
+> + * Low level function for splicing.
+> + *
+> + * @prev and @next must point into the same RCU-protected list.
+> + *
+> + * All elements between (not including) @prev and @next are replaced
+> + * by the nodes given by @list.
+> + *
+> + * It is safe to have concurrent readers of the @prev/@next list
+> + * on any of the referenced nodes. There must be no reader not
+> + * from @prev/@next within @list.
 
-While something else is running, lets say a SIGHUP is sent to our process,
-and there's a handler installed.
+OK, I did figure out what you meant by this last sentence, but it took
+me several time reading it.  How about something like the following:
+"The caller must make sure that there are no readers traversing @list."
 
-When we switch back, we again disable interrupts, reload the work mask,
-and notice this time that TIF_SIGPENDING is again set.  So, just like
-last time, we call do_notify_resume() and eventually do_signal().  This
-time, syscall is false.
+Yes, there might be readers traversing the nodes that used to be in
+@list as soon as the __list_link_rcu() below completes, but there had
+better not be any at the time that __list_splice_rcu() is called.  ;-)
 
-So we obtain the signal, save the current state, and set userspace up to
-call the handler.
+> + * There must be no concurrent writers on @list or @prev/@next.
+> + *
+> + * This is only for internal list manipulation. If elements of
+> + * @prev/@next are deleted, their prev-pointers are not poisoned.
+> + */
+> +static inline void __list_splice_rcu(struct list_head *list,
+> +					struct list_head *prev,
+> +					struct list_head *next)
+> +{
+> +	/* Prepare link back to @prev/@next */
+> +	__list_link(list->prev, next);
+> +
+> +	/*
+> +	 * Publish new nodes, implicitly deleting everything between
+> +	 * @prev and @next.
+> +	 */
+> +	__list_link_rcu(prev, list->next);
+> +}
+> +
+> +/**
+> + * list_splice_tail_init_rcu - splice a list into a RCU-protected list
+> + * @list: the list to be spliced
+> + * @head: the RCU-protected list to splice into
+> + *
+> + * The contents of @list are inserted before @head. After completion
+> + * @list is empty.
+> + *
+> + * It is safe to have concurrent readers of @head. There must be no
+> + * concurrent readers not from @head on @list.
 
-The state which we've saved though is the state required for the syscall
-restart - but that's wrong, because the return code said 'restart if
-no handler' and we're now invoking a handler.
+Again, treat this as a precondition: "The caller must ensure that there
+are no concurrent readers traversing @list."  This summarizes the reader's
+responsibility, and the fact that there might be readers on that list
+as soon as __list_splice_rcu() does its work is just muddying the waters.
 
-What should happen is that the syscall is not restarted, and -EINTR is
-returned instead.
-
-What has this got to do with the issue you raise?  Having interrupts
-off during signal handling helps to avoid this problem by ensuring that
-we can't get resched events if there's a signal with no handler present.
-Enabling interrupts for do_signal opens that race up.
-
-Now, having interrupts disabled for writing to the processes stack is
-technically bad news (although in the last 18 or so years its never
-caused a problem.)  That said, we really should enable interrupts
-before calling handle_signal() - which should be safe from the above
-race.
-
-But... without serious amounts of rework of the signal handling code
-to avoid the above race I don't see how we can allow try_to_freeze()
-to run with IRQs enabled and still have race-free syscall restarting.
+> + * There must be no concurrent writers on @list or @head.
+> + */
+> +static inline void list_splice_tail_init_rcu(struct list_head *list,
+> +						struct list_head *head)
+> +{
+> +	if (!list_empty(list)) {
+> +		__list_splice_rcu(list, head->prev, head);
+> +		INIT_LIST_HEAD(list);
+> +	}
+> +}
+> +
+>  /**
+>   * list_splice_init_rcu - splice an RCU-protected list into an existing list.
+>   * @list:	the RCU-protected list to splice
+> -- 
+> 1.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
