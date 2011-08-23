@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab1HWGj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 02:39:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62812 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab1HWGj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 02:39:56 -0400
-Date: Tue, 23 Aug 2011 09:39:53 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Iggy Iggy <ignatious1234@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel Panic on KVM Guests: "Scheduling while atomic: swapper''
-Message-ID: <20110823063953.GA15288@redhat.com>
-References: <CAMzJPjex8_VjWeykGs+E1=R9hTjc_qbxsnr9w+t6hS370nZdcg@mail.gmail.com>
+	id S1752283Ab1HWGlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 02:41:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41417 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1HWGlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 02:41:07 -0400
+Date: Tue, 23 Aug 2011 10:41:01 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        kernel-hardening@lists.openwall.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC] x86, mm: start mmap allocation for libs from low
+ addresses
+Message-ID: <20110823064101.GA3780@albatros>
+References: <20110812102954.GA3496@albatros>
+ <ccea406f-62be-4344-8036-a1b092937fe9@email.android.com>
+ <20110816090540.GA7857@albatros>
+ <20110822101730.GA3346@albatros>
+ <4E5290D6.5050406@zytor.com>
+ <20110822201418.GA3176@albatros>
+ <4E52B96B.8040404@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMzJPjex8_VjWeykGs+E1=R9hTjc_qbxsnr9w+t6hS370nZdcg@mail.gmail.com>
+In-Reply-To: <4E52B96B.8040404@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 10:40:15PM -0500, Iggy Iggy wrote:
-> I've started seeing kernel panics on a few of our virtual machines
-> after moving them (qemu-kvm, libvirt) off of a box with two Intel Xeon
-> X5650 processors (12 cores total) onto one with four AMD Opteron 6174
-> processors (48 cores total).
+On Mon, Aug 22, 2011 at 13:17 -0700, H. Peter Anvin wrote:
+> On 08/22/2011 01:14 PM, Vasiliy Kulikov wrote:
+> > 
+> >> Code-wise:
+> >>
+> >> The code is horrific; it is full of open-coded magic numbers;
+> > 
+> > Agreed, the magic needs macro definition and comments.
+> > 
+> >> it also
+> >> puts a function called arch_get_unmapped_exec_area() in a generic file,
+> >> which could best be described as "WTF" -- the arch_ prefix we use
+> >> specifically to denote a per-architecture hook function.
+> > 
+> > Agreed.  But I'd want to leave it in mm/mmap.c as it's likely be used by
+> > other archs - the changes are bitness specific, not arch specific.  Is
+> > it OK if I do this?
+> > 
+> > #ifndef HAVE_ARCH_UNMAPPED_EXEC_AREA
+> > void *arch_get_unmapped_exec_area(...)
+> > {
+> >     ...
+> > }
+> > #endif
+> > 
 > 
-> What is odd is that I feel like the panic is moving around on these
-> virtual machines. It was only happening on one for a bit and then it
-> stopped but started happening on another virtual machine. It also
-> doesn't happen all the time but it can also happen frequently. Two
-> days of not happening vs every four to six hours. The machine still
-> functions to an extent but over time it crawls and needs to be
-> destroyed and started back up.
-> 
-> This is the panic:
-> Jul 20 06:35:47 test-db kernel: [10881.413875] BUG: scheduling while
-> atomic: swapper/0/0x00010000
-> Jul 20 06:35:47 test-db kernel: [10881.414184] Modules linked in:
-> nf_conntrack_ftp i2c_piix4 i2c_core joydev virtio_net virtio_balloon
-> virtio_blk virtio_pci virtio_ring virtio [last unloaded:
-> scsi_wait_scan]
-> Jul 20 06:35:47 test-db kernel: [10881.414196] Pid: 0, comm: swapper
-> Not tainted 2.6.35.11-83.fc14.x86_64 #1
-> Jul 20 06:35:47 test-db kernel: [10881.414198] Call Trace:
-> Jul 20 06:35:47 test-db kernel: [10881.414205] [<ffffffff8103ffbe>]
-> __schedule_bug+0x5f/0x64
-> Jul 20 06:35:47 test-db kernel: [10881.414208] [<ffffffff8146845e>]
-> schedule+0xd9/0x5cb
-> Jul 20 06:35:47 test-db kernel: [10881.414214] [<ffffffff81072e20>] ?
-> hrtimer_start_expires.clone.5+0x1e/0x20
-> Jul 20 06:35:47 test-db kernel: [10881.414219] [<ffffffff81008345>]
-> cpu_idle+0xca/0xcc
-> Jul 20 06:35:47 test-db kernel: [10881.414223] [<ffffffff81451c66>]
-> rest_init+0x8a/0x8c
-> Jul 20 06:35:47 test-db kernel: [10881.414227] [<ffffffff81ba1c49>]
-> start_kernel+0x40b/0x416
-> Jul 20 06:35:47 test-db kernel: [10881.414231] [<ffffffff81ba12c6>]
-> x86_64_start_reservations+0xb1/0xb5
-> Jul 20 06:35:47 test-db kernel: [10881.414234] [<ffffffff81ba13c2>]
-> x86_64_start_kernel+0xf8/0x107
-> 
-> The new server is running Scientific Linux 6.0 with kernel
-> 2.6.32-131.6.1.el6.x86_64. One of the guests I see this on is running
-> Fedora Core 14, kernel 2.6.35.13-92.fc14.x86_64 and the other is
-> running Fedora Core 12, kernel 2.6.32.26-175.fc12.x86_64.
-> 
-This is RHEL bug [1], not upstream one and should be reported elsewhere.
-Just for the record the bug is fixed on the latest RHEL kernel.
+> Only if this is really an architecture-specific function overridden in
+> specific architectures.  I'm not so sure that applies here.
 
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=683658
+It is a more or less generic allocator.  Arch specific constants will be
+moved to arch headers, so it will be a 32-bit specific function, not
+arch specific (64 bit architectures don't need ASCII shield at all as
+mmap addresses already contain a zero byte).  It will not be overriden
+by x86 as it is "enough generic" for x86.
 
---
-			Gleb.
+I've defined it as arch_* looking at other allocator implementations.
+All of them are arch_* and are located in mm/mmap.c with the ability to
+override them in architecture specific files.  Probably nobody will
+override it, but I tried to make it consistent with the existing code.
+If this HAVE_ARCH_*/arch_* logic is not suitable for exec_area, I'll
+remove arch_ prefix.
+
+
+> Furthermore, I'm not even all that sure what this function *does*.
+
+This is a bottom-up allocator, which tries to reuse all holes in the
+ASCII-protected region.  It differs from arch_get_unmapped_area() in the
+priority of the first 16 Mb - arch_get_unmapped_area() tries to walk
+through all vmas in the whole VM space, arch_get_unmapped_exec_area()
+tries to reuse all memory from the first 16 Mb and only then allocating
+arbitrary addressed by fallbacking to the default allocator (top down in
+case of x86).
+
+I'll add the comment for the allocator.
+
+Thank you,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
