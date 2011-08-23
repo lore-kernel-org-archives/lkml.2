@@ -1,75 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab1HWRjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:39:47 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6747 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab1HWRjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:39:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6446"; a="112353751"
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Subhash Jadavani <subhashj@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Sahitya Tummala <stummala@codeaurora.org>
-Subject: [PATCH 6/6] mmc: msm_sdcc: Handle dma resource not present case
-Date: Tue, 23 Aug 2011 10:39:18 -0700
-Message-Id: <1314121158-3319-7-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1314121158-3319-1-git-send-email-davidb@codeaurora.org>
-References: <1314121158-3319-1-git-send-email-davidb@codeaurora.org>
+	id S1755902Ab1HWRj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 13:39:57 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:55186 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755878Ab1HWRjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 13:39:42 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201108231739.p7NHdXQ8008360@stout.americas.sgi.com>
+Date: Tue, 23 Aug 2011 12:39:33 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.1-rc4
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Subhash Jadavani <subhashj@codeaurora.org>
+Linus, please pull the following XFS changes.  Their effect is to
+remove the subdirectory structure from the XFS source hierarchy.
+There are no functional changes to the XFS code itself.  Thanks.
 
-If DMA resource is not available then SDCC driver
-should atleast work in PIO data transfer mode.
+					-Alex
 
-Signed-off-by: Subhash Jadavani <subhashj@codeaurora.org>
-Signed-off-by: Sahitya Tummala <stummala@codeaurora.org>
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- drivers/mmc/host/msm_sdcc.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+The following changes since commit fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c:
 
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index a835ac0..61c7d38 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -1242,9 +1242,13 @@ msmsdcc_probe(struct platform_device *pdev)
- 	/*
- 	 * Setup DMA
- 	 */
--	ret = msmsdcc_init_dma(host);
--	if (ret)
--		goto ioremap_free;
-+	if (host->dmares) {
-+		ret = msmsdcc_init_dma(host);
-+		if (ret)
-+			goto ioremap_free;
-+	} else {
-+		host->dma.channel = -1;
-+	}
- 
- 	/* Get our clocks */
- 	host->pclk = clk_get(&pdev->dev, "sdc_pclk");
-@@ -1388,8 +1392,9 @@ msmsdcc_probe(struct platform_device *pdev)
-  pclk_put:
- 	clk_put(host->pclk);
- dma_free:
--	dma_free_coherent(NULL, sizeof(struct msmsdcc_nc_dmadata),
--				host->dma.nc, host->dma.nc_busaddr);
-+	if (host->dmares)
-+		dma_free_coherent(NULL, sizeof(struct msmsdcc_nc_dmadata),
-+					host->dma.nc, host->dma.nc_busaddr);
- ioremap_free:
- 	tasklet_kill(&host->dma_tlet);
- 	iounmap(host->base);
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+  Linux 3.1-rc3 (2011-08-22 11:42:53 -0700)
 
+are available in the git repository at:
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Alex Elder (1):
+      xfs: don't expect xfs headers to be in subdirectories
+
+Christoph Hellwig (2):
+      xfs: remove subdirectories
+      xfs: fix tracing builds inside the source tree
+
+ fs/xfs/Makefile                       |  119 ++++++++++++++++-----------------
+ fs/xfs/{linux-2.6 => }/kmem.c         |    0
+ fs/xfs/{linux-2.6 => }/kmem.h         |    0
+ fs/xfs/{linux-2.6 => }/mrlock.h       |    0
+ fs/xfs/{linux-2.6 => }/time.h         |    0
+ fs/xfs/{support => }/uuid.c           |    0
+ fs/xfs/{support => }/uuid.h           |    0
+ fs/xfs/xfs.h                          |    3 +-
+ fs/xfs/{linux-2.6 => }/xfs_acl.c      |    0
+ fs/xfs/{linux-2.6 => }/xfs_aops.c     |    0
+ fs/xfs/{linux-2.6 => }/xfs_aops.h     |    0
+ fs/xfs/{linux-2.6 => }/xfs_buf.c      |    0
+ fs/xfs/{linux-2.6 => }/xfs_buf.h      |    0
+ fs/xfs/{linux-2.6 => }/xfs_discard.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_discard.h  |    0
+ fs/xfs/{quota => }/xfs_dquot.c        |    0
+ fs/xfs/{quota => }/xfs_dquot.h        |    0
+ fs/xfs/{quota => }/xfs_dquot_item.c   |    0
+ fs/xfs/{quota => }/xfs_dquot_item.h   |    0
+ fs/xfs/{linux-2.6 => }/xfs_export.c   |    0
+ fs/xfs/{linux-2.6 => }/xfs_export.h   |    0
+ fs/xfs/{linux-2.6 => }/xfs_file.c     |    0
+ fs/xfs/{linux-2.6 => }/xfs_fs_subr.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_globals.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_ioctl.c    |    0
+ fs/xfs/{linux-2.6 => }/xfs_ioctl.h    |    0
+ fs/xfs/{linux-2.6 => }/xfs_ioctl32.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_ioctl32.h  |    0
+ fs/xfs/{linux-2.6 => }/xfs_iops.c     |    0
+ fs/xfs/{linux-2.6 => }/xfs_iops.h     |    0
+ fs/xfs/{linux-2.6 => }/xfs_linux.h    |   27 ++++----
+ fs/xfs/{linux-2.6 => }/xfs_message.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_message.h  |    0
+ fs/xfs/{quota => }/xfs_qm.c           |    0
+ fs/xfs/{quota => }/xfs_qm.h           |    0
+ fs/xfs/{quota => }/xfs_qm_bhv.c       |    0
+ fs/xfs/{quota => }/xfs_qm_stats.c     |    0
+ fs/xfs/{quota => }/xfs_qm_stats.h     |    0
+ fs/xfs/{quota => }/xfs_qm_syscalls.c  |    0
+ fs/xfs/{quota => }/xfs_quota_priv.h   |    0
+ fs/xfs/{linux-2.6 => }/xfs_quotaops.c |    2 +-
+ fs/xfs/{linux-2.6 => }/xfs_stats.c    |    0
+ fs/xfs/{linux-2.6 => }/xfs_stats.h    |    0
+ fs/xfs/{linux-2.6 => }/xfs_super.c    |    0
+ fs/xfs/{linux-2.6 => }/xfs_super.h    |    0
+ fs/xfs/{linux-2.6 => }/xfs_sync.c     |    0
+ fs/xfs/{linux-2.6 => }/xfs_sync.h     |    0
+ fs/xfs/{linux-2.6 => }/xfs_sysctl.c   |    0
+ fs/xfs/{linux-2.6 => }/xfs_sysctl.h   |    0
+ fs/xfs/{linux-2.6 => }/xfs_trace.c    |    4 +-
+ fs/xfs/{linux-2.6 => }/xfs_trace.h    |    0
+ fs/xfs/{quota => }/xfs_trans_dquot.c  |    0
+ fs/xfs/{linux-2.6 => }/xfs_vnode.h    |    0
+ fs/xfs/{linux-2.6 => }/xfs_xattr.c    |    0
+ kernel/sysctl_binary.c                |    2 +-
+ kernel/sysctl_check.c                 |    2 +-
+ 56 files changed, 78 insertions(+), 81 deletions(-)
+ rename fs/xfs/{linux-2.6 => }/kmem.c (100%)
+ rename fs/xfs/{linux-2.6 => }/kmem.h (100%)
+ rename fs/xfs/{linux-2.6 => }/mrlock.h (100%)
+ rename fs/xfs/{linux-2.6 => }/time.h (100%)
+ rename fs/xfs/{support => }/uuid.c (100%)
+ rename fs/xfs/{support => }/uuid.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_acl.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_aops.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_aops.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_buf.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_buf.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_discard.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_discard.h (100%)
+ rename fs/xfs/{quota => }/xfs_dquot.c (100%)
+ rename fs/xfs/{quota => }/xfs_dquot.h (100%)
+ rename fs/xfs/{quota => }/xfs_dquot_item.c (100%)
+ rename fs/xfs/{quota => }/xfs_dquot_item.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_export.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_export.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_file.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_fs_subr.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_globals.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_ioctl.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_ioctl.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_ioctl32.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_ioctl32.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_iops.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_iops.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_linux.h (96%)
+ rename fs/xfs/{linux-2.6 => }/xfs_message.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_message.h (100%)
+ rename fs/xfs/{quota => }/xfs_qm.c (100%)
+ rename fs/xfs/{quota => }/xfs_qm.h (100%)
+ rename fs/xfs/{quota => }/xfs_qm_bhv.c (100%)
+ rename fs/xfs/{quota => }/xfs_qm_stats.c (100%)
+ rename fs/xfs/{quota => }/xfs_qm_stats.h (100%)
+ rename fs/xfs/{quota => }/xfs_qm_syscalls.c (100%)
+ rename fs/xfs/{quota => }/xfs_quota_priv.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_quotaops.c (99%)
+ rename fs/xfs/{linux-2.6 => }/xfs_stats.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_stats.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_super.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_super.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_sync.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_sync.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_sysctl.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_sysctl.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_trace.c (96%)
+ rename fs/xfs/{linux-2.6 => }/xfs_trace.h (100%)
+ rename fs/xfs/{quota => }/xfs_trans_dquot.c (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_vnode.h (100%)
+ rename fs/xfs/{linux-2.6 => }/xfs_xattr.c (100%)
