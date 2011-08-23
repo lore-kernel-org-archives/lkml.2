@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1HWUpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:45:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39692 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791Ab1HWUpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:45:40 -0400
-Message-ID: <4E541154.6090805@zytor.com>
-Date: Tue, 23 Aug 2011 13:45:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1754221Ab1HWUtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:49:45 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41731 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751791Ab1HWUti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 16:49:38 -0400
+Date: Tue, 23 Aug 2011 16:49:37 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mnazarewicz@google.com>
+cc: Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
+In-Reply-To: <op.v0okm8hlvgw7ix@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108231636000.2069-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
-References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home> <4E540548.4080402@goop.org>
-In-Reply-To: <4E540548.4080402@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2011 12:53 PM, Jeremy Fitzhardinge wrote:
-> 
-> Yes, that would ideal.  The closest you can get is asm goto(), but the
-> syntax for that would be awful; something like:
-> 
-> #define cmpxchg_jump(ptr, old, new, fail)\
-> 	asm goto (...)
-> 
-> 
-> :
-> :
-> 
-> again:
-> 	old = *thingp;
-> 	new = frobulate(old);
-> 	cmpxchg_jump(thingp, old, new, again);
-> 	/* worked */
-> 
-> Would this be useful enough?
-> 
+On Tue, 23 Aug 2011, Michal Nazarewicz wrote:
 
-Actually there is a trick:
+> On Tue, 23 Aug 2011 20:00:25 +0200, Alan Stern <stern@rowland.harvard.edu>  
+> wrote:
+> > For the time being, perhaps the best answer is to use the _lowest_
+> > max_speed value among all the function drivers.  It's the simplest
+> > answer and most likely to be correct most of the time.
+> 
+> In theory, one could create a composite function with only SS/HS
+> descriptors.
 
-static inline bool ....
-{
-	asm goto(... yes);
-no:
-	return false;
-yes:
-	return true;
-}
+The only reason for doing that would be if the function was incapable
+of carrying out its duties when running at full speed (insufficient
+bandwidth, for example).  Something like this is discussed briefly in 
+section 9.2.6.6 of the USB-2 spec.
 
-... which makes syntax a heckuva lot less awkward.
+>  So it would work for SS/HS but not for FS.  I'm not
+> saying that it would make sense (or that it's not a bug) but that
+> adds to the discussion.
 
-	-hpa
+If somebody writes a composite gadget containing two functions, one of 
+which supports only full speed and the other only high speed, they'll 
+get what they deserve.  :-)
+
+Still, maybe I was wrong.  Maybe it would be better to use the fastest
+speed supported by at least one of the function drivers.  The user can
+always force a SuperSpeed-capable device to run at high speed by using
+a USB-2 cable to plug it in.  I'm not sure whether the user could force
+such a device to run at full speed, however.
+
+Alan Stern
+
