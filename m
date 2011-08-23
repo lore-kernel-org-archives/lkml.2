@@ -1,101 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab1HWWUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:20:16 -0400
+	id S1755215Ab1HWWVE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:21:04 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:53401 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab1HWWUL (ORCPT
+	with ESMTP id S1755296Ab1HWWUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:20:11 -0400
+	Tue, 23 Aug 2011 18:20:15 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com
 Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: [PATCHSET] cgroup: introduce cgroup_taskset and consolidate subsys methods
-Date: Wed, 24 Aug 2011 00:19:54 +0200
-Message-Id: <1314138000-2049-1-git-send-email-tj@kernel.org>
+        containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 4/6] cgroup: don't use subsys->can_attach_task() or ->attach_task()
+Date: Wed, 24 Aug 2011 00:19:58 +0200
+Message-Id: <1314138000-2049-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1314138000-2049-1-git-send-email-tj@kernel.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Now that subsys->can_attach() and attach() take @tset instead of
+@task, they can handle per-task operations.  Convert
+->can_attach_task() and ->attach_task() users to use ->can_attach()
+and attach() instead.  Most converions are straight-forward.
+Noteworthy changes are,
 
-cgroup has grown quite some number of subsys methods.  Some of them
-are overlapping, inconsistent with each other and called under
-different conditions depending on whether they're called for a single
-task or whole process.  Unfortunately, these callbacks are complicated
-and incomplete at the same time.
+* In cgroup_freezer, remove unnecessary NULL assignments to unused
+  methods.  It's useless and very prone to get out of sync, which
+  already happened.
 
-* ->attach_task() is called after migration for task attach but before
-  for process.
+* In cpuset, PF_THREAD_BOUND test is checked for each task.  This
+  doesn't make any practical difference but is conceptually cleaner.
 
-* Ditto for ->pre_attach().
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ block/blk-cgroup.c      |   45 +++++++++++++++++++-----------
+ kernel/cgroup_freezer.c |   14 +++-------
+ kernel/cpuset.c         |   70 +++++++++++++++++++++-------------------------
+ kernel/events/core.c    |   13 +++++---
+ kernel/sched.c          |   31 +++++++++++++--------
+ 5 files changed, 91 insertions(+), 82 deletions(-)
 
-* ->can_attach_task() is called for every task in the thread group but
-  ->attach_task() skips the ones which don't actually change cgroups.
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index bcaf16e..99e0bd4 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -30,8 +30,10 @@ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+ static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
+ 						  struct cgroup *);
+-static int blkiocg_can_attach_task(struct cgroup *, struct task_struct *);
+-static void blkiocg_attach_task(struct cgroup *, struct task_struct *);
++static int blkiocg_can_attach(struct cgroup_subsys *, struct cgroup *,
++			      struct cgroup_taskset *);
++static void blkiocg_attach(struct cgroup_subsys *, struct cgroup *,
++			   struct cgroup_taskset *);
+ static void blkiocg_destroy(struct cgroup_subsys *, struct cgroup *);
+ static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
+ 
+@@ -44,8 +46,8 @@ static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
+ struct cgroup_subsys blkio_subsys = {
+ 	.name = "blkio",
+ 	.create = blkiocg_create,
+-	.can_attach_task = blkiocg_can_attach_task,
+-	.attach_task = blkiocg_attach_task,
++	.can_attach = blkiocg_can_attach,
++	.attach = blkiocg_attach,
+ 	.destroy = blkiocg_destroy,
+ 	.populate = blkiocg_populate,
+ #ifdef CONFIG_BLK_CGROUP
+@@ -1614,30 +1616,39 @@ done:
+  * of the main cic data structures.  For now we allow a task to change
+  * its cgroup only if it's the only owner of its ioc.
+  */
+-static int blkiocg_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++static int blkiocg_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++			      struct cgroup_taskset *tset)
+ {
++	struct task_struct *task;
+ 	struct io_context *ioc;
+ 	int ret = 0;
+ 
+ 	/* task_lock() is needed to avoid races with exit_io_context() */
+-	task_lock(tsk);
+-	ioc = tsk->io_context;
+-	if (ioc && atomic_read(&ioc->nr_tasks) > 1)
+-		ret = -EINVAL;
+-	task_unlock(tsk);
+-
++	cgroup_taskset_for_each(task, cgrp, tset) {
++		task_lock(task);
++		ioc = task->io_context;
++		if (ioc && atomic_read(&ioc->nr_tasks) > 1)
++			ret = -EINVAL;
++		task_unlock(task);
++		if (ret)
++			break;
++	}
+ 	return ret;
+ }
+ 
+-static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++			   struct cgroup_taskset *tset)
+ {
++	struct task_struct *task;
+ 	struct io_context *ioc;
+ 
+-	task_lock(tsk);
+-	ioc = tsk->io_context;
+-	if (ioc)
+-		ioc->cgroup_changed = 1;
+-	task_unlock(tsk);
++	cgroup_taskset_for_each(task, cgrp, tset) {
++		task_lock(task);
++		ioc = task->io_context;
++		if (ioc)
++			ioc->cgroup_changed = 1;
++		task_unlock(task);
++	}
+ }
+ 
+ void blkio_policy_register(struct blkio_policy_type *blkiop)
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index a2b0082..2cb5e72 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -162,10 +162,14 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+ 			      struct cgroup_taskset *tset)
+ {
+ 	struct freezer *freezer;
++	struct task_struct *task;
+ 
+ 	/*
+ 	 * Anything frozen can't move or be moved to/from.
+ 	 */
++	cgroup_taskset_for_each(task, new_cgroup, tset)
++		if (cgroup_freezing(task))
++			return -EBUSY;
+ 
+ 	freezer = cgroup_freezer(new_cgroup);
+ 	if (freezer->state != CGROUP_THAWED)
+@@ -174,11 +178,6 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+ 	return 0;
+ }
+ 
+-static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+-{
+-	return cgroup_freezing(tsk) ? -EBUSY : 0;
+-}
+-
+ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
+ {
+ 	struct freezer *freezer;
+@@ -374,10 +373,5 @@ struct cgroup_subsys freezer_subsys = {
+ 	.populate	= freezer_populate,
+ 	.subsys_id	= freezer_subsys_id,
+ 	.can_attach	= freezer_can_attach,
+-	.can_attach_task = freezer_can_attach_task,
+-	.pre_attach	= NULL,
+-	.attach_task	= NULL,
+-	.attach		= NULL,
+ 	.fork		= freezer_fork,
+-	.exit		= NULL,
+ };
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 2e5825b..472ddd6 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1372,33 +1372,34 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 			     struct cgroup_taskset *tset)
+ {
+ 	struct cpuset *cs = cgroup_cs(cgrp);
++	struct task_struct *task;
++	int ret;
+ 
+ 	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
+ 		return -ENOSPC;
+ 
+-	/*
+-	 * Kthreads bound to specific cpus cannot be moved to a new cpuset; we
+-	 * cannot change their cpu affinity and isolating such threads by their
+-	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+-	 * applicable for such threads.  This prevents checking for success of
+-	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+-	 * be changed.
+-	 */
+-	if (cgroup_taskset_first(tset)->flags & PF_THREAD_BOUND)
+-		return -EINVAL;
+-
++	cgroup_taskset_for_each(task, cgrp, tset) {
++		/*
++		 * Kthreads bound to specific cpus cannot be moved to a new
++		 * cpuset; we cannot change their cpu affinity and
++		 * isolating such threads by their set of allowed nodes is
++		 * unnecessary.  Thus, cpusets are not applicable for such
++		 * threads.  This prevents checking for success of
++		 * set_cpus_allowed_ptr() on all attached tasks before
++		 * cpus_allowed may be changed.
++		 */
++		if (task->flags & PF_THREAD_BOUND)
++			return -EINVAL;
++		if ((ret = security_task_setscheduler(task)))
++			return ret;
++	}
+ 	return 0;
+ }
+ 
+-static int cpuset_can_attach_task(struct cgroup *cgrp, struct task_struct *task)
+-{
+-	return security_task_setscheduler(task);
+-}
+-
+ /*
+  * Protected by cgroup_lock. The nodemasks must be stored globally because
+  * dynamically allocating them is not allowed in pre_attach, and they must
+- * persist among pre_attach, attach_task, and attach.
++ * persist among pre_attach, and attach.
+  */
+ static cpumask_var_t cpus_attach;
+ static nodemask_t cpuset_attach_nodemask_from;
+@@ -1417,39 +1418,34 @@ static void cpuset_pre_attach(struct cgroup *cont)
+ 	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
+ }
+ 
+-/* Per-thread attachment work. */
+-static void cpuset_attach_task(struct cgroup *cont, struct task_struct *tsk)
+-{
+-	int err;
+-	struct cpuset *cs = cgroup_cs(cont);
+-
+-	/*
+-	 * can_attach beforehand should guarantee that this doesn't fail.
+-	 * TODO: have a better way to handle failure here
+-	 */
+-	err = set_cpus_allowed_ptr(tsk, cpus_attach);
+-	WARN_ON_ONCE(err);
+-
+-	cpuset_change_task_nodemask(tsk, &cpuset_attach_nodemask_to);
+-	cpuset_update_task_spread_flag(cs, tsk);
+-}
+-
+ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 			  struct cgroup_taskset *tset)
+ {
+ 	struct mm_struct *mm;
+-	struct task_struct *tsk = cgroup_taskset_first(tset);
++	struct task_struct *task;
++	struct task_struct *leader = cgroup_taskset_first(tset);
+ 	struct cgroup *oldcgrp = cgroup_taskset_cur_cgroup(tset);
+ 	struct cpuset *cs = cgroup_cs(cgrp);
+ 	struct cpuset *oldcs = cgroup_cs(oldcgrp);
+ 
++	cgroup_taskset_for_each(task, cgrp, tset) {
++		/*
++		 * can_attach beforehand should guarantee that this doesn't
++		 * fail.  TODO: have a better way to handle failure here
++		 */
++		WARN_ON_ONCE(set_cpus_allowed_ptr(task, cpus_attach));
++
++		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
++		cpuset_update_task_spread_flag(cs, task);
++	}
++
+ 	/*
+ 	 * Change mm, possibly for multiple threads in a threadgroup. This is
+ 	 * expensive and may sleep.
+ 	 */
+ 	cpuset_attach_nodemask_from = oldcs->mems_allowed;
+ 	cpuset_attach_nodemask_to = cs->mems_allowed;
+-	mm = get_task_mm(tsk);
++	mm = get_task_mm(leader);
+ 	if (mm) {
+ 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
+ 		if (is_memory_migrate(cs))
+@@ -1905,9 +1901,7 @@ struct cgroup_subsys cpuset_subsys = {
+ 	.create = cpuset_create,
+ 	.destroy = cpuset_destroy,
+ 	.can_attach = cpuset_can_attach,
+-	.can_attach_task = cpuset_can_attach_task,
+ 	.pre_attach = cpuset_pre_attach,
+-	.attach_task = cpuset_attach_task,
+ 	.attach = cpuset_attach,
+ 	.populate = cpuset_populate,
+ 	.post_clone = cpuset_post_clone,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index b8785e2..95e189d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7000,10 +7000,13 @@ static int __perf_cgroup_move(void *info)
+ 	return 0;
+ }
+ 
+-static void
+-perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
++static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++			       struct cgroup_taskset *tset)
+ {
+-	task_function_call(task, __perf_cgroup_move, task);
++	struct task_struct *task;
++
++	cgroup_taskset_for_each(task, cgrp, tset)
++		task_function_call(task, __perf_cgroup_move, task);
+ }
+ 
+ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+@@ -7017,7 +7020,7 @@ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+ 	if (!(task->flags & PF_EXITING))
+ 		return;
+ 
+-	perf_cgroup_attach_task(cgrp, task);
++	task_function_call(task, __perf_cgroup_move, task);
+ }
+ 
+ struct cgroup_subsys perf_subsys = {
+@@ -7026,6 +7029,6 @@ struct cgroup_subsys perf_subsys = {
+ 	.create		= perf_cgroup_create,
+ 	.destroy	= perf_cgroup_destroy,
+ 	.exit		= perf_cgroup_exit,
+-	.attach_task	= perf_cgroup_attach_task,
++	.attach		= perf_cgroup_attach,
+ };
+ #endif /* CONFIG_CGROUP_PERF */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ccacdbd..dd7e460 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8966,24 +8966,31 @@ cpu_cgroup_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ 	sched_destroy_group(tg);
+ }
+ 
+-static int
+-cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++static int cpu_cgroup_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++				 struct cgroup_taskset *tset)
+ {
++	struct task_struct *task;
++
++	cgroup_taskset_for_each(task, cgrp, tset) {
+ #ifdef CONFIG_RT_GROUP_SCHED
+-	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
+-		return -EINVAL;
++		if (!sched_rt_can_attach(cgroup_tg(cgrp), task))
++			return -EINVAL;
+ #else
+-	/* We don't support RT-tasks being in separate groups */
+-	if (tsk->sched_class != &fair_sched_class)
+-		return -EINVAL;
++		/* We don't support RT-tasks being in separate groups */
++		if (task->sched_class != &fair_sched_class)
++			return -EINVAL;
+ #endif
++	}
+ 	return 0;
+ }
+ 
+-static void
+-cpu_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
++static void cpu_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
++			      struct cgroup_taskset *tset)
+ {
+-	sched_move_task(tsk);
++	struct task_struct *task;
++
++	cgroup_taskset_for_each(task, cgrp, tset)
++		sched_move_task(task);
+ }
+ 
+ static void
+@@ -9071,8 +9078,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+ 	.name		= "cpu",
+ 	.create		= cpu_cgroup_create,
+ 	.destroy	= cpu_cgroup_destroy,
+-	.can_attach_task = cpu_cgroup_can_attach_task,
+-	.attach_task	= cpu_cgroup_attach_task,
++	.can_attach	= cpu_cgroup_can_attach,
++	.attach		= cpu_cgroup_attach,
+ 	.exit		= cpu_cgroup_exit,
+ 	.populate	= cpu_cgroup_populate,
+ 	.subsys_id	= cpu_cgroup_subsys_id,
+-- 
+1.7.6
 
-* Task attach becomes noop if the task isn't actually moving.  Process
-  attach is always performed.
-
-* ->attach_task() doesn't (or at least aren't supposed to) have access
-  to the old cgroup.
-
-* During cancel, there's no way to access the affected tasks.
-
-This patchset introduces cgroup_taskset along with some accessors and
-iterator, updates methods to use it, consolidates usages and drops
-superflous methods.
-
-It contains the following six patches.
-
- 0001-cgroup-subsys-attach_task-should-be-called-after-mig.patch
- 0002-cgroup-improve-old-cgroup-handling-in-cgroup_attach_.patch
- 0003-cgroup-introduce-cgroup_taskset-and-use-it-in-subsys.patch
- 0004-cgroup-don-t-use-subsys-can_attach_task-or-attach_ta.patch
- 0005-cgroup-cpuset-don-t-use-ss-pre_attach.patch
- 0006-cgroup-kill-subsys-can_attach_task-pre_attach-and-at.patch
-
-and is based on the current linux-pm/pm-freezer (7b5b95b3f5 "freezer:
-remove should_send_signal() and update frozen()"), and available in
-the following git tree.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git freezer
-
-I based this on top of pm-freezer because cgroup_freezer changes
-conflict (easy to resolve but still) and I'm planning on making
-further changes to cgroup_freezer which will depend on both freezer
-and cgroup changes.  How should we route these changes?
-
-1. As this patchset would affect other cgroup changes, it makes sense
-   to route these through the cgroup branch (BTW, where is it?) and
-   propagate things there.  In that case, I'll re-spin the patches on
-   top of that tree and send a pull request for the merged branch to
-   Rafael.
-
-2. Alternatively, if cgroup isn't expected to have too extensive
-   changes in this cycle, we can just funnel all these through
-   Rafael's tree.
-
-3. Yet another choice would be applying these on Rafael's tree and
-   then pull that into cgroup tree as further changes aren't gonna
-   affect cgroup all that much.
-
-What do you guys think?
-
-Thank you.
-
- Documentation/cgroups/cgroups.txt |   46 +++-----
- block/blk-cgroup.c                |   45 +++++---
- include/linux/cgroup.h            |   31 ++++-
- kernel/cgroup.c                   |  200 ++++++++++++++++++++++++--------------
- kernel/cgroup_freezer.c           |   16 ---
- kernel/cpuset.c                   |  105 +++++++++----------
- kernel/events/core.c              |   13 +-
- kernel/sched.c                    |   31 +++--
- mm/memcontrol.c                   |   16 +--
- security/device_cgroup.c          |    7 -
- 10 files changed, 289 insertions(+), 221 deletions(-)
-
---
-tejun
