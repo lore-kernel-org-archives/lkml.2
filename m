@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab1HWWo0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:44:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33085 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab1HWWoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:44:19 -0400
-Message-ID: <4E542D28.4090006@zytor.com>
-Date: Tue, 23 Aug 2011 15:43:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1755786Ab1HWWtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:49:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64706 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab1HWWtE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 18:49:04 -0400
+Message-ID: <4E542E5B.6040005@gmail.com>
+Date: Wed, 24 Aug 2011 00:48:59 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
-References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home> <4E540548.4080402@goop.org> <4E541154.6090805@zytor.com> <4E542681.2090703@goop.org>
-In-Reply-To: <4E542681.2090703@goop.org>
+To: Takashi Iwai <tiwai@suse.de>
+CC: alsa-devel@alsa-project.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ALSA: ctxfi: Bump playback substreams to 256
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2011 03:15 PM, Jeremy Fitzhardinge wrote:
-> 
-> However, having prototyped it, I dunno, it doesn't really seem like much
-> of a win for all the extra code it adds.  I just can't get too excited
-> about an extra test instruction adjacent to a monster like a locked
-> cmpxchg.  The jump variant avoids the test, but gcc still generates some
-> pretty bogus stuff:
-> 
+There are references in the code to 256 sources, so I tested it with 256 aplays,
+of which the first and last with real data and the rest playing /dev/zero .
 
-A compare is hardly a big cost, as you're quite correctly pointing out.
+Also increase amount of page tables, so the default aplay size works.
 
-	-hpa
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+
+---
+diff --git a/sound/pci/ctxfi/ctpcm.c b/sound/pci/ctxfi/ctpcm.c
+index 457d211..2c86226 100644
+--- a/sound/pci/ctxfi/ctpcm.c
++++ b/sound/pci/ctxfi/ctpcm.c
+@@ -404,7 +404,7 @@ int ct_alsa_pcm_create(struct ct_atc *atc,
+ 	int err;
+ 	int playback_count, capture_count;
+ 
+-	playback_count = (IEC958 == device) ? 1 : 8;
++	playback_count = (IEC958 == device) ? 1 : 256;
+ 	capture_count = (FRONT == device) ? 1 : 0;
+ 	err = snd_pcm_new(atc->card, "ctxfi", device,
+ 			  playback_count, capture_count, &pcm);
+diff --git a/sound/pci/ctxfi/ctsrc.c b/sound/pci/ctxfi/ctsrc.c
+index c749fa7..e134b3a 100644
+--- a/sound/pci/ctxfi/ctsrc.c
++++ b/sound/pci/ctxfi/ctsrc.c
+@@ -20,7 +20,7 @@
+ #include "cthardware.h"
+ #include <linux/slab.h>
+ 
+-#define SRC_RESOURCE_NUM	64
++#define SRC_RESOURCE_NUM	256
+ #define SRCIMP_RESOURCE_NUM	256
+ 
+ static unsigned int conj_mask;
+diff --git a/sound/pci/ctxfi/ctvmem.h b/sound/pci/ctxfi/ctvmem.h
+index b23adfc..e6da60e 100644
+--- a/sound/pci/ctxfi/ctvmem.h
++++ b/sound/pci/ctxfi/ctvmem.h
+@@ -18,7 +18,7 @@
+ #ifndef CTVMEM_H
+ #define CTVMEM_H
+ 
+-#define CT_PTP_NUM	1	/* num of device page table pages */
++#define CT_PTP_NUM	4	/* num of device page table pages */
+ 
+ #include <linux/mutex.h>
+ #include <linux/list.h>
 
