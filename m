@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab1HWV4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:56:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51943 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1HWV4h (ORCPT
+	id S1754738Ab1HWV7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:59:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60095 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886Ab1HWV7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:56:37 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Subject: Re: [PATCH] carl9170: Fix mismatch in carl9170_op_set_key mutex lock-unlock
-Date: Tue, 23 Aug 2011 23:56:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-rc2-wl+; KDE/4.6.5; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-References: <1314132272-7357-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1314132272-7357-1-git-send-email-khoroshilov@ispras.ru>
+	Tue, 23 Aug 2011 17:59:25 -0400
+Date: Tue, 23 Aug 2011 22:59:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Thieu Le <thieule@chromium.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: Export do_fallocate() to kernel modules
+Message-ID: <20110823215924.GN2203@ZenIV.linux.org.uk>
+References: <1314136075-8784-1-git-send-email-thieule@chromium.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108232356.22472.chunkeey@googlemail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314136075-8784-1-git-send-email-thieule@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 23, 2011 10:44:32 PM Alexey Khoroshilov wrote:
-> If is_main_vif(ar, vif) reports that we have to fall back
-> to software encryption, we goto err_softw; before locking ar->mutex.
-> As a result, we have unprotected call to carl9170_set_operating_mode
-> and unmatched mutex_unlock.
-> 
-> The patch fix the issue by adding mutex_lock before goto.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: <stable@kernel.org>
-Acked-By: Christian Lamparter <chunkeey@googlemail.com>
+On Tue, Aug 23, 2011 at 02:47:55PM -0700, Thieu Le wrote:
+> Export do_fallocate() so layered file systems such as ecryptfs can take
+> advantage of this interface.  Existing interfaces to the fallocate
+> facilities require a file descriptor which is not available to layered
+> file systems.
+
+Details, please.  do_fallocate() does shitloads of checks, probably pointless
+for ecryptfs and its ilk, but I want to see users for that export before
+I can say whether it's OK or not.
