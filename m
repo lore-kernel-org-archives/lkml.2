@@ -1,66 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab1HWI4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:56:47 -0400
+	id S1755018Ab1HWI45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:56:57 -0400
 Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43797 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754538Ab1HWI4p (ORCPT
+	by vger.kernel.org with ESMTP id S1754579Ab1HWI4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:56:45 -0400
+	Tue, 23 Aug 2011 04:56:46 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AloEAN5pU055LIxDgWdsb2JhbABBmQ2PGhUBARYmJYIdIxiBAgO/fYZIBJgmi38
+X-IronPort-Anti-Spam-Result: AnkDAN5pU055LIxDgWdsb2JhbABBqCcVAQEWJiWBQAEBBScvIxAIGDE5AxsZv0mGSASYJot/
 From: Dave Chinner <david@fromorbit.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, khlebnikov@openvz.org
-Subject: [PATCH 00/12] RFC: shrinker APi rework and generic LRU lists
-Date: Tue, 23 Aug 2011 18:56:13 +1000
-Message-Id: <1314089786-20535-1-git-send-email-david@fromorbit.com>
+Subject: [PATCH 03/13] dentry: move to per-sb LRU locks
+Date: Tue, 23 Aug 2011 18:56:16 +1000
+Message-Id: <1314089786-20535-4-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1314089786-20535-1-git-send-email-david@fromorbit.com>
+References: <1314089786-20535-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a current work in progress: 
+From: Dave Chinner <dchinner@redhat.com>
 
-	- cleans up the shrinker API, fixes a couple of warts and converts all
-	  the shrinkers to us it,
-	- makes the inode slab cache initialisation consistent across all inode
-	  caches,
-	- introduces a generic LRU list type and infrstructure
-	- converts inode cache to use lru list infrastructure
-	- convert xfs buffer cache to use lru list infrastructure
-	- converts the dentry cache LRU to per-sb
-	- fixes dcache select_parent() use-the-lru-for-disposal abuse
-	- makes the dcache consistent about removing inodes from the LRU before
-	  disposal of them
-	- converts the dentry cache to use lru list infrastructure
+With the dentry LRUs being per-sb structures, there is no real need
+for a global dentry_lru_lock. The locking can be made more
+fine-grained by moving to a per-sb LRU lock, isolating the LRU
+operations of different filesytsems completely from each other.
 
-The basic concept here is to fix the shrinker API to be somewhat
-sane and convert the main slab cache LRUs in the system to use
-generic infrastructure. Both the detry and inode caches use LRU
-implementations that are almost-but-not-quite the same. There is no
-reason for them to be different - it's only the fact that the dentry
-cache LRU has been used in for disposal purposes rather than using
-dispose lists.
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/dcache.c        |   33 ++++++++++++++++-----------------
+ fs/super.c         |    1 +
+ include/linux/fs.h |    4 ++--
+ 3 files changed, 19 insertions(+), 19 deletions(-)
 
-The dentry caceh dispose list also has a problem as a result of the
-RCU-ifying of the code - the dispose list is implicitly protected by
-the LRU lock, and actaully forms a disjoint part of the LRU as
-dentries on the dispose list are still accounted to the LRU and
-require a call to dentry_lru_del() to remove from the dispose list
-and correct the LRU accounting. THis only works when there is a
-single LRU lock - if the dispose list is made upof dentries
-protected by different LRU locks, then it fails with list corruption
-pretty quickly. This is another reason for moving to the same
-strategy as the inode cache, where inodes are completely removed
-form thr LRU before being placed on the dispose list....
-
-In case it is not obvious, this is all preparatory work for making
-the LRUs and shrinkers node aware. The new generic LRU lists can be
-trivially converted to be node aware, and with the addition of node
-masks to the struct shrink_control propagated from shrink_slab() we
-can easily extend all these caches to have node aware reclaim. We
-will then have a generic node-aware LRU implementation that all
-subsystems can use to play well with memory reclaim on large NUMA
-machines...
+diff --git a/fs/dcache.c b/fs/dcache.c
+index febe701..5123d71 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -46,7 +46,7 @@
+  *   - the dcache hash table
+  * s_anon bl list spinlock protects:
+  *   - the s_anon list (see __d_drop)
+- * dcache_lru_lock protects:
++ * dentry->d_sb->s_dentry_lru_lock protects:
+  *   - the dcache lru lists and counters
+  * d_lock protects:
+  *   - d_flags
+@@ -61,7 +61,7 @@
+  * Ordering:
+  * dentry->d_inode->i_lock
+  *   dentry->d_lock
+- *     dcache_lru_lock
++ *     dentry->d_sb->s_dentry_lru_lock
+  *     dcache_hash_bucket lock
+  *     s_anon lock
+  *
+@@ -79,7 +79,6 @@
+ int sysctl_vfs_cache_pressure __read_mostly = 100;
+ EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
+ 
+-static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
+ __cacheline_aligned_in_smp DEFINE_SEQLOCK(rename_lock);
+ 
+ EXPORT_SYMBOL(rename_lock);
+@@ -241,11 +240,11 @@ static void dentry_unlink_inode(struct dentry * dentry)
+ static void dentry_lru_add(struct dentry *dentry)
+ {
+ 	if (list_empty(&dentry->d_lru)) {
+-		spin_lock(&dcache_lru_lock);
++		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+ 		list_add(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
+ 		dentry->d_sb->s_nr_dentry_unused++;
+ 		this_cpu_inc(nr_dentry_unused);
+-		spin_unlock(&dcache_lru_lock);
++		spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
+ 	}
+ }
+ 
+@@ -259,15 +258,15 @@ static void __dentry_lru_del(struct dentry *dentry)
+ static void dentry_lru_del(struct dentry *dentry)
+ {
+ 	if (!list_empty(&dentry->d_lru)) {
+-		spin_lock(&dcache_lru_lock);
++		spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+ 		__dentry_lru_del(dentry);
+-		spin_unlock(&dcache_lru_lock);
++		spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
+ 	}
+ }
+ 
+ static void dentry_lru_move_tail(struct dentry *dentry)
+ {
+-	spin_lock(&dcache_lru_lock);
++	spin_lock(&dentry->d_sb->s_dentry_lru_lock);
+ 	if (list_empty(&dentry->d_lru)) {
+ 		list_add_tail(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
+ 		dentry->d_sb->s_nr_dentry_unused++;
+@@ -275,7 +274,7 @@ static void dentry_lru_move_tail(struct dentry *dentry)
+ 	} else {
+ 		list_move_tail(&dentry->d_lru, &dentry->d_sb->s_dentry_lru);
+ 	}
+-	spin_unlock(&dcache_lru_lock);
++	spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
+ }
+ 
+ /**
+@@ -767,14 +766,14 @@ static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+ 	LIST_HEAD(tmp);
+ 
+ relock:
+-	spin_lock(&dcache_lru_lock);
++	spin_lock(&sb->s_dentry_lru_lock);
+ 	while (!list_empty(&sb->s_dentry_lru)) {
+ 		dentry = list_entry(sb->s_dentry_lru.prev,
+ 				struct dentry, d_lru);
+ 		BUG_ON(dentry->d_sb != sb);
+ 
+ 		if (!spin_trylock(&dentry->d_lock)) {
+-			spin_unlock(&dcache_lru_lock);
++			spin_unlock(&sb->s_dentry_lru_lock);
+ 			cpu_relax();
+ 			goto relock;
+ 		}
+@@ -795,11 +794,11 @@ relock:
+ 			if (!--count)
+ 				break;
+ 		}
+-		cond_resched_lock(&dcache_lru_lock);
++		cond_resched_lock(&sb->s_dentry_lru_lock);
+ 	}
+ 	if (!list_empty(&referenced))
+ 		list_splice(&referenced, &sb->s_dentry_lru);
+-	spin_unlock(&dcache_lru_lock);
++	spin_unlock(&sb->s_dentry_lru_lock);
+ 
+ 	shrink_dentry_list(&tmp);
+ }
+@@ -832,14 +831,14 @@ void shrink_dcache_sb(struct super_block *sb)
+ {
+ 	LIST_HEAD(tmp);
+ 
+-	spin_lock(&dcache_lru_lock);
++	spin_lock(&sb->s_dentry_lru_lock);
+ 	while (!list_empty(&sb->s_dentry_lru)) {
+ 		list_splice_init(&sb->s_dentry_lru, &tmp);
+-		spin_unlock(&dcache_lru_lock);
++		spin_unlock(&sb->s_dentry_lru_lock);
+ 		shrink_dentry_list(&tmp);
+-		spin_lock(&dcache_lru_lock);
++		spin_lock(&sb->s_dentry_lru_lock);
+ 	}
+-	spin_unlock(&dcache_lru_lock);
++	spin_unlock(&sb->s_dentry_lru_lock);
+ }
+ EXPORT_SYMBOL(shrink_dcache_sb);
+ 
+diff --git a/fs/super.c b/fs/super.c
+index 3f56a26..6a72693 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -140,6 +140,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		INIT_HLIST_BL_HEAD(&s->s_anon);
+ 		INIT_LIST_HEAD(&s->s_inodes);
+ 		INIT_LIST_HEAD(&s->s_dentry_lru);
++		spin_lock_init(&s->s_dentry_lru_lock);
+ 		INIT_LIST_HEAD(&s->s_inode_lru);
+ 		spin_lock_init(&s->s_inode_lru_lock);
+ 		init_rwsem(&s->s_umount);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 178cdb4..14be4d8 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1410,9 +1410,9 @@ struct super_block {
+ #else
+ 	struct list_head	s_files;
+ #endif
+-	/* s_dentry_lru, s_nr_dentry_unused protected by dcache.c lru locks */
++	spinlock_t		s_dentry_lru_lock ____cacheline_aligned_in_smp;
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+-	int			s_nr_dentry_unused;	/* # of dentry on lru */
++	int			s_nr_dentry_unused; /* # of dentries on lru */
+ 
+ 	/* s_inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
+ 	spinlock_t		s_inode_lru_lock ____cacheline_aligned_in_smp;
+-- 
+1.7.5.4
 
