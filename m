@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1HWWRP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:17:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52474 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755947Ab1HWWRE convert rfc822-to-8bit (ORCPT
+	id S1755715Ab1HWWUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:20:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44641 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1HWWUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:17:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110823221314.GL3895@n2100.arm.linux.org.uk>
-References: <20110823151936.GM9232@opensource.wolfsonmicro.com>
-	<201108232351.55432.rjw@sisk.pl>
-	<CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com>
-	<20110823220056.GK3895@n2100.arm.linux.org.uk>
-	<CAOS58YNuCbaOsWBfmjSUsXsArZ5ng6c0B30yswFbRAWkho6L6Q@mail.gmail.com>
-	<20110823221314.GL3895@n2100.arm.linux.org.uk>
-Date: Wed, 24 Aug 2011 00:17:03 +0200
-X-Google-Sender-Auth: t0oO7XUPYSmCvE41EW72zPnwFys
-Message-ID: <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
+	Tue, 23 Aug 2011 18:20:11 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/6] cgroup: subsys->attach_task() should be called after migration
+Date: Wed, 24 Aug 2011 00:19:55 +0200
+Message-Id: <1314138000-2049-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1314138000-2049-1-git-send-email-tj@kernel.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 12:13 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> Thereby entirely preventing threads from being frozen?  You're asking
-> me to effectively disable suspend/resume on an architecture where it's
-> heavily used.  That's not a good idea, and would be an out-right
-> regression.
+cgroup_attach_task() calls subsys->attach_task() after
+cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
+migration.  This actually affects some of the users.  Update
+cgroup_attach_proc() such that ->attach_task() is called after
+migration.
 
-Eh? So, it's supposed to enter refrigerator with IRQ disabled? Then,
-moving might_sleep() inside refrigerator() doesn't help either, does
-it? Then we should be doing is,
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/cgroup.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-if (freezing() && IRQ disabled) {
-      bust on IRQ;
-      try_to_freeze();
-      replug IRQ;
-}
-
-But, that can't be right. The current code isn't triggering warning
-from scheduler code, right? If the above is the case, it should be
-triggering that. What am I missing?
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1d2b6ce..a606fa2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2135,14 +2135,16 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		oldcgrp = task_cgroup_from_root(tsk, root);
+ 		if (cgrp == oldcgrp)
+ 			continue;
++
++		/* if the thread is PF_EXITING, it can just get skipped. */
++		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
++		BUG_ON(retval != 0 && retval != -ESRCH);
++
+ 		/* attach each task to each subsystem */
+ 		for_each_subsys(root, ss) {
+ 			if (ss->attach_task)
+ 				ss->attach_task(cgrp, tsk);
+ 		}
+-		/* if the thread is PF_EXITING, it can just get skipped. */
+-		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+-		BUG_ON(retval != 0 && retval != -ESRCH);
+ 	}
+ 	/* nothing is sensitive to fork() after this point. */
+ 
 -- 
-tejun
+1.7.6
+
