@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1HWVp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:45:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52929 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752108Ab1HWVpU (ORCPT
+	id S1755425Ab1HWVsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:48:19 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:21190 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab1HWVsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:45:20 -0400
-Date: Tue, 23 Aug 2011 14:44:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] proc: fix races of /proc/PID/{fd/,fdinfo/,fdinfo/*}
-Message-Id: <20110823144430.75315ce8.akpm@linux-foundation.org>
-In-Reply-To: <20110804162009.GA2469@albatros>
-References: <20110804162009.GA2469@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Aug 2011 17:48:11 -0400
+From: Thieu Le <thieule@chromium.org>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thieu Le <thieule@chromium.org>
+Subject: [PATCH] vfs: Export do_fallocate() to kernel modules
+Date: Tue, 23 Aug 2011 14:47:55 -0700
+Message-Id: <1314136075-8784-1-git-send-email-thieule@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Aug 2011 20:20:09 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+Export do_fallocate() so layered file systems such as ecryptfs can take
+advantage of this interface.  Existing interfaces to the fallocate
+facilities require a file descriptor which is not available to layered
+file systems.
 
-> fd* files are restricted to the task's owner, but keeping opened procfs
-> file descriptors makes it possible to violate the permission model.
-> Keeping fdinfo/* may disclosure current position and flags, keeping
-> fdinfo/ and fd/ may disclosure number of opened files.
-> 
-> Used existing (un)lock_trace functions to deal with the race.
+Signed-off-by: Thieu Le <thieule@chromium.org>
+---
+ fs/open.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-what race.
-
-When fixing a bug, please completely, utterly and exhaustively describe
-the bug!
-
-> CC: Stable Tree <stable@kernel.org>
-
-And when cc'ing -stable, please make it very clear why you consider the
-bug sufficiently serious to warant mackporting the fix into earlier
-kernels.
+diff --git a/fs/open.c b/fs/open.c
+index f711921..5c3bcba 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -268,6 +268,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 
+ 	return file->f_op->fallocate(file, mode, offset, len);
+ }
++EXPORT_SYMBOL_GPL(do_fallocate);
+ 
+ SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
+ {
+-- 
+1.7.3.1
 
