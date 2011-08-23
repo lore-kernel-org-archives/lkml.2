@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141Ab1HWI6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:58:05 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21596 "EHLO
+	id S1755219Ab1HWI62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:58:28 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43797 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755131Ab1HWI5V (ORCPT
+	by vger.kernel.org with ESMTP id S1754967Ab1HWI44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:57:21 -0400
+	Tue, 23 Aug 2011 04:56:56 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnkDAN5pU055LIxDgWdsb2JhbABBqCcVAQEWJiWBQAEBBScvIxAIGDE5AxsZv0mGSASkJQ
+X-IronPort-Anti-Spam-Result: AnkDAN5pU055LIxDgWdsb2JhbAA5CKgnFQEBFiYlgUABAQUnLyMQCBgxOQMbGb9JgyqDHgSkJQ
 From: Dave Chinner <david@fromorbit.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, khlebnikov@openvz.org
-Subject: [PATCH 09/13] inode: convert inode lru list to generic lru list code.
-Date: Tue, 23 Aug 2011 18:56:22 +1000
-Message-Id: <1314089786-20535-10-git-send-email-david@fromorbit.com>
+Subject: [PATCH 08/13] list: add a new LRU list type
+Date: Tue, 23 Aug 2011 18:56:21 +1000
+Message-Id: <1314089786-20535-9-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1314089786-20535-1-git-send-email-david@fromorbit.com>
 References: <1314089786-20535-1-git-send-email-david@fromorbit.com>
@@ -24,292 +24,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
+Several subsystems use the same construct for LRU lists - a list
+head, a spin lock and and item count. They also use exactly the same
+code for adding and removing items from the LRU. Create a generic
+type for these LRU lists.
+
+This is the beginning of generic, node aware LRUs for shrinkers to
+work with.
+
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/inode.c         |  168 ++++++++++++++++++++-------------------------------
- fs/super.c         |   11 ++--
- include/linux/fs.h |    6 +-
- 3 files changed, 73 insertions(+), 112 deletions(-)
+ include/linux/list_lru.h |   30 ++++++++++++
+ lib/Makefile             |    3 +-
+ lib/list_lru.c           |  112 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 144 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/list_lru.h
+ create mode 100644 lib/list_lru.c
 
-diff --git a/fs/inode.c b/fs/inode.c
-index fee5d9a..98ca516 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -26,6 +26,7 @@
- #include <linux/ima.h>
- #include <linux/cred.h>
- #include <linux/buffer_head.h> /* for inode_has_buffers */
+diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+new file mode 100644
+index 0000000..b112ca3
+--- /dev/null
++++ b/include/linux/list_lru.h
+@@ -0,0 +1,30 @@
++#ifndef _LRU_LIST_H
++#define _LRU_LIST_H 0
++
++#include <linux/list.h>
++
++struct list_lru {
++	spinlock_t		lock;
++	struct list_head	list;
++	long			nr_items;
++};
++
++int list_lru_init(struct list_lru *lru);
++int list_lru_add(struct list_lru *lru, struct list_head *item);
++int list_lru_del(struct list_lru *lru, struct list_head *item);
++
++static inline long list_lru_count(struct list_lru *lru)
++{
++	return lru->nr_items;
++}
++
++typedef int (*list_lru_walk_cb)(struct list_head *item, spinlock_t *lock,
++				void *cb_arg);
++typedef void (*list_lru_dispose_cb)(struct list_head *dispose_list);
++
++long list_lru_walk(struct list_lru *lru, list_lru_walk_cb isolate,
++		   void *cb_arg, long nr_to_walk);
++
++long list_lru_dispose_all(struct list_lru *lru, list_lru_dispose_cb dispose);
++
++#endif /* _LRU_LIST_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index d5d175c..a08212f 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,8 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o find_next_bit.o
++	 is_single_threaded.o plist.o decompress.o find_next_bit.o \
++	 list_lru.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/list_lru.c b/lib/list_lru.c
+new file mode 100644
+index 0000000..8c18c63
+--- /dev/null
++++ b/lib/list_lru.c
+@@ -0,0 +1,112 @@
++
++#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/list_lru.h>
- #include "internal.h"
- 
- /*
-@@ -328,24 +329,14 @@ EXPORT_SYMBOL(ihold);
- 
- static void inode_lru_list_add(struct inode *inode)
- {
--	spin_lock(&inode->i_sb->s_inode_lru_lock);
--	if (list_empty(&inode->i_lru)) {
--		list_add(&inode->i_lru, &inode->i_sb->s_inode_lru);
--		inode->i_sb->s_nr_inodes_unused++;
-+	if (list_lru_add(&inode->i_sb->s_inode_lru, &inode->i_lru))
- 		this_cpu_inc(nr_unused);
--	}
--	spin_unlock(&inode->i_sb->s_inode_lru_lock);
- }
- 
- static void inode_lru_list_del(struct inode *inode)
- {
--	spin_lock(&inode->i_sb->s_inode_lru_lock);
--	if (!list_empty(&inode->i_lru)) {
--		list_del_init(&inode->i_lru);
--		inode->i_sb->s_nr_inodes_unused--;
--		this_cpu_dec(nr_unused);
--	}
--	spin_unlock(&inode->i_sb->s_inode_lru_lock);
-+	if (list_lru_del(&inode->i_sb->s_inode_lru, &inode->i_lru))
-+		this_cpu_inc(nr_unused);
- }
- 
- /**
-@@ -582,24 +573,8 @@ int invalidate_inodes(struct super_block *sb, bool kill_dirty)
- 	return busy;
- }
- 
--static int can_unuse(struct inode *inode)
--{
--	if (inode->i_state & ~I_REFERENCED)
--		return 0;
--	if (inode_has_buffers(inode))
--		return 0;
--	if (atomic_read(&inode->i_count))
--		return 0;
--	if (inode->i_data.nrpages)
--		return 0;
--	return 1;
--}
--
- /*
-- * Walk the superblock inode LRU for freeable inodes and attempt to free them.
-- * This is called from the superblock shrinker function with a number of inodes
-- * to trim from the LRU. Inodes to be freed are moved to a temporary list and
-- * then are freed outside inode_lock by dispose_list().
-+ * Isolate the inode from the LRU in preparation for freeing it.
-  *
-  * Any inodes which are pinned purely because of attached pagecache have their
-  * pagecache removed.  If the inode has metadata buffers attached to
-@@ -613,88 +588,77 @@ static int can_unuse(struct inode *inode)
-  * LRU does not have strict ordering. Hence we don't want to reclaim inodes
-  * with this flag set because they are the inodes that are out of order.
-  */
--long prune_icache_sb(struct super_block *sb, long nr_to_scan)
-+static int inode_lru_isolate(struct list_head *item, spinlock_t *lru_lock,
-+				void *arg)
- {
--	LIST_HEAD(freeable);
--	long nr_scanned;
--	long freed = 0;
--	unsigned long reap = 0;
-+	struct list_head *freeable = arg;
-+	struct inode	*inode = container_of(item, struct inode, i_lru);
- 
--	spin_lock(&sb->s_inode_lru_lock);
--	for (nr_scanned = nr_to_scan; nr_scanned >= 0; nr_scanned--) {
--		struct inode *inode;
-+	/*
-+	 * we are inverting the lru lock/inode->i_lock here,
-+	 * so use a trylock. If we fail to get the lock, just skip
-+	 * it
-+	 */
-+	if (!spin_trylock(&inode->i_lock))
-+		return 2;
- 
--		if (list_empty(&sb->s_inode_lru))
--			break;
-+	/*
-+	 * Referenced or dirty inodes are still in use. Give them
-+	 * another pass through the LRU as we canot reclaim them now.
-+	 */
-+	if (atomic_read(&inode->i_count) ||
-+	    (inode->i_state & ~I_REFERENCED)) {
-+		list_del_init(&inode->i_lru);
-+		spin_unlock(&inode->i_lock);
-+		this_cpu_dec(nr_unused);
-+		return 0;
-+	}
- 
--		inode = list_entry(sb->s_inode_lru.prev, struct inode, i_lru);
-+	/* recently referenced inodes get one more pass */
-+	if (inode->i_state & I_REFERENCED) {
-+		inode->i_state &= ~I_REFERENCED;
-+		spin_unlock(&inode->i_lock);
++
++int
++list_lru_add(
++	struct list_lru	*lru,
++	struct list_head *item)
++{
++	spin_lock(&lru->lock);
++	if (list_empty(item)) {
++		list_add_tail(item, &lru->list);
++		lru->nr_items++;
++		spin_unlock(&lru->lock);
 +		return 1;
 +	}
- 
--		/*
--		 * we are inverting the sb->s_inode_lru_lock/inode->i_lock here,
--		 * so use a trylock. If we fail to get the lock, just move the
--		 * inode to the back of the list so we don't spin on it.
--		 */
--		if (!spin_trylock(&inode->i_lock)) {
--			list_move(&inode->i_lru, &sb->s_inode_lru);
--			continue;
-+	if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-+		__iget(inode);
-+		spin_unlock(&inode->i_lock);
-+		spin_unlock(lru_lock);
-+		if (remove_inode_buffers(inode)) {
-+			unsigned long reap;
-+			reap = invalidate_mapping_pages(&inode->i_data, 0, -1);
-+			if (current_is_kswapd())
-+				__count_vm_events(KSWAPD_INODESTEAL, reap);
-+			else
-+				__count_vm_events(PGINODESTEAL, reap);
- 		}
-+		iput(inode);
-+		return 3;
-+	}
- 
--		/*
--		 * Referenced or dirty inodes are still in use. Give them
--		 * another pass through the LRU as we canot reclaim them now.
--		 */
--		if (atomic_read(&inode->i_count) ||
--		    (inode->i_state & ~I_REFERENCED)) {
--			list_del_init(&inode->i_lru);
--			spin_unlock(&inode->i_lock);
--			sb->s_nr_inodes_unused--;
--			this_cpu_dec(nr_unused);
--			continue;
--		}
-+	WARN_ON(inode->i_state & I_NEW);
-+	inode->i_state |= I_FREEING;
-+	spin_unlock(&inode->i_lock);
- 
--		/* recently referenced inodes get one more pass */
--		if (inode->i_state & I_REFERENCED) {
--			inode->i_state &= ~I_REFERENCED;
--			list_move(&inode->i_lru, &sb->s_inode_lru);
--			spin_unlock(&inode->i_lock);
--			continue;
--		}
--		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
--			__iget(inode);
--			spin_unlock(&inode->i_lock);
--			spin_unlock(&sb->s_inode_lru_lock);
--			if (remove_inode_buffers(inode))
--				reap += invalidate_mapping_pages(&inode->i_data,
--								0, -1);
--			iput(inode);
--			spin_lock(&sb->s_inode_lru_lock);
--
--			if (inode != list_entry(sb->s_inode_lru.next,
--						struct inode, i_lru))
--				continue;	/* wrong inode or list_empty */
--			/* avoid lock inversions with trylock */
--			if (!spin_trylock(&inode->i_lock))
--				continue;
--			if (!can_unuse(inode)) {
--				spin_unlock(&inode->i_lock);
--				continue;
--			}
--		}
--		WARN_ON(inode->i_state & I_NEW);
--		inode->i_state |= I_FREEING;
--		spin_unlock(&inode->i_lock);
-+	list_move(&inode->i_lru, freeable);
-+	this_cpu_dec(nr_unused);
++	spin_unlock(&lru->lock);
 +	return 0;
 +}
- 
--		list_move(&inode->i_lru, &freeable);
--		sb->s_nr_inodes_unused--;
--		this_cpu_dec(nr_unused);
--		freed++;
--	}
--	if (current_is_kswapd())
--		__count_vm_events(KSWAPD_INODESTEAL, reap);
--	else
--		__count_vm_events(PGINODESTEAL, reap);
--	spin_unlock(&sb->s_inode_lru_lock);
-+/*
-+ * Walk the superblock inode LRU for freeable inodes and attempt to free them.
-+ * This is called from the superblock shrinker function with a number of inodes
-+ * to trim from the LRU. Inodes to be freed are moved to a temporary list and
-+ * then are freed outside inode_lock by dispose_list().
-+ */
-+long prune_icache_sb(struct super_block *sb, long nr_to_scan)
++EXPORT_SYMBOL_GPL(list_lru_add);
++
++int
++list_lru_del(
++	struct list_lru	*lru,
++	struct list_head *item)
 +{
-+	LIST_HEAD(freeable);
-+	long freed;
- 
-+	freed = list_lru_walk(&sb->s_inode_lru, inode_lru_isolate,
-+						&freeable, nr_to_scan);
- 	dispose_list(&freeable);
- 	return freed;
- }
-diff --git a/fs/super.c b/fs/super.c
-index 074abbe..bc0e101 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -69,12 +69,12 @@ static long super_cache_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
- 		fs_objects = sb->s_op->nr_cached_objects(sb);
- 
--	total_objects = sb->s_nr_dentry_unused +
--			sb->s_nr_inodes_unused + fs_objects + 1;
-+	inodes = list_lru_count(&sb->s_inode_lru);
-+	total_objects = sb->s_nr_dentry_unused + inodes + fs_objects + 1;
- 
- 	/* proportion the scan between the caches */
- 	dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) / total_objects;
--	inodes = (sc->nr_to_scan * sb->s_nr_inodes_unused) / total_objects;
-+	inodes = (sc->nr_to_scan * inodes) / total_objects;
- 
- 	/*
- 	 * prune the dcache first as the icache is pinned by it, then
-@@ -106,7 +106,7 @@ static long super_cache_count(struct shrinker *shrink, struct shrink_control *sc
- 		total_objects = sb->s_op->nr_cached_objects(sb);
- 
- 	total_objects += sb->s_nr_dentry_unused;
--	total_objects += sb->s_nr_inodes_unused;
-+	total_objects += list_lru_count(&sb->s_inode_lru);
- 
- 	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
- 	drop_super(sb);
-@@ -153,8 +153,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 		INIT_LIST_HEAD(&s->s_inodes);
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
- 		spin_lock_init(&s->s_dentry_lru_lock);
--		INIT_LIST_HEAD(&s->s_inode_lru);
--		spin_lock_init(&s->s_inode_lru_lock);
-+		list_lru_init(&s->s_inode_lru);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
- 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 2651059..80beb62 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -385,6 +385,7 @@ struct inodes_stat_t {
- #include <linux/stat.h>
- #include <linux/cache.h>
- #include <linux/list.h>
-+#include <linux/list_lru.h>
- #include <linux/radix-tree.h>
- #include <linux/prio_tree.h>
- #include <linux/init.h>
-@@ -1414,10 +1415,7 @@ struct super_block {
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused; /* # of dentries on lru */
- 
--	/* s_inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
--	spinlock_t		s_inode_lru_lock ____cacheline_aligned_in_smp;
--	struct list_head	s_inode_lru;		/* unused inode lru */
--	int			s_nr_inodes_unused;	/* # of inodes on lru */
-+	struct list_lru		s_inode_lru ____cacheline_aligned_in_smp;
- 
- 	struct block_device	*s_bdev;
- 	struct backing_dev_info *s_bdi;
++	spin_lock(&lru->lock);
++	if (!list_empty(item)) {
++		list_del_init(item);
++		lru->nr_items--;
++		spin_unlock(&lru->lock);
++		return 1;
++	}
++	spin_unlock(&lru->lock);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(list_lru_del);
++
++long
++list_lru_walk(
++	struct list_lru *lru,
++	list_lru_walk_cb isolate,
++	void		*cb_arg,
++	long		nr_to_walk)
++{
++	struct list_head *item, *n;
++	long removed = 0;
++restart:
++	spin_lock(&lru->lock);
++	list_for_each_safe(item, n, &lru->list) {
++		int ret;
++
++		if (nr_to_walk-- < 0)
++			break;
++
++		ret = isolate(item, &lru->lock, cb_arg);
++		switch (ret) {
++		case 0:	/* item removed from list */
++			lru->nr_items--;
++			removed++;
++			break;
++		case 1: /* item referenced, give another pass */
++			list_move_tail(item, &lru->list);
++			break;
++		case 2: /* item cannot be locked, skip */
++			break;
++		case 3: /* item not freeable, lock dropped */
++			goto restart;
++		default:
++			BUG();
++		}
++	}
++	spin_unlock(&lru->lock);
++	return removed;
++}
++EXPORT_SYMBOL_GPL(list_lru_walk);
++
++long
++list_lru_dispose_all(
++	struct list_lru *lru,
++	list_lru_dispose_cb dispose)
++{
++	long disposed = 0;
++	LIST_HEAD(dispose_list);
++
++	spin_lock(&lru->lock);
++	while (!list_empty(&lru->list)) {
++		list_splice_init(&lru->list, &dispose_list);
++		disposed += lru->nr_items;
++		lru->nr_items = 0;
++		spin_unlock(&lru->lock);
++
++		dispose(&dispose_list);
++
++		spin_lock(&lru->lock);
++	}
++	spin_unlock(&lru->lock);
++	return disposed;
++}
++
++int
++list_lru_init(
++	struct list_lru	*lru)
++{
++	spin_lock_init(&lru->lock);
++	INIT_LIST_HEAD(&lru->list);
++	lru->nr_items = 0;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(list_lru_init);
 -- 
 1.7.5.4
 
