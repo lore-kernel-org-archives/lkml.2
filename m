@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab1HWORk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:17:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52843 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab1HWORg convert rfc822-to-8bit (ORCPT
+	id S1753287Ab1HWOWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:22:48 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43193 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab1HWOWo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:17:36 -0400
-Subject: Re: [RFC][PATCH 2/6] x86, nmi: create new NMI handler routines
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
-Date: Tue, 23 Aug 2011 16:17:23 +0200
-In-Reply-To: <20110823141452.GL2067@redhat.com>
-References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
-	 <1313786266-9585-3-git-send-email-dzickus@redhat.com>
-	 <1314022580.24275.33.camel@twins> <20110823141452.GL2067@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 23 Aug 2011 10:22:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdYJK7yJrocEJYudeOW0JbcWMTiqrhz1-mNZO0jc0y3S6g@mail.gmail.com>
+References: <1307616640-2013-1-git-send-email-mattias.wallin@stericsson.com>
+	<CACRpkdYJK7yJrocEJYudeOW0JbcWMTiqrhz1-mNZO0jc0y3S6g@mail.gmail.com>
+Date: Tue, 23 Aug 2011 16:22:43 +0200
+Message-ID: <CACRpkdYkjqFp0cxpLBLQVN-qPtugjfo1rsrXqsh8f7wThB544g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: ab5500 chip register access
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mattias Wallin <mattias.wallin@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1314109043.8002.58.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 10:14 -0400, Don Zickus wrote:
+On Tue, Aug 2, 2011 at 12:02 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Jun 9, 2011 at 12:50 PM, Mattias Wallin
+> <mattias.wallin@stericsson.com> wrote:
+>
+>> The analog baseband chip ab5500 is a multi functional chip
+>> containing regulators, charging, gpio, USB and accessory detect.
+>> It also contain various multimedia functionalities like digital
+>> encoder and audio codec.
+>> The core driver added with this patch provides register access via
+>> i2c via PRCMU. Event handling implemented as irq_chip will come in
+>> future patches since it depends on PRCMU functionality not yet
+>> implemented.
+>>
+>> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Sam, what happened to these two patches? Something that needs
+> to  be fixed about them?
 
-> Maybe I don't understand kfree_rcu, but what advantage do I have by
-> placing rcu_head into nmiaction that never gets used except on unregister
-> (which rarely happens to begin with)?
+Ping on this...
 
-you don't have to wait for sync_rcu(), but you're right, this is an
-absolute slow patch and we don't care.
+Thanks!
+Linus Walleij
