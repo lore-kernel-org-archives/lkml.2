@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1HWS1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 14:27:41 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9674 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab1HWS1g convert rfc822-to-8bit (ORCPT
+	id S1755102Ab1HWSdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:33:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45024 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab1HWSdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 14:27:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 23 Aug 2011 11:27:14 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Ben Dooks <ben-i2c@fluff.org>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Colin Cross <ccross@android.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 23 Aug 2011 11:27:12 -0700
-Subject: RE: Tegra I2C driver compilation failure (was: RE: [PATCH] dt: add
-	empty of_get_property for non-dt)
-Thread-Topic: Tegra I2C driver compilation failure (was: RE: [PATCH] dt: add
-	empty of_get_property for non-dt)
-Thread-Index: AcxYiW0+Eckdj+oRSvyjfS+mlpxbwgAqSq7QAiOrJfA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04B24A38CA@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF04A0687289@HQMAIL01.nvidia.com>
- <20110812004732.GF19115@trinity.fluff.org>
- <74CDBE0F657A3D45AFBB94109FB122FF04AEA24F41@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04AEA24F41@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Aug 2011 14:33:44 -0400
+Message-ID: <4E53F282.10908@suse.cz>
+Date: Tue, 23 Aug 2011 20:33:38 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
+To: gregkh@suse.de
+CC: alan@linux.intel.com, arnd@arndb.de,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: patch "TTY: remove tty_locked" added to tty tree
+References: <13141210141189@kroah.org>
+In-Reply-To: <13141210141189@kroah.org>
+X-Enigmail-Version: 1.3
+Content-Type: multipart/mixed;
+ boundary="------------040006090207050306080407"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Friday, August 12, 2011 3:09 PM:
-...
-> Related, here's the list of outstanding patches for i2c-tegra.c that I'm
-> aware of:
-> 
-> [PATCH] i2c: Tegra: Add of_match_table
-> http://www.spinics.net/lists/linux-i2c/msg05898.html
-> 
-> [PATCH] i2c: tegra: add I2C_FUNC_SMBUS_EMUL to adapter functionality
-> http://www.spinics.net/lists/linux-i2c/msg05396.html
-> 
-> [PATCH] i2c: tegra: fix possible race condition after tx
-> http://www.spinics.net/lists/linux-i2c/msg06103.html
-> 
-> Hope this helps! Thanks.
+This is a multi-part message in MIME format.
+--------------040006090207050306080407
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 
-Ben,
+On 08/23/2011 07:36 PM, gregkh@suse.de wrote:
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 44bc0c5..6d5eceb 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -600,8 +600,6 @@ extern long vt_compat_ioctl(struct tty_struct *tty,
+>  /* functions for preparation of BKL removal */
+>  extern void __lockfunc tty_lock(void) __acquires(tty_lock);
+>  extern void __lockfunc tty_unlock(void) __releases(tty_lock);
+> -extern struct task_struct *__big_tty_mutex_owner;
+> -#define tty_locked()		(current == __big_tty_mutex_owner)
 
-I see the patches above aren't in linux-next yet. I'd love to get them
-queued up so they get into 3.2. Can you please apply them? At least the
-second of these was first posted over 4 months ago.
+It looks like I need tty_locked to fix system stalls in
+tty_wait_until_sent in the end. Like with the patch attached. But if
+someone finds another way to fix this in short-term, it would be great.
 
-Thanks very much!
-
+thanks,
 -- 
-nvpublic
+js
+suse labs
 
+--------------040006090207050306080407
+Content-Type: text/x-patch;
+ name="0001-TTY-fix-stalls-on-BTM-when-waiting-until-sent.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-TTY-fix-stalls-on-BTM-when-waiting-until-sent.patch"
+
+>From a7c35daffe26129072aceb5d285924017820b56d Mon Sep 17 00:00:00 2001
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Fri, 19 Aug 2011 22:16:51 +0200
+Subject: [PATCH] TTY: fix stalls on BTM when waiting until sent
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Andreas Bombe <aeb@debian.org>
+---
+ drivers/tty/tty_ioctl.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
+index 53f2442..3837175 100644
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -146,6 +146,7 @@ EXPORT_SYMBOL(tty_unthrottle);
+ 
+ void tty_wait_until_sent(struct tty_struct *tty, long timeout)
+ {
++	int retval;
+ #ifdef TTY_DEBUG_WAIT_UNTIL_SENT
+ 	char buf[64];
+ 
+@@ -153,8 +154,14 @@ void tty_wait_until_sent(struct tty_struct *tty, long timeout)
+ #endif
+ 	if (!timeout)
+ 		timeout = MAX_SCHEDULE_TIMEOUT;
+-	if (wait_event_interruptible_timeout(tty->write_wait,
+-			!tty_chars_in_buffer(tty), timeout) >= 0) {
++
++	if (tty_locked()) /* e.g. uart (holds) vs. tty_ioctl (does not) */
++		retval = wait_event_interruptible_timeout_tty(tty->write_wait,
++			!tty_chars_in_buffer(tty), timeout);
++	else
++		retval = wait_event_interruptible_timeout(tty->write_wait,
++			!tty_chars_in_buffer(tty), timeout);
++	if (retval >= 0) {
+ 		if (tty->ops->wait_until_sent)
+ 			tty->ops->wait_until_sent(tty, timeout);
+ 	}
+-- 
+1.7.6
+
+
+--------------040006090207050306080407--
