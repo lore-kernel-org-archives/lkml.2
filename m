@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1HWO0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:26:47 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:20340 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753256Ab1HWO0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:26:40 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: U0uCaVsVM1nB91hwCPFXnZtXNGHez7v8oHRJEJHD_fdorNm
- i3MvRCFIIdOhueH85PRXN1ZxNq9Gb0.DJoyRUcljN0BxA1IHttsyQbrRuUFm
- FRDDtPE43cD3rJgmzB7gO1v4E.Wi_7.KhWgZY9OXQhPZalPb103xV2botMt_
- y_heZeYv1CHXib1xvVEwS_06ps9SUbG3.Ake2MIgOqURop3NnY_XpbVwBxj2
- qUkU6td2aoXEdmkLvOmQQ9PDEJygapS4p.H3qhr.qJC3DEkYsWjH56T.SeDp
- .rA8cPaPdaKimZ8vvz1EmfoKwWiM2_7y2o4ofhgKaNGNQDarS3_TE2.ZzDKH
- xNiphhR73zQu3J_ZD.BtyThIypEAT4ZL6SuwusdFYDnGzdXUs3Q--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 23 Aug 2011 09:26:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Shaohua Li <shaohua.li@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>, penberg@kernel.org,
-        "Shi, Alex" <alex.shi@intel.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [patch 1/2]slub: add slab with one free object to partial list
- tail
-In-Reply-To: <1314064098.29510.23.camel@sli10-conroe>
-Message-ID: <alpine.DEB.2.00.1108230926150.21267@router.home>
-References: <1314059819.29510.18.camel@sli10-conroe> <1314064098.29510.23.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754156Ab1HWO3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:29:20 -0400
+Received: from mxl1.seznam.cz ([77.75.72.44]:49376 "EHLO mxl1.seznam.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128Ab1HWO3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:29:13 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=beta; d=seznam.cz;
+	h=Date:Reply-To:From:Received:Subject:Mime-Version:Message-Id:Content-Transfer-Encoding:Content-Type:X-Country:X-Abuse:X-Seznam-User:X-Virus-Info:X-Seznam-SPF:X-Seznam-DomainKeys;
+	b=Rt7R+z7G0zknX7wbTPUJqRXrp2yErOzGaFxGhyGATX+qeA7X6EfVM+wn5tfrtC+3f
+	BwoIOdha7V6pDG24kCP/ZkT1xUXQ8m+P0XleLVNdnw2Ch1xiD0zco/W3mwr/NTVD3vW
+	iEErRubhjNyNM8rGBhgkpGJpOsb8QEqspyIWuH0=
+Date: Tue, 23 Aug 2011 15:58:29 +0200 (CEST)
+Reply-To: ak.mary@fastwebmail.it
+From: ggnelson3@seznam.cz
+Subject: =?us-ascii?Q?Correspondence=20of=20mine?=
+Mime-Version: 1.0
+Message-Id: <275.133.483-4615-328974182-1314107909@seznam.cz>
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;	charset="us-ascii"
+X-Country: CZ
+X-Abuse: abuse@seznam.cz
+X-Seznam-User: ggnelson3@seznam.cz
+X-Virus-Info: clean
+X-Seznam-SPF: neutral
+X-Seznam-DomainKeys: neutral
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Shaohua Li wrote:
+Correspondence of mine
 
-> Reported-by: Alex Shi <alex.shi@intel.com> Signed-off-by: Shaohua Li
-> <shli@kernel.org> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+Dear Sir,
 
-Acked-by: Christoph Lameter <cl@linux.com>
+I hope this correspondence of mine meets you in good health.
 
+I am Mr. N'Guessan Nelson, I am on the employment of one of the leading banks.  I am writing to seek your cooperation for investment partnership in your country.  I shall provide the funds for the investment. 
+
+I will give you full details of my investment proposal on receipt of your acknowledgement of this correspondence.
+
+I await your response in earliest.
+
+My regards,
+Mr. N'Guessan Nelson
