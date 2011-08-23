@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1HWDyN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 23:54:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:37371 "EHLO ozlabs.org"
+	id S1754583Ab1HWD4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 23:56:35 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35379 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab1HWDxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 23:53:40 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, rostedt@goodmis.org, jbaron@redhat.com,
-        akpm@linux-foundation.org, vapier@gentoo.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [RFC] UML/x86_64 module loader
-In-Reply-To: <4E52CC63.5070201@nod.at>
-References: <4E52CC63.5070201@nod.at>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Tue, 23 Aug 2011 13:22:18 +0930
-Message-ID: <878vqk4wel.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752530Ab1HWD42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 23:56:28 -0400
+Date: Tue, 23 Aug 2011 13:56:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: manual merge of the pm tree with the mfd tree
+Message-Id: <20110823135619.be8b64d2eec7cb78bc0160a8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__23_Aug_2011_13_56_19_+1000_4VkZMSAtywa7rCfn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011 23:38:43 +0200, Richard Weinberger <richard@nod.at> wrote:
-> Hi!
-> 
-> UserModeLinux is using the arch specific module functions from 
-> arch/x86/kernel/module.c.
-> On i386 this works perfectly fine but on x86_64 it causes problems.
-> 
-> apply_relocate_add() assumes modules compiled with -mcmodel=kernel 
-> because the kernel lives in the negative 2GiB of the address space.
-> This assumption is not true for UML.
-> On an UML instance with more than 512MiB of memory no modules can be 
-> loaded because vmalloc() locates the module near the 2GiB limit and the
-> ELF relocations causes an overflow. (Detected by "if ((s64)val != *(s32 
-> *)loc)" in apply_relocate_add()).
-> 
-> Now I'm not sure how to fix this.
-> Mostly because I'm not a module loader nor an ELF expert. 8-)
+--Signature=_Tue__23_Aug_2011_13_56_19_+1000_4VkZMSAtywa7rCfn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think you need to write your own routines.  It shouldn't be that hard,
-just keep implementing relocations until you're done :)
+Hi Rafael,
 
+Today's linux-next merge of the pm tree got a conflict in
+drivers/mfd/twl4030-irq.c between commit 99efe0d4c992 ("mfd: Drop the
+twl4030-irq kthread") from the mfd tree and commit febab68efa45
+("freezer: don't unnecessarily set PF_NOFREEZE explicitly") from the pm
+tree.
+
+The former dropped the code modified by the latter, so I did that.
+--=20
 Cheers,
-Rusty.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__23_Aug_2011_13_56_19_+1000_4VkZMSAtywa7rCfn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOUyTjAAoJEDMEi1NhKgbsemgH/jvpixloInqCPJUzDMeU5A+h
+IBPjIx49ho48Pk2amIUeHIYxXyNgb1nPvkhaV2iqdFzNvR1CRKFHTzfjxYiT+RN6
+R+jsNCz3xwh8dhZIQFO9ckFZ8C2bmbp28+OvuXisGFpYPcZnvSurLD1FTijZLE7D
+xpRNiPTq2ScIUH1ak6Ahh5c46DMTNmNtsay0YxKzL/HWkKUNpk8F0X2+/FVSW6G2
+PNChosG+MFNVBxL5+4ukp0ZGa/BNhmiHYvaSWjgg4tTkEF641Brur8/CuznOmX64
+KYAJcb1k2cRjMa0/47h7TUDKWPBHuzFmCo7RTBjak+QJ+GGiWGbE04bycdrK24M=
+=6plt
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__23_Aug_2011_13_56_19_+1000_4VkZMSAtywa7rCfn--
