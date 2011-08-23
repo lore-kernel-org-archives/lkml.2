@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137Ab1HWEH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 00:07:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44707 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab1HWEHY (ORCPT
+	id S1751264Ab1HWESO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 00:18:14 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44260 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab1HWESG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 00:07:24 -0400
-Date: Mon, 22 Aug 2011 21:02:55 -0700 (PDT)
-Message-Id: <20110822.210255.1902105215409964106.davem@davemloft.net>
-To: lacombar@gmail.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
-        mikey@neuling.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: linux-next: boot test failure (net tree)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CACqU3MW4BnucRt3gxPrKPDvWEjaVuxRF1VOPWk5hTRfneyANkg@mail.gmail.com>
-References: <20110823114129.ceb18da164bf7df3c145941b@canb.auug.org.au>
-	<20110822.191348.2099822249437201579.davem@davemloft.net>
-	<CACqU3MW4BnucRt3gxPrKPDvWEjaVuxRF1VOPWk5hTRfneyANkg@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 23 Aug 2011 00:18:06 -0400
+Message-ID: <4E5329E8.7060608@gmail.com>
+Date: Mon, 22 Aug 2011 21:17:44 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: module param for CPU_NOTIFIER_ERROR_INJECT
+References: <4E5153D8.7010607@gmail.com> <CAC5umyh3S0Xrc0OOXk7TzsQqF0t1ostKtR_5hqFwN_EkcgwuxA@mail.gmail.com> <CAKFRV=PSQT7Wt01gxirnkJEJv2GvQ7ELkd8QvxhT6BjXnBgQsw@mail.gmail.com>
+In-Reply-To: <CAKFRV=PSQT7Wt01gxirnkJEJv2GvQ7ELkd8QvxhT6BjXnBgQsw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 22 Aug 2011 21:03:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaud Lacombe <lacombar@gmail.com>
-Date: Mon, 22 Aug 2011 23:50:02 -0400
+On 08/22/2011 09:41 AM, Justin Mattock wrote:
+> Cool.. I will retry on this and let you know.
+>
+> On Aug 22, 2011 5:48 AM, "Akinobu Mita" <akinobu.mita@gmail.com
+> <mailto:akinobu.mita@gmail.com>> wrote:
+>  > 2011/8/22 Justin P. Mattock <justinmattock@gmail.com
+> <mailto:justinmattock@gmail.com>>:
+>  >
+>  >> example 2
+>  >> # modprobe cpu-notifier-error-inject cpu_up_prepare_error=-2
+>  >> # echo 1 > /sys/devices/system/cpu/cpu1/online
+>  >> bash: echo: write error: No such file or directory
+>  >>
+>  >> is not working for me, or atleast is not showing me any info that it is
+>  >> working.
+>  >
+>  > I suspect that cpu-notifier-error-inject module is already loaded and
+>  > the module parameter is just ignored when you run above commands.
+>  >
+>  > Please retry it after rmmod or change that parameter through
+>  > /sys/module/cpu-error-inject/parameters/cpu_up_prepare_error.
+>
 
-> Are you implying we need some kind of way to migrate config ?
+cool, Thanks for the help.. not sure if this is correct, but I had to 
+shutdown one of the cores, then execute the cammand to get any response..:
 
-The issue is that the dependencies for every single ethernet driver
-have changed.  Some dependencies have been dropped (f.e. NETDEV_10000
-and some have been added (f.e. ETHERNET, NET_VENDOR_****)
+echo 0 > /sys/devices/system/cpu/cpu1/online
+modprobe cpu-notifier-error-inject cpu_up_prepare_error=-2
+echo 1 > /sys/devices/system/cpu/cpu1/online
 
-So right now an automated (non-prompted, default to no on all new
-options) run on an existing config results in all ethernet drivers
-getting disabled because the new dependencies don't get enabled.
+[ 4205.955592] Injecting error (-2) at cpu notifier
+[ 4205.955601] _cpu_up: attempt to bring up CPU 1 failed
 
-This wouldn't be so bad if it was just one or two drivers, but in
-this case it's every single ethernet driver which will have and hit
-this problem.
+so it is working!
 
-
-
+Justin P. Mattock
