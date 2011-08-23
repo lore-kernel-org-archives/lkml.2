@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1HWNcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 09:32:05 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:42187 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab1HWNbv (ORCPT
+	id S1755534Ab1HWNck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 09:32:40 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55522 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754917Ab1HWNc3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 09:31:51 -0400
-Message-Id: <20110823132941.744407154@de.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 23 Aug 2011 15:29:41 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>
-Subject: [patch 0/3] [RFC] tick_program_event/clockevents_program_event tweaking
+	Tue, 23 Aug 2011 09:32:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110823130451.GD3162@dastard>
+References: <CAHFgRy_7XQkoU3uY72Eve_X-FfXOuUm2Ydhyheo4bf53P3K=zQ@mail.gmail.com>
+	<CA+5PVA47Pa14Sk5-VZuQhXk1db6KK13_3uSk1QMKVwsZyPmj_A@mail.gmail.com>
+	<20110823114931.GC3162@dastard>
+	<CA+5PVA4bLOSOQ=Pvt25xY=8L_b07XnM-8UetHOxnbtgtY0o4_Q@mail.gmail.com>
+	<20110823130451.GD3162@dastard>
+Date: Tue, 23 Aug 2011 09:32:28 -0400
+Message-ID: <CA+5PVA7fHAsSGFo4hcTtegT8a4K3xk=XTNYC7GzSYDbgRKc1ug@mail.gmail.com>
+Subject: Re: 3.1.0-rc3 -- INFO: possible circular locking dependency detected
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Miles Lane <miles.lane@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
-I rediscovered a couple of clockevents patches which have patiently
-been sitting on my hard drive for a rather long time. After some
-polishing I guess they are now ready for a review. The aim is to
-improve the handling of the clockevents device for s390.
+On Tue, Aug 23, 2011 at 9:04 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Aug 23, 2011 at 07:59:20AM -0400, Josh Boyer wrote:
+>> On Tue, Aug 23, 2011 at 7:49 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> >> >  Possible unsafe locking scenario:
+>> >> >
+>> >> >       CPU0                    CPU1
+>> >> >       ----                    ----
+>> >> >  lock(&mm->mmap_sem);
+>> >> >                               lock(&sb->s_type->i_mutex_key);
+>> >> >                               lock(&mm->mmap_sem);
+>> >> >  lock(&sb->s_type->i_mutex_key);
+>> >> >
+>> >> >  *** DEADLOCK ***
+>> >>
+>> >> This one was reported yesterday: https://lkml.org/lkml/2011/8/21/163
+>> >> and we're hoping Ted (or someone else from the ext4 camp) can comment
+>> >> on why ext4_evict_inode is holding i_mutex.
+>> >
+>> > Actually, the problem has nothing to do with ext4. the problem is
+>> > that remove_vma() is holding the mmap_sem while calling fput(). The
+>> > correct locking order is i_mutex->mmap_sem, as documented in
+>> > mm/filemap.c:
+>> >
+>> >  *  ->i_mutex                   (generic_file_buffered_write)
+>> >  *    ->mmap_sem                (fault_in_pages_readable->do_page_fault)
+>> >
+>> >
+>> > The way remove_vma() calls fput() also triggers lockdep reports in
+>> > XFS and it will do so with any filesystem that takes an inode
+>> > specific lock in it's evict() processing. IOWs, remove_vma() needs
+>> > fixing, not ext4....
+>>
+>> Er... ok.  So the remove_vma code hasn't changed since 2008.  We're
+>> only seeing this issue now because the debugging code has improved,
+>> or?
+>
+> The problem has been there since at least 2008.  Here's an early
+> XFS report from 2.6.24:
+>
+> http://oss.sgi.com/archives/xfs/2008-02/msg00931.html
+>
+> Here's an XFS report
+> to match the ext4 one in this thread from 2009:
+>
+> http://oss.sgi.com/archives/xfs/2009-03/msg00149.html
+>
+> You won't find reports much older than this - it only started to be
+> reported when lockdep support in XFS matured and it started to be
+> widely used....
+>
+>> At any rate, the proposed solution is to make remove_vma drop mmap_sem
+>> before calling fput, or make it not call fput, or?
+>
+> Ask the VM folk - this is the only response I can remember from them
+> is this:
+>
+> http://oss.sgi.com/archives/xfs/2009-03/msg00224.html
+>
+> Maybe now that ext4 is hitting the problem something will be done
+> about it...
 
-The first patch addresses an issue with the automatic adjustment of
-the minimum delay of the clockevents device. We have seen situations
-where this adjustment errornously increased the minimum delay on a
-virtual system running under z/VM. The only way to get the delay back
-to a sane value is a reboot.
-To solve this problem a new config option GENERIC_CLOCKEVENTS_MIN_ADJUST
-is introduced that allows to select if the automatic increase of the
-minimum delay of a clockevents device should be done or not.
-The patch enables GENERIC_CLOCKEVENTS_MIN_ADJUST for x86, for s390
-we never want to do an adjustment.
-Question to the architecture maintainers: are there any other platforms
-which will need the adjustment as well?
+OK.  I've CC'd Andrew and Hugh, so maybe we can get a discussion going.
 
-
-The second issue that patches #2 and #3 are trying to solve is the fact
-that the current code only supports clockevents devices which use a time
-delta. The clock comparator found on s390 uses a wall-time value that is
-constantly compared to the current TOD clock. If the clock comparator
-value is smaller than the TOD clock value an interrupt is made pending. 
-
-The current clockevents code is needlessly complex for this clockevents
-device, the function trace of a tick_program_event call looks like this:
-
-  0)               |  tick_program_event() {
-  0)               |    tick_dev_program_event() {
-  0)               |      ktime_get() {
-  0)               |        read_tod_clock() {
-  0)   0.336 us    |        } /* read_tod_clock */
-  0)   0.692 us    |      } /* ktime_get */
-  0)               |      clockevents_program_event() {
-  0)               |        s390_next_event() {
-  0)   0.190 us    |        } /* s390_next_event */
-  0)   0.701 us    |      } /* clockevents_program_event */
-  0)   1.901 us    |    } /* tick_dev_program_event */
-  0)   2.370 us    |  } /* tick_program_event */
-
-The code does a ktime_get and substracts the result from the expires
-value, then passes the delta to the s390_next_event function. This
-function then uses get_clock and adds that value to the delta. So
-basically the current ktime is first subtracted and then readded to
-the expires value for no gain.
-
-The new code implemented by the patches #2 and #3 gives this call trace:
-
-  0)               |  tick_program_event() {
-  0)               |    clockevents_program_event() {
-  0)               |      s390_next_ktime() {
-  0)               |        ktime_get_monotonic_offset() {
-  0)   0.183 us    |        } /* ktime_get_monotonic_offset */
-  0)   0.734 us    |      } /* s390_next_ktime */
-  0)   1.120 us    |    } /* clockevents_program_event */
-  0)   1.557 us    |  } /* tick_program_event */
-
-The function tick_dev_program_event is gone, clockevents_program_event
-passes the unmodified expires value to s390_next_ktime. This new
-function only needs to subtract the wall_to_monotonic offset to get
-the wall-clock value to program the clock comparator. And forcing the
-minimum delay on a clockevent device with CLOCK_EVT_FEAT_KTIME is not
-necessary anymore. Any ktime value can be programmed to the clock
-comparator, even one that is in the past. As soon as the irqs are
-open again we will simply get an interrupt.
-
-The old code needs 151 instruction for a tick_program_event call,
-the new one only 85. A nice improvement.
-
-To: linux-arch@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-To: linux-s390@vger.kernel.org
-To: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+josh
