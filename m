@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1HWWQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:16:08 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:34836 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755549Ab1HWWPO (ORCPT
+	id S1755447Ab1HWWQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:16:50 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:48908 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab1HWWQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:15:14 -0400
-X-Sasl-enc: TucKHopBykco4LWjwisA5FFKGzZgAPGjQ6PZ4FnJRxMG 1314137713
-Date: Tue, 23 Aug 2011 15:06:59 -0700
-From: Greg KH <greg@kroah.com>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] staging: vme: allow explicit assignment of bus
- numbers
-Message-ID: <20110823220659.GA15721@kroah.com>
-References: <1312968830-13377-1-git-send-email-manohar.vanga@cern.ch>
- <1312968830-13377-2-git-send-email-manohar.vanga@cern.ch>
- <4E425725.7080305@ge.com>
- <20110810104143.GA14060@becoht-mvanga>
- <4E427E89.8010700@ge.com>
+	Tue, 23 Aug 2011 18:16:44 -0400
+Date: Wed, 24 Aug 2011 00:16:31 +0200
+From: Richard <rz@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux/m68k <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Q40 interrupts (and genirq)
+Message-ID: <20110823221631.GA6827@rz>
+References: <CAMuHMdV1bpFDkLyDsdkzgvQg6_C1Jf=hwR=VOVBObB19mhH6yA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E427E89.8010700@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdV1bpFDkLyDsdkzgvQg6_C1Jf=hwR=VOVBObB19mhH6yA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 01:50:17PM +0100, Martyn Welch wrote:
-> On 10/08/11 11:41, Manohar Vanga wrote:
-> > Hey Martyn,
-> > 
-> >> I'm sorry, I'm still simply not convinced by this patch:
-> >>
-> >> 1) For a single bus driver (i.e. in the situation where we have 2 bridges of
-> >> the same type), the numbering of the buses is still dependent on the order
-> >> that they are found in the scan.
-> > 
-> > Yes this is still a bug. But this patch doesn't address this case.
-> > 
-> >> 2) If the bridge drivers are loaded as modules, I have a feeling they will be
-> >> loaded sequentially and therefore the order of the bridges would only change
-> >> if the order of the loading of the drivers changed.
-> > 
-> > And this is a major problem when it comes to multiple bridges of differing
-> > types. What I'm saying is that this patch simply fixes this one problematic
-> > case. We can move this out as soon as we have a more robust implementation.
-> > 
-> > As of now however, I think applying this is useful as we have a decent
-> > workaround to the problem. If you want I can make the fact of it being
-> > applicable only to cases with differing bridges explicit in the commit
-> > message.
-> > 
-> 
-> The problem is, I'm not convinced that this is the correct approach to take. I
-> think this should be parsed from sysfs dynamically (which may require some
-> work). I shall use the ethernet devices on my machine as an example:
-> 
-> I have 2 ethernet devices (and lo) on my machine:
-> 
-> $ ls /sys/class/net/
-> eth0  eth1  lo
-> $
-> 
-> These are symlinks and I can quite quickly find out which each of these
-> devices in (based on topology):
-> $ ls -l /sys/class/net/
-> total 0
-> lrwxrwxrwx 1 root root 0 2011-08-10 11:56 eth0 ->
-> ../../devices/pci0000:00/0000:00:19.0/net/eth0
-> lrwxrwxrwx 1 root root 0 2011-08-10 11:56 eth1 ->
-> ../../devices/pci0000:00/0000:00:1c.1/0000:03:00.0/net/eth1
-> lrwxrwxrwx 1 root root 0 2011-08-10 11:56 lo -> ../../devices/virtual/net/lo
-> $
-> 
-> I'd think that this contains the information that you have in the config file
-> (based on the previous discussion we had) and would allow you to map the bus
-> numbering after booting.
-> 
-> To do this, I think we need to register a class called "vme", I guess in
-> vme_init() and add a call to class_device_register in vme_register_bridge and
-> a call to class_device_unregister in vme_unregister_bridge.
-> 
-> Greg: Is that right?
+Hi Geert,
 
-Yes.
+> I'm a bit puzzled by the Q40 interrupt architecture.
+> 
+> arch/m68k/q40/q40ints.c says:
+> 
+>  * Q40 IRQs are defined as follows:
+>  *            3,4,5,6,7,10,11,14,15 : ISA dev IRQs
+> 
+> Yep, that's _9_ interrupts.
 
-> I'm really not convinced that the solution presented in this patch is suitable
-> for inclusion upstream.
+11 conflicts with q40_irq_startup() but I am not quite sure at the moment which
+one is right. Iirc some of the irqs are shared/indistinguishable as sources but were
+still defined both separately just in case the number is needed.
 
-I agree.  Bus numbers are dynamic and should NEVER be depended on by
-userspace to be static and unchanging on reboots.
+> In the "new" interrupt code, by Roman Zippel, all interrupts sources are handled
+> through q40_irq_handler().
+> Only autovector IRQs IRQ_AUTO_2 and IRQ_AUTO_4 are enabled.
+> 
+> In the old (pre-2006) interrupt code, only internal (master) and ISA interrupts
+> go through q40_irq2_handler on IRQ_AUTO_2.
+> Q40_IRQ_SAMPLE goes via both IRQ_AUTO_4 and IRQ_AUTO_6.
+> 
+> Why doesn't the new code use IRQ_AUTO_6? Does the new code work?
 
-thanks,
+iirc IRQ_AUTO_6 was needed for some very early versions of the master chip,
+should work without. 
 
-greg k-h
+I will need to verify this points but don't have the HW manual right here.
+
+> For the genirq conversion, I was first thinking about using a custom
+> chain-alike flow handler.
+> But it looks like this is not possible, as the Q40 handler remaps
+> autovector interrupts to
+> conflicting numbers (it handles IRQ_AUTO_4 = 4, but ISA interrupt 4 is also 4).
+> So if the custom flow handler would call generic_handle_irq(4) for ISA
+> interrupt 4,
+> it would recurse into the flow handler set up for autovector IRQ 4 :-(
+
+The numbers are equal but they mean different things at different stages 
+of abstraction/translation/mapping which is normally no concern as long as 
+it is clear at which stage it is. 
+
+Perhaps the new algorithm would need an extra flag to keep track of what it
+is dealing with. 
+What are the problems you are trying to solve with the new handler?
+
+For the Q40, IRQ_AUTO_4 should be translated to "34   : sample int (10/20 KHz periodic timer)"
+IRQ_AUTO_2 needs further decoding before it can be decided what should be handled. 
+It can be any of the ISA irqs or one of 32,33.
+
+So as long as ISA drivers can use the numbers 1-15 and the Q40 specific
+drivers 32-34 nothing there should not be a problem
+
+> Changing the numbers is not trivial, as ISA assumes interrupts 1-15 everywhere.
+
+indeed, would be a major incovenience.
+
+
+Richard
+
+---
+Name and OpenPGP keys available from pgp key servers
+
