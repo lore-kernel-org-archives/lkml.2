@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab1HWX3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 19:29:30 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:39431 "EHLO
+	id S1756354Ab1HWX3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 19:29:39 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:60350 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755941Ab1HWX2M (ORCPT
+	by vger.kernel.org with ESMTP id S1756028Ab1HWX2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 19:28:12 -0400
-X-Sasl-enc: nz3pd1np1t8NLGfKYRmH2PQ4lkliZgHffUJ/AzAURkrH 1314142091
-Date: Tue, 23 Aug 2011 16:14:45 -0700
+	Tue, 23 Aug 2011 19:28:09 -0400
+X-Sasl-enc: LM0ZwmrXa4g7x9AyEMN93h00bcIxu+SnjZkf9N8snaX3 1314142088
+Date: Tue, 23 Aug 2011 16:11:20 -0700
 From: Greg KH <greg@kroah.com>
 To: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/8] Staging: hv: vmbus: Fix a checkpatch warning in
- ring_buffer.c
-Message-ID: <20110823231445.GB9955@kroah.com>
-References: <1311101018-23370-1-git-send-email-kys@microsoft.com>
- <1311101065-23417-1-git-send-email-kys@microsoft.com>
+        virtualization@lists.osdl.org
+Subject: Re: [PATCH 0000/0117] Staging: hv: Driver cleanup
+Message-ID: <20110823231120.GP9641@kroah.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311101065-23417-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1310752024-27854-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 19, 2011 at 11:44:18AM -0700, K. Y. Srinivasan wrote:
-> Fix a checkpatch warning in ring_buffer.c (line over 80 characters).
+On Fri, Jul 15, 2011 at 10:47:04AM -0700, K. Y. Srinivasan wrote:
+> Further cleanup of the hv drivers. Back in June I had sent two patch
+> sets to address these issues. I have addressed the comments I got from
+> the community on my earlier patches here:
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> ---
->  drivers/staging/hv/ring_buffer.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> 	1) Implement code for autoloading the vmbus drivers without using PCI or DMI
+> 	   signatures. I have implemented this based on Greg's feedback on my earlier
+> 	   implementation.
 > 
-> diff --git a/drivers/staging/hv/ring_buffer.c b/drivers/staging/hv/ring_buffer.c
-> index 9212699..e41d206 100644
-> --- a/drivers/staging/hv/ring_buffer.c
-> +++ b/drivers/staging/hv/ring_buffer.c
-> @@ -34,7 +34,8 @@
->  
->  
->  /* Amount of space to write to */
-> -#define BYTES_AVAIL_TO_WRITE(r, w, z) ((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w))
-> +#define BYTES_AVAIL_TO_WRITE(r, w, z) \
-> +(((w) >= (r)) ? ((z) - ((w) - (r))) : ((r) - (w)))
+> 	2) Cleanup error handling across the board and use standard Linux error codes.
+> 
+> 	3) General cleanup
+> 
+> 	4) Some bug fixes.
+> 
+> 	5) Cleanup the reference counting mess for both stor and net devices.
+> 
+> 	6) Handle all block devices using the storvsc driver. I have modified
+> 	   the implementation here based on Christoph's feedback on my earlier
+> 	   implementation.
+> 
+> 	7) Accomodate some host side scsi emulation bugs.
+> 
+> 	8) In case of scsi errors off-line the device.
 
-Please at least indent the second line a little bit, otherwise it's a
-pain to read, right?
+Care to respin this patch series based on my comments?
+
+thanks,
 
 greg k-h
