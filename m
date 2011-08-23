@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1HWIdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:33:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34327 "EHLO mga01.intel.com"
+	id S1754770Ab1HWIdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:33:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56227 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab1HWIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:33:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,268,1312182000"; 
-   d="scan'208";a="44121710"
-Subject: Re: [PATCH] DMA: PL330: add missing header
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Boojin Kim <boojin.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>
-In-Reply-To: <20110823082319.GA19622@n2100.arm.linux.org.uk>
-References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com>
-	 <1314081133.22120.19.camel@vkoul-udesk3>
-	 <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
-	 <1314087342.22120.100.camel@vkoul-udesk3>
-	 <20110823082319.GA19622@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 14:02:47 +0530
-Message-ID: <1314088367.22120.133.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752587Ab1HWIdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:33:18 -0400
+Date: Tue, 23 Aug 2011 10:33:12 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: "Zou, Yi" <yi.zou@intel.com>
+Cc: Jesper Juhl <jj@chaosbits.net>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>
+Subject: RE: [Open-FCoE] [PATCH 2/4] drivers/scsi/fcoe/fcoe.c: add missing
+ test
+In-Reply-To: <5A9BD224CEA58D4CB62235967D650C1609F5B04B@orsmsx509.amr.corp.intel.com>
+Message-ID: <Pine.LNX.4.64.1108231032510.25811@ask.diku.dk>
+References: <1314021636-11528-2-git-send-email-julia@diku.dk>
+ <alpine.LNX.2.00.1108221632130.9774@swampdragon.chaosbits.net>
+ <Pine.LNX.4.64.1108221648560.10948@ask.diku.dk>
+ <5A9BD224CEA58D4CB62235967D650C1609F5B04B@orsmsx509.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 09:23 +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 23, 2011 at 01:45:42PM +0530, Koul, Vinod wrote:
-> > Russell had fixed compilation of pl330 driver, and was supposed to send
-> > the fix to Linus as part of his fixes. If thats not done I can send it
-> > for next -rc
+On Tue, 23 Aug 2011, Zou, Yi wrote:
+
+> > From nobody Mon Aug 22 15:57:42 CEST 2011
+> > From: Julia Lawall <julia@diku.dk>
+> > To: Robert Love <robert.w.love@intel.com>
+> > Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,devel@open-
+> > fcoe.org,linux-scsi@vger.kernel.org,linux-kernel@vger.kernel.org
+> > Subject: [PATCH 2/4] drivers/scsi/fcoe/fcoe.c: add missing test
+> > 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > The initializations of both fcoe_nport_scsi_transport and
+> > fcoe_vport_scsi_transport can fail, so test both of them.
+> > 
+> > The semantic match that finds this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @r@
+> > identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
+> > statement S;
+> > @@
+> > 
+> > x = f(...);
+> > (
+> > if (\(x == NULL\|IS_ERR(x)\)) S
+> > |
+> > *if (\(y == NULL\|IS_ERR(y)\))
+> >  { ... when != x
+> >    return ...; }
+> > )
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  drivers/scsi/fcoe/fcoe.c |   13 +++++++++++--
+> >  1 file changed, 11 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+> > index ba710e3..9f2e2f4 100644
+> > --- a/drivers/scsi/fcoe/fcoe.c
+> > +++ b/drivers/scsi/fcoe/fcoe.c
+> > @@ -1093,11 +1093,20 @@ static int __init fcoe_if_init(void)
+> >  	/* attach to scsi transport */
+> >  	fcoe_nport_scsi_transport =
+> >  		fc_attach_transport(&fcoe_nport_fc_functions);
+> > +
+> > +	if (!fcoe_nport_scsi_transport) {
+> > +		printk(KERN_ERR
+> > +		       "fcoe_nport: Failed to attach to the FC transport\n");
+> > +		return -ENODEV;
+> > +	}
+> > +
+> >  	fcoe_vport_scsi_transport =
+> >  		fc_attach_transport(&fcoe_vport_fc_functions);
+> > 
+> > -	if (!fcoe_nport_scsi_transport) {
+> > -		printk(KERN_ERR "fcoe: Failed to attach to the FC
+> > transport\n");
+> > +	if (!fcoe_vport_scsi_transport) {
+> > +		printk(KERN_ERR
+> > +		       "fcoe_vport: Failed to attach to the FC transport\n");
+> > +		fc_release_transport(fcoe_nport_scsi_transport);
+> >  		return -ENODEV;
+> >  	}
+> > 
 > 
-> That was for amba-pl08x.c, not pl330.c
-Okay, thanks.
-I will send the patch for dmaengine.h to Linus for next -rc
+> I understand we were using -ENODEV before, but -ENOMEM is preferred here 
+> as that's the only err from fc_attach_transport.
 
-That will resolve this error as well
+OK, I'll fix it.  Thanks.
 
--- 
-~Vinod
-
+julia
