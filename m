@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab1HWADy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 20:03:54 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52741 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab1HWADw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 20:03:52 -0400
-Date: Tue, 23 Aug 2011 01:03:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-Message-ID: <20110823000314.GW2203@ZenIV.linux.org.uk>
-References: <4E51D597.3060800@zytor.com>
- <20110822095336.GB25949@kernel.org>
- <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com>
- <20110822144051.GD2946@aftab>
- <20110822151305.GV2203@ZenIV.linux.org.uk>
- <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
- <4E52B7F8.3050002@zytor.com>
- <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
- <4E52D280.3010107@zytor.com>
- <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+	id S1754375Ab1HWAGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 20:06:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60408 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754007Ab1HWAGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 20:06:43 -0400
+Message-ID: <4E52EED5.3020007@cn.fujitsu.com>
+Date: Tue, 23 Aug 2011 08:05:41 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
+CC: Wanlong Gao <wanlong.gao@gmail.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chris.mason@oracle.com
+Subject: Re: [PATCH] btrfs:make btrfs_init_compress() return void
+References: <1314022940-6717-1-git-send-email-wanlong.gao@gmail.com> <4E52E986.8030405@jp.fujitsu.com>
+In-Reply-To: <4E52E986.8030405@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-23 08:05:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-23 08:05:40,
+	Serialize complete at 2011-08-23 08:05:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 04:27:51PM -0700, Linus Torvalds wrote:
+On 08/23/2011 07:43 AM, Tsutomu Itoh wrote:
+> (2011/08/22 23:22), Wanlong Gao wrote:
+>> From: Wanlong Gao<gaowanlong@cn.fujitsu.com>
+>>
+>> Make btrfs_init_compress() return void, since it always return 0,
+>> and no need to check return value.
+>>
+>> Signed-off-by: Wanlong Gao<gaowanlong@cn.fujitsu.com>
+>> ---
+>>   fs/btrfs/compression.c |    3 +--
+>>   fs/btrfs/compression.h |    2 +-
+>>   fs/btrfs/super.c       |    7 ++-----
+>>   3 files changed, 4 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
+>> index 8ec5d86..b2dbefa 100644
+>> --- a/fs/btrfs/compression.c
+>> +++ b/fs/btrfs/compression.c
+>> @@ -731,7 +731,7 @@ struct btrfs_compress_op *btrfs_compress_op[] = {
+>>   	&btrfs_lzo_compress,
+>>   };
+>>
+>> -int __init btrfs_init_compress(void)
+>> +void __init btrfs_init_compress(void)
+>>   {
+>>   	int i;
+>>
+>> @@ -741,7 +741,6 @@ int __init btrfs_init_compress(void)
+>>   		atomic_set(&comp_alloc_workspace[i], 0);
+>>   		init_waitqueue_head(&comp_workspace_wait[i]);
+>>   	}
+>> -	return 0;
+>>   }
+>>
+>>   /*
+>> diff --git a/fs/btrfs/compression.h b/fs/btrfs/compression.h
+>> index a12059f..9afb0a6 100644
+>> --- a/fs/btrfs/compression.h
+>> +++ b/fs/btrfs/compression.h
+>> @@ -19,7 +19,7 @@
+>>   #ifndef __BTRFS_COMPRESSION_
+>>   #define __BTRFS_COMPRESSION_
+>>
+>> -int btrfs_init_compress(void);
+>> +void btrfs_init_compress(void);
+>>   void btrfs_exit_compress(void);
+>>
+>>   int btrfs_compress_pages(int type, struct address_space *mapping,
+>> diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+>> index 15634d4..31e9654 100644
+>> --- a/fs/btrfs/super.c
+>> +++ b/fs/btrfs/super.c
+>> @@ -1238,9 +1238,7 @@ static int __init init_btrfs_fs(void)
+>>   	if (err)
+>>   		return err;
+>>
+>> -	err = btrfs_init_compress();
+>> -	if (err)
+>> -		goto free_sysfs;
+>> +	btrfs_init_compress();
+>>
+>>   	err = btrfs_init_cachep();
+>>   	if (err)
+>> @@ -1281,8 +1279,7 @@ free_cachep:
+>>   	btrfs_destroy_cachep();
+>>   free_compress:
+>>   	btrfs_exit_compress();
+>
+>> -free_sysfs:
+>> -	btrfs_exit_sysfs();
+>> +
+>
+> Why remove btrfs_exit_sysfs()?
 
-> So I think the "let's fix the vdso case for sysenter" + "let's remove
-> the 32-bit syscall vdso" is the right solution. If somebody has
-> hardcoded syscall instructions, or generates them dynamically with
-> some JIT, that's their problem. We'll continue to support it as well
-> as we ever have (read: "almost nobody will ever notice").
+Yeah, a mistake, just wanna remove the label.
 
-Umm...  Maybe, but I really wonder if it would be better to do this:
-	* check if %ecx is the right one for vdso32 entry.  If it isn't,
-act as we act now (and possibly warn).  If it is, increment it by 4.
-	* slap 0x90, 0x90, 0xcd, 0x80 right after that syscall insn -
-i.e. nop/nop/int 0x80.  Followed by what we currently do there.
+Thanks
+-Wanlong Gao
+>
+>   -Tsutomu
+>
+>>   	return err;
+>>   }
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-	Those who do syscall insn in 32bit mode outside of vdso will get
-what they currently get.  __kernel_vsyscall() will keep working and do
-that without restart problems.  And the price is comparison + branch not
-taken + addition for that path...
