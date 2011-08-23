@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab1HWONA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:13:00 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:51313 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753316Ab1HWOMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:12:52 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/DvdJOdKHDkeb45H2d8yN4WoKZVeWbOHjZSgclZJ
-	jlYH4z8Be8n+pE
-Subject: [patch] sched, rt: fix migrate_enable() thinko
-From: Mike Galbraith <efault@gmx.de>
+	id S1755231Ab1HWOPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:15:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab1HWOPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:15:04 -0400
+Date: Tue, 23 Aug 2011 10:14:52 -0400
+From: Don Zickus <dzickus@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-In-Reply-To: <1313232790.25267.7.camel@twins>
-References: <1313232790.25267.7.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 16:12:43 +0200
-Message-ID: <1314108763.6689.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Cc: x86@kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
+Subject: Re: [RFC][PATCH 2/6] x86, nmi: create new NMI handler routines
+Message-ID: <20110823141452.GL2067@redhat.com>
+References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
+ <1313786266-9585-3-git-send-email-dzickus@redhat.com>
+ <1314022580.24275.33.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314022580.24275.33.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 22, 2011 at 04:16:20PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-08-19 at 16:37 -0400, Don Zickus wrote:
+> > +static struct nmiaction *__free_nmi(unsigned int type, const char *name)
+> > +{
+> > +       struct nmi_desc *desc = nmi_to_desc(type);
+> > +       struct nmiaction *n, **np = &(desc->head);
+> > +       unsigned long flags;
+> > +
+> > +       spin_lock_irqsave(&desc->lock, flags);
+> > +
+> ...
+> > +
+> > +       spin_unlock_irqrestore(&desc->lock, flags);
+> > +       synchronize_rcu();
+> > +       return *np;
+> > +}
+> 
+> > +void unregister_nmi_handler(unsigned int type, const char *name)
+> > +{
+> > +       kfree(__free_nmi(type, name));
+> > +}
+> 
+> This code is weird.. why not have the kfree() in __free_nmi(), also why
+> use sync_rcu() and not use kfree_rcu()?
 
-Assigning mask = tsk_cpus_allowed(p) after p->migrate_disable = 0 ensures
-that we won't see a mask change.. no push/pull, we stack tasks on one CPU.
+I was looking at trying to use kfree_rcu and noticed I would have to add
+another element to the nmiaction struct and another function as a callback
+to kfree the memory from the device name.  The overhead didn't seem worth
+it.  For some reason it just seems simpler to keep it the way it is and
+just have
 
-Also add a couple fields to sched_debug for the next guy.
+	struct nmiaction *a;
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+	a = __free_nmi(type, name);
+	if (a) {
+		kfree(a->name);
+		kfree(a);
+	}
 
----
- kernel/sched.c       |    4 +++-
- kernel/sched_debug.c |    3 +++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+(side note:  I was keeping the kfree()s in here for symmetry with the
+registration handler).
 
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -6375,12 +6375,14 @@ void migrate_enable(void)
- 	 */
- 	rq = this_rq();
- 	raw_spin_lock_irqsave(&rq->lock, flags);
--	p->migrate_disable = 0;
- 	mask = tsk_cpus_allowed(p);
-+	p->migrate_disable = 0;
- 
- 	WARN_ON(!cpumask_test_cpu(smp_processor_id(), mask));
- 
- 	if (!cpumask_equal(&p->cpus_allowed, mask)) {
-+		/* Get the mask now that migration is enabled */
-+		mask = tsk_cpus_allowed(p);
- 		if (p->sched_class->set_cpus_allowed)
- 			p->sched_class->set_cpus_allowed(p, mask);
- 		p->rt.nr_cpus_allowed = cpumask_weight(mask);
-Index: linux-2.6/kernel/sched_debug.c
-===================================================================
---- linux-2.6.orig/kernel/sched_debug.c
-+++ linux-2.6/kernel/sched_debug.c
-@@ -235,6 +235,7 @@ void print_rt_rq(struct seq_file *m, int
- 	P(rt_throttled);
- 	PN(rt_time);
- 	PN(rt_runtime);
-+	P(rt_nr_migratory);
- 
- #undef PN
- #undef P
-@@ -484,6 +485,8 @@ void proc_sched_show_task(struct task_st
- 	P(se.load.weight);
- 	P(policy);
- 	P(prio);
-+	P(migrate_disable);
-+	P(rt.nr_cpus_allowed);
- #undef PN
- #undef __PN
- #undef P
+Maybe I don't understand kfree_rcu, but what advantage do I have by
+placing rcu_head into nmiaction that never gets used except on unregister
+(which rarely happens to begin with)?
 
-
+Cheers,
+Don
