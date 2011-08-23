@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1HWQpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:45:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48366 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab1HWQpd (ORCPT
+	id S1755425Ab1HWQqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:46:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39845 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab1HWQqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:45:33 -0400
-Date: Tue, 23 Aug 2011 17:45:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jiandong Zheng <jdzheng@broadcom.com>
-Cc: "Maxin B. John" <maxin.john@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] arm: mach-bcmring: fix build error in core.c
-Message-ID: <20110823164514.GG3895@n2100.arm.linux.org.uk>
-References: <20110823111824.GA2806@maxin> <4E53D84F.5060604@broadcom.com>
+	Tue, 23 Aug 2011 12:46:32 -0400
+Date: Tue, 23 Aug 2011 18:46:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, mporter@ti.com,
+        Kevin Hilman <khilman@ti.com>, "Govindraj.R" <govindraj.raja@ti.com>
+Subject: Re: [PATCH] tty: omap-serial: fix boot hang by converting to use a
+ threaded IRQ handler (was Re: [PATCH] irq: always set IRQF_ONESHOT if no
+ primary handler is specified)
+In-Reply-To: <CA+55aFyFzzd2GBbwFYrXMK353UE4tdrdZ5Lt8=qEwaaMJvStnA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1108231844140.2807@ionos>
+References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de> <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com> <4E4D4A5F.202@linutronix.de> <20110818213418.GA20509@legolas.emea.dhcp.ti.com> <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
+ <alpine.DEB.2.00.1108222306300.28226@utopia.booyaka.com> <20110823095711.058d9cf4@lxorguk.ukuu.org.uk> <CA+55aFyFzzd2GBbwFYrXMK353UE4tdrdZ5Lt8=qEwaaMJvStnA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E53D84F.5060604@broadcom.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 09:41:51AM -0700, Jiandong Zheng wrote:
-> On 8/23/2011 4:18 AM, Maxin B. John wrote:
->> CC      arch/arm/mach-bcmring/core.o
->> arch/arm/mach-bcmring/core.c: In function 'bcmring_init_timer':
->> arch/arm/mach-bcmring/core.c:238: error: implicit declaration of
->> function 'sp804_clockevents_register'
->> make[1]: *** [arch/arm/mach-bcmring/core.o] Error 1
->> make: *** [arch/arm/mach-bcmring] Error 2
->>
->> Please let me know your comments on this fix:
->>
->> Signed-off-by: Maxin B. John<maxin.john@gmail.com>
->> ---
->> diff --git a/arch/arm/mach-bcmring/core.c b/arch/arm/mach-bcmring/core.c
->> index 43eadbc..430da12 100644
->> --- a/arch/arm/mach-bcmring/core.c
->> +++ b/arch/arm/mach-bcmring/core.c
->> @@ -235,7 +235,7 @@ void __init bcmring_init_timer(void)
->>   	 */
->>   	bcmring_clocksource_init();
->>
->> -	sp804_clockevents_register(TIMER0_VA_BASE, IRQ_TIMER0, "timer0");
->> +	sp804_clockevents_init(TIMER0_VA_BASE, IRQ_TIMER0, "timer0");
->>   }
->>
->>   struct sys_timer bcmring_timer = {
->>
-> Signed-off-by: Jiandong Zheng <jdzheng@broadcom.com>
+Linus,
 
-Don't you mean acked-by or reviewed-by?
+On Tue, 23 Aug 2011, Linus Torvalds wrote:
+> but the "there is no difference for others" seems to be total crap,
+> exactly because it results in this IRQF mismatch.
+> 
+> So I think that commit should just be reverted. Thomas?
 
-> The same changes was in my comments on May 17 to Russell's serial  
-> patches to convert to sp804 clk dev, but seems it got lost.
+Yes. I missed that detail when I applied that patch. Reverting it
+seems to be the only sensible solution.
 
-Unfortunately... sorry about that.
+Thanks,
+
+	tglx
