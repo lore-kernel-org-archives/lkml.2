@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab1HWI33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:29:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33229 "EHLO mga03.intel.com"
+	id S1754708Ab1HWIdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:33:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34327 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab1HWI30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:29:26 -0400
+	id S1752587Ab1HWIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:33:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.68,268,1312182000"; 
-   d="asc'?scan'208";a="41407122"
-Subject: Re: linux-next: boot test failure (net tree)
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: David Miller <davem@davemloft.net>
-Cc: "lacombar@gmail.com" <lacombar@gmail.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mikey@neuling.org" <mikey@neuling.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
-Date: Tue, 23 Aug 2011 01:29:24 -0700
-In-Reply-To: <20110822.210255.1902105215409964106.davem@davemloft.net>
-References: <20110823114129.ceb18da164bf7df3c145941b@canb.auug.org.au>
-	 <20110822.191348.2099822249437201579.davem@davemloft.net>
-	 <CACqU3MW4BnucRt3gxPrKPDvWEjaVuxRF1VOPWk5hTRfneyANkg@mail.gmail.com>
-	 <20110822.210255.1902105215409964106.davem@davemloft.net>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-HpqJtc2ZH35A+XCxB7MA"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1314088165.2128.221.camel@jtkirshe-mobl>
+   d="scan'208";a="44121710"
+Subject: Re: [PATCH] DMA: PL330: add missing header
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Boojin Kim <boojin.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+In-Reply-To: <20110823082319.GA19622@n2100.arm.linux.org.uk>
+References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com>
+	 <1314081133.22120.19.camel@vkoul-udesk3>
+	 <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
+	 <1314087342.22120.100.camel@vkoul-udesk3>
+	 <20110823082319.GA19622@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Aug 2011 14:02:47 +0530
+Message-ID: <1314088367.22120.133.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-08-23 at 09:23 +0100, Russell King - ARM Linux wrote:
+> On Tue, Aug 23, 2011 at 01:45:42PM +0530, Koul, Vinod wrote:
+> > Russell had fixed compilation of pl330 driver, and was supposed to send
+> > the fix to Linus as part of his fixes. If thats not done I can send it
+> > for next -rc
+> 
+> That was for amba-pl08x.c, not pl330.c
+Okay, thanks.
+I will send the patch for dmaengine.h to Linus for next -rc
 
---=-HpqJtc2ZH35A+XCxB7MA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That will resolve this error as well
 
-On Mon, 2011-08-22 at 21:02 -0700, David Miller wrote:
-> From: Arnaud Lacombe <lacombar@gmail.com>
-> Date: Mon, 22 Aug 2011 23:50:02 -0400
->=20
-> > Are you implying we need some kind of way to migrate config ?
->=20
-> The issue is that the dependencies for every single ethernet driver
-> have changed.  Some dependencies have been dropped (f.e. NETDEV_10000
-> and some have been added (f.e. ETHERNET, NET_VENDOR_****)
->=20
-> So right now an automated (non-prompted, default to no on all new
-> options) run on an existing config results in all ethernet drivers
-> getting disabled because the new dependencies don't get enabled.
->=20
-> This wouldn't be so bad if it was just one or two drivers, but in
-> this case it's every single ethernet driver which will have and hit
-> this problem.
->=20
-
-Ok, I have patch which will resolve the issue.  It is the last patch in
-the series I am about to send out.  What this patch does is set the
-"new" Kconfig options to Y, so that current defconfig's can build
-driver's that are currently set to build.
-
-This will fix the issue, I have confirmed this with the x86_64
-defconfig.  It will be nice that eventually all configs get updated so
-that not all the NET_VENDOR_* tags have to be enabled, but
-understandably this is the best way to ensure that current defconfig's
-will compile all expected drivers.
-
---=-HpqJtc2ZH35A+XCxB7MA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOU2TkAAoJECTsCADr/EWUc3UH+wRmblkKCeeVZmfYQ8NrsFRX
-mUuupGthI7v0VDrc7wOvt6lOb44Of1PmDV1CcFikKA+eYOEbSIF+F2jCZ2P05qLc
-KWuOK9ZkcE1xVLvDOmbBUhHX/sOkdNfXfeprqzoYTjnXCnK14XcRkOGfZBGrotQw
-yCpSKJGQRYNGexl8ohgz9GvZUIWwmJmS4tglvRuxQ7BXTA/kiYjWw8n9miqjl+wU
-pHkd7+eFkS5axWTU0CLQGRdUkhhimhNBQ06i/FwCKgFIGlKB979RaMBBgg4wcCEM
-FOUDRdShaJP/zFsC6/QW7/5oLWcB+kfbTIHFgeUuzRACNn37IptNF8pfKblt4yk=
-=e3ED
------END PGP SIGNATURE-----
-
---=-HpqJtc2ZH35A+XCxB7MA--
+-- 
+~Vinod
 
