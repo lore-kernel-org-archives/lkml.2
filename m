@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab1HWVBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 17:01:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52911 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534Ab1HWVBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 17:01:33 -0400
-Date: Tue, 23 Aug 2011 21:01:20 GMT
-From: tip-bot for Zhao Jin <cronozhj@gmail.com>
-Message-ID: <tip-c812d8f7ad27bd5f1ed1c790eea8527b6f8ff1c7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        cronozhj@gmail.com, tglx@linutronix.de, hpa@linux.intel.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cronozhj@gmail.com, tglx@linutronix.de, hpa@linux.intel.com,
-        mingo@elte.hu
-In-Reply-To: <4E4FB5A9.700@gmail.com>
-References: <4E4FB5A9.700@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, mm, trivial: Remove unnecessary get_order() in free_thread_info()
-Git-Commit-ID: c812d8f7ad27bd5f1ed1c790eea8527b6f8ff1c7
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (hera.kernel.org [127.0.0.1]); Tue, 23 Aug 2011 21:01:21 +0000 (UTC)
+	id S1754879Ab1HWVDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 17:03:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34870 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751791Ab1HWVDp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 17:03:45 -0400
+Date: Tue, 23 Aug 2011 14:03:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] memblock: add memblock_start_of_DRAM()
+Message-Id: <20110823140309.9a7b36dd.akpm@linux-foundation.org>
+In-Reply-To: <20110806185923.GA8494@merkur.ravnborg.org>
+References: <20110806185923.GA8494@merkur.ravnborg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c812d8f7ad27bd5f1ed1c790eea8527b6f8ff1c7
-Gitweb:     http://git.kernel.org/tip/c812d8f7ad27bd5f1ed1c790eea8527b6f8ff1c7
-Author:     Zhao Jin <cronozhj@gmail.com>
-AuthorDate: Sat, 20 Aug 2011 21:24:57 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 23 Aug 2011 21:49:35 +0200
+On Sat, 6 Aug 2011 20:59:23 +0200
+Sam Ravnborg <sam@ravnborg.org> wrote:
 
-x86, mm, trivial: Remove unnecessary get_order() in free_thread_info()
+> SPARC32 require access to the start address.
+> Add a new helper memblock_start_of_DRAM() to give
+> access to the address of the first memblock - which
+> contains the lowest address.
+> 
 
-Because THREAD_SIZE is defined as PAGE_SIZE << THREAD_ORDER on x86, the
-call of get_order(THREAD_SIZE) can be replaced with THREAD_ORDER.
+What is the status of the sparc32 patches which need this change?
 
-Signed-off-by: Zhao Jin <cronozhj@gmail.com>
-Link: http://lkml.kernel.org/r/4E4FB5A9.700@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/process.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+If they're in some other tree then I'd suggest that this patch (which
+needed some small changes for current mainline) join them in that tree.
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e7e3b01..b9b3b1a 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -49,7 +49,7 @@ void free_thread_xstate(struct task_struct *tsk)
- void free_thread_info(struct thread_info *ti)
- {
- 	free_thread_xstate(ti->task);
--	free_pages((unsigned long)ti, get_order(THREAD_SIZE));
-+	free_pages((unsigned long)ti, THREAD_ORDER);
- }
- 
- void arch_task_cache_init(void)
+Or we could slip this change into mainline immediately if that makes
+life easier.
+
+Or we could just wait for 3.1.
