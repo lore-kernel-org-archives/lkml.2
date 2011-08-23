@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1HWLU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 07:20:58 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:43421 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1HWLUy (ORCPT
+	id S1753135Ab1HWLVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 07:21:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37300 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab1HWLVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 07:20:54 -0400
-Date: Tue, 23 Aug 2011 13:20:46 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] nohz: remove "Switched to NOHz mode" debugging messages
-Message-ID: <20110823112046.GB2540@osiris.boeblingen.de.ibm.com>
+	Tue, 23 Aug 2011 07:21:36 -0400
+Date: Tue, 23 Aug 2011 14:21:28 +0300
+From: Maxin B John <maxin.john@gmail.com>
+To: Jiandong Zheng <jdzheng@broadcom.com>
+Cc: Scott Branden <sbranden@broadcom.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] arm: mach-bcmring: fix build error in dma.c
+Message-ID: <20110823112128.GA2825@maxin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+ CC      arch/arm/mach-bcmring/dma.o
+arch/arm/mach-bcmring/dma.c: In function 'dma_request_channel_dbg':
+arch/arm/mach-bcmring/dma.c:1022: error: 'TASK_INTERRUPTIBLE'
+undeclared (first use in this function)
+arch/arm/mach-bcmring/dma.c:1022: error: (Each undeclared identifier
+is reported only once
+arch/arm/mach-bcmring/dma.c:1022: error: for each function it appears
+in.)
+arch/arm/mach-bcmring/dma.c:1024: error: implicit declaration of
+function 'schedule'
+arch/arm/mach-bcmring/dma.c:1027: error: implicit declaration of
+function 'signal_pending'
+arch/arm/mach-bcmring/dma.c: In function 'dma_free_channel':
+arch/arm/mach-bcmring/dma.c:1092: error: 'TASK_INTERRUPTIBLE'
+undeclared (first use in this function)
+arch/arm/mach-bcmring/dma.c: In function 'dma_map_add_region':
+arch/arm/mach-bcmring/dma.c:1946: error: dereferencing pointer to
+incomplete type
+arch/arm/mach-bcmring/dma.c:1948: error: dereferencing pointer to
+incomplete type
+arch/arm/mach-bcmring/dma.c:1955: error: dereferencing pointer to
+incomplete type
+make[1]: *** [arch/arm/mach-bcmring/dma.o] Error 1
+make: *** [arch/arm/mach-bcmring] Error 2
 
-When performing cpu hotplug tests the kernel printk log buffer gets flooded
-with pointless "Switched to NOHz mode..." messages. Especially when afterwards
-analyzing a dump this might have removed more interesting stuff out of the
-buffer.
-Assuming that switching to NOHz mode simply works just remove the printk.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
 ---
- kernel/time/tick-sched.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d5097c4..8b3b014 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -640,8 +640,6 @@ static void tick_nohz_switch_to_nohz(void)
- 		next = ktime_add(next, tick_period);
- 	}
- 	local_irq_enable();
--
--	printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
- }
+diff --git a/arch/arm/mach-bcmring/dma.c b/arch/arm/mach-bcmring/dma.c
+index 0ca0005..12d1504 100644
+--- a/arch/arm/mach-bcmring/dma.c
++++ b/arch/arm/mach-bcmring/dma.c
+@@ -35,6 +35,7 @@
+ #include <linux/mm.h>
+ #include <linux/pfn.h>
+ #include <linux/atomic.h>
++#include <linux/sched.h>
+ #include <mach/dma.h>
  
- /*
-@@ -793,10 +791,8 @@ void tick_setup_sched_timer(void)
- 	}
- 
- #ifdef CONFIG_NO_HZ
--	if (tick_nohz_enabled) {
-+	if (tick_nohz_enabled)
- 		ts->nohz_mode = NOHZ_MODE_HIGHRES;
--		printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
--	}
- #endif
- }
- #endif /* HIGH_RES_TIMERS */
+ /* I don't quite understand why dc4 fails when this is set to 1 and DMA is enabled */
