@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab1HWHbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 03:31:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:43558 "EHLO relay.sw.ru"
+	id S1753869Ab1HWHgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 03:36:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30035 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab1HWHbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 03:31:07 -0400
-Subject: [PATCH] oom: skip frozen tasks
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>
-Date: Tue, 23 Aug 2011 11:31:01 +0300
-Message-ID: <20110823073101.6426.77745.stgit@zurg>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752068Ab1HWHgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 03:36:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1314084231.5033.1.camel@phoenix>
+References: <1314084231.5033.1.camel@phoenix>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] CRED: fix build error due to 'tgcred' undeclared
+Date: Tue, 23 Aug 2011 08:36:27 +0100
+Message-ID: <25044.1314084987@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All frozen tasks are unkillable, and if one of them has TIF_MEMDIE
-we must kill something else to avoid deadlock. After this patch
-select_bad_process() will skip frozen task before checking TIF_MEMDIE.
+Axel Lin <axel.lin@gmail.com> wrote:
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- mm/oom_kill.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> This patch adds CONFIG_KEYS guard for tgcred to fix below build error
+> if CONFIG_KEYS is not configured.
+> 
+>   CC      kernel/cred.o
+> kernel/cred.c: In function 'prepare_kernel_cred':
+> kernel/cred.c:657: error: 'tgcred' undeclared (first use in this function)
+> kernel/cred.c:657: error: (Each undeclared identifier is reported only once
+> kernel/cred.c:657: error: for each function it appears in.)
+> make[1]: *** [kernel/cred.o] Error 1
+> make: *** [kernel] Error 2
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 626303b..931ab20 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -138,6 +138,8 @@ static bool oom_unkillable_task(struct task_struct *p,
- 		return true;
- 	if (p->flags & PF_KTHREAD)
- 		return true;
-+	if (p->flags & PF_FROZEN)
-+		return true;
- 
- 	/* When mem_cgroup_out_of_memory() and p is not member of the group */
- 	if (mem && !task_in_mem_cgroup(p, mem))
+Acked-by: David Howells <dhowells@redhat.com>
 
+James: do you want me to reissue my patches?
