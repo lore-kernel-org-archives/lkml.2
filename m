@@ -1,117 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1HWOhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:37:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab1HWOhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:37:12 -0400
-Date: Tue, 23 Aug 2011 10:36:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110823143621.GA15820@redhat.com>
-References: <20110806094526.733282037@intel.com>
- <1312811193.10488.33.camel@twins>
- <20110808141128.GA22080@localhost>
- <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
+	id S1754879Ab1HWOh0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:37:26 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50556 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752070Ab1HWOhY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:37:24 -0400
+Date: Tue, 23 Aug 2011 10:37:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mnazarewicz@google.com>
+cc: Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
+In-Reply-To: <op.v0n67imkvgw7ix@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108231030270.2069-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314093660.8002.24.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 12:01:00PM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-08-23 at 11:40 +0800, Wu Fengguang wrote:
-> > - not a factor at all for updating balanced_rate (whether or not we do (2))
-> >   well, in this concept: the balanced_rate formula inherently does not
-> >   derive the balanced_rate_(i+1) from balanced_rate_i. Rather it's
-> >   based on the ratelimit executed for the past 200ms:
-> > 
-> >           balanced_rate_(i+1) = task_ratelimit_200ms * bw_ratio
-> 
-> Ok, this is where it all goes funny..
+On Tue, 23 Aug 2011, Michal Nazarewicz wrote:
 
-Exactly. This is where it gets confusing and is bone of contention.
+> My understanding was that one could consciously create a composite gadget
+> such that not all of the functions support all of the speeds.
 
-> 
-> So if you want completely separated feedback loops I would expect
-> something like:
-> 
-> 	balance_rate_(i+1) = balance_rate_(i) * bw_ratio   ; every 200ms
-> 
+That's an important point.  If somebody wants to build a composite 
+gadget that includes both midi and storage support, the storage driver 
+would be able to go all the way up to SuperSpeed (or rather, it will 
+once Felipe's patch is finished and merged) but the midi driver would 
+only support full speed.  So what speed should the UDC connect at?
 
-I agree. This makes sense. IOW.
-						      write_bw
-bdi->dirty_ratelimit_n = bdi->dirty_ratelimit_(n-1) * -------
-						      dirty_rate
+In cases like this there's really no way to know.  Ultimately the best 
+approach would be to update the midi driver, but that's a long-term 
+sort of thing.
 
-> The former is a complete feedback loop, expressing the new value in the
-> old value (*) with bw_ratio as feedback parameter; if we throttled too
-> much, the dirty_rate will have dropped and the bw_ratio will be <1
-> causing the balance_rate to drop increasing the dirty_rate, and vice
-> versa.
+Usually when the kernel can't decide something, it asks the user for 
+help (by allowing the user to specify the speed via a module parameter, 
+for instance).  In this case even that wouldn't work, because the 
+gadget's userspace isn't aware of which functions the host's user will 
+want to utilize.
 
-I think you meant.
+At the moment I don't know the best answer.  This is something we 
+should all think about.
 
-"if we throttled too much, the dirty_rate will have dropped and the bw_ratio
- will be >1 causing the balance_rate to increase hence increasing the
- dirty_rate, and vice versa."
+Alan Stern
 
-> 
-> (*) which is the form I expected and why I thought your primary feedback
-> loop looked like: rate_(i+1) = rate_(i) * pos_ratio * bw_ratio
-> 
-> With the above balance_rate is an independent variable that tracks the
-> write bandwidth. Now possibly you'd want a low-pass filter on that since
-> your bw_ratio is a bit funny in the head, but that's another story.
-> 
-> Then when you use the balance_rate to actually throttle tasks you apply
-> your secondary control steering the dirty page count, yielding:
-> 
-> 	task_rate = balance_rate * pos_ratio
-> 
-> >   and task_ratelimit_200ms happen to can be estimated from
-> > 
-> >           task_ratelimit_200ms ~= balanced_rate_i * pos_ratio
-> 
-> >   We may alternatively record every task_ratelimit executed in the
-> >   past 200ms and average them all to get task_ratelimit_200ms. In this
-> >   way we take the "superfluous" pos_ratio out of sight :) 
-> 
-> Right, so I'm not at all sure that makes sense, its not immediately
-> evident that <task_ratelimit> ~= balance_rate * pos_ratio. Nor is it
-> clear to me why your primary feedback loop uses task_ratelimit_200ms at
-> all. 
-> 
-
-We I thought that this is evident that.
-
-task_ratelimit = balanced_rate * pos_ratio
-
-What is not evident to me is following.
-
-balanced_rate_(i+1) = task_ratelimit_200ms * pos_ratio.
-
-Instead, like you, I also thought that following is more obivious.
-
-balanced_rate_(i+1) = balanced_rate_(i) * pos_ratio
-
-Thanks
-Vivek
