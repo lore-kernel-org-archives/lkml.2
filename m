@@ -1,188 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab1HWT4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 15:56:36 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:50128 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755781Ab1HWT4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 15:56:30 -0400
-Date: Tue, 23 Aug 2011 14:56:28 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
-Message-ID: <20110823195628.GB4533@sgi.com>
-References: <20110817160759.GA3482@sgi.com>
- <alpine.LFD.2.02.1108171819120.2807@ionos>
+	id S1756040Ab1HWT6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 15:58:08 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42548 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755704Ab1HWT6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 15:58:02 -0400
+Subject: Re: [GIT PULL] XFS update for 3.1-rc4
+From: Alex Elder <aelder@sgi.com>
+Reply-To: <aelder@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <xfs@oss.sgi.com>,
+        <akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
+References: <201108231739.p7NHdXQ8008360@stout.americas.sgi.com>
+	 <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Aug 2011 14:57:56 -0500
+Message-ID: <1314129476.2898.28.camel@doink>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1108171819120.2807@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.232.50]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 17, 2011 at 06:47:43PM +0200, Thomas Gleixner wrote:
-> On Wed, 17 Aug 2011, Dimitri Sivanich wrote:
+On Tue, 2011-08-23 at 11:46 -0700, Linus Torvalds wrote:
+> On Tue, Aug 23, 2011 at 10:39 AM, Alex Elder <aelder@sgi.com> wrote:
+> >
+> > Linus, please pull the following XFS changes.  Their effect is to
+> > remove the subdirectory structure from the XFS source hierarchy.
+> > There are no functional changes to the XFS code itself.  Thanks.
 > 
-> > Reposting this, as this was posted 2 weeks ago with no replies.
+> Pulled.
 > 
-> It's still in my vacation backlog :)
+> Any plans to further sanitize the namespace?
 
-Thanks for the prompt reply to this last one.
+We haven't discussed it but it's not a bad idea.
 
+> It's kind of crazy to have filenames like
 > 
-> > Jiffies updates are currently done by the tick_do_timer_cpu.  This has a
-> > non-deterministic value that can be any running cpu on the system.  It
-> > changes dynamically in nohz mode.  When nohz mode is off, it gets set to
-> > a more static, but still non-deterministic value.
-> > 
-> > While the nohz behavior is necessary, is there a reason why the nohz off
-> > case can't have a specific value, say 0 as it was on earlier kernels?
+>    fs/xfs/xfs_trace.c
 > 
-> Yes, we had troubles when switching over to highres/oneshot mode when
-> the first cpu which did the switch did not take the do_timer duty. See
-> changelogs.
+> which just duplicate the "xfs" part for no good reason. Why not just
+> do something like
 > 
-> > If the cpu is offlined, let the value change at that time (note that the
-> > x86 arch disallows offlining cpu 0).
-> > 
-> > There are certain cases where this would be advantageous, especially where
-> > timely jiffies updates may not necessarily occur on specific processors.
+>   for i in xfs_*; do j=$(echo $i | sed 's/^xfs_//'); git mv $i $j; done
 > 
-> Huch? How about fixing those long interrupt disabled regions instead?
-> And honestly jiffies update being delayed for a bit is not really a
-> problem.
+> to get rid of the silly "xfs_" prefix that adds nothing?
 > 
-> > The following sample patch presents one way that this could be done.
-> > Processors wait for the selected cpu to enter high resolution mode before
-> > they do so.
-> 
-> That's a horrible hack.
+> You could use the bytes you save to rename "qm.c" to "quota_manager.c"
+> instead. Wouldn't it be nice to have *good* names, instead of a jumble
+> of crazy and mostly redundant letters?
 
-Hopefully the patch below is more tolerable.
+We're getting there, gradually.  The code is certainly
+evolving in that direction, though that hasn't happened
+in the file names.  Doing that would require my fingers
+to get used to skipping over the "xfs_" spasm though...
 
-> 
-> > Note that this patch is not hotplug aware (however, should the
-> > tick_static_do_timer_cpu be offlined, the tick_do_timer_cpu simply becomes
-> > another cpu anyway).
-> > 
-> > Comments on this idea, or the sample patch?
-> 
-> I still have no idea why a random assignment is so harmful. Also if
-> there is really a reason to make that assignment static, what about
-> using a sysfs file, which lets you read out the assignment and update
-> it in the NOHZ off case ?
+					-Alex
 
-While not necessarily harmful, doing jiffies updates on an application cpu
-does cause some extra overhead that HPC benchmarking people notice.  They
-prefer to have OS activity isolated to certain cpus.  They like reproducibility
-of results, and having jiffies updates bouncing around introduces variability.
-
-Maybe this is useful for other folks as well?  It does give an indication
-of which cpu is currently doing jiffies updates.
-
-The patch below puts the file in /proc/sys/kernel, but if you think it should be in
-/sys, please let me know where you'd like to see it.
-
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- include/linux/tick.h        |    5 +++++
- kernel/sysctl.c             |    9 +++++++++
- kernel/time/tick-internal.h |    1 -
- kernel/time/tick-sched.c    |   23 +++++++++++++++++++++++
- 4 files changed, 37 insertions(+), 1 deletion(-)
-
-Index: linux/kernel/sysctl.c
-===================================================================
---- linux.orig/kernel/sysctl.c
-+++ linux/kernel/sysctl.c
-@@ -57,6 +57,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/kmod.h>
-+#include <linux/tick.h>
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -368,6 +369,14 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= sched_rt_handler,
- 	},
-+	{
-+		.procname	= "sched_jiffies_cpu",
-+		.data		= &tick_do_timer_cpu,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= tick_do_timer_cpu_handler,
-+		.extra1		= &zero,
-+	},
- #ifdef CONFIG_SCHED_AUTOGROUP
- 	{
- 		.procname	= "sched_autogroup_enabled",
-Index: linux/include/linux/tick.h
-===================================================================
---- linux.orig/include/linux/tick.h
-+++ linux/include/linux/tick.h
-@@ -72,6 +72,11 @@ struct tick_sched {
- extern void __init tick_init(void);
- extern int tick_is_oneshot_available(void);
- extern struct tick_device *tick_get_device(int cpu);
-+extern int tick_do_timer_cpu_handler(struct ctl_table *table, int write,
-+				 void __user *buffer, size_t *lenp,
-+				 loff_t *ppos);
-+
-+extern int tick_do_timer_cpu __read_mostly;
- 
- # ifdef CONFIG_HIGH_RES_TIMERS
- extern int tick_init_highres(void);
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c
-+++ linux/kernel/time/tick-sched.c
-@@ -815,6 +815,29 @@ void tick_cancel_sched_timer(int cpu)
- }
- #endif
- 
-+int tick_do_timer_cpu_handler(struct ctl_table *table, int write,
-+		void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	int ret, old_val;
-+
-+#ifdef CONFIG_NO_HZ
-+	/* nohz mode not supported */
-+	if (write && tick_nohz_enabled)
-+		return -EINVAL;
-+#endif
-+
-+	old_val = tick_do_timer_cpu;
-+
-+	ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-+
-+	if (!ret && write && !cpu_online(tick_do_timer_cpu)) {
-+		tick_do_timer_cpu = old_val;
-+		return -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+
- /**
-  * Async notification about clocksource changes
-  */
-Index: linux/kernel/time/tick-internal.h
-===================================================================
---- linux.orig/kernel/time/tick-internal.h
-+++ linux/kernel/time/tick-internal.h
-@@ -12,7 +12,6 @@
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- extern ktime_t tick_next_period;
- extern ktime_t tick_period;
--extern int tick_do_timer_cpu __read_mostly;
- 
- extern void tick_setup_periodic(struct clock_event_device *dev, int broadcast);
- extern void tick_handle_periodic(struct clock_event_device *dev);
