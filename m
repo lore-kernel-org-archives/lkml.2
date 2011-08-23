@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab1HWRgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:36:01 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48862 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755534Ab1HWRfy convert rfc822-to-8bit (ORCPT
+	id S1755838Ab1HWRjc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 13:39:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:29318 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab1HWRj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:35:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADkLE3X82um14wFnisPBtB=PLCX4A9JPVMXmdqdNusfhVAjq2A@mail.gmail.com>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-	<CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
-	<CADkLE3Ux1gVBR0f1VUNP4JDsnDQPUQ8rJrXqPV7-2kdLW0_CCw@mail.gmail.com>
-	<4E53D145.7070207@linux.intel.com>
-	<CADkLE3X82um14wFnisPBtB=PLCX4A9JPVMXmdqdNusfhVAjq2A@mail.gmail.com>
-Date: Tue, 23 Aug 2011 13:35:53 -0400
-Message-ID: <CACqU3MVnskVU4U_iYp6XE32UUf7wXUYJNcu+fyn08WWhKvpmCw@mail.gmail.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Colin Walters <walters@verbum.org>
-Cc: Andi Kleen <ak@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Aug 2011 13:39:27 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6446"; a="112157106"
+From: David Brown <davidb@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/6] mmc: msm_sdcc Various fixes.
+Date: Tue, 23 Aug 2011 10:39:12 -0700
+Message-Id: <1314121158-3319-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Sahitya sent these out back in May, and I wanted to make sure they got
+reviewed before pulling them in.
 
-On Tue, Aug 23, 2011 at 12:20 PM, Colin Walters <walters@verbum.org> wrote:
-> [...]
-> I just happen to watch Mozilla bugzilla so I saw that one go by and
-> wanted to provide data for the discussion.
->
-Just to provide fuel, you can also just do a regular google search for
-"strncmp release 2.6". Lots of exploits, but not only.
+Sahitya Tummala (5):
+  mmc: msm_sdcc: Handle error cases in probe
+  mmc: msm_sdcc: Enable SDC host->clk only after setting the rate.
+  msm: mmc: Remove "pio_irq" resource
+  mmc: msm_sdcc: Use MCI_INT_MASK0 for PIO interrupts
+  mmc: msm_sdcc: Change initialization order of busclk_timer in probe
 
- - Arnaud
+Subhash Jadavani (1):
+  mmc: msm_sdcc: Handle dma resource not present case
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ arch/arm/mach-msm/devices-msm7x00.c |   24 ------------
+ arch/arm/mach-msm/devices-qsd8x50.c |   24 ------------
+ drivers/mmc/host/msm_sdcc.c         |   67 +++++++++++++++++++++++------------
+ drivers/mmc/host/msm_sdcc.h         |    6 +++-
+ 4 files changed, 49 insertions(+), 72 deletions(-)
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
