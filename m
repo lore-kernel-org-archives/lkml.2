@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1HWBsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 21:48:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58401 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752888Ab1HWBsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 21:48:09 -0400
-Message-ID: <4E530755.1020609@cn.fujitsu.com>
-Date: Tue, 23 Aug 2011 09:50:13 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754871Ab1HWCAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 22:00:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54740 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752888Ab1HWCAq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 22:00:46 -0400
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 07/11] KVM: MMU: fast prefetch spte on invlpg path
-References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A11DA.3050605@cn.fujitsu.com> <20110822222854.GA2497@amt.cnet>
-In-Reply-To: <20110822222854.GA2497@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-23 09:47:05,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-23 09:47:07,
-	Serialize complete at 2011-08-23 09:47:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110823011312.GZ2203@ZenIV.linux.org.uk>
+References: <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com>
+ <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+ <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+ <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 22 Aug 2011 18:59:48 -0700
+Message-ID: <CA+55aFygGyi8HRr8wNVDw5xk46D5QDOhis18u2qV-9+h0-4ReA@mail.gmail.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2011 06:28 AM, Marcelo Tosatti wrote:
+On Mon, Aug 22, 2011 at 6:13 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> *UGH*.  OK,
+>        1) I'm an idiot; int_ret_from_sys_call does *not* usually step on
+> rbp (it's callee-saved).  So normally ebp is left as is on the way out,
+> which is why we don't see stuff getting buggered left, right and center.
 
->> +
->> +			if (rmap_can_add(vcpu))
->> +				break;
-> 
-> if (!rmap_can_add(vcpu))
->         break;
-> 
-> ?
-> 
+Check.
 
-Oh, oops, thanks for you point it out. Will fix it.
+And the system call restart should actually work fine too, because at
+syscall entry we save %ebp *both* in the slot for ebp and ecx when we
+enter the first time. So the second time, we'll re-load the third
+argument from ebp again, but that's fine - it's still going to be the
+right value. Yes? No?
+
+However, I note that the cstar entrypont has a comment about not saving ebp:
+
+ * %ebp Arg2    [note: not saved in the stack frame, should not be touched]
+
+which sounds odd. Why don't we save it? If we take a signal handler
+there, don't we want %ebp on the kernel stack in pt_regs, in order to
+do everything right?
+
+Now I'm *really* confused.
+
+                       Linus
