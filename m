@@ -1,160 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477Ab1HWOPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:15:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59236 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab1HWOPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:15:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,269,1312182000"; 
-   d="scan'208";a="41504974"
-Date: Tue, 23 Aug 2011 22:15:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110823141504.GA15949@localhost>
-References: <20110806094526.733282037@intel.com>
- <1312811193.10488.33.camel@twins>
- <20110808141128.GA22080@localhost>
- <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
+	id S1755564Ab1HWOPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:15:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:46906 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab1HWOPQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:15:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:
+	mime-version:content-transfer-encoding:from:organization:date:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=oeW9Ky01+h/y8XFazklFj0ZW4NoeCrmhJcfvS1t05RrLYZiQhiMa9TVJFMx5r4WuQ
+	aAHoa8j0ioBVeKZv92oJw==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>
+Cc: "Alan Stern" <stern@rowland.harvard.edu>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+References: <cover.1313791722.git.mina86@mina86.com>
+ <accba3196fa1fe04f6110b350c03488acb785abe.1313791722.git.mina86@mina86.com>
+ <20110819232805.GC13317@legolas.emea.dhcp.ti.com>
+ <op.v0n5y4o0vgw7ix@mnazarewicz-glaptop>
+ <20110823135817.GJ1341@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314093660.8002.24.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Date: Tue, 23 Aug 2011 16:15:08 +0200
+Message-ID: <op.v0n67imkvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <20110823135817.GJ1341@legolas.emea.dhcp.ti.com>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 06:01:00PM +0800, Peter Zijlstra wrote:
-> On Tue, 2011-08-23 at 11:40 +0800, Wu Fengguang wrote:
-> > - not a factor at all for updating balanced_rate (whether or not we do (2))
-> >   well, in this concept: the balanced_rate formula inherently does not
-> >   derive the balanced_rate_(i+1) from balanced_rate_i. Rather it's
-> >   based on the ratelimit executed for the past 200ms:
-> > 
-> >           balanced_rate_(i+1) = task_ratelimit_200ms * bw_ratio
-> 
-> Ok, this is where it all goes funny..
-> 
-> So if you want completely separated feedback loops I would expect
+On Tue, 23 Aug 2011 15:58:17 +0200, Felipe Balbi <balbi@ti.com> wrote:
 
-If call it feedback loops, then it's a series of independent feedback
-loops of depth 1.  Because each balanced_rate is a fresh estimation
-dependent solely on
+>> On Sat, 20 Aug 2011 01:28:06 +0200, Felipe Balbi <balbi@ti.com> wrote:
+>>> IMHO the logic is inverted here. It should start from the function
+>>> drivers. They should say which USB speeds they support, that would go  
+>>> up to composite layer and composite would call e.g.
+>>> usb_gadget_set_speed(gadget, maximum_speed);
+>>
+>> This is actually not how composite works at the moment.  Currently,
+>
+> my suggestion was exactly to change that :-) Speed is something
+> functions support. composite.c shouldn't dictate which speed functions
+> should use, rather composite.c should use the maximum speed which all
+> functions support.
 
-- writeout bandwidth
-- N, the number of dd tasks
+Strictly speaking, composite.c does not dictate anything.   It just copies
+what the composite gadget driver declared as maximum speed.
 
-in the past 200ms.
+My understanding was that one could consciously create a composite gadget
+such that not all of the functions support all of the speeds.
 
-As long as a CONSTANT ratelimit (whatever value it is) is executed in
-the past 200ms, we can get the same balanced_rate.
+I would suggest leaving everything as is, expect if usb_composite_driver's
+max_speed is set to USB_SPEED_UNKNOWN in which case composite would iterate
+over all the functions and figure out the maximum speed that all of the
+functions support.
 
-        balanced_rate = CONSTANT_ratelimit * write_bw / dirty_rate
+>> a composite gadget can declare a maximum speed of say “high” even if
+>> all the functions do not support that speed.  Of course when host asks
+>> about descriptors for given speed, only functions that support that
+>> speed will be returned (and hence only configurations that have at
+>> least one function supporting that speed).
+>>
+>> Whether the behaviour should be changed is, in my opinion, issue
+>> separate from the patchset that I'm sending.
+>
+> I wouldn't say that, actually. Just replacing is_dualspeed with
+> max_speed isn't changing much and if you want to make that part of the
+> code better, why not doing The Right Thing(TM) ?
 
-The resulted balanced_rate is independent of how large the CONSTANT
-ratelimit is, because if we start with a doubled CONSTANT ratelimit,
-we'll see doubled dirty_rate and result in the same balanced_rate. 
+I'm just saying that the main reason for this patchset is to get rid of
+the USB_GADGET_DUALSPEED and USB_GADGET_SUPERSPEED Kconfig options.  So
+the purpose of changing is_dualspeed with max_speed is to be able to
+check if gadget is super speed at run-time so that gadget_is_superspeed()
+can be implemented.
 
-In that manner, balance_rate_(i+1) is not really depending on the
-value of balance_rate_(i): whatever balance_rate_(i) is, we are going
-to get the same balance_rate_(i+1) if not considering estimation
-errors. Note that the estimation errors mainly come from the
-fluctuations in dirty_rate.
+So I would like to just get this done and then figure out what to do with
+composite.c.  How does that sound?
 
-That may well be what's already in your mind, just that we disagree
-about the terms ;)
+> All of the speed negotiation between composite.c and f_*.c should happen
+> before even connecting to host
 
-> something like:
-> 
-> 	balance_rate_(i+1) = balance_rate_(i) * bw_ratio   ; every 200ms
-> 
-> The former is a complete feedback loop, expressing the new value in the
-> old value (*) with bw_ratio as feedback parameter; if we throttled too
-> much, the dirty_rate will have dropped and the bw_ratio will be <1
-> causing the balance_rate to drop increasing the dirty_rate, and vice
-> versa.
+Yep, obviously.  The usb_gadget_probe_driver() is called at the very and
+once all the functions and everything is added so composite.c can do all
+the analysis it wants and figure out the maximum speed.
 
-In principle, the bw_ratio works that way. However since
-balance_rate_(i) is not the exact _executed_ ratelimit in
-balance_dirty_pages().
+> (before attaching data pullups, enabling IRQs, etc), that's exactly why
+> me and Sebastian have decided (at that time off list) to add
+> udc_start()/udc_stop() methods.
 
-> (*) which is the form I expected and why I thought your primary feedback
-> loop looked like: rate_(i+1) = rate_(i) * pos_ratio * bw_ratio
- 
-Because the executed ratelimit was rate_(i) * pos_ratio.
+I don't really follow why those would be needed...
 
-> With the above balance_rate is an independent variable that tracks the
-> write bandwidth. Now possibly you'd want a low-pass filter on that since
-> your bw_ratio is a bit funny in the head, but that's another story.
+> One of the reason was that it would be a quite intrusive change to
+> all UDC drivers, second we wanted to give maintainers/authors of
+> those UDC drivers some grace period for the change, third  when
+> all UDCs are converted, it allow us to do the speed negotiation
+> before connecting to host.
 
-Yeah.
+Again, I don't follow.  We can figure out the max_speed before calling
+usb_gadget_probe_driver() just fine.  We don't even have to have UDC
+to figure that out (ie. gadget driver's max_speed does not change
+depending on UDC, right?).
 
-> Then when you use the balance_rate to actually throttle tasks you apply
-> your secondary control steering the dirty page count, yielding:
-> 
-> 	task_rate = balance_rate * pos_ratio
+>>> how about "current_speed" ?
+>>
+>> Is there a big advantage?  That would change external interface and I  
+>> don't see reason to do so.  Of course, udc class is quite recent so if
+>> you feel we can ignore this issue I can go forward with that change.
 
-Right. Note the above formula is not a derived one, but an original
-one that later leads to pos_ratio showing up in the calculation of
-balanced_rate.
+> you already maximum_speed (below) and speed alone looses some extra
+> hint of what kind of information will be there. I think it's better to
+> change this to current_speed and make a symbolic link called 'speed'
+> which we can keep for the next 5 years and remove it in e.g. Linux v5.0
 
-> >   and task_ratelimit_200ms happen to can be estimated from
-> > 
-> >           task_ratelimit_200ms ~= balanced_rate_i * pos_ratio
-> 
-> >   We may alternatively record every task_ratelimit executed in the
-> >   past 200ms and average them all to get task_ratelimit_200ms. In this
-> >   way we take the "superfluous" pos_ratio out of sight :) 
-> 
-> Right, so I'm not at all sure that makes sense, its not immediately
-> evident that <task_ratelimit> ~= balance_rate * pos_ratio. Nor is it
-> clear to me why your primary feedback loop uses task_ratelimit_200ms at
-> all. 
+OK, I'll do that (as soon as I figure out/recall how to make symlinks that
+is ;) ).
 
-task_ratelimit is used and hence defined to be (balance_rate * pos_ratio)
-by balance_dirty_pages(). So this is an original formula:
-
-        task_ratelimit = balance_rate * pos_ratio
-
-task_ratelimit_200ms is also used as an original data source in
-
-        balanced_rate = task_ratelimit_200ms * write_bw / dirty_rate
-
-Then we try to estimate task_ratelimit_200ms by assuming all tasks
-have been executing the same CONSTANT ratelimit in
-balance_dirty_pages(). Hence we get
-
-        task_ratelimit_200ms ~= prev_balance_rate * pos_ratio
-
-> >   There is fundamentally no dependency between balanced_rate_(i+1) and
-> >   balanced_rate_i/task_ratelimit_200ms: the balanced_rate estimation
-> >   only asks for _whatever_ CONSTANT task ratelimit to be executed for
-> >   200ms, then it get the balanced rate from the dirty_rate feedback.
-> 
-> How can there not be a relation between balance_rate_(i+1) and
-> balance_rate_(i) ? 
-
-In this manner: even though balance_rate_(i) is somehow used for
-calculating balance_rate_(i+1), the latter will evaluate to the same
-value given whatever balance_rate_(i).
-
-That is, there is two dependencies, the seemingly dependency in the
-formula, and the effective dependency in the data values.
-
-Thank,
-Fengguang
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
