@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab1HWR67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:58:59 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51396 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751997Ab1HWR6w (ORCPT
+	id S1754637Ab1HWSAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:00:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56326 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751997Ab1HWSA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:58:52 -0400
-X-Sasl-enc: 0yVzre9htsHMRkoNIV4keJ9wPEKT08rweV3JzcGZpecI 1314122331
-Date: Tue, 23 Aug 2011 10:57:52 -0700
-From: Greg KH <greg@kroah.com>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>, neilb@suse.de
-Subject: Re: [PATCH] sysctl: add support for poll()
-Message-ID: <20110823175752.GA4129@kroah.com>
-References: <CAMOw1v6uCMhgErrfPLQ5CSa0v_OoHhJ=M3OCL+YH9H1Zg5fEXQ@mail.gmail.com>
- <1312484238-1645-1-git-send-email-lucas.demarchi@profusion.mobi>
+	Tue, 23 Aug 2011 14:00:26 -0400
+Date: Tue, 23 Aug 2011 14:00:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Michal Nazarewicz <mnazarewicz@google.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
+In-Reply-To: <20110823172111.GD10996@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1108231350460.2069-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312484238-1645-1-git-send-email-lucas.demarchi@profusion.mobi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 03:57:18PM -0300, Lucas De Marchi wrote:
-> Adding support for poll() in sysctl fs allows userspace to receive
-> notifications of changes in sysctl entries. This adds a infrastructure
-> to allow files in sysctl fs to be pollable and implements it for
-> hostname and domainname.
+On Tue, 23 Aug 2011, Felipe Balbi wrote:
+
+> Hi,
 > 
-> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-> ---
->  fs/proc/proc_sysctl.c   |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/sysctl.h  |   22 ++++++++++++++++++++++
->  include/linux/utsname.h |   16 ++++++++++++++++
->  kernel/sys.c            |    2 ++
->  kernel/utsname_sysctl.c |   23 +++++++++++++++++++++++
->  5 files changed, 108 insertions(+), 0 deletions(-)
+> On Tue, Aug 23, 2011 at 11:43:44AM -0400, Alan Stern wrote:
+> > > if they are both part of the of the same configuration, full speed.
+> > > Otherwise Audio won't work. If they are part of different
+> > > configurations, then maximum_speed will be defined by the chosen config,
+> > > no ?
+> > 
+> > No.  The speed has to be chosen first, when the gadget connects to the 
+> > host.  The config isn't chosen until later, after the host retrieves 
+> > the various descriptors and decides among them.
+> 
+> true
+> 
+> > > I stand with the fact that if they are part of the same configuration,
+> > > there's no way around it, storage will have to come down to full speed.
+> > > Unless I'm missing something.
+> > 
+> > What if they are in different configurations?
+> 
+> then you use the fastest speed between both configurations?
 
-Who is going to take this through their tree?
+I simply don't know.  It's a difficult problem.
 
-I can through the driver-core tree if no one else objects.
+For the time being, perhaps the best answer is to use the _lowest_ 
+max_speed value among all the function drivers.  It's the simplest 
+answer and most likely to be correct most of the time.
 
-Any objections?
+If anybody ever does want to put together a composite gadget that runs
+faster than full speed but still provides a midi function ... well,
+they'll just have to update the midi gadget driver.
 
-thanks,
+(Actually that's a bogus example.  It turns out that gmidi.c doesn't 
+support the composite framework.  Oh well.)
 
-greg k-h
+Alan Stern
+
