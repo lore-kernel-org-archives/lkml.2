@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab1HWQaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:30:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54383 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab1HWQa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:30:26 -0400
-Message-ID: <4E53D620.9030304@cn.fujitsu.com>
-Date: Wed, 24 Aug 2011 00:32:32 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754124Ab1HWQay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:30:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40131 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab1HWQas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:30:48 -0400
+Date: Tue, 23 Aug 2011 17:30:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
+        Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823163010.GE2203@ZenIV.linux.org.uk>
+References: <4E52D280.3010107@zytor.com>
+ <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+ <20110823000314.GW2203@ZenIV.linux.org.uk>
+ <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk>
+ <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk>
+ <20110823061531.GC2203@ZenIV.linux.org.uk>
+ <20110823142608.GB12669@aftab>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
-References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet> <4E53872B.3070407@cn.fujitsu.com> <20110823123818.GB4261@amt.cnet>
-In-Reply-To: <20110823123818.GB4261@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-24 00:29:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-24 00:29:23,
-	Serialize complete at 2011-08-24 00:29:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823142608.GB12669@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2011 08:38 PM, Marcelo Tosatti wrote:
+On Tue, Aug 23, 2011 at 04:26:08PM +0200, Borislav Petkov wrote:
+> On Tue, Aug 23, 2011 at 02:15:31AM -0400, Al Viro wrote:
+> > Almost, but not quite.  What happens is:
+> > * process hits syscall insn
+> > * it's stopped and tracer (guest kernel) does GETREGS
+> > 	+ looks at the registers (mapped to the normal layout)
+> > 	+ decides to call sys_brk()
+> > 	+ notices pages to kick out
+> > 	+ queues munmap request for stub
+> > * tracer does SETREGS, pointing the child's eip to stub and sp to stub stack
+> > * tracer does CONT, letting the child run
+> > * child finishes with syscall insn, carefully preserving ebp.  It returns to
+> >   userland, in the beginning of the stub.
+> > * child does munmap() and hits int 3 in the end of stub.
+> > * the damn thing is stopped again.  The tracer had been waiting for it.
+> > * tracer finishes with sys_brk() and returns success.
+> > * it does SETREGS, setting eax to return value, eip to original return
+> > address of syscall insn... and ebp to what it had in regs.bp.  I.e. the
+> > damn arg6 value.
+> 
+> Ok, stupid question: can a convoluted ptracing case like this be created
+> in "normal" userspace, i.e. irrespective of UML and only by using gdb,
+> for example?
 
->> And, i think there are not problems since: if the spte without accssed bit is
->> written frequently, it means the guest page table is accessed infrequently or
->> during the writing, the guest page table is not accessed, in this time, zapping
->> this shadow page is not bad.
-> 
-> Think of the following scenario:
-> 
-> 1) page fault, spte with accessed bit is created from gpte at gfnA+indexA.
-> 2) write to gfnA+indexA, spte has accessed bit set, write_flooding_count
-> is not increased.
-> 3) repeat
-> 
+I don't know...
 
-I think the result is just we hoped, we do not want to zap the shadow page
-because the spte is currently used by the guest, it also will be used in the
-next repetition. So do not increase 'write_flooding_count' is a good choice.
+> I.e., from what I understand from above, you need to stop the tracee at
+> syscall and "redirect" it to the stub after it finishes the syscall so
+> that in another syscall it gets a debug exception... sounds complicated.
 
-Let's consider what will happen if we increase 'write_flooding_count':
-1: after three repetitions, zap the shadow page
-2: in step 1, we will alloc a new shadow page for gpte at gfnA+indexA
-3: in step 2, the flooding count is creased, so after 3 repetitions, the
-   shadow page can be zapped again, repeat 1 to 3.
+Basically, we need to do things that tracer can't do via ptrace() - i.e.
+play with mappings in the child.  I.e. we need to do several syscalls
+in child, then return it to traced state.  And all of that - before we
+return to execution of instructions past the syscall.
 
-The result is the shadow page for gfnA is alloced and zapped again and again,
-yes?
+BTW, booting 32bit uml with nosysemu on such boxen blows up instantly, since
+there we have *all* SETREGS done on the way out of syscall (with sysemu we
+use PTRACE_SYSEMU, which will stop on syscall entry, let you play with
+registers and suppress both the sys_...() call itself and the stop on
+the way out; without sysemu it'll use PTRACE_SYSCALL, replace syscall
+number with something harmless (getpid(2)), let it execute, stop on
+the way out and update the registers there).  Same issue, only here it
+really happens from within the syscall handler itself.
 
-> So you cannot rely on the accessed bit being cleared to zap the shadow
-> page, because it might not be cleared in certain scenarios.
-> 
->> Comparing the old way, the advantage of it is good for zapping upper shadow page,
->> for example, in the old way:
->> if a gfn is used as PDE for a task, later, the gfn is freed and used as PTE for
->> the new task, so we have two shadow pages in the host, one sp1.level = 2 and the
->> other sp2.level = 1. So, when we detect write-flooding, the vcpu->last_pte_updated
->> always point to sp2.pte. As sp2 is used for the new task, we always detected both
->> shadow pages are bing used, but actually, sp1 is not used by guest anymore.
-> 
-> Makes sense.
-> 
->>> Back to the first question, what is the motivation for this heuristic
->>> change? Do you have any numbers?
->>>
->>
->> Yes, i have done the quick test:
->>
->> before this patch:
->> 2m56.561
->> 2m50.651
->> 2m51.220
->> 2m52.199
->> 2m48.066
->>
->> After this patch:
->> 2m51.194
->> 2m55.980
->> 2m50.755
->> 2m47.396
->> 2m46.807
->>
->> It shows the new way is little better than the old way.
-> 
-> What test is this?
-> 
+Hell knows...  I have no idea what kind of weirdness ptrace users exhibit.
+FWIW, I suspect that there's another mess around signals in uml - signal
+frame is built by tracer and it *has* to contain ebp.  And have eip pointing
+to insn immediately past the syscall.  What should sigreturn do?  It got
+to restore ebp - can't rely on signal handler not having buggered the
+register.  And we are again in for it - ebp set to arg6 as we return to
+insn right after syscall one.
 
-Sorry, i forgot to mention it, the test case is kerbench. :-)
- 
+OTOH, making GETREGS/PEEKUSER return registers without arg2 -> ecx, arg6 -> ebp
+would instantly break both uml and far less exotic things.  strace(1), for
+one.  Anything that wants to examine the arguments of stopped syscall will
+be broken.
