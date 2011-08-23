@@ -1,112 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1HWFKc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 01:10:32 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:54564 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab1HWFKW (ORCPT
+	id S1753623Ab1HWFK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 01:10:58 -0400
+Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:57909 "EHLO
+	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750908Ab1HWFKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 01:10:22 -0400
-Date: Mon, 22 Aug 2011 23:10:21 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-cc: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, torvalds@linux-foundation.org,
-        mporter@ti.com, Kevin Hilman <khilman@ti.com>,
-        "Govindraj.R" <govindraj.raja@ti.com>
-Subject: [PATCH] tty: omap-serial: fix boot hang by converting to use a
- threaded IRQ handler (was Re: [PATCH] irq: always set IRQF_ONESHOT if no
- primary handler is specified)
-In-Reply-To: <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
-Message-ID: <alpine.DEB.2.00.1108222306300.28226@utopia.booyaka.com>
-References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de> <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com> <4E4D4A5F.202@linutronix.de> <20110818213418.GA20509@legolas.emea.dhcp.ti.com> <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 23 Aug 2011 01:10:51 -0400
+X-AuditID: 12074422-b7ba7ae000000a14-70-4e53365386e6
+Message-ID: <4E533651.8070205@mit.edu>
+Date: Tue, 23 Aug 2011 01:10:41 -0400
+From: Andrew Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
+        Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: SYSCALL, ptrace and syscall restart breakages (Re: [RFC] weird
+ crap with vdso on uml/i386)
+References: <20110821063443.GH2203@ZenIV.linux.org.uk> <20110821084230.GI2203@ZenIV.linux.org.uk> <CAObL_7GXyzAzNjBtgye9BwXLyHm337oBTdjRDjbSPqoKZGWyyA@mail.gmail.com> <20110821144352.GJ2203@ZenIV.linux.org.uk> <20110821164124.GL2203@ZenIV.linux.org.uk> <CAObL_7E1vU8+0UQST6Smf9j40TckTzB=QdY0AuAWo4AX6cs2xg@mail.gmail.com> <20110822011645.GM2203@ZenIV.linux.org.uk> <CA+55aFz1jCZGcQ-c6uGN=k8nKDuGoz5g8e+pxpYAg4X_p7=5Mw@mail.gmail.com> <20110822040759.GQ2203@ZenIV.linux.org.uk> <4E51D70A.1060001@zytor.com> <20110822042605.GR2203@ZenIV.linux.org.uk> <4E51E325.2050502@zytor.com>
+In-Reply-To: <4E51E325.2050502@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsUixG6nohtiFuxncKKVyWLaRnGLy7vmsFlc
+	OrCAyWLyzjeMFo/63rJbzOqdwmJx/u9xVgd2jxMzfrN47F7wmcnj5rxCj/f7rrJ5fN4k57Hp
+	yVsmjxMtX1gD2KO4bFJSczLLUov07RK4Mo62P2UrWKxVcWD6UfYGxtuKXYycHBICJhIt/f0s
+	ELaYxIV769m6GLk4hAT2MUrcODKDFcLZwCjxfOECFgjnLZPEtve32EBaeAXUJDq7LjOB2CwC
+	qhKt51+xg9hsQPG7Z9vB4qICQRL3fzewQNQLSpyc+QTMFhFQkZj+8xMTyFBmgd+MEldXnQQb
+	KiyQKfFp4V5GiG0HWSQ617wG6+AU0JSYMmclUBEHUIe6xPp5QiBhZgF5ie1v5zBPYBSchWTH
+	LISqWUiqFjAyr2KUTcmt0s1NzMwpTk3WLU5OzMtLLdI11cvNLNFLTSndxAiOEBelHYw/Dyod
+	YhTgYFTi4f15IMhPiDWxrLgy9xCjJAeTkihvtXGwnxBfUn5KZUZicUZ8UWlOavEhRgkOZiUR
+	3oV3gMp5UxIrq1KL8mFS0hwsSuK8XDsd/IQE0hNLUrNTUwtSi2CyMhwcShK8i02BhgoWpaan
+	VqRl5pQgpJk4OEGG8wAN7wap4S0uSMwtzkyHyJ9iVJQS510LkhAASWSU5sH1whLYK0ZxoFeE
+	eXtBqniAyQ+u+xXQYCagwRy/QK4uLklESEk1MC5V/DNbfUuD5FYOH9lOU13Fry8EkqaLWh5d
+	9efzz5fHZVrljXndbL2X/NCZcP9wVnC0101HllsLa1wNCzK9+B08OVb7VEzJOd1it0W5PCTe
+	ZHXbTSZ5CSV/w1/Cy5/lT7jxIGZdy3HfWXELuA7wSra+iWUPP7rPWsv/8OsNvnzSU4R/cL60
+	UmIpzkg01GIuKk4EAAemzdY7AwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/22/2011 01:03 AM, H. Peter Anvin wrote:
+> On 08/21/2011 09:26 PM, Al Viro wrote:
+>> On Sun, Aug 21, 2011 at 09:11:54PM -0700, H. Peter Anvin wrote:
+>>>> lack of point - the *only* CPU where it would matter would be K6-2, IIRC,
+>>>> and (again, IIRC) it had some differences in SYSCALL semantics compared to
+>>>> K7 (which supports SYSENTER as well).  Bugger if I remember what those
+>>>> differences might've been...  Some flag not cleared?
+>>>
+>>> The most likely reason for a binary to execute a stray SYSCALL is
+>>> because they read it out of the vdso.  Totally daft, but we certainly
+>>> see a lot of stupid things as evidenced by the JIT thread earlier this
+>>> month.
+>>
+>> Um...  What, blindly, no matter what surrounds it in there?  What will
+>> happen to the same eager JIT when it steps on SYSENTER?
+> 
+> The JIT will have had to manage SYSENTER already.  It's not a change,
+> whereas SYSCALL would be.  We could just try it, and see if anything
+> breaks, of course.
 
-Convert the omap-serial hardirq handler to a threaded IRQ handler. Without 
-this patch, OMAP boards which use the on-board OMAP UARTs and the 
-omap-serial driver will not boot to userspace after commit 
-f3637a5f2e2eb391ff5757bc83fb5de8f9726464 ("irq: Always set IRQF_ONESHOT if 
-no primary handler is specified").  Enabling CONFIG_DEBUG_SHIRQ reveals 
-'IRQ handler type mismatch' errors:
+Here's a possible solution that works for standalone SYSCALL and vdso
+SYSCALL.  The idea is to preserve the exact same SYSCALL invocation
+sequence.  Logically, the SYSCALL instruction does:
 
-IRQ handler type mismatch for IRQ 74
-current handler: serial idle
-[<c001b124>] (unwind_backtrace+0x0/0xf0) from [<c009c900>] (__setup_irq+0x42c/0x464)
-[<c009c900>] (__setup_irq+0x42c/0x464) from [<c009ca08>] (request_threaded_irq+0xd0/0x148)
-[<c009ca08>] (request_threaded_irq+0xd0/0x148) from [<c029d398>] (serial_omap_startup+0x30/0x2dc)
-[<c029d398>] (serial_omap_startup+0x30/0x2dc) from [<c0295a38>] (uart_startup+0x5c/0x1ac)
+push %ebp
+mov %ebp,%ecx
+mov 4(%esp),%ebp
+call __fake_int80
 
-(etc.)
+and __fake_int80 is:
+int 0x80
+mov 4(%esp),%ebp
+ret $4
 
-It turns out that the omap-serial code used one threaded IRQ
-handler[1][2] and one non-threaded IRQ handler[3] that shared the same
-IRQ.  During the 3.1-rc series, a patch was merged[4] that caused
-IRQF_ONESHOT to be set on the threaded handler, but the non-threaded
-handler did not have IRQF_ONESHOT set.  Since interrupt handlers
-that share the same IRQ must also share the presence or absence of
-IRQF_ONESHOT[5], this new commit caused a mismatch that prevented the
-non-threaded IRQ from registering.
 
-Fix by converting the non-threaded IRQ handler in omap-serial.c to a
-threaded IRQ handler.  Ideally we would not have to make this type of
-change during the -rc series, but the commit that caused this behavior
-was itself merged between v3.1-rc2 and v3.1-rc3.  In the long term, it
-would be good to get rid of the shared IRQ handler hack in
-arch/arm/mach-omap2/serial.c.
+The entire system call sequence is then (effectively):
 
-This change has been boot-tested on OMAP3530 BeagleBoard and
-OMAP4430ES2 PandaBoard, and static suspend has been lightly tested on
-the BeagleBoard.
+push %ebp
+movl %ecx,%ebp
 
-Pantelis Antoniou <pantelis.antoniou@gmail.com> originally reported
-the boot failure.
+; "SYSCALL" starts here
+push %ebp
+mov %ebp,%ecx
+mov 4(%esp),%ebp
+call __fake_int80
+; "SYSCALL ends here
 
-1. arch/arm/mach-omap2/serial.c line 550, as of Linux v3.1-rc3.  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=arch/arm/mach-omap2/serial.c;h=466fc722fa0f39f03b8d93cf84e4dae4f57fd029;hb=fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c#l550
+movl %ebp,%ecx
+popl %ebp
+ret
 
-2. arch/arm/mach-omap2/serial.c line 563, as of Linux v3.1-rc3.  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=arch/arm/mach-omap2/serial.c;h=466fc722fa0f39f03b8d93cf84e4dae4f57fd029;hb=fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c#l563
+So we rearrange ebp and ecx and then immediately rearrange them back.
+The landing point tweaks them again so that we preserve the old
+semantics of SYSCALL.  But now the pt_regs values exactly match what
+would have happened if we entered via the int 0x80 path, so there
+shouldn't be any corner cases with ptrace or restart -- as far as either
+one is concerned, we actually entered via int 0x80.  If we deliver a
+signal, the signal handler returns to the int 0x80 instruction.
 
-3. drivers/tty/serial/omap-serial.c line 464, as of Linux v3.1-rc3.  http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/tty/serial/omap-serial.c;h=c37df8d0fa2819261dffccc5bc4d0180b9531f49;hb=fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c#l464
+Am I missing something?  Extremely buggy, incomplete code that
+implements this is:
 
-4. Commit f3637a5f2e2eb391ff5757bc83fb5de8f9726464 ("irq: Always set
-   IRQF_ONESHOT if no primary handler is specified")
 
-5. Gleixner, Thomas. _[patch 2/5] genirq: Allow shared oneshot
-   interrupts_.  http://lkml.org/lkml/2011/2/23/511
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@gmail.com>
-Cc: Govindraj.R <govindraj.raja@ti.com>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/tty/serial/omap-serial.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index c37df8d..e83a769 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -461,8 +461,8 @@ static int serial_omap_startup(struct uart_port *port)
- 	/*
- 	 * Allocate the IRQ
- 	 */
--	retval = request_irq(up->port.irq, serial_omap_irq, up->port.irqflags,
--				up->name, up);
-+	retval = request_threaded_irq(up->port.irq, NULL, serial_omap_irq,
-+				      up->port.irqflags, up->name, up);
- 	if (retval)
- 		return retval;
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index a0e866d..6cda8ce 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -291,24 +291,59 @@ ENTRY(ia32_cstar_target)
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	SAVE_ARGS 8,0,0
+ 	movl 	%eax,%eax	/* zero extension */
+-	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
+-	movq	%rcx,RIP-ARGOFFSET(%rsp)
+-	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+-	movq	%rbp,RCX-ARGOFFSET(%rsp) /* this lies slightly to ptrace */
+-	movl	%ebp,%ecx
++
++	/*
++	 * This does (from the user's point of view):
++	 * push %ebp
++	 * mov %ebp, %ecx
++	 * mov 4(%esp), %ebp
++	 * call <function that does int 0x80; mov 4(%esp),%ebp; ret 4>
++	 *
++	 * User address access does not need access_ok check as r8
++	 * has been zero-extended, so even with the offsets it cannot
++	 * exceed 2**32 + 8.
++	 */
++
++	/* XXX: need to check that vdso actually exists. */
++	/* XXX: ia32_badarg may do bad things to the user state. */
++
++	/* move ebp into place on the user stack */
++	1:	movl	%ebp,-4(%r8)
++	.section __ex_table,"a"
++	.quad 1b,ia32_badarg
++	.previous
++
++	/* move eip into place on the user stack */
++	1:	movl	%ecx,-8(%r8)  /* user eip is in ecx */
++	.section __ex_table,"a"
++	.quad 1b,ia32_badarg
++	.previous
++
++	/* move ebp to ecx in CPU registers and argument save area */
++	mov %ebp,%ecx
++	movq %ecx,RCX-ARGOFFSET(%rsp)
++
++	/*
++	 * move arg6 to ebp in CPU registers and argument save area
++	 * minor optimization: the actual value of ebp is irrelevent,
++	 * so stick it straight into r9d -- see the definition of
++	 * IA32_ARG_FIXUP.
++	 */
++1:	movl	(%r8),%r9d
++	.section __ex_table,"a"
++	.quad 1b,ia32_badarg
++	.previous	
++
++	/* Do the fake call */
++	movl [insert address of int 0x80; ret helper + 2 here],RIP-ARGOFFSET(%rsp)
++	subl $8,%r8 /* we pushed twice */
++
+ 	movq	$__USER32_CS,CS-ARGOFFSET(%rsp)
+ 	movq	$__USER32_DS,SS-ARGOFFSET(%rsp)
+ 	movq	%r11,EFLAGS-ARGOFFSET(%rsp)
+ 	/*CFI_REL_OFFSET rflags,EFLAGS-ARGOFFSET*/
+ 	movq	%r8,RSP-ARGOFFSET(%rsp)	
+ 	CFI_REL_OFFSET rsp,RSP-ARGOFFSET
+-	/* no need to do an access_ok check here because r8 has been
+-	   32bit zero extended */ 
+-	/* hardware stack frame is complete now */	
+-1:	movl	(%r8),%r9d
+-	.section __ex_table,"a"
+-	.quad 1b,ia32_badarg
+-	.previous	
+ 	GET_THREAD_INFO(%r10)
+ 	orl   $TS_COMPAT,TI_status(%r10)
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
+diff --git a/arch/x86/vdso/vdso32/syscall.S b/arch/x86/vdso/vdso32/syscall.S
+index 5415b56..a3e48b0 100644
+--- a/arch/x86/vdso/vdso32/syscall.S
++++ b/arch/x86/vdso/vdso32/syscall.S
+@@ -19,8 +19,8 @@ __kernel_vsyscall:
+ .Lpush_ebp:
+ 	movl	%ecx, %ebp
+ 	syscall
+-	movl	$__USER32_DS, %ecx
+-	movl	%ecx, %ss
++	/* The ret in the fake int80 entry lands here */
++	/* ss is already correct AFAICS */
+ 	movl	%ebp, %ecx
+ 	popl	%ebp
+ .Lpop_ebp:
+@@ -28,6 +28,11 @@ __kernel_vsyscall:
+ .LEND_vsyscall:
+ 	.size __kernel_vsyscall,.-.LSTART_vsyscall
  
--- 
-1.7.5.4
++__kernel_vsyscall_fake_int80:
++	int 0x80
++	mov 4(%esp),%ebp
++	ret $4
++
+ 	.section .eh_frame,"a",@progbits
+ .LSTARTFRAME:
+ 	.long .LENDCIE-.LSTARTCIE
 
+
+This could be further simplified by checking if any work flags are set and bailing immediately to the right place in the int 0x80 entry.
+
+--Andy
