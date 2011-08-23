@@ -1,195 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1HWKxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 06:53:37 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:34588 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225Ab1HWKxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 06:53:32 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E538896.3050006@cam.ac.uk>
-Date: Tue, 23 Aug 2011 12:01:42 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110801 Thunderbird/5.0
+	id S1753199Ab1HWKxo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 06:53:44 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61768 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab1HWKxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 06:53:34 -0400
+Message-ID: <4E53872B.3070407@cn.fujitsu.com>
+Date: Tue, 23 Aug 2011 18:55:39 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] Sysfs group create for empty groups.
-References: <1313576222-27743-1-git-send-email-jic23@cam.ac.uk> <4E4BEBFD.3040004@cam.ac.uk> <20110823003352.GA5982@kroah.com>
-In-Reply-To: <20110823003352.GA5982@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+References: <4E4A10E8.5090705@cn.fujitsu.com> <4E4A1257.5080204@cn.fujitsu.com> <20110823080024.GA2297@amt.cnet>
+In-Reply-To: <20110823080024.GA2297@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-23 18:52:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-23 18:52:31,
+	Serialize complete at 2011-08-23 18:52:31
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/11 01:33, Greg KH wrote:
-> On Wed, Aug 17, 2011 at 05:27:41PM +0100, Jonathan Cameron wrote:
->> On 08/17/11 11:17, Jonathan Cameron wrote:
->>> The following is a quick stab at avoiding a hideous work around
->>> we are currently using in IIO.  In some cases we have entire
->>> attribute groups that are created from descriptions an array
->>> of struct iio_chan_spec.  To keep the reference counts sane
->>> and cause subdirectories to be created we are currently using
->>> dummy groups and dummy attribute arrays (provided once in the
->>> core).  This series is an initial probably stupid approach
->>> to avoiding this.
->>>
->>> Greg has expressed some doubts about whether subdirectories are
->>> ever a good idea, but the problem occurs for the top level
->>> directory as well (handled by patch 1).
->>>
->>> Note, all attributes are created at probe time.  Ultimately we
->>> are just respinning the create_group code to allow us to create
->>> the attributes from a device description rather than statically
->>> allocating them in each driver (results in a massive reduction
->>> in repeated code).
->>>
->>> All opinions welcomed.
->>>
->>> (this is definitely an rfc, the code isn't even tested yet)
->> Now tested and looks fine, so I've pushed it to our iio dev tree
->> (which is re based a few times a day currently so I can always
->> drop it again ;)
+Hi Marcelo,
+
+On 08/23/2011 04:00 PM, Marcelo Tosatti wrote:
+> On Tue, Aug 16, 2011 at 02:46:47PM +0800, Xiao Guangrong wrote:
+>> Detecting write-flooding does not work well, when we handle page written, if
+>> the last speculative spte is not accessed, we treat the page is
+>> write-flooding, however, we can speculative spte on many path, such as pte
+>> prefetch, page synced, that means the last speculative spte may be not point
+>> to the written page and the written page can be accessed via other sptes, so
+>> depends on the Accessed bit of the last speculative spte is not enough
 > 
-> Can you show me how you would use this so I could try to understand it a
-> bit better?
-Sorry, should have pointed you at an example.
+> Yes, a stale last_speculative_spte is possible, but is this fact a
+> noticeable problem in practice?
+> 
+> Was this detected by code inspection?
+> 
 
-See our iio-dev tree for the full code (some of it is in your staging tree
-as well).
-http://git.kernel.org/?p=linux/kernel/git/jic23/iio-blue.git;a=summary
+I detected this because: i noticed some shadow page is zapped by
+write-flooding but it is accessed soon, it causes the shadow page zapped
+and alloced again and again(very frequently).
 
-Summary:
+Another reason is that: in current code, write-flooding is little complex
+and it stuffs code in many places, actually, write-flooding is only needed for
+shadow page/nested guest, so i want to simplify it and wrap its code up.
 
-Sysfs attributes are created from struct iio_chan_spec arrays. These structures
-describe the facilities and characteristics of a physical device channel in
-a compact fashion. Sometimes there are no other attributes thus we currently
-end up with dummy attribute_groups in the core that are registered.  The
-purpose of this is to keep the reference counts consistent.
+>> -	}
+>> +	if (spte && !(*spte & shadow_accessed_mask))
+>> +		sp->write_flooding_count++;
+>> +	else
+>> +		sp->write_flooding_count = 0;
+> 
+> This relies on the sptes being created by speculative means
+> or by pressure on the host clearing the accessed bit for the
+> shadow page to be zapped. 
+> 
+> There is no guarantee that either of these is true for a given
+> spte.
+> 
+> And if the sptes do not have accessed bit set, any nonconsecutive 3 pte
+> updates will zap the page.
+> 
 
-Details:
+Please note we clear 'sp->write_flooding_count' when it is accessed from
+shadow page cache (in kvm_mmu_get_page), it means if any spte of sp generates
+#PF, the fooding count can be reset.
 
-The core of the matter is that we have channel descriptions for every
-channel on a device.  This encodes most of the information about the
-channel in a consistent compact way (there are a few more unusual cases
-we are still working out how to handle).  The sysfs control and data reading
-attributes are generated from these struct iio_chan_spec structure arrays
-rather than existing as a static set of attributes as they previously did.
+And, i think there are not problems since: if the spte without accssed bit is
+written frequently, it means the guest page table is accessed infrequently or
+during the writing, the guest page table is not accessed, in this time, zapping
+this shadow page is not bad.
 
-This change (suggested by Arnd) has two big advantages:
-1) Massive reduction in boilerplate code.
-2) Enforced consistency of interface across drivers.
+Comparing the old way, the advantage of it is good for zapping upper shadow page,
+for example, in the old way:
+if a gfn is used as PDE for a task, later, the gfn is freed and used as PTE for
+the new task, so we have two shadow pages in the host, one sp1.level = 2 and the
+other sp2.level = 1. So, when we detect write-flooding, the vcpu->last_pte_updated
+always point to sp2.pte. As sp2 is used for the new task, we always detected both
+shadow pages are bing used, but actually, sp1 is not used by guest anymore.
 
-The base directory contains simple read attributes for the files and
-stuff like calibration offsets.  In many cases there are other elements
-in there not handled by iio_chan_spec. When that happens we register the
-group of other attributes first and then use sysfs_add_file_to_group to
-add the other attributes as they are created from the description.
-A klist keeps track of the attributes added so they can be cleanly
-removed later.
+> Back to the first question, what is the motivation for this heuristic
+> change? Do you have any numbers?
+> 
 
-Key function is __iio_add_chan_devattr in industrialio-core.c
-int __iio_add_chan_devattr(const char *postfix,
-			   const char *group,
-			   struct iio_chan_spec const *chan,
-			   ssize_t (*readfunc)(struct device *dev,
-					       struct device_attribute *attr,
-					       char *buf),
-			   ssize_t (*writefunc)(struct device *dev,
-						struct device_attribute *attr,
-						const char *buf,
-						size_t len),
-			   u64 mask,
-			   bool generic,
-			   struct device *dev,
-			   struct list_head *attr_list)
-{
-	int ret;
-	struct iio_dev_attr *iio_attr, *t;
+Yes, i have done the quick test:
 
-	iio_attr = kzalloc(sizeof *iio_attr, GFP_KERNEL);
-	if (iio_attr == NULL) {
-		ret = -ENOMEM;
-		goto error_ret;
-	}
-	ret = __iio_device_attr_init(&iio_attr->dev_attr,
-				     postfix, chan,
-				     readfunc, writefunc, generic);
-	if (ret)
-		goto error_iio_dev_attr_free;
-	iio_attr->c = chan;
-	iio_attr->address = mask;
-	list_for_each_entry(t, attr_list, l)
-		if (strcmp(t->dev_attr.attr.name,
-			   iio_attr->dev_attr.attr.name) == 0) {
-			if (!generic)
-				dev_err(dev, "tried to double register : %s\n",
-					t->dev_attr.attr.name);
-			ret = -EBUSY;
-			goto error_device_attr_deinit;
-		}
+before this patch:
+2m56.561
+2m50.651
+2m51.220
+2m52.199
+2m48.066
 
-	ret = sysfs_add_file_to_group(&dev->kobj,
-				      &iio_attr->dev_attr.attr, group);
-	if (ret < 0)
-		goto error_device_attr_deinit;
+After this patch:
+2m51.194
+2m55.980
+2m50.755
+2m47.396
+2m46.807
 
-	list_add(&iio_attr->l, attr_list);
-
-	return 0;
-
-error_device_attr_deinit:
-	__iio_device_attr_deinit(&iio_attr->dev_attr);
-error_iio_dev_attr_free:
-	kfree(iio_attr);
-error_ret:
-	return ret;
-}
-
-
-Call to __iio_device_attr_init builds the attribute name up and then
-it performs checks for double registration (valid to try for 'generic'
-attributes - but not others. When it is marked generic it means
-it applies to a number of channels in_accel_scale for example applies to
-all registered in_accel channels and it simply will not be added if
-already there).
-
-The file is added with sysfs_add_file_to_group.
-
-So ultimately we have a dynamic equivalent of what goes on in
-sysfs_create_group with a const group.  We could in theory
-do two passes - first to work out what space is needed and second
-to create a suitable attribute_group, but it's a lot uglier than
-doing it in a single pass through the chan_spec structure array (made
-so by the need to handle those 'generic' attributes.)  An alternative
-is to do all but the sysfs_add_file_to_group and then build an
-attribute group from our existing klist of attributes.
-
-Basically I'm happy to do anything that makes this work. If we
-agree there is a reason to have sysfs_add_file_to_group available
-then to my mind we should also allow for empty groups. Right now
-it looks like there are only a few users of that (I count about 6 with
-2 of them in IIO).
-
-The group add of an empty group is simply to get the reference count
-consistent. 
-
-The slightly more involved case is for the scanelements subdirectory.
-This describes the contents of the any buffers that the driver supports
-and is often (but not quite always) generated entirely from the iio_chan_spec
-structure arrays provided by the drivers.  It's in a subdirectory as purely
-a means of grouping elements related to a particular task (buffer description)
-rather than any inherent requirement. This case motivates the allowing a group
-with a null pointer in .attrs to avoid having a
-struct attribute *dummy_attrs[] = {NULL};
-which is ugly.
-
-So what do you recommend?
-
-Thanks,
-
-Jonathan
+It shows the new way is little better than the old way.
