@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1HWRkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:40:37 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:29318 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722Ab1HWRj2 (ORCPT
+	id S1755863Ab1HWRnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 13:43:00 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:42297 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755645Ab1HWRmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:39:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6446"; a="112157108"
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Sahitya Tummala <stummala@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH 1/6] mmc: msm_sdcc: Handle error cases in probe
-Date: Tue, 23 Aug 2011 10:39:13 -0700
-Message-Id: <1314121158-3319-2-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1314121158-3319-1-git-send-email-davidb@codeaurora.org>
-References: <1314121158-3319-1-git-send-email-davidb@codeaurora.org>
+	Tue, 23 Aug 2011 13:42:55 -0400
+Date: Tue, 23 Aug 2011 10:42:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [linux-next] ASoC: build failure if CONFIG_I2C=m &&
+ CONFIG_SPI=y && CONFIG_SND_SOC=y
+Message-Id: <20110823104253.d7768c82.rdunlap@xenotime.net>
+In-Reply-To: <1314099960.13722.1.camel@phoenix>
+References: <1314099960.13722.1.camel@phoenix>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sahitya Tummala <stummala@codeaurora.org>
+On Tue, 23 Aug 2011 19:46:00 +0800 Axel Lin wrote:
 
-Signed-off-by: Sahitya Tummala <stummala@codeaurora.org>
-Signed-off-by: David Brown <davidb@codeaurora.org>
+> 
+> hi,
+> I got below build failure if CONFIG_I2C=m && CONFIG_SPI=y && CONFIG_SND_SOC=y
+> 
+>   LD      .tmp_vmlinux1
+> sound/built-in.o: In function `snd_soc_codec_set_cache_io':
+> last.c:(.text+0x1cb80): undefined reference to `regmap_init_i2c'
+> make: *** [.tmp_vmlinux1] Error 1
+
+
+I don't know if this is the same failure or just similar:
+
+ERROR: "regmap_exit" [drivers/mfd/wm8400-core.ko] undefined!
+ERROR: "regmap_bulk_read" [drivers/mfd/wm8400-core.ko] undefined!
+ERROR: "regmap_read" [drivers/mfd/wm8400-core.ko] undefined!
+ERROR: "regmap_init_i2c" [drivers/mfd/wm8400-core.ko] undefined!
+ERROR: "regmap_raw_read" [drivers/mfd/wm8400-core.ko] undefined!
+ERROR: "regmap_write" [drivers/mfd/wm8400-core.ko] undefined!
+
+Maybe MFD_WM8400 needs to select REGMAP_I2C ?
+
 ---
- drivers/mmc/host/msm_sdcc.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index cfe0c89..0f0b4fd 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -1215,7 +1215,7 @@ msmsdcc_probe(struct platform_device *pdev)
- 	host->base = ioremap(memres->start, PAGE_SIZE);
- 	if (!host->base) {
- 		ret = -ENOMEM;
--		goto out;
-+		goto host_free;
- 	}
- 
- 	host->cmd_irqres = cmd_irqres;
-@@ -1230,13 +1230,15 @@ msmsdcc_probe(struct platform_device *pdev)
- 	/*
- 	 * Setup DMA
- 	 */
--	msmsdcc_init_dma(host);
-+	ret = msmsdcc_init_dma(host);
-+	if (ret)
-+		goto ioremap_free;
- 
- 	/* Get our clocks */
- 	host->pclk = clk_get(&pdev->dev, "sdc_pclk");
- 	if (IS_ERR(host->pclk)) {
- 		ret = PTR_ERR(host->pclk);
--		goto host_free;
-+		goto dma_free;
- 	}
- 
- 	host->clk = clk_get(&pdev->dev, "sdc_clk");
-@@ -1377,6 +1379,12 @@ msmsdcc_probe(struct platform_device *pdev)
- 	clk_put(host->clk);
-  pclk_put:
- 	clk_put(host->pclk);
-+dma_free:
-+	dma_free_coherent(NULL, sizeof(struct msmsdcc_nc_dmadata),
-+				host->dma.nc, host->dma.nc_busaddr);
-+ioremap_free:
-+	tasklet_kill(&host->dma_tlet);
-+	iounmap(host->base);
-  host_free:
- 	mmc_free_host(mmc);
-  out:
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
