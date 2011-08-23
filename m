@@ -1,79 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1HWQoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:44:20 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3545 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754245Ab1HWQoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:44:14 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4E53D8D4.5080208@broadcom.com>
-Date: Tue, 23 Aug 2011 09:44:04 -0700
-From: "Jiandong Zheng" <jdzheng@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624
- Thunderbird/5.0
+	id S1755401Ab1HWQpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:45:33 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47936 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1HWQpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:45:25 -0400
+Date: Wed, 24 Aug 2011 01:45:15 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH] thp: tail page refcounting fix
+Message-ID: <20110823164515.GA2653@barrios-desktop>
+References: <1313740111-27446-1-git-send-email-walken@google.com>
+ <20110822213347.GF2507@redhat.com>
 MIME-Version: 1.0
-To: "Maxin B John" <maxin.john@gmail.com>
-cc: "Scott Branden" <sbranden@broadcom.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] arm: mach-bcmring: fix build error in dma.c
-References: <20110823112128.GA2825@maxin>
-In-Reply-To: <20110823112128.GA2825@maxin>
-X-WSS-ID: 624D05CB4R01437744-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110822213347.GF2507@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/2011 4:21 AM, Maxin B John wrote:
->   CC      arch/arm/mach-bcmring/dma.o
-> arch/arm/mach-bcmring/dma.c: In function 'dma_request_channel_dbg':
-> arch/arm/mach-bcmring/dma.c:1022: error: 'TASK_INTERRUPTIBLE'
-> undeclared (first use in this function)
-> arch/arm/mach-bcmring/dma.c:1022: error: (Each undeclared identifier
-> is reported only once
-> arch/arm/mach-bcmring/dma.c:1022: error: for each function it appears
-> in.)
-> arch/arm/mach-bcmring/dma.c:1024: error: implicit declaration of
-> function 'schedule'
-> arch/arm/mach-bcmring/dma.c:1027: error: implicit declaration of
-> function 'signal_pending'
-> arch/arm/mach-bcmring/dma.c: In function 'dma_free_channel':
-> arch/arm/mach-bcmring/dma.c:1092: error: 'TASK_INTERRUPTIBLE'
-> undeclared (first use in this function)
-> arch/arm/mach-bcmring/dma.c: In function 'dma_map_add_region':
-> arch/arm/mach-bcmring/dma.c:1946: error: dereferencing pointer to
-> incomplete type
-> arch/arm/mach-bcmring/dma.c:1948: error: dereferencing pointer to
-> incomplete type
-> arch/arm/mach-bcmring/dma.c:1955: error: dereferencing pointer to
-> incomplete type
-> make[1]: *** [arch/arm/mach-bcmring/dma.o] Error 1
-> make: *** [arch/arm/mach-bcmring] Error 2
->
-> Signed-off-by: Maxin B. John<maxin.john@gmail.com>
-> ---
-> diff --git a/arch/arm/mach-bcmring/dma.c b/arch/arm/mach-bcmring/dma.c
-> index 0ca0005..12d1504 100644
-> --- a/arch/arm/mach-bcmring/dma.c
-> +++ b/arch/arm/mach-bcmring/dma.c
-> @@ -35,6 +35,7 @@
->   #include<linux/mm.h>
->   #include<linux/pfn.h>
->   #include<linux/atomic.h>
-> +#include<linux/sched.h>
->   #include<mach/dma.h>
->
->   /* I don't quite understand why dc4 fails when this is set to 1 and DMA is enabled */
->
-Signed-off-by: Jiandong Zheng <jdzheng@broadcom.com>
+On Mon, Aug 22, 2011 at 11:33:47PM +0200, Andrea Arcangeli wrote:
+> Hi Michal,
+> 
+> I had proper time today to think about this issue and focusing more on
+> what the problem really is I think I found a simpler way to fix it. I
+> also found another maybe even smaller race in direct-io which I hope
+> this fixes too.
+> 
+> Fixing this was already in my top priority, but I wanted to obtain
+> proof that the knumad driving the scheduler was working as well as
+> hard numa bindings before KVMForum.
+> 
+> So this solution:
+> 
+> 1) should allow the working set estimation code to keep doing its
+> get_page_unless_zero() without any change (you'll still have to modify
+> it to check if you got a THP page etc... but you won't risk to get any
+> tail page anymore). Maybe it still needs some non trivial thought
+> about the changes but not anymore about tail pages refcounting screwups.
+> 
+> 2) no change to all existing get_page_unless_zero() is required, so
+> this should fix the radix tree speculative page lookup too.
+> 
+> 3) no RCU new feature is needed
 
-I have same fix submitted on May 12, which was supposed to be applied 
-soon but seems it wasn't.
+Nice goal.
 
+> 
+> 4) get_page was actually called by direct-io as my debug
+> instrumentation I wrote to test these changes noticed it so I fixed
+> that too
+
+Nice catch.
+
+> 
+> 3.1.0-rc for me will crash at boot, I think it's broken and it doesn't
+> boot unless one has an initrd which I never have so I did all testing
+> on 3.0.0 and the patch is against that too.
+> 
+> I'd like if you could review, it's still a bit too early to be sure it
+> works but my torture testing is going on without much problems so far
+> (a loop of dd if=/dev/zero of=/dev/null bs=10M iflag=direct plus heavy
+> swapping of THP splitting in a loop and KVM).
+> 
+> ===
+> Subject: thp: tail page refcounting fix
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> Michel while working on the working set estimation code, noticed that calling
+> get_page_unless_zero() on a random pfn_to_page(random_pfn) wasn't safe, if the
+> pfn ended up being a tail page of a transparent hugepage under splitting by
+> __split_huge_page_refcount(). He then found the problem could also
+> theoretically materialize with page_cache_get_speculative() during the
+> speculative radix tree lookups that uses get_page_unless_zero() in SMP if the
+> radix tree page is freed and reallocated and get_user_pages is called on it
+> before page_cache_get_speculative has a chance to call get_page_unless_zero().
+> 
+> So the best way to fix the problem is to keep page_tail->_count zero at all
+> times. This will guarantee that get_page_unless_zero() can never succeed on any
+> tail page. page_tail->_mapcount is guaranteed zero and is unused for all tail
+> pages of a compound page, so we can simply account the tail page references
+> there and transfer them to tail_page->_count in __split_huge_page_refcount() (in
+> addition to the head_page->_mapcount).
+
+Nice idea!
+
+> 
+> While debugging this s/_count/_mapcount/ change I also noticed get_page is
+> called by direct-io.c on pages returned by get_user_pages. That wasn't entirely
+> safe because the two atomic_inc in get_page weren't atomic. As opposed other
+> get_user_page users like secondary-MMU page fault to establish the shadow
+> pagetables would never call any superflous get_page after get_user_page
+> returns. It's safer to make get_page universally safe for tail pages and to use
+> get_page_foll() within follow_page (inside get_user_pages()). get_page_foll()
+> is safe to do the refcounting for tail pages without taking any locks because
+> it is run within PT lock protected critical sections (PT lock for pte and
+> page_table_lock for pmd_trans_huge). The standard get_page() as invoked by
+> direct-io instead will now take the compound_lock but still only for tail
+> pages. The direct-io paths are usually I/O bound and the compound_lock is per
+> THP so very finegrined, so there's no risk of scalability issues with it. A
+> simple direct-io benchmarks with all lockdep prove locking and spinlock
+> debugging infrastructure enabled shows identical performance and no overhead.
+> So it's worth it. Ideally direct-io should stop calling get_page() on pages
+> returned by get_user_pages(). The spinlock in get_page() is already optimized
+> away for no-THP builds but doing get_page() on tail pages returned by GUP is
+> generally a rare operation and usually only run in I/O paths.
+> 
+> This new refcounting on page_tail->_mapcount in addition to avoiding new RCU
+> critical sections will also allow the working set estimation code to work
+> without any further complexity associated to the tail page refcounting
+> with THP.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Reported-by: Michel Lespinasse <walken@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
+The code looks good to me.
+
+The nitpick is about naming 'foll'.
+What does it mean? 'follow'?
+If it is, I hope we use full name.
+Regardless of renaming it, I am okay the patch.
+
+-- 
+Kind regards,
+Minchan Kim
