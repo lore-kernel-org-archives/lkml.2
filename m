@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1HWJeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 05:34:18 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:42958 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab1HWJeQ convert rfc822-to-8bit (ORCPT
+	id S1755331Ab1HWJeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 05:34:23 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49592 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754463Ab1HWJeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 05:34:16 -0400
+	Tue, 23 Aug 2011 05:34:20 -0400
+Date: Tue, 23 Aug 2011 10:30:35 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: Greg KH <greg@kroah.com>, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Bernhard Roth <br@pwrnet.de>
+Subject: Re: [PATCH] atmel_serial: RS485: receiving enabled when sending
+	data
+Message-ID: <20110823093035.GB19622@n2100.arm.linux.org.uk>
+References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4E536536.3030004@evidence.eu.com>
 MIME-Version: 1.0
-Date: Tue, 23 Aug 2011 11:34:15 +0200
-X-Google-Sender-Auth: G5zg-V_-1LMTA7wjlhwPsDKYdRs
-Message-ID: <CAMuHMdUEOUGbNOv2dhzf43=Q9BQZ5s4CXJ=MctUmWoe-ZozoCA@mail.gmail.com>
-Subject: m68k: [v4] Convert to genirq (WIP)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Linux/m68k" <linux-m68k@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E536536.3030004@evidence.eu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I rebased and updated my m68k-genirq branch at
+On Tue, Aug 23, 2011 at 10:30:46AM +0200, Claudio Scordino wrote:
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index af9b781..5f6c745 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -339,8 +339,9 @@ static void atmel_stop_tx(struct uart_port *port)
+>  	/* Disable interrupts */
+>  	UART_PUT_IDR(port, atmel_port->tx_done_mask);
+>  
+> -	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
+> -		atmel_start_rx(port);
+> +	if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
+> +		!(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
+> +			atmel_start_rx(port);
 
-git://git.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git m68k-genirq
-http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-genirq
+However, this is incorrect formatting.  The code following the 'if' ends
+up being indented by two tabs.
 
-[PATCH 01/22] ide-{cd,floppy,tape}, keyboard: Do not include <linux/irq.>
-[PATCH 02/22] m68k/irq: Rename irq_controller to irq_chip
-[PATCH 03/22] m68k/irq: Kill irq_node_t typedef, always use struct irq_node
-[PATCH 04/22] m68k/irq: Rename irq_node to irq_data
-[PATCH 05/22] m68k/irq: Switch irq_chip methods to "struct irq_data *data"
-[PATCH 06/22] m68k/irq: Rename setup_irq() to m68k_setup_irq() and
-make it static
-[PATCH 07/22] m68k/irq: Extract irq_set_chip()
-[PATCH 08/22] m68k/irq: Add m68k_setup_irq_controller()
-[PATCH 09/22] m68k/irq: Rename {,__}m68k_handle_int()
-[PATCH 10/22] m68k/irq: Remove obsolete IRQ_FLG_* definitions and users
-[PATCH 11/22] m68k/irq: Add genirq support
-[PATCH 12/22] m68k/atari: Convert Atari to genirq
-[PATCH 13/22] m68k/atari: Remove code and comments about different irq types
-[PATCH 14/22] m68k/amiga: Refactor amiints.c
-[PATCH 15/22] m68k/amiga: Convert Amiga to genirq
-[PATCH 16/22] m68k/amiga: Optimize interrupts using chain handlers
-[PATCH 17/22] m68k/mac: Convert Mac to genirq
-[PATCH 18/22] m68k/hp300: Convert HP9000/300 and HP9000/400 to genirq
-[PATCH 19/22] m68k/vme: Convert VME to genirq
-[PATCH 20/22] m68k/sun3: Use the kstat_irqs_cpu() wrapper
-[PATCH 21/22] m68k/apollo: Convert Apollo to genirq
-[PATCH 22/22] m68k/sun3: Convert Sun3/3x to genirq
+This illustrates why the whole idea that tabs should only be used for
+indenting is wrong.  You end up with either what you have above, or:
 
-Changes:
-  - Added cleanup in patch 13
-  - Conversion of Apollo and Sun3/3x
+	if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
+		!(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
+		atmel_start_rx(port);
 
-Todo:
-  - Q40 conversion (see separate email with issues),
-  - Chain handler optimizations for Mac,
-  - Removal of legacy code inside #ifndef CONFIG_GENERIC_HARDIRQ,
-  - Proper patch submission emails,
-  - Get it merged (For 3.3? Or even 3.2?).
+both of which are dire for readability.  The only sane way to do this is
+to ignore that stupid "indentation by tabs only" thing and do it as the
+kernel code has _always_ been done over the last 19 years:
 
-Oh, I almost forgot: testing ;-)! So far I tested it on Atari (ARAnyM)
-and Amiga only.
+	if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
+	    !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
+		atmel_start_rx(port);
 
-Thanks for testing and feedback!
+IOW, use spaces to align the wrapped 'if' statement.
 
-Gr{oetje,eeting}s,
+> +		if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
+> +			!(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX)) {
+> +				/* DMA done, stop TX, start RX for RS485 */
+> +				atmel_start_rx(port);
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+And here it makes it look like there's a missing brace.
