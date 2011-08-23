@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab1HWQUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:20:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45661 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1HWQUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:20:24 -0400
+	id S1755036Ab1HWQUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:20:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50227 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751065Ab1HWQUg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:20:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E53D145.7070207@linux.intel.com>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-	<CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
-	<CADkLE3Ux1gVBR0f1VUNP4JDsnDQPUQ8rJrXqPV7-2kdLW0_CCw@mail.gmail.com>
-	<4E53D145.7070207@linux.intel.com>
-Date: Tue, 23 Aug 2011 12:20:23 -0400
-X-Google-Sender-Auth: oYyNwZDIPrIOYLiZGEd6kxNTmvc
-Message-ID: <CADkLE3X82um14wFnisPBtB=PLCX4A9JPVMXmdqdNusfhVAjq2A@mail.gmail.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-From: Colin Walters <walters@verbum.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
+References: <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+ <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+ <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk>
+ <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com> <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 23 Aug 2011 09:20:12 -0700
+Message-ID: <CA+55aFwozG02mX5hrjNo4k4i2X2=yNf_dgEnBvv8brYb1q9fDg@mail.gmail.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 12:11 PM, Andi Kleen <ak@linux.intel.com> wrote:
+On Tue, Aug 23, 2011 at 9:11 AM, Andrew Lutomirski <luto@mit.edu> wrote:
 >
-> That's a good point. I googled for this pattern in google codesearch
-> and there are 10+ in the first two pages.
->
-> http://www.google.com/codesearch#search/&q=lang:^python$%20sys.platform%20linux2&p=1&type=cs
+> Egads.  Does this mean that doing GETREGS and then doing SETREGS later
+> on with the *exact same values* is considered incorrect?
 
-Yes, though I should note I wasn't trying to defend having a
-compatibility sysctl or whatever - I think it's clear these apps are
-broken.  The python docs explicitly say that the returned string is
-just a straightforward transformation of uname, and if the apps read
-that carefully they'd realize they only want the first part.
+No. If it does it with exactly the same values, it's perfectly ok. But
+it isn't. It's changing some of those values.
 
-The reportlab example will break for FreeBSD 5 too:
+>  IMO, this way lies madness.
 
-     elif sys.platform in ("freebsd4", "darwin", "mac", "linux2"):
+No, the madness is in UML.
 
-I just happen to watch Mozilla bugzilla so I saw that one go by and
-wanted to provide data for the discussion.
+It's EMULATING A SYSTEM CALL. That original "getregs" value is not
+some "user space state". It's the *system call* state that you got
+after the system call trapped. Setting it back is an insane operation,
+but it would happen to work - if you make no changes.
+
+But UML *does* make changes. It takes that system call state, and then
+EMULATES THE SYSTEM CALL INCORRECTLY.
+
+If you see it that way (which is the correct way), then it's clearly
+an UML problem, and it's not at all "madness" that your
+getregs/setregs pairing doesn't work.
+
+See? Buggy system call emulation. It's really that simple. Of course,
+"simple" in this case is "really really subtle differences in how the
+kernel treats syscall/sysenter/int80", so the *details* are certainly
+not simple, but the concept is.
+
+                    Linus
