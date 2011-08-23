@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab1HWNcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 09:32:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45423 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754917Ab1HWNbw convert rfc822-to-8bit (ORCPT
+	id S1755451Ab1HWNcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 09:32:05 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:42187 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853Ab1HWNbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 09:31:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1314105839.8002.51.camel@twins>
-References: <CAELBVzAXXjfHDkUxSVM39coDC1QyNBtDc-gW27a-yascs2nVuA@mail.gmail.com>
-	<1314105839.8002.51.camel@twins>
-Date: Tue, 23 Aug 2011 10:31:50 -0300
-Message-ID: <CAELBVzBO7VcXG=A=hey3-GsbCPvUZtBfPSFdjidzTqEmMg__iA@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_warning=3A_=91x86=5Fget=5Fevent=5Fconstraints=92_defined?=
-	=?windows-1252?Q?_but_not_used?=
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: acme@ghostprotocols.net, mingo@elte.hu, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Aug 2011 09:31:51 -0400
+Message-Id: <20110823132941.744407154@de.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 23 Aug 2011 15:29:41 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>
+Subject: [patch 0/3] [RFC] tick_program_event/clockevents_program_event tweaking
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 August 2011 10:23, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2011-08-15 at 20:40 -0300, Kevin Winchester wrote:
->> Is there are reason why those C
->> files are included directly in another C file rather than being linked
->> together?
->
-> Sheer suckyness on my part.. we needed a 'quick' fix to make these
-> CPU_SUP_* things build at all and never got around to cleaning it up
-> afterwards.
->
->> Or is there some other way the code could be improved and
->> also remove the warning at the same time?
->
-> creation of a arch/x86/kernel/cpu/perf_event.h and enough code massage
-> to make all these .c files compile independently would be appreciated,
-> not sure that'll immediately solve your issue though.
->
->> I do not mind doing some coding here to make this happen.  I am very
->> close to a warning-free build, so I would definitely like to take care
->> of this one.
->
-> You could slip something like it into the 'cleanup' if nothing else
-> presents itself :-)
->
+Greetings,
+I rediscovered a couple of clockevents patches which have patiently
+been sitting on my hard drive for a rather long time. After some
+polishing I guess they are now ready for a review. The aim is to
+improve the handling of the clockevents device for s390.
 
-Sure, I'll give the above suggestion a try and see if I can ensure
-that the function is not compiled unless it is needed.
+The first patch addresses an issue with the automatic adjustment of
+the minimum delay of the clockevents device. We have seen situations
+where this adjustment errornously increased the minimum delay on a
+virtual system running under z/VM. The only way to get the delay back
+to a sane value is a reboot.
+To solve this problem a new config option GENERIC_CLOCKEVENTS_MIN_ADJUST
+is introduced that allows to select if the automatic increase of the
+minimum delay of a clockevents device should be done or not.
+The patch enables GENERIC_CLOCKEVENTS_MIN_ADJUST for x86, for s390
+we never want to do an adjustment.
+Question to the architecture maintainers: are there any other platforms
+which will need the adjustment as well?
 
-Kevin
+
+The second issue that patches #2 and #3 are trying to solve is the fact
+that the current code only supports clockevents devices which use a time
+delta. The clock comparator found on s390 uses a wall-time value that is
+constantly compared to the current TOD clock. If the clock comparator
+value is smaller than the TOD clock value an interrupt is made pending. 
+
+The current clockevents code is needlessly complex for this clockevents
+device, the function trace of a tick_program_event call looks like this:
+
+  0)               |  tick_program_event() {
+  0)               |    tick_dev_program_event() {
+  0)               |      ktime_get() {
+  0)               |        read_tod_clock() {
+  0)   0.336 us    |        } /* read_tod_clock */
+  0)   0.692 us    |      } /* ktime_get */
+  0)               |      clockevents_program_event() {
+  0)               |        s390_next_event() {
+  0)   0.190 us    |        } /* s390_next_event */
+  0)   0.701 us    |      } /* clockevents_program_event */
+  0)   1.901 us    |    } /* tick_dev_program_event */
+  0)   2.370 us    |  } /* tick_program_event */
+
+The code does a ktime_get and substracts the result from the expires
+value, then passes the delta to the s390_next_event function. This
+function then uses get_clock and adds that value to the delta. So
+basically the current ktime is first subtracted and then readded to
+the expires value for no gain.
+
+The new code implemented by the patches #2 and #3 gives this call trace:
+
+  0)               |  tick_program_event() {
+  0)               |    clockevents_program_event() {
+  0)               |      s390_next_ktime() {
+  0)               |        ktime_get_monotonic_offset() {
+  0)   0.183 us    |        } /* ktime_get_monotonic_offset */
+  0)   0.734 us    |      } /* s390_next_ktime */
+  0)   1.120 us    |    } /* clockevents_program_event */
+  0)   1.557 us    |  } /* tick_program_event */
+
+The function tick_dev_program_event is gone, clockevents_program_event
+passes the unmodified expires value to s390_next_ktime. This new
+function only needs to subtract the wall_to_monotonic offset to get
+the wall-clock value to program the clock comparator. And forcing the
+minimum delay on a clockevent device with CLOCK_EVT_FEAT_KTIME is not
+necessary anymore. Any ktime value can be programmed to the clock
+comparator, even one that is in the past. As soon as the irqs are
+open again we will simply get an interrupt.
+
+The old code needs 151 instruction for a tick_program_event call,
+the new one only 85. A nice improvement.
+
+To: linux-arch@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+To: linux-s390@vger.kernel.org
+To: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
