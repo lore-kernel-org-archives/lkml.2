@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1HXJBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 05:01:08 -0400
-Received: from server655-han.de-nserver.de ([85.158.177.45]:36009 "EHLO
-	server655-han.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756603Ab1HXJBH (ORCPT
+	id S1755698Ab1HXJNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 05:13:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42003 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751557Ab1HXJNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 05:01:07 -0400
-Message-ID: <4E54BDCF.9020504@profihost.ag>
-Date: Wed, 24 Aug 2011 11:01:03 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Subject: Re: slow performance on disk/network i/o full speed after drop_caches
-References: <4E5494D4.1050605@profihost.ag> <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
-In-Reply-To: <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
+	Wed, 24 Aug 2011 05:13:24 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Select REGMAP_I2C from WM8400
+Date: Tue, 23 Aug 2011 18:56:19 +0100
+Message-Id: <1314122179-14673-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
->> sync&&  echo 3>/proc/sys/vm/drop_caches&&  sleep 2&&  echo 0
->>> /proc/sys/vm/drop_caches
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index a67adcb..a8b33a5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -390,6 +390,7 @@ config MFD_WM8400
+ 	tristate "Support Wolfson Microelectronics WM8400"
+ 	select MFD_CORE
+ 	depends on I2C
++	select REGMAP_I2C
+ 	help
+ 	  Support for the Wolfson Microelecronics WM8400 PMIC and audio
+ 	  CODEC.  This driver provides common support for accessing
+-- 
+1.7.5.4
 
-Another way to get it working again is to stop some processes. Could be 
-mysql or apache or php fcgi doesn't matter. Just free some memory. 
-Although there are already 5GB free.
-
-Stefan
