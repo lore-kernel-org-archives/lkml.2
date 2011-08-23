@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab1HWUAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:00:39 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:50556 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755687Ab1HWUAe (ORCPT
+	id S1756095Ab1HWUED (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:04:03 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:50728 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756035Ab1HWUD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:00:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A38E6@HQMAIL01.nvidia.com>
-References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
-	<201108161509.17157.arnd@arndb.de>
-	<CACRpkdaVx=6AJ5DFjVN1ZYQ++hu9pT6WxD9n+pqmYVaCf1xawg@mail.gmail.com>
-	<201108161637.16620.arnd@arndb.de>
-	<74CDBE0F657A3D45AFBB94109FB122FF04AEA25368@HQMAIL01.nvidia.com>
-	<CACRpkdY=nVQYnznTU7=_D0n1V1U_xOKH2y75-jKp7k7NzwH8Zw@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF04B24A38E6@HQMAIL01.nvidia.com>
-Date: Tue, 23 Aug 2011 22:00:33 +0200
-Message-ID: <CAKnu2MoEvc7KGH-Fu1FzRE1xFFvsSRVdG5Amg6FL-6PrWRw5yA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Erik Gilling <konkers@android.com>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Jamie Iles <jamie@jamieiles.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Aug 2011 16:03:58 -0400
+Date: Tue, 23 Aug 2011 13:03:56 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        akpm <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, an Abbott <abbotti@mev.co.uk>,
+        ori Hess <fmhess@users.sourceforge.net>
+Subject: Re: [PATCH -next] staging: fix comedi build when COMEDI_PCI is not
+ enabled
+Message-Id: <20110823130356.dc54f74c.rdunlap@xenotime.net>
+In-Reply-To: <20110823185805.GA11786@kroah.com>
+References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
+	<20110822111314.bf7a526f.rdunlap@xenotime.net>
+	<20110823185805.GA11786@kroah.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/23 Stephen Warren <swarren@nvidia.com>:
-> Linus Walleij wrote at Tuesday, August 23, 2011 6:51 AM:
->> Each GPIO chip may have it's respective pin controller as parent
-                               ^^^^^
->> I guess, or they may simply be the same struct device * whatdoIknow.
->
-> I'm not clear on why the GPIO and pinmux would have any kind of parent
-> relationship. Perhaps that's how your HW is designed. In Tegra, GPIO
-> and pinmux are completely separate HW blocks without much of a defined
-> relationship.
->
-> I can certainly see both being implemented by the same code if it makes
-> sense to do so. On Tegra, I think I'd still lean towards keeping them
-> as separate devices, since they have separate register spaces and are
-> documented separately etc. However, I can certainly see that other HW
-> might have both sets of functionality in one HW block.
+On Tue, 23 Aug 2011 11:58:05 -0700 Greg KH wrote:
 
-Makes sense, for U300 I will probably also keep them separate
-like this:
+> On Mon, Aug 22, 2011 at 11:13:14AM -0700, Randy Dunlap wrote:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Fix build when CONFIG_ISA_DMA_API is enabled but
+> > CONFIG_COMEDI_PCI[_DRIVERS] is not enabled.
+> > Fixes these build errors:
+> > 
+> > drivers/staging/comedi/drivers/ni_labpc.c: In function 'labpc_ai_cmd':
+> > drivers/staging/comedi/drivers/ni_labpc.c:1351: error: implicit declaration of function 'labpc_suggest_transfer_size'
+> > drivers/staging/comedi/drivers/ni_labpc.c: At top level:
+> > drivers/staging/comedi/drivers/ni_labpc.c:1802: error: conflicting types for 'labpc_suggest_transfer_size'
+> > drivers/staging/comedi/drivers/ni_labpc.c:1351: note: previous implicit declaration of 'labpc_suggest_transfer_size' was here
+> > 
+> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> > ---
+> >  drivers/staging/comedi/drivers/ni_labpc.c |    4 +++-
+> 
+> I applied your older patch, which causes this one to not apply.  Is it
+> still needed as well?
 
-pinctrl.0 - deal with muxing
-pinctrl.1 - deal with biasing, driving etc
-gpio.0 - the GPIO driver using both of the above, no relationship
+Nope, the second (more recent) one is not needed.  Thanks.
 
-The only thing they have in common is some relation to the
-global GPIO pin space. (When/if we get rid of that - something
-better.)
-
-Yours,
-Linus Walleij
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
