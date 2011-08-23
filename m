@@ -1,56 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab1HWTwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 15:52:33 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:23784 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755704Ab1HWTw3 (ORCPT
+	id S1756051Ab1HWTwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 15:52:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59278 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704Ab1HWTwr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 15:52:29 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: LVjYqz8VM1kYmGfMO55lBePNiO_MTUshAtW7nrACfMY9NJP
- DknHSuwVVfSX8AFG7U330gvahcMz4GTmsBukziyotpx6xSN9OcRzZ8VVaZOW
- tt_CgtZWwuuqCvTrt2ePbHmMZ7Evq8gMsP3O1zikifLP8MQTdrnQCFgoQKdU
- SEtFNdXdIJx5MbjgAq10jhIuNSpHo_kQ_OM0qsM60fnNJPe_2B5Ghp8if4lC
- YgA3yUhlAFAjOBjqT_QJ5q_mx7dNJcOv18bV9ksQti8rys._0_XPrcnkRJzU
- BKA3ahu07X47Qr1Ts5vzaHnKSczk_AexezoVdyh8tcQNV4zasaA3WPniF9Ed
- FaPrBB80_iuehATHDgGltm7T72.1L1h7PfDARBhEkK6t4LA--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 23 Aug 2011 14:52:25 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
-In-Reply-To: <4E53FDDA.4020304@zytor.com>
-Message-ID: <alpine.DEB.2.00.1108231450130.28350@router.home>
-References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home> <4E53FDDA.4020304@zytor.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 23 Aug 2011 15:52:47 -0400
+Subject: Re: [kernel.org users] [KORG] Panics on master backend
+From: Peter Zijlstra <peterz@infradead.org>
+To: "J.H." <warthog9@kernel.org>
+Cc: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Frank Rowand <frank.rowand@am.sony.com>,
+        "yong.zhang0" <yong.zhang0@gmail.com>, mingo@kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>, Thomas Gleixner <tglx@linutronix.de>,
+        scameron@beardog.cce.hp.com,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        hch <hch@infradead.org>
+Date: Tue, 23 Aug 2011 21:52:13 +0200
+In-Reply-To: <4E53ECEF.7040109@kernel.org>
+References: <4E53ECEF.7040109@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314129133.8002.102.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, H. Peter Anvin wrote:
+On Tue, 2011-08-23 at 11:09 -0700, J.H. wrote:
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.702389]  <<EOE>>  <IRQ>  [<ffffffff81049469>] try_to_wake_up+0x89/0x1ca
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.709536]  [<ffffffff810495d3>] ? wake_up_process+0x15/0x17
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.715422]  [<ffffffff810495bc>] default_wake_function+0x12/0x14
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.721659]  [<ffffffff8103d165>] __wake_up_common+0x4e/0x84
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.727489]  [<ffffffffa0177066>] ? _xfs_buf_ioend+0x2f/0x36 [xfs]
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.733852]  [<ffffffff810428b0>] complete+0x3f/0x52
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.738985]  [<ffffffffa0177017>] xfs_buf_ioend+0xc2/0xe2 [xfs]
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.745079]  [<ffffffffa0177066>] _xfs_buf_ioend+0x2f/0x36 [xfs]
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.751259]  [<ffffffffa017727a>] xfs_buf_bio_end_io+0x2a/0x37 [xfs]
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.757758]  [<ffffffff8114f684>] bio_endio+0x2d/0x2f
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.762945]  [<ffffffff81229cd1>] req_bio_endio.clone.31+0x9e/0xa7
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.772811]  [<ffffffff81229e6b>] blk_update_request+0x191/0x32e
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.782563]  [<ffffffff8122a029>] blk_update_bidi_request+0x21/0x6d
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.792529]  [<ffffffff8122a180>] blk_end_bidi_request+0x1f/0x5d
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.802230]  [<ffffffff8122a1f8>] blk_end_request+0x10/0x12
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.811446]  [<ffffffff81313300>] scsi_io_completion+0x1e2/0x4d8
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.821002]  [<ffffffff814d47e7>] ? _raw_spin_unlock_irqrestore+0x17/0x19
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.831405]  [<ffffffff8130bf80>] scsi_finish_command+0xe8/0xf1
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.840948]  [<ffffffff8131305f>] scsi_softirq_done+0x109/0x112
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.850485]  [<ffffffff8122e3c8>] blk_done_softirq+0x73/0x87
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.859729]  [<ffffffff8105757a>] __do_softirq+0xc9/0x1b6
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.868705]  [<ffffffff81014e01>] ? paravirt_read_tsc+0x9/0xd
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.878093]  [<ffffffff814dd2ac>] call_softirq+0x1c/0x30
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.887025]  [<ffffffff81010c5e>] do_softirq+0x46/0x84
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.895767]  [<ffffffff81057849>] irq_exit+0x52/0xaf
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.904246]  [<ffffffff814ddc21>] smp_apic_timer_interrupt+0x7c/0x8a
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.914171]  [<ffffffff814dbb1e>] apic_timer_interrupt+0x6e/0x80
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.923618]  <EOI>  [<ffffffff81080526>] ? arch_local_irq_restore+0x6/0xd
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.933756]  [<ffffffff814d47e7>] _raw_spin_unlock_irqrestore+0x17/0x19
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.943630]  [<ffffffffa00446c4>] hpsa_scsi_queue_command+0x2f9/0x319 [hpsa]
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.953851]  [<ffffffff8130c9bb>] scsi_dispatch_cmd+0x18c/0x251
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.962917]  [<ffffffff81312d70>] scsi_request_fn+0x3cd/0x3f9
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.971781]  [<ffffffff81225214>] __blk_run_queue+0x1b/0x1d
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.980439]  [<ffffffff8123b637>] cfq_insert_request+0x4cf/0x504
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.989469]  [<ffffffff812248d4>] __elv_add_request+0x19c/0x1e7
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145813.998481]  [<ffffffff8122a934>] blk_flush_plug_list+0x166/0x19b
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145814.007670]  [<ffffffff814d2ce4>] schedule+0x2a3/0x6dc
+> 20110823.log:Aug 23 16:49:53 console1 port05  RXDATA: [145814.015903]  [<ffffffff814d35e1>] schedule_timeout+0x36/0xe3 
 
-> I keep meaning to write up a proposal for the gcc people to output
-> arithmetic flag status.
+Whee, you must be real 'lucky' to hit this so reliable.
 
-Should be relatively straightforward if you make the processor flag a
-builtin variable.
+Both panics included the above bit, so what I think happens is that we
+release rq->lock while calling that blk_flush_plug muck, it however then
+goes and re-enabled interrupts *FAIL*
 
-i.e. __processor_flag_zero, __processor_flag__gt etc.
+An interrupts happens and it (or in fact a pending softirq) then tries
+to wake the current task which is in the process of going to sleep.
+Since the task is still on the cpu we spin until its gone (assuming its
+a remote task since interrupts aren't supposed to happen here).
 
-Then the inline cmpxchg functions could simply do a
+Now I can fudge around this, see below, but really the whole
+block/scsi/hpsa crap should *NOT* re-enable interrupts here.
 
-	return __processor_flag_zero;
+It looks like the offender is:
 
-The code generator then needs to realize from the expression that we are
-referring to the zero flag and insert the correct jxx instruction.
+scsi_request_fn(), which does:
+
+                /*
+                 * XXX(hch): This is rather suboptimal, scsi_dispatch_cmd will
+                 *              take the lock again.
+                 */
+                spin_unlock_irq(shost->host_lock);
+
+
+
+---
+ kernel/sched.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ccacdbd..30d9788 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2630,7 +2630,6 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ 		smp_send_reschedule(cpu);
+ }
+ 
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
+ {
+ 	struct rq *rq;
+@@ -2647,7 +2646,6 @@ static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
+ 	return ret;
+ 
+ }
+-#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ #endif /* CONFIG_SMP */
+ 
+ static void ttwu_queue(struct task_struct *p, int cpu)
+@@ -2705,7 +2703,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	 * this task as prev, wait until its done referencing the task.
+ 	 */
+ 	while (p->on_cpu) {
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 		/*
+ 		 * In case the architecture enables interrupts in
+ 		 * context_switch(), we cannot busy wait, since that
+@@ -2713,11 +2710,11 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 		 * tries to wake up @prev. So bail and do a complete
+ 		 * remote wakeup.
+ 		 */
+-		if (ttwu_activate_remote(p, wake_flags))
++		if (cpu == smp_processor_id() && 
++				ttwu_activate_remote(p, wake_flags))
+ 			goto stat;
+-#else
++
+ 		cpu_relax();
+-#endif
+ 	}
+ 	/*
+ 	 * Pairs with the smp_wmb() in finish_lock_switch().
+
