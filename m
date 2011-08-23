@@ -1,134 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1HWPgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:36:21 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:46285
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751407Ab1HWPgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:36:14 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zzc85fh10e3Kzz1202hzzz2dh87h2a8h668h839h8e2h8e3h34h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.36.179.135;KIP:(null);UIP:(null);IPVD:NLI;H:kedge3.utk.tennessee.edu;RD:kedge3.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 23 Aug 2011 11:36:10 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, <mingo@elte.hu>, <paulus@samba.org>,
-        <acme@ghostprotocols.net>, Stephane Eranian <eranian@gmail.com>,
-        <krentel@cs.rice.edu>
-Subject: perf: overflow signal survives an exec call starting in 3.0
-Message-ID: <alpine.DEB.2.00.1108231127380.30837@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755215Ab1HWPkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:40:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48428 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065Ab1HWPkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 11:40:02 -0400
+Date: Tue, 23 Aug 2011 08:32:43 -0700
+From: Greg KH <gregkh@suse.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-usb@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/20] drivers_base: platform: use always ->name for
+ uevent
+Message-ID: <20110823153243.GB25968@suse.de>
+References: <1313419901-13492-1-git-send-email-bigeasy@linutronix.de>
+ <1313419901-13492-2-git-send-email-bigeasy@linutronix.de>
+ <CACxGe6us1vaUgMmiZR-D9iSCQdw+vbVyZdBCkET_9p3AGyHwRQ@mail.gmail.com>
+ <4E4937A4.5070204@linutronix.de>
+ <CACxGe6sAOYf3r4i1no=+-RgTLuiRbxYkcy+9VFXaCZOXUOi_uw@mail.gmail.com>
+ <20110822214154.GB20451@xanatos>
+ <20110822215151.GA18397@suse.de>
+ <20110823095036.GA23284@linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="8323329-105855205-1314113770=:30837"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823095036.GA23284@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8323329-105855205-1314113770=:30837
-Content-Type: text/plain; charset="US-ASCII"
+On Tue, Aug 23, 2011 at 11:50:36AM +0200, Sebastian Andrzej Siewior wrote:
+> * Greg KH | 2011-08-22 14:51:51 [-0700]:
+> 
+> >> Greg, do you want to take this patch through your driver core tree, or
+> >> would you prefer to have it come through the xHCI tree?
+> >
+> >I'll take it in my driver-core tree separate, as the others don't depend
+> >on this one, right?
+> 
+> Should the xhci series hit Linus' tree before your driver-core than
+> rmmod of the xhci-pci driver will lead to a crash.
 
-Hello
+That's ok, just don't do that :)
 
-Mark Krentel noticed that starting with Linux 3.0 perf_event signals
-survive a call to exec().  
+And you can tell me to merge stuff with Linus after one of my other
+trees is applied, I can do that as well.
 
-This means that if you exec() from within a perf-monitored process
-and don't immediately start a signal handler, your process will
-quickly be killed with a SIGIO signal.
-
-I'm guessing this was an unintended change, although what to do in
-this situation is a bit vague.
-
-I tediously bisected this to the following commit:
-
-commit f506b3dc0ec454a16d40cab9ee5d75435b39dc50
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Thu May 26 17:02:53 2011 +0200
-
-    perf: Fix SIGIO handling
-
-Attached is an example program that exhibits the problem.
-
-Vince
-
---8323329-105855205-1314113770=:30837
-Content-Type: text/x-csrc; name="signal_after_exec.c"
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.00.1108231136100.30837@cl320.eecs.utk.edu>
-Content-Description: signal_after_exec.c
-Content-Disposition: attachment; filename="signal_after_exec.c"
-
-Lyogc2lnbmFsX2FmdGVyX2V4ZWMuYyAgKi8NCi8qIGJ5IFZpbmNlIFdlYXZl
-ciAgIHZ3ZWF2ZXIxIF9hdF8gZWVjcy51dGsuZWR1ICovDQoNCi8qIENvbXBp
-bGUgd2l0aCBnY2MgLU8yIC1XYWxsIC1vIHNpZ25hbF9hZnRlcl9leGVjIHNp
-Z25hbF9hZnRlcl9leGVjLmMgKi8NCg0KLyogT24gMi42LjM5IGFuZCBlYXJs
-aWVyIHRoZSBleGVjZCBwcm9jZXNzIGdldHMgbm8gc2lnbmFscyAgICAgICAg
-ICAgICAgICovDQovKiBPbiAzLjAgYW5kIG5vcm1hbCBpdCBkb2VzLCB3aGlj
-aCBxdWlja2x5IGtpbGxzIHRoZSBwcm9ncmFtIHdpdGggU0lHSU8gKi8NCg0K
-I2RlZmluZSBfR05VX1NPVVJDRSAxDQoNCiNpbmNsdWRlIDxzdGRpby5oPg0K
-I2luY2x1ZGUgPHN0ZGxpYi5oPg0KI2luY2x1ZGUgPHN0cmluZy5oPg0KDQoj
-aW5jbHVkZSA8dW5pc3RkLmg+DQojaW5jbHVkZSA8ZmNudGwuaD4NCg0KI2lu
-Y2x1ZGUgPHNpZ25hbC5oPg0KDQojaW5jbHVkZSA8c3lzL21tYW4uaD4NCg0K
-I2luY2x1ZGUgPHN5cy9pb2N0bC5oPg0KDQojaW5jbHVkZSA8YXNtL3VuaXN0
-ZC5oPg0KI2luY2x1ZGUgPHN5cy9wcmN0bC5oPg0KI2luY2x1ZGUgInBlcmZf
-ZXZlbnQuaCINCg0KaW50IHBlcmZfZXZlbnRfb3BlbihzdHJ1Y3QgcGVyZl9l
-dmVudF9hdHRyICpod19ldmVudF91cHRyLA0KICAgICAgICAgICAgICAgICAg
-ICBwaWRfdCBwaWQsIGludCBjcHUsIGludCBncm91cF9mZCwgdW5zaWduZWQg
-bG9uZyBmbGFncykgew0KICAgDQogIHJldHVybiBzeXNjYWxsKF9fTlJfcGVy
-Zl9ldmVudF9vcGVuLGh3X2V2ZW50X3VwdHIsIHBpZCwgY3B1LA0KCQkgZ3Jv
-dXBfZmQsIGZsYWdzKTsNCn0NCg0KDQpzdGF0aWMgaW50IGNvdW50PTA7DQoN
-CnN0YXRpYyB2b2lkIG91cl9oYW5kbGVyKGludCBzaWdudW0sc2lnaW5mb190
-ICpvaCwgdm9pZCAqYmxhaCkgew0KICAgDQogICBpbnQgcmV0LGZkMTsNCiAg
-IA0KICAgZmQxPW9oLT5zaV9mZDsNCiAgIA0KICAgcmV0PWlvY3RsKGZkMSwg
-UEVSRl9FVkVOVF9JT0NfRElTQUJMRSwwKTsNCiAgIA0KICAgY291bnQrKzsN
-CiAgIA0KICAgcmV0PWlvY3RsKGZkMSwgUEVSRl9FVkVOVF9JT0NfUkVGUkVT
-SCwxKTsNCn0NCg0KZG91YmxlIGJ1c3l3b3JrKGludCBjb3VudCkgew0KIA0K
-ICBpbnQgaTsNCiAgZG91YmxlIHN1bT0wLjAwMTI7DQogICANCiAgZm9yKGk9
-MDtpPGNvdW50O2krKykgew0KICAgIHN1bSs9MC4wMTsNCiAgfQ0KICByZXR1
-cm4gc3VtOw0KICAgDQp9DQoNCg0KaW50IG1haW4oaW50IGFyZ2MsIGNoYXIq
-KiBhcmd2KSB7DQogICANCiAgaW50IGZkLHJldDsNCiAgZG91YmxlIHJlc3Vs
-dDsNCg0KICAgc3RydWN0IHBlcmZfZXZlbnRfYXR0ciBwZTsNCiAgIHN0cnVj
-dCBzaWdhY3Rpb24gc2E7DQoNCiAgIGlmIChhcmdjPjEpIHsNCiAgICAgIHJl
-c3VsdD1idXN5d29yaygxMDAwMDAwMCk7DQogICAgICBwcmludGYoIkNvdW50
-IGFmdGVyIGV4ZWM9JWQgKCVsZilcbiIsY291bnQscmVzdWx0KTsNCiAgICAg
-IGV4aXQoMCk7DQogICB9DQoNCiAgIHByaW50ZigiXG5PbiAyLjYuMzkgYW5k
-IGVhcmxpZXIgdGhlIGV4ZWMnZCBwcm9jZXNzIGdldHMgbm8gc2lnbmFscy5c
-biIpOw0KICAgcHJpbnRmKCJPbiAzLjAgYW5kIGxhdGVyIHRoZSBleGVjJ2Qg
-cHJvY2VzcyBnZXRzIGEgc2lnbmFsLCB3aGljaFxuIik7DQogICBwcmludGYo
-IiAgaXMgbm90IGhhbmRsZWQgYW5kIGl0IGRpZXMgd2l0aCBTSUdJTy5cblxu
-Iik7DQoNCiAgIC8qIHNldCB1cCBzaWduYWwgaGFuZGxlciAqLw0KICAgbWVt
-c2V0KCZzYSwgMCwgc2l6ZW9mKHN0cnVjdCBzaWdhY3Rpb24pKTsNCiAgIHNh
-LnNhX3NpZ2FjdGlvbiA9IG91cl9oYW5kbGVyOw0KICAgc2Euc2FfZmxhZ3Mg
-PSBTQV9TSUdJTkZPOw0KDQogICBpZiAoc2lnYWN0aW9uKCBTSUdJTywgJnNh
-LCBOVUxMKSA8IDApIHsNCiAgICAgZnByaW50ZihzdGRlcnIsIkVycm9yIHNl
-dHRpbmcgdXAgc2lnbmFsIGhhbmRsZXJcbiIpOw0KICAgICBleGl0KDEpOw0K
-ICAgfQ0KDQogICBtZW1zZXQoJnBlLDAsc2l6ZW9mKHN0cnVjdCBwZXJmX2V2
-ZW50X2F0dHIpKTsNCg0KICAgcGUudHlwZT1QRVJGX1RZUEVfSEFSRFdBUkU7
-DQogICBwZS5zaXplPXNpemVvZihzdHJ1Y3QgcGVyZl9ldmVudF9hdHRyKTsN
-CiAgIHBlLmNvbmZpZz1QRVJGX0NPVU5UX0hXX0lOU1RSVUNUSU9OUzsNCiAg
-IHBlLnNhbXBsZV9wZXJpb2Q9MTAwMDAwOw0KICAgcGUuc2FtcGxlX3R5cGU9
-UEVSRl9TQU1QTEVfSVA7DQogICBwZS5yZWFkX2Zvcm1hdD0wOw0KICAgcGUu
-ZGlzYWJsZWQ9MTsNCiAgIHBlLnBpbm5lZD0xOw0KIA0KICAgcGUud2FrZXVw
-X2V2ZW50cz0xOw0KICAgDQogICBmZD1wZXJmX2V2ZW50X29wZW4oJnBlLDAs
-LTEsLTEsMCk7DQogICBpZiAoZmQ8MCkgew0KICAgICAgZnByaW50ZihzdGRl
-cnIsIkVycm9yIG9wZW5pbmdcbiIpOw0KICAgICAgZXhpdCgxKTsNCiAgIH0N
-Cg0KICAgdm9pZCAqYmxhcmdoOw0KICAgDQogICBibGFyZ2g9bW1hcChOVUxM
-LCAoMSsxKSo0MDk2LCANCgkgICAgICAgUFJPVF9SRUFEfFBST1RfV1JJVEUs
-IE1BUF9TSEFSRUQsIGZkLCAwKTsNCg0KDQogICAvKiBzZXR1cCBldmVudCAy
-IHRvIGhhdmUgb3ZlcmZsb3cgc2lnbmFscyAqLw0KICAgZmNudGwoZmQsIEZf
-U0VURkwsIE9fUkRXUnxPX05PTkJMT0NLfE9fQVNZTkMpOw0KICAgZmNudGwo
-ZmQsIEZfU0VUU0lHLCBTSUdJTyk7DQogICBmY250bChmZCwgRl9TRVRPV04s
-Z2V0cGlkKCkpOw0KICAgDQogICBpb2N0bChmZCwgUEVSRl9FVkVOVF9JT0Nf
-UkVTRVQsIDApOyAgIA0KDQogICAvKiBlbmFibGUgY291bnRpbmcgKi8NCiAg
-IHJldD1pb2N0bChmZCwgUEVSRl9FVkVOVF9JT0NfRU5BQkxFLDApOw0KDQog
-ICByZXN1bHQ9YnVzeXdvcmsoMTAwMDAwMDApOw0KDQogICBwcmludGYoIkNv
-dW50IGJlZm9yZSBleGVjPSVkICglbGYpXG4iLGNvdW50LHJlc3VsdCk7DQoN
-CiAgIC8qIGV4ZWMgb3Vyc2VsdmVzLCBidXQgY2FsbCBhIGJ1c3kgZnVuY3Rp
-b24gKi8NCiAgIGV4ZWNsKGFyZ3ZbMF0sYXJndlswXSwiYnVzeSIsTlVMTCk7
-DQoNCiAgIHJldHVybiAwOw0KfQ0K
-
---8323329-105855205-1314113770=:30837--
+greg k-h
