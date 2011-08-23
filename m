@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1HWPz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:55:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab1HWPzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:55:21 -0400
-Date: Tue, 23 Aug 2011 17:52:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
-Message-ID: <20110823155221.GB25808@redhat.com>
-References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-7-git-send-email-tj@kernel.org>
+	id S1754567Ab1HWQEF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:04:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43141 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751959Ab1HWQD6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:03:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313763382-12341-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110823061531.GC2203@ZenIV.linux.org.uk>
+References: <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
+ <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
+ <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 23 Aug 2011 09:03:04 -0700
+Message-ID: <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-Not a comment, but the question. Probably falls into the "read the
-whole series" category too.
-
-On 08/19, Tejun Heo wrote:
+On Mon, Aug 22, 2011 at 11:15 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> There's no point in freezing an exiting task.
+> * it does SETREGS, setting eax to return value, eip to original return
+> address of syscall insn... and ebp to what it had in regs.bp.  I.e. the
+> damn arg6 value.
 
-This is not clear to me. Probably this is fine, I do not know what
-the callers of freeze_processes() actually expect.
+Ok, I think that exhaustively explains that
 
-> @@ -915,6 +913,12 @@ NORET_TYPE void do_exit(long code)
->
->  	ptrace_event(PTRACE_EVENT_EXIT, code);
->
-> +	/*
-> +	 * With ptrace notification done, there's no point in freezing from
-> +	 * here on.  Disallow freezing.
-> +	 */
-> +	current->flags |= PF_NOFREEZE;
+ (a) our system call restart has always worked correctly, and we're good.
 
-OK, but what PF_NOFREEZE actually means?
+ (b) it's simply just UML that is buggy, and doesn't understand the
+subtleties about doing GETREGS at a system call.
 
-Apart from "dont try to freeze" it means "no need to freeze", yes?
+and I think that the correct and simple solution is to just teach UML
+to understand the proper logic of pt_regs during a system call (and a
+'syscall' instruction in particular).
 
-IOW, try_to_freeze_tasks() can succeed even if we have a lot of
-exitinig task which can make some activity, say, disk i/o. Is this
-correct?
+The thing is, UML emulates 'syscall' the way the *CPU* does it, not
+the way *we* do it. That may make sense, but it's simply not correct.
 
-Once again, I do not understand the problem-space at all, jus I am
-curious.
+So I would vote very strongly against actually changing anything in
+arch/x86. This is very much an UML issue.
 
-Thanks,
+Suggested fixes:
 
-Oleg.
+ - instead of blindly doing SETREGS, just write the result registers
+individually like you suggested
 
+OR (and perhaps preferably):
+
+ - teach UML that when you do 'GETREGS' after a system call trapped,
+we have switched things around to match the "official system call
+order", and UML should just undo our swizzling, and do a "regs.ebp =
+regs.ecx" to make it be what the actual original registers were (or
+whatever the actual correct swizzle is - I didn't think that through
+very much).
+
+IOW, I think the core kernel does the right thing. Our argument
+register swizzling is odd, yes, but it's an implementation detail that
+something like uml should just have to take into account. No?
+
+Hmm?
+
+                            Linus
