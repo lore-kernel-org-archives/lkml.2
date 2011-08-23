@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab1HWOba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 10:31:30 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:37853 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752254Ab1HWObZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 10:31:25 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: aNipPWQVM1kh0MdkI3ALkfe8NYv7ZWx_c3C6xMTc1pjAKYd
- R58s8d1kZod1HBA..Tokk.kbjvrcJG7L8pmU_LdVT4RSDskWQnfwCm3OQbQ7
- aCoIyAjatn2HjzYNFr_PpApegaA20EpWq_VnShYpsjpFvrr4.93lX6LbfsvH
- T1JRWeQEt6NLsWm1TPwwLy_QbrpP4GllVIQgcxi1TCIwOv_Lmj7F1PpA7UMS
- byDKaadyGfOpSx0BeNkdwDhK4aYpHCFRe5_HEGzOcExlstzZf.O3XlPIKwbt
- cU1GWSZRV4VLG0Ug5ah5Jq9X4r3wc_.gyLuGTlL8vMOINOwRFXJhaGk7G_72
- lGcpzfl.VHRHh_Ov.Y_YtLHGio4ifxUr0dONgf4UckpH.
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 23 Aug 2011 09:31:21 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Joern Engel <joern@logfs.org>, logfs@logfs.org,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 3/4] string: introduce memchr_inv
-In-Reply-To: <CAMuHMdVUvLAYpGDKsDUJ0DkLJEJKHCRy2Cj6miAH1YyEL6iWpw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1108230931000.21267@router.home>
-References: <1314030548-21082-1-git-send-email-akinobu.mita@gmail.com> <1314030548-21082-4-git-send-email-akinobu.mita@gmail.com> <CAMuHMdVUvLAYpGDKsDUJ0DkLJEJKHCRy2Cj6miAH1YyEL6iWpw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754659Ab1HWOcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 10:32:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33499 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab1HWOcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 10:32:18 -0400
+Date: Tue, 23 Aug 2011 16:29:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Send a SIGCHLD to the init's pid namespace parent
+	when reboot
+Message-ID: <20110823142914.GA22593@redhat.com>
+References: <20110815144744.GA9660@redhat.com> <4E4DA461.8030006@free.fr> <20110819152416.GA17034@redhat.com> <4E524B73.3050704@free.fr> <20110822154448.GA8527@redhat.com> <20110822183134.10390b46@neptune.home> <20110822173949.GA13242@redhat.com> <20110822211716.7c141d5c@neptune.home> <20110823133302.GA19582@redhat.com> <1314108566.3465.29.camel@bahia.local>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314108566.3465.29.camel@bahia.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Aug 2011, Geert Uytterhoeven wrote:
-
-> On Mon, Aug 22, 2011 at 18:29, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> > +/**
-> > + * memchr_inv - Find a character in an area of memory.
+On 08/23, Greg Kurz wrote:
 >
-> This description doesn't really match.
+> On Tue, 2011-08-23 at 15:33 +0200, Oleg Nesterov wrote:
+> > [...]
+> > At least now I understand why did you mention si_code/CLD before. You
+> > meant waitid(). I thought you were talking about the death-notifications
+> > which can't report CLD_ you need.
+> >
+> > I strongly object. We shouldn't uglify wait_task_zombie() to solve the
+> > very specific problem.
+> >
+> > And once again. sub_init->parent does wiat(&status) and sees
+> > WIFSIGNALED() && WTERMSIG(status) == SIGHUP. This can only mean that
+> > sys_reboot(LINUX_REBOOT_CMD_RESTART) was called. It _can not_ be really
+> > killed by SIGHUP, it must be CMD_RESTART.
+> >
+> > Why this can't work? Why do you want the additional complications?
+> >
+>
+> I don't see either what could go wrong with you approach.
 
-Seconded. If you fix that then
+Thanks ;)
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Just in case... instead of WIFSIGNALED/WTERMSIG we can also report
+the exit code in the upper bits. I mean,
+
+	switch (reboot_cmd) {
+	case LINUX_REBOOT_CMD_RESTART:
+		code = 1 << 16;
+		break;
+	case LINUX_REBOOT_CMD_HALT:
+		code = 2 << 16;
+		break;
+	}
+
+this can't be confused with the normal exit(code), just the parent
+should be careful, I am not sure this can't confuse WIFEXITED/WEXITSTATUS
+user-space macroses.
+
+wait(&status) takes "int *", we have a room for additional info, and
+wait_task_zombie() simply copies exit_code.
+
+Oleg.
 
