@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435Ab1HWK5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 06:57:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33760 "EHLO mga09.intel.com"
+	id S1752838Ab1HWK6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 06:58:22 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:48919 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab1HWK5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 06:57:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="40927699"
-Subject: Re: [PATCH] DMA: PL330: add missing header
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dan <dan.j.williams@intel.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Boojin Kim <boojin.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>
-In-Reply-To: <20110823093958.GC19622@n2100.arm.linux.org.uk>
-References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com>
-	 <1314081133.22120.19.camel@vkoul-udesk3>
-	 <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
-	 <1314087342.22120.100.camel@vkoul-udesk3>
-	 <20110823082319.GA19622@n2100.arm.linux.org.uk>
-	 <1314088367.22120.133.camel@vkoul-udesk3>
-	 <20110823093958.GC19622@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 16:27:19 +0530
-Message-ID: <1314097039.22120.160.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751216Ab1HWK6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 06:58:18 -0400
+Date: Tue, 23 Aug 2011 12:57:42 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg KH <greg@kroah.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Chris Wright <chrisw@redhat.com>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@kernel.org
+Subject: Re: [stable] [PATCH] uio/gen-pci: don't enable interrupts in ISR
+Message-ID: <20110823105727.GA29209@local>
+References: <20110804204606.GA19724@linutronix.de>
+ <20110804210413.GA29222@redhat.com>
+ <20110805001507.GA5987@local>
+ <20110808062431.GB5182@redhat.com>
+ <20110808171931.GB867@local>
+ <20110809113743.GA32299@redhat.com>
+ <20110809185341.GD4229@local>
+ <20110810084012.GD13911@redhat.com>
+ <20110823004943.GB29215@kroah.com>
+ <20110823084005.GB20979@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823084005.GB20979@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 10:39 +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 23, 2011 at 02:02:47PM +0530, Koul, Vinod wrote:
-> > On Tue, 2011-08-23 at 09:23 +0100, Russell King - ARM Linux wrote:
-> > > On Tue, Aug 23, 2011 at 01:45:42PM +0530, Koul, Vinod wrote:
-> > > > Russell had fixed compilation of pl330 driver, and was supposed to send
-> > > > the fix to Linus as part of his fixes. If thats not done I can send it
-> > > > for next -rc
-> > > 
-> > > That was for amba-pl08x.c, not pl330.c
-> > Okay, thanks.
-> > I will send the patch for dmaengine.h to Linus for next -rc
+On Tue, Aug 23, 2011 at 10:40:05AM +0200, Sebastian Andrzej Siewior wrote:
+> * Greg KH | 2011-08-22 17:49:43 [-0700]:
 > 
-> If you read the original commit, you'll find that scatterlist.h was
-> explicitly removed from dmaengine.h:
+> >> > Cc: Anthony Foiani <anthony.foiani@gmail.com>
+> >
+> >Why, it's not fixing a bug that anyone hits, right?
 > 
->     net: remove mm.h inclusion from netdevice.h
+> "earlier" the interrupt handler was executed either with interrupts
+> enabled or disabled if IRQF_DISABLED was specified. Later the latter
+> become default even if IRQF_DISABLED was not specified. This lead to the
+> splat Anthony reported because the irq handler was entered with IRQs
+> disabled and the ISR enabled them via spin_unlock_irq(). My initial
+> patch simply used spin_unlock_irqrestore() (and its counterpart) to have
+> the same state as we had.
 > 
->     Remove linux/mm.h inclusion from netdevice.h -- it's unused (I've checked ma
+> So the bug Anthony hit was that the interrupts were enabled where they
+> should not be.
 > 
->     To prevent mm.h inclusion via other channels also extract "enum dma_data_dir
->     definition into separate header. This tiny piece is what gluing netdevice.h
->     via "netdevice.h => dmaengine.h => dma-mapping.h => scatterlist.h => mm.h".
->     Removal of mm.h from scatterlist.h was tried and was found not feasible
->     on most archs, so the link was cutoff earlier.
+> >greg k-h
 > 
->     Hope people are OK with tiny include file.
+> Sebastian
 > 
->     Note, that mm_types.h is still dragged in, but it is a separate story.
-> 
->     Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> So adding scatterlist.h back into dmaengine.h may not be the best idea.
-Yes, looks like that maybe the case. 
 
-It's rather unfortunate that neither Dan nor me were copied on changes
-done on dmaengine drivers and headers :(
+Greg, I'll change the commit message so that it becomes clear, and send
+you a pull request.
 
+There is also one more UIO patch pending. Do you want a separate branch
+for -stable, or can you cherry-pick that from one UIO branch?
 
--- 
-~Vinod
+Thanks,
+Hans
 
