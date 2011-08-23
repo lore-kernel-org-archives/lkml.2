@@ -1,59 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab1HWIkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:40:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45264 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab1HWIkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:40:11 -0400
-Date: Tue, 23 Aug 2011 10:40:05 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Greg KH <greg@kroah.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Chris Wright <chrisw@redhat.com>,
-        Anthony Foiani <anthony.foiani@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, stable@kernel.org
-Subject: Re: [stable] [PATCH] uio/gen-pci: don't enable interrupts in ISR
-Message-ID: <20110823084005.GB20979@linutronix.de>
-References: <20110804204606.GA19724@linutronix.de>
- <20110804210413.GA29222@redhat.com>
- <20110805001507.GA5987@local>
- <20110808062431.GB5182@redhat.com>
- <20110808171931.GB867@local>
- <20110809113743.GA32299@redhat.com>
- <20110809185341.GD4229@local>
- <20110810084012.GD13911@redhat.com>
- <20110823004943.GB29215@kroah.com>
+	id S1754767Ab1HWImu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:42:50 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51914 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823Ab1HWImr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:42:47 -0400
+Date: Tue, 23 Aug 2011 10:42:41 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: "Zou, Yi" <yi.zou@intel.com>
+Cc: Jesper Juhl <jj@chaosbits.net>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "devel@open-fcoe.org" <devel@open-fcoe.org>
+Subject: RE: [Open-FCoE] [PATCH 2/4] drivers/scsi/fcoe/fcoe.c: add missing
+ test
+In-Reply-To: <5A9BD224CEA58D4CB62235967D650C1609F5B04B@orsmsx509.amr.corp.intel.com>
+Message-ID: <Pine.LNX.4.64.1108231041520.25811@ask.diku.dk>
+References: <1314021636-11528-2-git-send-email-julia@diku.dk>
+ <alpine.LNX.2.00.1108221632130.9774@swampdragon.chaosbits.net>
+ <Pine.LNX.4.64.1108221648560.10948@ask.diku.dk>
+ <5A9BD224CEA58D4CB62235967D650C1609F5B04B@orsmsx509.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110823004943.GB29215@kroah.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH | 2011-08-22 17:49:43 [-0700]:
+From: Julia Lawall <julia@diku.dk>
 
->> > Cc: Anthony Foiani <anthony.foiani@gmail.com>
->
->Why, it's not fixing a bug that anyone hits, right?
+The initializations of both fcoe_nport_scsi_transport and
+fcoe_vport_scsi_transport can fail, so test both of them.
 
-"earlier" the interrupt handler was executed either with interrupts
-enabled or disabled if IRQF_DISABLED was specified. Later the latter
-become default even if IRQF_DISABLED was not specified. This lead to the
-splat Anthony reported because the irq handler was entered with IRQs
-disabled and the ISR enabled them via spin_unlock_irq(). My initial
-patch simply used spin_unlock_irqrestore() (and its counterpart) to have
-the same state as we had.
+Convert the return value to -ENOMEM to better reflect the reason for the 
+error.
 
-So the bug Anthony hit was that the interrupts were enabled where they
-should not be.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
->greg k-h
+// <smpl>
+@r@
+identifier x,y,f!={PTR_ERR,ERR_PTR,ERR_CAST};
+statement S;
+@@
 
-Sebastian
+x = f(...);
+(
+if (\(x == NULL\|IS_ERR(x)\)) S
+|
+*if (\(y == NULL\|IS_ERR(y)\))
+ { ... when != x
+   return ...; }
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/scsi/fcoe/fcoe.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/fcoe/fcoe.c b/drivers/scsi/fcoe/fcoe.c
+index ba710e3..2a279eb 100644
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -1093,12 +1093,21 @@ static int __init fcoe_if_init(void)
+ 	/* attach to scsi transport */
+ 	fcoe_nport_scsi_transport =
+ 		fc_attach_transport(&fcoe_nport_fc_functions);
++
++	if (!fcoe_nport_scsi_transport) {
++		printk(KERN_ERR
++		       "fcoe_nport: Failed to attach to the FC transport\n");
++		return -ENOMEM;
++	}
++
+ 	fcoe_vport_scsi_transport =
+ 		fc_attach_transport(&fcoe_vport_fc_functions);
+ 
+-	if (!fcoe_nport_scsi_transport) {
+-		printk(KERN_ERR "fcoe: Failed to attach to the FC transport\n");
+-		return -ENODEV;
++	if (!fcoe_vport_scsi_transport) {
++		printk(KERN_ERR
++		       "fcoe_vport: Failed to attach to the FC transport\n");
++		fc_release_transport(fcoe_nport_scsi_transport);
++		return -ENOMEM;
+ 	}
+ 
+ 	return 0;
