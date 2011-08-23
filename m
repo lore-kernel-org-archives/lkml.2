@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab1HWLVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 07:21:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37300 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab1HWLVg (ORCPT
+	id S1753652Ab1HWLa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 07:30:57 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57524 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1HWLau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 07:21:36 -0400
-Date: Tue, 23 Aug 2011 14:21:28 +0300
-From: Maxin B John <maxin.john@gmail.com>
-To: Jiandong Zheng <jdzheng@broadcom.com>
-Cc: Scott Branden <sbranden@broadcom.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] arm: mach-bcmring: fix build error in dma.c
-Message-ID: <20110823112128.GA2825@maxin>
+	Tue, 23 Aug 2011 07:30:50 -0400
+Date: Tue, 23 Aug 2011 13:30:46 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Sarah Sharp <sarah.a.sharp@intel.com>
+Cc: sifram rajas <sifram.rajas@gmail.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xhci: Redundant check for
+Message-ID: <20110823113046.GE23284@linutronix.de>
+References: <CA+OjSzyMGBsjCmwAgrFDkX3uphD9ya8DBGQw1nVktoKX=wpDHQ@mail.gmail.com>
+ <20110822155529.GA4783@xanatos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <20110822155529.GA4783@xanatos>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- CC      arch/arm/mach-bcmring/dma.o
-arch/arm/mach-bcmring/dma.c: In function 'dma_request_channel_dbg':
-arch/arm/mach-bcmring/dma.c:1022: error: 'TASK_INTERRUPTIBLE'
-undeclared (first use in this function)
-arch/arm/mach-bcmring/dma.c:1022: error: (Each undeclared identifier
-is reported only once
-arch/arm/mach-bcmring/dma.c:1022: error: for each function it appears
-in.)
-arch/arm/mach-bcmring/dma.c:1024: error: implicit declaration of
-function 'schedule'
-arch/arm/mach-bcmring/dma.c:1027: error: implicit declaration of
-function 'signal_pending'
-arch/arm/mach-bcmring/dma.c: In function 'dma_free_channel':
-arch/arm/mach-bcmring/dma.c:1092: error: 'TASK_INTERRUPTIBLE'
-undeclared (first use in this function)
-arch/arm/mach-bcmring/dma.c: In function 'dma_map_add_region':
-arch/arm/mach-bcmring/dma.c:1946: error: dereferencing pointer to
-incomplete type
-arch/arm/mach-bcmring/dma.c:1948: error: dereferencing pointer to
-incomplete type
-arch/arm/mach-bcmring/dma.c:1955: error: dereferencing pointer to
-incomplete type
-make[1]: *** [arch/arm/mach-bcmring/dma.o] Error 1
-make: *** [arch/arm/mach-bcmring] Error 2
+* Sarah Sharp | 2011-08-22 08:55:29 [-0700]:
 
-Signed-off-by: Maxin B. John <maxin.john@gmail.com>
----
-diff --git a/arch/arm/mach-bcmring/dma.c b/arch/arm/mach-bcmring/dma.c
-index 0ca0005..12d1504 100644
---- a/arch/arm/mach-bcmring/dma.c
-+++ b/arch/arm/mach-bcmring/dma.c
-@@ -35,6 +35,7 @@
- #include <linux/mm.h>
- #include <linux/pfn.h>
- #include <linux/atomic.h>
-+#include <linux/sched.h>
- #include <mach/dma.h>
- 
- /* I don't quite understand why dc4 fails when this is set to 1 and DMA is enabled */
+>Where did you find the intel.com email address?  I'm pretty sure the
+>MAINTAINERS file lists the linux.intel.com one, and I'd like to make
+>sure people aren't getting bad information.
+
+It is listed in Documentation/ABI/testing/sysfs-bus-usb. But for this
+kind of information the exchange server might work :)
+
+>
+>Sarah Sharp
+
+Sebastian
