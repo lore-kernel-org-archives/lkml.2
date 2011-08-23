@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab1HWPlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:41:10 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46525 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab1HWPlG (ORCPT
+	id S1753339Ab1HWPny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:43:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41248 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752070Ab1HWPnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:41:06 -0400
-Date: Tue, 23 Aug 2011 16:40:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Wei Ni <wni@nvidia.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        "mike@compulab.co.il" <mike@compulab.co.il>,
-        Nitin Kumbhar <nkumbhar@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: tps6586x: add api to power off tps6586x
-Message-ID: <20110823154056.GB26317@sirena.org.uk>
-References: <1311834636-15940-1-git-send-email-wni@nvidia.com>
- <20110821230511.GA4607@sortiz-mobl>
- <6B4D417B830BC44B8026029FD256F7F1C2CD7600DD@HKMAIL01.nvidia.com>
- <CAN1soZzkmP=ckzAOJv59YfYtFU63nC9j-Oa+cM5z674yf0Mihw@mail.gmail.com>
+	Tue, 23 Aug 2011 11:43:45 -0400
+Date: Tue, 23 Aug 2011 11:43:44 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Michal Nazarewicz <mnazarewicz@google.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
+In-Reply-To: <20110823145759.GM1341@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1108231141400.2069-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN1soZzkmP=ckzAOJv59YfYtFU63nC9j-Oa+cM5z674yf0Mihw@mail.gmail.com>
-X-Cookie: divorce, n:
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 01:06:02PM +0800, Haojian Zhuang wrote:
+On Tue, 23 Aug 2011, Felipe Balbi wrote:
 
-> Maybe we can add a LDO mapping in regulator driver. Since power-off
-> function is always
-> customized in board file. We can disable this regulator while
-> power_off() is called. So even
-> multiple PMICs is installed in one system, we only handle the real one
-> to shutdown the
-> whole system.
+> Hi,
+> 
+> On Tue, Aug 23, 2011 at 10:37:23AM -0400, Alan Stern wrote:
+> > On Tue, 23 Aug 2011, Michal Nazarewicz wrote:
+> > 
+> > > My understanding was that one could consciously create a composite gadget
+> > > such that not all of the functions support all of the speeds.
+> > 
+> > That's an important point.  If somebody wants to build a composite 
+> > gadget that includes both midi and storage support, the storage driver 
+> > would be able to go all the way up to SuperSpeed (or rather, it will 
+> > once Felipe's patch is finished and merged) but the midi driver would 
+> > only support full speed.  So what speed should the UDC connect at?
+> 
+> if they are both part of the of the same configuration, full speed.
+> Otherwise Audio won't work. If they are part of different
+> configurations, then maximum_speed will be defined by the chosen config,
+> no ?
 
-Some (ST?) platform had an issue like that.  What they did IIRC is
-define a regulator consumer driver which is hooked up as normal then had
-that driver implemented a power_off() which used regulator_disable() to do
-the honours.  Perhaps this could be made more generic somehow?  Though
-it may have been part of their cpufreq driver or something - I can't
-remember the detail right now.
+No.  The speed has to be chosen first, when the gadget connects to the 
+host.  The config isn't chosen until later, after the host retrieves 
+the various descriptors and decides among them.
+
+> > In cases like this there's really no way to know.  Ultimately the best 
+> > approach would be to update the midi driver, but that's a long-term 
+> > sort of thing.
+> 
+> yeah, I agree here.
+> 
+> > Usually when the kernel can't decide something, it asks the user for 
+> > help (by allowing the user to specify the speed via a module parameter, 
+> > for instance).  In this case even that wouldn't work, because the 
+> > gadget's userspace isn't aware of which functions the host's user will 
+> > want to utilize.
+> > 
+> > At the moment I don't know the best answer.  This is something we 
+> > should all think about.
+> 
+> I stand with the fact that if they are part of the same configuration,
+> there's no way around it, storage will have to come down to full speed.
+> Unless I'm missing something.
+
+What if they are in different configurations?
+
+Alan Stern
+
