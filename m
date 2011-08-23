@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472Ab1HWH7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 03:59:30 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:57822 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab1HWH73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 03:59:29 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: grant.likely@secretlab.ca
-Cc: spi-devel-general@lists.sourceforge.net, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH] SPI: fix build with CONFIG_SPI_FSL_ESPI=m
-Date: Tue, 23 Aug 2011 09:59:05 +0200
-Message-Id: <1314086345-2818-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.6
+	id S1754640Ab1HWIAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:00:09 -0400
+Received: from lo.gmane.org ([80.91.229.12]:54783 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389Ab1HWIAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:00:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Dheeraj Reddy <dheeraj.reddy@intel.com>
+Subject: Re: [Bug #39342] [3.0.0-rc6-git7] possible recursive locking atcache_alloc_refill
+Date: Tue, 23 Aug 2011 00:42:47 -0700
+Organization: Intel Corp.
+Message-ID: <87hb58inew.fsf@franklin.jf.intel.com>
+References: <xuTC4jRtHbB.A.l4H.gMCSOB@chimera>
+	<bkwpSnItbJM.A.o3.YNCSOB@chimera>
+	<alpine.DEB.2.00.1108142259120.4228@tiger>
+	<201108150736.FFC69227.MQSJVFHFFOOOtL@I-love.SAKURA.ne.jp>
+	<CAOJsxLH+qQxVwwx+2t-azc8fw+uz2+M9SCRzMUGdKKbUc1nC7A@mail.gmail.com>
+	<1314003262.24275.2.camel@twins>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 134.134.139.76
+X-Operating-System: x86_64-pc-linux-gnu
+X-Attribution: DSR
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Cancel-Lock: sha1:GOiMubY3lWv5BETC5v1Fv8HO5tQ=
+Cc: kernel-testers@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When spi_fsl_espi is chosen to be built as a module, there is a build
-error because we test only CONFIG_SPI_FSL_ESPI in declaration of
-struct mpc8xxx_spi in drivers/spi/spi_fsl_lib.h.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-We need to add a test for CONFIG_SPI_FSL_ESPI_MODULE too.
+> On Mon, 2011-08-15 at 08:46 +0300, Pekka Enberg wrote:
+>> On Mon, Aug 15, 2011 at 1:36 AM, Tetsuo Handa
+>> <penguin-kernel@i-love.sakura.ne.jp> wrote:
+>> > Pekka Enberg wrote:
+>> >> Tetsuio, did Peter's commit 30765b9 ("slab, lockdep: Annotate the locks
+>> >> before using them") and commit 83835b3 ("slab, lockdep: Annotate slab ->
+>> >> rcu -> debug_object -> slab") in Linus' git fix this for you?
+>> >
+>> > Yes. Applying these two commits fixes this problem.
+>> >
+>> > Thank you.
+>> 
+>> The commits weren't tagged for -stable, I'm afraid. Peter?
+>
+> I must have forgotten people were actually triggering this on 3.0. Feel
+> free to tell gregkh to include those two patches in his next 3.0-stable
+> lineup.
 
-The error looks like:
-drivers/spi/spi_fsl_espi.c: In function 'fsl_espi_bufs':
-drivers/spi/spi_fsl_espi.c:232: error: 'struct mpc8xxx_spi' has no member named 'len'
-...
+I have added some more info to the bug report. I can see a similar
+lockdep issue in 3.1 rc3.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/spi/spi-fsl-lib.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/spi/spi-fsl-lib.h b/drivers/spi/spi-fsl-lib.h
-index cbe881b..97968de 100644
---- a/drivers/spi/spi-fsl-lib.h
-+++ b/drivers/spi/spi-fsl-lib.h
-@@ -28,7 +28,7 @@ struct mpc8xxx_spi {
- 	/* rx & tx bufs from the spi_transfer */
- 	const void *tx;
- 	void *rx;
--#ifdef CONFIG_SPI_FSL_ESPI
-+#if defined(CONFIG_SPI_FSL_ESPI) || defined(CONFIG_SPI_FSL_ESPI_MODULE)
- 	int len;
- #endif
- 
+dheeraj
 -- 
-1.7.6
-
 
