@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab1HWWtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:49:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64706 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab1HWWtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:49:04 -0400
-Message-ID: <4E542E5B.6040005@gmail.com>
-Date: Wed, 24 Aug 2011 00:48:59 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1755611Ab1HWXFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 19:05:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44894 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754712Ab1HWXEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 19:04:54 -0400
+Message-ID: <4E5431F1.6040609@zytor.com>
+Date: Tue, 23 Aug 2011 16:04:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ALSA: ctxfi: Bump playback substreams to 256
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Andrew Lutomirski <luto@mit.edu>,
+        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+References: <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com> <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com> <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com> <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk> <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk> <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com> <20110823164849.GF2203@ZenIV.linux.org.uk> <CA+55aFxNeK3nx+FTkBpUuENmvwgQzVCTVjZnCW7Wtr6YkPuRgg@mail.gmail.com> <4E5416CB.7050604@zytor.com> <CA+55aFy1nR5D73hO6Pkug-FDZ1yCc6Jg5y0VsTkJWzGhD87Bog@mail.gmail.com>
+In-Reply-To: <CA+55aFy1nR5D73hO6Pkug-FDZ1yCc6Jg5y0VsTkJWzGhD87Bog@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are references in the code to 256 sources, so I tested it with 256 aplays,
-of which the first and last with real data and the rest playing /dev/zero .
+On 08/23/2011 02:20 PM, Linus Torvalds wrote:
+> On Tue, Aug 23, 2011 at 2:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> Again, can we steal one of the padding fields to use for that state
+>> variable?  We have two 16-bit padding fields; one for cs and one for ss.
+> 
+> We can steal them for passing the information to the user, but no, I
+> don't think we can use them to then take the information *from* the
+> user.
+> 
+> Somebody may well be setting up a 'pt_regs' structure on his own, and
+> simply not fill in the padding, resulting in random data in those
+> fields.
+> 
 
-Also increase amount of page tables, so the default aplay size works.
+That would be fine, I'd think... just gives the user space application
+enough information to know how it would have to reshuffle the registers
+if it needs to.
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-
----
-diff --git a/sound/pci/ctxfi/ctpcm.c b/sound/pci/ctxfi/ctpcm.c
-index 457d211..2c86226 100644
---- a/sound/pci/ctxfi/ctpcm.c
-+++ b/sound/pci/ctxfi/ctpcm.c
-@@ -404,7 +404,7 @@ int ct_alsa_pcm_create(struct ct_atc *atc,
- 	int err;
- 	int playback_count, capture_count;
- 
--	playback_count = (IEC958 == device) ? 1 : 8;
-+	playback_count = (IEC958 == device) ? 1 : 256;
- 	capture_count = (FRONT == device) ? 1 : 0;
- 	err = snd_pcm_new(atc->card, "ctxfi", device,
- 			  playback_count, capture_count, &pcm);
-diff --git a/sound/pci/ctxfi/ctsrc.c b/sound/pci/ctxfi/ctsrc.c
-index c749fa7..e134b3a 100644
---- a/sound/pci/ctxfi/ctsrc.c
-+++ b/sound/pci/ctxfi/ctsrc.c
-@@ -20,7 +20,7 @@
- #include "cthardware.h"
- #include <linux/slab.h>
- 
--#define SRC_RESOURCE_NUM	64
-+#define SRC_RESOURCE_NUM	256
- #define SRCIMP_RESOURCE_NUM	256
- 
- static unsigned int conj_mask;
-diff --git a/sound/pci/ctxfi/ctvmem.h b/sound/pci/ctxfi/ctvmem.h
-index b23adfc..e6da60e 100644
---- a/sound/pci/ctxfi/ctvmem.h
-+++ b/sound/pci/ctxfi/ctvmem.h
-@@ -18,7 +18,7 @@
- #ifndef CTVMEM_H
- #define CTVMEM_H
- 
--#define CT_PTP_NUM	1	/* num of device page table pages */
-+#define CT_PTP_NUM	4	/* num of device page table pages */
- 
- #include <linux/mutex.h>
- #include <linux/list.h>
+	-hpa
 
