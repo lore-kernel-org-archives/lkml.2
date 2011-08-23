@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab1HWUtp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 16:49:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41731 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751791Ab1HWUti (ORCPT
+	id S1754745Ab1HWU4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:56:35 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35364 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab1HWU43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 16:49:38 -0400
-Date: Tue, 23 Aug 2011 16:49:37 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mnazarewicz@google.com>
-cc: Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
-In-Reply-To: <op.v0okm8hlvgw7ix@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108231636000.2069-100000@iolanthe.rowland.org>
+	Tue, 23 Aug 2011 16:56:29 -0400
+Date: Tue, 23 Aug 2011 22:56:16 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823205616.GA15295@aftab>
+References: <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk>
+ <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk>
+ <20110823061531.GC2203@ZenIV.linux.org.uk>
+ <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
+ <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
+ <20110823162251.GC13138@aftab>
+ <4E53FC6E.1030807@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E53FC6E.1030807@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Michal Nazarewicz wrote:
+On Tue, Aug 23, 2011 at 03:15:58PM -0400, H. Peter Anvin wrote:
+> Right, but if you had said the difference had disappeared on current AMD
+> silicon it would be much less of an issue.  That's why I wanted to find
+> that bit out from you.
 
-> On Tue, 23 Aug 2011 20:00:25 +0200, Alan Stern <stern@rowland.harvard.edu>  
-> wrote:
-> > For the time being, perhaps the best answer is to use the _lowest_
-> > max_speed value among all the function drivers.  It's the simplest
-> > answer and most likely to be correct most of the time.
-> 
-> In theory, one could create a composite function with only SS/HS
-> descriptors.
+Yeah, I dug this out in the APM, btw.
 
-The only reason for doing that would be if the function was incapable
-of carrying out its duties when running at full speed (insufficient
-bandwidth, for example).  Something like this is discussed briefly in 
-section 9.2.6.6 of the USB-2 spec.
+But no, I don't think the difference has disappeared - to the contrary,
+AFAICT, the intention is for SYSCALL to be the fastest way to do
+syscalls on x86 due to diminished number of segment checks etc. INT80
+is legacy, slower, etc. I believe Andy measured a similar situation on
+Sandy Bridge with SYSCALL having latencies in the tens of nsecs range
+and INT80 being much slower. Ingo also measured a similar situation
+where the latency gap between the two on Intel is even bigger.
 
->  So it would work for SS/HS but not for FS.  I'm not
-> saying that it would make sense (or that it's not a bug) but that
-> adds to the discussion.
+So, the only problem left now is what we're going
+to do with cases similar to what Al conjured up:
+http://marc.info/?l=linux-kernel&m=131412271112461&w=2
 
-If somebody writes a composite gadget containing two functions, one of 
-which supports only full speed and the other only high speed, they'll 
-get what they deserve.  :-)
+I don't know, maybe the most cowardly approach is to issue a warning and
+shrug with the shoulders, or do some asm magic... Also, do we care at
+all, how relevant is a case like that?
 
-Still, maybe I was wrong.  Maybe it would be better to use the fastest
-speed supported by at least one of the function drivers.  The user can
-always force a SuperSpeed-capable device to run at high speed by using
-a USB-2 cable to plug it in.  I'm not sure whether the user could force
-such a device to run at full speed, however.
+Hmmm.
 
-Alan Stern
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
