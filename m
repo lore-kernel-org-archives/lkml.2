@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1HWBld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 21:41:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47244 "EHLO smtps.tip.net.au"
+	id S1754838Ab1HWBrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 21:47:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30298 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754804Ab1HWBla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 21:41:30 -0400
-Date: Tue, 23 Aug 2011 11:41:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com,
-        mikey@neuling.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: linux-next: boot test failure (net tree)
-Message-Id: <20110823114129.ceb18da164bf7df3c145941b@canb.auug.org.au>
-In-Reply-To: <20110823114011.a059aea0138b75bfa7eed1ce@canb.auug.org.au>
-References: <20110816.171525.639251389938336183.davem@davemloft.net>
-	<20110817105002.efebf85d08460ad99b14be8e@canb.auug.org.au>
-	<20110818152214.661858a61496993aaef2c704@canb.auug.org.au>
-	<20110817.225356.1790362313048139752.davem@davemloft.net>
-	<20110822113032.15087c2e190e2b0c3ee7dfb8@canb.auug.org.au>
-	<20110823114011.a059aea0138b75bfa7eed1ce@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1752888Ab1HWBrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 21:47:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="41154897"
+Subject: Re: [patch 1/2]slub: add slab with one free object to partial list
+ tail
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>,
+        cl@linux.com, penberg@kernel.org, "Shi, Alex" <alex.shi@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+In-Reply-To: <1314059819.29510.18.camel@sli10-conroe>
+References: <1314059819.29510.18.camel@sli10-conroe>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Aug 2011 09:48:18 +0800
+Message-ID: <1314064098.29510.23.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Tue, 2011-08-23 at 08:36 +0800, Shaohua Li wrote:
+> The slab has just one free object, adding it to partial list head doesn't make
+> sense. And it can cause lock contentation. For example,
+> 1. CPU takes the slab from partial list
+> 2. fetch an object
+> 3. switch to another slab
+> 4. free an object, then the slab is added to partial list again
+> In this way n->list_lock will be heavily contended.
+> In fact, Alex had a hackbench regression. 3.1-rc1 performance drops about 70%
+> against 3.0. This patch fixes it.
+updated the change log a little bit. My apologize to not mention Alex's credit.
 
-On Tue, 23 Aug 2011 11:40:11 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> On Mon, 22 Aug 2011 11:30:32 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > Here's what I am applying as a merge fixup to the net tree today so that
-> > my ppc64_defconfig builds actually build more or less the same set of
-> > drivers as before this rearrangement.
-> 
-> And this today:
+Thanks,
+Shaohua
 
-And this:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 23 Aug 2011 11:35:18 +1000
-Subject: [PATCH] sparc: update sparc64_defconfig for net device movement
+The slab has just one free object, adding it to partial list head doesn't make
+sense. And it can cause lock contentation. For example,
+1. CPU takes the slab from partial list
+2. fetch an object
+3. switch to another slab
+4. free an object, then the slab is added to partial list again
+In this way n->list_lock will be heavily contended.
+In fact, Alex had a hackbench regression. 3.1-rc1 performance drops about 70%
+against 3.0. This patch fixes it. Thanks Alex to bisect the issue to be a slub
+regression and collect perf data.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Shaohua Li <shli@kernel.org>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
 ---
- arch/sparc/configs/sparc64_defconfig |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+ mm/slub.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/configs/sparc64_defconfig b/arch/sparc/configs/sparc64_defconfig
-index 3c1e858..5732728 100644
---- a/arch/sparc/configs/sparc64_defconfig
-+++ b/arch/sparc/configs/sparc64_defconfig
-@@ -37,8 +37,6 @@ CONFIG_NET_KEY_MIGRATE=y
- CONFIG_INET=y
- CONFIG_IP_MULTICAST=y
- CONFIG_NET_IPIP=m
--CONFIG_NET_IPGRE=m
--CONFIG_NET_IPGRE_BROADCAST=y
- CONFIG_IP_MROUTE=y
- CONFIG_IP_PIMSM_V1=y
- CONFIG_IP_PIMSM_V2=y
-@@ -95,17 +93,19 @@ CONFIG_DM_SNAPSHOT=m
- CONFIG_DM_MIRROR=m
- CONFIG_DM_ZERO=m
- CONFIG_NETDEVICES=y
--CONFIG_NET_ETHERNET=y
- CONFIG_MII=m
-+CONFIG_NET_VENDOR_AMD=y
- CONFIG_SUNLANCE=m
-+CONFIG_NET_VENDOR_BROADCOM=y
-+CONFIG_BNX2=m
-+CONFIG_TIGON3=m
-+CONFIG_NET_VENDOR_INTEL=y
-+CONFIG_E1000=m
-+CONFIG_E1000E=m
-+CONFIG_NET_VENDOR_SUN=y
- CONFIG_HAPPYMEAL=m
- CONFIG_SUNGEM=m
- CONFIG_SUNVNET=m
--CONFIG_NET_PCI=y
--CONFIG_E1000=m
--CONFIG_E1000E=m
--CONFIG_TIGON3=m
--CONFIG_BNX2=m
- CONFIG_NIU=m
- # CONFIG_WLAN is not set
- CONFIG_PPP=m
-@@ -126,13 +126,13 @@ CONFIG_INPUT_SPARCSPKR=y
- # CONFIG_SERIO_SERPORT is not set
- CONFIG_SERIO_PCIPS2=m
- CONFIG_SERIO_RAW=m
-+# CONFIG_LEGACY_PTYS is not set
- # CONFIG_DEVKMEM is not set
- CONFIG_SERIAL_SUNSU=y
- CONFIG_SERIAL_SUNSU_CONSOLE=y
- CONFIG_SERIAL_SUNSAB=y
- CONFIG_SERIAL_SUNSAB_CONSOLE=y
- CONFIG_SERIAL_SUNHV=y
--# CONFIG_LEGACY_PTYS is not set
- CONFIG_FB=y
- CONFIG_FB_TILEBLITTING=y
- CONFIG_FB_SBUS=y
-@@ -206,10 +206,8 @@ CONFIG_PRINTK_TIME=y
- CONFIG_MAGIC_SYSRQ=y
- CONFIG_DEBUG_KERNEL=y
- CONFIG_LOCKUP_DETECTOR=y
--CONFIG_DETECT_HUNG_TASK=y
- # CONFIG_SCHED_DEBUG is not set
- CONFIG_SCHEDSTATS=y
--# CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_BLK_DEV_IO_TRACE=y
- CONFIG_KEYS=y
--- 
-1.7.5.4
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2011-08-15 09:55:21.000000000 +0800
++++ linux/mm/slub.c	2011-08-23 08:13:54.000000000 +0800
+@@ -2377,7 +2377,7 @@ static void __slab_free(struct kmem_cach
+ 		 */
+ 		if (unlikely(!prior)) {
+ 			remove_full(s, page);
+-			add_partial(n, page, 0);
++			add_partial(n, page, 1);
+ 			stat(s, FREE_ADD_PARTIAL);
+ 		}
+ 	}
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
