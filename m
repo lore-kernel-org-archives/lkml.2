@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1HWJ55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 05:57:57 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63250 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750982Ab1HWJ5z (ORCPT
+	id S1752294Ab1HWJ6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 05:58:24 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:36623 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752154Ab1HWJ6X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 05:57:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnkDAOl3U055LIxDgWdsb2JhbABBqBsVAQEWJiWBQAEBBAEnExwjEAgDDgouFCUDIROHcbdVDoVbXwSkJQ
-Date: Tue, 23 Aug 2011 19:57:52 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, khlebnikov@openvz.org
-Subject: Re: [PATCH 12/13] dcache: remove dentries from LRU before putting on
- dispose list
-Message-ID: <20110823095752.GB3162@dastard>
-References: <1314089786-20535-1-git-send-email-david@fromorbit.com>
- <1314089786-20535-13-git-send-email-david@fromorbit.com>
- <20110823093520.GA4938@infradead.org>
+	Tue, 23 Aug 2011 05:58:23 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Michel =?utf-8?q?D=C3=A4nzer?= <michel@daenzer.net>
+Subject: Re: [RFC PATCH v2] Resurrect Intel740 driver: i740fb
+Date: Tue, 23 Aug 2011 11:58:18 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+References: <201108212242.12717.linux@rainbow-software.org> <201108231103.30591.linux@rainbow-software.org> <1314091533.21860.289.camel@thor.local>
+In-Reply-To: <1314091533.21860.289.camel@thor.local>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20110823093520.GA4938@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201108231158.18173.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 05:35:20AM -0400, Christoph Hellwig wrote:
-> > diff --git a/fs/dcache.c b/fs/dcache.c
-> > index b931415..79bf47c 100644
-> > --- a/fs/dcache.c
-> > +++ b/fs/dcache.c
-> > @@ -269,10 +269,10 @@ static void dentry_lru_move_list(struct dentry *dentry, struct list_head *list)
-> >  	spin_lock(&dentry->d_sb->s_dentry_lru_lock);
-> >  	if (list_empty(&dentry->d_lru)) {
-> >  		list_add_tail(&dentry->d_lru, list);
-> > -		dentry->d_sb->s_nr_dentry_unused++;
-> > -		this_cpu_inc(nr_dentry_unused);
-> >  	} else {
-> >  		list_move_tail(&dentry->d_lru, list);
-> > +		dentry->d_sb->s_nr_dentry_unused--;
-> > +		this_cpu_dec(nr_dentry_unused);
-> >  	}
-> >  	spin_unlock(&dentry->d_sb->s_dentry_lru_lock);
-> 
-> I suspect at this point it might be more obvious to simply remove
-> dentry_lru_move_list.  Just call dentry_lru_del to remove it from the
-> lru, and then we can add it to the local dispose list without the need
-> of any locking, similar to how it is done for inodes already.
+On Tuesday 23 August 2011, Michel Dänzer wrote:
+> On Die, 2011-08-23 at 11:03 +0200, Ondrej Zary wrote:
+> > On Monday 22 August 2011, Alan Cox wrote:
+> > > > - 24bpp modes still don't work in fbtest but it looks like fbtest
+> > > > bug!
+> > > >
+> > > > Is there any better way to test fb drivers than fbtest?
+> > >
+> > > X11 fbdev driver ?
+> >
+> > Thanks, completely forgot about that. It works fine even in 24bpp.
+>
+> Beware that Xorg defaults to 32 bpp for depth 24; did you verify in
+> Xorg.0.log that it was really using 24 bpp?
 
-Yeah, that is what is done in the next patch when converting to the
-generic LRU list code. I can probably pull this back into this patch
-and just remove dentry_lru_move_list(0 right here.
+Yes, found that very quickly as I was testing at 1280x1024 and the card cannot 
+do 32bpp there. I had to set both DefaultDepth and DefaultFbBpp to 24 for X11 
+to run.
 
-> 
-> >  		if (dentry->d_count) {
-> > -			dentry_lru_del(dentry);
-> >  			spin_unlock(&dentry->d_lock);
-> >  			continue;
-> >  		}
-> > @@ -789,6 +794,8 @@ relock:
-> >  			spin_unlock(&dentry->d_lock);
-> >  		} else {
-> >  			list_move_tail(&dentry->d_lru, &tmp);
-> > +			this_cpu_dec(nr_dentry_unused);
-> > +			sb->s_nr_dentry_unused--;
-> 
-> It might be more obvious to use __dentry_lru_del + an opencoded list_add
-> here.
-
-This goes away completely in the next patch, so I don't think it
-matters that much...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Ondrej Zary
