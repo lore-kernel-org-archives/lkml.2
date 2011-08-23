@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1HWIO5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 04:14:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50269 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab1HWIOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 04:14:54 -0400
-Date: Tue, 23 Aug 2011 10:14:50 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Felipe Balbi <balbi@ti.com>,
-        torvalds@linux-foundation.org, mporter@ti.com,
-        Kevin Hilman <khilman@ti.com>, "Govindraj.R" <govindraj.raja@ti.com>
-Subject: Re: [PATCH] tty: omap-serial: fix boot hang by converting to use a
- threaded IRQ handler (was Re: [PATCH] irq: always set IRQF_ONESHOT if no
- primary handler is specified)
-Message-ID: <20110823081450.GA20979@linutronix.de>
-References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
- <C5991460-2092-4E65-99EE-091F8DAA0AC3@gmail.com>
- <4E4D4A5F.202@linutronix.de>
- <20110818213418.GA20509@legolas.emea.dhcp.ti.com>
- <alpine.DEB.2.00.1108221742130.10315@utopia.booyaka.com>
- <alpine.DEB.2.00.1108222306300.28226@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108222306300.28226@utopia.booyaka.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754690Ab1HWIQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 04:16:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56901 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754576Ab1HWIQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 04:16:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,267,1312182000"; 
+   d="scan'208";a="44117967"
+Subject: RE: [PATCH] DMA: PL330: add missing header
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Boojin Kim <boojin.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>
+In-Reply-To: <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
+References: <1314079058-24601-1-git-send-email-boojin.kim@samsung.com>
+	 <1314081133.22120.19.camel@vkoul-udesk3>
+	 <001101cc6164$fe07ce10$fa176a30$%kim@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Aug 2011 13:45:42 +0530
+Message-ID: <1314087342.22120.100.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley | 2011-08-22 23:10:21 [-0600]:
+On Tue, 2011-08-23 at 16:19 +0900, Boojin Kim wrote:
+> Koul, Vinod wrote:
+> > Sent: Tuesday, August 23, 2011 3:32 PM
+> > To: Boojin Kim
+> > Cc: linux-kernel@vger.kernel.org; Kukjin Kim
+> > Subject: Re: [PATCH] DMA: PL330: add missing header
+> >
+> > On Tue, 2011-08-23 at 14:57 +0900, Boojin Kim wrote:
+> > > This patch fixup below build error
+> > >
+> > > drivers/dma/pl330.c: In function 'pl330_prep_slave_sg':
+> > > drivers/dma/pl330.c:603: error: implicit declaration of function
+> > 'for_each_sg'
+> > > drivers/dma/pl330.c:603: error: expected ';' before '{' token
+> > > drivers/dma/pl330.c:581: warning: unused variable 'flags'
+> > > drivers/dma/pl330.c: In function 'pl330_probe':
+> > > drivers/dma/pl330.c:720: warning: comparison of distinct pointer
+> > types lacks a cast
+> > > make[2]: *** [drivers/dma/pl330.o] Error 1
+> > >
+> > > Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
+> > > ---
+> > >  drivers/dma/pl330.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> > > index 00eee59..fcad90c 100644
+> > > --- a/drivers/dma/pl330.c
+> > > +++ b/drivers/dma/pl330.c
+> > > @@ -17,6 +17,7 @@
+> > >  #include <linux/interrupt.h>
+> > >  #include <linux/amba/bus.h>
+> > >  #include <linux/amba/pl330.h>
+> > > +#include <linux/scatterlist.h>
+> > >
+> > >  #define NR_DEFAULT_DESC	16
+> > >
+> > Where tree is this error reported? scatterlist.h is already added to
+> > the
+> > dmaengine.h
+> Oops, I founded it just now in your tree.
+> OK, please kindly drop this.
+> As a note, since happens build error with latest mainline v3.1-rc3 so that 
+> should be merged for v3.1.
+Russell had fixed compilation of pl330 driver, and was supposed to send
+the fix to Linus as part of his fixes. If thats not done I can send it
+for next -rc
 
->IRQ handler type mismatch for IRQ 74
 
->It turns out that the omap-serial code used one threaded IRQ
->handler[1][2] and one non-threaded IRQ handler[3] that shared the same
->IRQ.  During the 3.1-rc series, a patch was merged[4] that caused
->IRQF_ONESHOT to be set on the threaded handler, but the non-threaded
->handler did not have IRQF_ONESHOT set.  Since interrupt handlers
+-- 
+~Vinod
 
-Is the type of IRQ74 edge or line/eoi?
-Since you registered the serial handler as threaded and the primary
-handler did _not_ disable the irq source (due to the absence of the
-IRQF_ONESHOT flag or a custom primary handler which does this by
-changing a bit in the hardware) it is more or less luck that you did not
-hang forever on the first serial interrupt. Well, it does not happen
-with edge typed interrupt lines.
-
->that share the same IRQ must also share the presence or absence of
->IRQF_ONESHOT[5], this new commit caused a mismatch that prevented the
->non-threaded IRQ from registering.
-
-In theory it should be okay if the handler without ONESHOT is either
-primary only or primary + threaded and the primary disables the irq
-source.
-
-Sebastian
