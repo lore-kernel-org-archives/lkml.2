@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1HWSlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 14:41:40 -0400
-Received: from void.printf.net ([89.145.121.20]:48560 "EHLO void.printf.net"
+	id S1755404Ab1HWSn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 14:43:27 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:58234 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752684Ab1HWSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 14:41:34 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-mmc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] sdhci/tegra: Add Device Tree probing support
-References: <1314123334-23133-1-git-send-email-swarren@nvidia.com>
-Date: Tue, 23 Aug 2011 14:41:05 -0400
-In-Reply-To: <1314123334-23133-1-git-send-email-swarren@nvidia.com> (Stephen
-	Warren's message of "Tue, 23 Aug 2011 12:15:33 -0600")
-Message-ID: <m2ippo2cou.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1751959Ab1HWSnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 14:43:21 -0400
+Date: Tue, 23 Aug 2011 11:41:48 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Fabio M . Di Nitto" <fabbione@fabbione.net>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] kernel/printk: do not turn off bootconsole in
+ printk_late_init if keep_bootcon
+Message-ID: <20110823184148.GB3082@us.ibm.com>
+References: <1312934553-17085-1-git-send-email-nacc@us.ibm.com>
+ <20110819171024.7805dec6.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110819171024.7805dec6.akpm@linux-foundation.org>
+X-Operating-System: Linux 2.6.38-11-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Andrew,
 
-On Tue, Aug 23 2011, Stephen Warren wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
->
-> Add hooks to read gpio configuration out of the device tree node.
->
-> [grant.likely: Rewrite of original patch from John Bonesio]
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> [swarren: Fixed tegra_sdhci_get_ro() to retrieve pdata correctly]
-> [swarren: Reworked to avoid #ifdef CONFIG_OF]
-> [swarren: Reworked binding based on fsl-imx-esdhc.txt]
-> [swarren: Documented binding]
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Theoretically, these two patches should be merged in order in one place,
-> since the 2nd logically depends on the first. However, it's really just
-> a documentation dependency, so I think it's fine to merge them into the
-> MMC and DT trees separately and let them meet in linux-next.
->
->  .../devicetree/bindings/mmc/nvidia-sdhci.txt       |   25 ++++++++++
->  drivers/mmc/host/sdhci-tegra.c                     |   51 +++++++++++++++----
->  2 files changed, 65 insertions(+), 11 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mmc/nvidia-sdhci.txt
+On 19.08.2011 [17:10:24 -0700], Andrew Morton wrote:
+> On Tue,  9 Aug 2011 17:02:33 -0700
+> Nishanth Aravamudan <nacc@us.ibm.com> wrote:
+> 
+> > It seems that commit 7bf693951a8e5f7e600a45b74d91d962a453146e doesn't
+> > always achieve what it aims, as printk_late_init() runs it
+> > unconditionally turns off all boot consoles. With this patch, I am able
+> > to see more messages on the boot console in KVM guests than I can
+> > without, when keep_bootcon is specified.
+> > 
+> > Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > Cc: Greg KH <gregkh@suse.de>
+> 
+> The patch is applicable to 2.6.39.x and to 3.0.x but I'm unable to work
+> out if the end-user impact is sufficiently serious to warrant
+> backporting the fix into those kernels.
+> 
+> Please let us know you opinion on this.
 
-Okay, I've pushed this patch [1/2] to mmc-next for 3.2.
+Sorry for the delay in responding. I think it is appropriate for the
+relevant -stable trees. However, it's more of an annoyance than a
+serious bug (ideally you don't need to keep the boot console around as
+console handover should be working -- I was encountering a situation
+where the console handover wasn't working and not having the boot
+console available meant I couldn't see why).
 
 Thanks,
+Nish
 
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
