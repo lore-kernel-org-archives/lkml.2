@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab1HWCF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 22:05:59 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51487 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab1HWCF5 (ORCPT
+	id S1754887Ab1HWCIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 22:08:43 -0400
+Received: from lunge.queued.net ([173.255.254.236]:60762 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab1HWCIm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 22:05:57 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] block: separate priority boosting from REQ_META
-References: <4E4E6238.3080808@fusionio.com>
-	<20110820174137.GA27243@infradead.org> <4E5146C1.508@fusionio.com>
-	<20110821181935.GA28979@infradead.org> <4E515057.7040802@fusionio.com>
-	<20110822165221.GB7257@infradead.org>
-Date: Tue, 23 Aug 2011 11:05:48 +0900
-In-Reply-To: <20110822165221.GB7257@infradead.org> (Christoph Hellwig's
-	message of "Mon, 22 Aug 2011 12:52:21 -0400")
-Message-ID: <87r54cg9vn.fsf@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 22 Aug 2011 22:08:42 -0400
+Date: Mon, 22 Aug 2011 19:08:38 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Leo Yan <leoy@marvell.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <hzhuang1@marvell.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: Re: [PATCH] ARM: mmp: map sram as MT_MEMORY rather than MT_DEVICE
+Message-ID: <20110822190838.3e03c3ec@debxo>
+In-Reply-To: <CAMPhdO-cttCzdm_gh=KdNqqPYQOgPBNS57DtPduPahpkP2rk0g@mail.gmail.com>
+References: <1313377794-26721-1-git-send-email-leoy@marvell.com>
+	<1313377794-26721-2-git-send-email-leoy@marvell.com>
+	<20110822164740.5682541b@queued.net>
+	<CAMPhdO-cttCzdm_gh=KdNqqPYQOgPBNS57DtPduPahpkP2rk0g@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 23 Aug 2011 08:07:41 +0800
+Eric Miao <eric.y.miao@gmail.com> wrote:
 
+> On Tue, Aug 23, 2011 at 7:47 AM, Andres Salomon <dilinger@queued.net>
+> wrote:
+> > The sram code allocates memory with ioremap, which assumes MT_DEVICE
+> > for memory protections.  This explodes when we map sram for power
+> > management purposes and then attempt to execute it (jump_to_lp_sram)
+> > on the OLPC XO-1.75.  Instead, we want to specify MT_MEMORY, which
+> > doesn't set the L_PTE_XN bit.
+> >
+> > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > ---
+> >  arch/arm/mach-mmp/sram.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> >
+> > Eric, this patch is against the devel branch of your pxa tree.
+> >
+> > diff --git a/arch/arm/mach-mmp/sram.c b/arch/arm/mach-mmp/sram.c
+> > index 4304f95..ca4d3c1 100644
+> > --- a/arch/arm/mach-mmp/sram.c
+> > +++ b/arch/arm/mach-mmp/sram.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/err.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/genalloc.h>
+> > +#include <asm/mach/map.h>
+> >
+> >  #include <mach/sram.h>
+> >
+> > @@ -87,7 +88,8 @@ static int __devinit sram_probe(struct
+> > platform_device *pdev)
+> >
+> >        info->sram_phys   = (phys_addr_t)res->start;
+> >        info->sram_size   = resource_size(res);
+> > -       info->sram_virt   = ioremap(info->sram_phys,
+> > info->sram_size);
+> > +       info->sram_virt   = __arm_ioremap(info->sram_phys,
+> > info->sram_size,
+> > +                                         MT_MEMORY);
+> 
+> I doubt MT_MEMORY is intended for use with __arm_ioremap(). There
+> could be other way around to the L_PTE_XN bit.
+> 
+> One other way I'm actually thinking of is to add the SRAM mapping to
+> mmp_map_io(). The difference of SRAM offset/size may result the
+> separation of mmp_map_io() into {pxa168,pxa910,mmp2}_map_io()
+> if necessary.
+> 
 
-Christoph Hellwig <hch@infradead.org> writes:
-> Add a new REQ_PRIO to let requests preempt others in the cfq I/O schedule,
-> and lave REQ_META purely for marking requests as metadata in blktrace.
->
-> All existing callers of REQ_META except for XFS are updated to also
-> set REQ_PRIO for now.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
->
-
-snipped...
-
-> Index: linux-2.6/include/linux/blk_types.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/blk_types.h	2011-08-22 04:25:50.373473791 +0200
-> +++ linux-2.6/include/linux/blk_types.h	2011-08-22 04:26:44.443473870 +0200
-> @@ -124,6 +124,7 @@ enum rq_flag_bits {
->  
->  	__REQ_SYNC,		/* request is sync (sync write or read) */
->  	__REQ_META,		/* metadata io request */
-> +	__REQ_PRIO,
-
-It'd be better if it's commented too, IMHO.
-
-
->  	__REQ_DISCARD,		/* request to discard sectors */
->  	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
->  
-> @@ -161,13 +162,14 @@ enum rq_flag_bits {
->  #define REQ_FAILFAST_DRIVER	(1 << __REQ_FAILFAST_DRIVER)
->  #define REQ_SYNC		(1 << __REQ_SYNC)
->  #define REQ_META		(1 << __REQ_META)
-> +#define REQ_PRIO		(1 << __REQ_PRIO)
->  #define REQ_DISCARD		(1 << __REQ_DISCARD)
->  #define REQ_NOIDLE		(1 << __REQ_NOIDLE)
->  
->  #define REQ_FAILFAST_MASK \
->  	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
->  #define REQ_COMMON_MASK \
-> -	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
-> +	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_PRIO | REQ_DISCARD | \
->  	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
->  #define REQ_CLONE_MASK		REQ_COMMON_MASK
->  
-
-I think you need to include REQ_META into REQ_COMMON_MASK in order to
-track those requests using blktrace.
-
-Thanks.
+I guess I don't follow.  I think you're talking about adding it to the
+standard_io_desc array, but that would require having it pre-mapped and
+knowing the virtual address.  Or were you planning to ioremap it?
