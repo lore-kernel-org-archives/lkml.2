@@ -1,350 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab1HWWRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:17:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37511 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab1HWWQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:16:52 -0400
-From: Alexander Graf <agraf@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [PATCH] KVM: Add wrapper script around Qemu to test kernels
-Date: Wed, 24 Aug 2011 00:16:46 +0200
-Message-Id: <1314137806-5747-1-git-send-email-agraf@suse.de>
-X-Mailer: git-send-email 1.7.3.4
+	id S1756036Ab1HWWRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:17:15 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52474 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755947Ab1HWWRE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 18:17:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110823221314.GL3895@n2100.arm.linux.org.uk>
+References: <20110823151936.GM9232@opensource.wolfsonmicro.com>
+	<201108232351.55432.rjw@sisk.pl>
+	<CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com>
+	<20110823220056.GK3895@n2100.arm.linux.org.uk>
+	<CAOS58YNuCbaOsWBfmjSUsXsArZ5ng6c0B30yswFbRAWkho6L6Q@mail.gmail.com>
+	<20110823221314.GL3895@n2100.arm.linux.org.uk>
+Date: Wed, 24 Aug 2011 00:17:03 +0200
+X-Google-Sender-Auth: t0oO7XUPYSmCvE41EW72zPnwFys
+Message-ID: <CAOS58YNtQEuke=Ko9J2oNGMECjabzxj=Nrg1o64X1JC3YRmJuw@mail.gmail.com>
+Subject: Re: try_to_freeze() called with IRQs disabled on ARM
+From: Tejun Heo <tj@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On LinuxCon I had a nice chat with Linus on what he thinks kvm-tool
-would be doing and what he expects from it. Basically he wants a
-small and simple tool he and other developers can run to try out and
-see if the kernel they just built actually works.
+On Wed, Aug 24, 2011 at 12:13 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> Thereby entirely preventing threads from being frozen?  You're asking
+> me to effectively disable suspend/resume on an architecture where it's
+> heavily used.  That's not a good idea, and would be an out-right
+> regression.
 
-Fortunately, Qemu can do that today already! The only piece that was
-missing was the "simple" piece of the equation, so here is a script
-that wraps around Qemu and executes a kernel you just built.
+Eh? So, it's supposed to enter refrigerator with IRQ disabled? Then,
+moving might_sleep() inside refrigerator() doesn't help either, does
+it? Then we should be doing is,
 
-If you do have KVM around and are not cross-compiling, it will use
-KVM. But if you don't, you can still fall back to emulation mode and
-at least check if your kernel still does what you expect. I only
-implemented support for s390x and ppc there, but it's easily extensible
-to more platforms, as Qemu can emulate (and virtualize) pretty much
-any platform out there.
+if (freezing() && IRQ disabled) {
+      bust on IRQ;
+      try_to_freeze();
+      replug IRQ;
+}
 
-If you don't have qemu installed, please do so before using this script. Your
-distro should provide a package for it (might even call it "kvm"). If not,
-just compile it from source - it's not hard!
+But, that can't be right. The current code isn't triggering warning
+from scheduler code, right? If the above is the case, it should be
+triggering that. What am I missing?
 
-To quickly get going, just execute the following as user:
-
-    $ ./Documentation/run-qemu.sh -r / -a init=/bin/bash
-
-This will drop you into a shell on your rootfs.
-
-Happy hacking!
-
-Signed-off-by: Alexander Graf <agraf@suse.de>
----
- Documentation/run-qemu.sh |  284 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 284 insertions(+), 0 deletions(-)
- create mode 100755 Documentation/run-qemu.sh
-
-diff --git a/Documentation/run-qemu.sh b/Documentation/run-qemu.sh
-new file mode 100755
-index 0000000..0bac924
---- /dev/null
-+++ b/Documentation/run-qemu.sh
-@@ -0,0 +1,284 @@
-+#!/bin/bash
-+#
-+# QEMU Launcher
-+#
-+# This script enables simple use of the KVM and Qemu tool stack for
-+# easy kernel testing. It allows to pass either a host directory to
-+# the guest or a disk image. Example usage:
-+#
-+# Run the host root fs inside a VM:
-+#
-+# $ ./Documentation/run-qemu.sh -r /
-+#
-+# Run the same with SDL:
-+#
-+# $ ./Documentation/run-qemu.sh -r / --sdl
-+# 
-+# Or with a PPC build:
-+#
-+# $ ARCH=ppc ./Documentation/run-qemu.sh -r /
-+# 
-+#
-+
-+USE_SDL=
-+USE_VNC=
-+KERNEL_BIN=arch/x86/boot/bzImage
-+MON_STDIO=
-+KERNEL_APPEND2=
-+SERIAL=ttyS0
-+SERIAL_KCONFIG=SERIAL_8250
-+
-+function usage() {
-+	echo "
-+Run-Qemu allows you to execute a virtual machine with the Linux kernel
-+that you just built. To only execute a simple VM, you can just run it
-+on your root fs with \"-r / -a init=/bin/bash\"
-+
-+	-a, --append parameters
-+		Append the given parameters to the kernel command line
-+
-+	-d, --disk image
-+		Add the image file as disk into the VM
-+
-+	-r, --root directory
-+		Use the specified directory as root directory inside the guest.
-+
-+	-s, --sdl
-+		Enable SDL graphical output.
-+
-+	-S, --smp cpus
-+		Set number of virtual CPUs
-+
-+	-v, --vnc
-+		Enable VNC graphical output.
-+
-+Examples:
-+
-+	Run the host root fs inside a VM:
-+	$ ./Documentation/run-qemu.sh -r /
-+
-+	Run the same with SDL:
-+	$ ./Documentation/run-qemu.sh -r / --sdl
-+	
-+	Or with a PPC build:
-+	$ ARCH=ppc ./Documentation/run-qemu.sh -r /
-+"
-+}
-+
-+function require_config() {
-+	if [ "$(grep CONFIG_$1=y .config)" ]; then
-+		return
-+	fi
-+
-+	echo "You need to enable CONFIG_$1 for run-qemu to work properly"
-+	exit 1
-+}
-+
-+function has_config() {
-+	grep "CONFIG_$1=y" .config
-+}
-+
-+function drive_if() {
-+	if [ "$(has_config VIRTIO_BLK)" ]; then
-+		echo virtio
-+	elif [ "$(has_config ATA_PIIX)" ]; then
-+		echo ide
-+	else
-+		echo "\
-+Your kernel must have either VIRTIO_BLK or ATA_PIIX
-+enabled for block device assignment" >&2
-+		exit 1
-+	fi
-+}
-+
-+GETOPT=`getopt -o a:d:hr:sS:v --long append,disk:,help,root:,sdl,smp:,vnc \
-+	-n "$(basename \"$0\")" -- "$@"`
-+
-+if [ $? != 0 ]; then
-+	echo "Terminating..." >&2
-+	exit 1
-+fi
-+
-+eval set -- "$GETOPT"
-+
-+while true; do
-+	case "$1" in
-+	-a|--append)
-+		KERNEL_APPEND2="$2"
-+		shift 2
-+		;;
-+	-d|--disk)
-+		QEMU_OPTIONS="$QEMU_OPTIONS -drive \
-+			file=$2,if=$(drive_if),cache=unsafe"
-+		USE_DISK=1
-+		shift 2
-+		;;
-+	-h|--help)
-+		usage
-+		exit 0
-+		;;
-+	-r|--root)
-+		ROOTFS="$2"
-+		shift 2
-+		;;
-+	-s|--sdl)
-+		USE_SDL=1
-+		shift
-+		;;
-+	-S|--smp)
-+		SMP="$2"
-+		shift 2
-+		;;
-+	-v|--vnc)
-+		USE_VNC=1
-+		shift
-+		;;
-+	--)
-+		shift
-+		break
-+		;;
-+	*)
-+		echo "Could not parse option: $1" >&2
-+		exit 1
-+		;;
-+	esac
-+done
-+
-+if [ ! "$ROOTFS" -a ! "$USE_DISK" ]; then
-+	echo "\
-+Error: Please specify at least -r or -d with a target \
-+FS to run off of" >&2
-+	exit 1
-+fi
-+
-+# Try to find the KVM accelerated Qemu binary
-+
-+[ "$ARCH" ] || ARCH=$(uname -m)
-+case $ARCH in
-+i*86|x86_64)
-+	KERNEL_BIN=arch/x86/boot/bzImage
-+	# SUSE and Red Hat call the binary qemu-kvm
-+	[ "$QEMU_BIN" ] || QEMU_BIN=$(which qemu-kvm 2>/dev/null)
-+
-+	# Debian and Gentoo call it kvm
-+	[ "$QEMU_BIN" ] || QEMU_BIN=$(which kvm 2>/dev/null)
-+
-+	# Qemu's own build system calls it qemu-system-x86_64
-+	[ "$QEMU_BIN" ] || QEMU_BIN=$(which qemu-system-x86_64 2>/dev/null)
-+
-+	# i386 version of Qemu
-+	if [ ! "$(has_config X86_64)" ]; then
-+		[ "$QEMU_BIN" ] || QEMU_BIN=$(which qemu 2>/dev/null)
-+	fi
-+	;;
-+s390*)
-+	KERNEL_BIN=arch/s390/boot/image
-+	[ "$QEMU_BIN" ] || QEMU_BIN=$(which qemu-system-s390x 2>/dev/null)
-+	;;
-+ppc*)
-+	KERNEL_BIN=vmlinux
-+
-+	IS_64BIT=
-+	[ "$(has_config PPC64)" ] && IS_64BIT=64
-+	if [ "$(has_config PPC_85xx)" ]; then
-+		QEMU_OPTIONS="$QEMU_OPTIONS -M mpc8544ds"
-+	elif [ "$(has_config PPC_PSERIES)" ]; then
-+		QEMU_OPTIONS="$QEMU_OPTIONS -M pseries"
-+		SERIAL=hvc0
-+		SERIAL_KCONFIG=HVC_CONSOLE
-+	elif [ "$(has_config PPC_PMAC)" ]; then
-+		[ "$(has_config SERIAL_PMACZILOG_TTYS)" ] || SERIAL=ttyPZ0
-+		SERIAL_KCONFIG=SERIAL_PMACZILOG
-+	else
-+		echo "Unknown PPC board" >&2
-+		exit 1
-+	fi
-+
-+	[ "$QEMU_BIN" ] || QEMU_BIN=$(which qemu-system-ppc${IS_64BIT} 2>/dev/null)
-+	;;
-+esac
-+
-+if [ ! "$QEMU_BIN" ]; then
-+	echo "\
-+Could not find a usable Qemu binary. Please install one from \
-+your distro or from source code." >&2
-+	exit 1
-+fi
-+
-+# The binaries without kvm in their name can be too old to support KVM, so
-+# check for that before the user gets confused
-+if [ ! "$(echo $QEMU_BIN | grep kvm)" -a \
-+     ! "$($QEMU_BIN --help | egrep '^-machine')" ]; then
-+	echo "Your Qemu binary is too old, please update to at least 0.15." >&2
-+	exit 1
-+fi
-+QEMU_OPTIONS="$QEMU_OPTIONS -machine accel=kvm:tcg"
-+
-+# We need to check some .config variables to make sure we actually work
-+# on the respective kernel.
-+if [ ! -e .config ]; then
-+	echo "\
-+Please run this script on a fully compiled and configured
-+Linux kernel build directory" >&2
-+	exit 1
-+fi
-+
-+if [ ! -e "$KERNEL_BIN" ]; then
-+	echo "Could not find kernel binary: $KERNEL_BIN" >&2
-+	exit 1
-+fi
-+
-+QEMU_OPTIONS="$QEMU_OPTIONS -kernel $KERNEL_BIN"
-+
-+if [ "$USE_SDL" ]; then
-+	# SDL is the default, so nothing to do
-+	:
-+elif [ "$USE_VNC" ]; then
-+	QEMU_OPTIONS="$QEMU_OPTIONS -vnc :5"
-+else
-+	# When emulating a serial console, tell the kernel to use it as well
-+	QEMU_OPTIONS="$QEMU_OPTIONS -nographic"
-+	KERNEL_APPEND="$KERNEL_APPEND console=$SERIAL earlyprintk=serial"
-+	MON_STDIO=1
-+	require_config "$SERIAL_KCONFIG"
-+fi
-+
-+if [ "$ROOTFS" ]; then
-+	# Using rootfs with 9p
-+	require_config "NET_9P_VIRTIO"
-+	KERNEL_APPEND="$KERNEL_APPEND \
-+root=/dev/root rootflags=rw,trans=virtio,version=9p2000.L rootfstype=9p"
-+
-+#Usage: -virtfs fstype,path=/share_path/,security_model=[mapped|passthrough|none],mount_tag=tag.
-+
-+
-+	QEMU_OPTIONS="$QEMU_OPTIONS \
-+-virtfs local,id=root,path=$ROOTFS,mount_tag=root,security_model=passthrough \
-+-device virtio-9p-pci,fsdev=root,mount_tag=/dev/root"
-+fi
-+
-+[ "$SMP" ] || SMP=1
-+
-+# User append args come last
-+KERNEL_APPEND="$KERNEL_APPEND $KERNEL_APPEND2"
-+
-+############### Execution #################
-+
-+echo "
-+	################# Linux Qemu launcher #################
-+
-+This script executes your currently built Linux kernel using Qemu. If KVM is
-+available, it will also use KVM for fast virtualization of your guest.
-+
-+The intent is to make it very easy to run your kernel. If you need to do more
-+advanced things, such as passing through real devices, please take the command
-+line shown below and modify it to your needs. This tool is for simplicity, not
-+world dominating functionality coverage.
-+"
-+echo "\
-+Your guest is bound to the current foreground shell. To quit the guest,
-+please use Ctrl-A x"
-+echo "  Executing: $QEMU_BIN $QEMU_OPTIONS -append \"$KERNEL_APPEND\" -smp $SMP"
-+echo
-+
-+exec $QEMU_BIN $QEMU_OPTIONS -append "$KERNEL_APPEND -smp $SMP"
 -- 
-1.6.0.2
-
+tejun
