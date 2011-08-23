@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab1HWQEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:04:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43141 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751959Ab1HWQD6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:03:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110823061531.GC2203@ZenIV.linux.org.uk>
-References: <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com>
- <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com>
- <20110823000314.GW2203@ZenIV.linux.org.uk> <4E52EF2A.8060608@zytor.com>
- <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
- <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk>
- <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 23 Aug 2011 09:03:04 -0700
-Message-ID: <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <luto@mit.edu>,
-        Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754659Ab1HWQHC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:07:02 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:38418 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751959Ab1HWQG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 12:06:57 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: gregkh@suse.de
+Cc: cascardo@holoscopio.com, dan.magenheimer@oracle.com, rdunlap@xenotime.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH] staging: zcache: fix highmem crash on 32-bit
+Date: Tue, 23 Aug 2011 11:06:30 -0500
+Message-Id: <1314115590-20942-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 22, 2011 at 11:15 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> * it does SETREGS, setting eax to return value, eip to original return
-> address of syscall insn... and ebp to what it had in regs.bp.  I.e. the
-> damn arg6 value.
+After commit 966b9016a1, zcache_put_page() was modified to pass
+page_address(page) instead of the actual page pointer. In
+combination with the function signature changes to tmem_put()
+and zcache_pampd_create(), zcache_pampd_create() tries to (re)derive
+the page structure from the virtual address.  However, if the
+original page is a high memory page (or any unmapped page),
+this virt_to_page() fails because the page_address() in
+zcache_put_page() returned NULL.
 
-Ok, I think that exhaustively explains that
+This patch changes zcache_put_page() and zcache_get_page() to pass
+the page structure instead of the page's virtual address, which
+may or may not exist.
 
- (a) our system call restart has always worked correctly, and we're good.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
- (b) it's simply just UML that is buggy, and doesn't understand the
-subtleties about doing GETREGS at a system call.
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 855a5bb..a3f5162 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1158,7 +1158,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+ 	size_t clen;
+ 	int ret;
+ 	unsigned long count;
+-	struct page *page = virt_to_page(data);
++	struct page *page = (struct page *)(data);
+ 	struct zcache_client *cli = pool->client;
+ 	uint16_t client_id = get_client_id_from_client(cli);
+ 	unsigned long zv_mean_zsize;
+@@ -1227,7 +1227,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
+ 	int ret = 0;
+ 
+ 	BUG_ON(is_ephemeral(pool));
+-	zv_decompress(virt_to_page(data), pampd);
++	zv_decompress((struct page *)(data), pampd);
+ 	return ret;
+ }
+ 
+@@ -1539,7 +1539,7 @@ static int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
+ 		goto out;
+ 	if (!zcache_freeze && zcache_do_preload(pool) == 0) {
+ 		/* preload does preempt_disable on success */
+-		ret = tmem_put(pool, oidp, index, page_address(page),
++		ret = tmem_put(pool, oidp, index, (char *)(page),
+ 				PAGE_SIZE, 0, is_ephemeral(pool));
+ 		if (ret < 0) {
+ 			if (is_ephemeral(pool))
+@@ -1572,7 +1572,7 @@ static int zcache_get_page(int cli_id, int pool_id, struct tmem_oid *oidp,
+ 	pool = zcache_get_pool_by_id(cli_id, pool_id);
+ 	if (likely(pool != NULL)) {
+ 		if (atomic_read(&pool->obj_count) > 0)
+-			ret = tmem_get(pool, oidp, index, page_address(page),
++			ret = tmem_get(pool, oidp, index, (char *)(page),
+ 					&size, 0, is_ephemeral(pool));
+ 		zcache_put_pool(pool);
+ 	}
+-- 
+1.7.4.1
 
-and I think that the correct and simple solution is to just teach UML
-to understand the proper logic of pt_regs during a system call (and a
-'syscall' instruction in particular).
-
-The thing is, UML emulates 'syscall' the way the *CPU* does it, not
-the way *we* do it. That may make sense, but it's simply not correct.
-
-So I would vote very strongly against actually changing anything in
-arch/x86. This is very much an UML issue.
-
-Suggested fixes:
-
- - instead of blindly doing SETREGS, just write the result registers
-individually like you suggested
-
-OR (and perhaps preferably):
-
- - teach UML that when you do 'GETREGS' after a system call trapped,
-we have switched things around to match the "official system call
-order", and UML should just undo our swizzling, and do a "regs.ebp =
-regs.ecx" to make it be what the actual original registers were (or
-whatever the actual correct swizzle is - I didn't think that through
-very much).
-
-IOW, I think the core kernel does the right thing. Our argument
-register swizzling is odd, yes, but it's an implementation detail that
-something like uml should just have to take into account. No?
-
-Hmm?
-
-                            Linus
