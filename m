@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab1HWJ7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 05:59:46 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:48329 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751216Ab1HWJ7p (ORCPT
+	id S1751997Ab1HWKBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 06:01:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46091 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1HWKBT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 05:59:45 -0400
-Date: Tue, 23 Aug 2011 12:59:40 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-Message-ID: <20110823095938.GJ1341@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <20110823150854.2f6da7f66247c3d31b07e072@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RUqJLqMNe5u4kDWT"
-Content-Disposition: inline
-In-Reply-To: <20110823150854.2f6da7f66247c3d31b07e072@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Aug 2011 06:01:19 -0400
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Aug 2011 12:01:00 +0200
+In-Reply-To: <20110823034042.GC7332@localhost>
+References: <20110806084447.388624428@intel.com>
+	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
+	 <20110808141128.GA22080@localhost> <1312814501.10488.41.camel@twins>
+	 <20110808230535.GC7176@localhost> <1313154259.6576.42.camel@twins>
+	 <20110812142020.GB17781@localhost> <1314027488.24275.74.camel@twins>
+	 <20110823034042.GC7332@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314093660.8002.24.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-08-23 at 11:40 +0800, Wu Fengguang wrote:
+> - not a factor at all for updating balanced_rate (whether or not we do (2))
+>   well, in this concept: the balanced_rate formula inherently does not
+>   derive the balanced_rate_(i+1) from balanced_rate_i. Rather it's
+>   based on the ratelimit executed for the past 200ms:
+> 
+>           balanced_rate_(i+1) = task_ratelimit_200ms * bw_ratio
 
---RUqJLqMNe5u4kDWT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, this is where it all goes funny..
 
-Hi,
+So if you want completely separated feedback loops I would expect
+something like:
 
-On Tue, Aug 23, 2011 at 03:08:54PM +1000, Stephen Rothwell wrote:
-> After merging the moduleh tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/usb/dwc3/dwc3-pci.c: In function 'dwc3_pci_init':
-> drivers/usb/dwc3/dwc3-pci.c:211:9: error: 'THIS_MODULE' undeclared (first=
- use in this function)
->=20
-> Caused by the interaction of the module.h split up with commit
-> 72246da40f37 ("usb: Introduce DesignWare USB3 DRD Driver") from the usb
-> tree.
->=20
-> I have applied this patch for today (Greg, this should be applied to your
-> tree):
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 23 Aug 2011 15:05:25 +1000
-> Subject: [PATCH] usb: include module.h in the DesignWare USB3 DRD driver
->=20
-> Fixes this build error:
->=20
-> drivers/usb/dwc3/dwc3-pci.c: In function 'dwc3_pci_init':
-> drivers/usb/dwc3/dwc3-pci.c:211:9: error: 'THIS_MODULE' undeclared (first=
- use in this function)
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/usb/dwc3/dwc3-pci.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-> index 2578595..e3b77d2 100644
-> --- a/drivers/usb/dwc3/dwc3-pci.c
-> +++ b/drivers/usb/dwc3/dwc3-pci.c
-> @@ -38,6 +38,7 @@
->   */
-> =20
->  #include <linux/kernel.h>
-> +#include <linux/module.h>
+	balance_rate_(i+1) = balance_rate_(i) * bw_ratio   ; every 200ms
 
-that was my fault, I didn't know about Paul's commit. Please Greg, apply
-this to your tree:
+The former is a complete feedback loop, expressing the new value in the
+old value (*) with bw_ratio as feedback parameter; if we throttled too
+much, the dirty_rate will have dropped and the bw_ratio will be <1
+causing the balance_rate to drop increasing the dirty_rate, and vice
+versa.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+(*) which is the form I expected and why I thought your primary feedback
+loop looked like: rate_(i+1) = rate_(i) * pos_ratio * bw_ratio
 
---=20
-balbi
+With the above balance_rate is an independent variable that tracks the
+write bandwidth. Now possibly you'd want a low-pass filter on that since
+your bw_ratio is a bit funny in the head, but that's another story.
 
---RUqJLqMNe5u4kDWT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Then when you use the balance_rate to actually throttle tasks you apply
+your secondary control steering the dirty page count, yielding:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+	task_rate = balance_rate * pos_ratio
 
-iQEcBAEBAgAGBQJOU3oKAAoJEAv8Txj19kN1AtgIAIw1xBnv8+7CUvuuA1iJISx5
-ogvr/yQkoDBKSt52aTtTxUeg8Nu6BkUGTHxMOY0n0J8s52kNB0BHVzTq4qfBwbrH
-fHk7643HYA54nI5BEE7y3CC9Vk966nsMwlpw4VG3oz1ENBegkF57gdY2tCjo1U/5
-6/wITUnRUZB9vQoA3NI2s1htvFWfUWfPSitoE/wFi8L6LK4HZqByJ+BlYAMHxFyW
-7dZBqrGoBz117K9G3LjT+Rtzb8B4uG0aCKxBDd/CbevC2bRObgTZpVFUTpLz/Rwq
-yK9NThgrn4UlBKWm7zUZMXBA89uxJ0dozxiqS9nGqsfMZjdKnwP5FK1Q50o6ank=
-=/XyC
------END PGP SIGNATURE-----
+>   and task_ratelimit_200ms happen to can be estimated from
+> 
+>           task_ratelimit_200ms ~= balanced_rate_i * pos_ratio
 
---RUqJLqMNe5u4kDWT--
+>   We may alternatively record every task_ratelimit executed in the
+>   past 200ms and average them all to get task_ratelimit_200ms. In this
+>   way we take the "superfluous" pos_ratio out of sight :) 
+
+Right, so I'm not at all sure that makes sense, its not immediately
+evident that <task_ratelimit> ~= balance_rate * pos_ratio. Nor is it
+clear to me why your primary feedback loop uses task_ratelimit_200ms at
+all. 
+
+>   There is fundamentally no dependency between balanced_rate_(i+1) and
+>   balanced_rate_i/task_ratelimit_200ms: the balanced_rate estimation
+>   only asks for _whatever_ CONSTANT task ratelimit to be executed for
+>   200ms, then it get the balanced rate from the dirty_rate feedback.
+
+How can there not be a relation between balance_rate_(i+1) and
+balance_rate_(i) ? 
