@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1HWGsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 02:48:32 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:19416 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777Ab1HWGsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 02:48:30 -0400
-Message-ID: <4E534D13.5020102@openvz.org>
-Date: Tue, 23 Aug 2011 10:47:47 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110702 Iceape/2.0.14
+	id S1753100Ab1HWGtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 02:49:15 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:14593
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751402Ab1HWGtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 02:49:13 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dK9371K1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+Message-ID: <4E534CEF.1080908@analog.com>
+Date: Tue, 23 Aug 2011 08:47:11 +0200
+From: Michael Hennerich <michael.hennerich@analog.com>
+Reply-To: <michael.hennerich@analog.com>
+Organization: Analog Devices Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 1/2] vmscan: fix initial shrinker size handling
-References: <20110822101721.19462.63082.stgit@zurg> <20110822143006.60f4b560.akpm@linux-foundation.org>
-In-Reply-To: <20110822143006.60f4b560.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH RESEND] backlight: fix module alias prefix for adp8870_bl
+References: <1314077176.2290.0.camel@phoenix>
+In-Reply-To: <1314077176.2290.0.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-<snip>
->>   		long new_nr;
->>   		long batch_size = shrinker->batch ? shrinker->batch
->>   						  : SHRINK_BATCH;
->>
->> +		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
->> +		if (max_pass<= 0)
->> +			continue;
->> +
->>   		/*
->>   		 * copy the current shrinker scan count into a local variable
->>   		 * and zero it so that other concurrent shrinker invocations
->> @@ -266,7 +270,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->>   		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
->>
->>   		total_scan = nr;
->> -		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
->>   		delta = (4 * nr_pages_scanned) / shrinker->seeks;
->>   		delta *= max_pass;
->>   		do_div(delta, lru_pages + 1);
+On 08/23/2011 07:26 AM, Axel Lin wrote:
+> This is a i2c driver, not a platform driver,
+> thus use "i2c" prefix for the module alias.
 >
-> Why was the shrinker call moved to before the alteration of shrinker->nr?
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+> ---
+>   drivers/video/backlight/adp8870_bl.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
+> index 383c4c3..98e0304 100644
+> --- a/drivers/video/backlight/adp8870_bl.c
+> +++ b/drivers/video/backlight/adp8870_bl.c
+> @@ -1008,4 +1008,4 @@ module_exit(adp8870_exit);
+>   MODULE_LICENSE("GPL v2");
+>   MODULE_AUTHOR("Michael Hennerich<hennerich@blackfin.uclinux.org>");
+>   MODULE_DESCRIPTION("ADP8870 Backlight driver");
+> -MODULE_ALIAS("platform:adp8870-backlight");
+> +MODULE_ALIAS("i2c:adp8870-backlight");
 
-I think, if we skip shrinker we shouldn't reset accumulated pressure,
-because next reclaimer (for example with less strict gfp) can use it.
+
+-- 
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+Margaret Seif
+
+
