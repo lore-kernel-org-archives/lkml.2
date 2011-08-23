@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab1HWQu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 12:50:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62590 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab1HWQut (ORCPT
+	id S1755451Ab1HWQx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 12:53:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39509 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1HWQxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 12:50:49 -0400
-Date: Tue, 23 Aug 2011 18:50:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2] nohz: Drop useless call in tick_nohz_start_idle()
-Message-ID: <20110823165041.GB14903@somewhere.redhat.com>
-References: <1311274177-23891-1-git-send-email-fweisbec@gmail.com>
+	Tue, 23 Aug 2011 12:53:51 -0400
+Date: Tue, 23 Aug 2011 17:53:20 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, Andrew Lutomirski <luto@mit.edu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>
+Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
+ [RFC] weird crap with vdso on uml/i386)
+Message-ID: <20110823165320.GG2203@ZenIV.linux.org.uk>
+References: <4E52EF2A.8060608@zytor.com>
+ <CA+55aFx9zRTD72jaztLvyB68ejHcqM3Z3=b+6W64opfYu3ANjA@mail.gmail.com>
+ <20110823010146.GY2203@ZenIV.linux.org.uk>
+ <20110823011312.GZ2203@ZenIV.linux.org.uk>
+ <20110823021717.GA2203@ZenIV.linux.org.uk>
+ <20110823061531.GC2203@ZenIV.linux.org.uk>
+ <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com>
+ <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com>
+ <20110823162251.GC13138@aftab>
+ <CA+55aFxJF88EJ=WhPq08j4+REBgpvVHVwbg5BR05DD+exRyp8A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311274177-23891-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <CA+55aFxJF88EJ=WhPq08j4+REBgpvVHVwbg5BR05DD+exRyp8A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? No problem with these three patches?
+On Tue, Aug 23, 2011 at 09:29:29AM -0700, Linus Torvalds wrote:
 
-On Thu, Jul 21, 2011 at 08:49:36PM +0200, Frederic Weisbecker wrote:
-> The call to update_ts_time_stats() there is useless. All
-> we need is to save the idle entry_time.
+> Oh yes.
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/time/tick-sched.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+> System call performance is *important*. And x86 is *important*.
 > 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index d5097c4..58e1a96 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -185,9 +185,6 @@ static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
->  	ktime_t now;
->  
->  	now = ktime_get();
-> -
-> -	update_ts_time_stats(cpu, ts, now, NULL);
-> -
->  	ts->idle_entrytime = now;
->  	ts->idle_active = 1;
->  	sched_clock_idle_sleep_event();
-> -- 
-> 1.7.5.4
+> UML? In comparison, not that important.
 > 
+> So quite frankly, if this is purely an UML issue (and unless we're
+> missing something else, that's what it looks like, despite all the
+> confusion we've had so far), then if we have a choice between "remove
+> syscall instruction" and "remove UML", then ...
+
+Agreed.  Note, BTW, that UML has perfectly usable workaround for 99% of
+that - don't tell the binaries it has *any* vdso in such cases.  And
+"remove UML" turns into "remove support under UML for 32bit binaries
+that go out of their way to do SYSCALL directly, which wouldn't work
+on native 32bit", which is really a no-brainer.
