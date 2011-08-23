@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1HWRuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 13:50:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39267 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab1HWRu2 (ORCPT
+	id S1754392Ab1HWR67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 13:58:59 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51396 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751997Ab1HWR6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 13:50:28 -0400
-Message-ID: <4E53E6F4.1040006@gmail.com>
-Date: Tue, 23 Aug 2011 19:44:20 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Tue, 23 Aug 2011 13:58:52 -0400
+X-Sasl-enc: 0yVzre9htsHMRkoNIV4keJ9wPEKT08rweV3JzcGZpecI 1314122331
+Date: Tue, 23 Aug 2011 10:57:52 -0700
+From: Greg KH <greg@kroah.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Greg KH <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, neilb@suse.de
+Subject: Re: [PATCH] sysctl: add support for poll()
+Message-ID: <20110823175752.GA4129@kroah.com>
+References: <CAMOw1v6uCMhgErrfPLQ5CSa0v_OoHhJ=M3OCL+YH9H1Zg5fEXQ@mail.gmail.com>
+ <1312484238-1645-1-git-send-email-lucas.demarchi@profusion.mobi>
 MIME-Version: 1.0
-To: Sunil Mushran <sunil.mushran@oracle.com>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>	<4E4F814B.5070202@gmail.com>	<4E4F865B.2010608@gmail.com>	<4E4FD48B.8030101@oracle.com>	<4E4FE1B1.7010601@gmail.com>	<4E51F24F.1050503@oracle.com> <CANGUGtCi85Sgrr5R0E8iuN75ubbMX9txZMwnsvp4Wv3Xh+938g@mail.gmail.com> <4E527C7F.9040807@oracle.com> <4E52984F.8050702@gmail.com> <4E52C890.1060600@oracle.com>
-In-Reply-To: <4E52C890.1060600@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312484238-1645-1-git-send-email-lucas.demarchi@profusion.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/08/2011 23:22, Sunil Mushran ha scritto:
-> On 08/22/2011 10:56 AM, Marco Stornelli wrote:
->> Il 22/08/2011 17:57, Sunil Mushran ha scritto:
->>>
->>> The following test was used to test the early implementations.
->>> http://oss.oracle.com/~smushran/seek_data/
->>>
->>
->> Thank you very much!! I found another point. Your test fails with my
->> implementation because here
->> (http://www.austingroupbugs.net/view.php?id=415) says: "If whence is
->> SEEK_DATA, the file offset shall be set to the smallest location of a
->> byte not within a hole and not less than offset. It shall be an error
->> if no such byte exists." So in this case I return ENXIO but the test
->> expects another value. I have to say that there is a bit of confusion
->> about the real behavior of this new feature :)
->>
->
-> That's test 5.10, 5.12, 5.14. And it expects -ENXIO.
->
-> Which test is failing for you?
->
+On Thu, Aug 04, 2011 at 03:57:18PM -0300, Lucas De Marchi wrote:
+> Adding support for poll() in sysctl fs allows userspace to receive
+> notifications of changes in sysctl entries. This adds a infrastructure
+> to allow files in sysctl fs to be pollable and implements it for
+> hostname and domainname.
+> 
+> Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+> ---
+>  fs/proc/proc_sysctl.c   |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/sysctl.h  |   22 ++++++++++++++++++++++
+>  include/linux/utsname.h |   16 ++++++++++++++++
+>  kernel/sys.c            |    2 ++
+>  kernel/utsname_sysctl.c |   23 +++++++++++++++++++++++
+>  5 files changed, 108 insertions(+), 0 deletions(-)
 
-Sorry, I was reading the results in a wrong way.
+Who is going to take this through their tree?
 
-Marco
+I can through the driver-core tree if no one else objects.
+
+Any objections?
+
+thanks,
+
+greg k-h
