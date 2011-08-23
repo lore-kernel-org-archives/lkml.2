@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab1HWT6I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 15:58:08 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42548 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755704Ab1HWT6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 15:58:02 -0400
-Subject: Re: [GIT PULL] XFS update for 3.1-rc4
-From: Alex Elder <aelder@sgi.com>
-Reply-To: <aelder@sgi.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <xfs@oss.sgi.com>,
-        <akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
-References: <201108231739.p7NHdXQ8008360@stout.americas.sgi.com>
-	 <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 14:57:56 -0500
-Message-ID: <1314129476.2898.28.camel@doink>
+	id S1756059Ab1HWUAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 16:00:39 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:50556 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687Ab1HWUAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 16:00:34 -0400
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.232.50]
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04B24A38E6@HQMAIL01.nvidia.com>
+References: <1313440100-17131-1-git-send-email-swarren@nvidia.com>
+	<201108161509.17157.arnd@arndb.de>
+	<CACRpkdaVx=6AJ5DFjVN1ZYQ++hu9pT6WxD9n+pqmYVaCf1xawg@mail.gmail.com>
+	<201108161637.16620.arnd@arndb.de>
+	<74CDBE0F657A3D45AFBB94109FB122FF04AEA25368@HQMAIL01.nvidia.com>
+	<CACRpkdY=nVQYnznTU7=_D0n1V1U_xOKH2y75-jKp7k7NzwH8Zw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04B24A38E6@HQMAIL01.nvidia.com>
+Date: Tue, 23 Aug 2011 22:00:33 +0200
+Message-ID: <CAKnu2MoEvc7KGH-Fu1FzRE1xFFvsSRVdG5Amg6FL-6PrWRw5yA@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 00/13] arm/tegra: Initialize GPIO & pinmux from DT
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Erik Gilling <konkers@android.com>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>, Jamie Iles <jamie@jamieiles.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 11:46 -0700, Linus Torvalds wrote:
-> On Tue, Aug 23, 2011 at 10:39 AM, Alex Elder <aelder@sgi.com> wrote:
-> >
-> > Linus, please pull the following XFS changes.  Their effect is to
-> > remove the subdirectory structure from the XFS source hierarchy.
-> > There are no functional changes to the XFS code itself.  Thanks.
-> 
-> Pulled.
-> 
-> Any plans to further sanitize the namespace?
+2011/8/23 Stephen Warren <swarren@nvidia.com>:
+> Linus Walleij wrote at Tuesday, August 23, 2011 6:51 AM:
+>> Each GPIO chip may have it's respective pin controller as parent
+                               ^^^^^
+>> I guess, or they may simply be the same struct device * whatdoIknow.
+>
+> I'm not clear on why the GPIO and pinmux would have any kind of parent
+> relationship. Perhaps that's how your HW is designed. In Tegra, GPIO
+> and pinmux are completely separate HW blocks without much of a defined
+> relationship.
+>
+> I can certainly see both being implemented by the same code if it makes
+> sense to do so. On Tegra, I think I'd still lean towards keeping them
+> as separate devices, since they have separate register spaces and are
+> documented separately etc. However, I can certainly see that other HW
+> might have both sets of functionality in one HW block.
 
-We haven't discussed it but it's not a bad idea.
+Makes sense, for U300 I will probably also keep them separate
+like this:
 
-> It's kind of crazy to have filenames like
-> 
->    fs/xfs/xfs_trace.c
-> 
-> which just duplicate the "xfs" part for no good reason. Why not just
-> do something like
-> 
->   for i in xfs_*; do j=$(echo $i | sed 's/^xfs_//'); git mv $i $j; done
-> 
-> to get rid of the silly "xfs_" prefix that adds nothing?
-> 
-> You could use the bytes you save to rename "qm.c" to "quota_manager.c"
-> instead. Wouldn't it be nice to have *good* names, instead of a jumble
-> of crazy and mostly redundant letters?
+pinctrl.0 - deal with muxing
+pinctrl.1 - deal with biasing, driving etc
+gpio.0 - the GPIO driver using both of the above, no relationship
 
-We're getting there, gradually.  The code is certainly
-evolving in that direction, though that hasn't happened
-in the file names.  Doing that would require my fingers
-to get used to skipping over the "xfs_" spasm though...
+The only thing they have in common is some relation to the
+global GPIO pin space. (When/if we get rid of that - something
+better.)
 
-					-Alex
-
+Yours,
+Linus Walleij
