@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab1HWEj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 00:39:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61402 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1HWEjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 00:39:20 -0400
+	id S1752102Ab1HWEmB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 00:42:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58260 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713Ab1HWElz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 00:41:55 -0400
+Message-ID: <4E532F65.7010609@zytor.com>
+Date: Mon, 22 Aug 2011 21:41:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Date: Tue, 23 Aug 2011 00:39:19 -0400
-Message-ID: <CAHFgRy_7XQkoU3uY72Eve_X-FfXOuUm2Ydhyheo4bf53P3K=zQ@mail.gmail.com>
-Subject: 3.1.0-rc3 -- INFO: possible circular locking dependency detected
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 07/15] x86: add xadd helper macro
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <41c1484d36a94613f86f33e15219d5fcd14b2343.1314054734.git.jeremy.fitzhardinge@citrix.com> <4E52E64D.5090309@zytor.com> <4E52E9BF.3050904@goop.org>
+In-Reply-To: <4E52E9BF.3050904@goop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ INFO: possible circular locking dependency detected ]
-3.1.0-rc3 #2
--------------------------------------------------------
-dconf-service/1836 is trying to acquire lock:
- (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff8116df1a>]
-ext4_evict_inode+0x88/0x32b
+On 08/22/2011 04:43 PM, Jeremy Fitzhardinge wrote:
+> On 08/22/2011 04:29 PM, H. Peter Anvin wrote:
+>> On 08/22/2011 04:15 PM, Jeremy Fitzhardinge wrote:
+>>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>>
+>>> Add a common xadd implementation.
+>>>
+>>> This has the side effect of generating a bad instruction if you try to
+>>> use it on a 64-bit value on a 32-bit system - but don't do that.
+>>>
+>> It would be better to barf at that point, so we get the error with a C
+>> line... also, there needs to be a default clause with
+>> __compiletime_error() in it.
+> 
+> OK, but the "standard of care" here is the old "calling undefined
+> function" link error; getting a bad asm instruction is a little more
+> helpful, in a sense.  But agreed on the default: case.  I'll see if I
+> can fix up xadd and cmpxchg to fail better as well.
+> 
 
- but task is already holding lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff810d4393>] sys_munmap+0x36/0x5b
+__compiletime_error() is better than either, obviously...
 
-which lock already depends on the new lock.
+	-hpa
 
-the existing dependency chain (in reverse order) is:
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
--> #1 (&mm->mmap_sem){++++++}:
-       [<ffffffff8106933a>] lock_acquire+0x129/0x14e
-       [<ffffffff810cddbd>] might_fault+0x68/0x8b
-       [<ffffffff810fcf5e>] filldir+0x6a/0xc2
-       [<ffffffff811651a1>] call_filldir+0x91/0xb8
-       [<ffffffff811654bf>] ext4_readdir+0x1af/0x510
-       [<ffffffff810fd1a4>] vfs_readdir+0x76/0xac
-       [<ffffffff810fd2b6>] sys_getdents+0x79/0xc9
-       [<ffffffff814162fb>] system_call_fastpath+0x16/0x1b
-
--> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
-       [<ffffffff81068b10>] __lock_acquire+0xa5e/0xd52
-       [<ffffffff8106933a>] lock_acquire+0x129/0x14e
-       [<ffffffff8140f1a2>] __mutex_lock_common+0x64/0x413
-       [<ffffffff8140f5b0>] mutex_lock_nested+0x16/0x18
-       [<ffffffff8116df1a>] ext4_evict_inode+0x88/0x32b
-       [<ffffffff81102d8a>] evict+0x94/0x14e
-       [<ffffffff81102fd0>] iput+0x18c/0x195
-       [<ffffffff810ffdd4>] dentry_kill+0x11e/0x140
-       [<ffffffff8110019b>] dput+0xd4/0xe4
-       [<ffffffff810efac3>] fput+0x1a5/0x1bd
-       [<ffffffff810d3214>] remove_vma+0x37/0x5f
-       [<ffffffff810d4239>] do_munmap+0x2ed/0x306
-       [<ffffffff810d43a1>] sys_munmap+0x44/0x5b
-       [<ffffffff814162fb>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&mm->mmap_sem);
-                               lock(&sb->s_type->i_mutex_key);
-                               lock(&mm->mmap_sem);
-  lock(&sb->s_type->i_mutex_key);
-
- *** DEADLOCK ***
-
-1 lock held by dconf-service/1836:
- #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810d4393>] sys_munmap+0x36/0x5b
-
-stack backtrace:
-Pid: 1836, comm: dconf-service Tainted: G        W   3.1.0-rc3 #2
-Call Trace:
- [<ffffffff81407d14>] print_circular_bug+0x1f8/0x209
- [<ffffffff81068b10>] __lock_acquire+0xa5e/0xd52
- [<ffffffff8116df1a>] ? ext4_evict_inode+0x88/0x32b
- [<ffffffff8106933a>] lock_acquire+0x129/0x14e
- [<ffffffff8116df1a>] ? ext4_evict_inode+0x88/0x32b
- [<ffffffff8140f1a2>] __mutex_lock_common+0x64/0x413
- [<ffffffff8116df1a>] ? ext4_evict_inode+0x88/0x32b
- [<ffffffff81102d5a>] ? evict+0x64/0x14e
- [<ffffffff8116df1a>] ? ext4_evict_inode+0x88/0x32b
- [<ffffffff8102fa1c>] ? get_parent_ip+0xe/0x3e
- [<ffffffff8140f5b0>] mutex_lock_nested+0x16/0x18
- [<ffffffff8116df1a>] ext4_evict_inode+0x88/0x32b
- [<ffffffff8116de92>] ? ext4_da_writepages+0x53f/0x53f
- [<ffffffff81102d8a>] evict+0x94/0x14e
- [<ffffffff81102fd0>] iput+0x18c/0x195
- [<ffffffff810ffdd4>] dentry_kill+0x11e/0x140
- [<ffffffff8110019b>] dput+0xd4/0xe4
- [<ffffffff810efac3>] fput+0x1a5/0x1bd
- [<ffffffff810d4393>] ? sys_munmap+0x36/0x5b
- [<ffffffff810d3214>] remove_vma+0x37/0x5f
- [<ffffffff810d4239>] do_munmap+0x2ed/0x306
- [<ffffffff810d43a1>] sys_munmap+0x44/0x5b
- [<ffffffff814162fb>] system_call_fastpath+0x16/0x1b
