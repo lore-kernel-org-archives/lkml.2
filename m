@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab1HWPRE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 11:17:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47406 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab1HWPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 11:16:56 -0400
-Date: Tue, 23 Aug 2011 08:15:18 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Greg KH <greg@kroah.com>, joe@perches.com, jim.cromie@gmail.com,
-        bvanassche@acm.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 00/11] various fixes v3
-Message-ID: <20110823151518.GA25130@suse.de>
-References: <cover.1313085588.git.jbaron@redhat.com>
- <20110823013224.GA7190@kroah.com>
- <20110823135452.GA2526@redhat.com>
+	id S1755368Ab1HWPRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 11:17:50 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:25499 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab1HWPRp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 11:17:45 -0400
 MIME-Version: 1.0
+Message-ID: <319475b8-897e-4c32-b781-2c86541f0753@default>
+Date: Tue, 23 Aug 2011 08:17:28 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, gregkh@suse.de
+Cc: ascardo@holoscopio.com, rdunlap@xenotime.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] staging: zcache: fix typos
+References: <1314039008-8845-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1314039008-8845-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110823135452.GA2526@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E53C493.011E:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 09:54:53AM -0400, Jason Baron wrote:
-> On Mon, Aug 22, 2011 at 06:32:24PM -0700, Greg KH wrote:
-> > On Thu, Aug 11, 2011 at 02:36:17PM -0400, Jason Baron wrote:
-> > > Hi,
-> > > 
-> > > Dynamic debug fixes and cleanups. Only changes from v2 are a re-base against
-> > > Linus's latest tree and the inclusion of the re-posted version for patch #11.
-> > 
-> > I applied the first 8, as it seemed like there was lots of discussion
-> > about #9.
-> > 
-> > Care to send the rest when you all have those worked out?
-> > 
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Sent: Monday, August 22, 2011 12:50 PM
+> To: gregkh@suse.de
+> Cc: ascardo@holoscopio.com; Dan Magenheimer; sjenning@linux.vnet.ibm.com; rdunlap@xenotime.net;
+> devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] staging: zcache: fix typos
 > 
-> Hi Greg,
+> The patch fixes two typos in zcache-main.c
 > 
-> The comments on #9 were mostly around formatting. The 'take #2' version
-> is fine: https://lkml.org/lkml/2011/8/15/395. Do you need me to re-post
-> it? If not please also take 10, 11.
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-As stated above, pleae resend what you want me to apply.
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-thanks,
+Seth, I'm not very familiar with the process but I think this
+kind of patch can go through the trivial patch monkey. See
+Documentation/SubmittingPatches.
 
-greg k-h
+> ---
+>  drivers/staging/zcache/zcache-main.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index 855a5bb..82054c9 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -651,7 +651,7 @@ static unsigned int zv_max_zsize = (PAGE_SIZE / 8) * 7;
+>  /*
+>   * byte count defining poor *mean* compression; pages with greater zsize
+>   * will be rejected until sufficient better-compressed pages are accepted
+> - * driving the man below this threshold
+> + * driving the mean below this threshold
+>   */
+>  static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
+> 
+> @@ -1993,7 +1993,7 @@ static int __init zcache_init(void)
+>  		pr_info("zcache: frontswap enabled using kernel "
+>  			"transcendent memory and xvmalloc\n");
+>  		if (old_ops.init != NULL)
+> -			pr_warning("ktmem: frontswap_ops overridden");
+> +			pr_warning("zcache: frontswap_ops overridden");
+>  	}
+>  #endif
+>  out:
+> --
+> 1.7.4.1
+> 
