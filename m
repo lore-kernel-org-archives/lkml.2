@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1HWWL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 18:11:58 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:32912 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab1HWWLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 18:11:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: try_to_freeze() called with IRQs disabled on ARM
-Date: Wed, 24 Aug 2011 00:13:40 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <20110823151936.GM9232@opensource.wolfsonmicro.com> <201108232351.55432.rjw@sisk.pl> <CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com>
-In-Reply-To: <CAOS58YNUSn2eVLDLzqKmrtL7M5tSetkhZ1ODecLK54NSDnZVAA@mail.gmail.com>
+	id S1755814Ab1HWWMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 18:12:50 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60300 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1HWWMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 18:12:44 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108240013.40705.rjw@sisk.pl>
+In-Reply-To: <20110823220158.GA28444@count0.beaverton.ibm.com>
+References: <20110727163159.GA23785@redhat.com>
+	<20110729192358.GB31717@mtj.dyndns.org>
+	<20110812175550.GA7484@redhat.com>
+	<20110813161814.GE4254@htj.dyndns.org>
+	<20110823220158.GA28444@count0.beaverton.ibm.com>
+Date: Wed, 24 Aug 2011 00:12:44 +0200
+X-Google-Sender-Auth: onJ8PX1wq5ckVY9P2mjHciix27A
+Message-ID: <CAOS58YOsjLRWnbgfP=b=mZL6MtTZQExWvR9XkrJiHDYU0BEZrw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] make vfork killable
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 23, 2011, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 23, 2011 at 11:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> and the boot runs very slowly.  Reverting the series merged in 56f0be
-> >> appears to resolve the issue,
-> >
-> > In fact, the patch from:
-> >
-> > https://patchwork.kernel.org/patch/1083602/
-> >
-> > is sufficient to make the calltrace go away.
-> 
-> Yes, that's true but the added might_sleep() discovered an actual bug
-> here, so I still think it's better to keep it there.
+Hello, Matt.
 
-Well, I think we _have_ _to_ put it into __refrigerator() at least until
-the ARM issue is fixed (other architectures seem to do similar things, BTW),
-since otherwise this can be reported over and over again.
+On Wed, Aug 24, 2011 at 12:01 AM, Matt Helsley <matthltc@us.ibm.com> wrote:
+> Are you proposing one new jobctl state for vfork and another for
+> the cgroup freezer?
 
-Let's try to fix the known issues first and _then_ we can move the
-might_sleep() back into try_to_freeze().
+Dunno how it would actually turn out yet, but no matter how, it would
+be transparent to the process itself while being visible to and
+manipulatable by ptracer.  Well, that's the idea...
 
-Thanks,
-Rafael
+Thanks.
+
+-- 
+tejun
