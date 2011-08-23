@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1HWAIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Aug 2011 20:08:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38654 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753925Ab1HWAIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Aug 2011 20:08:11 -0400
-Message-ID: <4E52EF2A.8060608@zytor.com>
-Date: Mon, 22 Aug 2011 17:07:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1754548Ab1HWAIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Aug 2011 20:08:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57830 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526Ab1HWAIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Aug 2011 20:08:16 -0400
+Date: Tue, 23 Aug 2011 01:07:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Leo Yan <leoy@marvell.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Haojian Zhuang <hzhuang1@marvell.com>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [PATCH] ARM: mmp: map sram as MT_MEMORY rather than MT_DEVICE
+Message-ID: <20110823000755.GE3895@n2100.arm.linux.org.uk>
+References: <1313377794-26721-1-git-send-email-leoy@marvell.com> <1313377794-26721-2-git-send-email-leoy@marvell.com> <20110822164740.5682541b@queued.net>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Lutomirski <luto@mit.edu>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-References: <4E51D597.3060800@zytor.com> <20110822095336.GB25949@kernel.org> <CAObL_7F6D8nQovf+aJGiEOF1mBpBU8RwtjNA-5myxvEBRRHgsg@mail.gmail.com> <20110822144051.GD2946@aftab> <20110822151305.GV2203@ZenIV.linux.org.uk> <CA+55aFwoRO9xxnTyt_gYFdTS9LsaFoCWRuyNeXY7gvrE8CdZ0A@mail.gmail.com> <4E52B7F8.3050002@zytor.com> <CAObL_7GmMXPUE0Oix1CKTYzqheyJV+ua=WEBUQk5m-LGsvqihw@mail.gmail.com> <4E52D280.3010107@zytor.com> <CA+55aFw4C+ShLHF2NYZMQ-Lhjow3mJ62_eqO_iAww2nh7V_-Uw@mail.gmail.com> <20110823000314.GW2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110823000314.GW2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110822164740.5682541b@queued.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2011 05:03 PM, Al Viro wrote:
-> On Mon, Aug 22, 2011 at 04:27:51PM -0700, Linus Torvalds wrote:
+On Mon, Aug 22, 2011 at 04:47:40PM -0700, Andres Salomon wrote:
+> The sram code allocates memory with ioremap, which assumes MT_DEVICE
+> for memory protections.  This explodes when we map sram for power
+> management purposes and then attempt to execute it (jump_to_lp_sram)
+> on the OLPC XO-1.75.  Instead, we want to specify MT_MEMORY, which
+> doesn't set the L_PTE_XN bit.
 > 
->> So I think the "let's fix the vdso case for sysenter" + "let's remove
->> the 32-bit syscall vdso" is the right solution. If somebody has
->> hardcoded syscall instructions, or generates them dynamically with
->> some JIT, that's their problem. We'll continue to support it as well
->> as we ever have (read: "almost nobody will ever notice").
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  arch/arm/mach-mmp/sram.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> Umm...  Maybe, but I really wonder if it would be better to do this:
-> 	* check if %ecx is the right one for vdso32 entry.  If it isn't,
-> act as we act now (and possibly warn).  If it is, increment it by 4.
-> 	* slap 0x90, 0x90, 0xcd, 0x80 right after that syscall insn -
-> i.e. nop/nop/int 0x80.  Followed by what we currently do there.
+> Eric, this patch is against the devel branch of your pxa tree.
 > 
-> 	Those who do syscall insn in 32bit mode outside of vdso will get
-> what they currently get.  __kernel_vsyscall() will keep working and do
-> that without restart problems.  And the price is comparison + branch not
-> taken + addition for that path...
+> diff --git a/arch/arm/mach-mmp/sram.c b/arch/arm/mach-mmp/sram.c
+> index 4304f95..ca4d3c1 100644
+> --- a/arch/arm/mach-mmp/sram.c
+> +++ b/arch/arm/mach-mmp/sram.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/err.h>
+>  #include <linux/slab.h>
+>  #include <linux/genalloc.h>
+> +#include <asm/mach/map.h>
+>  
+>  #include <mach/sram.h>
+>  
+> @@ -87,7 +88,8 @@ static int __devinit sram_probe(struct platform_device *pdev)
+>  
+>  	info->sram_phys   = (phys_addr_t)res->start;
+>  	info->sram_size   = resource_size(res);
+> -	info->sram_virt   = ioremap(info->sram_phys, info->sram_size);
+> +	info->sram_virt   = __arm_ioremap(info->sram_phys, info->sram_size,
+> +					  MT_MEMORY);
 
-Checking for SYSCALL in the vdso is cheap... the only problem is if
-someone thinks that they can copy it out of the vdso and run it, having
-special-cased SYSENTER already, but not SYSCALL.  The recent experience
-shows that that is apparently a very real possibility.
+Not a good idea fiddling about under the covers like that.  The reason
+that MT_MEMORY is not in asm/io.h is to stop it being used like this -
+MT_MEMORY etc are not meant for general purpose use.
 
-Without a SYSCALL in the vdso, anything that examines the vdso will end
-up using int $0x80 and we don't have an issue.
+It needs to be looked at properly rather than working behind the APIs,
+and making my life a misery by doing so, preventing me from making
+changes where necessary by this kind of back-door use.
 
-Again, waiting for Borislav & co to tell us how much the SYSCALL
-instruction actually buys us.
-
-	-hpa
+I guess we need a new ioremap_xxx() variant to cope with this.
