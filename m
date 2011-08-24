@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab1HXS1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:27:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63795 "EHLO mx1.redhat.com"
+	id S1753612Ab1HXS2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:28:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9657 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab1HXS1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:27:16 -0400
-Date: Wed, 24 Aug 2011 20:24:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Ian Kent <raven@themaw.net>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Petr Vandrovec <petr@vandrovec.name>
-Subject: Re: [PATCH v2 00/43] signal: set_current_blocked() and
-	block_sigmask()
-Message-ID: <20110824182411.GA30094@redhat.com>
-References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753158Ab1HXS2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 14:28:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,276,1312182000"; 
+   d="scan'208";a="10667570"
+Subject: Re: [patch 3/8] iommu: move IOMMU specific code to intel-iommu.c
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "Song, Youquan" <youquan.song@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Aug 2011 11:31:40 -0700
+In-Reply-To: <20110824092700.GF2079@amd.com>
+References: <20110824000517.710353624@sbsiddha-desk.sc.intel.com>
+	 <20110824001456.282401285@sbsiddha-desk.sc.intel.com>
+	 <20110824092700.GF2079@amd.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.1 (3.0.1-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1314210701.16133.13.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(add linux-arch)
+On Wed, 2011-08-24 at 02:27 -0700, Roedel, Joerg wrote:
+> On Tue, Aug 23, 2011 at 08:05:20PM -0400, Suresh Siddha wrote:
+> > +static void __init dmar_register_rmrr_unit(struct dmar_rmrr_unit *rmrr)
+> > +int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
+> > +int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
+> > +int dmar_find_matched_atsr_unit(struct pci_dev *dev)
+> > +int dmar_parse_rmrr_atsr_dev(void)
+> 
+> If these functions are not DMAR specific, how about replacing the dmar_
+> prefix too while at it?
 
-On 08/19, Matt Fleming wrote:
->
->  arch/alpha/kernel/signal.c         |   31 ++++++++----------------
->  arch/arm/kernel/signal.c           |   24 ++++++------------
->  arch/avr32/kernel/signal.c         |   26 ++++++--------------
->  arch/blackfin/kernel/signal.c      |   17 +++----------
->  arch/cris/arch-v10/kernel/signal.c |   34 +++++++++-----------------
->  arch/cris/arch-v32/kernel/signal.c |   37 ++++++++--------------------
->  arch/frv/kernel/signal.c           |   32 ++++++++-----------------
->  arch/h8300/kernel/signal.c         |   33 +++++++-------------------
->  arch/ia64/kernel/signal.c          |   15 +----------
->  arch/m32r/kernel/signal.c          |   12 +--------
->  arch/m68k/kernel/signal_mm.c       |   22 +++++++----------
->  arch/m68k/kernel/signal_no.c       |   28 +++++++---------------
->  arch/microblaze/kernel/signal.c    |   42 +++++++++++++--------------------
->  arch/mips/kernel/signal.c          |   27 ++++-----------------
->  arch/mips/kernel/signal32.c        |   20 +++------------
->  arch/mips/kernel/signal_n32.c      |   10 +------
->  arch/mn10300/kernel/signal.c       |   32 ++++++++-----------------
->  arch/openrisc/kernel/signal.c      |   45 +++++++++++++++--------------------
->  arch/parisc/kernel/signal.c        |   12 +--------
->  arch/powerpc/kernel/signal.c       |   13 +--------
->  arch/powerpc/kernel/signal_32.c    |   11 ++++----
->  arch/s390/kernel/compat_signal.c   |    6 +----
->  arch/s390/kernel/signal.c          |    6 +----
->  arch/score/kernel/signal.c         |   13 ++--------
->  arch/sh/kernel/signal_32.c         |   35 ++++++++--------------------
->  arch/sh/kernel/signal_64.c         |   40 ++++++++------------------------
->  arch/sparc/kernel/signal32.c       |   17 ++-----------
->  arch/sparc/kernel/signal_32.c      |   28 +++++++---------------
->  arch/sparc/kernel/signal_64.c      |   29 ++++++++---------------
->  arch/tile/kernel/compat_signal.c   |    5 +---
->  arch/tile/kernel/signal.c          |   13 +--------
->  arch/um/kernel/signal.c            |   28 +++++++---------------
->  arch/um/sys-i386/signal.c          |   12 +--------
->  arch/um/sys-x86_64/signal.c        |    6 +----
->  arch/unicore32/kernel/signal.c     |   13 +--------
->  arch/x86/kernel/signal.c           |    6 +----
->  arch/xtensa/kernel/signal.c        |   35 ++++++++-------------------
->  fs/autofs4/waitq.c                 |   13 +++-------
->  fs/coda/upcall.c                   |   19 ++++++--------
->  fs/dlm/user.c                      |    1 -
->  fs/ncpfs/sock.c                    |   15 ++++--------
->  include/linux/signal.h             |    1 +
->  kernel/signal.c                    |   21 ++++++++++++++++
+These parsing functions are APCI DMAR table specific and are used only
+by intel-iommu routines. Because of this I didn't change their names but
+just moved to intel-iommu.c to cleanup some of the ifdef's in the common
+dmar.c code (specific to handling common ACPI DMAR tables etc) shared by
+both DMA-remapping (iommu) and IRQ-remapping.
 
-Thanks to those who replied.
-
-I applied the whole series with a few acks we got. Other maintainers
-do not care, I guess.
-
-Oleg.
+thanks,
+suresh
 
