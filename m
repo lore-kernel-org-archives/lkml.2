@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab1HXWKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:10:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33879 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924Ab1HXWKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:10:37 -0400
-Message-ID: <4E5576CF.2050905@zytor.com>
-Date: Wed, 24 Aug 2011 15:10:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: base support for the TS-5500 platform
-References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com> <4E55670F.90102@zytor.com> <20110824180837.6841f3d8@v0nbox>
-In-Reply-To: <20110824180837.6841f3d8@v0nbox>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751875Ab1HXWLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:11:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59813 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750770Ab1HXWLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 18:11:45 -0400
+Date: Wed, 24 Aug 2011 15:11:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-Id: <20110824151115.9499019c.akpm@linux-foundation.org>
+In-Reply-To: <20110824150433.70e140a6.rdunlap@xenotime.net>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+	<20110824150433.70e140a6.rdunlap@xenotime.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 03:08 PM, Vivien Didelot wrote:
-> Indeed this will be run on any Elan SC520 based platforms if the user
-> has asked for TS-5500 support in the menuconfig. I could add checks for
-> other hardware such as the Ethernet controller, but it would require
-> including pci headers and delaying the initcall (using late_initcall
-> instead of postcore_initcall).
-> That's why I think it is not really worth adding more tests. They
-> could be added later in this function if there is really a need.
+On Wed, 24 Aug 2011 15:04:33 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
+
+> On Wed, 24 Aug 2011 14:09:05 -0700 akpm@linux-foundation.org wrote:
 > 
-> Regards,
-> Vivien.
+> > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > It contains the following patches against 3.1-rc3:
+> > (patches marked "*" will be included in linux-next)
+> 
+> Hi Andrew,
+> 
+> Am I supposed to apply this to linux-next?
 
-Hello?  HELLO?
+Nope.  The full series is based on 3.1-rc3.  It includes origin.patch
+which takes it up to current -linus.  And linux-next.patch which takes
+it up to today's linux-next.
 
-We do not break unrelated hardware just because something is enabled at
-compile time.
+> I don't get a clean patch(1) against 3.1-rc3.
 
-EVER.
-
-	-hpa
+hm.  What broke?
