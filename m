@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1HXP35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:29:57 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:40754 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab1HXP3z convert rfc822-to-8bit (ORCPT
+	id S1752116Ab1HXPcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:32:10 -0400
+Received: from 74-92-214-37-Colorado.hfc.comcastbusiness.net ([74.92.214.37]:33171
+	"EHLO zlynx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab1HXPcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:29:55 -0400
+	Wed, 24 Aug 2011 11:32:08 -0400
+X-Greylist: delayed 1500 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 11:32:08 EDT
+Message-ID: <4E551331.1010709@acm.org>
+Date: Wed, 24 Aug 2011 09:05:21 -0600
+From: Zan Lynx <zlynx@acm.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1314199415-7924-1-git-send-email-linkinjeon@gmail.com>
-References: <1314199415-7924-1-git-send-email-linkinjeon@gmail.com>
-Date: Thu, 25 Aug 2011 00:29:53 +0900
-Message-ID: <CAKYAXd-hkg4yKXLd-HfW56NJX8RUZhVyg8YEEzaZmpE1epDk-g@mail.gmail.com>
-Subject: Re: [PATCH] include: Fix compile warning in include/linux/bitops.h
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: arnd@arndb.de
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
+ v2
+References: <20110824085329.GL29452@sun>
+In-Reply-To: <20110824085329.GL29452@sun>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20110824/1QwF1R-000763-5Q-linux-kernel@vger.kernel.org:zlynx@acm.org:74.92.214.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Arnd.
+On 8/24/2011 2:53 AM, Cyrill Gorcunov wrote:
+> From: Pavel Emelyanov <xemul@parallels.com>
+> 
+> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
+> one for each mapping with file, the name of a symlink is vma->vm_start, the
+> target is the file. Opening a symlink results in a file that point exactly
+> to the same inode as them vma's one.
+> 
+> This thing is aimed to help checkpointing processes.
+> 
+> For example the ls -l of some arbitrary /proc/<pid>/map_files/
+> 
+>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
+[snip]
 
-I send a patch by the below your request.
+Just curious: How do these symlinks work when the process reading a
+/proc file is in a chroot or a different namespace?
 
-Would you plz confirm it ?
-
-Thanks.
-
-2011/8/25 Namjae Jeon <linkinjeon@gmail.com>:
-> The compile warning is caused by __const_hweight8 when using hweight_long with -Wsign-compare option.
-> The reason is that the default return value of this macro is signed. So need type casting to remove warning.
->
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  include/asm-generic/bitops/const_hweight.h |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
-> index fa2a50b..31b7fce 100644
-> --- a/include/asm-generic/bitops/const_hweight.h
-> +++ b/include/asm-generic/bitops/const_hweight.h
-> @@ -4,15 +4,15 @@
->  /*
->  * Compile time versions of __arch_hweightN()
->  */
-> -#define __const_hweight8(w)            \
-> -      (        (!!((w) & (1ULL << 0))) +       \
-> -       (!!((w) & (1ULL << 1))) +       \
-> -       (!!((w) & (1ULL << 2))) +       \
-> -       (!!((w) & (1ULL << 3))) +       \
-> -       (!!((w) & (1ULL << 4))) +       \
-> -       (!!((w) & (1ULL << 5))) +       \
-> -       (!!((w) & (1ULL << 6))) +       \
-> -       (!!((w) & (1ULL << 7))) )
-> +#define __const_hweight8(w)    (unsigned long) \
-> +       (       (!!((w) & (1ULL << 0))) +       \
-> +               (!!((w) & (1ULL << 1))) +       \
-> +               (!!((w) & (1ULL << 2))) +       \
-> +               (!!((w) & (1ULL << 3))) +       \
-> +               (!!((w) & (1ULL << 4))) +       \
-> +               (!!((w) & (1ULL << 5))) +       \
-> +               (!!((w) & (1ULL << 6))) +       \
-> +               (!!((w) & (1ULL << 7))) )
->
->  #define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
->  #define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
-> --
-> 1.7.4.4
->
->
-Yes, this looks correct to me. Could you send the change as a proper patch
-with your Signed-off-by:?
-
-       Arnd
+For example, a chroot environment might have independent copies of
+/lib64/ld-2.5.so and a bind mount of /proc. Does the symlink then point
+to the wrong file?
