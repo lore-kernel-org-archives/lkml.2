@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1HXVKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:10:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57829 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1HXVKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:10:42 -0400
-Message-ID: <4E5568AC.2040605@zytor.com>
-Date: Wed, 24 Aug 2011 14:10:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1753649Ab1HXVK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:10:59 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:24255 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab1HXVK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:10:57 -0400
+X-IronPort-AV: E=Sophos;i="4.68,277,1312156800"; 
+   d="scan'208";a="7431165"
+Subject: Re: [PATCH 68/75] hv: netvsc: convert to SKB paged frag API.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hank Janssen <hjanssen@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org
+In-Reply-To: <20110824183010.GG15675@dumpdata.com>
+References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
+	 <1313760467-8598-68-git-send-email-ian.campbell@citrix.com>
+	 <20110824183010.GG15675@dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Wed, 24 Aug 2011 22:10:55 +0100
+Message-ID: <1314220255.17978.695.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Andrew Lutomirski <luto@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        Richard Weinberger <richard@nod.at>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: [uml-devel] SYSCALL, ptrace and syscall restart breakages (Re:
- [RFC] weird crap with vdso on uml/i386)
-References: <20110823010146.GY2203@ZenIV.linux.org.uk> <20110823011312.GZ2203@ZenIV.linux.org.uk> <20110823021717.GA2203@ZenIV.linux.org.uk> <20110823061531.GC2203@ZenIV.linux.org.uk> <CA+55aFzUAuPEwcvVvuXooWMT6XpDuOjEHi-Ab+SOhZVjfbVYpA@mail.gmail.com> <CAObL_7F-E2y_cd1MK4ayBx_CqszrewSrBt6V7=ndVuBQrrmTKQ@mail.gmail.com> <20110823162251.GC13138@aftab> <4E53FC6E.1030807@zytor.com> <20110823205616.GA15295@aftab> <4E54163B.6080205@zytor.com> <20110823211047.GC15295@aftab>
-In-Reply-To: <20110823211047.GC15295@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/2011 02:10 PM, Borislav Petkov wrote:
-> On Tue, Aug 23, 2011 at 05:06:03PM -0400, H. Peter Anvin wrote:
->> On 08/23/2011 01:56 PM, Borislav Petkov wrote:
->>>
->>> But no, I don't think the difference has disappeared - to the contrary,
->>> AFAICT, the intention is for SYSCALL to be the fastest way to do
->>> syscalls on x86 due to diminished number of segment checks etc. INT80
->>> is legacy, slower, etc. I believe Andy measured a similar situation on
->>> Sandy Bridge with SYSCALL having latencies in the tens of nsecs range
->>> and INT80 being much slower. Ingo also measured a similar situation
->>> where the latency gap between the two on Intel is even bigger.
->>>
->>
->> Sandy Bridge doesn't have SYSCALL32 at all.  It has SYSENTER and SYSCALL64.
-> 
-> Yeah, I was talking about SYSCALL in general.
-> 
+On Wed, 2011-08-24 at 14:30 -0400, Konrad Rzeszutek Wilk wrote:
+> What is with the 'XXX' ?
 
-By the way, Borislav;
+Those bits were supposed to be the "net: add support for
+per-paged-fragment destructors" patch which I accidentally squashed into
+the hv driver.
 
-any way you could nudge your hardware people into
+As I said to Dan they are a reminder referring to the dilemma I
+mentioned in the intro mail. Basically that ".p" is ugly because
+gl->frags[0].page isn't actually a paged fragment, it's just that this
+driver uses skb_frag_t in its internal datastructures.
 
-a) supporting SYSENTER in compatibility mode, and
-b) giving us a way to turn SYSCALL *off* in compat mode?
+Ian.
 
-... for future chips?
 
-	-hpa
