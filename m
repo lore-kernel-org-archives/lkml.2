@@ -1,157 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab1HXGZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 02:25:23 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41624 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab1HXGYk (ORCPT
+	id S1756515Ab1HXG04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 02:26:56 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:20104 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492Ab1HXG0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 02:24:40 -0400
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: jbarnes@virtuousgeek.org, ralf@linux-mips.org
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
-        dengcheng.zhu@gmail.com
-Subject: [RFC PATCH 2/3] PCI: Pass available resources into pci_create_bus()
-Date: Wed, 24 Aug 2011 14:24:22 +0800
-Message-Id: <1314167063-15785-3-git-send-email-dengcheng.zhu@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
-References: <1314167063-15785-1-git-send-email-dengcheng.zhu@gmail.com>
+	Wed, 24 Aug 2011 02:26:54 -0400
+From: JJ Ding <jj_ding@emc.com.tw>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?UTF-8?q?=C3=89ric=20Piel?= <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, JJ Ding <jj_ding@emc.com.tw>
+Subject: [PATCH v2 2/7] Input: elantech - get rid of ETP_2FT_* in elantech.h
+Date: Wed, 24 Aug 2011 14:29:10 +0800
+Message-Id: <1314167350-19505-1-git-send-email-jj_ding@emc.com.tw>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
+References: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, after pci_create_bus(), resources available on the bus could be
-handled by pci_scan_child_bus(). The problem is that, in
-pci_scan_child_bus(), before calling arch-dependent pcibios_fixup_bus(),
-PCI quirks will probably conflict (while doing pci_claim_resource()) with
-resources like system controller's I/O resource that have not yet been
-added to the bus. So, add those resources right before returning the newly
-created bus in pci_create_bus().
+For two finger touches the coordinate of each finger gets reported
+separately but with reduced resolution.
 
-A related discussion thread can be found here:
-http://www.spinics.net/lists/mips/msg41654.html
+With this change, we now have the same range for ST and MT data and
+scale MT data because it has lower resolution to match ST.
 
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: JJ Ding <jj_ding@emc.com.tw>
 ---
- arch/microblaze/pci/pci-common.c |    3 ++-
- arch/powerpc/kernel/pci-common.c |    3 ++-
- arch/sparc/kernel/pci.c          |    3 ++-
- arch/x86/pci/acpi.c              |    2 +-
- drivers/pci/probe.c              |   15 +++++++++++----
- include/linux/pci.h              |    3 ++-
- 6 files changed, 20 insertions(+), 9 deletions(-)
+ drivers/input/mouse/elantech.c |   28 +++++++++++++---------------
+ drivers/input/mouse/elantech.h |   11 -----------
+ 2 files changed, 13 insertions(+), 26 deletions(-)
 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 4cfae20..9c35aa6 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -1581,7 +1581,8 @@ static void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index da161da..cd8e2e5 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -273,11 +273,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 	struct elantech_data *etd = psmouse->private;
+ 	struct input_dev *dev = psmouse->dev;
+ 	unsigned char *packet = psmouse->packet;
+-	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0, width = 0, pres = 0;
++	unsigned int fingers, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
++	unsigned int width = 0, pres = 0;
  
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		printk(KERN_ERR "Failed to create bus for PCI domain %04x\n",
- 		       hose->global_number);
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index 32656f1..2ede26a 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -1703,7 +1703,8 @@ void __devinit pcibios_scan_phb(struct pci_controller *hose)
- 		 node ? node->full_name : "<NO NAME>");
+ 	/* byte 0: n1  n0   .   .   .   .   R   L */
+ 	fingers = (packet[0] & 0xc0) >> 6;
+-	input_report_key(dev, BTN_TOUCH, fingers != 0);
  
- 	/* Create an empty bus for the toplevel */
--	bus = pci_create_bus(hose->parent, hose->first_busno, hose->ops, hose);
-+	bus = pci_create_bus(hose->parent, hose->first_busno,
-+			     hose->ops, hose, NULL);
- 	if (bus == NULL) {
- 		pr_err("Failed to create bus for PCI domain %04x\n",
- 			hose->global_number);
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 1e94f94..77c38bb 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -689,7 +689,8 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_pbm_info *pbm,
+ 	switch (fingers) {
+ 	case 3:
+@@ -300,9 +300,6 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 */
+ 		y1 = ETP_YMAX_V2 - (((packet[4] & 0x0f) << 8) | packet[5]);
  
- 	printk("PCI: Scanning PBM %s\n", node->full_name);
+-		input_report_abs(dev, ABS_X, x1);
+-		input_report_abs(dev, ABS_Y, y1);
+-
+ 		pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+ 		width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+ 		break;
+@@ -314,22 +311,18 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		 * byte 0:  .   .  ay8 ax8  .   .   .   .
+ 		 * byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
+ 		 */
+-		x1 = ((packet[0] & 0x10) << 4) | packet[1];
++		x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
+ 		/* byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0 */
+-		y1 = ETP_2FT_YMAX - (((packet[0] & 0x20) << 3) | packet[2]);
++		y1 = ETP_YMAX_V2 -
++			((((packet[0] & 0x20) << 3) | packet[2]) << 2);
+ 		/*
+ 		 * byte 3:  .   .  by8 bx8  .   .   .   .
+ 		 * byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
+ 		 */
+-		x2 = ((packet[3] & 0x10) << 4) | packet[4];
++		x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
+ 		/* byte 5: by7 by8 by5 by4 by3 by2 by1 by0 */
+-		y2 = ETP_2FT_YMAX - (((packet[3] & 0x20) << 3) | packet[5]);
+-		/*
+-		 * For compatibility with the X Synaptics driver scale up
+-		 * one coordinate and report as ordinary mouse movent
+-		 */
+-		input_report_abs(dev, ABS_X, x1 << 2);
+-		input_report_abs(dev, ABS_Y, y1 << 2);
++		y2 = ETP_YMAX_V2 -
++			((((packet[3] & 0x20) << 3) | packet[5]) << 2);
  
--	bus = pci_create_bus(parent, pbm->pci_first_busno, pbm->pci_ops, pbm);
-+	bus = pci_create_bus(parent, pbm->pci_first_busno,
-+			     pbm->pci_ops, pbm, NULL);
- 	if (!bus) {
- 		printk(KERN_ERR "Failed to create bus for %s\n",
- 		       node->full_name);
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index c953302..bab2113 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -353,7 +353,7 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(sd);
- 	} else {
--		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd);
-+		bus = pci_create_bus(NULL, busnum, &pci_root_ops, sd, NULL);
- 		if (bus) {
- 			get_current_resources(device, busnum, domain, bus);
- 			bus->subordinate = pci_scan_child_bus(bus);
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 8473727..7735fe7 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1516,7 +1516,8 @@ unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
- }
+ 		/* Unknown so just report sensible values */
+ 		pres = 127;
+@@ -337,6 +330,11 @@ static void elantech_report_absolute_v2(struct psmouse *psmouse)
+ 		break;
+ 	}
  
- struct pci_bus * pci_create_bus(struct device *parent,
--		int bus, struct pci_ops *ops, void *sysdata)
-+		int bus, struct pci_ops *ops, void *sysdata,
-+		struct pci_bus_resource *bus_res)
- {
- 	int error;
- 	struct pci_bus *b, *b2;
-@@ -1570,8 +1571,14 @@ struct pci_bus * pci_create_bus(struct device *parent,
- 	pci_create_legacy_files(b);
- 
- 	b->number = b->secondary = bus;
--	b->resource[0] = &ioport_resource;
--	b->resource[1] = &iomem_resource;
-+
-+	/* Add initial resources to the bus */
-+	if (bus_res != NULL) {
-+		list_add_tail(&b->resources, &bus_res->list);
-+	} else {
-+		pci_bus_add_resource(b, &ioport_resource, 0);
-+		pci_bus_add_resource(b, &iomem_resource, 0);
++	input_report_key(dev, BTN_TOUCH, fingers != 0);
++	if (fingers != 0) {
++		input_report_abs(dev, ABS_X, x1);
++		input_report_abs(dev, ABS_Y, y1);
 +	}
+ 	elantech_report_semi_mt_data(dev, fingers, x1, y1, x2, y2);
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+ 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
+index fabb2b9..1c5894e 100644
+--- a/drivers/input/mouse/elantech.h
++++ b/drivers/input/mouse/elantech.h
+@@ -82,17 +82,6 @@
+ #define ETP_WMIN_V2			0
+ #define ETP_WMAX_V2			15
  
- 	return b;
- 
-@@ -1592,7 +1599,7 @@ struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
- {
- 	struct pci_bus *b;
- 
--	b = pci_create_bus(parent, bus, ops, sysdata);
-+	b = pci_create_bus(parent, bus, ops, sysdata, NULL);
- 	if (b)
- 		b->subordinate = pci_scan_child_bus(b);
- 	return b;
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 8c230cb..5e1bacd 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -666,7 +666,8 @@ static inline struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *o
- 	return root_bus;
- }
- struct pci_bus *pci_create_bus(struct device *parent, int bus,
--			       struct pci_ops *ops, void *sysdata);
-+			       struct pci_ops *ops, void *sysdata,
-+			       struct pci_bus_resource *bus_res);
- struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
- 				int busnr);
- void pcie_update_link_speed(struct pci_bus *bus, u16 link_status);
+-/*
+- * For two finger touches the coordinate of each finger gets reported
+- * separately but with reduced resolution.
+- */
+-#define ETP_2FT_FUZZ			4
+-
+-#define ETP_2FT_XMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_XMAX			(288 - ETP_2FT_FUZZ)
+-#define ETP_2FT_YMIN			(  0 + ETP_2FT_FUZZ)
+-#define ETP_2FT_YMAX			(192 - ETP_2FT_FUZZ)
+-
+ struct elantech_data {
+ 	unsigned char reg_10;
+ 	unsigned char reg_11;
 -- 
-1.7.1
+1.7.4.1
 
