@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab1HXCKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 22:10:31 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42870 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1HXCKZ (ORCPT
+	id S1756213Ab1HXCQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 22:16:13 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:39790 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755759Ab1HXCQF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 22:10:25 -0400
+	Tue, 23 Aug 2011 22:16:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110823164035.ca28fdc6.rdunlap@xenotime.net>
-References: <20110822145304.980529cb921e5f1321c622da@canb.auug.org.au>
-	<20110822125355.bb01d76b.rdunlap@xenotime.net>
-	<CACqU3MVjg60pTPyNWm+41w144QzPgtHQ4wZPUUV=vok8gGffuQ@mail.gmail.com>
-	<20110822174958.73dd96c7.rdunlap@xenotime.net>
-	<1314065358.3225.44.camel@localhost.localdomain>
-	<20110823164035.ca28fdc6.rdunlap@xenotime.net>
-Date: Tue, 23 Aug 2011 22:10:24 -0400
-Message-ID: <CACqU3MWfKji5BcGRmwO_Y4_15oOq7Trw3u6j1g2meFAaG-s9-w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 22 (evm)
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <Pine.LNX.4.44L0.1108221325290.2192-100000@iolanthe.rowland.org>
+References: <929137d06c253bafa2a5559534dd865d4d5a959e.1314028707.git.mina86@mina86.com>
+	<Pine.LNX.4.44L0.1108221325290.2192-100000@iolanthe.rowland.org>
+Date: Wed, 24 Aug 2011 10:16:04 +0800
+Message-ID: <CABqxG0fyNNV39=tnTOVEK+Ko_UxdD0Mc593T7ARFTE47+ab=kQ@mail.gmail.com>
+Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Michal Nazarewicz <mnazarewicz@google.com>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Aug 23, 2011 at 7:40 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> I think that you are going to need to do something like Arnaud suggested
-> and use "depends on TCG_TPM=y" instead of just "depends on TCG_TPM",
-> unless you can convince someone that this is a kconfig bug.
+On Tue, Aug 23, 2011 at 1:28 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 22 Aug 2011, Michal Nazarewicz wrote:
 >
-dammit... I guess there is...
+>> From: Michal Nazarewicz <mina86@mina86.com>
+>>
+>> In a few places in the kernel, the code prints
+>> a human-readable USB device speed (eg. "high speed").
+>> This involves a switch statement sometimes wrapped
+>> around in ({ ... }) block leading to code repetition.
+>>
+>> To mitigate this issue, this commit introduces
+>> usb_speed_string() function, which returns
+>> a human-readable name of provided speed.
+>>
+>> It also changes a few places switch was used to use
+>> this new function.  This changes a bit the way the
+>> speed is printed in few instances at the same time
+>> standardising it.
+>
+>> --- a/drivers/usb/Makefile
+>> +++ b/drivers/usb/Makefile
+>> @@ -51,3 +51,6 @@ obj-$(CONFIG_USB_MUSB_HDRC) += musb/
+>>  obj-$(CONFIG_USB_RENESAS_USBHS)      += renesas_usbhs/
+>>  obj-$(CONFIG_USB_OTG_UTILS)  += otg/
+>>  obj-$(CONFIG_USB_GADGET)     += gadget/
+>> +
+>> +obj-$(CONFIG_USB)            += common.o
+>> +obj-$(CONFIG_USB_GADGET)     += common.o
+>
+> Will this cause problems?  For example, what if CONFIG_USB is Y and
+> CONFIG_USB_GADGET is M?
+>
+> Also, it seems a little silly to have an entire kernel module devoted
+> to a single, little function.  This is a symptom of the difficulty of
+> sharing code between the host-side and gadget-side USB stacks.
+>
 
-If you consider the following Kconfig:
+How about put the code as inline function in ch9.h?
 
-config MOD
-        bool
-        default y
-        option modules
+> Alan Stern
+>
+>
 
-config EXPERIMENTAL
-        bool
-        default y
 
-menuconfig A
-        tristate "A"
-        depends on EXPERIMENTAL
 
-config B
-        bool "B"
-
-config B0
-        bool
-
-config C
-        tristate "C"
-        depends on B
-
-config C0
-        tristate
-
-config D
-        boolean "D"
-        depends on A && B
-        select C
-        select C0
-
-config E
-        tristate "E"
-
-config F
-        tristate "F"
-        select E
-
-B (KEYS) allows to set C (TRUSTED_KEYS). Also, B (KEYS) and A
-(TCG_TPM) allows to set D (EVM), which will select (C). Now,
-menuconfig highlight the problem very well. Proceeding as following
-A=m, B=y, C=m, E=y, F=y, we ends up having:
-
- <M> A  --->
- [*] B
- {M} C
- [*] D
- -*- E
- <*> F
-
-which translate in the following config:
-
-CONFIG_MOD=y
-CONFIG_EXPERIMENTAL=y
-CONFIG_A=m
-CONFIG_B=y
-CONFIG_C=m
-CONFIG_C0=m
-CONFIG_D=y
-CONFIG_E=y
-CONFIG_F=y
-
-I would have expected CONFIG_C and CONFIG_C0 to be 'y', just as 'E'.
-If you remove D's dependency on 'A', everything works as expected. So
-it would seem direct dependency state influence the state of reverse
-dependencies...
-
-Will have a look...
-
- - Arnaud
+-- 
+Regards
+Yang RuiRui
