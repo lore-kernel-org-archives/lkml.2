@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab1HXJlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 05:41:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36392 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab1HXJli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 05:41:38 -0400
-Date: Wed, 24 Aug 2011 13:41:33 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110824094133.GN29452@sun>
-References: <20110824085329.GL29452@sun>
- <20110824093431.GA3286@htj.dyndns.org>
- <20110824093752.GM29452@sun>
+	id S1756583Ab1HXJnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 05:43:21 -0400
+Received: from david.siemens.de ([192.35.17.14]:28092 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124Ab1HXJnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 05:43:19 -0400
+X-Greylist: delayed 1545 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 05:43:19 EDT
+Message-ID: <4E54C179.2090608@siemens.com>
+Date: Wed, 24 Aug 2011 11:16:41 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824093752.GM29452@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] KVM: Add wrapper script around Qemu to test kernels
+References: <1314137806-5747-1-git-send-email-agraf@suse.de> <4E54B590.9040408@redhat.com>
+In-Reply-To: <4E54B590.9040408@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 01:37:52PM +0400, Cyrill Gorcunov wrote:
-...
+On 2011-08-24 10:25, Avi Kivity wrote:
+> On 08/24/2011 01:16 AM, Alexander Graf wrote:
+>> +"
+>> +echo "\
+>> +Your guest is bound to the current foreground shell. To quit the guest,
+>> +please use Ctrl-A x"
+>> +echo "  Executing: $QEMU_BIN $QEMU_OPTIONS -append \"$KERNEL_APPEND\"
+>> -smp $SMP"
+>> +echo
+>> +
+>> +exec $QEMU_BIN $QEMU_OPTIONS -append "$KERNEL_APPEND -smp $SMP"
 > 
-> Hmm, good point, letme check...
-> 
+> Would be nice to support launching gdb in a separate terminal with
+> vmlinux already loaded, and already attached to qemu.
 
-Yes, Tejun, we need an own revalidate here! So'll update the patch
-anyway (will put Pavel's comments into changelog). I somehow forgot
-in first place that this entries might be referred even if process is
-not stopped. Thanks for chatching it!
++ loading a python script into gdb to pull in module symbols. There are
+a few implementations floating around (including my own one).
 
-	Cyrill
+It would also be nice if one could append QEMU (note the capitalization
+BTW) options to the script, maybe everything after a '--' separator.
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
