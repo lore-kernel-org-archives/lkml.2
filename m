@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab1HXAV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:21:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51475 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab1HXAVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:21:51 -0400
+	id S1755932Ab1HXA1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:27:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58911 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab1HXA1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 20:27:33 -0400
+Date: Wed, 24 Aug 2011 02:27:17 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] thp: tail page refcounting fix
+Message-ID: <20110824002717.GI23870@redhat.com>
+References: <1313740111-27446-1-git-send-email-walken@google.com>
+ <20110822213347.GF2507@redhat.com>
+ <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
+ <20110824000914.GH23870@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20110824001137.GA23979@somewhere>
-References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
-	<20110824001137.GA23979@somewhere>
-Date: Tue, 23 Aug 2011 20:21:50 -0400
-Message-ID: <CAFWT=83FNbAHUtPiouD3R06LEze5w1Mv07EL-x9VxSs_EXuruA@mail.gmail.com>
-Subject: Re: Bug Report for Linux Kernel 3.x
-From: Steevven1 <steevven1@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110824000914.GH23870@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-QUICK NOTE - Thanks for replying directly to me as well as the mailing
-list. I am NOT on that mailing list. Please continue to do this.
+On Wed, Aug 24, 2011 at 02:09:14AM +0200, Andrea Arcangeli wrote:
+> That's an optimization I can look into agreed. I guess I just added
+> one line and not even think too much at optimizing this,
+> split_huge_page isn't in a fast path.
 
-That is correct about sparse irq. That was causing the first problem,
-and solving that did in fact result in better power performance, but
-it was apparently NOT the bulk of the problem.
+So this would more or less be the optimization (untested):
 
-We still have no diagnosis at all for the apparently still-present
-other (mystery) problem. Powertop now reports to me very low processor
-wakeups (basically the same as the 2.6-series kernels), which
-indicates to me that the problem is PROBABLY not related to processor
-wakeups. I am by no means an expert. The top wakeup-causers with the
-modified 3.0 kernel (no sparse irq) and an idle system are "[iwlagn]
-<interrupt>" (wifi), "[i915] <interrupt>" (I don't know what this is),
-and "[kernel scheduler] Load balancing tick"
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1169,8 +1169,8 @@ static void __split_huge_page_refcount(s
+ 		atomic_sub(page_mapcount(page_tail), &page->_count);
+ 		BUG_ON(atomic_read(&page->_count) <= 0);
+ 		BUG_ON(atomic_read(&page_tail->_count) != 0);
+-		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
+-		atomic_add(page_mapcount(page_tail), &page_tail->_count);
++		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
++			   &page_tail->_count);
+ 
+ 		/* after clearing PageTail the gup refcount can be released */
+ 		smp_mb();
 
-P-states/frequencies are handled about the same as with the 2.6
-kernels, so I don't see a problem there either.
+This might also be possible but I'm scared by it because the value
+would be set by the C language without locked op, and I wonder then
+what happens with get_page_unless_zero runs. Now we relay on atomic
+(without lock prefix) writes from C for all pagetable updates
+already. So I guess this might actually work ok too in
+practice. get_page_unless_zero not incrementing anything sounds
+unlikely, and it's hard to see how it could increment zero or a random
+value if the "long" write is done in a single asm insn (like we relay
+in other places). But still the above is obviously safe, the below far
+less obvious and generally one always is forced to use locked ops on
+any region of memory concurrently modified to have a deterministic
+result. And there's nothing anywhere doing atomic_set on page->_count
+except at boot where there are no races before the pages are visible
+to the buddy allocator. So for now I'll stick to the above version
+unless somebody can guarantee the safety of the below (which I can't).
+Comments welcome..
 
-What else can I check? It seems like powertop is telling me nothing
-about this mystery power drain.
-
-Thanks for the reply,
-SK!
-
-
-On Tue, Aug 23, 2011 at 8:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Tue, Aug 23, 2011 at 07:19:35PM -0400, Steevven1 wrote:
->> Hello,
->>
->> I would like to report what myself and several others believe to be a
->> serious bug affecting all Linux kernels 3.0 and up, and none below 3.0
->> (2.6.x and lower).
->>
->> One-sentence description: On certain hardware, the 3.x series kernels
->> drain a considerable amount more power than the 2.6-series kernels, up
->> to 40% more, even when idle.
->>
->> The specific hardware I have personally tested is a Lenovo ThinkPad
->> X220 with an Intel SandyBridge i7 2620M processor. We think that this
->> bug is POSSIBLY specific to this processor, or family of processors,
->> commonly used in notebooks. A complete thread of mine and others'
->> results, evidence, and troubleshooting process is located at:
->> http://ubuntuforums.org/showthread.php?t=1822629
->>
->> We have tried several different 3.0 and 3.1-series kernels, all with
->> the same problems. One part of the problem was that the following
->> (revealed by powertop) was causing excessive processor wakeups
->> compared to the 2.6-series kernels: "[Rescheduling interrupts] <kernel
->> IPI>"
->>
->> Someone much more advanced than I figured out how to eliminate this
->> problem and recompiled the kernel (which he posted in the thread I
->> linked to previously), but power usage is still improved only
->> slightly, nowhere near kernel 2.6 levels.
->>
->> There is a lot more information I could give you here, but all of it
->> is contained within the thread I linked to. If you have any specific
->> questions, I will answer as quickly as possible.
->>
->> Thanks a lot for your assistance. Please confirm that you received this email.
->>
->> Steven Keys!
->
-> Hi Steve,
->
->
-> You said the problem with rescheduling interrupt disappeared but you
-> haven't said why. After reading the thread it seems it was about
-> Sparse irq config beeing enabled? And that disappeared after
-> sparse irq got disabled?
->
-> If so that looks like a first bug.
->
-> Also now that you don't see that problem anymore but still
-> a problem with power consumption, what does powertop report to
-> you?
->
-> Thanks.
->
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1169,8 +1169,8 @@ static void __split_huge_page_refcount(s
+ 		atomic_sub(page_mapcount(page_tail), &page->_count);
+ 		BUG_ON(atomic_read(&page->_count) <= 0);
+ 		BUG_ON(atomic_read(&page_tail->_count) != 0);
+-		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
+-		atomic_add(page_mapcount(page_tail), &page_tail->_count);
++		atomic_set(&page_tail->_count,
++			   page_mapcount(page) + page_mapcount(page_tail) + 1);
+ 
+ 		/* after clearing PageTail the gup refcount can be released */
+ 		smp_mb();
