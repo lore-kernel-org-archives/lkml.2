@@ -1,113 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab1HXANF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:13:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47549 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab1HXANC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:13:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,272,1312182000"; 
-   d="scan'208";a="41713267"
-Date: Wed, 24 Aug 2011 08:12:58 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110824001257.GA6349@localhost>
-References: <20110808141128.GA22080@localhost>
- <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
+	id S1756028Ab1HXAV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:21:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51475 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab1HXAVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 20:21:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110823174757.GC15820@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110824001137.GA23979@somewhere>
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+	<20110824001137.GA23979@somewhere>
+Date: Tue, 23 Aug 2011 20:21:50 -0400
+Message-ID: <CAFWT=83FNbAHUtPiouD3R06LEze5w1Mv07EL-x9VxSs_EXuruA@mail.gmail.com>
+Subject: Re: Bug Report for Linux Kernel 3.x
+From: Steevven1 <steevven1@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You somehow directly jump to  
-> 
-> 	balanced_rate = task_ratelimit_200ms * write_bw / dirty_rate
-> 
-> without explaining why following will not work.
-> 
-> 	balanced_rate_(i+1) = balance_rate(i) * write_bw / dirty_rate
+QUICK NOTE - Thanks for replying directly to me as well as the mailing
+list. I am NOT on that mailing list. Please continue to do this.
 
-Thanks for asking that, it's probably the root of confusions, so let
-me answer it standalone.
+That is correct about sparse irq. That was causing the first problem,
+and solving that did in fact result in better power performance, but
+it was apparently NOT the bulk of the problem.
 
-It's actually pretty simple to explain this equation:
+We still have no diagnosis at all for the apparently still-present
+other (mystery) problem. Powertop now reports to me very low processor
+wakeups (basically the same as the 2.6-series kernels), which
+indicates to me that the problem is PROBABLY not related to processor
+wakeups. I am by no means an expert. The top wakeup-causers with the
+modified 3.0 kernel (no sparse irq) and an idle system are "[iwlagn]
+<interrupt>" (wifi), "[i915] <interrupt>" (I don't know what this is),
+and "[kernel scheduler] Load balancing tick"
 
-                                               write_bw
-        balanced_rate = task_ratelimit_200ms * ----------       (1)
-                                               dirty_rate
+P-states/frequencies are handled about the same as with the 2.6
+kernels, so I don't see a problem there either.
 
-If there are N dd tasks, each task is throttled at task_ratelimit_200ms
-for the past 200ms, we are going to measure the overall bdi dirty rate
+What else can I check? It seems like powertop is telling me nothing
+about this mystery power drain.
 
-        dirty_rate = N * task_ratelimit_200ms                   (2)
-
-put (2) into (1) we get
-
-        balanced_rate = write_bw / N                            (3)
-
-So equation (1) is the right estimation to get the desired target (3).
+Thanks for the reply,
+SK!
 
 
-As for
-
-                                                  write_bw
-        balanced_rate_(i+1) = balanced_rate_(i) * ----------    (4)
-                                                  dirty_rate
-
-Let's compare it with the "expanded" form of (1):
-
-                                                              write_bw
-        balanced_rate_(i+1) = balanced_rate_(i) * pos_ratio * ----------      (5)
-                                                              dirty_rate
-
-So the difference lies in pos_ratio.
-
-Believe it or not, it's exactly the seemingly use of pos_ratio that
-makes (5) independent(*) of the position control.
-
-Why? Look at (4), assume the system is in a state
-
-- dirty rate is already balanced, ie. balanced_rate_(i) = write_bw / N
-- dirty position is not balanced, for example pos_ratio = 0.5
-
-balance_dirty_pages() will be rate limiting each tasks at half the
-balanced dirty rate, yielding a measured
-
-        dirty_rate = write_bw / 2                               (6)
-
-Put (6) into (4), we get
-
-        balanced_rate_(i+1) = balanced_rate_(i) * 2
-                            = (write_bw / N) * 2
-
-That means, any position imbalance will lead to balanced_rate
-estimation errors if we follow (4). Whereas if (1)/(5) is used, we
-always get the right balanced dirty ratelimit value whether or not
-(pos_ratio == 1.0), hence make the rate estimation independent(*) of
-dirty position control.
-
-(*) independent as in real values, not the seemingly relations in equation
-
-Thanks,
-Fengguang
+On Tue, Aug 23, 2011 at 8:11 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, Aug 23, 2011 at 07:19:35PM -0400, Steevven1 wrote:
+>> Hello,
+>>
+>> I would like to report what myself and several others believe to be a
+>> serious bug affecting all Linux kernels 3.0 and up, and none below 3.0
+>> (2.6.x and lower).
+>>
+>> One-sentence description: On certain hardware, the 3.x series kernels
+>> drain a considerable amount more power than the 2.6-series kernels, up
+>> to 40% more, even when idle.
+>>
+>> The specific hardware I have personally tested is a Lenovo ThinkPad
+>> X220 with an Intel SandyBridge i7 2620M processor. We think that this
+>> bug is POSSIBLY specific to this processor, or family of processors,
+>> commonly used in notebooks. A complete thread of mine and others'
+>> results, evidence, and troubleshooting process is located at:
+>> http://ubuntuforums.org/showthread.php?t=1822629
+>>
+>> We have tried several different 3.0 and 3.1-series kernels, all with
+>> the same problems. One part of the problem was that the following
+>> (revealed by powertop) was causing excessive processor wakeups
+>> compared to the 2.6-series kernels: "[Rescheduling interrupts] <kernel
+>> IPI>"
+>>
+>> Someone much more advanced than I figured out how to eliminate this
+>> problem and recompiled the kernel (which he posted in the thread I
+>> linked to previously), but power usage is still improved only
+>> slightly, nowhere near kernel 2.6 levels.
+>>
+>> There is a lot more information I could give you here, but all of it
+>> is contained within the thread I linked to. If you have any specific
+>> questions, I will answer as quickly as possible.
+>>
+>> Thanks a lot for your assistance. Please confirm that you received this email.
+>>
+>> Steven Keys!
+>
+> Hi Steve,
+>
+>
+> You said the problem with rescheduling interrupt disappeared but you
+> haven't said why. After reading the thread it seems it was about
+> Sparse irq config beeing enabled? And that disappeared after
+> sparse irq got disabled?
+>
+> If so that looks like a first bug.
+>
+> Also now that you don't see that problem anymore but still
+> a problem with power consumption, what does powertop report to
+> you?
+>
+> Thanks.
+>
