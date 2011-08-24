@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1HXRyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:54:09 -0400
-Received: from claw.goop.org ([74.207.240.146]:52892 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:53:22 -0400
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 17/18] x86: add local and sync variants of xadd
-Date: Wed, 24 Aug 2011 10:53:11 -0700
-Message-Id: <b6707747021ae55d8c37b71f5f4a67b1bacf5e37.1314207974.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+	id S1753367Ab1HXRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:54:28 -0400
+Received: from 87-104-106-3-dynamic-customer.profibernet.dk ([87.104.106.3]:56885
+	"EHLO kernel.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab1HXRyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:54:08 -0400
+Message-ID: <4E553ABF.3030904@kernel.dk>
+Date: Wed, 24 Aug 2011 19:54:07 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: Kyle Moffett <kyle@moffetthome.net>, linux-kernel@vger.kernel.org,
+        drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] drbd-8.4 for mainline
+References: <201108241641.42676.philipp.reisner@linbit.com> <CAGZ=bq+A1ExZYRnuBBwfAq7Ez37mpBtT1_T91AWcchDBZ3iqPw@mail.gmail.com> <4E552E9C.2000104@kernel.dk> <201108241949.43716.philipp.reisner@linbit.com>
+In-Reply-To: <201108241949.43716.philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On 2011-08-24 19:49, Philipp Reisner wrote:
+> Am Mittwoch 24 August 2011, 19:02:20 schrieb Jens Axboe:
+>> On 2011-08-24 18:00, Kyle Moffett wrote:
+>>> On Wed, Aug 24, 2011 at 10:41, Philipp Reisner
+>>>
+>>> <philipp.reisner@linbit.com> wrote:
+>>>> Hi Jens,
+>>>>
+>>>> First the announcement of drbd-8.4, then the git pull-request text:
+>>>>
+>>>> We are proud to announce the availability of DRBD-8.4.0.
+>>>>
+>>>>  The most noticeable change is the support for multiple replicated
+>>>>  volumes in a single DRBD connection.
+>>>>  Write-ordering is obeyed among all writes in all volumes in a
+>>>>  single connection.
+>>>>  This feature is really important for users who DRBD for mirroring
+>>>>  over longer distances. (Protocol A).
+>>>>
+>>>> We do not only release DRBD-8.4.0 today:
+>>>> The DRBD User's Guide was reviewed and updated to match DRBD-8.4.
+>>>>
+>>>> I suggest to everybody who considers to upgrade from 8.3 to 8.4
+>>>> to have a look at the "Recent changes" appendix of the UG:
+>>>> http://www.drbd.org/users-guide/ap-recent-changes.html
+>>>>
+>>>>  This release brings a new meta-data format. Forward (8.3 -> 8.4)
+>>>>  conversion happens complete seamless. Backward conversion
+>>>>  is done by a single command (drbdadm apply-al res).
+>>>>  
+>>>>  This release is protocol compatible with all it predecessor.
+>>>>  Although, we do not recommend to run it in 8.3 - 8.4 for long
+>>>>  time frames. We recommend to use that capability only for the
+>>>>  rolling upgrade.
+>>>>  
+>>>>  drbdadm of 8.4 can parse config files of 8.3. We recommend
+>>>>  to switch to the new configuration syntax after the upgrade
+>>>>  of both nodes. (Use drbdadm dump to learn about the new
+>>>>  config syntax)
+>>>
+>>> Hm...
+>>>
+>>> That's a lot of patches (including some protocol changes) that have not
+>>> yet been reviewed by other kernel developers.
+>>>
+>>> By officially releasing the kernel and user-space bits and then posting
+>>> them to LKML and expecting them to be merged as-is, you are not really
+>>> following the linux kernel development process.
+>>>
+>>> Some of the reverts and commit messages make me concerned that your
+>>> patch series has bisection issues; are you sure it compiles and runs
+>>> after every patch?
+>>>
+>>> I'm obviously not anywhere in the maintenance chain for this code, but
+>>> it does look really funny.
+>>
+>> That was my exact response a few weeks back, but I don't recall seeing
+>> anything until this email today. Philipp, has this been reviewed at all
+>> outside your internal group?
+> 
+> Yes, I requested review on LKML. See here: https://lkml.org/lkml/2011/8/8/179
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/cmpxchg.h |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+You are not going to get any reviews this way. You need to make it a lot
+easier for people to review patches individually. Requiring that people
+pull your repo, then look at each change in there, is not going to work.
+That's a lot of work up front. And how do you respond to code? Paste
+into an email, copy/paste recepients, send. Even more work. End result,
+nobody will EVER review such a posting as the above. I see you got one
+guy to write back with an error, which I think is probably more a
+testament to the user base than anything else.
 
-diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index c99ce79..992ac80 100644
---- a/arch/x86/include/asm/cmpxchg.h
-+++ b/arch/x86/include/asm/cmpxchg.h
-@@ -193,26 +193,26 @@ extern void __xadd_wrong_size(void);
- 	__cmpxchg_local_flag((ptr), (old), (new), sizeof(*ptr))
- #endif
- 
--#define xadd(ptr, inc)							\
-+#define __xadd(ptr, inc, lock)						\
- 	do {								\
- 		switch (sizeof(*(ptr))) {				\
- 		case __X86_CASE_B:					\
--			asm volatile (LOCK_PREFIX "xaddb %b0, %1\n"	\
-+			asm volatile (lock "xaddb %b0, %1\n"		\
- 				      : "+r" (inc), "+m" (*(ptr))	\
- 				      : : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_W:					\
--			asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"	\
-+			asm volatile (lock "xaddw %w0, %1\n"		\
- 				      : "+r" (inc), "+m" (*(ptr))	\
- 				      : : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_L:					\
--			asm volatile (LOCK_PREFIX "xaddl %0, %1\n"	\
-+			asm volatile (lock "xaddl %0, %1\n"		\
- 				      : "+r" (inc), "+m" (*(ptr))	\
- 				      : : "memory", "cc");		\
- 			break;						\
- 		case __X86_CASE_Q:					\
--			asm volatile (LOCK_PREFIX "xaddq %q0, %1\n"	\
-+			asm volatile (lock "xaddq %q0, %1\n"		\
- 				      : "+r" (inc), "+m" (*(ptr))	\
- 				      : : "memory", "cc");		\
- 			break;						\
-@@ -221,4 +221,8 @@ extern void __xadd_wrong_size(void);
- 		}							\
- 	} while(0)
- 
-+#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
-+#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
-+#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
-+
- #endif	/* ASM_X86_CMPXCHG_H */
+So, please do this right. The email you sent is perfect for a 0/N header
+email, then each patch must follow as a reply to that. There's git
+send-email to help you with this. If you haven't used it before, I'd
+advise you to do a dry-run or two to your own email address to ensure
+that it produces the right result. When it does, then send it off to
+lkml and myself. Then I too will see reviews and have a better chance of
+judging whether this is mergeable now or not.
+
 -- 
-1.7.6
+Jens Axboe
 
