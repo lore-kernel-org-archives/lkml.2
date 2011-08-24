@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab1HXOTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:19:51 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58476 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab1HXOTt (ORCPT
+	id S1752288Ab1HXOT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:19:58 -0400
+Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:55277 "EHLO
+	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752210Ab1HXOTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:19:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADkLE3Ux1gVBR0f1VUNP4JDsnDQPUQ8rJrXqPV7-2kdLW0_CCw@mail.gmail.com>
-References: <1313795710-30827-1-git-send-email-andi@firstfloor.org>
-	<CA+55aFwEgp=3F6uH198XuQR0=6Um-Kp+0Wjcm0Xv1WoHRveKXw@mail.gmail.com>
-	<CADkLE3Ux1gVBR0f1VUNP4JDsnDQPUQ8rJrXqPV7-2kdLW0_CCw@mail.gmail.com>
-Date: Wed, 24 Aug 2011 17:19:48 +0300
-Message-ID: <CACVxJT93c+tYryWGPdw6LM9X+3b_QT78B0D9JwksksvN0akBkQ@mail.gmail.com>
-Subject: Re: [PATCH] Add a personality to report 2.6.x version numbers
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Colin Walters <walters@verbum.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Aug 2011 10:19:55 -0400
+X-AuditID: 1209190c-b7bdeae000000a26-8a-4e55084a9441
+From: Andy Lutomirski <luto@MIT.EDU>
+To: "H.J. Lu" <hjl.tools@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH] x86-64: Remove __IGNORE_getcpu
+Date: Wed, 24 Aug 2011 10:19:44 -0400
+Message-Id: <b4cb60ef45db3a675a0e2b9d51bcb022b0a9ab9c.1314195481.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <CAMe9rOrejBbutqRMuE1f5iVn3nr8+zOmFyXgGmn=R9zHMC6U8Q@mail.gmail.com>
+References: <CAMe9rOrejBbutqRMuE1f5iVn3nr8+zOmFyXgGmn=R9zHMC6U8Q@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsUixG6nruvFEepnsK7N0KLvylF2i+3rDjNb
+	TNsobnF51xw2BxaPnbPusnt83iTncaLlC2sAcxSXTUpqTmZZapG+XQJXxpGHxQW/2Csmb33F
+	1MB4ha2LkZNDQsBE4sXWVlYIW0ziwr31QHEuDiGBfYwSm04vYAdJCAlsYJT4s9scIvGMSWLj
+	uS6wDjYBFYmOpQ+YQGwRAWWJu1dPg9nMAkUSi3omMYPYwgL6Ei+OfgOzWQRUJea++skCYvMK
+	BElsev+VCWKznMSRy8/BbE6BQImWEytZIRYHSEx9f5JxAiPfAkaGVYyyKblVurmJmTnFqcm6
+	xcmJeXmpRbqGermZJXqpKaWbGEGBxCnJs4PxzUGlQ4wCHIxKPLw3LgT7CbEmlhVX5h5ilORg
+	UhLlTWIP9RPiS8pPqcxILM6ILyrNSS0+xCjBwawkwnvqXIifEG9KYmVValE+TEqag0VJnPfg
+	Dgc/IYH0xJLU7NTUgtQimKwMB4eSBG8uyFDBotT01Iq0zJwShDQTByfIcB6g4Y/ZgGp4iwsS
+	c4sz0yHypxgVpcR5K0GaBUASGaV5cL2wSH/FKA70ijDvXJAqHmCSgOt+BTSYCWgwx68gkMEl
+	iQgpqQZGQcHpu+M25DycqT5BKsbp5zveG4432ysMQ7pPSvQFm1nPWyHJd07jerPXY/WLjIcY
+	75YkMenN3LYlOM7i9D5L7jc+skWcaS8X385gZT0wz6VC82tRv19ekMUfvsuL1aQe7H9nIr80
+	+8lF7q137lyVK5Pbttr6zMF44aznzSpby8Q2SOQ6vzyoxFKckWioxVxUnAgACbhNus8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 23, 2011 at 4:15 PM, Colin Walters <walters@verbum.org> wrote:
-> Seems pretty clear to me though it's a bug in the apps that are using
-> '==' instead of .startswith().
+The change:
 
-This doesn't count under "no userspace breakage" doctrine.
-Or rather, it shouldn't.
+commit fce8dc06423d6fb2709469dc5c55b04e09c1d126
+Author: Andy Lutomirski <luto@mit.edu>
+Date:   Wed Aug 10 11:15:31 2011 -0400
 
-valgrind _compilation_ was broken by 3.0:
-11 	*valgrind-3.6.1-r1 (09 Jun 2011)
-12 	
-13 	09 Jun 2011; Anthony G. Basile <blueness@gentoo.org>
-14 	+valgrind-3.6.1-r1.ebuild, +files/valgrind-3.6.1-linux-3.patch:
-15 	Fixed to build against linux-3.x, bug #370857
+    x86-64: Wire up getcpu syscall
 
-Was this fixed? Yes.
-Will this break one more time? Of course!
+added getcpu as a real syscall, so we shouldn't ignore it any more.
 
-         case "${kernel}" in
--             2.6.*)
-+             2.6.*|3.*)
-         	    AC_MSG_RESULT([2.6 family (${kernel})])
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Reported-by: H.J. Lu <hjl.tools@gmail.com>
+---
+
+My bad.
+
+ arch/x86/include/asm/unistd_64.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index d92641c..940d720 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -624,7 +624,6 @@ __SYSCALL(__NR_vmsplice, sys_vmsplice)
+ __SYSCALL(__NR_move_pages, sys_move_pages)
+ #define __NR_utimensat				280
+ __SYSCALL(__NR_utimensat, sys_utimensat)
+-#define __IGNORE_getcpu		/* implemented as a vsyscall */
+ #define __NR_epoll_pwait			281
+ __SYSCALL(__NR_epoll_pwait, sys_epoll_pwait)
+ #define __NR_signalfd				282
+-- 
+1.7.6
+
