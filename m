@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab1HXXVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 19:21:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59094 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751054Ab1HXXVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 19:21:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFw5T_rkH7195E=P_YO9sjvJbsG4j6n40=fXbdrJktAYjQ@mail.gmail.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
- <1314209019.6925.53.camel@twins> <CA+55aFwuz14ez9=2wiG-344ua0tAJNL8ZuCC41fm6aFgCp+Txw@mail.gmail.com>
- <4E555AD0.3020101@goop.org> <CA+55aFwp6EM1rwP9k8RCj_M5bzPCkR1N1d9a-VZmYaZNyCNC=A@mail.gmail.com>
- <4E558236.9000707@goop.org> <4E5583B3.8080309@zytor.com> <CA+55aFw5T_rkH7195E=P_YO9sjvJbsG4j6n40=fXbdrJktAYjQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 24 Aug 2011 16:21:17 -0700
-Message-ID: <CA+55aFy2E+t2oNGPe1nx4nRXMiFaq29h6F1x8H+sVDoHDiryZQ@mail.gmail.com>
-Subject: Re: [PATCH 00/18] x86: Ticket lock + cmpxchg cleanup
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752037Ab1HXX2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 19:28:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46753 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915Ab1HXX2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 19:28:19 -0400
+Date: Thu, 25 Aug 2011 09:28:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        edwin_rong <edwin_rong@realsil.com.cn>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (staging tree related)
+Message-Id: <20110825092813.ee3d0c285ab9f36b12430050@canb.auug.org.au>
+In-Reply-To: <20110824225758.GA3454@kroah.com>
+References: <20110824154741.3cbe03b403b646e2a99d63a2@canb.auug.org.au>
+	<20110824211646.GB9707@kroah.com>
+	<20110825085420.521cc24fddadc7753dc67199@canb.auug.org.au>
+	<20110824225758.GA3454@kroah.com>
+X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__25_Aug_2011_09_28_13_+1000_SrQRe6cC0aDVXTOk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 4:09 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+--Signature=_Thu__25_Aug_2011_09_28_13_+1000_SrQRe6cC0aDVXTOk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Greg,
+
+On Wed, 24 Aug 2011 15:57:58 -0700 Greg KH <greg@kroah.com> wrote:
 >
-> However, the reason I disagree with it is that I don't think that it's
-> any prettier at all to have the two barriers than it is to just have
-> the asm.
+> Fair enough, I've made this fix in my tree, so it should be good now.
 
-.. and btw, we probably do need *both* barriers. We definitely need
-the one before. The one after is a bit less obvious, since it is
-technically legal for code to move into the locked region. However,
-it's not necessarily a *good* idea for code to move into the locked
-region, so the two barriers are likely the RightThing(tm). But the two
-barriers are what makes me think that the C version really isn't any
-better. And the OOSTORE case then just clinches the deal for me.
+Great, thanks.
 
-                         Linus
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__25_Aug_2011_09_28_13_+1000_SrQRe6cC0aDVXTOk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOVYkNAAoJEDMEi1NhKgbs2FAH/RSYUfYFTbrWBzRElVIsJ5Wf
+gIq/JdEHIPsJxF55pYG7PIzmrWEpO8BIhz7O+bd3TNakofS/h+jB7DVVqsIadazF
+nRPM9w9PHa5rE9TCxWGN0dSpkpn+z8RK8UCjTc+wTREjUIZgS3P3QIvLQxYyabFL
+regwCPIT4yX3qYTpMRUazngEr/4C34hC4XAzCXYyId2lf6YTxnXyomGzlen/pS81
+tW65qsLu5JCiOcAtl/wHkl754cazN1b7PTFhxcpklzwYqL9mAcSFL11sz+sB1g2N
+zsq2dyPdTr6ubZT2jgHHGdM45z5QQu2ef1veB3IqVge14+zVEX1Oky55c1zLbM4=
+=vW0I
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__25_Aug_2011_09_28_13_+1000_SrQRe6cC0aDVXTOk--
