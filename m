@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1HXRXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:23:24 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3574 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab1HXRXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:23:21 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4E55334A.9030102@broadcom.com>
-Date: Wed, 24 Aug 2011 10:22:18 -0700
-From: "Jiandong Zheng" <jdzheng@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624
- Thunderbird/5.0
-MIME-Version: 1.0
-To: "Maxin B John" <maxin.john@gmail.com>
-cc: "Scott Branden" <sbranden@broadcom.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] arm: mach-bcmring: fix build error in dma.c
-References: <20110823112128.GA2825@maxin>
- <4E53D8D4.5080208@broadcom.com>
- <CAMhs6Yx6DDA4guyiUEQ6K74iouQcqA5rpvo6iY+Qd_Vdi0GhGg@mail.gmail.com>
-In-Reply-To: <CAMhs6Yx6DDA4guyiUEQ6K74iouQcqA5rpvo6iY+Qd_Vdi0GhGg@mail.gmail.com>
-X-WSS-ID: 624BEB6D4R01878796-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+	id S1752775Ab1HXRZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:25:56 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58304 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752670Ab1HXRZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:25:53 -0400
+Date: Wed, 24 Aug 2011 10:25:51 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Jason Baron <jbaron@redhat.com>,
+        Bart Van Assche <bvanassche@acm.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 24 (dynamic_debug)
+Message-Id: <20110824102551.8fc076b5.rdunlap@xenotime.net>
+In-Reply-To: <20110824160404.ebad6370aee2cad82a990142@canb.auug.org.au>
+References: <20110824160404.ebad6370aee2cad82a990142@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/23/2011 11:28 PM, Maxin B John wrote:
-> On Tue, Aug 23, 2011 at 7:44 PM, Jiandong Zheng<jdzheng@broadcom.com>  wrote:
->> On 8/23/2011 4:21 AM, Maxin B John wrote:
->>>
->>>   CC      arch/arm/mach-bcmring/dma.o
->>>
->> Signed-off-by: Jiandong Zheng<jdzheng@broadcom.com>
->>
->> I have same fix submitted on May 12, which was supposed to be applied soon
->> but seems it wasn't.
->
-> Oh.. I wasn't aware of that. Please feel free to ignore this one and
-> go ahead with your patch.
->
-> Regards,
-> Maxin
->
-Seems the previous patch was lost. Let us just go ahead with this one in 
-order to get it fixed sooner.
+On Wed, 24 Aug 2011 16:04:04 +1000 Stephen Rothwell wrote:
 
+> Hi all,
+
+When CONFIG_NET is not enabled (I see this on i386 builds):
+
+lib/built-in.o: In function `__dynamic_netdev_dbg':
+(.text+0x9fda): undefined reference to `__netdev_printk'
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
