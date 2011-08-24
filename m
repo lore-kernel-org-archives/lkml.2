@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032Ab1HXG7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 02:59:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:55457 "EHLO ozlabs.org"
+	id S1756144Ab1HXG7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 02:59:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:42198 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755478Ab1HXG6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 02:58:51 -0400
-X-Mailbox-Line: From anton@samba.org Wed Aug 24 16:52:43 2011
-Message-Id: <20110824065243.077125989@samba.org>
+	id S1755331Ab1HXG6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 02:58:50 -0400
+X-Mailbox-Line: From anton@samba.org Wed Aug 24 16:52:42 2011
+Message-Id: <20110824065242.895239970@samba.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 24 Aug 2011 16:40:16 +1000
+Date: Wed, 24 Aug 2011 16:40:14 +1000
 From: Anton Blanchard <anton@samba.org>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] perf symbols: Preserve symbol scope when parsing /proc/kallsyms
+Cc: linux-kernel@vger.kernel.org, <stable@kernel.org>
+Subject: [PATCH 1/4] perf symbols: Fix ppc64 SEGV in dso__load_sym with debuginfo files
 References: <20110824064013.205515988@samba.org>
-Content-Disposition: inline; filename=kallsyms_2
+Content-Disposition: inline; filename=perf_fix_segv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kallsyms__parse capitalises the symbol type, so every symbol 
-is marked global. Remove this and fix symbol_type__is_a to handle
-both local and global symbols.
+64bit PowerPC debuginfo files have an empty function descriptor
+section. I hit a SEGV when perf tried to use this section for
+symbol resolution.
+
+To fix this we need to check the section is valid and we can
+do this by checking for type SHT_PROGBITS.
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: <stable@kernel.org>
 ---
 
 Index: linux-2.6-tip/tools/perf/util/symbol.c
 ===================================================================
---- linux-2.6-tip.orig/tools/perf/util/symbol.c	2011-08-24 13:12:00.873072535 +1000
-+++ linux-2.6-tip/tools/perf/util/symbol.c	2011-08-24 14:19:10.975819103 +1000
-@@ -76,11 +76,13 @@ static void dso__set_sorted_by_name(stru
- 
- bool symbol_type__is_a(char symbol_type, enum map_type map_type)
- {
-+	symbol_type = toupper(symbol_type);
-+
- 	switch (map_type) {
- 	case MAP__FUNCTION:
- 		return symbol_type == 'T' || symbol_type == 'W';
- 	case MAP__VARIABLE:
--		return symbol_type == 'D' || symbol_type == 'd';
-+		return symbol_type == 'D';
- 	default:
- 		return false;
+--- linux-2.6-tip.orig/tools/perf/util/symbol.c	2011-08-19 12:33:08.271144414 +1000
++++ linux-2.6-tip/tools/perf/util/symbol.c	2011-08-19 12:33:21.501373684 +1000
+@@ -1113,6 +1113,8 @@ static int dso__load_sym(struct dso *dso
  	}
-@@ -465,7 +467,7 @@ int kallsyms__parse(const char *filename
- 		if (len + 2 >= line_len)
- 			continue;
  
--		symbol_type = toupper(line[len]);
-+		symbol_type = line[len];
- 		len += 2;
- 		symbol_name = line + len;
- 		len = line_len - len;
+ 	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
++	if (opdshdr.sh_type != SHT_PROGBITS)
++		opdsec = NULL;
+ 	if (opdsec)
+ 		opddata = elf_rawdata(opdsec, NULL);
+ 
 
 
