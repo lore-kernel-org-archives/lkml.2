@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab1HXLbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 07:31:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39168 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1HXLbG (ORCPT
+	id S1754924Ab1HXLn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 07:43:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41959 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab1HXLny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 07:31:06 -0400
-Date: Wed, 24 Aug 2011 15:31:00 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110824113100.GR29452@sun>
-References: <20110824085329.GL29452@sun>
- <20110824111806.GA7191@albatros>
+	Wed, 24 Aug 2011 07:43:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824111806.GA7191@albatros>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 24 Aug 2011 19:43:53 +0800
+Message-ID: <CACPU8qKHq8CLqprMtT=3t7H-xCyY+gw0JBxFtt4mJVKF+FESBw@mail.gmail.com>
+Subject: 
+From: gengjia ding <gengjia.ding@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 03:18:06PM +0400, Vasiliy Kulikov wrote:
-...
-> 
-> You have no ptrace_may_access() check in ->lookup(), only in ->readdir().
-> 
+Hi,
 
-Thanks Vasiliy! I'm reworking it anyway ;)
+trying to modify source file net/sched/sch_generic.c in Linux Kernel
+2.6.37.6, add code(+):
++ #include <linux/tcp.h>
++ #include <net/tcp.h>
+static int pfifo_fast_enqueue(struct sk_buff *skb, struct Qdisc* qdisc){
+    + struct tcphdr *th = tcp_hdr(skb);
 
-	Cyrill
+}
+I just want to get the transport header of the socket buffer.
+After recompile the kernel and reboot, the network is  unable to startup.
+
+But when i
+Where did it make the mistake?
+
+Thanks,
+Gavin Ding
