@@ -1,104 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1HXUGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:06:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab1HXUGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:06:03 -0400
-Date: Wed, 24 Aug 2011 17:05:40 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
-Message-ID: <20110824200540.GA19804@amt.cnet>
-References: <4E4A10E8.5090705@cn.fujitsu.com>
- <4E4A1257.5080204@cn.fujitsu.com>
- <20110823080024.GA2297@amt.cnet>
- <4E53872B.3070407@cn.fujitsu.com>
- <20110823123818.GB4261@amt.cnet>
- <4E53D620.9030304@cn.fujitsu.com>
- <20110823190939.GA10220@amt.cnet>
- <4E540AB4.6060905@cn.fujitsu.com>
+	id S1752805Ab1HXURw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:17:52 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58564 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752613Ab1HXURu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 16:17:50 -0400
+X-Sasl-enc: 5QAro5uwcM25x/xCGIz2kwlRyQ/kdXuyFsg3RBZ6zDtz 1314217070
+Date: Wed, 24 Aug 2011 13:11:44 -0700
+From: Greg KH <greg@kroah.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+ mod_devicetable.h
+Message-ID: <20110824201144.GA28667@kroah.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-3-git-send-email-kys@microsoft.com>
+ <20110823224157.GA9641@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B236E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110824025913.GC30779@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B27B9@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E540AB4.6060905@cn.fujitsu.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B27B9@TK5EX14MBXC126.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 04:16:52AM +0800, Xiao Guangrong wrote:
-> On 08/24/2011 03:09 AM, Marcelo Tosatti wrote:
-> > On Wed, Aug 24, 2011 at 12:32:32AM +0800, Xiao Guangrong wrote:
-> >> On 08/23/2011 08:38 PM, Marcelo Tosatti wrote:
-> >>
-> >>>> And, i think there are not problems since: if the spte without accssed bit is
-> >>>> written frequently, it means the guest page table is accessed infrequently or
-> >>>> during the writing, the guest page table is not accessed, in this time, zapping
-> >>>> this shadow page is not bad.
-> >>>
-> >>> Think of the following scenario:
-> >>>
-> >>> 1) page fault, spte with accessed bit is created from gpte at gfnA+indexA.
-> >>> 2) write to gfnA+indexA, spte has accessed bit set, write_flooding_count
-> >>> is not increased.
-> >>> 3) repeat
-> >>>
-> >>
-> >> I think the result is just we hoped, we do not want to zap the shadow page
-> >> because the spte is currently used by the guest, it also will be used in the
-> >> next repetition. So do not increase 'write_flooding_count' is a good choice.
-> > 
-> > Its not used. Step 2) is write to write protected shadow page at
-> > gfnA.
-> > 
-> >> Let's consider what will happen if we increase 'write_flooding_count':
-> >> 1: after three repetitions, zap the shadow page
-> >> 2: in step 1, we will alloc a new shadow page for gpte at gfnA+indexA
-> >> 3: in step 2, the flooding count is creased, so after 3 repetitions, the
-> >>    shadow page can be zapped again, repeat 1 to 3.
-> > 
-> > The shadow page will not be zapped because the spte created from
-> > gfnA+indexA has the accessed bit set:
-> > 
-> >        if (spte && !(*spte & shadow_accessed_mask))
-> >                sp->write_flooding_count++;
-> >        else
-> >                sp->write_flooding_count = 0;
-> > 
+On Wed, Aug 24, 2011 at 04:46:11PM +0000, KY Srinivasan wrote:
 > 
-> Ah, i see, i thought it was "repeat"ed on the same spte, it was my wrong.
 > 
-> Yes, in this case, the sp is not zapped, but it is hardly to know the gfn
-> is not used as gpte just depends on writing, for example, the guest can
-> change the mapping address or the status bit, and so on...The sp can be
-> zapped if the guest write it again(on the same address), i think it is
-> acceptable, anymore, it is just the speculative way to zap the unused
-> shadow page...your opinion?
-
-It could increase the flood count independently of the accessed bit of
-the spte being updated, zapping after 3 attempts as it is now.
-
-But additionally reset the flood count if the gpte appears to be valid
-(points to an existant gfn if the present bit is set, or if its zeroed).
-
-> >> The result is the shadow page for gfnA is alloced and zapped again and again,
-> >> yes?
+> > -----Original Message-----
+> > From: Greg KH [mailto:greg@kroah.com]
+> > Sent: Tuesday, August 23, 2011 10:59 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+> > mod_devicetable.h
 > > 
-> > The point is you cannot rely on the accessed bit of sptes that have been
-> > instantiated with the accessed bit set to decide whether or not to zap.
-> > Because the accessed bit will only be cleared on host memory pressure.
+> > On Wed, Aug 24, 2011 at 12:44:38AM +0000, KY Srinivasan wrote:
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Greg KH [mailto:greg@kroah.com]
+> > > > Sent: Tuesday, August 23, 2011 6:42 PM
+> > > > To: KY Srinivasan
+> > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > > > Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+> > > > mod_devicetable.h
+> > > >
+> > > > On Fri, Jul 15, 2011 at 10:45:51AM -0700, K. Y. Srinivasan wrote:
+> > > > > In preparation for implementing vmbus aliases for auto-loading
+> > > > > Hyper-V drivers, define vmbus specific device ID.
+> > > > >
+> > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > > ---
+> > > > >  include/linux/mod_devicetable.h |    7 +++++++
+> > > > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > > > >
+> > > > > diff --git a/include/linux/mod_devicetable.h
+> > > > b/include/linux/mod_devicetable.h
+> > > > > index ae28e93..5a12377 100644
+> > > > > --- a/include/linux/mod_devicetable.h
+> > > > > +++ b/include/linux/mod_devicetable.h
+> > > > > @@ -405,6 +405,13 @@ struct virtio_device_id {
+> > > > >  };
+> > > > >  #define VIRTIO_DEV_ANY_ID	0xffffffff
+> > > > >
+> > > > > +/*
+> > > > > + * For Hyper-V devices we use the device guid as the id.
+> > > > > + */
+> > > > > +struct hv_vmbus_device_id {
+> > > > > +	__u8 guid[16];
+> > > > > +};
+> > > >
+> > > > Why do you not need a driver_data pointer here?  Are you sure you aren't
+> > > > ever going to need it in the future?  Hint, I think you will...
+> > >
+> > > I am not sure I am following you here; the guid is the device ID and it is
+> > > guaranteed to remain the same. What is the driver _data pointer here
+> > > you are referring to here.  While some device id have the _data pointer,
+> > > there are others that don't - for instance struct virtio_device_id. In
+> > > our case, I am not sure how I would use this private pointer.
 > > 
+> > You use it like all other drivers use it, only if needed.
 > 
-> Yes, accessed bit is the cursory way to track gpte accessed, however,
-> at least, the accessed bit can indicate whether the gfn is accessed
-> for a period of time in the most case, for example, from it is
-> speculated to it is written, or from it is zapped to it is written,
-> i thinks it is not too bad.
+> Fair enough; the point is I am not sure how I would use it.
 > 
-> Do you have ideas to improve this?
+> > 
+> > Hint, I think you need to use it in your hv_utils driver, it would
+> > reduce the size of your code and simplify your logic.
+> 
+> Could you expand on this. Currently the util driver handles a bunch 
+> services that have their own guids - and these have been included
+> in the idtable. How would having the pointer simplify this code.
 
+It would allow you, in your probe function, to do something different
+depending on the guid that the probe function was matching on.  So you
+would not have to check the guid again to do that, just use the data
+pointed in that void pointer and away you go.
 
+As an example, look at drivers/usb/class/cdc-acm.c, the acm_ids[]
+variable which uses the driver_info field to contain a quirk for the
+device.
+
+> I looked at the usage of this in PCI and it appears to be for supporting
+> dynamic  IDs for existing drivers.
+
+No, that's exactly wrong.  dynamic ids play havoc with this pointer,
+making some drivers not be able to handle dynamic ids because they rely
+on it for some driver-specific information to be passed in it, which
+dynamic ids can not handle.
+
+Oh, have you remembered to turn off dynamic ids for these devices?  Or
+do you support them properly?
+
+greg k-h
