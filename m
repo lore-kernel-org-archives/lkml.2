@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab1HXUCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:02:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39135 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617Ab1HXUCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:02:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="41534173"
-From: Andi Kleen <andi@firstfloor.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 02/18] x86/ticketlock: convert spin loop to C
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-	<f04120629b8b1cfa1c306373e34320687305a518.1314207974.git.jeremy.fitzhardinge@citrix.com>
-Date: Wed, 24 Aug 2011 13:02:29 -0700
-In-Reply-To: <f04120629b8b1cfa1c306373e34320687305a518.1314207974.git.jeremy.fitzhardinge@citrix.com>
-	(Jeremy Fitzhardinge's message of "Wed, 24 Aug 2011 10:52:56 -0700")
-Message-ID: <m2liuid1d6.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752842Ab1HXUCz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:02:55 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:43485 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752044Ab1HXUCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 16:02:54 -0400
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        devel <devel@driverdev.osuosl.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] staging: tidspbridge: fix compilation on dsp clock functions
+Date: Wed, 24 Aug 2011 15:07:04 -0500
+Message-Id: <1314216424-28538-1-git-send-email-omar.ramirez@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremy Fitzhardinge <jeremy@goop.org> writes:
-> +
-> +	for (;;) {
-> +		if (inc.tickets.head == inc.tickets.tail)
-> +			goto out;
+Seen on v3.1-rc3, patch:
 
-What's wrong with break ?  Similar below.
+omap: mcbsp: Drop in-driver transfer support
+bafe2721a0fbd1cc1af04384133684f660f3658e
 
-> +		cpu_relax();
-> +		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
-> +	}
-> +out:	barrier();		/* make sure nothing creeps before the lock is taken */
->  }
+Removed code that now cause tidspbridge to break while compiling.
 
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
+---
+ drivers/staging/tidspbridge/core/dsp-clock.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
--Andi
+diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
+index 589a055..3d1279c 100644
+--- a/drivers/staging/tidspbridge/core/dsp-clock.c
++++ b/drivers/staging/tidspbridge/core/dsp-clock.c
+@@ -209,7 +209,6 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
+ 		break;
+ #ifdef CONFIG_OMAP_MCBSP
+ 	case MCBSP_CLK:
+-		omap_mcbsp_set_io_type(MCBSP_ID(clk_id), OMAP_MCBSP_POLL_IO);
+ 		omap_mcbsp_request(MCBSP_ID(clk_id));
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
+ 		break;
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.0.4
+
