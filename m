@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab1HXWIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:08:42 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:38459 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1HXWIl (ORCPT
+	id S1752113Ab1HXWJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:09:04 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:52484 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750924Ab1HXWJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:08:41 -0400
-Date: Wed, 24 Aug 2011 18:08:37 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: base support for the TS-5500 platform
-Message-ID: <20110824180837.6841f3d8@v0nbox>
-In-Reply-To: <4E55670F.90102@zytor.com>
-References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<4E55670F.90102@zytor.com>
-Organization: Savoir-faire Linux Inc.
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+	Wed, 24 Aug 2011 18:09:02 -0400
+Date: Wed, 24 Aug 2011 15:08:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-24-14-08 uploaded
+Message-Id: <20110824150858.b91af1aa.rdunlap@xenotime.net>
+In-Reply-To: <20110824150433.70e140a6.rdunlap@xenotime.net>
+References: <201108242148.p7OLm1lt009191@imap1.linux-foundation.org>
+	<20110824150433.70e140a6.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 14:03:11 -0700,
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+On Wed, 24 Aug 2011 15:04:33 -0700 Randy Dunlap wrote:
 
-> On 08/24/2011 01:23 PM, Vivien Didelot wrote:
-> > +
-> > +/**
-> > + * ts5500_pre_detect() - check for TS-5500 specific features
-> > + *
-> > + * It is not safe to read ID register if we are not sure that it's
-> > a TS SBC.
-> > + * Since TS SBCs don't have DMI support, it is safer to check for
-> > a TS-5500
-> > + * specific feature such as the processor.
-> > + */
-> > +static int ts5500_pre_detect(void)
-> > +{
-> > +	/* Check for AMD ElanSC520 Microcontroller */
-> > +	if (!(cpu_info.x86_vendor == X86_VENDOR_AMD &&
-> > +	      cpu_info.x86 == AMD_ELAN_FAMILY &&
-> > +	      cpu_info.x86_model == AMD_ELAN_SC520))
-> > +		return -ENODEV;
-> > +
-> > +	return 0;
-> > +}
-> > +
+> On Wed, 24 Aug 2011 14:09:05 -0700 akpm@linux-foundation.org wrote:
 > 
-> Doesn't this mean you will read this unsafe register on any Elan SC520
-> platform?  Is that okay?
+> > The mm-of-the-moment snapshot 2011-08-24-14-08 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > It contains the following patches against 3.1-rc3:
+> > (patches marked "*" will be included in linux-next)
 > 
-> 	-hpa
+> Hi Andrew,
 > 
-Indeed this will be run on any Elan SC520 based platforms if the user
-has asked for TS-5500 support in the menuconfig. I could add checks for
-other hardware such as the Ethernet controller, but it would require
-including pci headers and delaying the initcall (using late_initcall
-instead of postcore_initcall).
-That's why I think it is not really worth adding more tests. They
-could be added later in this function if there is really a need.
+> Am I supposed to apply this to linux-next?
+> I don't get a clean patch(1) against 3.1-rc3.
 
-Regards,
-Vivien.
+My bad.  Sorry for the noise.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
