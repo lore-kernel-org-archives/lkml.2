@@ -1,110 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab1HXV11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:27:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58546 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab1HXV10 (ORCPT
+	id S1753944Ab1HXV1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:27:39 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:34111 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab1HXV1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:27:26 -0400
-Message-ID: <4E556CB7.2010102@suse.cz>
-Date: Wed, 24 Aug 2011 23:27:19 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 24 Aug 2011 17:27:38 -0400
+Message-ID: <4E556CB2.3060502@cs.tu-berlin.de>
+Date: Wed, 24 Aug 2011 23:27:14 +0200
+From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110508 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: gregkh@suse.de, alan@linux.intel.com,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-References: <13141210141189@kroah.org> <201108241320.47635.arnd@arndb.de> <4E54E4D9.6070802@suse.cz> <201108241635.13502.arnd@arndb.de>
-In-Reply-To: <201108241635.13502.arnd@arndb.de>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
+References: <1313503666-13726-1-git-send-email-schnhrr@cs.tu-berlin.de>	 <1313503666-13726-3-git-send-email-schnhrr@cs.tu-berlin.de> <1314125615.8002.90.camel@twins>
+In-Reply-To: <1314125615.8002.90.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 04:35 PM, Arnd Bergmann wrote:
-> On Wednesday 24 August 2011, Jiri Slaby wrote:
->> On 08/24/2011 01:20 PM, Arnd Bergmann wrote:
->>> It's not clear to me what state->mutex protects in the serial_core, but
->>> it has been around forever (used to be called state->sem)
->>
->> It was actually moved in uart_close back in 2003. Formerly (when there
->> was only a coarse grained port_sem) it was right before uart_shutdown.
->> But there were some flags to handle some races. I'm not sure whether the
->> flags protected any race here though.
+Am 23.08.2011 20:53, schrieb Peter Zijlstra:
+> On Tue, 2011-08-16 at 16:07 +0200, Jan H. Schönherr wrote:
+[...]
+> It would be good to have a comment here about why we're doing things,
+> much like the changelog in fact, the comments in the function explain
+> the how of things, but not really the why of things.
+
+I'll try to do this.
+
+>> +static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
+>> +					struct list_head *leaf_cfs_rqs)
+>>  {
+>> +	if (cfs_rq->on_list)
+>> +		return;
+>> +
+>> +	/*
+>> +	 * Carefully collect leaf-cfs entries:
+>> +	 *
+>> +	 * We might still have concurrent readers on these entries from before
+>> +	 * the previous delete operation. Therefore we cannot collect them in a
+>> +	 * totally independent list. Instead, we reorganize the deleted entries
+>> +	 * within the deleted list, making sure that the next pointers always
+>> +	 * lead back to the list.
+>> +	 */
+>> +	if (list_empty(leaf_cfs_rqs)) {
+>>  		/*
+>> +		 * Nothing has been collected so far. Make this cfs_rq the
+>> +		 * first entry. There is no need to take care of its next
+>> +		 * pointer.
+>>  		 */
+>> +		leaf_cfs_rqs->next = &cfs_rq->leaf_cfs_rq_list;
+>> +		leaf_cfs_rqs->prev = &cfs_rq->leaf_cfs_rq_list;
+>>  
+>> +	} else {
+>> +		/*
+>> +		 * We already collected at least one entry. Add this cfs_rq
+>> +		 * after the collected ones. Before that, however, we need to
+>> +		 * set its next pointer to a not deleted list entry so that
+>> +		 * concurrent readers of already collected elements cannot run
+>> +		 * into physically deleted elements.
+>> +		 */
+>> +		cfs_rq->leaf_cfs_rq_list.next =
+>> +					&rq_of(cfs_rq)->leaf_cfs_rq_list;
 > 
-> ok
+> So __list_link_rcu() adds a smp_wmb() right here, I somehow can't seem
+> to make my mind up on how that's important..
+
+It makes sure that a reader from the private list cannot see
+the old next pointer of the current element that was overwritten
+just above. The old next pointer might lead to memory that is
+freed.
+
+>> +		__list_link_rcu(leaf_cfs_rqs->prev, &cfs_rq->leaf_cfs_rq_list);
+>> +		leaf_cfs_rqs->prev = &cfs_rq->leaf_cfs_rq_list;
+>>  	}
 > 
->>> and is held in
->>> all uart functions, which is at least consistent. IIRC what Alan's plan
->>> for this was, uart_close should eventually get changed to use
->>> tty_port_close_start or even tty_port_close. Maybe the time for that has
->>> come now, lacking better alternatives?
->>
->> Yes, I have such a patch in my queue. But it's not easy to get there.
->> You may take a look at:
->> http://decibel.fi.muni.cz/gitweb/?p=linux.git;a=shortlog;h=refs/heads/devel
->>
->> But it's still far from ready. And yet, in the queue, I still have
->> port->mutex locked before tty_port_close_start like it is now.
+> OK, so the above part queues the passed cfs_rq on the private list in
+> bottom up fashion. Existing (lingering) iterators can get trapped on
+> this list and go round and round for a while.
+
+They are not trapped: the next-pointer of the last element of the
+private list does not point to the head of the private list, but to
+the head of the leaf-list.
+
+>> +
+>> +	/*
+>> +	 * If our parent is on_list or if there is no parent, then splice all
+>> +	 * entries collected so far at the correct position into the
+>> +	 * leaf_cfs_rq_list.
+>> +	 *
+>> +	 * If our parent is not on the list, it will be collected during the
+>> +	 * next call to this function.
+>> +	 */
+>> +	if (cfs_rq->tg->parent) {
+>> +		int cpu = cpu_of(rq_of(cfs_rq));
+>> +		struct cfs_rq *parent_cfs_rq = cfs_rq->tg->parent->cfs_rq[cpu];
+>> +		if (parent_cfs_rq->on_list) {
+>> +			list_splice_tail_init_rcu(leaf_cfs_rqs,
+>> +					&parent_cfs_rq->leaf_cfs_rq_list);
+>> +		}
+>> +	} else {
+>> +		list_splice_tail_init_rcu(leaf_cfs_rqs,
+>> +					&rq_of(cfs_rq)->leaf_cfs_rq_list);
+>> +	}
+>> +
+>> +	cfs_rq->on_list = 1;
 > 
-> Ah, right. I still don't see why the port->mutex is or is not needed there,
-> and I think that's the main issue.
+> And this part is where we splice the queue into the bigger list, and can
+> be simplified (see below), at this point the trapped iterators are
+> released and will complete their traversal 'up' and reach the
+> rq->leaf_cfs_rq_list list head for termination.
 > 
-> By comparison, getting *_wait_until_sent to be called without BTM seems
-> easy -- we know that all callers from ->close() hold it, while the ones
-> from ->ioctl() don't. We could have a helper like
+> Since all this is done with IRQs disabled the delay imposed on the
+> trapped iterators is bounded by our own runtime, which again should be
+> limited because we're in the middle of the scheduler (bounded by the
+> cgroup hierarchy depth).
+
+Luckily, there is no trapping, so we don't need to consider the effects. :)
+
+>>  }
+>>  
+>>  static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
 > 
-> void tty_wait_until_sent_from_close(struct tty_struct *tty, long timeout)
-> {
-> 	tty_unlock(); /* tty->ops->close holds the BTM, drop it while waiting */
-> 	tty_wait_until_sent(tty, timeout);
-> 	tty_lock();
-> }
+>> @@ -1307,12 +1345,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>>  {
+>>  	struct cfs_rq *cfs_rq;
+>>  	struct sched_entity *se = &p->se;
+>> +	struct list_head leaf_cfs_rqs;
+>> +
+>> +	INIT_LIST_HEAD(&leaf_cfs_rqs);
 > 
-> to deal with that, if only we can sort the lock ordering with .
+>>  	for_each_sched_entity(se) {
+>>  		if (se->on_rq)
+>>  			break;
+>>  		cfs_rq = cfs_rq_of(se);
+>>  		enqueue_entity(cfs_rq, se, flags);
+>> +		if (cfs_rq->nr_running == 1)
+>> +			list_add_leaf_cfs_rq(cfs_rq, &leaf_cfs_rqs);
+>>  		flags = ENQUEUE_WAKEUP;
+>>  	}
+> 
+> 
+> I think splitting the function into two parts would make the thing
+> saner, something like:
+> 
+> 
+> 	LIST_HEAD(leaf_queue);
+> 
+> 	for_each_sched_entity(se) {
+> 		if (se->on_rq)
+> 			break;
+> 		cfs_rq = cfs_rq_of(se);
+> 		enqueue_entity(cfs_rq, se, flags);
+> 		flags = ENQUEUE_WAKEUP;
+> 		if (cfs_rq->nr_running == 1)
+> 			leaf_add_queue(cfs_rq, &leaf_queue);
+> 	}
+> 	/* XXX does ->on_rq imply ->on_list ? */
+> 	if (se->on_list)
+> 		leaf_splice_queue(cfs_rq, &leaf_queue);
+> 
+> that splits the add to queue and add queue to list part and avoids the
+> parent_cfs_rq peeking.
 
-Ah, it looks like I just got the reason why port->mutex is locked in the
-top of uart_close. In uart, TTY_CLOSING flag is not used. So there is
-nothing to protect against races between ->close (the code between the
-two spinlock critical sections corresponding to port_close_start and
-_end) and ->open (block_til_ready).
+Unfortunately that won't work. The problem here is that some of the
+traversed SEs are on_list and others aren't. And the on_list status
+of one SE is independent from other SEs. So, if we don't want to remove
+on_list elements during the traversal, we need to splice collected
+entries as soon as we find a SE that is on_list.
 
-Other than that I see no point for the lock to be in the beginning. So
-if we introduce CLOSING flag (I do that in my patches implicitly),
-everything should be OK:
-* port->count etc is and always was protected by the spinlock,
-* ->stop_rx stands as I wrote earlier.
-* uart_wait_until_sent -- that one is already called without port->mutex
-from set_termios and tty_set_ldisc.
+We might get away with collecting all entries always (removing on_list entries
+temporarily) and splice them after the loop, but that would
+introduce more work than normally necessary. And we should double check
+for new concurrency issues...
 
-So it looks like we should:
-- introduce CLOSING flag
-- move the lock below, before shutdown
-- introduce your magic _from_close helper
-- use it
 
-Doing this after we have all the helpers in place would be easier. There
-would be no need to play with CLOSING bit. But there will be no option
-to backport this to stable trees then. And I know I will have to do that
-at least for 3.0.
+> Now I don't really like the above because its hard to make the code go
+> away in the !FAIR_GROUP case, but maybe we can come up with something
+> for that.
 
-Note that we may use the _from_close helper from tty_port_close_start
-almost instantly. All users should not hold port->mutex over
-tty_port_close_start. But I need to check. Tomorrow.
+Hmmm... you might want to reconsider my original approach to solve this:
+http://lkml.org/lkml/2011/7/18/86
 
-In the meantime, comments welcome.
+That might have been the cleanest one in this respect.
 
-> BTW, I saw that the three m68k serial port drivers (amiserial, 68328, 68360)
-> all call *_wait_until_sent with interrupts disabled, which is even more
-> broken.
+Paul Turner did not like the introduced in-order removal, but the
+out-of-order removal is causing most problems.
 
-Blah, yes.
 
--- 
-js
-suse labs
+Regards
+Jan (not quite sure which path to follow)
