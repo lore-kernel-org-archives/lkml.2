@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1HXPLB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:11:01 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34808 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab1HXPK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:10:58 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch/x86/kernel/microcode_core.c: add missing platform_device_unregister
-Date: Wed, 24 Aug 2011 17:10:52 +0200
-Message-Id: <1314198652-10333-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1751750Ab1HXPPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:15:31 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60654 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750934Ab1HXPP3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 11:15:29 -0400
+Date: Wed, 24 Aug 2011 11:15:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <mnazarewicz@google.com>
+cc: Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>,
+        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
+In-Reply-To: <op.v0p3n2m9vgw7ix@mnazarewicz-glaptop>
+Message-ID: <Pine.LNX.4.44L0.1108241114270.2010-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Wed, 24 Aug 2011, Michal Nazarewicz wrote:
 
-Call platform_device_unregister as in the previous error-handling code.
+> I've found where my reasoning was faulty.  The usb_gadget_driver's
+> max_speed is set before all the functions get added so composite.c has
+> no way to figure those things in advance.  That's why we need to relay
+> on usb_composite_driver's max_speed be set to a proper value.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+This is what Felipe was complaining about earlier.  We shouldn't set 
+max_speed or allow the UDC to connect to the host until all the 
+functions have been added.
 
----
-This is not tested, but I couldn't see how else platform_device_unregister
-could be called.
-
- arch/x86/kernel/microcode_core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index f924280..1872a3a 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -532,8 +532,10 @@ static int __init microcode_init(void)
- 	}
- 
- 	error = microcode_dev_init();
--	if (error)
-+	if (error) {
-+		platform_device_unregister(microcode_pdev);
- 		return error;
-+	}
- 
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
+Alan Stern
 
