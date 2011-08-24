@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1HXXSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 19:18:47 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54765 "EHLO smtps.tip.net.au"
+	id S1752768Ab1HXXT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 19:19:29 -0400
+Received: from claw.goop.org ([74.207.240.146]:53973 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab1HXXSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 19:18:46 -0400
-Date: Thu, 25 Aug 2011 09:18:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the mips tree
-Message-Id: <20110825091837.ebf61e307d65fb77e29b2ca3@canb.auug.org.au>
-In-Reply-To: <20110822104809.451b0e8d7b231d70d73aa256@canb.auug.org.au>
-References: <20110821094302.e46933704cd74ab7728bfc74@canb.auug.org.au>
-	<20110822104809.451b0e8d7b231d70d73aa256@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__25_Aug_2011_09_18_37_+1000_72.j1l2L+gc8.lpV"
+	id S1751054Ab1HXXT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 19:19:28 -0400
+Message-ID: <4E5586FD.7080103@goop.org>
+Date: Wed, 24 Aug 2011 16:19:25 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 13/15] x86: add cmpxchg_flag() variant
+References: <cover.1314045780.git.jeremy.fitzhardinge@citrix.com> <738d736ecffa3bd32df76ae41188aa39c2ace941.1314054734.git.jeremy.fitzhardinge@citrix.com> <alpine.DEB.2.00.1108231355380.26421@router.home> <4E540548.4080402@goop.org> <4E541154.6090805@zytor.com> <4E542681.2090703@goop.org> <alpine.DEB.2.00.1108240852370.24118@router.home> <4E5527C2.8000801@goop.org> <alpine.DEB.2.00.1108241408310.30776@router.home> <4E555FBB.3020906@zytor.com> <4E556150.8030100@goop.org> <4E558380.7060304@zytor.com> <CA+55aFy9r7jHi_9B4zH9LEy4PidWvjs5nDddHA5RyKRvunDehA@mail.gmail.com>
+In-Reply-To: <CA+55aFy9r7jHi_9B4zH9LEy4PidWvjs5nDddHA5RyKRvunDehA@mail.gmail.com>
+X-Enigmail-Version: 1.3.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__25_Aug_2011_09_18_37_+1000_72.j1l2L+gc8.lpV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Ralf,
-
-On Mon, 22 Aug 2011 10:48:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On 08/24/2011 04:11 PM, Linus Torvalds wrote:
+> On Wed, Aug 24, 2011 at 4:04 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> I was also thinking that using it reduces register pressure, since you
+>>> don't need to keep the "old" value around, so it dies sooner.
+>> ... but you burn a register for the intermediate flag value, so you're
+>> just as bad off.
+> But that register has much shorter liveness - so I do agree that it *can* help.
 >
-> On Sun, 21 Aug 2011 09:43:02 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > The mips tree today seems like a complete mess.  It seem to be some
-> > historical tree including commits with commit dates going back to 1994
-> > and v1.1.68!  Please fix it up as it is unusable in its current form.
->=20
-> Since it hasn't been fixed yet, I have reset the mips tree to be what it
-> was in next-20110819.
+> Whether it actually *does* help is unclear. I do agree that we might
+> be better off without introducing yet another (questionable)
+> interface.
 
-Still not fixed :-(
+I think the interface is useful because it directly expresses what many
+cmpxchg users want to know: "Did that work?"  There are very few users
+which actually care what the "old" value was if it wasn't what they were
+expecting.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+There's 3(ish) ways it could be implemented, but I don't have a strong
+opinion on them:
 
---Signature=_Thu__25_Aug_2011_09_18_37_+1000_72.j1l2L+gc8.lpV
-Content-Type: application/pgp-signature
+ 1. with a direct compare, as people are doing now
+ 2. with sete to set a flag (clearly better for > wordsize arguments)
+ 3. with asm goto
+ 4. (with a hypothetical gcc extension which exposes condition codes)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+My experiments with asm goto were not very promising at first glance,
+but it *should* be the best of the lot for most users.  A hybrid 1/2
+implementation would also be possible.
 
-iQEcBAEBAgAGBQJOVYbNAAoJEDMEi1NhKgbsNNoH/2ECygV87TvAKybFzvz5BLwp
-eE6V09A2eJ3iqRoCdqbeFA523gUHusgccCY0MB/G3TX1eChgjU5Msc18/MIu9meE
-qlnyknQXrVCsGq3zJgZ00ywdx6AXieVE0Xt6UpJDZlTs3cPG6D+d8q24MLTiOdiq
-TT1t9OyB63FF4ozDdSQpn7lmu93f6Byuo5+hRWJi/NH/VviTi6/9pFvGvJ2NFkYn
-RoEF9UZfb1GGLHzMhbtFrw2fcXB8O6zrk861o428GuKPFntIg4wg5SfXmXg53szS
-Qac4NUf3k/farkBwpBWpFW1bYUIikoqommPVAyOwRaoA7Io4j+scynyKVyQKZXE=
-=oQ0m
------END PGP SIGNATURE-----
+But the interface hides the implementation specifics, so its not all
+that important.
 
---Signature=_Thu__25_Aug_2011_09_18_37_+1000_72.j1l2L+gc8.lpV--
+    J
