@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441Ab1HXKLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 06:11:34 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:58747 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab1HXKLc (ORCPT
+	id S1756626Ab1HXKLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 06:11:44 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:33254 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756530Ab1HXKLe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 06:11:32 -0400
-Message-ID: <4E54CE15.1020504@atmel.com>
-Date: Wed, 24 Aug 2011 12:10:29 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.20) Gecko/20110804 Lightning/1.0b2 Thunderbird/3.1.12
+	Wed, 24 Aug 2011 06:11:34 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Remy Bohmer <linux@bohmer.net>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] at91: fixes for 3.1
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <20110802095604.GA22637@linux-mips.org>
+References: <1312216934-29710-1-git-send-email-paul.gortmaker@windriver.com> <20110802095604.GA22637@linux-mips.org>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Wed, 24 Aug 2011 18:11:14 +0800
+X-Google-Sender-Auth: t1LnCBbFcf-QTyO9LuczqzNKO-c
+Message-ID: <CAK5ve-L+ZZFD3rQMwp638V+NfrHqth2dAXGEeK+iBzFP-EHOzg@mail.gmail.com>
+Subject: Re: [PATCH] arm: fix compile failure in orion5x/dns323-setup.c
+To: Paul Gortmaker <paul.gortmaker@windriver.com>, rob.herring@calxeda.com,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Rob,
 
-Can you please pull this "fixes" patch since commit fcb8ce5cfe30ca9ca5c9a79cdfe26d1993e65e0c:
+I guess you can add your Ack to Paul's patch here.
 
-  Linux 3.1-rc3 (2011-08-22 11:42:53 -0700)
+Arnd, could you please add this patch into your tree, as it's a
+obvious right fixing.
 
-It is available in the git repository at:
-  git://github.com/at91linux/linux-2.6-at91.git at91-fixes
+Thanks,
+-Bryan
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      at91: at91sam9261.c: fix typo in t2_clk alias for atmel_tcb.0
-
- arch/arm/mach-at91/at91sam9261.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-It is a single patch but I prefer to send you a 
-pull request as it may integrate better with your
-flow...
-
-Thanks a lot, bye,
--- 
-Nicolas Ferre
-
+On Tue, Aug 2, 2011 at 5:56 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
+> On Mon, Aug 01, 2011 at 12:42:14PM -0400, Paul Gortmaker wrote:
+>
+>> index a6eddae..c105556 100644
+>> --- a/arch/arm/mach-orion5x/dns323-setup.c
+>> +++ b/arch/arm/mach-orion5x/dns323-setup.c
+>> @@ -77,7 +77,7 @@ static int __init dns323_pci_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
+>>       /*
+>>        * Check for devices with hard-wired IRQs.
+>>        */
+>> -     irq = orion5x_pci_map_irq(const dev, slot, pin);
+>> +     irq = orion5x_pci_map_irq(dev, slot, pin);
+>
+> Very obviously correct ...
+>
+> Acked-by: Ralf Baechle <ralf@linux-mips.org>
+>
+>  Ralf
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
