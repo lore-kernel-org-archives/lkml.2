@@ -1,85 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab1HXI5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 04:57:46 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:60685 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756457Ab1HXI5m (ORCPT
+	id S1756826Ab1HXI6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 04:58:38 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:50780 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756308Ab1HXI6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 04:57:42 -0400
-Date: Wed, 24 Aug 2011 11:57:39 +0300
+	Wed, 24 Aug 2011 04:58:34 -0400
+Date: Wed, 24 Aug 2011 11:58:29 +0300
 From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Michal Nazarewicz <mnazarewicz@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        Yang Rui Rui <ruirui.r.yang@tieto.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
-Message-ID: <20110824085738.GE12549@legolas.emea.dhcp.ti.com>
+Subject: Re: [PATCHv4 3/4] usb: gadget: rename usb_gadget_driver::speed to
+ max_speed
+Message-ID: <20110824085828.GF12549@legolas.emea.dhcp.ti.com>
 Reply-To: balbi@ti.com
-References: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
- <op.v0mv05vu3l0zgt@mnazarewicz-glaptop>
+References: <cover.1314028707.git.mina86@mina86.com>
+ <8289497114d3da8366ea7ed8397b4d3f16afb946.1314028707.git.mina86@mina86.com>
+ <CABqxG0c=y=hH83CqHewnvrx+OHTLssymzu0Hai+kJzN6LTvYHw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HnQK338I3UIa/qiP"
+	protocol="application/pgp-signature"; boundary="K/NRh952CO+2tg14"
 Content-Disposition: inline
-In-Reply-To: <op.v0mv05vu3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <CABqxG0c=y=hH83CqHewnvrx+OHTLssymzu0Hai+kJzN6LTvYHw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---HnQK338I3UIa/qiP
-Content-Type: text/plain; charset=us-ascii
+--K/NRh952CO+2tg14
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Mon, Aug 22, 2011 at 11:16:07PM +0200, Michal Nazarewicz wrote:
-> >>>>+obj-$(CONFIG_USB)		+=3D common.o
-> >>>>+obj-$(CONFIG_USB_GADGET)	+=3D common.o
->=20
-> >>>Will this cause problems?  For example, what if CONFIG_USB is Y and
-> >>>CONFIG_USB_GADGET is M?
->=20
-> >>>Also, it seems a little silly to have an entire kernel module devoted
-> >>>to a single, little function.
->=20
-> On Mon, 22 Aug 2011 23:06:43 +0200, Alan Stern
-> <stern@rowland.harvard.edu> wrote:
-> >You could do:
+On Wed, Aug 24, 2011 at 10:26:53AM +0800, Dave Young wrote:
+> On Tue, Aug 23, 2011 at 12:04 AM, Michal Nazarewicz
+> <mnazarewicz@google.com> wrote:
+> > From: Michal Nazarewicz <mina86@mina86.com>
 > >
-> >	obj-$(CONFIG_USB_SUPPORT)  +=3D common.o
+> > This commit renames the =E2=80=9Cspeed=E2=80=9D=C2=A0field of the usb_g=
+adget_driver
+> > structure to =E2=80=9Cmax_speed=E2=80=9D. =C2=A0This is so that to make=
+ it more
+> > apparent that the field represents the maximum speed gadget
+> > driver can support.
 > >
-> >which would build that subroutine into the main kernel whenever either
-> >side of the USB stack is enabled.
+> > This also make the field look more like fields with the same
+> > name in usb_gadget and usb_composite_driver structures. =C2=A0All
+> > of those represent the *maximal* speed given entity supports.
+> >
+> > After this commit, there are the following fields in various
+> > structures:
+> > * usb_gadget::speed - the current connection speed,
+> > * usb_gadget::max_speed - maximal speed UDC supports,
+> > * usb_gadget_driver::max_speed - maximal speed gadget driver
+> > =C2=A0supports, and
+> > * usb_composite_driver::max_speed - maximal speed composite
+> > =C2=A0gadget supports.
+> >
+> > Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> > ---
+> > =C2=A0drivers/usb/gadget/amd5536udc.c =C2=A0 | =C2=A0 =C2=A02 +-
+> > =C2=A0drivers/usb/gadget/ci13xxx_udc.c =C2=A0| =C2=A0 =C2=A02 +-
+> > =C2=A0drivers/usb/gadget/composite.c =C2=A0 =C2=A0| =C2=A0 =C2=A08 ++++=
+----
+> > =C2=A0drivers/usb/gadget/dbgp.c =C2=A0 =C2=A0 =C2=A0 =C2=A0 | =C2=A0 =
+=C2=A02 +-
+> > =C2=A0drivers/usb/gadget/dummy_hcd.c =C2=A0 =C2=A0| =C2=A0 13 ++++++---=
+----
+> > =C2=A0drivers/usb/gadget/file_storage.c | =C2=A0 =C2=A04 ++--
+> > =C2=A0drivers/usb/gadget/gmidi.c =C2=A0 =C2=A0 =C2=A0 =C2=A0| =C2=A0 =
+=C2=A02 +-
+> > =C2=A0drivers/usb/gadget/goku_udc.c =C2=A0 =C2=A0 | =C2=A0 =C2=A02 +-
+> > =C2=A0drivers/usb/gadget/inode.c =C2=A0 =C2=A0 =C2=A0 =C2=A0| =C2=A0 =
+=C2=A06 +++---
+> > =C2=A0drivers/usb/gadget/m66592-udc.c =C2=A0 | =C2=A0 =C2=A02 +-
+> > =C2=A0drivers/usb/gadget/net2272.c =C2=A0 =C2=A0 =C2=A0| =C2=A0 =C2=A02=
+ +-
+> > =C2=A0drivers/usb/gadget/net2280.c =C2=A0 =C2=A0 =C2=A0| =C2=A0 =C2=A02=
+ +-
+> > =C2=A0drivers/usb/gadget/pch_udc.c =C2=A0 =C2=A0 =C2=A0| =C2=A0 =C2=A02=
+ +-
+> > =C2=A0drivers/usb/gadget/printer.c =C2=A0 =C2=A0 =C2=A0| =C2=A0 =C2=A02=
+ +-
+> > =C2=A0drivers/usb/gadget/r8a66597-udc.c | =C2=A0 =C2=A02 +-
+> > =C2=A0include/linux/usb/gadget.h =C2=A0 =C2=A0 =C2=A0 =C2=A0| =C2=A0 =
+=C2=A04 ++--
+> > =C2=A016 files changed, 28 insertions(+), 29 deletions(-)
+> >
 >=20
-> OK.  I'll wait for any more possible comments and post changed version
-> by the end of the week.
+> Still missing drivers/usb/musb/musb_gadget for the speed check
 
-if it's only for one single function, wouldn't a static inline in a
-common header do ?
+and the new DWC3 on Greg's usb-next branch.
 
 --=20
 balbi
 
---HnQK338I3UIa/qiP
+--K/NRh952CO+2tg14
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOVL0CAAoJEAv8Txj19kN1WL0IAKK3FXJPipQyiDQ7XtSpT8NH
-O2h+nlUCf/T8IshYaogaX5+J93rSzpWHVj03gYv/M50yzr4hA60+Eex2TEA8ABe5
-1wL906G7MGpwAXEDg1zmbIVcxEet3jMyH8XBvRdRSgPrrT/sSkCoSFXs3+DxelEf
-T8++8DYxEdBzOaxlbAqt/qstMtB0teaN4eOy9brFlklIWLUSoO91VueP40IvAQGB
-T9clPUk7hP7B4o4EIjbei6IykHMrjmnsmwo0deS6+HjU9dQRKFW0d4/SQnPdwE0z
-4Q1ADiqYgh/qawx4VOGxwQarwzWBCWnO2qLjlv+NlXP48fzFL9Ha2aeAnyuKUIk=
-=Idg0
+iQEcBAEBAgAGBQJOVL00AAoJEAv8Txj19kN1Sm4H/3cjBNtps1qH+0ep81Y0qVT8
+GSszkphCDTgstlbAl7kaPkgNXfJHsAp2nXpyXii+zfsZzVhbn/8Tbu7Z6JkMg380
+6p0iJzqT896hTc/MqNRXHApYK1Aoh4skcpn7nw2iEZ0Nf6lnKjiWl62WGmSBj+nM
+6E2ktEYKuRGUJl8bmF/uOX4zZcvzbu1DiyBYvF4bjLO9/PGj3eHCnD0vCHstmY1B
+aWVHujLX4HY8f0ebM2Z2Gc6MydSVk3Sd+21NL0y37Ubkruhp710WV2YNkcR8XqIi
+lSP/SxSqcoVDkvC5Ofuq6ZMJIzb0o2HiiL2Dl/e9gTYze0VfdU+5uGuTQHOFTLg=
+=V9sx
 -----END PGP SIGNATURE-----
 
---HnQK338I3UIa/qiP--
+--K/NRh952CO+2tg14--
