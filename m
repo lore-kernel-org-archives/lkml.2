@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab1HXOT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:19:58 -0400
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:55277 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752210Ab1HXOTz (ORCPT
+	id S1751550Ab1HXOYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:24:47 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:32990 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750891Ab1HXOYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:19:55 -0400
-X-AuditID: 1209190c-b7bdeae000000a26-8a-4e55084a9441
-From: Andy Lutomirski <luto@MIT.EDU>
-To: "H.J. Lu" <hjl.tools@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH] x86-64: Remove __IGNORE_getcpu
-Date: Wed, 24 Aug 2011 10:19:44 -0400
-Message-Id: <b4cb60ef45db3a675a0e2b9d51bcb022b0a9ab9c.1314195481.git.luto@mit.edu>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <CAMe9rOrejBbutqRMuE1f5iVn3nr8+zOmFyXgGmn=R9zHMC6U8Q@mail.gmail.com>
-References: <CAMe9rOrejBbutqRMuE1f5iVn3nr8+zOmFyXgGmn=R9zHMC6U8Q@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsUixG6nruvFEepnsK7N0KLvylF2i+3rDjNb
-	TNsobnF51xw2BxaPnbPusnt83iTncaLlC2sAcxSXTUpqTmZZapG+XQJXxpGHxQW/2Csmb33F
-	1MB4ha2LkZNDQsBE4sXWVlYIW0ziwr31QHEuDiGBfYwSm04vYAdJCAlsYJT4s9scIvGMSWLj
-	uS6wDjYBFYmOpQ+YQGwRAWWJu1dPg9nMAkUSi3omMYPYwgL6Ei+OfgOzWQRUJea++skCYvMK
-	BElsev+VCWKznMSRy8/BbE6BQImWEytZIRYHSEx9f5JxAiPfAkaGVYyyKblVurmJmTnFqcm6
-	xcmJeXmpRbqGermZJXqpKaWbGEGBxCnJs4PxzUGlQ4wCHIxKPLw3LgT7CbEmlhVX5h5ilORg
-	UhLlTWIP9RPiS8pPqcxILM6ILyrNSS0+xCjBwawkwnvqXIifEG9KYmVValE+TEqag0VJnPfg
-	Dgc/IYH0xJLU7NTUgtQimKwMB4eSBG8uyFDBotT01Iq0zJwShDQTByfIcB6g4Y/ZgGp4iwsS
-	c4sz0yHypxgVpcR5K0GaBUASGaV5cL2wSH/FKA70ijDvXJAqHmCSgOt+BTSYCWgwx68gkMEl
-	iQgpqQZGQcHpu+M25DycqT5BKsbp5zveG4432ysMQ7pPSvQFm1nPWyHJd07jerPXY/WLjIcY
-	75YkMenN3LYlOM7i9D5L7jc+skWcaS8X385gZT0wz6VC82tRv19ekMUfvsuL1aQe7H9nIr80
-	+8lF7q137lyVK5Pbttr6zMF44aznzSpby8Q2SOQ6vzyoxFKckWioxVxUnAgACbhNus8CAAA=
+	Wed, 24 Aug 2011 10:24:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: nsnUsAQVM1kB5sK00VRR8YZWYQHQYHxcxbTbvtwfqzc4VsH
+ g.vEY0G5vwljvsRGcZx9rs7.tS9BbNomoMZHoz0RiwYMUuiAFseP3p9Yu0sw
+ V36oS2VfoPaWTy2URd3.bJVUtpwWbeI3pu2P3GFEQljmFXgf2fohfEcZ_RkQ
+ JaYNMBtmmPMva5sIAdSCsW6iuN4ThyBwa3cer5zSbBp4j4NOtemW2HY2flfa
+ ITiDqCUOyEwRlLj1hYVasU6bF.mgwakdocri6GEZFqOZ8O.ruqRtegZfssti
+ H5tJzGPKgnlU3.tSD4nsRtwuETQ6N4z.0B0yzWwqStPNrcTG4FxsezDotmg4
+ qFvKzd_XG3WUOb4hBODU9lR7K4s6YgVjOMeXoVrWCfB3U
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 24 Aug 2011 09:24:41 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 08/13] list: add a new LRU list type
+In-Reply-To: <4E5379DA.8060109@openvz.org>
+Message-ID: <alpine.DEB.2.00.1108240923420.24118@router.home>
+References: <1314089786-20535-1-git-send-email-david@fromorbit.com> <1314089786-20535-9-git-send-email-david@fromorbit.com> <20110823092056.GE21492@infradead.org> <20110823093205.GZ3162@dastard> <4E5379DA.8060109@openvz.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The change:
+On Tue, 23 Aug 2011, Konstantin Khlebnikov wrote:
 
-commit fce8dc06423d6fb2709469dc5c55b04e09c1d126
-Author: Andy Lutomirski <luto@mit.edu>
-Date:   Wed Aug 10 11:15:31 2011 -0400
+> maybe is better to rename it to enum page_lru_list
 
-    x86-64: Wire up getcpu syscall
-
-added getcpu as a real syscall, so we shouldn't ignore it any more.
-
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
-Reported-by: H.J. Lu <hjl.tools@gmail.com>
----
-
-My bad.
-
- arch/x86/include/asm/unistd_64.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index d92641c..940d720 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -624,7 +624,6 @@ __SYSCALL(__NR_vmsplice, sys_vmsplice)
- __SYSCALL(__NR_move_pages, sys_move_pages)
- #define __NR_utimensat				280
- __SYSCALL(__NR_utimensat, sys_utimensat)
--#define __IGNORE_getcpu		/* implemented as a vsyscall */
- #define __NR_epoll_pwait			281
- __SYSCALL(__NR_epoll_pwait, sys_epoll_pwait)
- #define __NR_signalfd				282
--- 
-1.7.6
+Better rename both and clearly indicate what type of lru list it is. An
+LRU list is such a generic concept that it shows up in an excessive amount
+of contexts.
 
