@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab1HXKnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 06:43:52 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:34550 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab1HXKnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 06:43:50 -0400
-Message-ID: <4E54D5D7.8050807@siemens.com>
-Date: Wed, 24 Aug 2011 12:43:35 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1756757Ab1HXKr7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 06:47:59 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:36332
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752147Ab1HXKr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 06:47:56 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Jason Liu <jason.hui@linaro.org>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>,
+        <patches@linaro.org>
+Subject: [PATCH] mtd: check parts pointer before using it
+Date: Wed, 24 Aug 2011 18:53:01 +0800
+Message-ID: <1314183181-4197-1-git-send-email-jason.hui@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Brian King <brking@linux.vnet.ibm.com>
-Subject: Broken pci_block_user_cfg_access interface
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The code has the check for parts but it called after kmemdup,
+kmemdup(parts, sizeof(*parts) * nr_parts,...)
+if (!parts)
+	return -ENOMEM
 
-trying to port the generic device interrupt masking pattern of
-uio_pci_generic to KVM's device assignment code, I stumbled over some
-fundamental problem with the current pci_block/unblock_user_cfg_access
-interface: it does not provide any synchronization between blocking
-sides. This allows user space to trigger a kernel BUG, just run two
+In fact, we need check parts before safely using it.
 
-while true; do echo 1 > /sys/bus/pci/devices/<some-device>/reset; done
+Signed-off-by: Jason Liu <jason.hui@linaro.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Artem Bityutskiy <artem.bityutskiy@intel.com>
 
-loops in parallel and watch the kernel oops.
+---
+This patch is based on git://git.infradead.org/users/dedekind/l2-mtd-2.6.git
+---
+ drivers/mtd/mtdcore.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Instead of some funky open-coded locking mechanism, we would rather need
-a plain mutex across both the user space access (via sysfs) and the
-sections guarded by pci_block/unblock_user_cfg_access so far. But I'm
-not sure which of them already allow sleeping, specifically if the IPR
-driver would be fine with such a change. Can someone in the CC list
-comment on this?
-
-uio_pci_generic would definitely not be able to sleep as it takes the
-lock from (potentially hard) IRQ context. This particular use case, RMW
-of command/status word, requires a separate mechanism. I'm considering
-to introduce a dedicated raw spinlock with IRQ protection for that
-words, maybe also a PCI core service to abstract INTx testing and masking.
-
-Any further thoughts on how to resolve this issue?
-
-Thanks,
-Jan
-
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index 09bdbac..ce59ff5 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -465,12 +465,10 @@ int mtd_device_parse_register(struct mtd_info *mtd, const char **types,
+ 	struct mtd_partition *real_parts;
+ 
+ 	err = parse_mtd_partitions(mtd, types, &real_parts, parser_data);
+-	if (err <= 0 && nr_parts) {
++	if (err <= 0 && nr_parts && !parts) {
+ 		real_parts = kmemdup(parts, sizeof(*parts) * nr_parts,
+ 				     GFP_KERNEL);
+ 		err = nr_parts;
+-		if (!parts)
+-			err = -ENOMEM;
+ 	}
+ 
+ 	if (err > 0) {
 -- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+1.7.4.1
+
+
