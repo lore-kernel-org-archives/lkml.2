@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab1HXUXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:23:52 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:45137 "EHLO
+	id S1753289Ab1HXUX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:23:58 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:45148 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab1HXUXu (ORCPT
+	with ESMTP id S1753087Ab1HXUXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:23:50 -0400
+	Wed, 24 Aug 2011 16:23:53 -0400
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: x86@kernel.org
-Cc: Jerome Oufella <jerome.oufella@savoirfairelinux.com>,
+Cc: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
         Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Subject: [PATCH 2/4] x86: (TS-5500) add GPIO support
-Date: Wed, 24 Aug 2011 16:23:25 -0400
-Message-Id: <1314217407-31249-3-git-send-email-vivien.didelot@savoirfairelinux.com>
+Subject: [PATCH 4/4] x86: (TS-5500) add ADC support
+Date: Wed, 24 Aug 2011 16:23:27 -0400
+Message-Id: <1314217407-31249-5-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -23,590 +23,561 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
 
 
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- MAINTAINERS                            |    2 +
- arch/x86/platform/ts5500/Kconfig       |    7 +
- arch/x86/platform/ts5500/Makefile      |    1 +
- arch/x86/platform/ts5500/ts5500.c      |   21 ++
- arch/x86/platform/ts5500/ts5500_gpio.c |  421 ++++++++++++++++++++++++++++++++
- arch/x86/platform/ts5500/ts5500_gpio.h |   60 +++++
- 6 files changed, 512 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/platform/ts5500/ts5500_gpio.c
- create mode 100644 arch/x86/platform/ts5500/ts5500_gpio.h
+ MAINTAINERS                           |    2 +
+ arch/x86/platform/ts5500/Kconfig      |    6 +
+ arch/x86/platform/ts5500/Makefile     |    3 +-
+ arch/x86/platform/ts5500/ts5500.c     |   77 ++++++++
+ arch/x86/platform/ts5500/ts5500_adc.c |  326 +++++++++++++++++++++++++++++++++
+ arch/x86/platform/ts5500/ts5500_adc.h |   62 +++++++
+ 6 files changed, 475 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/platform/ts5500/ts5500_adc.c
+ create mode 100644 arch/x86/platform/ts5500/ts5500_adc.h
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index be8ce4b..c6cf870 100644
+index 034a25f..967f5cc 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6140,6 +6140,8 @@ S:	Maintained
- F:  arch/x86/platform/ts5500/Kconfig
- F:  arch/x86/platform/ts5500/Makefile
- F:  arch/x86/platform/ts5500/ts5500.c
-+F:  arch/x86/platform/ts5500/ts5500_gpio.c
-+F:  arch/x86/platform/ts5500/ts5500_gpio.h
+@@ -6143,6 +6143,8 @@ F:  arch/x86/platform/ts5500/ts5500.c
+ F:  arch/x86/platform/ts5500/ts5500_gpio.c
+ F:  arch/x86/platform/ts5500/ts5500_gpio.h
+ F:  arch/x86/platform/ts5500/ts5500_leds.c
++F:  arch/x86/platform/ts5500/ts5500_adc.c
++F:  arch/x86/platform/ts5500/ts5500_adc.h
  
  TEGRA SUPPORT
  M:	Colin Cross <ccross@android.com>
 diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-index 6428ca5..bb4ef81 100644
+index e7fbf34..f38c8b6 100644
 --- a/arch/x86/platform/ts5500/Kconfig
 +++ b/arch/x86/platform/ts5500/Kconfig
-@@ -5,3 +5,10 @@ config TS5500
- 	  Add support for the Technologic Systems TS-5500 platform features.
- 
- 	  If you have a TS-5500, say Y here.
+@@ -19,3 +19,9 @@ config TS5500_LEDS
+ 	default y
+ 	help
+ 	  This option enables support for the on-chip LED.
 +
-+config TS5500_GPIO
-+	bool "TS-5500 GPIO support"
++config TS5500_ADC
++	bool "TS-5500 ADC"
 +	depends on TS5500
-+	default y
 +	help
-+	  This enables support for the DIO headers for GPIO usage.
++      Support for the A/D converter on Technologic Systems TS-5500 SBCs.
 diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
-index 0a689a7..9eb93fe 100644
+index 4d23812..79b8d10 100644
 --- a/arch/x86/platform/ts5500/Makefile
 +++ b/arch/x86/platform/ts5500/Makefile
-@@ -1 +1,2 @@
+@@ -1,3 +1,4 @@
  obj-$(CONFIG_TS5500)			+= ts5500.o
-+obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
+ obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
+-obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
 \ No newline at end of file
++obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
++obj-$(CONFIG_TS5500_ADC)		+= ts5500_adc.o
 diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index 0135dbd..1ed0097 100644
+index a455178..d0c496a 100644
 --- a/arch/x86/platform/ts5500/ts5500.c
 +++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -24,6 +24,8 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <asm/processor.h>
-+#include <linux/gpio.h>
-+#include "ts5500_gpio.h"
+@@ -27,6 +27,7 @@
+ #include <linux/leds.h>
+ #include <linux/gpio.h>
+ #include "ts5500_gpio.h"
++#include "ts5500_adc.h"
  
  /* Hardware info for pre-detection */
  #define AMD_ELAN_FAMILY			4
-@@ -141,7 +143,26 @@ error:
- 
- #define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
- 
+@@ -197,6 +198,71 @@ static struct platform_device ts5500_gpio_device = {
+ 	}
+ };
+ #endif
 +
-+#ifdef CONFIG_TS5500_GPIO
-+/* Callback for releasing resources */
-+static void ts5500_gpio_device_release(struct device *dev)
++#ifdef CONFIG_TS5500_ADC
++static void ts5500_adc_release(struct device *dev)
 +{
 +	/* noop */
 +}
 +
-+static struct platform_device ts5500_gpio_device = {
-+	.name = "ts5500_gpio",
-+	.id = -1,
-+	.dev = {
-+		.release = ts5500_gpio_device_release,
++static struct resource ts5500_adc_resources[] = {
++	{
++		.name  = "ts5500_adc" "-data",
++		.start = TS5500_ADC_INIT_LSB_REG,
++		.end   = TS5500_ADC_MSB_REG,
++		.flags = IORESOURCE_IO,
++	},
++	{
++		.name  = "ts5500_adc" "-ctrl",
++		.start = TS5500_ADC_CTRL_REG,
++		.end   = TS5500_ADC_CTRL_REG,
++		.flags = IORESOURCE_IO,
 +	}
++};
++
++static struct ts5500_adc_platform_data ts5500_adc_platform_data = {
++	.name = TS5500_ADC_NAME,
++	.ioaddr = {
++		.data = TS5500_ADC_INIT_LSB_REG,
++		.ctrl = TS5500_ADC_CTRL_REG,
++	},
++	.read = {
++		.delay     = TS5500_ADC_READ_DELAY,
++		.busy_mask = TS5500_ADC_READ_BUSY_MASK,
++	},
++	.ctrl = {
++		{ TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_5V,
++		  TS5500_ADC_UNIPOLAR | TS5500_ADC_RANGE_10V },
++		{ TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_5V,
++		  TS5500_ADC_BIPOLAR  | TS5500_ADC_RANGE_10V },
++	},
++	.ranges = {
++		.min = {
++			{  0,     0 },
++			{ -5000, -10000 },
++		},
++		.max = {
++			{  5000,  10000 },
++			{  5000,  10000 },
++		},
++	},
++	.scale = {
++		{ 12207, 24414 },
++		{ 24414, 48828 },
++	},
++};
++
++static struct platform_device ts5500_adc_device = {
++	.name = "ts5500_adc",
++	.id = -1,
++	.resource = ts5500_adc_resources,
++	.num_resources = ARRAY_SIZE(ts5500_adc_resources),
++	.dev = {
++		.platform_data = &ts5500_adc_platform_data,
++		.release = ts5500_adc_release,
++	},
 +};
 +#endif
  static struct platform_device *ts5500_devices[] __initdata = {
-+#ifdef CONFIG_TS5500_GPIO
-+	&ts5500_gpio_device,
-+#endif
- };
+ #ifdef CONFIG_TS5500_LEDS
+ 	&ts5500_led_device,
+@@ -335,6 +401,17 @@ static int __init ts5500_init(void)
+ 	if (ret)
+ 		goto release_pdev;
  
- static ssize_t ts5500_show_id(struct device *dev,
-diff --git a/arch/x86/platform/ts5500/ts5500_gpio.c b/arch/x86/platform/ts5500/ts5500_gpio.c
++#ifdef CONFIG_TS5500_ADC
++	if (ts5500->adc) {
++		ret = platform_device_register(&ts5500_adc_device);
++		if (ret)
++			goto release_pdev;
++	} else {
++		pr_warn("ADC config enabled, "
++			"but the platform has no A/D converter!");
++	}
++#endif
++
+ 	ret = sysfs_create_group(&pdev->dev.kobj,
+ 				 &ts5500_attr_group);
+ 	if (ret)
+diff --git a/arch/x86/platform/ts5500/ts5500_adc.c b/arch/x86/platform/ts5500/ts5500_adc.c
 new file mode 100644
-index 0000000..0250973
+index 0000000..6a85edf
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_gpio.c
-@@ -0,0 +1,421 @@
++++ b/arch/x86/platform/ts5500/ts5500_adc.c
+@@ -0,0 +1,326 @@
 +/*
-+ * GPIO (DIO) driver for Technologic Systems TS-5500
++ * Technologic Systems TS-5500 boards - Mapped MAX197 ADC driver
 + *
 + * Copyright (c) 2010 Savoir-faire Linux Inc.
-+ *	Jerome Oufella <jerome.oufella@savoirfairelinux.com>
++ *          Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
++ *
++ * Portions Copyright (C) 2008 Marc Pignat <marc.pignat@hevs.ch>
++ *
++ * The driver uses direct access for communication with the ADC.
++ * Should work unchanged with the MAX199 chip.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * TS-5500 board has 38 GPIOs referred to as DIOs in the product's literature.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ * The TS-5500 uses a CPLD to abstract the interface to a MAX197.
 + */
 +
++#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/gpio.h>
++#include <linux/kernel.h>
++#include <linux/device.h>
++#include <linux/delay.h>
 +#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/sysfs.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/mutex.h>
 +#include <linux/slab.h>
 +#include <linux/io.h>
-+#include "ts5500_gpio.h"
++#include "ts5500_adc.h"
 +
-+static void port_bit_set(u8 addr, int bit)
-+{
-+	u8 var;
-+	var = inb(addr);
-+	var |= (1 << bit);
-+	outb(var, addr);
-+}
-+
-+static void port_bit_clear(u8 addr, int bit)
-+{
-+	u8 var;
-+	var = inb(addr);
-+	var &= ~(1 << bit);
-+	outb(var, addr);
-+}
-+
-+/* "DIO" line to IO port mapping table for line's value */
-+static const unsigned long line_to_port_map[] = {
-+	0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B,		/* DIO1_0~7  */
-+	0x7C, 0x7C, 0x7C, 0x7C, 0x7C, 0x7C,			/* DIO1_8~13 */
-+	0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,		/* DIO2_0~7  */
-+	0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F,			/* DIO2_8~13 */
-+	0x72, 0x72, 0x72, 0x72, 0x72, 0x72, 0x72, 0x72,		/* LCD_0~7   */
-+	0x73, 0x73, 0x73			   /* LCD_EN, LCD_RS, LCD_WR */
-+};
-+
-+/* "DIO" line to IO port's bit map for line's value */
-+static const int line_to_bit_map[] = {
-+	0, 1, 2, 3, 4, 5, 6, 7,		/* DIO1_0~7  */
-+	0, 1, 2, 3, 4, 5,		/* DIO1_8~13 */
-+	0, 1, 2, 3, 4, 5, 6, 7,		/* DIO2_0~7  */
-+	0, 1, 2, 3, 4, 5,		/* DIO2_8~13 */
-+	0, 1, 2, 3, 4, 5, 6, 7,		/* LCD_0~7   */
-+	0, 7, 6				/* LCD_EN, LCD_RS, LCD_WR */
-+};
-+
-+/* "DIO" line's direction control mapping table */
-+static const unsigned long line_to_dir_map[] = {
-+	0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A, 0x7A,		/* DIO1_0~7  */
-+	0x7A, 0x7A, 0x7A, 0x7A, 0, 0,				/* DIO1_8~13 */
-+	0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D,		/* DIO2_0~7  */
-+	0x7D, 0x7D, 0x7D, 0x7D, 0, 0,				/* DIO2_8~13 */
-+	0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D,		/* LCD_0~7   */
-+	0, 0, 0					   /* LCD_EN, LCD_RS, LCD_WR */
-+};
-+
-+/* "DIO" line's direction control bit-mapping table */
-+static const int line_to_dir_bit_map[] = {
-+	0, 0, 0, 0,  1,  1, 1, 1,	/* DIO1_0~7  */
-+	5, 5, 5, 5, -1, -1,		/* DIO1_8~13 */
-+	0, 0, 0, 0,  1,  1, 1, 1,	/* DIO2_0~7  */
-+	5, 5, 5, 5, -1, -1,		/* DIO2_8~13 */
-+	2, 2, 2, 2,  3,  3, 3, 3,	/* LCD_0~7   */
-+	-1, -1, -1			/* LCD_EN, LCD_RS, LCD_WR */
-+};
-+
-+/* This array is used to track requests for our GPIO lines */
-+static int requested_gpios[TS5500_LCD_WR + 1];
-+
-+static int dio1_irq = 1;
-+module_param(dio1_irq, int, 0644);
-+MODULE_PARM_DESC(dio1_irq,
-+		 "Enable usage of IRQ7 for any DIO1 line (default 1).");
-+
-+static int dio2_irq = 0;
-+module_param(dio2_irq, int, 0644);
-+MODULE_PARM_DESC(dio2_irq,
-+		 "Enable usage of IRQ6 for any DIO2 line (default 0).");
-+
-+static int lcd_irq = 0;
-+module_param(lcd_irq, int, 0644);
-+MODULE_PARM_DESC(lcd_irq, "Enable usage of IRQ1 for any LCD line (default 0).");
-+
-+static int use_lcdio = 0;
-+module_param(use_lcdio, int, 0644);
-+MODULE_PARM_DESC(use_lcdio, "Enable usage of the LCD header for DIO operation"
-+		 " (default 0).");
++#define ts5500_adc_test_bit(bit, map)	(test_bit(bit, map) != 0)
 +
 +/**
-+ * struct ts5500_drvdata - Driver data
-+ * @master:		Device.
-+ * @gpio_chip:		GPIO chip.
-+ * @gpio_lock:		Read/Write Mutex.
++ * struct ts5500_adc_chip
++ * @hwmon_dev:		The hwmon device.
++ * @lock:		Read/Write mutex.
++ * @spec:		The mapped MAX197 platform data.
++ * @polarity:		bitmap for polarity.
++ * @range:		bitmap for range.
 + */
-+struct ts5500_drvdata {
-+	struct device *master;
-+	struct gpio_chip gpio_chip;
-+	struct mutex gpio_lock;
++struct ts5500_adc_chip {
++	struct device *hwmon_dev;
++	struct mutex lock;
++	struct ts5500_adc_platform_data spec;
++	DECLARE_BITMAP(polarity, TS5500_ADC_CHANNELS_MAX);
++	DECLARE_BITMAP(range, TS5500_ADC_CHANNELS_MAX);
 +};
 +
-+static int ts5500_gpio_request(struct gpio_chip *chip, unsigned offset)
++static s32 ts5500_adc_scale(struct ts5500_adc_chip *chip, s16 raw,
++			    int polarity, int range)
 +{
-+	struct ts5500_drvdata *drvdata;
++	s32 scaled = raw;
 +
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
++	scaled *= chip->spec.scale[polarity][range];
++	scaled /= 10000;
 +
-+	mutex_lock(&drvdata->gpio_lock);
-+	if (requested_gpios[offset]) {
-+		mutex_unlock(&drvdata->gpio_lock);
-+		return -EBUSY;
-+	}
-+	requested_gpios[offset] = 1;
-+	mutex_unlock(&drvdata->gpio_lock);
++	return scaled;
++}
++
++static int ts5500_adc_range(struct ts5500_adc_chip *chip, int is_min,
++			       int polarity, int range)
++{
++	if (is_min)
++		return chip->spec.ranges.min[polarity][range];
++	return chip->spec.ranges.max[polarity][range];
++}
++
++static int ts5500_adc_strtol(const char *buf, long *value, int range1,
++				int range2)
++{
++	if (strict_strtol(buf, 10, value))
++		return -EINVAL;
++
++	if (range1 < range2)
++		*value = SENSORS_LIMIT(*value, range1, range2);
++	else
++		*value = SENSORS_LIMIT(*value, range2, range1);
 +
 +	return 0;
 +}
 +
-+static void ts5500_gpio_free(struct gpio_chip *chip, unsigned offset)
++static struct ts5500_adc_chip *ts5500_adc_get_drvdata(struct device *dev)
 +{
-+	struct ts5500_drvdata *drvdata;
-+
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
-+
-+	mutex_lock(&drvdata->gpio_lock);
-+	requested_gpios[offset] = 0;
-+	mutex_unlock(&drvdata->gpio_lock);
++	return platform_get_drvdata(to_platform_device(dev));
 +}
 +
-+static int ts5500_gpio_get(struct gpio_chip *chip, unsigned offset)
++/**
++ * ts5500_adc_show_range() - Display range on user output
++ *
++ * Function called on read access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
++ */
++static ssize_t ts5500_adc_show_range(struct device *dev,
++				 struct device_attribute *devattr, char *buf)
 +{
-+	unsigned long ioaddr;
-+	u8 byte;
-+	int bitno;
-+	struct ts5500_drvdata *drvdata;
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int is_min = attr->nr != 0;
++	int polarity, range;
 +
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
 +
-+	/* Some lines are output-only and cannot be read */
-+	switch (offset) {
-+	case TS5500_LCD_EN:
-+		return -ENXIO;
-+	default:
-+		if (offset > chip->ngpio)
-+			return -ENXIO;
-+	}
++	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
++	range = ts5500_adc_test_bit(attr->index, chip->range);
 +
-+	ioaddr = line_to_port_map[offset];
-+	bitno = line_to_bit_map[offset];
++	mutex_unlock(&chip->lock);
 +
-+	mutex_lock(&drvdata->gpio_lock);
-+	byte = inb(ioaddr);
-+	mutex_unlock(&drvdata->gpio_lock);
-+
-+	return (byte >> bitno) & 0x1;
++	return sprintf(buf, "%d\n",
++		       ts5500_adc_range(chip, is_min, polarity, range));
 +}
 +
-+static void ts5500_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
++/**
++ * ts5500_adc_store_range() - Write range from user input
++ *
++ * Function called on write access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_{min,max}
++ */
++static ssize_t ts5500_adc_store_range(struct device *dev,
++				  struct device_attribute *devattr,
++				  const char *buf, size_t count)
 +{
-+	int bitno;
-+	unsigned long ioaddr;
-+	struct ts5500_drvdata *drvdata;
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
++	int is_min = attr->nr != 0;
++	int range1 = ts5500_adc_range(chip, is_min, 0, 0);
++	int range2 = ts5500_adc_range(chip, is_min, 1, 1);
++	long value;
 +
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
++	if (ts5500_adc_strtol(buf, &value, range1, range2))
++		return -EINVAL;
 +
-+	/* Some lines just can't be set */
-+	switch (offset) {
-+	case TS5500_DIO1_12:
-+	case TS5500_DIO1_13:
-+	case TS5500_DIO2_13:
-+	case TS5500_LCD_RS:
-+	case TS5500_LCD_WR:
-+		return;
-+	default:
-+		if (offset > chip->ngpio)
-+			return;
-+		break;
-+	}
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
 +
-+	/* Get io port and bit for 'offset' */
-+	ioaddr = line_to_port_map[offset];
-+	bitno = line_to_bit_map[offset];
-+
-+	mutex_lock(&drvdata->gpio_lock);
-+	if (val == 0)
-+		port_bit_clear(ioaddr, bitno);
++	if (abs(value) > 5000)
++		set_bit(attr->index, chip->range);
 +	else
-+		port_bit_set(ioaddr, bitno);
-+	mutex_unlock(&drvdata->gpio_lock);
-+}
++		clear_bit(attr->index, chip->range);
 +
-+static int ts5500_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	/* Only a few lines are IRQ-Capable */
-+	switch (offset) {
-+	case TS5500_DIO1_13:
-+		return TS5500_DIO1_13_IRQ;
-+	case TS5500_DIO2_13:
-+		return TS5500_DIO2_13_IRQ;
-+	case TS5500_LCD_RS:
-+		return TS5500_LCD_RS_IRQ;
-+	default:
-+		break;
++	if (is_min) {
++		if (value < 0)
++			set_bit(attr->index, chip->polarity);
++		else
++			clear_bit(attr->index, chip->polarity);
 +	}
 +
-+	/*
-+	 * Handle the case where the user bridged the IRQ line with another
-+	 * DIO line from the same header.
-+	 */
-+	if (dio1_irq && offset >= TS5500_DIO1_0 && offset < TS5500_DIO1_13)
-+		return TS5500_DIO1_13_IRQ;
++	mutex_unlock(&chip->lock);
 +
-+	if (dio2_irq && offset >= TS5500_DIO2_0 && offset < TS5500_DIO2_13)
-+		return TS5500_DIO2_13_IRQ;
-+
-+	if (lcd_irq && offset >= TS5500_LCD_0 && offset <= TS5500_LCD_WR)
-+		return TS5500_LCD_RS_IRQ;
-+
-+	return -ENXIO;
++	return count;
 +}
 +
-+static int ts5500_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++/**
++ * ts5500_adc_show_input() - Show channel input
++ *
++ * Function called on read access on
++ * /sys/devices/platform/ts5500-adc/in{0,1,2,3,4,5,6,7}_input
++ */
++static ssize_t ts5500_adc_show_input(struct device *dev,
++				     struct device_attribute *devattr,
++				     char *buf)
 +{
-+	unsigned long dir_reg;
-+	int dir_bit;
-+	struct ts5500_drvdata *drvdata;
-+
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
-+
-+	/* Some lines cannot be set as inputs */
-+	switch (offset) {
-+	case TS5500_LCD_EN:
-+		return -ENXIO;
-+	default:
-+		if (offset > chip->ngpio)
-+			return -ENXIO;
-+		break;
-+	}
-+
-+	dir_reg = line_to_dir_map[offset];
-+	dir_bit = line_to_dir_bit_map[offset];
-+
-+	mutex_lock(&drvdata->gpio_lock);
-+	port_bit_clear(dir_reg, dir_bit);
-+	mutex_unlock(&drvdata->gpio_lock);
-+
-+	return 0;
-+}
-+
-+static int ts5500_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
-+					int val)
-+{
-+	unsigned long dir_reg, ioaddr;
-+	int dir_bit, bitno;
-+	struct ts5500_drvdata *drvdata;
-+
-+	drvdata = container_of(chip, struct ts5500_drvdata, gpio_chip);
-+
-+	/* Some lines cannot be set as outputs */
-+	switch (offset) {
-+	case TS5500_DIO1_12:
-+	case TS5500_DIO1_13:
-+	case TS5500_DIO2_13:
-+	case TS5500_LCD_RS:
-+	case TS5500_LCD_WR:
-+		return -ENXIO;
-+	default:
-+		if (offset > chip->ngpio)
-+			return -ENXIO;
-+		break;
-+	}
-+
-+	/* Get direction and value registers infos */
-+	dir_reg = line_to_dir_map[offset];
-+	dir_bit = line_to_dir_bit_map[offset];
-+	ioaddr = line_to_port_map[offset];
-+	bitno = line_to_bit_map[offset];
-+
-+	mutex_lock(&drvdata->gpio_lock);
-+	if (val == 0)
-+		port_bit_clear(ioaddr, bitno); /* Set initial line value */
-+	else
-+		port_bit_set(ioaddr, bitno);
-+	port_bit_set(dir_reg, dir_bit); /* Set output direction for line */
-+
-+	/*
-+	 * Confirm initial line output value
-+	 * (might have been changed by input)
-+	 */
-+	if (val == 0)
-+		port_bit_clear(ioaddr, bitno);
-+	else
-+		port_bit_set(ioaddr, bitno);
-+	mutex_unlock(&drvdata->gpio_lock);
-+
-+	return 0;
-+}
-+
-+static int __devinit ts5500_gpio_probe(struct platform_device *pdev)
-+{
-+	struct ts5500_drvdata *drvdata;
-+	struct gpio_chip *chip;
++	struct ts5500_adc_chip *chip = ts5500_adc_get_drvdata(dev);
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	int polarity, range;
 +	int ret;
++	u8 command;
 +
-+	if (pdev == NULL) {
-+		dev_err(&pdev->dev, "Platform device not available!\n");
-+		return -ENODEV;
++	if (mutex_lock_interruptible(&chip->lock))
++		return -ERESTARTSYS;
++
++	polarity = ts5500_adc_test_bit(attr->index, chip->polarity);
++	range = ts5500_adc_test_bit(attr->index, chip->range);
++
++	command = attr->index | chip->spec.ctrl[polarity][range];
++
++	outb(command, chip->spec.ioaddr.data);
++
++	udelay(chip->spec.read.delay);
++	ret = inb(chip->spec.ioaddr.ctrl);
++
++	if (ret & chip->spec.read.busy_mask) {
++		dev_err(dev, "device not ready (ret=0x0%x, try=%d)\n", ret,
++			range);
++		ret = -EIO;
++	} else {
++		/* LSB of conversion is at 0x196 and MSB is at 0x197 */
++		u8 lsb = inb(chip->spec.ioaddr.data);
++		u8 msb = inb(chip->spec.ioaddr.data + 1);
++		s16 raw = (msb << 8) | lsb;
++		s32 scaled = ts5500_adc_scale(chip, raw, polarity, range);
++
++		ret = sprintf(buf, "%d\n", scaled);
 +	}
 +
-+	/* Request DIO1 */
-+	if (!request_region(0x7A, 3, "ts5500-gpio-DIO1")) {
-+		dev_err(&pdev->dev, "Cannot request I/O port 0x7A-7C\n");
-+		goto err_req_dio1;
-+	}
-+
-+	/* Request DIO2 */
-+	if (!request_region(0x7D, 3, "ts5500-gpio-DIO2")) {
-+		dev_err(&pdev->dev, "Cannot request I/O port 0x7D-7F\n");
-+		goto err_req_dio2;
-+	}
-+
-+	/* Request LCDIO if wanted */
-+	if (use_lcdio && !request_region(0x72, 2, "ts5500-gpio-LCD")) {
-+		dev_err(&pdev->dev, "Cannot request I/O port 0x72-73\n");
-+		goto err_req_lcdio;
-+	}
-+
-+	/* Setup the gpio_chip structure */
-+	drvdata = kzalloc(sizeof(struct ts5500_drvdata), GFP_KERNEL);
-+	if (drvdata == NULL)
-+		goto err_alloc_dev;
-+
-+	memset(requested_gpios, 0, sizeof(requested_gpios));
-+	mutex_init(&drvdata->gpio_lock);
-+
-+	drvdata->master = pdev->dev.parent;
-+	chip = &drvdata->gpio_chip;
-+	chip->request = ts5500_gpio_request;
-+	chip->free = ts5500_gpio_free;
-+	chip->to_irq = ts5500_gpio_to_irq;
-+	chip->direction_input = ts5500_gpio_direction_input;
-+	chip->direction_output = ts5500_gpio_direction_output;
-+	chip->get = ts5500_gpio_get;
-+	chip->set = ts5500_gpio_set;
-+	chip->can_sleep = 0;
-+	chip->base = TS5500_DIO1_0;
-+	chip->label = pdev->name;
-+	chip->ngpio = (use_lcdio ? TS5500_LCD_WR + 1 : TS5500_DIO2_13 + 1);
-+
-+	/* Enable IRQ generation */
-+	mutex_lock(&drvdata->gpio_lock);
-+	port_bit_set(0x7A, 7); /* DIO1_13 on IRQ7 */
-+	port_bit_set(0x7D, 7); /* DIO2_13 on IRQ6 */
-+	if (use_lcdio) {
-+		port_bit_clear(0x7D, 4); /* Enable LCD header usage as DIO */
-+		port_bit_set(0x7D, 6);   /* LCD_RS on IRQ1 */
-+	}
-+	mutex_unlock(&drvdata->gpio_lock);
-+
-+	/* Register chip */
-+	ret = gpiochip_add(&drvdata->gpio_chip);
-+	if (ret)
-+		goto err_gpiochip_add;
-+
-+	platform_set_drvdata(pdev, drvdata);
-+
-+	return 0;
-+
-+err_gpiochip_add:
-+	dev_err(&pdev->dev, "Failed to register the gpio chip.\n");
-+	kfree(drvdata);
-+
-+err_alloc_dev:
-+	if (use_lcdio)
-+		release_region(0x72, 2);	/* Release LCD's region */
-+
-+err_req_lcdio:
-+	release_region(0x7D, 3);		/* Release DIO2's region */
-+
-+err_req_dio2:
-+	release_region(0x7A, 3);		/* Release DIO1's region */
-+
-+err_req_dio1:
-+	ret = -EBUSY;
-+
++	mutex_unlock(&chip->lock);
 +	return ret;
 +}
 +
-+static struct platform_driver ts5500_gpio_driver = {
-+	.driver = {
-+		.name = "ts5500_gpio",
-+		.owner = THIS_MODULE,
++static ssize_t ts5500_adc_show_name(struct device *dev,
++	struct device_attribute *devattr, char *buf)
++{
++	return sprintf(buf, "%s\n", ts5500_adc_get_drvdata(dev)->spec.name);
++}
++
++#define TS5500_ADC_HWMON_CHANNEL(chan)				\
++	SENSOR_DEVICE_ATTR(in##chan##_input, S_IRUGO,		\
++			   ts5500_adc_show_input, NULL, chan);	\
++	SENSOR_DEVICE_ATTR_2(in##chan##_max, S_IRUGO | S_IWUSR,	\
++			     ts5500_adc_show_range,		\
++			     ts5500_adc_store_range, 0, chan);	\
++	SENSOR_DEVICE_ATTR_2(in##chan##_min, S_IRUGO | S_IWUSR,	\
++			     ts5500_adc_show_range,		\
++			     ts5500_adc_store_range, 1, chan)	\
++
++#define TS5500_ADC_SYSFS_CHANNEL(chan)				\
++	&sensor_dev_attr_in##chan##_input.dev_attr.attr,	\
++	&sensor_dev_attr_in##chan##_max.dev_attr.attr,		\
++	&sensor_dev_attr_in##chan##_min.dev_attr.attr
++
++static DEVICE_ATTR(name, S_IRUGO, ts5500_adc_show_name, NULL);
++
++static TS5500_ADC_HWMON_CHANNEL(0);
++static TS5500_ADC_HWMON_CHANNEL(1);
++static TS5500_ADC_HWMON_CHANNEL(2);
++static TS5500_ADC_HWMON_CHANNEL(3);
++static TS5500_ADC_HWMON_CHANNEL(4);
++static TS5500_ADC_HWMON_CHANNEL(5);
++static TS5500_ADC_HWMON_CHANNEL(6);
++static TS5500_ADC_HWMON_CHANNEL(7);
++
++static const struct attribute_group ts5500_adc_sysfs_group = {
++	.attrs = (struct attribute *[]) {
++		&dev_attr_name.attr,
++		TS5500_ADC_SYSFS_CHANNEL(0),
++		TS5500_ADC_SYSFS_CHANNEL(1),
++		TS5500_ADC_SYSFS_CHANNEL(2),
++		TS5500_ADC_SYSFS_CHANNEL(3),
++		TS5500_ADC_SYSFS_CHANNEL(4),
++		TS5500_ADC_SYSFS_CHANNEL(5),
++		TS5500_ADC_SYSFS_CHANNEL(6),
++		TS5500_ADC_SYSFS_CHANNEL(7),
++		NULL
++	}
++};
++
++static int __devinit ts5500_adc_probe(struct platform_device *pdev)
++{
++	struct ts5500_adc_platform_data *pdata = pdev->dev.platform_data;
++	struct ts5500_adc_chip *chip;
++	int ret;
++
++	if (pdata == NULL)
++		return -ENODEV;
++
++	chip = kzalloc(sizeof *chip, GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->spec = *pdata;
++
++	mutex_init(&chip->lock);
++	mutex_lock(&chip->lock);
++
++	ret = sysfs_create_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
++	if (ret) {
++		dev_err(&pdev->dev, "sysfs_create_group failed.\n");
++		goto error_unlock_and_free;
++	}
++
++	chip->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(chip->hwmon_dev)) {
++		dev_err(&pdev->dev, "hwmon_device_register failed.\n");
++		ret = PTR_ERR(chip->hwmon_dev);
++		goto error_unregister_device;
++	}
++
++	platform_set_drvdata(pdev, chip);
++	mutex_unlock(&chip->lock);
++	return 0;
++
++error_unregister_device:
++	sysfs_remove_group(&pdev->dev.kobj, &ts5500_adc_sysfs_group);
++
++error_unlock_and_free:
++	mutex_unlock(&chip->lock);
++	kfree(chip);
++	return ret;
++}
++
++static struct platform_driver ts5500_adc_driver = {
++	.driver	= {
++		.name	= "ts5500_adc",
++		.owner	= THIS_MODULE,
 +	},
-+	.probe = ts5500_gpio_probe
++	.probe	= ts5500_adc_probe
 +};
 +
 +static const struct platform_device_id ts5500_devices[] = {
-+	{ "ts5500_gpio", 0 },
++	{ "ts5500_adc", 0 },
 +	{}
 +};
 +MODULE_DEVICE_TABLE(platform, ts5500_devices);
 +
-+static int __init ts5500_gpio_init(void)
++static int __init ts5500_adc_init(void)
 +{
-+	return platform_driver_register(&ts5500_gpio_driver);
++	return platform_driver_register(&ts5500_adc_driver);
 +}
-+module_init(ts5500_gpio_init);
++module_init(ts5500_adc_init);
 +
-+MODULE_AUTHOR("Jerome Oufella <jerome.oufella@savoirfairelinux.com>");
++MODULE_DESCRIPTION("TS-5500 mapped MAX197 ADC device driver");
++MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Technologic Systems TS-5500, GPIO/DIO driver");
-diff --git a/arch/x86/platform/ts5500/ts5500_gpio.h b/arch/x86/platform/ts5500/ts5500_gpio.h
+diff --git a/arch/x86/platform/ts5500/ts5500_adc.h b/arch/x86/platform/ts5500/ts5500_adc.h
 new file mode 100644
-index 0000000..7090263
+index 0000000..76d389f
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_gpio.h
-@@ -0,0 +1,60 @@
++++ b/arch/x86/platform/ts5500/ts5500_adc.h
+@@ -0,0 +1,62 @@
++#ifndef _TS5500_ADC_H
++#define _TS5500_ADC_H
++
++#define TS5500_ADC_CTRL_REG		0x195	/* Conversion state register */
++#define TS5500_ADC_INIT_LSB_REG		0x196	/* Init conv. / LSB register */
++#define TS5500_ADC_MSB_REG		0x197	/* MSB register */
 +/*
-+ * GPIO (DIO) driver for Technologic Systems TS-5500
-+ *
-+ * Copyright (c) 2010 Savoir-faire Linux Inc.
-+ *	Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Control bits of A/D command
++ * bits 0-2:	selected channel (0 - 7)
++ * bits 3:	uni/bipolar (0 = unipolar (ie 0 to +5V))
++ *			    (1 = bipolar (ie -5 to +5V))
++ * bit 4:	selected range (0 = 5v range, 1 = 10V range)
++ * bit 5-7:	padded zero (unused)
 + */
 +
-+#ifndef _TS5500_GPIO_H
-+#define _TS5500_GPIO_H
++#define TS5500_ADC_CHANNELS_MAX		8	/* 0 to 7 channels on device */
 +
-+#define TS5500_DIO1_0		0
-+#define TS5500_DIO1_1		1
-+#define TS5500_DIO1_2		2
-+#define TS5500_DIO1_3		3
-+#define TS5500_DIO1_4		4
-+#define TS5500_DIO1_5		5
-+#define TS5500_DIO1_6		6
-+#define TS5500_DIO1_7		7
-+#define TS5500_DIO1_8		8
-+#define TS5500_DIO1_9		9
-+#define TS5500_DIO1_10		10
-+#define TS5500_DIO1_11		11
-+#define TS5500_DIO1_12		12
-+#define TS5500_DIO1_13		13
-+#define TS5500_DIO2_0		14
-+#define TS5500_DIO2_1		15
-+#define TS5500_DIO2_2		16
-+#define TS5500_DIO2_3		17
-+#define TS5500_DIO2_4		18
-+#define TS5500_DIO2_5		19
-+#define TS5500_DIO2_6		20
-+#define TS5500_DIO2_7		21
-+#define TS5500_DIO2_8		22
-+#define TS5500_DIO2_9		23
-+#define TS5500_DIO2_10		24
-+#define TS5500_DIO2_11		25
-+/* #define TS5500_DIO2_12 - Keep commented out as it simply doesn't exist. */
-+#define TS5500_DIO2_13		26
-+#define TS5500_LCD_0		27
-+#define TS5500_LCD_1		28
-+#define TS5500_LCD_2		29
-+#define TS5500_LCD_3		30
-+#define TS5500_LCD_4		31
-+#define TS5500_LCD_5		32
-+#define TS5500_LCD_6		33
-+#define TS5500_LCD_7		34
-+#define TS5500_LCD_EN		35
-+#define TS5500_LCD_RS		36
-+#define TS5500_LCD_WR		37
++#define TS5500_ADC_BIPOLAR		0x08
++#define TS5500_ADC_UNIPOLAR		0x00
++#define TS5500_ADC_RANGE_5V		0x00	/* 0 to 5V range */
++#define TS5500_ADC_RANGE_10V		0x10	/* 0 to 10V range */
 +
-+/* Lines that can trigger IRQs */
-+#define TS5500_DIO1_13_IRQ	7
-+#define TS5500_DIO2_13_IRQ	6
-+#define TS5500_LCD_RS_IRQ	1
++#define TS5500_ADC_READ_DELAY		15	/* usec */
++#define TS5500_ADC_READ_BUSY_MASK	0x01
++#define TS5500_ADC_NAME			"MAX197 (8 channels)"
 +
-+#endif /* _TS5500_GPIO_H */
++/**
++ * struct ts5500_adc_platform_data
++ * @name:	Name of the device.
++ * @ioaddr:	I/O address containing:
++ *		.data:		Data register for conversion reading.
++ *		.ctrl:		A/D Control Register (bit 0 = 0 when
++ *				conversion completed).
++ * @read:	Information about conversion reading, with:
++ *		.delay:		Delay before next conversion.
++ *		.busy_mask:	Control register bit 0 equals 1 means
++ *				conversion is not completed yet.
++ * @ctrl:	Data tables addressable by [polarity][range].
++ * @ranges:	Ranges.
++ *		.min:		Min value.
++ *		.max:		Max value.
++ * @scale:	Polarity/Range coefficients to scale raw conversion reading.
++ */
++struct ts5500_adc_platform_data {
++	const char *name;
++	struct {
++		int data;
++		int ctrl;
++	} ioaddr;
++	struct {
++		u8 delay;
++		u8 busy_mask;
++	} read;
++	u8 ctrl[2][2];
++	struct {
++		int min[2][2];
++		int max[2][2];
++	} ranges;
++	int scale[2][2];
++};
++
++#endif
 -- 
 1.7.6
 
