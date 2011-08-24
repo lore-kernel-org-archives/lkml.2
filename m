@@ -1,79 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1HXSeY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:34:24 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44375 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753885Ab1HXSeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:34:20 -0400
-Subject: [PATCH 5/5] SUNRPC: remove rpcbind clients destruction on module
-	cleanup
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net
-Date: Wed, 24 Aug 2011 22:34:15 +0400
-Message-ID: <20110824183415.4924.36067.stgit@localhost6.localdomain6>
-In-Reply-To: <20110824183304.4924.94670.stgit@localhost6.localdomain6>
-References: <20110824183304.4924.94670.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753785Ab1HXSry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:47:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52353 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753699Ab1HXSrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 14:47:53 -0400
+Date: Wed, 24 Aug 2011 11:47:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Clifton Barnes <cabarnes@indesign-llc.com>
+Cc: <ryan@bluewatersys.com>, <haojian.zhuang@marvell.com>,
+        <johnpol@2ka.mipt.ru>, <simon.inizan@goobie.fr>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] w1: ds2780, fix deadlock upon insertion and
+ removal
+Message-Id: <20110824114703.e82021ec.akpm@linux-foundation.org>
+In-Reply-To: <4E550C35.4080700@indesign-llc.com>
+References: <4E550C35.4080700@indesign-llc.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need this anymore since now rpcbind clients are destroying during last
-RPC service shutdown.
+On Wed, 24 Aug 2011 10:35:33 -0400
+Clifton Barnes <cabarnes@indesign-llc.com> wrote:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Fixes the deadlock when inserting and removing the ds2780.
 
----
- net/sunrpc/rpcb_clnt.c   |   12 ------------
- net/sunrpc/sunrpc_syms.c |    3 ---
- 2 files changed, 0 insertions(+), 15 deletions(-)
-
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index f363efe..94a310d 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -1098,15 +1098,3 @@ static struct rpc_program rpcb_program = {
- 	.version	= rpcb_version,
- 	.stats		= &rpcb_stats,
- };
--
--/**
-- * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-- *
-- */
--void cleanup_rpcb_clnt(void)
--{
--	if (rpcb_local_clnt4)
--		rpc_shutdown_client(rpcb_local_clnt4);
--	if (rpcb_local_clnt)
--		rpc_shutdown_client(rpcb_local_clnt);
--}
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 9d08091..8ec9778 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -61,8 +61,6 @@ static struct pernet_operations sunrpc_net_ops = {
- 
- extern struct cache_detail unix_gid_cache;
- 
--extern void cleanup_rpcb_clnt(void);
--
- static int __init
- init_sunrpc(void)
- {
-@@ -102,7 +100,6 @@ out:
- static void __exit
- cleanup_sunrpc(void)
- {
--	cleanup_rpcb_clnt();
- 	rpcauth_remove_module();
- 	cleanup_socket_xprt();
- 	svc_cleanup_xprt_sock();
+When fixing a bug, please always provide a full description of that bug
+so that others can review the proposed fix.  "the deadlock" is not a
+complete description ;)
 
