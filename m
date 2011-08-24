@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1HXJbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 05:31:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44084 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1HXJbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 05:31:31 -0400
-Message-ID: <4E54C4ED.3060809@suse.cz>
-Date: Wed, 24 Aug 2011 11:31:25 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1756503Ab1HXJcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 05:32:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:50200 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557Ab1HXJcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 05:32:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,274,1312182000"; 
+   d="scan'208";a="41839535"
+Date: Wed, 24 Aug 2011 17:32:05 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Linux Netdev List <netdev@vger.kernel.org>
+Subject: Re: slow performance on disk/network i/o full speed after
+ drop_caches
+Message-ID: <20110824093205.GA5214@localhost>
+References: <4E5494D4.1050605@profihost.ag>
+ <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: gregkh@suse.de, alan@linux.intel.com,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-References: <13141210141189@kroah.org> <2337681.paSeVyBarJ@wuerfel> <4E53F750.2050408@suse.cz> <73013289.R6WJLciOm2@wuerfel>
-In-Reply-To: <73013289.R6WJLciOm2@wuerfel>
-X-Enigmail-Version: 1.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLEFYW0eDbXQ0Uixf-FjsxHZ_1nmnovNx1CWj=m-c-_vJw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 10:46 AM, Arnd Bergmann wrote:
-> On Tuesday 23 August 2011 20:54:08 Jiri Slaby wrote:
->> On 08/23/2011 08:46 PM, Arnd Bergmann wrote:
->>> According to http://kernelnewbies.org/BigKernelLock, I concluded back then
->>> that tty_wait_until_sent would always be called without BTM held. Has that
->>> changed recently, or did I miss a caller that holds the BTM?
->>
->> Every tty_operations->close and ->hangup :).
+On Wed, Aug 24, 2011 at 02:20:07PM +0800, Pekka Enberg wrote:
+> On Wed, Aug 24, 2011 at 9:06 AM, Stefan Priebe - Profihost AG
+> <s.priebe@profihost.ag> wrote:
+> > i hope this is the correct list to write to if it would be nice to give me a
+> > hint where i can ask.
+> >
+> > Kernel: 2.6.38
+> >
+> > I'm seeing some strange problems on some of our servers after upgrading to
+> > 2.6.38.
+> >
+> > I'm copying a 1GB file via scp from Machine A to Machine B. When B is
+> > freshly booted the file transfer is done with about 80 to 85 Mb/s. I can
+> > repeat that various times to performance degrease.
+> >
+> > Then after some days copying is only done with about 900kb/s up to 3Mb/s
+> > going up and down while transfering the file.
+> >
+> > When i then do drop_caches it works again on 80Mb/s.
+> >
+> > sync && echo 3 >/proc/sys/vm/drop_caches && sleep 2 && echo 0
+> >>/proc/sys/vm/drop_caches
+> >
+> > Attached is also an output of meminfo before and after drop_caches.
+> >
+> > What's going on here? MemFree is pretty high.
+> >
+> > Please CC me i'm not on list.
 > 
-> Ah, right, I remember. The chart I did was only to prove that locking was
-> consistent (i.e. no deadlocks), it ignored that the function needs to be
-> called without BTM because I had incorrectly convinced myself that the
-> wait_event_interruptible_timeout() didn't need to release it.
+> Interesting. I can imagine one or more of the following to be
+> involved: networking, vmscan, block, and writeback. Lets CC all of
+> them!
 > 
-> I think I just saw another problem: uart_close takes port->mutex while
-> holding the BTM, then calls tty_wait_until_sent(). If this releases
-> and reaquires the BTM, you get an AB-BA deadlock with port->mutex.
+> > # before drop_caches
+> >
+> > # cat /proc/meminfo
+> > MemTotal:        8185544 kB
+> > MemFree:         6670292 kB
+> > Buffers:          105164 kB
+> > Cached:           166672 kB
+> > SwapCached:            0 kB
+> > Active:           728308 kB
+> > Inactive:         567428 kB
+> > Active(anon):     639204 kB
+> > Inactive(anon):   394932 kB
+> > Active(file):      89104 kB
+> > Inactive(file):   172496 kB
+> > Unevictable:        2976 kB
+> > Mlocked:            2992 kB
+> > SwapTotal:       1464316 kB
+> > SwapFree:        1464316 kB
+> > Dirty:                52 kB
+> > Writeback:             0 kB
 
-Aargh, right. The question is why uart_close takes port->mutex there? It
-may take it even right before uart_shutdown. As tty_wait_until_sent (or
-uart_wait_until_sent) may be called e.g. from set_termios without that
-lock anyway. There are ->tx_empty and ->stop_rx that may need some
-protection. But those are register accessors, so they should be
-protected by some spinlock to not race with interrupts. Actually stop_rx
-is. And empty_rx is only in 8250.
+Since dirty/writeback pages are low, it seems not being throttled by
+balance_dirty_pages().
 
-And I don't see anything else there which would need be protected by the
-lock. Do you?
+Stefan, would you please run this several times on the server?
 
-thanks,
--- 
-js
-suse labs
+ps -eo user,pid,tid,class,rtprio,ni,pri,psr,pcpu,vsz,rss,pmem,stat,wchan:28,cmd | grep scp
+
+It will show where the scp task is blocked (the wchan field). Hope it helps.
+
+Thanks,
+Fengguang
