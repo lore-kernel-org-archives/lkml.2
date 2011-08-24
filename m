@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1HXRxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:53:31 -0400
-Received: from claw.goop.org ([74.207.240.146]:52878 "EHLO claw.goop.org"
+	id S1753472Ab1HXRyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:54:12 -0400
+Received: from claw.goop.org ([74.207.240.146]:52897 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753232Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753224Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Aug 2011 13:53:22 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 15/18] x86: use cmpxchg_flag() where applicable
-Date: Wed, 24 Aug 2011 10:53:09 -0700
-Message-Id: <9bc60b30fb677d95eb4fb9c58bdc1fa231991ccb.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 13/18] x86: add cmpxchg_flag() variant
+Date: Wed, 24 Aug 2011 10:53:07 -0700
+Message-Id: <738d736ecffa3bd32df76ae41188aa39c2ace941.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -28,132 +28,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
+Most callers of cmpxchg() direcly compare RETURN with OLD to see if it was
+successful.  This results in unnecessary conditional comparisons
+and conditionals since the cmpxchg instruction directly sets the flags
+to indicate success/failure.
+
+Add cmpxchg_flag() variants which return a boolean flag directly indicating
+success.  Unfortunately an asm() statement can't directly export status
+status flags, but sete isn't too bad.
+
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/cacheflush.h |    2 +-
- arch/x86/include/asm/rwsem.h      |    7 ++-----
- arch/x86/kernel/acpi/boot.c       |   10 ++++------
- arch/x86/kernel/cpu/mcheck/mce.c  |    2 +-
- arch/x86/xen/p2m.c                |   10 +++++-----
- 5 files changed, 13 insertions(+), 18 deletions(-)
+ arch/x86/include/asm/cmpxchg.h    |   48 +++++++++++++++++++++++++++++++-----
+ arch/x86/include/asm/cmpxchg_32.h |   14 ++++++++++
+ 2 files changed, 55 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
-index 4e12668..6ceae20 100644
---- a/arch/x86/include/asm/cacheflush.h
-+++ b/arch/x86/include/asm/cacheflush.h
-@@ -56,7 +56,7 @@ static inline void set_page_memtype(struct page *pg, unsigned long memtype)
- 	do {
- 		old_flags = pg->flags;
- 		new_flags = (old_flags & _PGMT_CLEAR_MASK) | memtype_flags;
--	} while (cmpxchg(&pg->flags, old_flags, new_flags) != old_flags);
-+	} while (!cmpxchg_flag(&pg->flags, old_flags, new_flags));
- }
- #else
- static inline unsigned long get_page_memtype(struct page *pg) { return -1; }
-diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
-index df4cd32..5a35263 100644
---- a/arch/x86/include/asm/rwsem.h
-+++ b/arch/x86/include/asm/rwsem.h
-@@ -126,11 +126,8 @@ static inline void __down_write(struct rw_semaphore *sem)
-  */
- static inline int __down_write_trylock(struct rw_semaphore *sem)
- {
--	long ret = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
--			   RWSEM_ACTIVE_WRITE_BIAS);
--	if (ret == RWSEM_UNLOCKED_VALUE)
--		return 1;
--	return 0;
-+	return cmpxchg_flag(&sem->count, RWSEM_UNLOCKED_VALUE,
-+			    RWSEM_ACTIVE_WRITE_BIAS);
- }
- 
+diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+index 76375ba..57d6706 100644
+--- a/arch/x86/include/asm/cmpxchg.h
++++ b/arch/x86/include/asm/cmpxchg.h
+@@ -64,18 +64,18 @@ extern void __cmpxchg_wrong_size(void);
  /*
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 9a966c5..6bf0bf8 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1669,22 +1669,20 @@ early_param("acpi_sci", setup_acpi_sci);
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+  * store NEW in MEM.  Return the initial value in MEM.  Success is
+- * indicated by comparing RETURN with OLD.
++ * determined by "compare"
+  */
+-#define __raw_cmpxchg(ptr, old, new, size, lock)			\
++#define __raw_cmpxchg_cmp(ptr, old, new, size, lock, rettype, compare)	\
+ ({									\
+-	__typeof__(*(ptr)) __ret;					\
++	rettype __ret;							\
+ 	__typeof__(*(ptr)) __old = (old);				\
+ 	__typeof__(*(ptr)) __new = (new);				\
+ 	switch (size) {							\
+ 	case 1:								\
+ 	{								\
+ 		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
+-		asm volatile(lock "cmpxchgb %2,%1"			\
++		asm volatile(lock "cmpxchgb %2,%1; " compare		\
+ 			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "q" (__new), "0" (__old)			\
+ 			     : "memory");				\
+@@ -84,7 +84,7 @@ extern void __cmpxchg_wrong_size(void);
+ 	case 2:								\
+ 	{								\
+ 		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
+-		asm volatile(lock "cmpxchgw %2,%1"			\
++		asm volatile(lock "cmpxchgw %2,%1; " compare		\
+ 			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+@@ -93,7 +93,7 @@ extern void __cmpxchg_wrong_size(void);
+ 	case 4:								\
+ 	{								\
+ 		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+-		asm volatile(lock "cmpxchgl %2,%1"			\
++		asm volatile(lock "cmpxchgl %2,%1; " compare		\
+ 			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+@@ -102,7 +102,7 @@ extern void __cmpxchg_wrong_size(void);
+ 	case 8:								\
+ 	{								\
+ 		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+-		asm volatile(lock "cmpxchgq %2,%1"			\
++		asm volatile(lock "cmpxchgq %2,%1; " compare		\
+ 			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+@@ -114,15 +114,40 @@ extern void __cmpxchg_wrong_size(void);
+ 	__ret;								\
+ })
  
- int __acpi_acquire_global_lock(unsigned int *lock)
- {
--	unsigned int old, new, val;
-+	unsigned int old, new;
- 	do {
- 		old = *lock;
- 		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
--		val = cmpxchg(lock, old, new);
--	} while (unlikely (val != old));
-+	} while (unlikely (!cmpxchg_flag(lock, old, new)));
- 	return (new < 3) ? -1 : 0;
- }
++/*
++ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
++ * store NEW in MEM.  Return the initial value in MEM.  Success is
++ * indicated by comparing RETURN with OLD.
++ */
++#define __raw_cmpxchg(ptr, old, new, size, lock)			\
++	__raw_cmpxchg_cmp(ptr, old, new, size, lock, __typeof__(*(ptr)), "")
++
++/*
++ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
++ * store NEW in MEM.  Return the initial value in MEM.  Success is
++ * indicated by a true return.
++ */
++#define __raw_cmpxchg_flag(ptr, old, new, size, lock)			\
++	__raw_cmpxchg_cmp(ptr, old, new, size, lock, unsigned char, "sete %0")
++
+ #define __cmpxchg(ptr, old, new, size)					\
+ 	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
  
- int __acpi_release_global_lock(unsigned int *lock)
- {
--	unsigned int old, new, val;
-+	unsigned int old, new;
- 	do {
- 		old = *lock;
- 		new = old & ~0x3;
--		val = cmpxchg(lock, old, new);
--	} while (unlikely (val != old));
-+	} while (unlikely (!cmpxchg_flag(lock, old, new)));
- 	return old & 0x1;
- }
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 3385ea2..99ae2d1 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -198,7 +198,7 @@ void mce_log(struct mce *mce)
- 		}
- 		smp_rmb();
- 		next = entry + 1;
--		if (cmpxchg(&mcelog.next, entry, next) == entry)
-+		if (cmpxchg_flag(&mcelog.next, entry, next))
- 			break;
- 	}
- 	memcpy(mcelog.entry + entry, mce, sizeof(struct mce));
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 141eb0d..5510082 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -448,7 +448,7 @@ static bool alloc_p2m(unsigned long pfn)
++#define __cmpxchg_flag(ptr, old, new, size)				\
++	__raw_cmpxchg_flag((ptr), (old), (new), (size), LOCK_PREFIX)
++
+ #define __sync_cmpxchg(ptr, old, new, size)				\
+ 	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
  
- 		p2m_mid_init(mid);
++#define __sync_cmpxchg_flag(ptr, old, new, size)			\
++	__raw_cmpxchg_flag((ptr), (old), (new), (size), "lock; ")
++
+ #define __cmpxchg_local(ptr, old, new, size)				\
+ 	__raw_cmpxchg((ptr), (old), (new), (size), "")
  
--		if (cmpxchg(top_p, p2m_mid_missing, mid) != p2m_mid_missing)
-+		if (!cmpxchg_flag(top_p, p2m_mid_missing, mid))
- 			free_p2m_page(mid);
- 	}
++#define __cmpxchg_local_flag(ptr, old, new, size)		\
++	__raw_cmpxchg_flag((ptr), (old), (new), (size), "")
++
+ #ifdef CONFIG_X86_32
+ # include "cmpxchg_32.h"
+ #else
+@@ -134,11 +159,20 @@ extern void __cmpxchg_wrong_size(void);
+ #define cmpxchg(ptr, old, new)						\
+ 	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
  
-@@ -470,7 +470,7 @@ static bool alloc_p2m(unsigned long pfn)
++#define cmpxchg_flag(ptr, old, new)					\
++	__cmpxchg_flag((ptr), (old), (new), sizeof(*ptr))
++
+ #define sync_cmpxchg(ptr, old, new)					\
+ 	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
  
- 		missing_mfn = virt_to_mfn(p2m_mid_missing_mfn);
- 		mid_mfn_mfn = virt_to_mfn(mid_mfn);
--		if (cmpxchg(top_mfn_p, missing_mfn, mid_mfn_mfn) != missing_mfn)
-+		if (!cmpxchg_flag(top_mfn_p, missing_mfn, mid_mfn_mfn))
- 			free_p2m_page(mid_mfn);
- 		else
- 			p2m_top_mfn_p[topidx] = mid_mfn;
-@@ -488,7 +488,7 @@ static bool alloc_p2m(unsigned long pfn)
++#define sync_cmpxchg_flag(ptr, old, new)				\
++	__sync_cmpxchg_flag((ptr), (old), (new), sizeof(*ptr))
++
+ #define cmpxchg_local(ptr, old, new)					\
+ 	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
++
++#define cmpxchg_local_flag(ptr, old, new)				\
++	__cmpxchg_local_flag((ptr), (old), (new), sizeof(*ptr))
+ #endif
  
- 		p2m_init(p2m);
+ #define xadd(ptr, inc)							\
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 3b573f6..0797bc6 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -111,6 +111,13 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
+ 				sizeof(*(ptr)));			\
+ 	__ret;								\
+ })
++
++#define cmpxchg_flag(ptr, o, n)			\
++({						\
++	__typeof__(*(ptr)) __orig = (o);	\
++	cmpxchg((ptr), __orig, (n)) == __orig;	\
++})
++
+ #define cmpxchg_local(ptr, o, n)					\
+ ({									\
+ 	__typeof__(*(ptr)) __ret;					\
+@@ -124,6 +131,13 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
+ 				sizeof(*(ptr)));			\
+ 	__ret;								\
+ })
++
++#define cmpxchg_local_flag(ptr, o, n)			\
++({							\
++	__typeof__(*(ptr)) __orig = (o);		\
++	cmpxchg_local((ptr), __orig, (n)) == __orig;	\
++})
++
+ #endif
  
--		if (cmpxchg(&mid[mididx], p2m_orig, p2m) != p2m_orig)
-+		if (!cmpxchg_flag(&mid[mididx], p2m_orig, p2m))
- 			free_p2m_page(p2m);
- 		else
- 			mid_mfn[mididx] = virt_to_mfn(p2m);
-@@ -600,8 +600,8 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 
- 		/* Swap over from MISSING to IDENTITY if needed. */
- 		if (p2m_top[topidx][mididx] == p2m_missing) {
--			WARN_ON(cmpxchg(&p2m_top[topidx][mididx], p2m_missing,
--				p2m_identity) != p2m_missing);
-+			WARN_ON(!cmpxchg_flag(&p2m_top[topidx][mididx], p2m_missing,
-+					      p2m_identity));
- 			return true;
- 		}
- 	}
+ #ifndef CONFIG_X86_CMPXCHG64
 -- 
 1.7.6
 
