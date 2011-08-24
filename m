@@ -1,92 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab1HXNWa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 09:22:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39583 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab1HXNW1 (ORCPT
+	id S1751960Ab1HXNWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 09:22:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55907 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab1HXNWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 09:22:27 -0400
-MIME-Version: 1.0
-Date: Wed, 24 Aug 2011 14:22:26 +0100
-Message-ID: <CAPM=9tz6r60CvNuoCcg+6tckQAyCZwZjK4K3_ZA9dzkFn-B+Rg@mail.gmail.com>
-Subject: oops on rmmod iwlagn on 3.1.0-rc3
-From: Dave Airlie <airlied@gmail.com>
-To: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Aug 2011 09:22:30 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 3/4] vfs: protect remounting superblock read-only
+Date: Wed, 24 Aug 2011 15:22:02 +0200
+Message-Id: <1314192123-29393-3-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1314191791-29218-1-git-send-email-miklos@szeredi.hu>
+References: <1314191791-29218-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running close to latest linus, just rmmod iwlagn.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Dave.
+Currently remouting superblock read-only is racy in a major way.
 
-[10878.480981] cfg80211:     (5490000 KHz - 5710000 KHz @ 40000 KHz),
-(N/A, 2700 mBm)
-[10878.492479] IP: [<ffffffff812d96bc>] dev_set_drvdata+0x26/0x34
-[10878.493988] PGD 21786a067 PUD 0
-[10878.495646] Oops: 0002 [#1] SMP
-[10878.497272] CPU 0
-[10878.497287] Modules linked in: snd_usb_audio snd_usbmidi_lib
-snd_rawmidi tun fuse bridge stp llc sunrpc cpufreq_ondemand
-acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6
-nf_defrag_ipv6 ip6table_filter ip6_tables arc4 iwlagn(-) mac80211
-snd_hda_codec_hdmi snd_hda_codec_conexant snd_hda_intel qcserial
-snd_hda_codec usb_wwan uvcvideo usbserial snd_hwdep aes_generic
-snd_seq ecb snd_seq_device microcode videodev btusb bluetooth
-v4l2_compat_ioctl32 cfg80211 snd_pcm joydev thinkpad_acpi iTCO_wdt
-intel_ips i2c_i801 iTCO_vendor_support snd_timer e1000e rfkill snd
-snd_page_alloc soundcore kvm_intel kvm ipv6 sdhci_pci sdhci mmc_core
-nouveau i915 ttm drm_kms_helper drm i2c_algo_bit i2c_core mxm_wmi wmi
-video [last unloaded: scsi_wait_scan]
-[10878.506228]
-[10878.507687] Pid: 12262, comm: rmmod Tainted: G        W
-3.1.0-rc3+ #13 LENOVO 2904HHM/2904HHM
-[10878.509248] RIP: 0010:[<ffffffff812d96bc>]  [<ffffffff812d96bc>]
-dev_set_drvdata+0x26/0x34
-[10878.510816] RSP: 0018:ffff8802160b9d78  EFLAGS: 00010202
-[10878.512331] RAX: 0000007ff7a141b5 RBX: ffff880200000091 RCX: 000000000000f733
-[10878.513877] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880200000091
-[10878.515363] RBP: ffff8802160b9d88 R08: 0000000000000002 R09: 0000ffff00066c0a
-[10878.516904] R10: 0000ffff00066c0a R11: ffff88022d4c29c0 R12: 0000000000000000
-[10878.518411] R13: ffff88022e7b8000 R14: ffffffffa04ce418 R15: 0000000000000008
-[10878.519931] FS:  00007fe239e82720(0000) GS:ffff88023bc00000(0000)
-knlGS:0000000000000000
-[10878.521438] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[10878.522995] CR2: 0000007ff7a1423d CR3: 0000000217298000 CR4: 00000000000006f0
-[10878.524540] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[10878.526163] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[10878.527726] Process rmmod (pid: 12262, threadinfo ffff8802160b8000,
-task ffff88022cc80000)
-[10878.529305] Stack:
-[10878.530927]  ffff88022d4c29c0 ffffffffa04ce340 ffff8802160b9da8
-ffffffffa04b9ce6
-[10878.532500]  0000000000000001 ffff88022e7b8090 ffff8802160b9dd8
-ffffffff812427e6
-[10878.534027]  ffffffff81b3ff20 ffff88022e7b8090 ffffffffa04ce3a0
-ffff88022e7b80f0
-[10878.535529] Call Trace:
-[10878.537025]  [<ffffffffa04b9ce6>] iwl_pci_remove+0x5b/0x68 [iwlagn]
-[10878.538532]  [<ffffffff812427e6>] pci_device_remove+0x3d/0x8f
-[10878.540205]  [<ffffffff812d978b>] __device_release_driver+0x86/0xcf
-[10878.541716]  [<ffffffff812d9e64>] driver_detach+0x82/0xaa
-[10878.543238]  [<ffffffff812d9650>] bus_remove_driver+0xb7/0xdb
-[10878.544761]  [<ffffffff81170854>] ? release_sysfs_dirent+0x92/0xb0
-[10878.546301]  [<ffffffff812da4fc>] driver_unregister+0x6a/0x72
-[10878.547809]  [<ffffffff812429b4>] pci_unregister_driver+0x44/0x89
-[10878.549332]  [<ffffffffa04acc54>]
-iwl_pci_unregister_driver+0x15/0x19 [iwlagn]
-[10878.550867]  [<ffffffffa04b9cfc>] iwl_exit+0x9/0x10 [iwlagn]
-[10878.552389]  [<ffffffff8107cc44>] sys_delete_module+0x1ba/0x22c
-[10878.553919]  [<ffffffff81095700>] ? audit_syscall_entry+0x145/0x171
-[10878.555438]  [<ffffffff8145c6c2>] system_call_fastpath+0x16/0x1b
-[10878.556959] Code: 00 00 00 5d c3 55 48 89 e5 41 54 53 66 66 66 66
-90 48 83 7f 08 00 48 89 fb 49 89 f4 75 09 e8 4e dc ff ff 85 c0 75 0d
-48 8b 43 08 <4c> 89 a0 88 00 00 00 31 c0 5b 41 5c 5d c3 55 48 89 e5 53
-52 66
-[10878.560483] RIP  [<ffffffff812d96bc>] dev_set_drvdata+0x26/0x34
-[10878.562200]  RSP <ffff8802160b9d78>
-[10878.563920] CR2: 0000007ff7a1423d
-[10878.626994] ---[ end trace e82e7c34f2061c1f ]---
+With the per mount read-only infrastructure it is now possible to
+prevent most races, which this patch attempts.
+
+Before starting the remount read-only, iterate through all mounts
+belonging to the superblock and if none of them have any pending
+writes, set sb->s_readonly_remount.  This indicates that remount is in
+progress and no further write requests are allowed.  If the remount
+succeeds set MS_RDONLY and reset s_readonly_remount.
+
+If the remounting is unsuccessful just reset s_readonly_remount.
+This can result in transient EROFS errors, despite the fact the
+remount failed.  Unfortunately hodling off writes is difficult as
+remount itself may touch the filesystem (e.g. through load_nls())
+which would deadlock.
+
+Small races still remain because delayed writes due to nlink going to
+zero but inode still having a reference are not dealt with by this
+patch.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/internal.h      |    1 +
+ fs/namespace.c     |   40 +++++++++++++++++++++++++++++++++++++++-
+ fs/super.c         |   22 ++++++++++++++++++----
+ include/linux/fs.h |    3 +++
+ 4 files changed, 61 insertions(+), 5 deletions(-)
+
+diff --git a/fs/internal.h b/fs/internal.h
+index fe327c2..f925271 100644
+--- a/fs/internal.h
++++ b/fs/internal.h
+@@ -74,6 +74,7 @@ extern int finish_automount(struct vfsmount *, struct path *);
+ 
+ extern void mnt_make_longterm(struct vfsmount *);
+ extern void mnt_make_shortterm(struct vfsmount *);
++extern int sb_prepare_remount_readonly(struct super_block *);
+ 
+ extern void __init mnt_init(void);
+ 
+diff --git a/fs/namespace.c b/fs/namespace.c
+index c369c32..263201c 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -311,6 +311,15 @@ static unsigned int mnt_get_writers(struct vfsmount *mnt)
+ #endif
+ }
+ 
++static int mnt_is_readonly(struct vfsmount *mnt)
++{
++	if (mnt->mnt_sb->s_readonly_remount)
++		return 1;
++	/* Order wrt setting s_flags/s_readonly_remount in do_remount() */
++	smp_rmb();
++	return __mnt_is_readonly(mnt);
++}
++
+ /*
+  * Most r/o checks on a fs are for operations that take
+  * discrete amounts of time, like a write() or unlink().
+@@ -349,7 +358,7 @@ int mnt_want_write(struct vfsmount *mnt)
+ 	 * MNT_WRITE_HOLD is cleared.
+ 	 */
+ 	smp_rmb();
+-	if (__mnt_is_readonly(mnt)) {
++	if (mnt_is_readonly(mnt)) {
+ 		mnt_dec_writers(mnt);
+ 		ret = -EROFS;
+ 		goto out;
+@@ -466,6 +475,35 @@ static void __mnt_unmake_readonly(struct vfsmount *mnt)
+ 	br_write_unlock(vfsmount_lock);
+ }
+ 
++int sb_prepare_remount_readonly(struct super_block *sb)
++{
++	struct vfsmount *mnt;
++	int err = 0;
++
++	br_write_lock(vfsmount_lock);
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (!(mnt->mnt_flags & MNT_READONLY)) {
++			mnt->mnt_flags |= MNT_WRITE_HOLD;
++			smp_mb();
++			if (mnt_get_writers(mnt) > 0) {
++				err = -EBUSY;
++				break;
++			}
++		}
++	}
++	if (!err) {
++		sb->s_readonly_remount = 1;
++		smp_wmb();
++	}
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (mnt->mnt_flags & MNT_WRITE_HOLD)
++			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++	}
++	br_write_unlock(vfsmount_lock);
++
++	return err;
++}
++
+ static void free_vfsmnt(struct vfsmount *mnt)
+ {
+ 	kfree(mnt->mnt_devname);
+diff --git a/fs/super.c b/fs/super.c
+index e8aad34..94c8ace 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -721,23 +721,33 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	/* If we are remounting RDONLY and current sb is read/write,
+ 	   make sure there are no rw files opened */
+ 	if (remount_ro) {
+-		if (force)
++		if (force) {
+ 			mark_files_ro(sb);
+-		else if (!fs_may_remount_ro(sb))
+-			return -EBUSY;
++		} else {
++			retval = sb_prepare_remount_readonly(sb);
++			if (retval)
++				return retval;
++
++			retval = -EBUSY;
++			if (!fs_may_remount_ro(sb))
++				goto cancel_readonly;
++		}
+ 	}
+ 
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+ 		if (retval) {
+ 			if(!force)
+-				return retval;
++				goto cancel_readonly;
+ 			/* If forced remount, go ahead despite any errors */
+ 			WARN(1, "forced remount of a %s fs returned %i\n",
+ 			     sb->s_type->name, retval);
+ 		}
+ 	}
+ 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
++	/* Needs to be ordered wrt mnt_is_readonly() */
++	smp_wmb();
++	sb->s_readonly_remount = 0;
+ 
+ 	/*
+ 	 * Some filesystems modify their metadata via some other path than the
+@@ -750,6 +760,10 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+ 	if (remount_ro && sb->s_bdev)
+ 		invalidate_bdev(sb->s_bdev);
+ 	return 0;
++
++cancel_readonly:
++	sb->s_readonly_remount = 0;
++	return retval;
+ }
+ 
+ static void do_emergency_remount(struct work_struct *work)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e2a67e6..e820478 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1464,6 +1464,9 @@ struct super_block {
+ 	int cleancache_poolid;
+ 
+ 	struct shrinker s_shrink;	/* per-sb shrinker handle */
++
++	/* Being remounted read-only */
++	int s_readonly_remount;
+ };
+ 
+ /* superblock cache pruning functions */
+-- 
+1.7.3.4
+
