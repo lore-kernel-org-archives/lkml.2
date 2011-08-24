@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1HXOMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:12:47 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:32093 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab1HXOMp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:12:45 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
-Thread-Topic: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
-Thread-Index: AQHMQxmwelNZej0M8Ey5TPtGzUjq3JUrvP0A//+izUCAAKNMgIAARhkw
-Date: Wed, 24 Aug 2011 14:12:43 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B26EC@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-19-git-send-email-kys@microsoft.com>
- <20110823224932.GF9641@kroah.com>
- <6E21E5352C11B742B20C142EB499E048081B2356@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110824030025.GD30779@kroah.com>
-In-Reply-To: <20110824030025.GD30779@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.72]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751808Ab1HXORh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:17:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab1HXORf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 10:17:35 -0400
+Date: Wed, 24 Aug 2011 16:14:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, menage@google.com, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH 06/16] freezer: make exiting tasks properly unfreezable
+Message-ID: <20110824141431.GA8562@redhat.com>
+References: <1313763382-12341-1-git-send-email-tj@kernel.org> <1313763382-12341-7-git-send-email-tj@kernel.org> <20110823155221.GB25808@redhat.com> <20110823194451.GH2803@mtj.dyndns.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110823194451.GH2803@mtj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, August 23, 2011 11:00 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
-> 
-> On Wed, Aug 24, 2011 at 12:38:09AM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:greg@kroah.com]
-> > > Sent: Tuesday, August 23, 2011 6:50 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> > > Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent()
-> code
+On 08/23, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Tue, Aug 23, 2011 at 05:52:21PM +0200, Oleg Nesterov wrote:
+> > > @@ -915,6 +913,12 @@ NORET_TYPE void do_exit(long code)
 > > >
-> > > On Fri, Jul 15, 2011 at 10:46:07AM -0700, K. Y. Srinivasan wrote:
-> > > > Now generate appropriate uevent based on the modalias string. As part of
-> this,
-> > > > cleanup the existing uevent code.
+> > >  	ptrace_event(PTRACE_EVENT_EXIT, code);
 > > >
-> > > Note, you just change the user api here, did you have tools that relied
-> > > on the old format?  If so, they just broke :(
+> > > +	/*
+> > > +	 * With ptrace notification done, there's no point in freezing from
+> > > +	 * here on.  Disallow freezing.
+> > > +	 */
+> > > +	current->flags |= PF_NOFREEZE;
 > >
-> > Prior to this, I don't think autoloading worked the way it should for these
-> > modules.
-> 
-> It didn't?  How did the mouse driver get autoloaded then, through the
-> pci/dmi tables?
+> > OK, but what PF_NOFREEZE actually means?
+> >
+> > Apart from "dont try to freeze" it means "no need to freeze", yes?
+>
+> Yes.
+>
+> > IOW, try_to_freeze_tasks() can succeed even if we have a lot of
+> > exitinig task which can make some activity, say, disk i/o. Is this
+> > correct?
+>
+> Hmmm... can it cause disk IOs after that point?  I skimmed through and
+> couldn't spot one
 
-You are right, prior to this all drivers were loaded using pci/dmi signatures.
+I am not sure. But, say, exit_files(). We can't know what f_op->flush()
+f_op->release() can do in general. Even without i/o the exiting task can
+do a lot of different things.
 
-Regards,
+> (the original code made simliar assumption albeit a
+> bit later).
 
-K. Y
+Yes, and this looks "safer". I think exit_mm()->clear_freeze_flag() was
+simply unneeded, but exit_state != 0 in freezable() looks understandable.
+do_each_thread() (in general) can't see the threads with exit_state != 0
+anyway, but we should skip zombies.
+
+
+Let me repeat, I do not know what the callers of try_to_freeze_tasks()
+actually need, probably this is fine.
+
+Oleg.
+
