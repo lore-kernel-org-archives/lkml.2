@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab1HXSQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:16:05 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61536 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab1HXSQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:16:03 -0400
+	id S1753232Ab1HXSRF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:17:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752651Ab1HXSRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 14:17:02 -0400
+Date: Wed, 24 Aug 2011 14:16:43 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, x86@kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        LKML <linux-kernel@vger.kernel.org>, jason.wessel@windriver.com
+Subject: Re: [RFC][PATCH 2/6] x86, nmi: create new NMI handler routines
+Message-ID: <20110824181643.GP2067@redhat.com>
+References: <1313786266-9585-1-git-send-email-dzickus@redhat.com>
+ <1313786266-9585-3-git-send-email-dzickus@redhat.com>
+ <20110824170411.GI2417@linux.vnet.ibm.com>
+ <20110824174456.GN2067@redhat.com>
+ <1314208261.6925.51.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <4E553ABF.3030904@kernel.dk>
-References: <201108241641.42676.philipp.reisner@linbit.com>
-	<CAGZ=bq+A1ExZYRnuBBwfAq7Ez37mpBtT1_T91AWcchDBZ3iqPw@mail.gmail.com>
-	<4E552E9C.2000104@kernel.dk>
-	<201108241949.43716.philipp.reisner@linbit.com>
-	<4E553ABF.3030904@kernel.dk>
-Date: Wed, 24 Aug 2011 21:16:02 +0300
-X-Google-Sender-Auth: O1ftiFyA1EaB7lYaQZ092x45sgw
-Message-ID: <CAOJsxLHNeZq-kOy2UorOTia7AO3UmfpaWm6gfx3WeW7J6F4hEw@mail.gmail.com>
-Subject: Re: [GIT PULL] drbd-8.4 for mainline
-From: Pekka Enberg <penberg@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Philipp Reisner <philipp.reisner@linbit.com>,
-        Kyle Moffett <kyle@moffetthome.net>, linux-kernel@vger.kernel.org,
-        drbd-dev@lists.linbit.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314208261.6925.51.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 8:54 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> So, please do this right. The email you sent is perfect for a 0/N header
-> email, then each patch must follow as a reply to that. There's git
-> send-email to help you with this. If you haven't used it before, I'd
-> advise you to do a dry-run or two to your own email address to ensure
-> that it produces the right result. When it does, then send it off to
-> lkml and myself. Then I too will see reviews and have a better chance of
-> judging whether this is mergeable now or not.
+On Wed, Aug 24, 2011 at 07:51:00PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-08-24 at 13:44 -0400, Don Zickus wrote:
+> > > > +   rcu_read_lock();
+> > > > +   a = rcu_dereference_raw(*ap);
+> > > 
+> > > The reason for rcu_dereference_raw() is to prevent lockdep from choking
+> > > due to being called from an NMI handler, correct?  If so, please add a
+> > > comment to this effect on this and similar uses.
+> > 
+> > That sounds right.  But honestly, I just copied what notifier_call_chain
+> > had.  Regardless, I will make sure to document that in my next version.
+> > Thanks! 
+> 
+> Not quite right, nmi_enter() does lockdep_disable() and makes
+> lock_is_held() return always true.
+> 
+> I think this (and the other sites) could do with rcu_dereference_check(,
+> lockdep_is_held(&desc->lock)); not that it wouldn't be anything but
+> documentation since the actual test isn't working from NMI context but I
+> do think its worth it for that alone.
 
-Another thing: there's roughly 500 commit in the pull request. Please
-don't send all of them at the same time if you want people to take a
-look at them.
+So you want me to remove the _raw part of the dereference?  I can test
+that with lockdep enabled to verify things don't go splat.
+
+Cheers,
+Don
