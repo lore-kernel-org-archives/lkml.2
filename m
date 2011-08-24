@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab1HXFbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 01:31:42 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:36751 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab1HXFbk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 01:31:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOJsxLHzFnP0GuUWyg4U91_AkrK8q5=k1ZhN3JikUxqLQNK5tQ@mail.gmail.com>
-References: <1314137806-5747-1-git-send-email-agraf@suse.de>
-	<CAOJsxLHzFnP0GuUWyg4U91_AkrK8q5=k1ZhN3JikUxqLQNK5tQ@mail.gmail.com>
-Date: Wed, 24 Aug 2011 13:31:39 +0800
-Message-ID: <CAM_iQpWD_uYT18XUGg=1FZDsvZx2kSSUEW+EtSYxgg5+gfHR7Q@mail.gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around Qemu to test kernels
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Alexander Graf <agraf@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752403Ab1HXFeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 01:34:14 -0400
+Received: from linux-sh.org ([111.68.239.195]:35219 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab1HXFeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 01:34:10 -0400
+Date: Wed, 24 Aug 2011 14:33:18 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-sh@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 2/2 v2] sh-sci / PM: Use power.irq_safe
+Message-ID: <20110824053317.GC26391@linux-sh.org>
+References: <201108202131.19479.rjw@sisk.pl> <201108212109.30399.rjw@sisk.pl> <201108212111.45012.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108212111.45012.rjw@sisk.pl>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 1:19 PM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> It's nice to see such an honest attempt at improving QEMU usability, Alexander!
->
-> One comment: in my experience, having shell scripts under
-> Documentation reduces the likelihood that people actually discover
-> them so you might want to consider putting it under scripts or tools.
->
+On Sun, Aug 21, 2011 at 09:11:44PM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Since sci_port_enable() and sci_port_disable() may be run with
+> interrupts off and they execute pm_runtime_get_sync() and
+> pm_runtime_put_sync(), respectively, the SCI device's
+> power.irq_safe flags has to be used to indicate that it is safe
+> to execute runtime PM callbacks for this device with interrupts off.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-I was going to give the same suggestion, +1 for tools/ directory.
-
-Thanks!
+Not sure how you want this one handled. Did you simply want to roll this
+in with your other patch with my Acked-by, or should I be taking this
+through my tree already regardless of the 1/2 patch?
