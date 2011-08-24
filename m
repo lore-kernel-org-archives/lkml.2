@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1HXRzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:55:45 -0400
-Received: from claw.goop.org ([74.207.240.146]:52892 "EHLO claw.goop.org"
+	id S1753228Ab1HXRzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:55:42 -0400
+Received: from claw.goop.org ([74.207.240.146]:52894 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215Ab1HXRxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753217Ab1HXRxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Aug 2011 13:53:21 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 04/18] x86/ticketlock: make large and small ticket versions of spin_lock the same
-Date: Wed, 24 Aug 2011 10:52:58 -0700
-Message-Id: <c65dd816341412ade7b714d5918d5af0a3a9ff32.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 11/18] x86/cmpxchg: move 64-bit set64_bit() to match 32-bit
+Date: Wed, 24 Aug 2011 10:53:05 -0700
+Message-Id: <a4e57d501236503d40f90793ad71ca921810d37f.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -28,68 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Make the bulk of __ticket_spin_lock look identical for large and small
-number of cpus.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h |   23 ++++++++---------------
- 1 files changed, 8 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/cmpxchg_64.h |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 61feeb5..894753f 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -70,19 +70,16 @@ static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
- #if (NR_CPUS < 256)
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	register union {
--		struct __raw_tickets tickets;
--		unsigned short slock;
--	} inc = { .slock = 1 << TICKET_SHIFT };
-+	register struct __raw_tickets inc = { .tail = 1 };
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
+index 423ae58..aeaa610 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -3,11 +3,6 @@
  
- 	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
--		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
-+		      : "+r" (inc), "+m" (lock->tickets) : : "memory", "cc");
+ #include <asm/alternative.h> /* Provides LOCK_PREFIX */
  
- 	for (;;) {
--		if (inc.tickets.head == inc.tickets.tail)
-+		if (inc.head == inc.tail)
- 			goto out;
- 		cpu_relax();
--		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
-+		inc.head = ACCESS_ONCE(lock->tickets.head);
- 	}
- out:	barrier();		/* make sure nothing creeps before the lock is taken */
- }
-@@ -108,21 +105,17 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- #else
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	unsigned inc = 1 << TICKET_SHIFT;
--	__ticket_t tmp;
-+	register struct __raw_tickets inc = { .tail = 1 };
- 
- 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
--		     : "+r" (inc), "+m" (lock->slock)
-+		     : "+r" (inc), "+m" (lock->tickets)
- 		     : : "memory", "cc");
- 
--	tmp = inc;
--	inc >>= TICKET_SHIFT;
+-static inline void set_64bit(volatile u64 *ptr, u64 val)
+-{
+-	*ptr = val;
+-}
 -
- 	for (;;) {
--		if ((__ticket_t)inc == tmp)
-+		if (inc.head == inc.tail)
- 			goto out;
- 		cpu_relax();
--		tmp = ACCESS_ONCE(lock->tickets.head);
-+		inc.head = ACCESS_ONCE(lock->tickets.head);
- 	}
- out:	barrier();		/* make sure nothing creeps before the lock is taken */
- }
+ extern void __xchg_wrong_size(void);
+ extern void __cmpxchg_wrong_size(void);
+ 
+@@ -66,6 +61,11 @@ extern void __cmpxchg_wrong_size(void);
+ #define xchg(ptr, v)							\
+ 	__xchg((v), (ptr), sizeof(*ptr))
+ 
++static inline void set_64bit(volatile u64 *ptr, u64 val)
++{
++	*ptr = val;
++}
++
+ #define __HAVE_ARCH_CMPXCHG 1
+ 
+ /*
 -- 
 1.7.6
 
