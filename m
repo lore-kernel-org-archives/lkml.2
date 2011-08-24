@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab1HXVWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:22:14 -0400
-Received: from eastrmfepi208.cox.net ([68.230.241.212]:45176 "EHLO
-	eastrmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab1HXVWN convert rfc822-to-8bit (ORCPT
+	id S1753764Ab1HXVXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:23:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60652 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753335Ab1HXVXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:22:13 -0400
-X-Greylist: delayed 845 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 17:22:12 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020205.4E55682B.00E2,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=aUFDW8FZeteuO/fxyvToEy2C7OWB/cKxsZjvUqUod7E=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=s7WxrzdoqFgA:10 a=IkcTkHD0fZMA:10
- a=kTUvB0TWC4kfFd9n2t+ykg==:17 a=ASLJr6tBVnQuFvWEl9oA:9
- a=Ool1Ops6P-KvLcjl0LQA:7 a=QEXdDO2ut3YA:10 a=y3iaKwrw0cI55juD:21
- a=OFu8v8PaZvq4ct5a:21 a=kTUvB0TWC4kfFd9n2t+ykg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110824170756.WK2CK.1510215.imail@eastrmwml35>
-Date: Wed, 24 Aug 2011 17:07:55 -0400
-From: WINS <enat03@cox.net>
-Reply-To: italiansuperenalott2011@forotrabajo.es
-Subject: CONGRATULATIONS
+	Wed, 24 Aug 2011 17:23:09 -0400
+Date: Wed, 24 Aug 2011 17:23:08 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hans de Goede <hdegoede@redhat.com>
+cc: Greg KH <greg@kroah.com>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: Add USBDEVFS_TRY_DISCONNECT ioctl
+In-Reply-To: <4E556743.4000106@redhat.com>
+Message-ID: <Pine.LNX.4.44L0.1108241719540.1643-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are please to inform you that €1,000,000.00 (EUROS) has been
-Awarded to you in the ITALIAN SUPER ENALOTTO ONLINE PROMOTION.
-acknowledge the receipt of this mail to Mr. Giorgio Alex with the details below.
+On Wed, 24 Aug 2011, Hans de Goede wrote:
 
-To process your claim, You are required to send the following details below:
+> Hi,
+> 
+> First of all: A big thanks to Alan for working on this. From my POV
+> the code looks good, but I'm only familiar with the usb parts
+> and not with the scsi parts.
+> 
+> One generic concern is the use of scsi_lock(host) in the
+> scsi_device_open / close callbacks. We need to be sure non
+> of the callers of these can already be holding the lock.
 
-*Name of Beneficiary:
-*Address:
-*City/State:
-*Nationality:
-*Country:
-*Sex:
-*Age:
-*Status:
-*Tel:
-*Occupation:
+The callers always runs in process context (because file open/close
+always uses process context) and the lock is a spinlock.  So no, the
+lock can't be held at the wrong time.
+
+
+> On 08/24/2011 10:45 PM, Greg KH wrote:
+
+> > I don't like the fact that if a driver doesn't contain check_busy() then
+> > it will automatically fall back to looking like it was a DISCONNECT
+> > call, which could give userspace a false sense of "everything was fine"
+> > when trying this out.
+> 
+> I've to agree with Greg here, what to do in case of a driver not
+> implementing check_busy and thus not really offering USBDEVFS_TRY_DISCONNECT
+> is policy and thus should be left to userspace. I suggest we just return
+> -ENOTTY in case of USBDEVFS_TRY_DISCONNECT and the bound driver does not
+> have checkbusy, then userspace can decide wether to fallback to a regular
+> disconnect, or to give up.
+
+Okay, I'll change the patch.  But the real question is whether the 
+basic idea is acceptable.
+
+Alan Stern
+
