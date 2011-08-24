@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1HXBa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:30:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55078 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755549Ab1HXBat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:30:49 -0400
-Message-ID: <4E545467.9070202@cn.fujitsu.com>
-Date: Wed, 24 Aug 2011 09:31:19 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        rjw@sisk.pl, paul@paulmenage.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/6] cgroup: subsys->attach_task() should be called after
- migration
-References: <1314138000-2049-1-git-send-email-tj@kernel.org> <1314138000-2049-2-git-send-email-tj@kernel.org> <20110824003234.GB23979@somewhere>
-In-Reply-To: <20110824003234.GB23979@somewhere>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-24 09:29:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-24 09:29:45,
-	Serialize complete at 2011-08-24 09:29:45
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755981Ab1HXBfG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:35:06 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61219 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1HXBfC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 21:35:02 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] zram: minor features and cleanups
+Date: Wed, 24 Aug 2011 08:34:46 +0700
+Message-Id: <1314149690-3177-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There have been a patch posted recently:
-> 
->         "[PATCH][BUGFIX] cgroups: fix ordering of calls in cgroup_attach_proc"
-> 
-> that not only fixes that ordering but also only attach the task if the
-> migration happened correctly (task not exited).
-> 
-> Can somebody queue it for 3.2 ?
-> 
+These changes address many of the issues list at:
+http://code.google.com/p/compcache/issues/list
 
-cgroup patches normally go through -mm tree.
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+
+Nitin Gupta (4):
+  Kernel config option for number of devices
+  Make gobal variables use unique names
+  Simplify zram disk resizing interface
+  Set initial disksize to some default value
+
+ drivers/staging/zram/Kconfig      |    9 ++++
+ drivers/staging/zram/zram_drv.c   |   93 ++++++++++++++++--------------------
+ drivers/staging/zram/zram_drv.h   |    6 +-
+ drivers/staging/zram/zram_sysfs.c |    4 +-
+ 4 files changed, 55 insertions(+), 57 deletions(-)
+
+-- 
+1.7.6
+
