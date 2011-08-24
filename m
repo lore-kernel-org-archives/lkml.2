@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1HXRtI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:49:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44761 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752116Ab1HXRtG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:49:06 -0400
+	id S1752921Ab1HXRtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:49:55 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:41856 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab1HXRtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:49:52 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [GIT PULL] drbd-8.4 for mainline
+Date: Wed, 24 Aug 2011 19:49:43 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-11-generic; KDE/4.6.2; i686; ; )
+Cc: Kyle Moffett <kyle@moffetthome.net>, linux-kernel@vger.kernel.org,
+        drbd-dev@lists.linbit.com
+References: <201108241641.42676.philipp.reisner@linbit.com> <CAGZ=bq+A1ExZYRnuBBwfAq7Ez37mpBtT1_T91AWcchDBZ3iqPw@mail.gmail.com> <4E552E9C.2000104@kernel.dk>
+In-Reply-To: <4E552E9C.2000104@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKNVckzkxM=ahV13kV=7-Jtj=WWkx_So4pCdVX3e8mdjPw@mail.gmail.com>
-References: <20110819175316.GA999@ime.usp.br> <CAOtrxKNVckzkxM=ahV13kV=7-Jtj=WWkx_So4pCdVX3e8mdjPw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 24 Aug 2011 10:47:43 -0700
-Message-ID: <CA+55aFyyJNnL54o=xRH7CubFLDaQwcF31sqd7tfBcfR8XfnX5g@mail.gmail.com>
-Subject: Re: [Bug 41622] [REGRESSION][BISECTED] Notebook crashes upon
- detecting the PCI subsystem with kernels >= 2.6.24-rc7
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>, Thomas Meyer <thomas@m3y3r.de>,
-        Gary Hade <garyhade@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, bugme-daemon@bugzilla.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108241949.43716.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/8/19 Rogério Brito <rbrito@ime.usp.br>:
->
-> Reverting the commit above with the patch below makes me able to
-> compile and run Linus's v3.1-rc2:
+Am Mittwoch 24 August 2011, 19:02:20 schrieb Jens Axboe:
+> On 2011-08-24 18:00, Kyle Moffett wrote:
+> > On Wed, Aug 24, 2011 at 10:41, Philipp Reisner
+> > 
+> > <philipp.reisner@linbit.com> wrote:
+> >> Hi Jens,
+> >> 
+> >> First the announcement of drbd-8.4, then the git pull-request text:
+> >> 
+> >> We are proud to announce the availability of DRBD-8.4.0.
+> >> 
+> >>  The most noticeable change is the support for multiple replicated
+> >>  volumes in a single DRBD connection.
+> >>  Write-ordering is obeyed among all writes in all volumes in a
+> >>  single connection.
+> >>  This feature is really important for users who DRBD for mirroring
+> >>  over longer distances. (Protocol A).
+> >> 
+> >> We do not only release DRBD-8.4.0 today:
+> >> The DRBD User's Guide was reviewed and updated to match DRBD-8.4.
+> >> 
+> >> I suggest to everybody who considers to upgrade from 8.3 to 8.4
+> >> to have a look at the "Recent changes" appendix of the UG:
+> >> http://www.drbd.org/users-guide/ap-recent-changes.html
+> >> 
+> >>  This release brings a new meta-data format. Forward (8.3 -> 8.4)
+> >>  conversion happens complete seamless. Backward conversion
+> >>  is done by a single command (drbdadm apply-al res).
+> >>  
+> >>  This release is protocol compatible with all it predecessor.
+> >>  Although, we do not recommend to run it in 8.3 - 8.4 for long
+> >>  time frames. We recommend to use that capability only for the
+> >>  rolling upgrade.
+> >>  
+> >>  drbdadm of 8.4 can parse config files of 8.3. We recommend
+> >>  to switch to the new configuration syntax after the upgrade
+> >>  of both nodes. (Use drbdadm dump to learn about the new
+> >>  config syntax)
+> > 
+> > Hm...
+> > 
+> > That's a lot of patches (including some protocol changes) that have not
+> > yet been reviewed by other kernel developers.
+> > 
+> > By officially releasing the kernel and user-space bits and then posting
+> > them to LKML and expecting them to be merged as-is, you are not really
+> > following the linux kernel development process.
+> > 
+> > Some of the reverts and commit messages make me concerned that your
+> > patch series has bisection issues; are you sure it compiles and runs
+> > after every patch?
+> > 
+> > I'm obviously not anywhere in the maintenance chain for this code, but
+> > it does look really funny.
+> 
+> That was my exact response a few weeks back, but I don't recall seeing
+> anything until this email today. Philipp, has this been reviewed at all
+> outside your internal group?
 
-Oh, I just noticed that the "revert" you did actually does way more than revert.
+Yes, I requested review on LKML. See here: https://lkml.org/lkml/2011/8/8/179
 
-> diff --cc drivers/pci/setup-bus.c
-> index 8a1d3c7,125e7b7..0000000
-> --- a/drivers/pci/setup-bus.c
-> +++ b/drivers/pci/setup-bus.c
-> @@@ -783,16 -486,14 +783,14 @@@ void __ref __pci_bus_size_bridges(struc
->                break;
->
->        case PCI_CLASS_BRIDGE_PCI:
-> +               /* don't size subtractive decoding (transparent)
-> +                * PCI-to-PCI bridges */
-> +               if (bus->self->transparent)
-> +                       break;
-
-The above is the real revert.
-
-The below should be totally independent, and I'd like to make sure
-that you test the revert without this change:
-
->                pci_bridge_check_ranges(bus);
-> -               if (bus->self->is_hotplug_bridge) {
-> -                       additional_io_size  = pci_hotplug_io_size;
-> -                       additional_mem_size = pci_hotplug_mem_size;
-> -               }
-> -               /*
-> -                * Follow thru
-> -                */
-> +               /* fall through */
->        default:
->  -              pbus_size_io(bus);
->  +              pbus_size_io(bus, 0, additional_io_size, add_head);
-
-And in fact I think that last line is just broken, you can't apply
-that on my current -git. What's going on?
-
-Also, I'd like to see the output of:
-
- - cat /proc/iomem
- - cat /proc/ioports
- - /sbin/lspci -vvxxx
-
-from that machine. And Bjorn asked for a full dmesg, and I see that
-email, but it didn't get updated into the bugzilla entry (apparently
-bugzilla is not smart enough to take email attachments and make them
-bugzilla attachments). Rogério, can you do that so that it doesn't get
-lost?
-
-                                 Linus
+Best,
+ Phil
