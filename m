@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab1HXA1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:27:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58911 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab1HXA1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:27:33 -0400
-Date: Wed, 24 Aug 2011 02:27:17 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] thp: tail page refcounting fix
-Message-ID: <20110824002717.GI23870@redhat.com>
-References: <1313740111-27446-1-git-send-email-walken@google.com>
- <20110822213347.GF2507@redhat.com>
- <CANN689HE=TKyr-0yDQgXEoothGJ0Cw0HLB2iOvCKrOXVF2DNww@mail.gmail.com>
- <20110824000914.GH23870@redhat.com>
+	id S1755046Ab1HXAct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:32:49 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49560 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1HXAcl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 20:32:41 -0400
+Date: Wed, 24 Aug 2011 02:32:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 1/6] cgroup: subsys->attach_task() should be called after
+ migration
+Message-ID: <20110824003234.GB23979@somewhere>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
+ <1314138000-2049-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110824000914.GH23870@redhat.com>
+In-Reply-To: <1314138000-2049-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 02:09:14AM +0200, Andrea Arcangeli wrote:
-> That's an optimization I can look into agreed. I guess I just added
-> one line and not even think too much at optimizing this,
-> split_huge_page isn't in a fast path.
+On Wed, Aug 24, 2011 at 12:19:55AM +0200, Tejun Heo wrote:
+> cgroup_attach_task() calls subsys->attach_task() after
+> cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
+> migration.  This actually affects some of the users.  Update
+> cgroup_attach_proc() such that ->attach_task() is called after
+> migration.
 
-So this would more or less be the optimization (untested):
+There have been a patch posted recently:
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1169,8 +1169,8 @@ static void __split_huge_page_refcount(s
- 		atomic_sub(page_mapcount(page_tail), &page->_count);
- 		BUG_ON(atomic_read(&page->_count) <= 0);
- 		BUG_ON(atomic_read(&page_tail->_count) != 0);
--		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
--		atomic_add(page_mapcount(page_tail), &page_tail->_count);
-+		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
-+			   &page_tail->_count);
- 
- 		/* after clearing PageTail the gup refcount can be released */
- 		smp_mb();
+        "[PATCH][BUGFIX] cgroups: fix ordering of calls in cgroup_attach_proc"
 
-This might also be possible but I'm scared by it because the value
-would be set by the C language without locked op, and I wonder then
-what happens with get_page_unless_zero runs. Now we relay on atomic
-(without lock prefix) writes from C for all pagetable updates
-already. So I guess this might actually work ok too in
-practice. get_page_unless_zero not incrementing anything sounds
-unlikely, and it's hard to see how it could increment zero or a random
-value if the "long" write is done in a single asm insn (like we relay
-in other places). But still the above is obviously safe, the below far
-less obvious and generally one always is forced to use locked ops on
-any region of memory concurrently modified to have a deterministic
-result. And there's nothing anywhere doing atomic_set on page->_count
-except at boot where there are no races before the pages are visible
-to the buddy allocator. So for now I'll stick to the above version
-unless somebody can guarantee the safety of the below (which I can't).
-Comments welcome..
+that not only fixes that ordering but also only attach the task if the
+migration happened correctly (task not exited).
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1169,8 +1169,8 @@ static void __split_huge_page_refcount(s
- 		atomic_sub(page_mapcount(page_tail), &page->_count);
- 		BUG_ON(atomic_read(&page->_count) <= 0);
- 		BUG_ON(atomic_read(&page_tail->_count) != 0);
--		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
--		atomic_add(page_mapcount(page_tail), &page_tail->_count);
-+		atomic_set(&page_tail->_count,
-+			   page_mapcount(page) + page_mapcount(page_tail) + 1);
- 
- 		/* after clearing PageTail the gup refcount can be released */
- 		smp_mb();
+Can somebody queue it for 3.2 ?
