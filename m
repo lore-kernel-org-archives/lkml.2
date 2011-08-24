@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1HXPtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:49:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39597 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172Ab1HXPtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:49:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,275,1312182000"; 
-   d="scan'208";a="10610479"
-Date: Wed, 24 Aug 2011 16:53:57 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, gregkh@suse.de,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-Message-ID: <20110824165357.477f760d@bob.linux.org.uk>
-In-Reply-To: <201108241320.47635.arnd@arndb.de>
-References: <13141210141189@kroah.org>
-	<73013289.R6WJLciOm2@wuerfel>
-	<4E54C4ED.3060809@suse.cz>
-	<201108241320.47635.arnd@arndb.de>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752350Ab1HXPwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:52:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65138 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab1HXPwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 11:52:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E5513FA.6060904@linux.intel.com>
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+	<20110824001137.GA23979@somewhere>
+	<CAFWT=83FNbAHUtPiouD3R06LEze5w1Mv07EL-x9VxSs_EXuruA@mail.gmail.com>
+	<20110824135852.GE23979@somewhere>
+	<4E5513FA.6060904@linux.intel.com>
+Date: Wed, 24 Aug 2011 18:52:01 +0300
+Message-ID: <CAJL_dMug+L0oQjeDs_3Xs2s2=-_3ci-Ab5-iDS8Up5u-xbaHiw@mail.gmail.com>
+Subject: Re: Bug Report for Linux Kernel 3.x
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Steevven1 <steevven1@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's not clear to me what state->mutex protects in the serial_core,
-> but it has been around forever (used to be called state->sem) and is
-> held in all uart functions, which is at least consistent. IIRC what
-> Alan's plan for this was, uart_close should eventually get changed to
-> use tty_port_close_start or even tty_port_close. Maybe the time for
-> that has come now, lacking better alternatives?
+Hi all,
 
-That was certainly the plan.
 
-> A lot of other drivers call tty_port_close_start() before taking
-> port->mutex.
+Make sure you read this:
 
-You don't need the port->mutex for tty_port_close_start() if I got it
-right, the reason for taking it across the whole of tty_port_close is
-so we would end up with a simple API which could be explained as
+Tweaks To Extend The Battery Life Of Intel Linux Notebooks
+http://www.phoronix.com/scan.php?page=article&item=intel_i915_power&num=1
 
-"open, close and hangup manage locking internally, you will never get
- the events overlapping in any callback. Initialize and shutdown
- callbacks will only be called once with each initialize of the first
- open matching a shutdown of the final close"
-
-It has no meaningful performance impact so it seemed silly not to
-provide a somewhat more accident-proof API.
+Linux 3.1 Kernel Draws More Power With Another Regression
+http://www.phoronix.com/scan.php?page=article&item=linux_31_power_regress&num=1
