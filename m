@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab1HXR5d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:57:33 -0400
-Received: from claw.goop.org ([74.207.240.146]:52878 "EHLO claw.goop.org"
+	id S1753139Ab1HXRxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:53:18 -0400
+Received: from claw.goop.org ([74.207.240.146]:52848 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753007Ab1HXRxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:53:19 -0400
+	id S1752865Ab1HXRxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:53:15 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,118 +14,76 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 02/18] x86/ticketlock: convert spin loop to C
-Date: Wed, 24 Aug 2011 10:52:56 -0700
-Message-Id: <f04120629b8b1cfa1c306373e34320687305a518.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 00/18] x86: Ticket lock + cmpxchg cleanup
+Date: Wed, 24 Aug 2011 10:52:54 -0700
+Message-Id: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-The inner loop of __ticket_spin_lock isn't doing anything very special,
-so reimplement it in C.
+Hi all,
 
-For the 8 bit ticket lock variant, we use a register union to get direct
-access to the lower and upper bytes in the tickets, but unfortunately gcc
-won't generate a direct comparison between the two halves of the register,
-so the generated asm isn't quite as pretty as the hand-coded version.
-However benchmarking shows that this is actually a small improvement in
-runtime performance on some benchmarks, and never a slowdown.
+[ Change from last post: use PeterZ's idea to retain link-time
+  reporting of bad sized arguments for xchg/cmpxchg/xadd. ]
 
-We also need to make sure there's a barrier at the end of the lock loop
-to make sure that the compiler doesn't move any instructions from within
-the locked region into the region where we don't yet own the lock.
+This is a repost of the ticketlock cleanup I posted for the last mergewindow.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
- 1 files changed, 29 insertions(+), 29 deletions(-)
+The main differences are:
+ - put "asm volatiles" into the locked unlock path
+ - tidy up xadd helper to put it into a common place
+ - clean up the rest of cmpxchg.h to remove most of the 32/64 duplication
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index d6d5784..f48a6e3 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -58,21 +58,21 @@
- #if (NR_CPUS < 256)
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	unsigned short inc = 1 << TICKET_SHIFT;
--
--	asm volatile (
--		LOCK_PREFIX "xaddw %w0, %1\n"
--		"1:\t"
--		"cmpb %h0, %b0\n\t"
--		"je 2f\n\t"
--		"rep ; nop\n\t"
--		"movb %1, %b0\n\t"
--		/* don't need lfence here, because loads are in-order */
--		"jmp 1b\n"
--		"2:"
--		: "+Q" (inc), "+m" (lock->slock)
--		:
--		: "memory", "cc");
-+	register union {
-+		struct __raw_tickets tickets;
-+		unsigned short slock;
-+	} inc = { .slock = 1 << TICKET_SHIFT };
-+
-+	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
-+		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
-+
-+	for (;;) {
-+		if (inc.tickets.head == inc.tickets.tail)
-+			goto out;
-+		cpu_relax();
-+		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
-+	}
-+out:	barrier();		/* make sure nothing creeps before the lock is taken */
- }
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
-@@ -105,22 +105,22 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
- 	unsigned inc = 1 << TICKET_SHIFT;
--	unsigned tmp;
-+	__ticket_t tmp;
- 
--	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
--		     "movzwl %w0, %2\n\t"
--		     "shrl $16, %0\n\t"
--		     "1:\t"
--		     "cmpl %0, %2\n\t"
--		     "je 2f\n\t"
--		     "rep ; nop\n\t"
--		     "movzwl %1, %2\n\t"
--		     /* don't need lfence here, because loads are in-order */
--		     "jmp 1b\n"
--		     "2:"
--		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
--		     :
--		     : "memory", "cc");
-+	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
-+		     : "+r" (inc), "+m" (lock->slock)
-+		     : : "memory", "cc");
-+
-+	tmp = inc;
-+	inc >>= TICKET_SHIFT;
-+
-+	for (;;) {
-+		if ((__ticket_t)inc == tmp)
-+			goto out;
-+		cpu_relax();
-+		tmp = ACCESS_ONCE(lock->tickets.head);
-+	}
-+out:	barrier();		/* make sure nothing creeps before the lock is taken */
- }
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+As a bonus, I added some cmpxchg_flag() variants, which return a bool
+rather than the old value, which saves the caller from having to do a
+comparison (since cmpxchg itself sets the flags).  This is useful
+since many callers of cmpxchg() only care whether it worked without
+actually getting the old value.
+
+This is also available at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/ticketlock-cleanup
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (18):
+  x86/ticketlock: clean up types and accessors
+  x86/ticketlock: convert spin loop to C
+  x86/ticketlock: Use C for __ticket_spin_unlock
+  x86/ticketlock: make large and small ticket versions of spin_lock the
+    same
+  x86/ticketlock: make __ticket_spin_lock common
+  x86/ticketlock: make __ticket_spin_trylock common
+  x86: add xadd helper macro
+  x86/ticketlock: use xadd helper
+  x86/cmpxchg: linux/alternative.h has LOCK_PREFIX
+  x86/cmpxchg: move 32-bit __cmpxchg_wrong_size to match 64 bit.
+  x86/cmpxchg: move 64-bit set64_bit() to match 32-bit
+  x86/cmpxchg: unify cmpxchg into cmpxchg.h
+  x86: add cmpxchg_flag() variant
+  x86/ticketlocks: use cmpxchg_flag for trylock
+  x86: use cmpxchg_flag() where applicable
+  x86: report xchg/cmpxchg/xadd usage errors consistently
+  x86: add local and sync variants of xadd
+  x86: use xadd helper more widely
+
+ arch/x86/include/asm/atomic.h         |    4 +-
+ arch/x86/include/asm/atomic64_64.h    |    4 +-
+ arch/x86/include/asm/cacheflush.h     |    2 +-
+ arch/x86/include/asm/cmpxchg.h        |  223 +++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/cmpxchg_32.h     |  128 ++-----------------
+ arch/x86/include/asm/cmpxchg_64.h     |  131 -------------------
+ arch/x86/include/asm/rwsem.h          |   11 +--
+ arch/x86/include/asm/spinlock.h       |  140 +++++++--------------
+ arch/x86/include/asm/spinlock_types.h |   22 +++-
+ arch/x86/include/asm/uv/uv_bau.h      |    4 +-
+ arch/x86/kernel/acpi/boot.c           |   10 +-
+ arch/x86/kernel/cpu/mcheck/mce.c      |    2 +-
+ arch/x86/xen/p2m.c                    |   10 +-
+ 13 files changed, 321 insertions(+), 370 deletions(-)
+
 -- 
 1.7.6
 
