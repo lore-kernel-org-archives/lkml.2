@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab1HXUjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:39:33 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:50173 "EHLO smtp.ispras.ru"
+	id S1753154Ab1HXUpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:45:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35621 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab1HXUjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:39:32 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@ispras.ru
-Subject: [PATCH] [SCSI] megaraid_sas: Fix mismatch in megasas_reset_fusion mutex lock-unlock
-Date: Thu, 25 Aug 2011 00:39:25 +0400
-Message-Id: <1314218365-12295-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752116Ab1HXUpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 16:45:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM / Runtime: Correct documentation of pm_runtime_irq_safe()
+Date: Wed, 24 Aug 2011 22:46:41 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc2+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108242246.41574.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of MEGASAS_HW_CRITICAL_ERROR goto out is invalid since
-we have not locked mutex and have not set MEGASAS_FUSION_IN_RESET bit yet.
-The patch replaces goto by immediate return.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+The description of pm_runtime_irq_safe() has to be updated to follow
+the code after commit 02b2677 (PM / Runtime: Allow _put_sync() from
+interrupts-disabled context).
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/scsi/megaraid/megaraid_sas_fusion.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ Documentation/power/runtime_pm.txt |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-index f13e7ab..8b59fb9 100644
---- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-@@ -2057,8 +2057,7 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
- 	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
- 		printk(KERN_WARNING "megaraid_sas: Hardware critical error, "
- 		       "returning FAILED.\n");
--		retval = FAILED;
--		goto out;
-+		return FAILED;
- 	}
+Index: linux/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux.orig/Documentation/power/runtime_pm.txt
++++ linux/Documentation/power/runtime_pm.txt
+@@ -431,8 +431,7 @@ drivers/base/power/runtime.c and include
  
- 	mutex_lock(&instance->reset_mutex);
--- 
-1.7.4.1
-
+   void pm_runtime_irq_safe(struct device *dev);
+     - set the power.irq_safe flag for the device, causing the runtime-PM
+-      suspend and resume callbacks (but not the idle callback) to be invoked
+-      with interrupts disabled
++      callbacks to be invoked with interrupts off
+ 
+   void pm_runtime_mark_last_busy(struct device *dev);
+     - set the power.last_busy field to the current time
