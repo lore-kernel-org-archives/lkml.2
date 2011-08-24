@@ -1,55 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506Ab1HXVu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:50:57 -0400
-Received: from mail-yi0-f70.google.com ([209.85.218.70]:40999 "EHLO
-	mail-yi0-f70.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab1HXVu4 (ORCPT
+	id S1751964Ab1HXVvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:51:05 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:4115 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab1HXVvC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:50:56 -0400
-X-Greylist: delayed 1646 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 17:50:56 EDT
+	Wed, 24 Aug 2011 17:51:02 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+ mod_devicetable.h
+Thread-Topic: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+ mod_devicetable.h
+Thread-Index: AQHMQxTTgzmsMn/8gUaVtEtcxauI8JUruumA//+rW0CAAJyGgIAAbFsAgAC0IAD//5FzEA==
+Date: Wed, 24 Aug 2011 21:51:00 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B29C8@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-3-git-send-email-kys@microsoft.com>
+ <20110823224157.GA9641@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B236E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110824025913.GC30779@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B27B9@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110824201144.GA28667@kroah.com>
+In-Reply-To: <20110824201144.GA28667@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.72]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKMgdSWXRacAy8AVp8q1Zst2NKhvwbUDrhp1pMN5fme9ew@mail.gmail.com>
-References: <20110819175316.GA999@ime.usp.br> <CAOtrxKNVckzkxM=ahV13kV=7-Jtj=WWkx_So4pCdVX3e8mdjPw@mail.gmail.com>
- <CA+55aFyyJNnL54o=xRH7CubFLDaQwcF31sqd7tfBcfR8XfnX5g@mail.gmail.com>
- <CAOtrxKN3sugEcNPb0MkihAJ6P+idAUfGnJBoBq_kwxsDiHdR+A@mail.gmail.com> <CAOtrxKMgdSWXRacAy8AVp8q1Zst2NKhvwbUDrhp1pMN5fme9ew@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 24 Aug 2011 15:23:06 -0600
-Message-ID: <CAErSpo79Wu7fvm=bCpSN=ydfb9u64r=_WVoV3qBmjqb76CKjXg@mail.gmail.com>
-Subject: Re: [Bug 41622] [REGRESSION][BISECTED] Notebook crashes upon
- detecting the PCI subsystem with kernels >= 2.6.24-rc7
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Thomas Meyer <thomas@m3y3r.de>, Gary Hade <garyhade@us.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        bugme-daemon@bugzilla.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If there is anything else that you would like me to change or to
-> provide any extra information, then please let me know and I will do
-> my best.
 
-I'd still like to see a dmesg log with no arguments (remove the
-"acpi=off pnpbios=off noapic nolapic" arguments).  Your machine is new
-enough that we'll use PCI _CRS by default, and I'd like to make sure
-we're doing the right thing.
 
-I assume that with no arguments, you still need the "skip transparent
-bridge sizing" change to boot.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, August 24, 2011 4:12 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+> mod_devicetable.h
+> 
+> On Wed, Aug 24, 2011 at 04:46:11PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Tuesday, August 23, 2011 10:59 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > > Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
+> > > mod_devicetable.h
+> > >
+> > > On Wed, Aug 24, 2011 at 12:44:38AM +0000, KY Srinivasan wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Greg KH [mailto:greg@kroah.com]
+> > > > > Sent: Tuesday, August 23, 2011 6:42 PM
+> > > > > To: KY Srinivasan
+> > > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > > > > Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id
+> to
+> > > > > mod_devicetable.h
+> > > > >
+> > > > > On Fri, Jul 15, 2011 at 10:45:51AM -0700, K. Y. Srinivasan wrote:
+> > > > > > In preparation for implementing vmbus aliases for auto-loading
+> > > > > > Hyper-V drivers, define vmbus specific device ID.
+> > > > > >
+> > > > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > > > ---
+> > > > > >  include/linux/mod_devicetable.h |    7 +++++++
+> > > > > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > > > > >
+> > > > > > diff --git a/include/linux/mod_devicetable.h
+> > > > > b/include/linux/mod_devicetable.h
+> > > > > > index ae28e93..5a12377 100644
+> > > > > > --- a/include/linux/mod_devicetable.h
+> > > > > > +++ b/include/linux/mod_devicetable.h
+> > > > > > @@ -405,6 +405,13 @@ struct virtio_device_id {
+> > > > > >  };
+> > > > > >  #define VIRTIO_DEV_ANY_ID	0xffffffff
+> > > > > >
+> > > > > > +/*
+> > > > > > + * For Hyper-V devices we use the device guid as the id.
+> > > > > > + */
+> > > > > > +struct hv_vmbus_device_id {
+> > > > > > +	__u8 guid[16];
+> > > > > > +};
+> > > > >
+> > > > > Why do you not need a driver_data pointer here?  Are you sure you aren't
+> > > > > ever going to need it in the future?  Hint, I think you will...
+> > > >
+> > > > I am not sure I am following you here; the guid is the device ID and it is
+> > > > guaranteed to remain the same. What is the driver _data pointer here
+> > > > you are referring to here.  While some device id have the _data pointer,
+> > > > there are others that don't - for instance struct virtio_device_id. In
+> > > > our case, I am not sure how I would use this private pointer.
+> > >
+> > > You use it like all other drivers use it, only if needed.
+> >
+> > Fair enough; the point is I am not sure how I would use it.
+> >
+> > >
+> > > Hint, I think you need to use it in your hv_utils driver, it would
+> > > reduce the size of your code and simplify your logic.
+> >
+> > Could you expand on this. Currently the util driver handles a bunch
+> > services that have their own guids - and these have been included
+> > in the idtable. How would having the pointer simplify this code.
+> 
+> It would allow you, in your probe function, to do something different
+> depending on the guid that the probe function was matching on.  So you
+> would not have to check the guid again to do that, just use the data
+> pointed in that void pointer and away you go.
+> 
+> As an example, look at drivers/usb/class/cdc-acm.c, the acm_ids[]
+> variable which uses the driver_info field to contain a quirk for the
+> device.
 
-I don't really like that change because in __pci_bus_size_bridges(),
-it's not obvious why sizing transparent bridges should be a problem.
-If growing transparent bridge windows makes us run out of space, let's
-put the smarts ("this bridge is transparent, we can take advantage of
-subtractive decode so we may not need to grow the positive decode
-windows") at the point where we grow, not at the point where we size.
-If we do have enough space, growing the positive decode windows is
-better because they're faster than subtractive decode.
+Ok; this makes sense. But I currently don't have any quirks to support!
+The util driver is not even a driver in the true sense. I made it a driver and
+added the probe function just to support auto-loading with the vmbus ID space
+that I am trying to implement here - the probe function does nothing.
 
-Bjorn
+So, if it is ok with you, I will not add driver_data pointer since I will not be
+using it.
+ 
+> 
+> > I looked at the usage of this in PCI and it appears to be for supporting
+> > dynamic  IDs for existing drivers.
+> 
+> No, that's exactly wrong.  dynamic ids play havoc with this pointer,
+> making some drivers not be able to handle dynamic ids because they rely
+> on it for some driver-specific information to be passed in it, which
+> dynamic ids can not handle.
+> 
+> Oh, have you remembered to turn off dynamic ids for these devices?  Or
+> do you support them properly?
+
+I don't support dynamic IDs. What would I need to do to turn it off.
+
+Regards,
+
+K. Y
