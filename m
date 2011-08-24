@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1HXGIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 02:08:06 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:46689 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab1HXGID (ORCPT
+	id S1755170Ab1HXGLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 02:11:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46809 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab1HXGK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 02:08:03 -0400
-Subject: Re: b43 crash with fragmented packet
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1314163238.4478.8.camel@edumazet-laptop> (sfid-20110824_074509_254388_9F8F7B58)
-References: <1314152883.4573.0.camel@jlt3.sipsolutions.net>
-	 <1314163238.4478.8.camel@edumazet-laptop>
-	 (sfid-20110824_074509_254388_9F8F7B58)
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 23:08:15 -0700
-Message-ID: <1314166095.4719.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Aug 2011 02:10:57 -0400
+Date: Tue, 23 Aug 2011 23:10:51 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: JJ Ding <jj_ding@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
+        =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Alessandro Rubini <rubini@cvml.unipv.it>
+Subject: Re: [PATCH v2 0/7] Input: elantech: add support for newer hardware
+Message-ID: <20110824061051.GA15604@core.coreip.homeip.net>
+References: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
+ <87wre31hnu.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wre31hnu.fsf@emc.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-24 at 07:20 +0200, Eric Dumazet wrote:
-> Le mardi 23 août 2011 à 19:28 -0700, Johannes Berg a écrit :
-> > Just had a crash in mac80211 with an apparently fragmented packet
-> > (segfault in ieee80211_rx_h_defragment), I can send the stacktrace but I
-> > can't make much sense of it -- anyone see something similar?
-> > 
-> 
-> 
-> 
-> Send it, preferably to netdev, since its probably more suited ;)
+Hi JJ,
 
-Err, I guess I messed up, I meant to send this to linux-wireless, sorry
-folks.
+On Wed, Aug 24, 2011 at 01:51:17PM +0800, JJ Ding wrote:
+> Sorry.
+> linux-kernel and linux-input complains patch #2's subject
+> ETP_2FT_XXXX looks like spam.
+> (5.1.0 - Unknown address error 550-'5.7.1 Content-Policy reject msg: The
+> capital Triple-X in subject is way too often associated with junk email,
+> please rephrase.  BF:<H 0>; S1752956Ab1HXFgV'
+> )
+> so patch #2 is blocked.
+> Please ignore this series.
+> I will rephase and resend.
 
-johannes
+Just resend that one patch changing subject to ETP_2FT_* or similar...
+No need to resend the rest of the patches.
 
+Thanks.
+
+-- 
+Dmitry
