@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab1HXVXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:23:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:60652 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753335Ab1HXVXJ (ORCPT
+	id S1753798Ab1HXVZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:25:26 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:52305 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622Ab1HXVZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:23:09 -0400
-Date: Wed, 24 Aug 2011 17:23:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hans de Goede <hdegoede@redhat.com>
-cc: Greg KH <greg@kroah.com>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: Add USBDEVFS_TRY_DISCONNECT ioctl
-In-Reply-To: <4E556743.4000106@redhat.com>
-Message-ID: <Pine.LNX.4.44L0.1108241719540.1643-100000@iolanthe.rowland.org>
+	Wed, 24 Aug 2011 17:25:25 -0400
+X-Auth-Info: v5y9B+Mx6aAMQypztwrWVYNjWUUipJOynTw5a4W9Cm8=
+To: Joe Perches <joe@perches.com>
+cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Graeme Russ <graeme.russ@gmail.com>,
+        U-Boot Users <u-boot@lists.denx.de>, linux-kernel@vger.kernel.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [U-Boot] [RFC PATCH] checkpatch.pl: Add ability to ignore various messages
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+In-reply-to: <1311804639.21169.22.camel@Joe-Laptop>
+References: <1303713156.1745.38.camel@Joe-Laptop> <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com> <20110727211707.139ED15794C3@gemini.denx.de> <1311804639.21169.22.camel@Joe-Laptop>
+Comments: In-reply-to Joe Perches <joe@perches.com>
+   message dated "Wed, 27 Jul 2011 15:10:39 -0700."
+Date: Wed, 24 Aug 2011 23:25:21 +0200
+Message-Id: <20110824212521.9B48811F9E76@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011, Hans de Goede wrote:
+Dear Joe Perches,
 
-> Hi,
+In message <1311804639.21169.22.camel@Joe-Laptop> you wrote:
+>
+> > Did you receive any feedback for your proposal, especially from Andrew
+> > Morton?
+> > This feature would be really useful for us, but I'd rather see this in
+> > mainline than starting a fork.
 > 
-> First of all: A big thanks to Alan for working on this. From my POV
-> the code looks good, but I'm only familiar with the usb parts
-> and not with the scsi parts.
-> 
-> One generic concern is the use of scsi_lock(host) in the
-> scsi_device_open / close callbacks. We need to be sure non
-> of the callers of these can already be holding the lock.
+> A better version is in Linus' current 3.0+ as of a couple of days ago.
+> It's not in 3.0.
 
-The callers always runs in process context (because file open/close
-always uses process context) and the lock is a spinlock.  So no, the
-lock can't be held at the wrong time.
+Great.  Are you planning to submit a patch to add this into U-Boot?
 
+Best regards,
 
-> On 08/24/2011 10:45 PM, Greg KH wrote:
+Wolfgang Denk
 
-> > I don't like the fact that if a driver doesn't contain check_busy() then
-> > it will automatically fall back to looking like it was a DISCONNECT
-> > call, which could give userspace a false sense of "everything was fine"
-> > when trying this out.
-> 
-> I've to agree with Greg here, what to do in case of a driver not
-> implementing check_busy and thus not really offering USBDEVFS_TRY_DISCONNECT
-> is policy and thus should be left to userspace. I suggest we just return
-> -ENOTTY in case of USBDEVFS_TRY_DISCONNECT and the bound driver does not
-> have checkbusy, then userspace can decide wether to fallback to a regular
-> disconnect, or to give up.
-
-Okay, I'll change the patch.  But the real question is whether the 
-basic idea is acceptable.
-
-Alan Stern
-
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+"Look! There! Evil!.. pure and simple, total  evil  from  the  Eighth
+Dimension!"                                         - Buckaroo Banzai
