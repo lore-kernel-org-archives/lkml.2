@@ -1,172 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1HXSCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:02:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab1HXSCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:02:01 -0400
-Date: Wed, 24 Aug 2011 14:00:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110824180058.GC22434@redhat.com>
-References: <1312814501.10488.41.camel@twins>
- <20110808230535.GC7176@localhost>
- <1313154259.6576.42.camel@twins>
- <20110812142020.GB17781@localhost>
- <1314027488.24275.74.camel@twins>
- <20110823034042.GC7332@localhost>
- <1314093660.8002.24.camel@twins>
- <20110823141504.GA15949@localhost>
- <20110823174757.GC15820@redhat.com>
- <20110824001257.GA6349@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824001257.GA6349@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753680Ab1HXSCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:02:33 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:62076 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab1HXSBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 14:01:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, j.glisse@redhat.com, thomas@shipmail.org,
+        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/6] ttm: Pass in 'struct device' to TTM so it can do DMA API on behalf of device.
+Date: Wed, 24 Aug 2011 13:17:01 -0400
+Message-Id: <1314206224-15304-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+References: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E553C47.00FE:SCFMA922111,ss=1,re=-6.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 08:12:58AM +0800, Wu Fengguang wrote:
-> > You somehow directly jump to  
-> > 
-> > 	balanced_rate = task_ratelimit_200ms * write_bw / dirty_rate
-> > 
-> > without explaining why following will not work.
-> > 
-> > 	balanced_rate_(i+1) = balance_rate(i) * write_bw / dirty_rate
-> 
-> Thanks for asking that, it's probably the root of confusions, so let
-> me answer it standalone.
-> 
-> It's actually pretty simple to explain this equation:
-> 
->                                                write_bw
->         balanced_rate = task_ratelimit_200ms * ----------       (1)
->                                                dirty_rate
-> 
-> If there are N dd tasks, each task is throttled at task_ratelimit_200ms
-> for the past 200ms, we are going to measure the overall bdi dirty rate
-> 
->         dirty_rate = N * task_ratelimit_200ms                   (2)
-> 
-> put (2) into (1) we get
-> 
->         balanced_rate = write_bw / N                            (3)
-> 
-> So equation (1) is the right estimation to get the desired target (3).
-> 
-> 
-> As for
-> 
->                                                   write_bw
->         balanced_rate_(i+1) = balanced_rate_(i) * ----------    (4)
->                                                   dirty_rate
-> 
-> Let's compare it with the "expanded" form of (1):
-> 
->                                                               write_bw
->         balanced_rate_(i+1) = balanced_rate_(i) * pos_ratio * ----------      (5)
->                                                               dirty_rate
-> 
-> So the difference lies in pos_ratio.
-> 
-> Believe it or not, it's exactly the seemingly use of pos_ratio that
-> makes (5) independent(*) of the position control.
-> 
-> Why? Look at (4), assume the system is in a state
-> 
-> - dirty rate is already balanced, ie. balanced_rate_(i) = write_bw / N
-> - dirty position is not balanced, for example pos_ratio = 0.5
-> 
-> balance_dirty_pages() will be rate limiting each tasks at half the
-> balanced dirty rate, yielding a measured
-> 
->         dirty_rate = write_bw / 2                               (6)
-> 
-> Put (6) into (4), we get
-> 
->         balanced_rate_(i+1) = balanced_rate_(i) * 2
->                             = (write_bw / N) * 2
-> 
-> That means, any position imbalance will lead to balanced_rate
-> estimation errors if we follow (4). Whereas if (1)/(5) is used, we
-> always get the right balanced dirty ratelimit value whether or not
-> (pos_ratio == 1.0), hence make the rate estimation independent(*) of
-> dirty position control.
-> 
-> (*) independent as in real values, not the seemingly relations in equation
+We want to pass in the 'struct device' to the TTM layer so that
+the TTM DMA pool code (if enabled) can use it. The DMA API code
+needs the 'struct device' to do the DMA API operations.
 
-Ok, I think I am beginning to see your point. Let me just elaborate on
-the example you gave.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_mem.c |    3 ++-
+ drivers/gpu/drm/radeon/radeon_ttm.c   |    3 ++-
+ drivers/gpu/drm/ttm/ttm_bo.c          |    4 +++-
+ drivers/gpu/drm/ttm/ttm_page_alloc.c  |   17 ++++++++++-------
+ drivers/gpu/drm/ttm/ttm_tt.c          |    5 +++--
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c   |    4 ++--
+ include/drm/ttm/ttm_bo_driver.h       |    7 ++++++-
+ include/drm/ttm/ttm_page_alloc.h      |   16 ++++++++++++----
+ 8 files changed, 40 insertions(+), 19 deletions(-)
 
-Assume a system is completely balanced and a task is writing at 100MB/s
-rate.
+diff --git a/drivers/gpu/drm/nouveau/nouveau_mem.c b/drivers/gpu/drm/nouveau/nouveau_mem.c
+index 5ee14d2..a2d7e35 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_mem.c
++++ b/drivers/gpu/drm/nouveau/nouveau_mem.c
+@@ -417,7 +417,8 @@ nouveau_mem_vram_init(struct drm_device *dev)
+ 	ret = ttm_bo_device_init(&dev_priv->ttm.bdev,
+ 				 dev_priv->ttm.bo_global_ref.ref.object,
+ 				 &nouveau_bo_driver, DRM_FILE_PAGE_OFFSET,
+-				 dma_bits <= 32 ? true : false);
++				 dma_bits <= 32 ? true : false,
++				 dev->dev);
+ 	if (ret) {
+ 		NV_ERROR(dev, "Error initialising bo driver: %d\n", ret);
+ 		return ret;
+diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+index 60125dd..dbc6bcb 100644
+--- a/drivers/gpu/drm/radeon/radeon_ttm.c
++++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+@@ -517,7 +517,8 @@ int radeon_ttm_init(struct radeon_device *rdev)
+ 	r = ttm_bo_device_init(&rdev->mman.bdev,
+ 			       rdev->mman.bo_global_ref.ref.object,
+ 			       &radeon_bo_driver, DRM_FILE_PAGE_OFFSET,
+-			       rdev->need_dma32);
++			       rdev->need_dma32,
++			       rdev->dev);
+ 	if (r) {
+ 		DRM_ERROR("failed initializing buffer object driver(%d).\n", r);
+ 		return r;
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index 2e618b5..0358889 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1527,12 +1527,14 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
+ 		       struct ttm_bo_global *glob,
+ 		       struct ttm_bo_driver *driver,
+ 		       uint64_t file_page_offset,
+-		       bool need_dma32)
++		       bool need_dma32,
++		       struct device *dev)
+ {
+ 	int ret = -EINVAL;
+ 
+ 	rwlock_init(&bdev->vm_lock);
+ 	bdev->driver = driver;
++	bdev->dev = dev;
+ 
+ 	memset(bdev->man, 0, sizeof(bdev->man));
+ 
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index 6a888f8..f9a4d83 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -666,7 +666,7 @@ out:
+  */
+ int __ttm_get_pages(struct list_head *pages, int flags,
+ 		    enum ttm_caching_state cstate, unsigned count,
+-		    dma_addr_t *dma_address)
++		    dma_addr_t *dma_address, struct device *dev)
+ {
+ 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+ 	struct page *p = NULL;
+@@ -724,7 +724,8 @@ int __ttm_get_pages(struct list_head *pages, int flags,
+ 			printk(KERN_ERR TTM_PFX
+ 			       "Failed to allocate extra pages "
+ 			       "for large request.");
+-			ttm_put_pages(pages, 0, flags, cstate, NULL);
++			ttm_put_pages(pages, 0, flags, cstate, dma_address,
++				      dev);
+ 			return r;
+ 		}
+ 	}
+@@ -735,7 +736,8 @@ int __ttm_get_pages(struct list_head *pages, int flags,
+ 
+ /* Put all pages in pages list to correct pool to wait for reuse */
+ void __ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
+-		     enum ttm_caching_state cstate, dma_addr_t *dma_address)
++		     enum ttm_caching_state cstate, dma_addr_t *dma_address,
++		     struct device *dev)
+ {
+ 	unsigned long irq_flags;
+ 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
+@@ -867,19 +869,20 @@ struct ttm_page_alloc_func ttm_page_alloc_default = {
+ 
+ int ttm_get_pages(struct list_head *pages, int flags,
+ 		  enum ttm_caching_state cstate, unsigned count,
+-		  dma_addr_t *dma_address)
++		  dma_addr_t *dma_address, struct device *dev)
+ {
+ 	if (ttm_page_alloc && ttm_page_alloc->get_pages)
+ 		return ttm_page_alloc->get_pages(pages, flags, cstate, count,
+-						 dma_address);
++						 dma_address, dev);
+ 	return -1;
+ }
+ void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
+-		   enum ttm_caching_state cstate, dma_addr_t *dma_address)
++		   enum ttm_caching_state cstate, dma_addr_t *dma_address,
++		   struct device *dev)
+ {
+ 	if (ttm_page_alloc && ttm_page_alloc->put_pages)
+ 		ttm_page_alloc->put_pages(pages, page_count, flags, cstate,
+-					  dma_address);
++					  dma_address, dev);
+ }
+ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ {
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index 58c271e..1f11a33 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -111,7 +111,7 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
+ 		INIT_LIST_HEAD(&h);
+ 
+ 		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1,
+-				    &ttm->dma_address[index]);
++				    &ttm->dma_address[index], ttm->dev);
+ 
+ 		if (ret != 0)
+ 			return NULL;
+@@ -305,7 +305,7 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
+ 		}
+ 	}
+ 	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state,
+-		      ttm->dma_address);
++		      ttm->dma_address, ttm->dev);
+ 	ttm->state = tt_unpopulated;
+ 	ttm->first_himem_page = ttm->num_pages;
+ 	ttm->last_lomem_page = -1;
+@@ -398,6 +398,7 @@ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
+ 	ttm->last_lomem_page = -1;
+ 	ttm->caching_state = tt_cached;
+ 	ttm->page_flags = page_flags;
++	ttm->dev = bdev->dev;
+ 
+ 	ttm->dummy_read_page = dummy_read_page;
+ 
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+index 96949b9..d266ae7 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -322,11 +322,11 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	ttm_lock_set_kill(&dev_priv->fbdev_master.lock, false, SIGTERM);
+ 	dev_priv->active_master = &dev_priv->fbdev_master;
+ 
+-
+ 	ret = ttm_bo_device_init(&dev_priv->bdev,
+ 				 dev_priv->bo_global_ref.ref.object,
+ 				 &vmw_bo_driver, VMWGFX_FILE_PAGE_OFFSET,
+-				 false);
++				 false,
++				 dev->dev);
+ 	if (unlikely(ret != 0)) {
+ 		DRM_ERROR("Failed initializing TTM buffer object driver.\n");
+ 		goto out_err1;
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index 09af2d7..9a7ecae 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -177,6 +177,7 @@ struct ttm_tt {
+ 		tt_unpopulated,
+ 	} state;
+ 	dma_addr_t *dma_address;
++	struct device *dev;
+ };
+ 
+ #define TTM_MEMTYPE_FLAG_FIXED         (1 << 0)	/* Fixed (on-card) PCI memory */
+@@ -551,6 +552,7 @@ struct ttm_bo_device {
+ 	struct list_head device_list;
+ 	struct ttm_bo_global *glob;
+ 	struct ttm_bo_driver *driver;
++	struct device *dev;
+ 	rwlock_t vm_lock;
+ 	struct ttm_mem_type_manager man[TTM_NUM_MEM_TYPES];
+ 	spinlock_t fence_lock;
+@@ -791,6 +793,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+  * @file_page_offset: Offset into the device address space that is available
+  * for buffer data. This ensures compatibility with other users of the
+  * address space.
++ * @need_dma32: Allocate pages under 4GB
++ * @dev: 'struct device' of the PCI device.
+  *
+  * Initializes a struct ttm_bo_device:
+  * Returns:
+@@ -799,7 +803,8 @@ extern int ttm_bo_device_release(struct ttm_bo_device *bdev);
+ extern int ttm_bo_device_init(struct ttm_bo_device *bdev,
+ 			      struct ttm_bo_global *glob,
+ 			      struct ttm_bo_driver *driver,
+-			      uint64_t file_page_offset, bool need_dma32);
++			      uint64_t file_page_offset, bool need_dma32,
++			      struct device *dev);
+ 
+ /**
+  * ttm_bo_unmap_virtual
+diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+index 6e8d73a..8fc92f2 100644
+--- a/include/drm/ttm/ttm_page_alloc.h
++++ b/include/drm/ttm/ttm_page_alloc.h
+@@ -39,12 +39,14 @@ struct ttm_page_alloc_func {
+ 	 * @cstate: ttm caching state for the page.
+ 	 * @count: number of pages to allocate.
+ 	 * @dma_address: The DMA (bus) address of pages (by default zero).
++	 * @dev: The device that needs this.
+ 	 */
+ 	int (*get_pages) (struct list_head *pages,
+ 			  int flags,
+ 			  enum ttm_caching_state cstate,
+ 			  unsigned count,
+-			  dma_addr_t *dma_address);
++			  dma_addr_t *dma_address,
++			  struct device *dev);
+ 	/**
+ 	 * struct ttm_page_alloc_func member put_pages.
+ 	 *
+@@ -56,12 +58,14 @@ struct ttm_page_alloc_func {
+ 	 * @flags: ttm flags for page allocation.
+ 	 * @cstate: ttm caching state.
+ 	 * @dma_address: The DMA (bus) address of pages (by default zero).
++	 * @dev: The device that needs this.
+ 	 */
+ 	void (*put_pages)(struct list_head *pages,
+ 			  unsigned page_count,
+ 			  int flags,
+ 			  enum ttm_caching_state cstate,
+-			  dma_addr_t *dma_address);
++			  dma_addr_t *dma_address,
++			  struct device *dev);
+ 	/**
+ 	 * struct ttm_page_alloc_func member alloc_init.
+ 	 *
+@@ -97,12 +101,14 @@ extern struct ttm_page_alloc_func ttm_page_alloc_default;
+  * @cstate: ttm caching state for the page.
+  * @count: number of pages to allocate.
+  * @dma_address: The DMA (bus) address of pages - (by default zero).
++ * @dev: The device that needs this.
+  */
+ int ttm_get_pages(struct list_head *pages,
+ 		  int flags,
+ 		  enum ttm_caching_state cstate,
+ 		  unsigned count,
+-		  dma_addr_t *dma_address);
++		  dma_addr_t *dma_address,
++		  struct device *dev);
+ /**
+  * Put linked list of pages to pool.
+  *
+@@ -112,12 +118,14 @@ int ttm_get_pages(struct list_head *pages,
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state.
+  * @dma_address: The DMA (bus) address of pages (by default zero).
++ * @dev: The device that needs this.
+  */
+ void ttm_put_pages(struct list_head *pages,
+ 		   unsigned page_count,
+ 		   int flags,
+ 		   enum ttm_caching_state cstate,
+-		   dma_addr_t *dma_address);
++		   dma_addr_t *dma_address,
++		   struct device *dev);
+ /**
+  * Initialize pool allocator.
+  */
+-- 
+1.7.4.1
 
-write_bw = dirty_rate = 100MB/s, pos_ratio = 1; N=1
-
-bdi->dirty_ratelimit = 100MB/s
-
-Now another tasks starts dirtying the page cache on same bdi. Number of 
-dirty pages should go up pretty fast and likely position ratio feedback
-will kick in to reduce the dirtying rate. (rate based feedback does not
-kick in till next 200ms) and pos_ratio feedback seems to be instantaneous.
-Assume new pos_ratio is .5
-
-So new throttle rate for both the tasks is 50MB/s.
-
-bdi->dirty_ratelimit = 100MB/s (a feedback has not kicked in yet)
-task_ratelimit = bdi->dirty_ratelimit * pos_ratio = 100 *.5 = 50MB/s
-
-Now lets say 200ms have passed and rate base feedback is reevaluated.
-
-						      write_bw	
-bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * ---------
-						      dirty_bw
-
-bdi->dirty_ratelimit_(i+1) = 100 * 100/100 = 100MB/s
-
-Ideally bdi->dirty_ratelimit should have now become 50MB/s as N=2 but 
-that did not happen. And reason being that there are two feedback control
-loops and pos_ratio loops reacts to imbalances much more quickly. Because
-previous loop has already reacted to the imbalance and reduced the
-dirtying rate of task, rate based loop does not try to adjust anything
-and thinks everything is just fine.
-
-Things are fine in the sense that still dirty_rate == write_bw but
-system is not balanced in terms of number of dirty pages and pos_ratio=.5
-
-So you are trying to make one feedback loop aware of second loop so that
-if second loop is unbalanced, first loop reacts to that as well and not
-just look at dirty_rate and write_bw. So refining new balanced rate by
-pos_ratio helps.
-						      write_bw	
-bdi->dirty_ratelimit_(i+1) = bdi->dirty_ratelimit_i * --------- * pos_ratio
-						      dirty_bw
-
-Now if global dirty pages are imbalanced, balanced rate will still go
-down despite the fact that dirty_bw == write_bw. This will lead to
-further reduction in task dirty rate. Which in turn will lead to reduced
-number of dirty rate and should eventually lead to pos_ratio=1.
-
-A related question though I should have asked you this long back. How does
-throttling based on rate helps. Why we could not just work with two
-pos_ratios. One is gloabl postion ratio and other is bdi position ratio.
-And then throttle task gradually to achieve smooth throttling behavior.
-IOW, what property does rate provide which is not available just by
-looking at per bdi dirty pages. Can't we come up with bdi setpoint and
-limit the way you have done for gloabl setpoint and throttle tasks
-accordingly?
-
-Thanks
-Vivek
