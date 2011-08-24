@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1HXRxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:53:20 -0400
-Received: from claw.goop.org ([74.207.240.146]:52853 "EHLO claw.goop.org"
+	id S1753277Ab1HXRxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:53:24 -0400
+Received: from claw.goop.org ([74.207.240.146]:52894 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab1HXRxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:53:16 -0400
+	id S1753190Ab1HXRxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:53:21 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 01/18] x86/ticketlock: clean up types and accessors
-Date: Wed, 24 Aug 2011 10:52:55 -0700
-Message-Id: <05552e1c97739f589cb76c20b5a6565ccd506636.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/18] x86/cmpxchg: move 32-bit __cmpxchg_wrong_size to match 64 bit.
+Date: Wed, 24 Aug 2011 10:53:04 -0700
+Message-Id: <a3dfa9aa0cd77ec7d0a289a680436f7848be9c97.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -28,130 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-A few cleanups to the way spinlocks are defined and accessed:
- - define __ticket_t which is the size of a spinlock ticket (ie, enough
-   bits to hold all the cpus)
- - Define struct arch_spinlock as a union containing plain slock and
-   the head and tail tickets
- - Use head and tail to implement some of the spinlock predicates.
- - Make all ticket variables unsigned.
- - Use TICKET_SHIFT to form constants
-
-Most of this will be used in later patches.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h       |   24 ++++++++++--------------
- arch/x86/include/asm/spinlock_types.h |   20 ++++++++++++++++++--
- 2 files changed, 28 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/cmpxchg_32.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 3089f70..d6d5784 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -56,11 +56,9 @@
-  * much between them in performance though, especially as locks are out of line.
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 8d53b16..0ef9b82 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -9,6 +9,7 @@
   */
- #if (NR_CPUS < 256)
--#define TICKET_SHIFT 8
+ 
+ extern void __xchg_wrong_size(void);
++extern void __cmpxchg_wrong_size(void);
+ 
+ /*
+  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+@@ -84,8 +85,6 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
+ 		     : "memory");
+ }
+ 
+-extern void __cmpxchg_wrong_size(void);
 -
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	short inc = 0x0100;
-+	unsigned short inc = 1 << TICKET_SHIFT;
- 
- 	asm volatile (
- 		LOCK_PREFIX "xaddw %w0, %1\n"
-@@ -79,7 +77,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp, new;
-+	unsigned int tmp, new;
- 
- 	asm volatile("movzwl %2, %0\n\t"
- 		     "cmpb %h0,%b0\n\t"
-@@ -104,12 +102,10 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 		     : "memory", "cc");
- }
- #else
--#define TICKET_SHIFT 16
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	int inc = 0x00010000;
--	int tmp;
-+	unsigned inc = 1 << TICKET_SHIFT;
-+	unsigned tmp;
- 
- 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
- 		     "movzwl %w0, %2\n\t"
-@@ -129,8 +125,8 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp;
--	int new;
-+	unsigned tmp;
-+	unsigned new;
- 
- 	asm volatile("movl %2,%0\n\t"
- 		     "movl %0,%1\n\t"
-@@ -160,16 +156,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 
- static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
-+	return !!(tmp.tail ^ tmp.head);
- }
- 
- static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
-+	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
- }
- 
- #ifndef CONFIG_PARAVIRT_SPINLOCKS
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index dcb48b2..e3ad1e3 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -5,11 +5,27 @@
- # error "please don't include this file directly"
- #endif
- 
-+#include <linux/types.h>
-+
-+#if (CONFIG_NR_CPUS < 256)
-+typedef u8  __ticket_t;
-+#else
-+typedef u16 __ticket_t;
-+#endif
-+
-+#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
-+#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
-+
- typedef struct arch_spinlock {
--	unsigned int slock;
-+	union {
-+		unsigned int slock;
-+		struct __raw_tickets {
-+			__ticket_t head, tail;
-+		} tickets;
-+	};
- } arch_spinlock_t;
- 
--#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
- 
- typedef struct {
- 	unsigned int lock;
+ /*
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+  * store NEW in MEM.  Return the initial value in MEM.  Success is
 -- 
 1.7.6
 
