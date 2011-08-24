@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab1HXWed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:34:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:55736 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab1HXWeb (ORCPT
+	id S1752200Ab1HXWiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:38:25 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:49599 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab1HXWiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:34:31 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: JBeulich@novell.com, jeremy@goop.org, ian.campbell@citrix.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH 1/5] xen-pcifront: Update warning comment to use 'e820_host' option.
-Date: Wed, 24 Aug 2011 18:31:32 -0400
-Message-Id: <1314225096-4861-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314225096-4861-1-git-send-email-konrad.wilk@oracle.com>
-References: <1314225096-4861-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090201.4E557BD4.013B,ss=1,re=0.000,fgs=0
+	Wed, 24 Aug 2011 18:38:24 -0400
+Date: Wed, 24 Aug 2011 18:38:14 -0400
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/4] x86: base support for the TS-5500 platform
+Message-ID: <20110824183814.64abc94c@v0nbox>
+In-Reply-To: <4E5576CF.2050905@zytor.com>
+References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<4E55670F.90102@zytor.com>
+	<20110824180837.6841f3d8@v0nbox>
+	<4E5576CF.2050905@zytor.com>
+Organization: Savoir-faire Linux Inc.
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With Xen changeset 23428 "libxl: Add 'e820_host' option to config file"
-the E820 as seen from the host can now be passed into the guest.
-This means that a PV guest can now:
- - Use the correct PCI I/O gap. Before these patches, Linux guest would
-   boot up and would tell:
-   [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:c0000000)
-   while in actuality the PCI I/O gap should have been:
-   [    0.000000] Allocating PCI resources starting at b0000000 (gap: b0000000:4c000000)
+On Wed, 24 Aug 2011 15:10:23 -0700,
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
- - The PV domain with PCI devices was limited to 3GB. It now can be booted
-   with 4GB, 8GB, or whatever number you want. The PCI devices will now _not_ conflict
-   with System RAM. Meaning the drivers can load.
+> On 08/24/2011 03:08 PM, Vivien Didelot wrote:
+> > Indeed this will be run on any Elan SC520 based platforms if the
+> > user has asked for TS-5500 support in the menuconfig. I could add
+> > checks for other hardware such as the Ethernet controller, but it
+> > would require including pci headers and delaying the initcall
+> > (using late_initcall instead of postcore_initcall).
+> > That's why I think it is not really worth adding more tests. They
+> > could be added later in this function if there is really a need.
+> > 
+> > Regards,
+> > Vivien.
+> 
+> Hello?  HELLO?
+> 
+> We do not break unrelated hardware just because something is enabled
+> at compile time.
+> 
+> EVER.
+> 
+> 	-hpa
 
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: linux-pci@vger.kernel.org
-CC: stable@kernel.org
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/pci/xen-pcifront.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I agree with you. The platform does not provide many identification
+points. We have specific hardware such as the CPU, Ethernet, Cardbus
+and USB controllers; there is no DMI available; no PCI bridge subvendor
+info, only the BIOS provides a 16-bit identification call...
+We discussed that point in https://lkml.org/lkml/2011/5/4/437 without
+success.
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index 492b7d8..659efd1 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -401,8 +401,8 @@ static int pcifront_claim_resource(struct pci_dev *dev, void *data)
- 				pci_name(dev), i);
- 			if (pci_claim_resource(dev, i)) {
- 				dev_err(&pdev->xdev->dev, "Could not claim "
--					"resource %s/%d! Device offline. Try "
--					"giving less than 4GB to domain.\n",
-+					"resource %s/%d! Device offline. Try"
-+					"using e820_host=1 in the guest config.\n",
- 					pci_name(dev), i);
- 			}
- 		}
--- 
-1.7.4.1
+What would be the proper way in your opinion?
 
+Vivien.
