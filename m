@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab1HXIFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 04:05:14 -0400
-Received: from mail-iy0-f198.google.com ([209.85.210.198]:56861 "EHLO
-	mail-iy0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab1HXIFJ convert rfc822-to-8bit (ORCPT
+	id S1755768Ab1HXIJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 04:09:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52892 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1HXIJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 04:05:09 -0400
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 04:05:09 EDT
+	Wed, 24 Aug 2011 04:09:30 -0400
+Date: Wed, 24 Aug 2011 12:09:24 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH resend] vfs: Add ->statfs callback for pipefs
+Message-ID: <20110824080924.GG29452@sun>
 MIME-Version: 1.0
-In-Reply-To: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
-References: <1314164303-30382-1-git-send-email-jj_ding@emc.com.tw>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 24 Aug 2011 15:56:33 +0800
-X-Google-Sender-Auth: XAVrVW4kEPqsp_NyRKlTqseetM8
-Message-ID: <CAGS+omAj-jo02O0MXZb_JF7+SfyQmmmAr7MA3_hYfead6gszyg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/7] Input: elantech: add support for newer hardware
-To: JJ Ding <jj_ding@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Aaron Huang <aaron_huang@emc.com.tw>, Tom Lin <tom_lin@emc.com.tw>,
-        =?ISO-8859-1?Q?=C9ric_Piel?= <E.A.B.Piel@tudelft.nl>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 1:38 PM, JJ Ding <jj_ding@emc.com.tw> wrote:
-> Hi Lists,
->
-> This is a series of patches to add support for newer generation of ELAN
-> touchpad.
->
-> Patches #1~#6 are essentially fixes and cleanups that pave the way for
-> patch #7, which really adds code for v3 hardware.
->
-> Any comments, suggestoins are welcome.
->
-> Thank you.
->
-> Changes since v1:
-> - drop EC workaround patch.
-> - add patch #2, make ST and MT have the same range, as Dmitry suggested.
-> - add patch #4, remove ETP_EDGE_FUZZ_V2, as Éric suggested.
-> - rename all packet checking functions so they are consistent.
-> - some code cleanup, and don't report ABS_[XY] when fingers == 0, as Seth suggested.
-> - add document for v3 debounce, and now check debounce in elantech_packet_check_v3.
->
-> JJ Ding (7):
->  Input: elantech - correct x, y value range for v2 hardware
->  Input: elantech - get rid of ETP_2FT_XXXX in elantech.h
->  Input: elantech - use firmware provided x, y ranges
->  Input: elantech - remove ETP_EDGE_FUZZ_V2
->  Input: elantech - packet checking for v2 hardware
->  Input: elantech - clean up elantech_init
->  Input: elantech - add v3 hardware support
->
->  Documentation/input/elantech.txt |  125 +++++++++++--
->  drivers/input/mouse/elantech.c   |  387 +++++++++++++++++++++++++++++++-------
->  drivers/input/mouse/elantech.h   |   35 ++--
->  3 files changed, 444 insertions(+), 103 deletions(-)
->
-> --
-> 1.7.4.1
->
->
+From: Pavel Emelyanov <xemul@parallels.com>
 
-Hi JJ,
+This is done to make it possible to distinguish pipes
+from fifos when opening one via /proc/<pid>/fd/ link.
 
-Thank you for the updating the patch set.
-For all 7 patches:
-  Acked-by: Daniel Kurtz <djkurtz@chromium.org>
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ fs/pipe.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Any objections to this one? It was a part of a patchset
+but can be treated independently so I'm re-sending it alone.
+
+Index: linux-2.6.git/fs/pipe.c
+===================================================================
+--- linux-2.6.git.orig/fs/pipe.c
++++ linux-2.6.git/fs/pipe.c
+@@ -1254,6 +1254,7 @@ out:
+ 
+ static const struct super_operations pipefs_ops = {
+ 	.destroy_inode = free_inode_nonrcu,
++	.statfs = simple_statfs,
+ };
+ 
+ /*
