@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab1HXPZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:25:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:30911 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab1HXPZR (ORCPT
+	id S1751993Ab1HXP35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:29:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:40754 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab1HXP3z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:25:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:content-type:to:cc:subject:references:
-	mime-version:content-transfer-encoding:from:organization:date:message-id:
-	in-reply-to:user-agent:x-system-of-record;
-	b=kr0rDTiQiHKjiW9cUS5CnCwK3FWIMc8zmgkFw2/4pwM2UXn1AKX3NcdhftdNB3QlF
-	9wod8LICQcqB+d04IhcmQ==
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Alan Stern" <stern@rowland.harvard.edu>
-Cc: "Felipe Balbi" <balbi@ti.com>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with
- "max_speed"
-References: <Pine.LNX.4.44L0.1108241114270.2010-100000@iolanthe.rowland.org>
+	Wed, 24 Aug 2011 11:29:55 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mnazarewicz@google.com>
-Organization: Google
-Date: Wed, 24 Aug 2011 17:25:11 +0200
-Message-ID: <op.v0p439txvgw7ix@mnazarewicz-glaptop>
-In-Reply-To: <Pine.LNX.4.44L0.1108241114270.2010-100000@iolanthe.rowland.org>
-User-Agent: Opera Mail/11.50 (Linux)
-X-System-Of-Record: true
+In-Reply-To: <1314199415-7924-1-git-send-email-linkinjeon@gmail.com>
+References: <1314199415-7924-1-git-send-email-linkinjeon@gmail.com>
+Date: Thu, 25 Aug 2011 00:29:53 +0900
+Message-ID: <CAKYAXd-hkg4yKXLd-HfW56NJX8RUZhVyg8YEEzaZmpE1epDk-g@mail.gmail.com>
+Subject: Re: [PATCH] include: Fix compile warning in include/linux/bitops.h
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 17:15:29 +0200, Alan Stern <stern@rowland.harvard.edu>  
-wrote:
+Hi. Arnd.
 
-> On Wed, 24 Aug 2011, Michal Nazarewicz wrote:
+I send a patch by the below your request.
+
+Would you plz confirm it ?
+
+Thanks.
+
+2011/8/25 Namjae Jeon <linkinjeon@gmail.com>:
+> The compile warning is caused by __const_hweight8 when using hweight_long with -Wsign-compare option.
+> The reason is that the default return value of this macro is signed. So need type casting to remove warning.
 >
->> I've found where my reasoning was faulty.  The usb_gadget_driver's
->> max_speed is set before all the functions get added so composite.c has
->> no way to figure those things in advance.  That's why we need to relay
->> on usb_composite_driver's max_speed be set to a proper value.
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  include/asm-generic/bitops/const_hweight.h |   18 +++++++++---------
+>  1 files changed, 9 insertions(+), 9 deletions(-)
 >
-> This is what Felipe was complaining about earlier.  We shouldn't set
-> max_speed or allow the UDC to connect to the host until all the
-> functions have been added.
+> diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
+> index fa2a50b..31b7fce 100644
+> --- a/include/asm-generic/bitops/const_hweight.h
+> +++ b/include/asm-generic/bitops/const_hweight.h
+> @@ -4,15 +4,15 @@
+>  /*
+>  * Compile time versions of __arch_hweightN()
+>  */
+> -#define __const_hweight8(w)            \
+> -      (        (!!((w) & (1ULL << 0))) +       \
+> -       (!!((w) & (1ULL << 1))) +       \
+> -       (!!((w) & (1ULL << 2))) +       \
+> -       (!!((w) & (1ULL << 3))) +       \
+> -       (!!((w) & (1ULL << 4))) +       \
+> -       (!!((w) & (1ULL << 5))) +       \
+> -       (!!((w) & (1ULL << 6))) +       \
+> -       (!!((w) & (1ULL << 7))) )
+> +#define __const_hweight8(w)    (unsigned long) \
+> +       (       (!!((w) & (1ULL << 0))) +       \
+> +               (!!((w) & (1ULL << 1))) +       \
+> +               (!!((w) & (1ULL << 2))) +       \
+> +               (!!((w) & (1ULL << 3))) +       \
+> +               (!!((w) & (1ULL << 4))) +       \
+> +               (!!((w) & (1ULL << 5))) +       \
+> +               (!!((w) & (1ULL << 6))) +       \
+> +               (!!((w) & (1ULL << 7))) )
+>
+>  #define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
+>  #define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
+> --
+> 1.7.4.4
+>
+>
+Yes, this looks correct to me. Could you send the change as a proper patch
+with your Signed-off-by:?
 
-We're not doing the latter.  The functions are added in bind callback so
-(hopefully) UDC will first run the bind callback and then try connecting
-to host.
-
-And the former would be fixed if we allowed gadget driver to set max_speed
-in bind callback rather then prior to calling usb_gadget_probe_driver().
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+       Arnd
