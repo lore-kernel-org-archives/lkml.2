@@ -1,50 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab1HXFA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 01:00:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58308 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921Ab1HXFAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 01:00:55 -0400
-Date: Wed, 24 Aug 2011 15:00:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the moduleh tree with the staging tree
-Message-Id: <20110824150049.c7668a56930ab2fe2809dd88@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752104Ab1HXFJc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 01:09:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58788 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab1HXFJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 01:09:30 -0400
+MIME-Version: 1.0
+Date: Wed, 24 Aug 2011 14:09:28 +0900
+Message-ID: <CAKYAXd9MwO-JEMNt9-0C8pzgYn5Tvtv8ovJ35TNiqqe8PWGogQ@mail.gmail.com>
+Subject: RFC : mmc: mmc_blk_issue_secdiscard_rq() and mmc_blk_issue_discard_rq()
+ effectively merged into one.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, linus.walleij@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi.
 
-Today's linux-next merge of the moduleh tree got a conflict in
-drivers/staging/iio/accel/adis16220_core.c between commit 7991029a55fa
-("staging:iio:accel:adis16220 iio_chan_spec conversion") from the staging
-tree and commit dcf6be043de1 ("staging: Add module.h to drivers/staging
-users") from the moduleh tree.
+I am wordering why mmc_blk_issue_secdiscard_rq() and
+mmc_blk_issue_discard_rq() is seperated.
+So I try to make mmc_blk_issue_secdiscard_rq() and
+mmc_blk_issue_discard_rq() effectively merged into one.
 
-Just context changes.  I have fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I want to know your opinion.
 
-diff --cc drivers/staging/iio/accel/adis16220_core.c
-index 075e40f,e119874..0000000
---- a/drivers/staging/iio/accel/adis16220_core.c
-+++ b/drivers/staging/iio/accel/adis16220_core.c
-@@@ -13,6 -16,8 +13,7 @@@
-  #include <linux/spi/spi.h>
-  #include <linux/slab.h>
-  #include <linux/sysfs.h>
- -#include <linux/list.h>
-+ #include <linux/module.h>
-  
-  #include "../iio.h"
-  #include "../sysfs.h"
+Thanks.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
+{
+        struct mmc_blk_data *md = mq->data;
+        struct mmc_card *card = md->queue.card;
+        unsigned int from, nr, arg;
+        int err = 0;
+        from = blk_rq_pos(req);
+        nr = blk_rq_sectors(req);
+        if (req->cmd_flags & REQ_SECURE) {
+                if (!mmc_can_secure_erase_trim(card)) {
+                        err = -EOPNOTSUPP;
+                        goto out;
+                }
+                if(mmc_can_trim(card) &&
+!mmc_erase_group_aligned(card, from, nr))
+                        arg = MMC_SECURE_TRIM1_ARG;
+                else
+                        arg = MMC_SECURE_ERASE_ARG;
+        }
+        else {
+                if (!mmc_can_erase(card)) {
+                        err = -EOPNOTSUPP;
+                        goto out;
+                }
+                if (mmc_can_trim(card))
+                        arg = MMC_TRIM_ARG;
+                else
+                        arg = MMC_ERASE_ARG;
+        }
+
+        if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+                if(req->cmd_flags & REQ_SECURE)
+                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+                                        NAND_CMD38_ARG_EXT_CSD,
+                                        arg == MMC_SECURE_TRIM1_ARG ?
+                                        INAND_CMD38_ARG_SECTRIM1 :
+                                        INAND_CMD38_ARG_SECERASE,
+                                        0);
+                else
+                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+                                        INAND_CMD38_ARG_EXT_CSD,
+                                        arg == MMC_TRIM_ARG ?
+                                        INAND_CMD38_ARG_TRIM :
+                                        INAND_CMD38_ARG_ERASE,
+                                        0);
+                if (err)
+                        goto out;
+        }
+        err = mmc_erase(card, from, nr, arg);
+        if (!err && arg == MMC_SECURE_TRIM1_ARG) {
+                if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+                                         INAND_CMD38_ARG_EXT_CSD,
+                                         INAND_CMD38_ARG_SECTRIM2,
+                                         0);
+                        if (err)
+                                goto out;
+                }
+                err = mmc_erase(card, from, nr, MMC_SECURE_TRIM2_ARG);
+        }
+out:
+        spin_lock_irq(&md->lock);
+        __blk_end_request(req, err, blk_rq_bytes(req));
+        spin_unlock_irq(&md->lock);
+        return err ? 0 : 1;
+}
+
+
+static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+{
+        int ret;
+        struct mmc_blk_data *md = mq->data;
+        struct mmc_card *card = md->queue.card;
+        mmc_claim_host(card->host);
+        ret = mmc_blk_part_switch(card, md);
+        if (ret) {
+                ret = 0;
+                goto out;
+        }
+        if (req->cmd_flags & REQ_DISCARD) {
+                ret = mmc_blk_issue_discard_rq(mq, req);
+        } else if (req->cmd_flags & REQ_FLUSH) {
+                ret = mmc_blk_issue_flush(mq, req);
+        } else {
+                ret = mmc_blk_issue_rw_rq(mq, req);
+        }
+out:
+        mmc_release_host(card->host);
+        return ret;
+}
