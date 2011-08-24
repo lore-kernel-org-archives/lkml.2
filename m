@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab1HXB6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:58:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41584 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab1HXB6o convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:58:44 -0400
-MIME-Version: 1.0
-Date: Tue, 23 Aug 2011 20:58:43 -0500
-Message-ID: <CA+JN8xP1FsjhNzgV5-0MNLewuJdbW1SxQXVxAeEOXcGwOLyKHg@mail.gmail.com>
-Subject: Possible scheduler bug
-From: seth bollinger <seth.boll@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756221Ab1HXCCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 22:02:44 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:56618 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754434Ab1HXCCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 22:02:39 -0400
+Subject: Re: [PATCH v2 35/43] unicore32: Use set_current_blocked() and
+ block_sigmask()
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <1314008796.19751.28.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1313772419-21951-1-git-send-email-matt@console-pimps.org>
+	 <1313772419-21951-36-git-send-email-matt@console-pimps.org>
+	 <1313979346.2905.27.camel@epip-laptop>
+	 <1314008796.19751.28.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Wed, 24 Aug 2011 10:03:21 +0800
+Message-ID: <1314151401.29738.35.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All,
+Thanks Matt,
 
-We recently ran into an interesting scheduler problem when testing one
-of our products. It manifested itself as a user space lockup.  When I
-enabled/printed scheduler stats I noticed that the scheduler was
-always picking the same task to run, and no task stats were being
-updated(clock, sum_exec, sum_sleep, etc.). The scheduler would become
-stuck in this state permanently. This problem was ultimately resolved
-by the following patch to sched.c
+For unicore32 bit,
 
-@@ -564,7 +569,7 @@ void check_preempt_curr(struct rq *rq, struct
-task_struct *p, int flags)
-         * A queue event has occurred, and we're going to schedule.  In
-         * this case, we can save a useless back to back clock update.
-         */
--       if (test_tsk_need_resched(p))
-+       if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
-                rq->skip_clock_update = 1;
- }
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-I have two questions regarding this patch.
 
-1. How was it possible to get the scheduler locked up like that (prior
-to patch application)?
-2. After patch, is it possible that the scheduler could spin in this
-loop until a sched_clock() tick (our clock resolution is unfortunately
-10ms)?
+On Mon, 2011-08-22 at 11:26 +0100, Matt Fleming wrote:
+> On Mon, 2011-08-22 at 10:15 +0800, Guan Xuetao wrote:
+> > Hi, Matt
+> > Could you add me (and other relevant people) to the patch series, or at
+> > least the main patches in the series, since the separated patch is hard
+> > to understand, and can't be tested.
+> > 
+> > For signal patches, I can only test it by booting up the system, running
+> > some commands, and perhaps, running lmbench or ltp.
+> > Is there any testsuite specified to signal part?
+> > 
+> > 
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > Thanks Matt.
+> > Guan Xuetao
+> 
+> Hi Guan,
+> 
+> Unfortunately there are too many maintainers to add directly to the Cc
+> list. However, I did reply to the first patch in the series (the only
+> other one that matters for arch maintainers) and added yourself and
+> linux-arch, so hopefully the rest of the arch maintainers will find it
+> there. But just to be complete, the link to the patch is here,
+> 
+> 	https://lkml.org/lkml/2011/8/19/409
+> 
+> There isn't really a specific testsuite that I would recommend, though
+> I'm pretty sure that LTP has some signal-related test cases. Booting up
+> your system and running some commands (and perhaps interrupting them
+> with Ctrl-C) should be good enough.
+> 
 
-We're currently running kernel version 2.6.35.14 on a freescale
-i.MX28. I can provide the test code that reproduces the problem (or
-explanation of what it does), or a more verbose explanation of the
-problem and analysis I've done if it would help.
 
-Thanks,
-
-Seth Bollinger
