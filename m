@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab1HXBMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:12:17 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37231 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab1HXBMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:12:10 -0400
-Date: Wed, 24 Aug 2011 11:12:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: linux-next: manual merge of the pm tree with the mfd tree
-Message-Id: <20110824111201.75aac21e4e4ed697011a093d@canb.auug.org.au>
-In-Reply-To: <201108240016.33529.rjw@sisk.pl>
-References: <20110823135619.be8b64d2eec7cb78bc0160a8@canb.auug.org.au>
-	<201108240016.33529.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.2.0beta2 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__24_Aug_2011_11_12_01_+1000_Tb_x8K4oICxzJC9="
+	id S1756293Ab1HXBOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:14:40 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50436 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083Ab1HXBOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 21:14:35 -0400
+Date: Wed, 24 Aug 2011 03:14:30 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCHSET] cgroup: introduce cgroup_taskset and consolidate
+ subsys methods
+Message-ID: <20110824011428.GC23979@somewhere>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1314138000-2049-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__24_Aug_2011_11_12_01_+1000_Tb_x8K4oICxzJC9=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 24, 2011 at 12:19:54AM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> cgroup has grown quite some number of subsys methods.  Some of them
+> are overlapping, inconsistent with each other and called under
+> different conditions depending on whether they're called for a single
+> task or whole process.  Unfortunately, these callbacks are complicated
+> and incomplete at the same time.
+> 
+> * ->attach_task() is called after migration for task attach but before
+>   for process.
+> 
+> * Ditto for ->pre_attach().
+> 
+> * ->can_attach_task() is called for every task in the thread group but
+>   ->attach_task() skips the ones which don't actually change cgroups.
+> 
+> * Task attach becomes noop if the task isn't actually moving.  Process
+>   attach is always performed.
+> 
+> * ->attach_task() doesn't (or at least aren't supposed to) have access
+>   to the old cgroup.
+> 
+> * During cancel, there's no way to access the affected tasks.
+> 
+> This patchset introduces cgroup_taskset along with some accessors and
+> iterator, updates methods to use it, consolidates usages and drops
+> superflous methods.
+> 
+> It contains the following six patches.
+> 
+>  0001-cgroup-subsys-attach_task-should-be-called-after-mig.patch
+>  0002-cgroup-improve-old-cgroup-handling-in-cgroup_attach_.patch
+>  0003-cgroup-introduce-cgroup_taskset-and-use-it-in-subsys.patch
+>  0004-cgroup-don-t-use-subsys-can_attach_task-or-attach_ta.patch
+>  0005-cgroup-cpuset-don-t-use-ss-pre_attach.patch
+>  0006-cgroup-kill-subsys-can_attach_task-pre_attach-and-at.patch
 
-Hi Rafael,
+I don't understand the point on patches 3,4,5,6
 
-On Wed, 24 Aug 2011 00:16:33 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->
-> On Tuesday, August 23, 2011, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the pm tree got a conflict in
-> > drivers/mfd/twl4030-irq.c between commit 99efe0d4c992 ("mfd: Drop the
-> > twl4030-irq kthread") from the mfd tree and commit febab68efa45
-> > ("freezer: don't unnecessarily set PF_NOFREEZE explicitly") from the pm
-> > tree.
-> >=20
-> > The former dropped the code modified by the latter, so I did that.
->=20
-> Thanks!
->=20
-> Unfortunately, I don't think we can really fix that other that making
-> one tree depend on the other.
-
-We can just leave it for Linus to fix up during the next merge window.
-After all, I figured it out.  :-)
-
-("git rerere" takes care of fixing it up for me from now on)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__24_Aug_2011_11_12_01_+1000_Tb_x8K4oICxzJC9=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOVE/hAAoJEDMEi1NhKgbs7/UH/2sl1QULs1/woCFttAx7/o9y
-0Rg9Zr8sA5DVxJAgvuGFpFr9NUUWGhjahpKRQWKI5g09JKF/EjcEhAAgf1Y9tFPd
-hFw/4tzTZaBT4XA+AlqJ5GDGUmPY6HrSrPwja/57ACprvNSifWSr0kGDa9DigFki
-r/7es4eK9afXPtoawfRCeUW915ORFEq1uHg+Jpw6vgLPlY5kwaQR+epBAb5kj11d
-nT/AiAIB0j2ywa/VQWQqA9FXxLBTKqnQhKv1kvCJ9vt4AyAAQv1/ZcS6hBtyCbc0
-3AOqu747UBGtRC3khWZ/yJtDFxJk/1WulrGAAxhY5Gzj4qTgY45TbY5CXoUvA38=
-=Q1Q1
------END PGP SIGNATURE-----
-
---Signature=_Wed__24_Aug_2011_11_12_01_+1000_Tb_x8K4oICxzJC9=--
+Why pushing the task iterations down to the subsystems?
