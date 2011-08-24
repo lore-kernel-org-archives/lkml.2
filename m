@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab1HXDnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 23:43:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:53299 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752296Ab1HXDnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 23:43:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/NOPJq3nDN5L6BfgZDzxk2/OMD1VqOwOufOgUN3H
-	sSQTGs5wGsW6Ne
-Subject: Re: Possible scheduler bug
-From: Mike Galbraith <efault@gmx.de>
-To: seth bollinger <seth.boll@gmail.com>
+	id S1755900Ab1HXD6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 23:58:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab1HXD6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 23:58:04 -0400
+Date: Tue, 23 Aug 2011 23:58:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steevven1 <steevven1@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CA+JN8xP1FsjhNzgV5-0MNLewuJdbW1SxQXVxAeEOXcGwOLyKHg@mail.gmail.com>
-References: <CA+JN8xP1FsjhNzgV5-0MNLewuJdbW1SxQXVxAeEOXcGwOLyKHg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Aug 2011 05:43:30 +0200
-Message-ID: <1314157410.6220.24.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Subject: Re: Bug Report for Linux Kernel 3.x
+Message-ID: <20110824035800.GA30312@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steevven1 <steevven1@gmail.com>, linux-kernel@vger.kernel.org
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 20:58 -0500, seth bollinger wrote:
-> Hello All,
-> 
-> We recently ran into an interesting scheduler problem when testing one
-> of our products. It manifested itself as a user space lockup.  When I
-> enabled/printed scheduler stats I noticed that the scheduler was
-> always picking the same task to run, and no task stats were being
-> updated(clock, sum_exec, sum_sleep, etc.). The scheduler would become
-> stuck in this state permanently. This problem was ultimately resolved
-> by the following patch to sched.c
-> 
-> @@ -564,7 +569,7 @@ void check_preempt_curr(struct rq *rq, struct
-> task_struct *p, int flags)
->          * A queue event has occurred, and we're going to schedule.  In
->          * this case, we can save a useless back to back clock update.
->          */
-> -       if (test_tsk_need_resched(p))
-> +       if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
->                 rq->skip_clock_update = 1;
->  }
-
-Yeah, that's correct, but see f26f9aff6aaf67e9a430d16c266f91b13a5bff64.
-You'll also want the other bits as well.  (but not the WARN_ON()) 
-
-> I have two questions regarding this patch.
-> 
-> 1. How was it possible to get the scheduler locked up like that (prior
-> to patch application)?
-
-If the clock isn't updated, vruntimes don't advance, so you could end up
-selecting the same task repeatedly.
-
-> 2. After patch, is it possible that the scheduler could spin in this
-> loop until a sched_clock() tick (our clock resolution is unfortunately
-> 10ms)?
-
-If you take the rest of the fix, that shouldn't happen.
-
-	-Mike
+On Tue, Aug 23, 2011 at 07:19:35PM -0400, Steevven1 wrote:
+ > Hello,
+ > 
+ > I would like to report what myself and several others believe to be a
+ > serious bug affecting all Linux kernels 3.0 and up, and none below 3.0
+ > (2.6.x and lower).
+ > 
+ > One-sentence description: On certain hardware, the 3.x series kernels
+ > drain a considerable amount more power than the 2.6-series kernels, up
+ > to 40% more, even when idle.
+ >
+ > The specific hardware I have personally tested is a Lenovo ThinkPad
+ > X220 with an Intel SandyBridge i7 2620M processor.
+ 
+Sounds like https://bugzilla.redhat.com/show_bug.cgi?id=727579
+Try booting with i915.i915_enable_rc6=1
+ 
+	Dave
 
