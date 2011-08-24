@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab1HXA6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:58:42 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:23302 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab1HXA6h convert rfc822-to-8bit (ORCPT
+	id S1756250Ab1HXBAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:00:15 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:35507 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754749Ab1HXBAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:58:37 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
- manage ref_cnt
-Thread-Topic: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
- manage ref_cnt
-Thread-Index: AQHMQxTTgKIq9Plk/0mMzxNJa+Ov05UrwuAA//+oJ+A=
-Date: Wed, 24 Aug 2011 00:58:36 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B239E@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-86-git-send-email-kys@microsoft.com>
- <20110823231028.GO9641@kroah.com>
-In-Reply-To: <20110823231028.GO9641@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 23 Aug 2011 21:00:07 -0400
+Subject: Re: RFC: dynamic debug enhancements?
+From: Joe Perches <joe@perches.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Jim Cromie <jim.cromie@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110823142311.GB2526@redhat.com>
+References: <1313972143.11178.55.camel@Joe-Laptop>
+	 <20110823142311.GB2526@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Aug 2011 18:00:05 -0700
+Message-ID: <1314147605.1659.40.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-08-23 at 10:23 -0400, Jason Baron wrote:
+> On Sun, Aug 21, 2011 at 05:15:43PM -0700, Joe Perches wrote:
+> > I recently went through drivers/media and updated
+> > lots of calls to pr_<level>.
+> > A common pattern for debugging there and elsewhere
+> > treewide is the use of macros like:
+> > #define dprintk(level, fmt, ...)			\
+> > do {							\
+> > 	if (level > [some_modparam_var])		\
+> > 		pr_debug(fmt, ##__VA_ARGS__);		\
+> > } while (0)
+> > and
+> > #define dprintk(mask, fmt, ...)				\
+> > do {							\
+> > 	if (mask & [some_modparam_var])			\
+> > 		pr_debug(fmt, ##__VA_ARGS__);		\
+> > } while (0)
+> > It might be useful to have standardized calls
+> > like pr_debug_level and pr_debug_mask instead
+> > of multiple hand-rolled variants treewide.
+[]
+> looks interesting. I'm wondering how we handle module parameters though?
+> In the dynamic debug disabled case, we'd have to standardize the module
+> params names. And for the dynamic debug enabled case, I'm not sure how
+> we would honor those module params?
 
+One possibility would be to require a #define
+before use.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, August 23, 2011 7:10 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
-> manage ref_cnt
-> 
-> On Fri, Jul 15, 2011 at 10:47:14AM -0700, K. Y. Srinivasan wrote:
-> > Now that we have a spin lock protecting access to the stor device pointer,
-> > use it manage the reference count as well.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/staging/hv/hyperv_storage.h |    8 ++++----
-> >  drivers/staging/hv/storvsc.c        |   10 +++++-----
-> >  2 files changed, 9 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/staging/hv/hyperv_storage.h
-> b/drivers/staging/hv/hyperv_storage.h
-> > index 53b65be..d946211 100644
-> > --- a/drivers/staging/hv/hyperv_storage.h
-> > +++ b/drivers/staging/hv/hyperv_storage.h
-> > @@ -265,7 +265,7 @@ struct storvsc_device {
-> >  	struct hv_device *device;
-> >
-> >  	/* 0 indicates the device is being destroyed */
-> > -	atomic_t ref_count;
-> > +	int	 ref_count;
-> 
-> Is this really needed?  Can't you rely on the reference count of the
-> hv_device itself?
+Something like the DEBUG_VARIABLE used in
+drivers/media/ and include/media/.
 
-We don't have a reference count on the hv_device and this count is taken
-to deal with racing unloads and incoming traffic on the channel from the 
-host. 
+Maybe something like:
 
-Regards,
+#define DYNAMIC_DEBUG_LEVEL_VARIABLE module_var_foo
+and/or
+#define DYNAMIC_DEBUG_MASK_VARIABLE module_var_bar
 
-K. Y
+and
+
+$ echo 'module <foo> mask <n>' > <debugfs>/dynamic_debug/control
+and
+$ echo 'module <foo> level <n>' > <debugfs>/dynamic_debug/control
+
+could work to set the module control variable too.
+
 
