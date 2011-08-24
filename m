@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1HXB5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:57:49 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48802 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754434Ab1HXB5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:57:43 -0400
-Date: Tue, 23 Aug 2011 18:57:39 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        containers@lists.linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH 4/6] cgroup: don't use subsys->can_attach_task() or
- ->attach_task()
-Message-ID: <20110824015739.GE28444@count0.beaverton.ibm.com>
-References: <1314138000-2049-1-git-send-email-tj@kernel.org>
- <1314138000-2049-5-git-send-email-tj@kernel.org>
+	id S1756184Ab1HXB6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:58:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41584 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab1HXB6o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 21:58:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314138000-2049-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 23 Aug 2011 20:58:43 -0500
+Message-ID: <CA+JN8xP1FsjhNzgV5-0MNLewuJdbW1SxQXVxAeEOXcGwOLyKHg@mail.gmail.com>
+Subject: Possible scheduler bug
+From: seth bollinger <seth.boll@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 12:19:58AM +0200, Tejun Heo wrote:
+Hello All,
 
-<snip>
+We recently ran into an interesting scheduler problem when testing one
+of our products. It manifested itself as a user space lockup.  When I
+enabled/printed scheduler stats I noticed that the scheduler was
+always picking the same task to run, and no task stats were being
+updated(clock, sum_exec, sum_sleep, etc.). The scheduler would become
+stuck in this state permanently. This problem was ultimately resolved
+by the following patch to sched.c
 
-> * In cgroup_freezer, remove unnecessary NULL assignments to unused
->   methods.  It's useless and very prone to get out of sync, which
->   already happened.
+@@ -564,7 +569,7 @@ void check_preempt_curr(struct rq *rq, struct
+task_struct *p, int flags)
+         * A queue event has occurred, and we're going to schedule.  In
+         * this case, we can save a useless back to back clock update.
+         */
+-       if (test_tsk_need_resched(p))
++       if (rq->curr->se.on_rq && test_tsk_need_resched(rq->curr))
+                rq->skip_clock_update = 1;
+ }
 
-You could post this part independently -- that might be best since
-I guess the taskset bits will need more discussion.
+I have two questions regarding this patch.
 
-Cheers,
-	-Matt Helsley
+1. How was it possible to get the scheduler locked up like that (prior
+to patch application)?
+2. After patch, is it possible that the scheduler could spin in this
+loop until a sched_clock() tick (our clock resolution is unfortunately
+10ms)?
+
+We're currently running kernel version 2.6.35.14 on a freescale
+i.MX28. I can provide the test code that reproduces the problem (or
+explanation of what it does), or a more verbose explanation of the
+problem and analysis I've done if it would help.
+
+Thanks,
+
+Seth Bollinger
