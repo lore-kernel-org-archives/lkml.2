@@ -1,45 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab1HXOYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:24:47 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:32990 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750891Ab1HXOYo (ORCPT
+	id S1752264Ab1HXO0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:26:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42816 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab1HXO0Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:24:44 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: nsnUsAQVM1kB5sK00VRR8YZWYQHQYHxcxbTbvtwfqzc4VsH
- g.vEY0G5vwljvsRGcZx9rs7.tS9BbNomoMZHoz0RiwYMUuiAFseP3p9Yu0sw
- V36oS2VfoPaWTy2URd3.bJVUtpwWbeI3pu2P3GFEQljmFXgf2fohfEcZ_RkQ
- JaYNMBtmmPMva5sIAdSCsW6iuN4ThyBwa3cer5zSbBp4j4NOtemW2HY2flfa
- ITiDqCUOyEwRlLj1hYVasU6bF.mgwakdocri6GEZFqOZ8O.ruqRtegZfssti
- H5tJzGPKgnlU3.tSD4nsRtwuETQ6N4z.0B0yzWwqStPNrcTG4FxsezDotmg4
- qFvKzd_XG3WUOb4hBODU9lR7K4s6YgVjOMeXoVrWCfB3U
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 24 Aug 2011 09:24:41 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+	Wed, 24 Aug 2011 10:26:16 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
+        "mchehab@infradead.org" <mchehab@infradead.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 08/13] list: add a new LRU list type
-In-Reply-To: <4E5379DA.8060109@openvz.org>
-Message-ID: <alpine.DEB.2.00.1108240923420.24118@router.home>
-References: <1314089786-20535-1-git-send-email-david@fromorbit.com> <1314089786-20535-9-git-send-email-david@fromorbit.com> <20110823092056.GE21492@infradead.org> <20110823093205.GZ3162@dastard> <4E5379DA.8060109@openvz.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 24 Aug 2011 19:56:03 +0530
+Subject: RE: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+Thread-Topic: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+Thread-Index: AcxiYU907Dld08JYRJC1NsjjGMPzWAAAlcuA
+Message-ID: <19F8576C6E063C45BE387C64729E739404EC007C68@dbde02.ent.ti.com>
+References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com>
+ <201108241329.48147.laurent.pinchart@ideasonboard.com>
+ <19F8576C6E063C45BE387C64729E739404EC007BE3@dbde02.ent.ti.com>
+ <201108241525.47332.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201108241525.47332.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Konstantin Khlebnikov wrote:
 
-> maybe is better to rename it to enum page_lru_list
+> -----Original Message-----
+> From: Laurent Pinchart [mailto:laurent.pinchart@ideasonboard.com]
+> Sent: Wednesday, August 24, 2011 6:56 PM
+> To: Hiremath, Vaibhav
+> Cc: Ravi, Deepthy; mchehab@infradead.org; linux-media@vger.kernel.org;
+> linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
+> 
+> Hi Vaibhav,
+> 
+> On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
+> > On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote:
+> > > On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
+> > > > On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
+> > > > > On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
+> > > > >> From: Vaibhav Hiremath <hvaibhav@ti.com>
+> > > > >>
+> > > > >> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
+> > > > >> option is disabled and if any sensor driver has to be used
+> > > > >> between MC and non MC framework compatible devices.
+> > > > >>
+> > > > >> For example,if tvp514x video decoder driver migrated to
+> > > > >> MC framework is being built without CONFIG_MEDIA_CONTROLLER
+> > > > >> option enabled, the following error messages will result.
+> > > > >> drivers/built-in.o: In function `tvp514x_remove':
+> > > > >> drivers/media/video/tvp514x.c:1285: undefined reference to
+> > > > >> `media_entity_cleanup'
+> > > > >> drivers/built-in.o: In function `tvp514x_probe':
+> > > > >> drivers/media/video/tvp514x.c:1237: undefined reference to
+> > > > >> `media_entity_init'
+> > > > >
+> > > > > If the tvp514x is migrated to the MC framework, its Kconfig option
+> > > > > should depend on MEDIA_CONTROLLER.
+> > > >
+> > > > The same TVP514x driver is being used for both MC and non MC
+> compatible
+> > > > devices, for example OMAP3 and AM35x. So if it is made dependent on
+> > > > MEDIA CONTROLLER, we cannot enable the driver for MC independent
+> > > > devices.
+> > >
+> > > Then you should use conditional compilation in the tvp514x driver
+> itself.
+> > > Or
+> >
+> > No. I am not in favor of conditional compilation in driver code.
+> 
+> Actually, thinking some more about this, you should make the tvp514x
+> driver
+> depend on CONFIG_MEDIA_CONTROLLER unconditionally. This doesn't mean that
+> the
+> driver will become unusable by applications that are not MC-aware.
+[Hiremath, Vaibhav] I am not referring to application here, there is no doubt that application must support non-MC devices. 
+I should be able to use standard V4L2 streaming application and use it on streaming device node, the only change would be, for MC aware device, links need to be set before and for non-MC aware devices its default thing. 
 
-Better rename both and clearly indicate what type of lru list it is. An
-LRU list is such a generic concept that it shows up in an excessive amount
-of contexts.
+> Hosts/bridges don't have to export subdev nodes, they can just call subdev
+> pad-level operations internally and let applications control the whole
+> device
+> through a single V4L2 video node.
+> 
+[Hiremath, Vaibhav] Agreed. That's what I thought.
 
+> > > better, port the AM35x driver to the MC API.
+> >
+> > Why should we use MC if I have very simple device (like AM35x) which
+> only
+> > supports single path? I can very well use simple V4L2 sub-dev based
+> > approach (master - slave), isn't it?
+> 
+> The AM35x driver should use the in-kernel MC and V4L2 subdev APIs, but it
+> doesn't have to expose them to userspace.
+> 
+[Hiremath, Vaibhav] Let me digest this.
+
+Thanks,
+Vaibhav
+
+> --
+> Regards,
+> 
+> Laurent Pinchart
