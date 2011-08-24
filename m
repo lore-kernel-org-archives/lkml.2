@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab1HXOM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:12:29 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:43274 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751030Ab1HXOM1 (ORCPT
+	id S1752201Ab1HXOMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:12:47 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:32093 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab1HXOMp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:12:27 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Y6QDiS8VM1mY9WMMev7eoR4qMkvIvjp6XC.CykO8BgbPlrx
- 53o.p8zkwYTnUVHUQckl5GPA5t3QeDNBwVpnJVEAO2O1TJQBhSEw2bAHSJZg
- XFtD5HKMFiOR3JhlTKHIzLjmoD9kZvZe3MxYOeHe_CKZguhNKAcplvLt.Yus
- ynZub3XEwNNCKngX8RcnGEgYm9j.T54bEmhJwpXc1yZr4qrm5uBhzKEUYykM
- __KH9HqBNPhUWc75E3BXmHyyTbM0oZXAoO9vvotjqp_6EjtKv_WQkuVPeqpJ
- 00MOgL3YS5fuztscufaKssgQcXqalGS8Mmd_TkgjXCT5Mx..aEqFjxQv3kDZ
- My1SxVvDahr2Fo_WygU2TN4JM.YUdNNvXiAjm_K85Bv9SVQ--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 24 Aug 2011 09:12:23 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Chinner <david@fromorbit.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, khlebnikov@openvz.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 02/13] dcache: convert dentry_stat.nr_unused to per-cpu
- counters
-In-Reply-To: <1314089786-20535-3-git-send-email-david@fromorbit.com>
-Message-ID: <alpine.DEB.2.00.1108240910440.24118@router.home>
-References: <1314089786-20535-1-git-send-email-david@fromorbit.com> <1314089786-20535-3-git-send-email-david@fromorbit.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 24 Aug 2011 10:12:45 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Topic: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Index: AQHMQxmwelNZej0M8Ey5TPtGzUjq3JUrvP0A//+izUCAAKNMgIAARhkw
+Date: Wed, 24 Aug 2011 14:12:43 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B26EC@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-19-git-send-email-kys@microsoft.com>
+ <20110823224932.GF9641@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B2356@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110824030025.GD30779@kroah.com>
+In-Reply-To: <20110824030025.GD30779@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.72]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Aug 2011, Dave Chinner wrote:
 
-> Before we split up the dcache_lru_lock, the unused dentry counter
-> needs to be made independent of the global dcache_lru_lock. Convert
-> it to per-cpu counters to do this.
 
-I hope there is nothing depending on the counter being accurate.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, August 23, 2011 11:00 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+> 
+> On Wed, Aug 24, 2011 at 12:38:09AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Tuesday, August 23, 2011 6:50 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > > Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent()
+> code
+> > >
+> > > On Fri, Jul 15, 2011 at 10:46:07AM -0700, K. Y. Srinivasan wrote:
+> > > > Now generate appropriate uevent based on the modalias string. As part of
+> this,
+> > > > cleanup the existing uevent code.
+> > >
+> > > Note, you just change the user api here, did you have tools that relied
+> > > on the old format?  If so, they just broke :(
+> >
+> > Prior to this, I don't think autoloading worked the way it should for these
+> > modules.
+> 
+> It didn't?  How did the mouse driver get autoloaded then, through the
+> pci/dmi tables?
 
-Otherwise
+You are right, prior to this all drivers were loaded using pci/dmi signatures.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Regards,
+
+K. Y
