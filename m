@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab1HXQXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 12:23:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63455 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab1HXQX3 (ORCPT
+	id S1752437Ab1HXQZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 12:25:21 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:29970 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1HXQZT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 12:23:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: dedekind1@gmail.com
-Subject: Re: [PATCHv3] UBI: new module ubiblk: block layer on top of UBI
-Date: Wed, 24 Aug 2011 18:23:20 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: david.wagner@free-electrons.com,
-        "linux-mtd" <linux-mtd@lists.infradead.org>,
-        "linux-embedded" <linux-embedded@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tim Bird <tim.bird@am.sony.com>,
-        David Woodhouse <dwmw2@infradead.org>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com> <1313587042-30846-1-git-send-email-david.wagner@free-electrons.com> <1313998939.2644.52.camel@sauron>
-In-Reply-To: <1313998939.2644.52.camel@sauron>
+	Wed, 24 Aug 2011 12:25:19 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+ manage ref_cnt
+Thread-Topic: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+ manage ref_cnt
+Thread-Index: AQHMQxTTgKIq9Plk/0mMzxNJa+Ov05UrwuAA//+oJ+CAAJdQgIAAWkTw
+Date: Wed, 24 Aug 2011 16:25:18 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B2789@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-86-git-send-email-kys@microsoft.com>
+ <20110823231028.GO9641@kroah.com>
+ <6E21E5352C11B742B20C142EB499E048081B239E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110824025737.GA30779@kroah.com>
+In-Reply-To: <20110824025737.GA30779@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.72]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108241823.20904.arnd@arndb.de>
-X-Provags-ID: V02:K0:YxcxYk3FIdUKTaDFMnsHZJ0/aUvp/HcbyVKUnsWFZn+
- c6X0nePRlNhH2MgBYUyFh9K+znW2OupzWIxPYS7dp5TzYuKyeV
- bhZCtsCkFTxCQ7z4YzdjnAaERVD6SiN6asbj/wWTF/0/HFxX6+
- ga82YIx9NkCJa7zM9uR0cYCxMCMDU6janOXUxXWXgrK2C2fUNN
- 3DzCCuysqf5a/q/GFBKMA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 August 2011, Artem Bityutskiy wrote:
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, August 23, 2011 10:58 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+> manage ref_cnt
 > 
-> On Wed, 2011-08-17 at 15:17 +0200, david.wagner@free-electrons.com
-> wrote:
-> > Questions:
-> > ==========
-> > I wasn't sure what magic ioctl number to use, so I settled to use the same one
-> > as a part of UBI: 'O', which was so far only used by UBI but on a higher range
-> > and leaving some room for UBI to add ioctls (for nw, it uses 'O'/0x00-0x06 and
-> > ubiblk uses 'O'/0x10-0x11).  Is it ok or should ubiblk use a different
-> > number/range ?
+> On Wed, Aug 24, 2011 at 12:58:36AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:greg@kroah.com]
+> > > Sent: Tuesday, August 23, 2011 7:10 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> > > Subject: Re: [PATCH 086/117] Staging: hv: storvsc: Leverage the spinlock to
+> > > manage ref_cnt
+> > >
+> > > On Fri, Jul 15, 2011 at 10:47:14AM -0700, K. Y. Srinivasan wrote:
+> > > > Now that we have a spin lock protecting access to the stor device pointer,
+> > > > use it manage the reference count as well.
+> > > >
+> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > ---
+> > > >  drivers/staging/hv/hyperv_storage.h |    8 ++++----
+> > > >  drivers/staging/hv/storvsc.c        |   10 +++++-----
+> > > >  2 files changed, 9 insertions(+), 9 deletions(-)
+> > > >
+> > > > diff --git a/drivers/staging/hv/hyperv_storage.h
+> > > b/drivers/staging/hv/hyperv_storage.h
+> > > > index 53b65be..d946211 100644
+> > > > --- a/drivers/staging/hv/hyperv_storage.h
+> > > > +++ b/drivers/staging/hv/hyperv_storage.h
+> > > > @@ -265,7 +265,7 @@ struct storvsc_device {
+> > > >  	struct hv_device *device;
+> > > >
+> > > >  	/* 0 indicates the device is being destroyed */
+> > > > -	atomic_t ref_count;
+> > > > +	int	 ref_count;
+> > >
+> > > Is this really needed?  Can't you rely on the reference count of the
+> > > hv_device itself?
+> >
+> > We don't have a reference count on the hv_device
 > 
-> I think this is OK to share them between UBI and ubiblk, as long as this
-> is documented.
+> Wait, why not?  You shure better have a reference count on that device
+> if you have a pointer to it, if not, you have a bug, and that needs to
+> be fixed.  Please reread Documentation/CodingStyle for details.
 
-That should  be fine, yes. I would probably put them into the same
-header file though if they are in the same number space even
-when you use them on distinct devices.
+Greg,
 
-It does feel a little clumsy to have yet another character device
-to manage the block devices though. What do you think about one
-of these alternative approaches:
+I am confused here. The model we have is identical to other device/bus
+abstractions in the kernel. For instance, neither  struct pci_dev nor struct
+virtio_device have an explicit reference count. However, they both embed
+struct device which  has the kobject structure embedded to manage
+the object life cycle. This is exactly the model we have for the vmbus devices -
+struct hv_device embeds struct device that embeds the struct kobject for
+managing the lifecycle.
 
-* When the ubi block device driver gets loaded, create one block
-  device per volume and let the user deal with permissions for
-  the devices instead of having to first create them as well.
-* Use the existing UBI control device for the block devices as
-  well and just add two more ioctls to create the devices.
-  You can add a logical bus_type for this so that the ubi block
-  driver gets automatically loaded matched with the device when
-  one is created using the control device.
+Like other  bus specific devices in the kernel (pci devices, virtio devices,),  
+class specific vmbus devices - struct storvsc_device and struct netvsc_device 
+embed a pointer to the underlying struct hv_device. Furthermore, a pointer to 
+the class specific device structure is stashed in the struct hv_device (the ext pointer).
+This is identical what is done in the virtio blk device - look at the priv element in struct virtio_device.
 
-	Arnd
+As I noted in a different email, I did not introduce this reference counting, I just fixed some gaping 
+holes in the logic. The reason, I fixed the logic and kept the reference counting is because I can 
+see cases where we could end up de-referencing a NULL pointer from the interrupt side that is
+trying to deliver a vmbus packet to a device that is being destroyed. 
+
+Regards,
+
+K. Y
+
+> 
+> > and this count is taken to deal with racing unloads and incoming
+> > traffic on the channel from the host.
+> 
+> Is this something that all other storage drivers have to do?  If not,
+> then you shouldn't be doing that as well.
+> 
+> greg k-h
+
