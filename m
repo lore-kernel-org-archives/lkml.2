@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab1HXTbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 15:31:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26269 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab1HXTbe (ORCPT
+	id S1752383Ab1HXTcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 15:32:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43495 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1HXTcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 15:31:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=hmu34CjL3/DU4+ZmjRUUlrGQVKyKD8She2Dal36uYej0LJXp2geUMphVLo+mmzXXD
-	/6J98Gf5XNe8bjMml4egQ==
-Date: Wed, 24 Aug 2011 12:31:26 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] oom: skip frozen tasks
-In-Reply-To: <20110824101927.GB3505@tiehlicka.suse.cz>
-Message-ID: <alpine.DEB.2.00.1108241226550.31357@chino.kir.corp.google.com>
-References: <20110823073101.6426.77745.stgit@zurg> <alpine.DEB.2.00.1108231313520.21637@chino.kir.corp.google.com> <20110824101927.GB3505@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 24 Aug 2011 15:32:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <CAOJsxLHNeZq-kOy2UorOTia7AO3UmfpaWm6gfx3WeW7J6F4hEw@mail.gmail.com>
+References: <201108241641.42676.philipp.reisner@linbit.com>
+ <CAGZ=bq+A1ExZYRnuBBwfAq7Ez37mpBtT1_T91AWcchDBZ3iqPw@mail.gmail.com>
+ <4E552E9C.2000104@kernel.dk> <201108241949.43716.philipp.reisner@linbit.com>
+ <4E553ABF.3030904@kernel.dk> <CAOJsxLHNeZq-kOy2UorOTia7AO3UmfpaWm6gfx3WeW7J6F4hEw@mail.gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Wed, 24 Aug 2011 15:32:26 -0400
+Message-ID: <CAGZ=bqLhcjzPDdb8mkGf5MbwqjrA_3ETLDe9Xiv-Wq2GnTgaUw@mail.gmail.com>
+Subject: Re: [GIT PULL] drbd-8.4 for mainline
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Philipp Reisner <philipp.reisner@linbit.com>,
+        linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011, Michal Hocko wrote:
+On Wed, Aug 24, 2011 at 14:16, Pekka Enberg <penberg@kernel.org> wrote:
+> On Wed, Aug 24, 2011 at 8:54 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> So, please do this right. The email you sent is perfect for a 0/N header
+>> email, then each patch must follow as a reply to that. There's git
+>> send-email to help you with this. If you haven't used it before, I'd
+>> advise you to do a dry-run or two to your own email address to ensure
+>> that it produces the right result. When it does, then send it off to
+>> lkml and myself. Then I too will see reviews and have a better chance of
+>> judging whether this is mergeable now or not.
+>
+> Another thing: there's roughly 500 commit in the pull request. Please
+> don't send all of them at the same time if you want people to take a
+> look at them.
 
-> When we are in the global OOM condition then you are right, we have a
-> higher chance to panic. I still find the patch an improvement because
-> encountering a frozen task and looping over it without any progress
-> (even though there are other tasks that could be killed) is more
-> probable than having no killable task at all.
-> On non-NUMA machines there is even not a big chance that somebody would
-> be able to thaw a task as the system is already on knees.
-> 
+Clearly you've been developing DRBD 8.4 for quite a while; it will save you
+a lot of time overall in the future to submit patches as soon as you have
+each one ready for review.
 
-That's obviously false since we call oom_killer_disable() in 
-freeze_processes() to disable the oom killer from ever being called in the 
-first place, so this is something you need to resolve with Rafael before 
-you cause more machines to panic.
+You should be merging functional and code improvements continuously
+into every release window, instead of batching them up and submitting
+500 at a time.
+
+Cheers,
+Kyle Moffett
