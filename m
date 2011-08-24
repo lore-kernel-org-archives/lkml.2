@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1HXOfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:35:42 -0400
-Received: from 64-198-47-7.ip.mcleodusa.net ([64.198.47.7]:51768 "EHLO
-	mail02.indesign-llc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab1HXOfk (ORCPT
+	id S1752865Ab1HXOfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:35:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59350 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344Ab1HXOft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:35:40 -0400
-Message-ID: <4E550C35.4080700@indesign-llc.com>
-Date: Wed, 24 Aug 2011 10:35:33 -0400
-From: Clifton Barnes <cabarnes@indesign-llc.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Wed, 24 Aug 2011 10:35:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: patch "TTY: remove tty_locked" added to tty tree
+Date: Wed, 24 Aug 2011 16:35:13 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@suse.de, alan@linux.intel.com,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+References: <13141210141189@kroah.org> <201108241320.47635.arnd@arndb.de> <4E54E4D9.6070802@suse.cz>
+In-Reply-To: <4E54E4D9.6070802@suse.cz>
 MIME-Version: 1.0
-To: <akpm@linux-foundation.org>
-CC: <ryan@bluewatersys.com>, <haojian.zhuang@marvell.com>,
-        <johnpol@2ka.mipt.ru>, <simon.inizan@goobie.fr>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/3] w1: ds2780, fix deadlock upon insertion and removal
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201108241635.13502.arnd@arndb.de>
+X-Provags-ID: V02:K0:oR9itAPkbN7LouY0NiG56yhcqfufAIZgzSVpWjAU8aT
+ Ij+dLOZHlxR3RqMqX+dwIDBe3sdi3joa8LpOaUFTnqJ96EyH3s
+ 7+m9uP7QuJNa1DzvWQ2mJUVXlVMA5m/I7Dv6sJ5FHsN0O+wvo7
+ KHVRO0xMQ8P+cI9ZUZdNj9fWf5G+a4/0bEtK2Oi344m2+aEC9h
+ A0csBA4KlftYWc971bNFw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the deadlock when inserting and removing the ds2780.
+On Wednesday 24 August 2011, Jiri Slaby wrote:
+> On 08/24/2011 01:20 PM, Arnd Bergmann wrote:
+> > It's not clear to me what state->mutex protects in the serial_core, but
+> > it has been around forever (used to be called state->sem)
+> 
+> It was actually moved in uart_close back in 2003. Formerly (when there
+> was only a coarse grained port_sem) it was right before uart_shutdown.
+> But there were some flags to handle some races. I'm not sure whether the
+> flags protected any race here though.
 
-Signed-off-by: Clifton Barnes <cabarnes@indesign-llc.com>
----
- drivers/power/ds2780_battery.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ok
 
-diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
-index 2571b41..91a783d 100644
---- a/drivers/power/ds2780_battery.c
-+++ b/drivers/power/ds2780_battery.c
-@@ -39,6 +39,7 @@ struct ds2780_device_info {
- 	struct device *dev;
- 	struct power_supply bat;
- 	struct device *w1_dev;
-+	struct task_struct *mutex_holder;
- };
- 
- enum current_types {
-@@ -63,6 +64,9 @@ static inline struct power_supply *to_power_supply(struct device *dev)
- static inline int ds2780_battery_io(struct ds2780_device_info *dev_info,
- 	char *buf, int addr, size_t count, int io)
- {
-+	if (dev_info->mutex_holder == current)
-+		return w1_ds2780_io_nolock(dev_info->w1_dev, buf, addr, count, io);
-+	else
- 		return w1_ds2780_io(dev_info->w1_dev, buf, addr, count, io);
- }
- 
-@@ -775,6 +779,7 @@ static int __devinit ds2780_battery_probe(struct platform_device *pdev)
- 	dev_info->bat.properties	= ds2780_battery_props;
- 	dev_info->bat.num_properties	= ARRAY_SIZE(ds2780_battery_props);
- 	dev_info->bat.get_property	= ds2780_battery_get_property;
-+	dev_info->mutex_holder		= current;
- 
- 	ret = power_supply_register(&pdev->dev, &dev_info->bat);
- 	if (ret) {
-@@ -804,6 +809,8 @@ static int __devinit ds2780_battery_probe(struct platform_device *pdev)
- 		goto fail_remove_bin_file;
- 	}
- 
-+	dev_info->mutex_holder = NULL;
-+
- 	return 0;
- 
- fail_remove_bin_file:
-@@ -823,6 +830,8 @@ static int __devexit ds2780_battery_remove(struct platform_device *pdev)
- {
- 	struct ds2780_device_info *dev_info = platform_get_drvdata(pdev);
- 
-+	dev_info->mutex_holder = current;
-+
- 	/* remove attributes */
- 	sysfs_remove_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
- 
--- 
-1.7.6
+> > and is held in
+> > all uart functions, which is at least consistent. IIRC what Alan's plan
+> > for this was, uart_close should eventually get changed to use
+> > tty_port_close_start or even tty_port_close. Maybe the time for that has
+> > come now, lacking better alternatives?
+> 
+> Yes, I have such a patch in my queue. But it's not easy to get there.
+> You may take a look at:
+> http://decibel.fi.muni.cz/gitweb/?p=linux.git;a=shortlog;h=refs/heads/devel
+> 
+> But it's still far from ready. And yet, in the queue, I still have
+> port->mutex locked before tty_port_close_start like it is now.
 
+Ah, right. I still don't see why the port->mutex is or is not needed there,
+and I think that's the main issue.
+
+By comparison, getting *_wait_until_sent to be called without BTM seems
+easy -- we know that all callers from ->close() hold it, while the ones
+from ->ioctl() don't. We could have a helper like
+
+void tty_wait_until_sent_from_close(struct tty_struct *tty, long timeout)
+{
+	tty_unlock(); /* tty->ops->close holds the BTM, drop it while waiting */
+	tty_wait_until_sent(tty, timeout);
+	tty_lock();
+}
+
+to deal with that, if only we can sort the lock ordering with port->mutex.
+
+BTW, I saw that the three m68k serial port drivers (amiserial, 68328, 68360)
+all call *_wait_until_sent with interrupts disabled, which is even more
+broken.
+
+	Arnd
