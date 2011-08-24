@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab1HXLUy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 07:20:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64634 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1HXLUv (ORCPT
+	id S1753680Ab1HXLYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 07:24:39 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:41545 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab1HXLYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 07:20:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-Date: Wed, 24 Aug 2011 13:20:47 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: gregkh@suse.de, alan@linux.intel.com,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-References: <13141210141189@kroah.org> <73013289.R6WJLciOm2@wuerfel> <4E54C4ED.3060809@suse.cz>
-In-Reply-To: <4E54C4ED.3060809@suse.cz>
+	Wed, 24 Aug 2011 07:24:37 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bh8275dhz2dh87h2a8h668h839h64h)
+X-Spam-TCS-SCL: 3:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Jason Liu <jason.hui@linaro.org>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <David.Woodhouse@intel.com>, <dedekind1@gmail.com>,
+        <patches@linaro.org>
+Subject: [[PATCH v2] mtd: check parts pointer before using it
+Date: Wed, 24 Aug 2011 19:26:28 +0800
+Message-ID: <1314185188-6151-1-git-send-email-jason.hui@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108241320.47635.arnd@arndb.de>
-X-Provags-ID: V02:K0:hxw/sv9XVCqWWLQg2mXCT+DIWD22dG2+SW624QhvamP
- 1aE4a04CLnHHNdeCUZcJc0ZQ51jfHTgrluwtHrk9EOk+HpgQ9d
- pEDnaogtMOqyCwIrwPSi2p5Sb0dI2jDF4H6E9e/QfzaglJG73A
- MGC86Ctt17HX5nZbzfSLPKkTPbru8rw+BQf2aFtov6PNbjOxgv
- 1qW1K+0LPayPWRSCulcOQ==
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 August 2011, Jiri Slaby wrote:
-> On 08/24/2011 10:46 AM, Arnd Bergmann wrote:
-> > On Tuesday 23 August 2011 20:54:08 Jiri Slaby wrote:
-> >> On 08/23/2011 08:46 PM, Arnd Bergmann wrote:
+The code has the check for parts but it called after kmemdup,
+kmemdup(parts, sizeof(*parts) * nr_parts,...)
+if (!parts)
+	return -ENOMEM
 
-> > I think I just saw another problem: uart_close takes port->mutex while
-> > holding the BTM, then calls tty_wait_until_sent(). If this releases
-> > and reaquires the BTM, you get an AB-BA deadlock with port->mutex.
-> 
-> Aargh, right. The question is why uart_close takes port->mutex there? It
-> may take it even right before uart_shutdown. As tty_wait_until_sent (or
-> uart_wait_until_sent) may be called e.g. from set_termios without that
-> lock anyway. There are ->tx_empty and ->stop_rx that may need some
-> protection. But those are register accessors, so they should be
-> protected by some spinlock to not race with interrupts. Actually stop_rx
-> is. And empty_rx is only in 8250.
-> 
-> And I don't see anything else there which would need be protected by the
-> lock. Do you?
+In fact, we need check parts before safely using it.
+and we also need check the real_parts to make sure kmemdup
+allocation sucessfully.
 
-I have not looked at correctness of port->lock before, I just tried to
-make sure that BTM correctly nests around it when I removed the BKL.
+Signed-off-by: Jason Liu <jason.hui@linaro.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Artem Bityutskiy <artem.bityutskiy@intel.com>
+---
+V2: Fix one error condition check and add real_parts check too.
+---
+This patch is based on git://git.infradead.org/users/dedekind/l2-mtd-2.6.git
+---
+ drivers/mtd/mtdcore.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-It's not clear to me what state->mutex protects in the serial_core, but
-it has been around forever (used to be called state->sem) and is held in
-all uart functions, which is at least consistent. IIRC what Alan's plan
-for this was, uart_close should eventually get changed to use
-tty_port_close_start or even tty_port_close. Maybe the time for that has
-come now, lacking better alternatives?
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index 09bdbac..b01993e 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -465,12 +465,13 @@ int mtd_device_parse_register(struct mtd_info *mtd, const char **types,
+ 	struct mtd_partition *real_parts;
+ 
+ 	err = parse_mtd_partitions(mtd, types, &real_parts, parser_data);
+-	if (err <= 0 && nr_parts) {
++	if (err <= 0 && nr_parts && parts) {
+ 		real_parts = kmemdup(parts, sizeof(*parts) * nr_parts,
+ 				     GFP_KERNEL);
+-		err = nr_parts;
+-		if (!parts)
++		if (!real_parts)
+ 			err = -ENOMEM;
++		else
++			err = nr_parts;
+ 	}
+ 
+ 	if (err > 0) {
+-- 
+1.7.4.1
 
-A lot of other drivers call tty_port_close_start() before taking port->mutex.
 
-	Arnd
