@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab1HXLSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 07:18:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44788 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab1HXLSO (ORCPT
+	id S1756631Ab1HXLUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 07:20:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64634 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab1HXLUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 07:18:14 -0400
-Date: Wed, 24 Aug 2011 15:18:06 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <jbottomley@parallels.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>, containers@lists.osdl.org
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v2
-Message-ID: <20110824111806.GA7191@albatros>
-References: <20110824085329.GL29452@sun>
+	Wed, 24 Aug 2011 07:20:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: patch "TTY: remove tty_locked" added to tty tree
+Date: Wed, 24 Aug 2011 13:20:47 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@suse.de, alan@linux.intel.com,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+References: <13141210141189@kroah.org> <73013289.R6WJLciOm2@wuerfel> <4E54C4ED.3060809@suse.cz>
+In-Reply-To: <4E54C4ED.3060809@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110824085329.GL29452@sun>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108241320.47635.arnd@arndb.de>
+X-Provags-ID: V02:K0:hxw/sv9XVCqWWLQg2mXCT+DIWD22dG2+SW624QhvamP
+ 1aE4a04CLnHHNdeCUZcJc0ZQ51jfHTgrluwtHrk9EOk+HpgQ9d
+ pEDnaogtMOqyCwIrwPSi2p5Sb0dI2jDF4H6E9e/QfzaglJG73A
+ MGC86Ctt17HX5nZbzfSLPKkTPbru8rw+BQf2aFtov6PNbjOxgv
+ 1qW1K+0LPayPWRSCulcOQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
+On Wednesday 24 August 2011, Jiri Slaby wrote:
+> On 08/24/2011 10:46 AM, Arnd Bergmann wrote:
+> > On Tuesday 23 August 2011 20:54:08 Jiri Slaby wrote:
+> >> On 08/23/2011 08:46 PM, Arnd Bergmann wrote:
 
-On Wed, Aug 24, 2011 at 12:53 +0400, Cyrill Gorcunov wrote:
-> +static struct dentry *proc_map_files_lookup(struct inode *dir,
-> +		struct dentry *dentry, struct nameidata *nd)
-> +{
-> +	struct task_struct *task;
-> +	unsigned long vm_start;
-> +	struct vm_area_struct *vma;
-> +	struct mm_struct *mm;
-> +	struct dentry *result;
-> +	char *endp;
-> +
-> +	result = ERR_PTR(-ENOENT);
-> +
-> +	task = get_proc_task(dir);
-> +	if (!task)
-> +		goto out_no_task;
-> +
-> +	vm_start = simple_strtoul(dentry->d_name.name, &endp, 16);
-> +	if (*endp != '\0')
-> +		goto out_no_mm;
-> +
-> +	mm = get_task_mm(task);
-> +	if (!mm)
-> +		goto out_no_mm;
-> +
-> +	down_read(&mm->mmap_sem);
-> +	vma = find_vma(mm, vm_start);
-> +	if (!vma || vma->vm_start != vm_start)
-> +		goto out_no_vma;
-> +	result = proc_map_files_instantiate(dir, dentry, task, vma);
-> +
-> +out_no_vma:
-> +	up_read(&mm->mmap_sem);
-> +	mmput(mm);
-> +out_no_mm:
-> +	put_task_struct(task);
-> +out_no_task:
-> +	return result;
-> +}
+> > I think I just saw another problem: uart_close takes port->mutex while
+> > holding the BTM, then calls tty_wait_until_sent(). If this releases
+> > and reaquires the BTM, you get an AB-BA deadlock with port->mutex.
+> 
+> Aargh, right. The question is why uart_close takes port->mutex there? It
+> may take it even right before uart_shutdown. As tty_wait_until_sent (or
+> uart_wait_until_sent) may be called e.g. from set_termios without that
+> lock anyway. There are ->tx_empty and ->stop_rx that may need some
+> protection. But those are register accessors, so they should be
+> protected by some spinlock to not race with interrupts. Actually stop_rx
+> is. And empty_rx is only in 8250.
+> 
+> And I don't see anything else there which would need be protected by the
+> lock. Do you?
 
-You have no ptrace_may_access() check in ->lookup(), only in ->readdir().
+I have not looked at correctness of port->lock before, I just tried to
+make sure that BTM correctly nests around it when I removed the BKL.
 
-> +static const struct inode_operations proc_map_files_inode_operations = {
-> +	.lookup		= proc_map_files_lookup,
-> +	.setattr	= proc_setattr,
-> +};
-> +
-> +static int proc_map_files_readdir(struct file *filp, void *dirent, filldir_t filldir)
-> +{
-...
-> +	ret = -EPERM;
-> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> +		goto out;
-...
-> +	}
+It's not clear to me what state->mutex protects in the serial_core, but
+it has been around forever (used to be called state->sem) and is held in
+all uart functions, which is at least consistent. IIRC what Alan's plan
+for this was, uart_close should eventually get changed to use
+tty_port_close_start or even tty_port_close. Maybe the time for that has
+come now, lacking better alternatives?
 
-Thanks,
+A lot of other drivers call tty_port_close_start() before taking port->mutex.
 
--- 
-Vasiliy
+	Arnd
