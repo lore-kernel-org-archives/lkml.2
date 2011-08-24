@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab1HXQqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 12:46:13 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:48907 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab1HXQqL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 12:46:11 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
- mod_devicetable.h
-Thread-Topic: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
- mod_devicetable.h
-Thread-Index: AQHMQxTTgzmsMn/8gUaVtEtcxauI8JUruumA//+rW0CAAJyGgIAAbFsA
-Date: Wed, 24 Aug 2011 16:46:11 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B27B9@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-3-git-send-email-kys@microsoft.com>
- <20110823224157.GA9641@kroah.com>
- <6E21E5352C11B742B20C142EB499E048081B236E@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110824025913.GC30779@kroah.com>
-In-Reply-To: <20110824025913.GC30779@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.72]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752621Ab1HXQrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 12:47:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44231 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab1HXQrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 12:47:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="41459809"
+Message-ID: <4E552B01.7090109@linux.intel.com>
+Date: Wed, 24 Aug 2011 09:46:57 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
+To: Steevven1 <steevven1@gmail.com>
+CC: Anca Emanuel <anca.emanuel@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Bug Report for Linux Kernel 3.x
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com> <20110824001137.GA23979@somewhere> <CAFWT=83FNbAHUtPiouD3R06LEze5w1Mv07EL-x9VxSs_EXuruA@mail.gmail.com> <20110824135852.GE23979@somewhere> <4E5513FA.6060904@linux.intel.com> <CAJL_dMug+L0oQjeDs_3Xs2s2=-_3ci-Ab5-iDS8Up5u-xbaHiw@mail.gmail.com> <CAFWT=80YV-+-COSfGnuDTSxqy17kgXCQpCVJD1b2yif_nM=1Yg@mail.gmail.com>
+In-Reply-To: <CAFWT=80YV-+-COSfGnuDTSxqy17kgXCQpCVJD1b2yif_nM=1Yg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/24/2011 9:44 AM, Steevven1 wrote:
+
+> VERY interesting! The second link seems to imply that Phoronix has
+> independently found this same bug that we've been talking about in my
+> originally-linked ubuntuforums discussion. Specifically, the
+> interesting quote is:
+>
+> "Besides the new Linux 3.1 kernel power regression, there's also a
+> power regression introduced in the Linux 3.0 kernel that has
+> previously not been talked about on Phoronix. The Linux 3.0 power draw
+> is up by 24% over the Linux 2.6.39 kernel."
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, August 23, 2011 10:59 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
-> mod_devicetable.h
-> 
-> On Wed, Aug 24, 2011 at 12:44:38AM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:greg@kroah.com]
-> > > Sent: Tuesday, August 23, 2011 6:42 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> > > Subject: Re: [PATCH 003/117] Staging: hv: Add struct hv_vmbus_device_id to
-> > > mod_devicetable.h
-> > >
-> > > On Fri, Jul 15, 2011 at 10:45:51AM -0700, K. Y. Srinivasan wrote:
-> > > > In preparation for implementing vmbus aliases for auto-loading
-> > > > Hyper-V drivers, define vmbus specific device ID.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > > > ---
-> > > >  include/linux/mod_devicetable.h |    7 +++++++
-> > > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/include/linux/mod_devicetable.h
-> > > b/include/linux/mod_devicetable.h
-> > > > index ae28e93..5a12377 100644
-> > > > --- a/include/linux/mod_devicetable.h
-> > > > +++ b/include/linux/mod_devicetable.h
-> > > > @@ -405,6 +405,13 @@ struct virtio_device_id {
-> > > >  };
-> > > >  #define VIRTIO_DEV_ANY_ID	0xffffffff
-> > > >
-> > > > +/*
-> > > > + * For Hyper-V devices we use the device guid as the id.
-> > > > + */
-> > > > +struct hv_vmbus_device_id {
-> > > > +	__u8 guid[16];
-> > > > +};
-> > >
-> > > Why do you not need a driver_data pointer here?  Are you sure you aren't
-> > > ever going to need it in the future?  Hint, I think you will...
-> >
-> > I am not sure I am following you here; the guid is the device ID and it is
-> > guaranteed to remain the same. What is the driver _data pointer here
-> > you are referring to here.  While some device id have the _data pointer,
-> > there are others that don't - for instance struct virtio_device_id. In
-> > our case, I am not sure how I would use this private pointer.
-> 
-> You use it like all other drivers use it, only if needed.
-
-Fair enough; the point is I am not sure how I would use it.
-
-> 
-> Hint, I think you need to use it in your hv_utils driver, it would
-> reduce the size of your code and simplify your logic.
-
-Could you expand on this. Currently the util driver handles a bunch 
-services that have their own guids - and these have been included
-in the idtable. How would having the pointer simplify this code. 
-I looked at the usage of this in PCI and it appears to be for supporting
-dynamic  IDs for existing drivers. I am not sure if this is applicable to the util
-driver. First, I am not sure if there will be additional services being 
-packaged into util driver and secondly, even if I implement this scheme
-of being able to dynamically add new IDs, we still would need to add the
-code to the driver to handle the new service. In fact not a whole lot of 
-code is shared amongst the services that are currently packaged as the
-util driver. 
-
-Regards,
-
-K. Y
+sounds like good news; a 24% regression is MUCH easier to bisect than a 
+0.05% regression ;-)
 
