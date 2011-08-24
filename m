@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab1HXBAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 21:00:15 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:35507 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754749Ab1HXBAH (ORCPT
+	id S1756332Ab1HXBAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 21:00:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59639 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756009Ab1HXBAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 21:00:07 -0400
-Subject: Re: RFC: dynamic debug enhancements?
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110823142311.GB2526@redhat.com>
-References: <1313972143.11178.55.camel@Joe-Laptop>
-	 <20110823142311.GB2526@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Aug 2011 18:00:05 -0700
-Message-ID: <1314147605.1659.40.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Aug 2011 21:00:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110824004206.GG3162@dastard>
+References: <201108231739.p7NHdXQ8008360@stout.americas.sgi.com>
+ <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com> <20110824004206.GG3162@dastard>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 23 Aug 2011 17:59:46 -0700
+Message-ID: <CA+55aFwJAPN=EgTo-2iarhe4cFSArqB6AZAHDsuEK5EPBZVn+A@mail.gmail.com>
+Subject: Re: [GIT PULL] XFS update for 3.1-rc4
+To: Dave Chinner <david@fromorbit.com>
+Cc: Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-23 at 10:23 -0400, Jason Baron wrote:
-> On Sun, Aug 21, 2011 at 05:15:43PM -0700, Joe Perches wrote:
-> > I recently went through drivers/media and updated
-> > lots of calls to pr_<level>.
-> > A common pattern for debugging there and elsewhere
-> > treewide is the use of macros like:
-> > #define dprintk(level, fmt, ...)			\
-> > do {							\
-> > 	if (level > [some_modparam_var])		\
-> > 		pr_debug(fmt, ##__VA_ARGS__);		\
-> > } while (0)
-> > and
-> > #define dprintk(mask, fmt, ...)				\
-> > do {							\
-> > 	if (mask & [some_modparam_var])			\
-> > 		pr_debug(fmt, ##__VA_ARGS__);		\
-> > } while (0)
-> > It might be useful to have standardized calls
-> > like pr_debug_level and pr_debug_mask instead
-> > of multiple hand-rolled variants treewide.
-[]
-> looks interesting. I'm wondering how we handle module parameters though?
-> In the dynamic debug disabled case, we'd have to standardize the module
-> params names. And for the dynamic debug enabled case, I'm not sure how
-> we would honor those module params?
+On Tue, Aug 23, 2011 at 5:42 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> I consider the context it adds to cscope searches a damn good reason
+> for keeping it.
 
-One possibility would be to require a #define
-before use.
+Umm. I suggest you start learning to use the tools you have, rather
+than blame your inability to use them for then making crap decisions
+in file naming.
 
-Something like the DEBUG_VARIABLE used in
-drivers/media/ and include/media/.
+Read up on the "-pN" thing to cscope.
 
-Maybe something like:
+So here's a trick of the day:
 
-#define DYNAMIC_DEBUG_LEVEL_VARIABLE module_var_foo
-and/or
-#define DYNAMIC_DEBUG_MASK_VARIABLE module_var_bar
+  export CSCOPEOPTIONS=-p2
 
-and
+or something like that. And stop using crap to excuse bad decisions.
 
-$ echo 'module <foo> mask <n>' > <debugfs>/dynamic_debug/control
-and
-$ echo 'module <foo> level <n>' > <debugfs>/dynamic_debug/control
-
-could work to set the module control variable too.
-
-
+                      Linus
