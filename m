@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab1HXQfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 12:35:25 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:43893
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751993Ab1HXQfW (ORCPT
+	id S1752491Ab1HXQnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 12:43:25 -0400
+Received: from eastrmfepo202.cox.net ([68.230.241.217]:51457 "EHLO
+	eastrmfepo202.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab1HXQnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 12:35:22 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz98dKzz1202h1082kzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQFY1B-01-E32-02
-X-M-MSG: 
-Date: Wed, 24 Aug 2011 18:33:54 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Julia Lawall <julia@diku.dk>
-CC: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        <kernel-janitors@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/x86/kernel/microcode_core.c: add missing
- platform_device_unregister
-Message-ID: <20110824163354.GC21066@gere.osrc.amd.com>
-References: <1314198652-10333-1-git-send-email-julia@diku.dk>
- <20110824153611.GB21066@gere.osrc.amd.com>
- <Pine.LNX.4.64.1108241742480.25172@ask.diku.dk>
+	Wed, 24 Aug 2011 12:43:24 -0400
+X-Greylist: delayed 711 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 12:43:24 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A02020A.4E55275E.0078,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=mwl0/2xM3ubHJTXa6l4kGPt5l4r2ytuQtfJUKIGJKFg=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=DvSzqBOGy98A:10 a=Cfj4BQAnxiAA:10
+ a=cON0yyOmcrEHWemEhnyXug==:17 a=KQIhcPuWQPl-0tQ6hzoA:9 a=Ft8UYL4EG9YA:10
+ a=cON0yyOmcrEHWemEhnyXug==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=bndlpt@cox.net
+Reply-To: <verificationwebservice@qatar.io>
+From: "WEB-SUPPORT" <wibjab@bellsouth.net>
+Subject: mailbox execeed limit
+Date: Wed, 24 Aug 2011 22:01:15 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1108241742480.25172@ask.diku.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 110824-1, 08/24/2011), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20110824163126.OQAY3924.eastrmfepo103.cox.net@eastrmimpo03.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 05:44:08PM +0200, Julia Lawall wrote:
-> That seems like a fairly big change.  Is it desirable to move the calls to 
-> sysdev_driver_register and microcode_dev_init up over the get_online_cpus 
-> ... put_online_cpus sequence?
-
-Well, you need microcode_pdev for request_firmware() which happens
-when you do sysdev_driver_register() so it has to run after
-platform_device_register_simple().
-
-And the microcode_dev_init() thing got moved further
-down in 871b72dd1e12afc3f024479531d25a9339d2e3f9 but its
-counterpart microcode_dev_exit() is mistakenly called if
-platform_device_register_simple() fails which is clearly another bug.
-
-And frankly, microcode_dev_init() is strictly needed only for the
-CONFIG_MICROCODE_OLD_INTERFACE. And on the driver destroy path
-microcode_exit() is calling microcode_dev_exit() first so it could be
-that 871b72dd1e12afc3f024479531d25a9339d2e3f9 mistakenly moved the
-microcode_dev_init() call down.
-
-I guess you could move the microcode_dev_init() call up, before
-platform_device_register_simple() but this needs testing on Intel
-because they still can do microcode loading over the old interface using
-microcode_ctl userspace helper...
-
-Or, you can do a bit cleaner version of the goto-with-labels thing by
-adding a helper like this:
-
-static void __microcode_sysdev_unregister(void)
-{
-        get_online_cpus();
-        mutex_lock(&microcode_mutex);
-
-        sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
-
-        mutex_unlock(&microcode_mutex);
-        put_online_cpus();
-}
-
-and call it both on the error-out path in microcode_init(), and in
-microcode_exit().
-
-Oh boy, the rabbit hole turns out to be pretty deep once you go down
-into it :-).
-
-Btw, I totally understand if you've lost all desire to fix that properly
-after all this :-).
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
-
+Your Mailbox has exceeded the storage limit which is 20GB as set by your
+ Administrator, you are currently running on 20GB, you may not be able to
+ send or receive new mails until you re-validate your mailbox.
+ 
+ To re-validate your mailbox please
+ Enter Username and Password in the column given below to Validate your
+ Account
+ 
+ Username...............................
+ Password.........................................
+ Date of Birth................................................
+ 
+ submit to us
+ 
+ 
+Thanks,
+ System Adminstrator
+CHELLO ADMIN
