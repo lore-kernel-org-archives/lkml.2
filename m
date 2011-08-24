@@ -1,199 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab1HXV1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:27:39 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:34111 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab1HXV1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:27:38 -0400
-Message-ID: <4E556CB2.3060502@cs.tu-berlin.de>
-Date: Wed, 24 Aug 2011 23:27:14 +0200
-From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110508 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1753979Ab1HXV1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:27:50 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59046 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab1HXV1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:27:48 -0400
+Date: Wed, 24 Aug 2011 14:27:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Will Simoneau <simoneau@ele.uri.edu>
+Cc: linux-kernel@vger.kernel.org, dipankar@in.ibm.com
+Subject: Re: 2.6.39.4: Oops in rcu_read_unlock_special()/_raw_spin_lock()
+Message-ID: <20110824212744.GV2417@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110824211907.GA4225@ele.uri.edu>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
-References: <1313503666-13726-1-git-send-email-schnhrr@cs.tu-berlin.de>	 <1313503666-13726-3-git-send-email-schnhrr@cs.tu-berlin.de> <1314125615.8002.90.camel@twins>
-In-Reply-To: <1314125615.8002.90.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110824211907.GA4225@ele.uri.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.08.2011 20:53, schrieb Peter Zijlstra:
-> On Tue, 2011-08-16 at 16:07 +0200, Jan H. Schönherr wrote:
-[...]
-> It would be good to have a comment here about why we're doing things,
-> much like the changelog in fact, the comments in the function explain
-> the how of things, but not really the why of things.
-
-I'll try to do this.
-
->> +static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
->> +					struct list_head *leaf_cfs_rqs)
->>  {
->> +	if (cfs_rq->on_list)
->> +		return;
->> +
->> +	/*
->> +	 * Carefully collect leaf-cfs entries:
->> +	 *
->> +	 * We might still have concurrent readers on these entries from before
->> +	 * the previous delete operation. Therefore we cannot collect them in a
->> +	 * totally independent list. Instead, we reorganize the deleted entries
->> +	 * within the deleted list, making sure that the next pointers always
->> +	 * lead back to the list.
->> +	 */
->> +	if (list_empty(leaf_cfs_rqs)) {
->>  		/*
->> +		 * Nothing has been collected so far. Make this cfs_rq the
->> +		 * first entry. There is no need to take care of its next
->> +		 * pointer.
->>  		 */
->> +		leaf_cfs_rqs->next = &cfs_rq->leaf_cfs_rq_list;
->> +		leaf_cfs_rqs->prev = &cfs_rq->leaf_cfs_rq_list;
->>  
->> +	} else {
->> +		/*
->> +		 * We already collected at least one entry. Add this cfs_rq
->> +		 * after the collected ones. Before that, however, we need to
->> +		 * set its next pointer to a not deleted list entry so that
->> +		 * concurrent readers of already collected elements cannot run
->> +		 * into physically deleted elements.
->> +		 */
->> +		cfs_rq->leaf_cfs_rq_list.next =
->> +					&rq_of(cfs_rq)->leaf_cfs_rq_list;
+On Wed, Aug 24, 2011 at 05:19:07PM -0400, Will Simoneau wrote:
+> Hi,
 > 
-> So __list_link_rcu() adds a smp_wmb() right here, I somehow can't seem
-> to make my mind up on how that's important..
-
-It makes sure that a reader from the private list cannot see
-the old next pointer of the current element that was overwritten
-just above. The old next pointer might lead to memory that is
-freed.
-
->> +		__list_link_rcu(leaf_cfs_rqs->prev, &cfs_rq->leaf_cfs_rq_list);
->> +		leaf_cfs_rqs->prev = &cfs_rq->leaf_cfs_rq_list;
->>  	}
+> I just got this rather odd Oops and some subsequent BUGs on a rather odd
+> piece of hardware. I'm sending this message in hope that someone who
+> understands the code can decide if it's a real problem or not.
 > 
-> OK, so the above part queues the passed cfs_rq on the private list in
-> bottom up fashion. Existing (lingering) iterators can get trapped on
-> this list and go round and round for a while.
-
-They are not trapped: the next-pointer of the last element of the
-private list does not point to the head of the private list, but to
-the head of the leaf-list.
-
->> +
->> +	/*
->> +	 * If our parent is on_list or if there is no parent, then splice all
->> +	 * entries collected so far at the correct position into the
->> +	 * leaf_cfs_rq_list.
->> +	 *
->> +	 * If our parent is not on the list, it will be collected during the
->> +	 * next call to this function.
->> +	 */
->> +	if (cfs_rq->tg->parent) {
->> +		int cpu = cpu_of(rq_of(cfs_rq));
->> +		struct cfs_rq *parent_cfs_rq = cfs_rq->tg->parent->cfs_rq[cpu];
->> +		if (parent_cfs_rq->on_list) {
->> +			list_splice_tail_init_rcu(leaf_cfs_rqs,
->> +					&parent_cfs_rq->leaf_cfs_rq_list);
->> +		}
->> +	} else {
->> +		list_splice_tail_init_rcu(leaf_cfs_rqs,
->> +					&rq_of(cfs_rq)->leaf_cfs_rq_list);
->> +	}
->> +
->> +	cfs_rq->on_list = 1;
+> First of all, let me explain the situation: I am running Linux 2.6.39.4
+> on a system-on-FPGA I designed. The system has 4 CPU cores which are
+> essentially MIPS R4Ks as far as both kernel and userspace are concerned.
+> The cores are fully cache-coherent with sequential consistency. The
+> kernel has been modified with relatively minor patches to support the
+> CPUs and peripherals.
 > 
-> And this part is where we splice the queue into the bigger list, and can
-> be simplified (see below), at this point the trapped iterators are
-> released and will complete their traversal 'up' and reach the
-> rq->leaf_cfs_rq_list list head for termination.
+> The below Oops/BUGs were captured on a serial console during a large
+> rsync job. I do not know of a way to reproduce the Oops, I've only seen
+> it once. Some recent changes have been made suspiciously close to the
+> exploding code, which makes me think that maybe 2.6.39-stable is lacking
+> some fixes? The following commits from Linus' git seem vaguely related,
+> although I have no idea how relevant they are to 2.6.39.4:
 > 
-> Since all this is done with IRQs disabled the delay imposed on the
-> trapped iterators is bounded by our own runtime, which again should be
-> limited because we're in the middle of the scheduler (bounded by the
-> cgroup hierarchy depth).
+>    ec433f0c (softirq,rcu: Inform RCU of irq_exit() activity)
+>    10f39bb1 (rcu: protect __rcu_read_unlock() against scheduler-using
+>              irq handlers)
 
-Luckily, there is no trapping, so we don't need to consider the effects. :)
+If this failure mechanism really is the culprit, you should be able
+to make failure happen much more frequently by inserting a delay in
+__rcu_read_unlock() just prior to the call to rcu_read_unlock_special().
+I would suggest starting with a few tens to hundreds of microseconds
+worth of delay.
 
->>  }
->>  
->>  static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+If this does make the failure reproducible, then it would make sense
+to try applying the two patches you identified.
+
+							Thanx, Paul
+
+> --- 8< ---
+> [898755.190000] CPU 2 Unable to handle kernel paging request at
+>  virtual address 00000000, epc == 802eefd8, ra == 8006a788
+> [898755.190000] Oops[#1]:                                 
+> [898755.190000] Cpu 2    
+> [898755.190000] $ 0   : 00000000 10009800 00010000 00000001
+> [898755.190000] $ 4   : 00000000 82865450 10009800 ffff00fe
+> [898755.190000] $ 8   : 80843fe0 00009800 00000000 80844000
+> [898755.190000] $12   : 03070001 00129eaf 00000000 00000000
+> [898755.190000] $16   : 00000000 00000008 80843dc0 10009801
+> [898755.190000] $20   : 82861630 87e45900 00000008 00000001
+> [898755.190000] $24   : 00000000 8025c800                  
+> [898755.190000] $28   : 80842000 80843d10 87e46494 8006a788
+> [898755.190000] Hi    : 00033169                           
+> [898755.250000] Lo    : bfd70980
+> [898755.260000] epc   : 802eefd8 _raw_spin_lock+0x10/0x3c
+> [898755.260000]     Not tainted                          
+> [898755.260000] ra    : 8006a788 rcu_read_unlock_special+0x134/0x2bc
+> [898755.260000] Status: 10009802    KERNEL EXL                      
+> [898755.260000] Cause : 00000008               
+> [898755.260000] BadVA : 00000000
+> [898755.260000] PrId  : 00004800 (Z4800)
+> [898755.260000] Process rsync (pid: 3683, threadinfo=80842000, task=82861630, tl
+> s=2b6ba8b0)
+> [898755.260000] Stack : 10009801 00000001 87e46494 87e46300 87e46300 00000008 00
+> 000008 80843dc0
+> [898755.260000]         80843de0 87e46300 87e45900 802c6bdc 80843dd0 80843dcc 00
+> 000000 00000020
+> [898755.260000]         00000000 828581c0 85eda780 00000000 00000e63 00000000 00
+> 000000 00000001
+> [898755.260000]         00000008 87e4637c 87e46344 00000080 87118800 80843dc0 80
+> 843e30 80843e38
+> [898755.260000]         fffffdee 80843e30 80843f10 00000020 00000000 7fb57a68 7f
+> b57a78 802461b8
+> [898755.260000]         ...
+> [898755.260000] Call Trace:
+> [898755.260000] [<802eefd8>] _raw_spin_lock+0x10/0x3c
+> [898755.260000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898755.260000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898755.260000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898755.260000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898755.260000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898755.260000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898755.260000] [<8000aa1c>] stack_done+0x20/0x40
+> [898755.260000]                                  
+> [898755.260000] 
+> [898755.260000] Code: 24630001  af830014  3c020001 <c0830000> 00622821  e0850000
+>   10a0fffc  00032c02  3063ffff 
+> [898755.260000] Disabling lock debugging due to kernel taint
+> [898755.400000] note: rsync[3683] exited with preempt_count 1
+> [898755.410000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898755.410000] Call Trace:                                        
+> [898755.420000] [<802ec028>] dump_stack+0x8/0x34
+> [898755.420000] [<802ecd84>] schedule+0x61c/0x690
+> [898755.430000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898755.430000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898755.440000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898755.440000] [<800293d4>] mmput+0x58/0x104     
+> [898755.450000] [<8002d850>] exit_mm+0x130/0x178
+> [898755.450000] [<8002f638>] do_exit+0x254/0x310
+> [898755.460000] [<800089ec>] die+0xec/0x114     
+> [898755.460000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898755.470000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898755.480000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898755.480000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898755.490000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898755.500000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898755.500000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898755.510000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898755.510000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898755.520000] [<8000aa1c>] stack_done+0x20/0x40
+> [898755.520000]                                  
+> [898755.540000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898755.540000] Call Trace:                                        
+> [898755.550000] [<802ec028>] dump_stack+0x8/0x34
+> [898755.550000] [<802ecd84>] schedule+0x61c/0x690
+> [898755.560000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898755.560000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898755.570000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898755.570000] [<800293d4>] mmput+0x58/0x104     
+> [898755.570000] [<8002d850>] exit_mm+0x130/0x178
+> [898755.580000] [<8002f638>] do_exit+0x254/0x310
+> [898755.580000] [<800089ec>] die+0xec/0x114     
+> [898755.590000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898755.590000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898755.600000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898755.600000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898755.610000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898755.620000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898755.620000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898755.630000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898755.630000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898755.640000] [<8000aa1c>] stack_done+0x20/0x40
+> [898755.640000]                                  
+> [898755.700000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898755.700000] Call Trace:                                        
+> [898755.700000] [<802ec028>] dump_stack+0x8/0x34
+> [898755.710000] [<802ecd84>] schedule+0x61c/0x690
+> [898755.710000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898755.720000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898755.720000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898755.730000] [<800293d4>] mmput+0x58/0x104     
+> [898755.730000] [<8002d850>] exit_mm+0x130/0x178
+> [898755.740000] [<8002f638>] do_exit+0x254/0x310
+> [898755.740000] [<800089ec>] die+0xec/0x114     
+> [898755.750000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898755.750000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898755.760000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898755.760000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898755.770000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898755.770000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898755.780000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898755.780000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898755.790000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898755.790000] [<8000aa1c>] stack_done+0x20/0x40
+> [898755.800000]                                  
+> [898755.820000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898755.820000] Call Trace:                                        
+> [898755.820000] [<802ec028>] dump_stack+0x8/0x34
+> [898755.830000] [<802ecd84>] schedule+0x61c/0x690
+> [898755.830000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898755.840000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898755.840000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898755.850000] [<800293d4>] mmput+0x58/0x104     
+> [898755.850000] [<8002d850>] exit_mm+0x130/0x178
+> [898755.860000] [<8002f638>] do_exit+0x254/0x310
+> [898755.860000] [<800089ec>] die+0xec/0x114     
+> [898755.870000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898755.870000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898755.880000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898755.880000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898755.890000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898755.900000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898755.900000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898755.910000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898755.910000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898755.920000] [<8000aa1c>] stack_done+0x20/0x40
+> [898755.920000]                                  
+> [898755.930000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898755.930000] Call Trace:                                        
+> [898755.930000] [<802ec028>] dump_stack+0x8/0x34
+> [898755.940000] [<802ecd84>] schedule+0x61c/0x690
+> [898755.940000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898755.950000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898755.950000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898755.960000] [<800293d4>] mmput+0x58/0x104     
+> [898755.960000] [<8002d850>] exit_mm+0x130/0x178
+> [898755.970000] [<8002f638>] do_exit+0x254/0x310
+> [898755.970000] [<800089ec>] die+0xec/0x114     
+> [898755.980000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898755.980000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898755.990000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898755.990000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.000000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.000000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.010000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.010000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.020000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.020000] [<8000aa1c>] stack_done+0x20/0x40
+> [898756.030000]                                  
+> [898756.090000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898756.100000] Call Trace:                                        
+> [898756.100000] [<802ec028>] dump_stack+0x8/0x34
+> [898756.110000] [<802ecd84>] schedule+0x61c/0x690
+> [898756.110000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898756.120000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898756.120000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898756.130000] [<800293d4>] mmput+0x58/0x104     
+> [898756.130000] [<8002d850>] exit_mm+0x130/0x178
+> [898756.140000] [<8002f638>] do_exit+0x254/0x310
+> [898756.140000] [<800089ec>] die+0xec/0x114     
+> [898756.150000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898756.150000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898756.160000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898756.170000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.170000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.180000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.180000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.190000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.190000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.200000] [<8000aa1c>] stack_done+0x20/0x40
+> [898756.200000]                                  
+> [898756.230000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898756.230000] Call Trace:                                        
+> [898756.230000] [<802ec028>] dump_stack+0x8/0x34
+> [898756.240000] [<802ecd84>] schedule+0x61c/0x690
+> [898756.240000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898756.250000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898756.250000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898756.260000] [<800293d4>] mmput+0x58/0x104     
+> [898756.270000] [<8002d850>] exit_mm+0x130/0x178
+> [898756.270000] [<8002f638>] do_exit+0x254/0x310
+> [898756.280000] [<800089ec>] die+0xec/0x114     
+> [898756.280000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898756.290000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898756.290000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898756.300000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.300000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.310000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.320000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.320000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.330000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.330000] [<8000aa1c>] stack_done+0x20/0x40
+> [898756.340000]                                  
+> [898756.360000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898756.360000] Call Trace:                                        
+> [898756.360000] [<802ec028>] dump_stack+0x8/0x34
+> [898756.370000] [<802ecd84>] schedule+0x61c/0x690
+> [898756.370000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898756.380000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898756.380000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898756.390000] [<800293d4>] mmput+0x58/0x104     
+> [898756.390000] [<8002d850>] exit_mm+0x130/0x178
+> [898756.400000] [<8002f638>] do_exit+0x254/0x310
+> [898756.400000] [<800089ec>] die+0xec/0x114     
+> [898756.410000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898756.410000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898756.420000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898756.420000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.430000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.440000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.440000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.450000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.450000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.460000] [<8000aa1c>] stack_done+0x20/0x40
+> [898756.460000]                                  
+> [898756.470000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898756.470000] Call Trace:                                        
+> [898756.470000] [<802ec028>] dump_stack+0x8/0x34
+> [898756.480000] [<802ecd84>] schedule+0x61c/0x690
+> [898756.480000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898756.490000] [<8008f82c>] unmap_vmas+0x1e0/0x30c 
+> [898756.490000] [<800922c8>] exit_mmap+0x10c/0x1dc 
+> [898756.500000] [<800293d4>] mmput+0x58/0x104     
+> [898756.500000] [<8002d850>] exit_mm+0x130/0x178
+> [898756.510000] [<8002f638>] do_exit+0x254/0x310
+> [898756.510000] [<800089ec>] die+0xec/0x114     
+> [898756.520000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898756.520000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898756.530000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898756.530000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.540000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.550000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.550000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.560000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.560000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.570000] [<8000aa1c>] stack_done+0x20/0x40
+> [898756.570000]                                  
+> [898756.580000] BUG: scheduling while atomic: rsync/3683/0x10000002
+> [898756.580000] Call Trace:                                        
+> [898756.590000] [<802ec028>] dump_stack+0x8/0x34
+> [898756.590000] [<802ecd84>] schedule+0x61c/0x690
+> [898756.600000] [<802ed110>] _cond_resched+0x4c/0x60
+> [898756.600000] [<8002db64>] put_files_struct+0x144/0x158
+> [898756.610000] [<8002f640>] do_exit+0x25c/0x310         
+> [898756.610000] [<800089ec>] die+0xec/0x114     
+> [898756.620000] [<8000c2b8>] do_page_fault+0x2a8/0x330
+> [898756.620000] [<800032a4>] ret_from_exception+0x0/0x10
+> [898756.630000] [<802eefd8>] _raw_spin_lock+0x10/0x3c   
+> [898756.630000] [<8006a788>] rcu_read_unlock_special+0x134/0x2bc
+> [898756.640000] [<802c6bdc>] unix_stream_sendmsg+0x278/0x44c    
+> [898756.640000] [<802461b8>] sock_aio_write+0x138/0x154     
+> [898756.650000] [<800a6460>] do_sync_write+0xc4/0x13c  
+> [898756.660000] [<800a719c>] vfs_write+0x15c/0x164   
+> [898756.660000] [<800a72a4>] sys_write+0x50/0xa0  
+> [898756.670000] [<8000aa1c>] stack_done+0x20/0x40
+> --- 8< ---
 > 
->> @@ -1307,12 +1345,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
->>  {
->>  	struct cfs_rq *cfs_rq;
->>  	struct sched_entity *se = &p->se;
->> +	struct list_head leaf_cfs_rqs;
->> +
->> +	INIT_LIST_HEAD(&leaf_cfs_rqs);
+> --- 8< ---
+> $ grep RCU .config
+> # RCU Subsystem
+> CONFIG_TREE_PREEMPT_RCU=y
+> CONFIG_PREEMPT_RCU=y
+> # CONFIG_RCU_TRACE is not set
+> CONFIG_RCU_FANOUT=32
+> # CONFIG_RCU_FANOUT_EXACT is not set
+> # CONFIG_TREE_RCU_TRACE is not set
+> # CONFIG_SPARSE_RCU_POINTER is not set
+> # CONFIG_RCU_TORTURE_TEST is not set
+> CONFIG_RCU_CPU_STALL_DETECTOR=y
+> CONFIG_RCU_CPU_STALL_TIMEOUT=60
+> CONFIG_RCU_CPU_STALL_DETECTOR_RUNNABLE=y
+> CONFIG_RCU_CPU_STALL_VERBOSE=y
+> --- 8< ---
 > 
->>  	for_each_sched_entity(se) {
->>  		if (se->on_rq)
->>  			break;
->>  		cfs_rq = cfs_rq_of(se);
->>  		enqueue_entity(cfs_rq, se, flags);
->> +		if (cfs_rq->nr_running == 1)
->> +			list_add_leaf_cfs_rq(cfs_rq, &leaf_cfs_rqs);
->>  		flags = ENQUEUE_WAKEUP;
->>  	}
+> Any input is appreciated. I would love to be able to definitively blame
+> this on fixes that simply haven't been backported, instead of bringing
+> the hardware design into question.
 > 
+> I would upgrade to 3.0 or newer, but I haven't been able to get such a
+> kernel to boot. It dies just after going SMP - which might be my fault.
+> However, that's a seperate issue, and I haven't spent much time trying
+> to figure out what goes wrong yet.
 > 
-> I think splitting the function into two parts would make the thing
-> saner, something like:
-> 
-> 
-> 	LIST_HEAD(leaf_queue);
-> 
-> 	for_each_sched_entity(se) {
-> 		if (se->on_rq)
-> 			break;
-> 		cfs_rq = cfs_rq_of(se);
-> 		enqueue_entity(cfs_rq, se, flags);
-> 		flags = ENQUEUE_WAKEUP;
-> 		if (cfs_rq->nr_running == 1)
-> 			leaf_add_queue(cfs_rq, &leaf_queue);
-> 	}
-> 	/* XXX does ->on_rq imply ->on_list ? */
-> 	if (se->on_list)
-> 		leaf_splice_queue(cfs_rq, &leaf_queue);
-> 
-> that splits the add to queue and add queue to list part and avoids the
-> parent_cfs_rq peeking.
-
-Unfortunately that won't work. The problem here is that some of the
-traversed SEs are on_list and others aren't. And the on_list status
-of one SE is independent from other SEs. So, if we don't want to remove
-on_list elements during the traversal, we need to splice collected
-entries as soon as we find a SE that is on_list.
-
-We might get away with collecting all entries always (removing on_list entries
-temporarily) and splice them after the loop, but that would
-introduce more work than normally necessary. And we should double check
-for new concurrency issues...
-
-
-> Now I don't really like the above because its hard to make the code go
-> away in the !FAIR_GROUP case, but maybe we can come up with something
-> for that.
-
-Hmmm... you might want to reconsider my original approach to solve this:
-http://lkml.org/lkml/2011/7/18/86
-
-That might have been the cleanest one in this respect.
-
-Paul Turner did not like the introduced in-order removal, but the
-out-of-order removal is causing most problems.
-
-
-Regards
-Jan (not quite sure which path to follow)
+> I can provide all sorts of further info on request, let me know what you
+> need. Thanks for looking.
