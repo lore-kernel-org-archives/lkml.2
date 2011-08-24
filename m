@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1HXSCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:02:31 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:62079 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab1HXSBU (ORCPT
+	id S1753109Ab1HXSEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:04:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45885 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab1HXSEG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:01:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        bskeggs@redhat.com, j.glisse@redhat.com, thomas@shipmail.org,
-        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/6] ttm/radeon/nouveau: Check the DMA address from TTM against known value.
-Date: Wed, 24 Aug 2011 13:16:59 -0400
-Message-Id: <1314206224-15304-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
-References: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090204.4E553C48.00B3,ss=1,re=0.000,fgs=0
+	Wed, 24 Aug 2011 14:04:06 -0400
+Subject: Re: [PATCH 00/18] x86: Ticket lock + cmpxchg cleanup
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Wed, 24 Aug 2011 20:03:39 +0200
+In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1314209019.6925.53.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. instead of checking against the DMA_ERROR_CODE value which is
-per-platform specific. The zero value is a known invalid value
-that the TTM layer sets on the dma_address array if it is not
-used (ttm_tt_alloc_page_directory calls drm_calloc_large which
-creates a page with GFP_ZERO).
+On Wed, 2011-08-24 at 10:52 -0700, Jeremy Fitzhardinge wrote:
+> 
+>  arch/x86/include/asm/atomic.h         |    4 +-
+>  arch/x86/include/asm/atomic64_64.h    |    4 +-
+>  arch/x86/include/asm/cacheflush.h     |    2 +-
+>  arch/x86/include/asm/cmpxchg.h        |  223 +++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/cmpxchg_32.h     |  128 ++-----------------
+>  arch/x86/include/asm/cmpxchg_64.h     |  131 -------------------
+>  arch/x86/include/asm/rwsem.h          |   11 +--
+>  arch/x86/include/asm/spinlock.h       |  140 +++++++--------------
+>  arch/x86/include/asm/spinlock_types.h |   22 +++-
+>  arch/x86/include/asm/uv/uv_bau.h      |    4 +-
+>  arch/x86/kernel/acpi/boot.c           |   10 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c      |    2 +-
+>  arch/x86/xen/p2m.c                    |   10 +-
+>  13 files changed, 321 insertions(+), 370 deletions(-)
 
-We can't use pci_dma_mapping_error as that is IOMMU
-specific (some check for a specific physical address, some
-for ranges, some just do a check against zero).
+The patches look good to me, and 50 lines less is always nice too!
 
-Also update the comments in the header about the true state
-of that parameter.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 +--
- drivers/gpu/drm/radeon/radeon_gart.c    |    4 +---
- include/drm/ttm/ttm_page_alloc.h        |    4 ++--
- 3 files changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-index 82fad91..624e2db 100644
---- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
-@@ -42,8 +42,7 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
- 
- 	nvbe->nr_pages = 0;
- 	while (num_pages--) {
--		/* this code path isn't called and is incorrect anyways */
--		if (0) { /*dma_addrs[nvbe->nr_pages] != DMA_ERROR_CODE)*/
-+		if (dev->pdev, dma_addrs[nvbe->nr_pages] != 0) {
- 			nvbe->pages[nvbe->nr_pages] =
- 					dma_addrs[nvbe->nr_pages];
- 		 	nvbe->ttm_alloced[nvbe->nr_pages] = true;
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index a533f52..41f7e51 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -181,9 +181,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
- 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
- 
- 	for (i = 0; i < pages; i++, p++) {
--		/* we reverted the patch using dma_addr in TTM for now but this
--		 * code stops building on alpha so just comment it out for now */
--		if (0) { /*dma_addr[i] != DMA_ERROR_CODE) */
-+		if (rdev->pdev, dma_addr[i] != 0) {
- 			rdev->gart.ttm_alloced[p] = true;
- 			rdev->gart.pages_addr[p] = dma_addr[i];
- 		} else {
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 8062890..0017b17 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -36,7 +36,7 @@
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages - (by default zero).
-  */
- int ttm_get_pages(struct list_head *pages,
- 		  int flags,
-@@ -51,7 +51,7 @@ int ttm_get_pages(struct list_head *pages,
-  * count.
-  * @flags: ttm flags for page allocation.
-  * @cstate: ttm caching state.
-- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
-+ * @dma_address: The DMA (bus) address of pages (by default zero).
-  */
- void ttm_put_pages(struct list_head *pages,
- 		   unsigned page_count,
--- 
-1.7.4.1
-
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
