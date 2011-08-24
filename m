@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1HXRyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:54:12 -0400
-Received: from claw.goop.org ([74.207.240.146]:52897 "EHLO claw.goop.org"
+	id S1753222Ab1HXRyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:54:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:52892 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753243Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Aug 2011 13:53:22 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 13/18] x86: add cmpxchg_flag() variant
-Date: Wed, 24 Aug 2011 10:53:07 -0700
-Message-Id: <738d736ecffa3bd32df76ae41188aa39c2ace941.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 17/18] x86: add local and sync variants of xadd
+Date: Wed, 24 Aug 2011 10:53:11 -0700
+Message-Id: <b6707747021ae55d8c37b71f5f4a67b1bacf5e37.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -28,169 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Most callers of cmpxchg() direcly compare RETURN with OLD to see if it was
-successful.  This results in unnecessary conditional comparisons
-and conditionals since the cmpxchg instruction directly sets the flags
-to indicate success/failure.
-
-Add cmpxchg_flag() variants which return a boolean flag directly indicating
-success.  Unfortunately an asm() statement can't directly export status
-status flags, but sete isn't too bad.
-
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/cmpxchg.h    |   48 +++++++++++++++++++++++++++++++-----
- arch/x86/include/asm/cmpxchg_32.h |   14 ++++++++++
- 2 files changed, 55 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/cmpxchg.h |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
-index 76375ba..57d6706 100644
+index c99ce79..992ac80 100644
 --- a/arch/x86/include/asm/cmpxchg.h
 +++ b/arch/x86/include/asm/cmpxchg.h
-@@ -64,18 +64,18 @@ extern void __cmpxchg_wrong_size(void);
- /*
-  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-  * store NEW in MEM.  Return the initial value in MEM.  Success is
-- * indicated by comparing RETURN with OLD.
-+ * determined by "compare"
-  */
--#define __raw_cmpxchg(ptr, old, new, size, lock)			\
-+#define __raw_cmpxchg_cmp(ptr, old, new, size, lock, rettype, compare)	\
- ({									\
--	__typeof__(*(ptr)) __ret;					\
-+	rettype __ret;							\
- 	__typeof__(*(ptr)) __old = (old);				\
- 	__typeof__(*(ptr)) __new = (new);				\
- 	switch (size) {							\
- 	case 1:								\
- 	{								\
- 		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
--		asm volatile(lock "cmpxchgb %2,%1"			\
-+		asm volatile(lock "cmpxchgb %2,%1; " compare		\
- 			     : "=a" (__ret), "+m" (*__ptr)		\
- 			     : "q" (__new), "0" (__old)			\
- 			     : "memory");				\
-@@ -84,7 +84,7 @@ extern void __cmpxchg_wrong_size(void);
- 	case 2:								\
- 	{								\
- 		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
--		asm volatile(lock "cmpxchgw %2,%1"			\
-+		asm volatile(lock "cmpxchgw %2,%1; " compare		\
- 			     : "=a" (__ret), "+m" (*__ptr)		\
- 			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
-@@ -93,7 +93,7 @@ extern void __cmpxchg_wrong_size(void);
- 	case 4:								\
- 	{								\
- 		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
--		asm volatile(lock "cmpxchgl %2,%1"			\
-+		asm volatile(lock "cmpxchgl %2,%1; " compare		\
- 			     : "=a" (__ret), "+m" (*__ptr)		\
- 			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
-@@ -102,7 +102,7 @@ extern void __cmpxchg_wrong_size(void);
- 	case 8:								\
- 	{								\
- 		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
--		asm volatile(lock "cmpxchgq %2,%1"			\
-+		asm volatile(lock "cmpxchgq %2,%1; " compare		\
- 			     : "=a" (__ret), "+m" (*__ptr)		\
- 			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
-@@ -114,15 +114,40 @@ extern void __cmpxchg_wrong_size(void);
- 	__ret;								\
- })
- 
-+/*
-+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-+ * store NEW in MEM.  Return the initial value in MEM.  Success is
-+ * indicated by comparing RETURN with OLD.
-+ */
-+#define __raw_cmpxchg(ptr, old, new, size, lock)			\
-+	__raw_cmpxchg_cmp(ptr, old, new, size, lock, __typeof__(*(ptr)), "")
-+
-+/*
-+ * Atomic compare and exchange.  Compare OLD with MEM, if identical,
-+ * store NEW in MEM.  Return the initial value in MEM.  Success is
-+ * indicated by a true return.
-+ */
-+#define __raw_cmpxchg_flag(ptr, old, new, size, lock)			\
-+	__raw_cmpxchg_cmp(ptr, old, new, size, lock, unsigned char, "sete %0")
-+
- #define __cmpxchg(ptr, old, new, size)					\
- 	__raw_cmpxchg((ptr), (old), (new), (size), LOCK_PREFIX)
- 
-+#define __cmpxchg_flag(ptr, old, new, size)				\
-+	__raw_cmpxchg_flag((ptr), (old), (new), (size), LOCK_PREFIX)
-+
- #define __sync_cmpxchg(ptr, old, new, size)				\
- 	__raw_cmpxchg((ptr), (old), (new), (size), "lock; ")
- 
-+#define __sync_cmpxchg_flag(ptr, old, new, size)			\
-+	__raw_cmpxchg_flag((ptr), (old), (new), (size), "lock; ")
-+
- #define __cmpxchg_local(ptr, old, new, size)				\
- 	__raw_cmpxchg((ptr), (old), (new), (size), "")
- 
-+#define __cmpxchg_local_flag(ptr, old, new, size)		\
-+	__raw_cmpxchg_flag((ptr), (old), (new), (size), "")
-+
- #ifdef CONFIG_X86_32
- # include "cmpxchg_32.h"
- #else
-@@ -134,11 +159,20 @@ extern void __cmpxchg_wrong_size(void);
- #define cmpxchg(ptr, old, new)						\
- 	__cmpxchg((ptr), (old), (new), sizeof(*ptr))
- 
-+#define cmpxchg_flag(ptr, old, new)					\
-+	__cmpxchg_flag((ptr), (old), (new), sizeof(*ptr))
-+
- #define sync_cmpxchg(ptr, old, new)					\
- 	__sync_cmpxchg((ptr), (old), (new), sizeof(*ptr))
- 
-+#define sync_cmpxchg_flag(ptr, old, new)				\
-+	__sync_cmpxchg_flag((ptr), (old), (new), sizeof(*ptr))
-+
- #define cmpxchg_local(ptr, old, new)					\
- 	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
-+
-+#define cmpxchg_local_flag(ptr, old, new)				\
-+	__cmpxchg_local_flag((ptr), (old), (new), sizeof(*ptr))
+@@ -193,26 +193,26 @@ extern void __xadd_wrong_size(void);
+ 	__cmpxchg_local_flag((ptr), (old), (new), sizeof(*ptr))
  #endif
  
- #define xadd(ptr, inc)							\
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 3b573f6..0797bc6 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -111,6 +111,13 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
- 				sizeof(*(ptr)));			\
- 	__ret;								\
- })
-+
-+#define cmpxchg_flag(ptr, o, n)			\
-+({						\
-+	__typeof__(*(ptr)) __orig = (o);	\
-+	cmpxchg((ptr), __orig, (n)) == __orig;	\
-+})
-+
- #define cmpxchg_local(ptr, o, n)					\
- ({									\
- 	__typeof__(*(ptr)) __ret;					\
-@@ -124,6 +131,13 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
- 				sizeof(*(ptr)));			\
- 	__ret;								\
- })
-+
-+#define cmpxchg_local_flag(ptr, o, n)			\
-+({							\
-+	__typeof__(*(ptr)) __orig = (o);		\
-+	cmpxchg_local((ptr), __orig, (n)) == __orig;	\
-+})
-+
- #endif
+-#define xadd(ptr, inc)							\
++#define __xadd(ptr, inc, lock)						\
+ 	do {								\
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+-			asm volatile (LOCK_PREFIX "xaddb %b0, %1\n"	\
++			asm volatile (lock "xaddb %b0, %1\n"		\
+ 				      : "+r" (inc), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
+-			asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"	\
++			asm volatile (lock "xaddw %w0, %1\n"		\
+ 				      : "+r" (inc), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_L:					\
+-			asm volatile (LOCK_PREFIX "xaddl %0, %1\n"	\
++			asm volatile (lock "xaddl %0, %1\n"		\
+ 				      : "+r" (inc), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_Q:					\
+-			asm volatile (LOCK_PREFIX "xaddq %q0, %1\n"	\
++			asm volatile (lock "xaddq %q0, %1\n"		\
+ 				      : "+r" (inc), "+m" (*(ptr))	\
+ 				      : : "memory", "cc");		\
+ 			break;						\
+@@ -221,4 +221,8 @@ extern void __xadd_wrong_size(void);
+ 		}							\
+ 	} while(0)
  
- #ifndef CONFIG_X86_CMPXCHG64
++#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
++#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
++#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
++
+ #endif	/* ASM_X86_CMPXCHG_H */
 -- 
 1.7.6
 
