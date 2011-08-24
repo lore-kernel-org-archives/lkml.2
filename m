@@ -1,60 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1HXDJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 23:09:13 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:47240 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755996Ab1HXDIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 23:08:34 -0400
-X-Sasl-enc: aOeyt/taSLCfCywHyuYR2NZ4BGu6E/zxM1BozC5f9MT7 1314155313
-Date: Tue, 23 Aug 2011 20:08:22 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 0000/0117] Staging: hv: Driver cleanup
-Message-ID: <20110824030822.GE30779@kroah.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <20110823231120.GP9641@kroah.com>
- <6E21E5352C11B742B20C142EB499E048081B23B1@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	id S1756067Ab1HXDJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 23:09:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22194 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab1HXDJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 23:09:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,273,1312182000"; 
+   d="scan'208";a="41754513"
+Date: Wed, 24 Aug 2011 11:09:42 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
+Message-ID: <20110824030942.GA26055@localhost>
+References: <20110816022006.348714319@intel.com>
+ <20110816022329.190706384@intel.com>
+ <20110819020637.GA13597@redhat.com>
+ <20110819025406.GA13365@localhost>
+ <20110819190037.GJ18656@redhat.com>
+ <20110821034657.GA30747@localhost>
+ <20110822172230.GB17833@redhat.com>
+ <20110823010721.GB7332@localhost>
+ <20110823135355.GB20291@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E048081B23B1@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110823135355.GB20291@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 01:01:26AM +0000, KY Srinivasan wrote:
-> Thank you for your comments. I will try to re-submit these patches as
-> soon as I possibly can. If I were to get these patches re-spun and
-> sent to you in the next couple of days, can I still make this current
-> merge window?
+On Tue, Aug 23, 2011 at 09:53:55PM +0800, Vivek Goyal wrote:
+> On Tue, Aug 23, 2011 at 09:07:21AM +0800, Wu Fengguang wrote:
+> 
+> [..]
+> > > > > So we refined the formula for calculating a tasks's effective rate
+> > > > > over a period of time to following.
+> > > > > 					    write_bw
+> > > > > 	task_ratelimit = task_ratelimit_0 * ------- * pos_ratio		(9)
+> > > > > 					    dirty_rate
+> > > > > 
+> > > > 
+> > > > That's not true. It should still be formula (7) when
+> > > > balance_drity_pages() considers pos_ratio.
+> > > 
+> > > Why it is not true? If I do some math, it sounds right. Let me summarize
+> > > my understanding again.
+> > 
+> > Ah sorry! (9) actually holds true, as made clear by your below reasoning.
+> > 
+> > > - In a steady state stable system, we want dirty_bw = write_bw, IOW.
+> > >  
+> > >   dirty_bw/write_bw = 1  		(1)
+> > > 
+> > >   If we can achieve above then that means we are throttling tasks at
+> > >   just right rate.
+> > > 
+> > > Or
+> > > -  dirty_bw  == write_bw
+> > >    N * task_ratelimit == write_bw
+> > >    task_ratelimit =  write_bw/N         (2)
+> > > 
+> > >   So as long as we can come up with a system where balance_dirty_pages()
+> > >   calculates task_ratelimit to be write_bw/N, we should be fine.
+> > 
+> > Right.
+> > 
+> > > - But this does not take care of imbalances. So if system goes out of
+> > >   balance before feedback loop kicks in and dirty rate shoots up, then
+> > >   cache size will grow and number of dirty pages will shoot up. Hence
+> > >   we brought in the notion of position ratio where we also vary a 
+> > >   tasks's dirty ratelimit based on number of dirty pages. So our
+> > >   effective formula became.
+> > > 
+> > >   task_ratelimit = write_bw/N * pos_ratio     (3)
+> > > 
+> > >   So as long as we meet (3), we should reach to stable state.
+> > 
+> > Right.
+> > 
+> > > -  But here N is unknown in advance so balance_drity_pages() can not make
+> > >    use of this formula directly. But write_bw and dirty_bw from previous
+> > >    200ms are known. So following can replace (3).
+> > > 
+> > > 				       write_bw
+> > >    task_ratelimit = task_ratelimit_0 * --------- * pos_ratio      (4)
+> > > 					dirty_bw	
+> > > 
+> > >    dirty_bw = task_ratelimit_0 * N                (5)
+> > > 
+> > >    Substitute (5) in (4)
+> > > 
+> > >    task_ratelimit = write_bw/N * pos_ratio      (6)
+> > > 
+> > >    (6) is same as (3) which has been derived from (4) and that means at any
+> > >    given point of time (4) can be used by balance_drity_pages() to calculate
+> > >    a tasks's throttling rate.
+> > 
+> > Right. Sorry what's in my mind was
+> > 
+> >                                        write_bw
+> >     balanced_rate = task_ratelimit_0 * --------
+> >                                        dirty_bw        
+> > 
+> >     task_ratelimit = balanced_rate * pos_ratio
+> > 
+> > which is effective the same to your combined equation (4).
+> > 
+> > > - Now going back to (4). Because we have a feedback loop where we
+> > >   continuously update a previous number based on feedback, we can track
+> > >   previous value in bdi->dirty_ratelimit.
+> > > 
+> > > 				       write_bw
+> > >    task_ratelimit = task_ratelimit_0 * --------- * pos_ratio 
+> > > 					dirty_bw	
+> > > 
+> > >    Or
+> > > 
+> > >    task_ratelimit = bdi->dirty_ratelimit * pos_ratio         (7)
+> > > 
+> > >    where
+> > > 					    write_bw	
+> > >   bdi->dirty_ratelimit = task_ratelimit_0 * ---------
+> > > 					    dirty_bw
+> > 
+> > Right.
+> > 
+> > >   Because task_ratelimit_0 is initial value to begin with and we will
+> > >   keep on coming with new value every 200ms, we should be able to write
+> > >   above as follows.
+> > > 
+> > > 						      write_bw
+> > >   bdi->dirty_ratelimit_n = bdi->dirty_ratelimit_n-1 * --------  (8)
+> > > 						      dirty_bw
+> > > 
+> > >   Effectively we start with an initial value of task_ratelimit_0 and
+> > >   then keep on updating it based on rate change feedback every 200ms.
+> > 
+> > Right.
+> > 
+> > >   To summarize,
+> > > 
+> > >   We need to achieve (3) for a balanced system. Because we don't know the
+> > >   value of N in advance, we can use (4) to achieve effect of (3). So we
+> > >   start with a default value of task_ratelimit_0 and update that every
+> > >   200ms based on how write and dirty rate on device is changing (8). We also
+> > >   further refine that rate by pos_ratio so that any variations in number
+> > >   of dirty pages due to temporary imbalances in the system can be
+> > >   accounted for (7).
+> > > 
+> > > I see that you also use (7). I think only contention point is how
+> > > (8) is perceived. So can you please explain why do you think that
+> > > above calculation or (9) is wrong.
+> > 
+> > There is no contention point and (9) is right..Sorry it's my fault.
+> > We are well aligned in the above reasoning :)
+> 
+> Great. Now we are on same page now at least till this point.
+> 
+> > 
+> > > I can kind of understand that you have done various adjustments to keep the
+> > > task_ratelimit and bdi->dirty_ratelimit relatively stable. Just that
+> > > I am not able to understand your calculations in updating bdi->dirty_ratelimit.  
+> > 
+> > You mean the below chunk of code? Which is effectively the same as this _one_
+> > line of code
+> > 
+> >         bdi->dirty_ratelimit = balanced_rate;
+> > 
+> > except for doing some tricks (conditional update and limiting step size) to
+> > stabilize bdi->dirty_ratelimit:
+> 
+> I am fine with bdi->dirty_ratelimit being called balanced rate. I am
+> taking exception to the fact that you are also taking into accout
+> pos_ratio while coming up with new balanced_rate after 200ms of feedback.
+> 
+> We agreed to updating bdi->dirty_ratelimit as follows (8 above).
+> 
+>  
+>  						      write_bw
+>    bdi->dirty_ratelimit_n = bdi->dirty_ratelimit_n-1 * --------  (8)
+>  						      dirty_bw
+> 
+> I think in your terminology it could be called.
+> 					   write_bw
+>   new_balanced_rate = prev_balanced_rate * ----------            (9)
+> 					   dirty_bw
+> 
+> But what you seem to be doing is following.
+> 							write_bw
+>   new_balanced_rate = prev_balanced_rate * pos_ratio * -----------  (10)
+> 							dirty_bw
+> 
+> Of course I have just tried to simlify your actual calculations to
+> show why I am questioning the presence of pos_ratio while calculating
+> the new bdi->dirty_ratelimit. I am fine with limiting the step size etc.
+> 
+> So (9) and (10) don't match?
+> 
+> Now going back to your code and show how I arrived at (10).
+> 
+> executed_rate = (u64)base_rate * pos_ratio >> RATELIMIT_CALC_SHIFT; (11)
+> balanced_rate = div_u64((u64)executed_rate * bdi->avg_write_bandwidth,
+> 			dirty_rate | 1);			(12)
+> 
+> Combining (11) and (12) gives us (10).
+> 				     write_bw
+> balance_rate = base_rate * pos_ratio --------
+> 				     dirty_rate
+> 
+> Or
+> 					    write_bw
+> bdi->dirty_ratelimit = base_rate * pos_ratio --------
+> 					     dirty_rate
 
-You ever sit down and write an email, pour out your frustrations and
-anger in a long, detailed rant?  Smoke coming off of your keyboard as
-the keys start melting in the fury of the frustration driving your rage?
+I hope the other email on the balanced_rate estimation equation can
+clarify the questions on pos_ratio..
 
-And then, afterward, re-reading it, realizing that you now felt at peace
-with yourself, and such a rant was only for your benefit, the recipient,
-while surely knowing better than to have caused the response in the
-first place, really didn't deserve the flame in the end?  So you then
-delete the email before sending it, and then write a simple and concise
-response instead, following the "three sentences"[1] rule?
+> To complicate the things you also have the notion of pos_rate and reduce
+> the step size based on either pos_rate or balance_rate.
+> 
+> pos_rate = executed_rate = base_rate * pos_ratio;
+> 
+> 				     write_bw
+> balance_rate = base_rate * pos_ratio --------
+> 				     dirty_rate
+> 
+> bdi->dirty_rate_limit = min_change(pos_rate, balance_rate)       (13)
+> 
+> So for feedback, why are not sticking to simply (9) and limit the step
+> size and not take pos_ratio into account. 
 
-Here's that response:
+pos_rate is used to limit the step size. This reply to Peter has more
+details:
 
-	Read Documentation/development-process/ for how Linux kernel
-	development works and the merge windows happen.
+http://www.spinics.net/lists/linux-fsdevel/msg47991.html
 
-	Please never ask me again.
+> Even if you have to take it into account, it needs to be explained clearly
+> and so many rate definitions confuse things more. Keeping name constant
+> everywhere (even for local variables), helps understand the code better.
+> 
 
-	Ever.
+Good idea! There are two many names that differs subtly..
 
-	greg k-h
+> Look at number of rates we have in code and it gets so confusing.
+> 
+> balanced_rate
+> base_rate
+> bdi->dirty_ratelimit
+> 
+> executed_rate
+> pos_rate
+> task_ratelimit
+> 
+> dirty_rate
+> write_bw
+> 
+> Here balanced_rate, base_rate and bdi->dirty_ratelimit all seem to be
+> referring to same thing and that is not obivious from the code. Looks
+> like task->ratelimit and executed_rate and pos_rate are referring to same
+> thing.
 
-[1] http://three.sentenc.es/
+Right.
+
+> So instead of 6 rates, we could atleast collpase the naming to 2 rates
+> to keep the context clear. Just prefix/suffix more strings to highlight
+> subtle difference between two rates.
+
+How about
+
+  balanced_rate            =>  balanced_dirty_ratelimit
+  base_rate                =>  dirty_ratelimit
+  bdi->dirty_ratelimit     ==  bdi->dirty_ratelimit
+
+  pos_rate                 =>  task_ratelimit
+  executed_rate            =>  task_ratelimit
+  task_ratelimit           ==  task_ratelimit
+
+Thanks,
+Fengguang
