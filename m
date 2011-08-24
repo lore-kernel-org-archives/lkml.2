@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab1HXNZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 09:25:34 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:40055 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab1HXNZd (ORCPT
+	id S1751937Ab1HXNZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 09:25:48 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57177 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab1HXNZo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 09:25:33 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Subject: Re: [PATCHv2] ISP:BUILD:FIX: Move media_entity_init() and
-Date: Wed, 24 Aug 2011 15:25:46 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
-Cc: "Ravi, Deepthy" <deepthy.ravi@ti.com>,
-        "mchehab@infradead.org" <mchehab@infradead.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1313761725-6614-1-git-send-email-deepthy.ravi@ti.com> <201108241329.48147.laurent.pinchart@ideasonboard.com> <19F8576C6E063C45BE387C64729E739404EC007BE3@dbde02.ent.ti.com>
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404EC007BE3@dbde02.ent.ti.com>
+	Wed, 24 Aug 2011 09:25:44 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108241525.47332.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <CAFWT=829mqzfzdXDEFcbno0zJh+EARmdmsjx6H5-Ju5Pqm2CrA@mail.gmail.com>
+References: <CAFWT=833UrQ0irJfL5z=6R97+wd4ewW9Cd88maeXhZ_95aMhsw@mail.gmail.com>
+	<20110824035800.GA30312@redhat.com>
+	<CAFWT=829mqzfzdXDEFcbno0zJh+EARmdmsjx6H5-Ju5Pqm2CrA@mail.gmail.com>
+Date: Wed, 24 Aug 2011 21:25:43 +0800
+Message-ID: <CAAJw_ZsA1h3zza2km6Dj9DUKuWj-3_HTYTGPUgPwpiyphjADhw@mail.gmail.com>
+Subject: Re: Bug Report for Linux Kernel 3.x
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Steevven1 <steevven1@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vaibhav,
+Your might have  a different issue or perhaps you should make sure
+you're up to date with the latest git pull. I'm on
+14c62e78dc1379185515be41903c4a667efc6d54 (3.1.0-rc3)
 
-On Wednesday 24 August 2011 14:19:01 Hiremath, Vaibhav wrote:
-> On Wednesday, August 24, 2011 5:00 PM Laurent Pinchart wrote: 
-> > On Wednesday 24 August 2011 13:21:27 Ravi, Deepthy wrote:
-> > > On Wed, Aug 24, 2011 at 4:47 PM, Laurent Pinchart wrote:
-> > > > On Friday 19 August 2011 15:48:45 Deepthy Ravi wrote:
-> > > >> From: Vaibhav Hiremath <hvaibhav@ti.com>
-> > > >> 
-> > > >> Fix the build break caused when CONFIG_MEDIA_CONTROLLER
-> > > >> option is disabled and if any sensor driver has to be used
-> > > >> between MC and non MC framework compatible devices.
-> > > >> 
-> > > >> For example,if tvp514x video decoder driver migrated to
-> > > >> MC framework is being built without CONFIG_MEDIA_CONTROLLER
-> > > >> option enabled, the following error messages will result.
-> > > >> drivers/built-in.o: In function `tvp514x_remove':
-> > > >> drivers/media/video/tvp514x.c:1285: undefined reference to
-> > > >> `media_entity_cleanup'
-> > > >> drivers/built-in.o: In function `tvp514x_probe':
-> > > >> drivers/media/video/tvp514x.c:1237: undefined reference to
-> > > >> `media_entity_init'
-> > > > 
-> > > > If the tvp514x is migrated to the MC framework, its Kconfig option
-> > > > should depend on MEDIA_CONTROLLER.
-> > > 
-> > > The same TVP514x driver is being used for both MC and non MC compatible
-> > > devices, for example OMAP3 and AM35x. So if it is made dependent on
-> > > MEDIA CONTROLLER, we cannot enable the driver for MC independent
-> > > devices.
-> > 
-> > Then you should use conditional compilation in the tvp514x driver itself.
-> > Or
-> 
-> No. I am not in favor of conditional compilation in driver code.
+I'm using Lenovo X201s and X was very very unstable and screen freezes
+after a while. Now after adding i915.i915_enable_rc6=1, X is running
+happily again!!!
 
-Actually, thinking some more about this, you should make the tvp514x driver 
-depend on CONFIG_MEDIA_CONTROLLER unconditionally. This doesn't mean that the 
-driver will become unusable by applications that are not MC-aware. 
-Hosts/bridges don't have to export subdev nodes, they can just call subdev 
-pad-level operations internally and let applications control the whole device 
-through a single V4L2 video node.
+Thanks,
+Jeff.
 
-> > better, port the AM35x driver to the MC API.
-> 
-> Why should we use MC if I have very simple device (like AM35x) which only
-> supports single path? I can very well use simple V4L2 sub-dev based
-> approach (master - slave), isn't it?
 
-The AM35x driver should use the in-kernel MC and V4L2 subdev APIs, but it 
-doesn't have to expose them to userspace.
-
--- 
-Regards,
-
-Laurent Pinchart
+On Wed, Aug 24, 2011 at 12:00 PM, Steevven1 <steevven1@gmail.com> wrote:
+>
+> Thanks for the comment. I have already tried this with several
+> different 3-series kernels. There was no effect on power consumption
+> or output from powertop.
+>
+> SK!
+>
+>
+> On Tue, Aug 23, 2011 at 11:58 PM, Dave Jones <davej@redhat.com> wrote:
+> > On Tue, Aug 23, 2011 at 07:19:35PM -0400, Steevven1 wrote:
+> >  > Hello,
+> >  >
+> >  > I would like to report what myself and several others believe to be a
+> >  > serious bug affecting all Linux kernels 3.0 and up, and none below 3.0
+> >  > (2.6.x and lower).
+> >  >
+> >  > One-sentence description: On certain hardware, the 3.x series kernels
+> >  > drain a considerable amount more power than the 2.6-series kernels, up
+> >  > to 40% more, even when idle.
+> >  >
+> >  > The specific hardware I have personally tested is a Lenovo ThinkPad
+> >  > X220 with an Intel SandyBridge i7 2620M processor.
+> >
+> > Sounds like https://bugzilla.redhat.com/show_bug.cgi?id=727579
+> > Try booting with i915.i915_enable_rc6=1
+> >
+> >        Dave
+> >
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
