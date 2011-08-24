@@ -1,74 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab1HXAiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:38:15 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:13036 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1HXAiL convert rfc822-to-8bit (ORCPT
+	id S1756036Ab1HXAmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:42:16 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60640 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752730Ab1HXAmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:38:11 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
-Thread-Topic: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
-Thread-Index: AQHMQxmwelNZej0M8Ey5TPtGzUjq3JUrvP0A//+izUA=
-Date: Wed, 24 Aug 2011 00:38:09 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E048081B2356@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-1-git-send-email-kys@microsoft.com>
- <1310752065-27895-19-git-send-email-kys@microsoft.com>
- <20110823224932.GF9641@kroah.com>
-In-Reply-To: <20110823224932.GF9641@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.78]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Aug 2011 20:42:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvcDAIhIVE55LIxDgWdsb2JhbABCp2gVAQEWJiWBQAEBBAEyASMjBQsIAxguFCUDIROHcbxcDoY6BKQl
+Date: Wed, 24 Aug 2011 10:42:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alex Elder <aelder@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        akpm@linux-foundation.org
+Subject: Re: [GIT PULL] XFS update for 3.1-rc4
+Message-ID: <20110824004206.GG3162@dastard>
+References: <201108231739.p7NHdXQ8008360@stout.americas.sgi.com>
+ <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFxEyj8qJnr9QR3Scy7SFocEr2BNA9z4PXs7q9rpkXM1vQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, August 23, 2011 6:50 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
-> Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+On Tue, Aug 23, 2011 at 11:46:30AM -0700, Linus Torvalds wrote:
+> On Tue, Aug 23, 2011 at 10:39 AM, Alex Elder <aelder@sgi.com> wrote:
+> >
+> > Linus, please pull the following XFS changes.  Their effect is to
+> > remove the subdirectory structure from the XFS source hierarchy.
+> > There are no functional changes to the XFS code itself.  Thanks.
 > 
-> On Fri, Jul 15, 2011 at 10:46:07AM -0700, K. Y. Srinivasan wrote:
-> > Now generate appropriate uevent based on the modalias string. As part of this,
-> > cleanup the existing uevent code.
+> Pulled.
 > 
-> Note, you just change the user api here, did you have tools that relied
-> on the old format?  If so, they just broke :(
-
-Prior to this, I don't think autoloading worked the way it should for these
-modules. 
-
+> Any plans to further sanitize the namespace?
 > 
-> > +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
-> > +		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
+> It's kind of crazy to have filenames like
 > 
-> Don't we have a type for printing out a uuid already?
-
-I did not see one; could you point me to the right place.
+>    fs/xfs/xfs_trace.c
 > 
-> And what's with the jumping by 2 yet dividing?  What am I missing here?
+> which just duplicate the "xfs" part for no good reason.
 
-Each byte of the uuid is represented by 2 bytes in the string; thus the magic with 2.
+I consider the context it adds to cscope searches a damn good reason
+for keeping it.
 
-Regards,
+> Why not just
+> do something like
+> 
+>   for i in xfs_*; do j=$(echo $i | sed 's/^xfs_//'); git mv $i $j; done
+> 
+> to get rid of the silly "xfs_" prefix that adds nothing?
 
-K. Y
+Because that then kills context that is actually useful in cscope
+searches. That is, every filesystem has the file "inode.c",
+"super.c", etc and so you can't tell from the cscope searchs which
+filesystem function calls belong to. 
 
+Duplicate name spaces are evil, and we have a lot of them in the
+filesystem tree - if they all had explicit namespacing like XFS
+does, then the world would be a better place. ;)
+
+
+> You could use the bytes you save to rename "qm.c" to "quota_manager.c"
+> instead. Wouldn't it be nice to have *good* names, instead of a jumble
+> of crazy and mostly redundant letters?
+
+The names make sense to anyone who has spent any time in the XFS
+code. The name of the file reflects the namespace of the code inside
+the file itself. e.g. to use the xfs_qm.c as an example:
+
+$ grep ^xfs_qm_  fs/xfs/xfs_qm.c
+xfs_qm_destroy(
+xfs_qm_hold_quotafs_ref(
+xfs_qm_rele_quotafs_ref(
+xfs_qm_unmount(
+xfs_qm_mount_quotas(
+xfs_qm_unmount_quotas(
+xfs_qm_dqflush_all(
+xfs_qm_detach_gdquots(
+xfs_qm_dqpurge_int(
+xfs_qm_dqpurge_all(
+xfs_qm_dqattach_one(
+xfs_qm_dqattach_grouphint(
+xfs_qm_dqattach_locked(
+xfs_qm_dqattach(
+xfs_qm_dqdetach(
+xfs_qm_sync(
+xfs_qm_init_quotainfo(
+xfs_qm_destroy_quotainfo(
+xfs_qm_list_init(
+xfs_qm_list_destroy(
+xfs_qm_qino_alloc(
+xfs_qm_reset_dqcounts(
+xfs_qm_dqiter_bufs(
+xfs_qm_dqiterate(
+xfs_qm_quotacheck_dqadjust(
+xfs_qm_get_rtblks(
+xfs_qm_dqusage_adjust(
+xfs_qm_quotacheck(
+xfs_qm_init_quotainos(
+xfs_qm_dqreclaim_one(void)
+xfs_qm_shake_freelist(
+xfs_qm_shake_scan(
+xfs_qm_shake_count(
+xfs_qm_dqalloc_incore(
+xfs_qm_write_sb_changes(
+xfs_qm_vop_dqalloc(
+xfs_qm_vop_chown(
+xfs_qm_vop_chown_reserve(
+xfs_qm_vop_rename_dqattach(
+xfs_qm_vop_create_dqattach(
+
+So there is a certain methodic sanity to the naming convention that
+is not immediately obvious from just looking at the file names, and
+that's a good reason not to change them.
+
+Besides, I don't want to have to spend 3 months reprogramming
+my muscle memory just because we painted the bikeshed a different
+colour. ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
