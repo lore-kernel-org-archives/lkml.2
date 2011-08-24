@@ -1,173 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab1HXSah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:30:37 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:55436 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1HXSaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:30:35 -0400
-Date: Wed, 24 Aug 2011 14:30:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 68/75] hv: netvsc: convert to SKB paged frag API.
-Message-ID: <20110824183010.GG15675@dumpdata.com>
-References: <1313760393.5010.356.camel@zakaz.uk.xensource.com>
- <1313760467-8598-68-git-send-email-ian.campbell@citrix.com>
+	id S1753734Ab1HXSdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:33:44 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4897 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753523Ab1HXSdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 14:33:42 -0400
+Subject: [PATCH 0/5] SUNRPC: make rpcbind clients allocated and destroyed on
+	dynamically
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net
+Date: Wed, 24 Aug 2011 22:33:36 +0400
+Message-ID: <20110824183304.4924.94670.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1313760467-8598-68-git-send-email-ian.campbell@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4E554343.0050:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is with the 'XXX' ?
+This patch is required for further RPC layer virtualization, because rpcbind
+clients have to be per network namespace.
+To achive this, we have to untie network namespace from rpcbind clients sockets.
+The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
+clients will be created during first RPC service creation, and destroyed when
+last RPC service is stopped.
+With this patch set rpcbind clients can be virtualized easely.
 
-> diff --git a/drivers/net/cxgb4/sge.c b/drivers/net/cxgb4/sge.c
-> index f1813b5..3e7c4b3 100644
-> --- a/drivers/net/cxgb4/sge.c
-> +++ b/drivers/net/cxgb4/sge.c
-> @@ -1416,7 +1416,7 @@ static inline void copy_frags(struct sk_buff *skb,
->  	unsigned int n;
->  
->  	/* usually there's just one frag */
-> -	skb_frag_set_page(skb, 0, gl->frags[0].page);
-> +	skb_frag_set_page(skb, 0, gl->frags[0].page.p);	/* XXX */
->  	ssi->frags[0].page_offset = gl->frags[0].page_offset + offset;
->  	ssi->frags[0].size = gl->frags[0].size - offset;
->  	ssi->nr_frags = gl->nfrags;
-> @@ -1425,7 +1425,7 @@ static inline void copy_frags(struct sk_buff *skb,
->  		memcpy(&ssi->frags[1], &gl->frags[1], n * sizeof(skb_frag_t));
->  
->  	/* get a reference to the last page, we don't own it */
-> -	get_page(gl->frags[n].page);
-> +	get_page(gl->frags[n].page.p);	/* XXX */
->  }
->  
->  /**
-> @@ -1482,7 +1482,7 @@ static void t4_pktgl_free(const struct pkt_gl *gl)
->  	const skb_frag_t *p;
->  
->  	for (p = gl->frags, n = gl->nfrags - 1; n--; p++)
-> -		put_page(p->page);
-> +		put_page(p->page.p); /* XXX */
->  }
->  
->  /*
-> @@ -1635,7 +1635,7 @@ static void restore_rx_bufs(const struct pkt_gl *si, struct sge_fl *q,
->  		else
->  			q->cidx--;
->  		d = &q->sdesc[q->cidx];
-> -		d->page = si->frags[frags].page;
-> +		d->page = si->frags[frags].page.p; /* XXX */
->  		d->dma_addr |= RX_UNMAPPED_BUF;
->  		q->avail++;
->  	}
-> @@ -1717,7 +1717,7 @@ static int process_responses(struct sge_rspq *q, int budget)
->  			for (frags = 0, fp = si.frags; ; frags++, fp++) {
->  				rsd = &rxq->fl.sdesc[rxq->fl.cidx];
->  				bufsz = get_buf_size(rsd);
-> -				fp->page = rsd->page;
-> +				fp->page.p = rsd->page; /* XXX */
->  				fp->page_offset = q->offset;
->  				fp->size = min(bufsz, len);
->  				len -= fp->size;
-> @@ -1734,8 +1734,8 @@ static int process_responses(struct sge_rspq *q, int budget)
->  						get_buf_addr(rsd),
->  						fp->size, DMA_FROM_DEVICE);
->  
-> -			si.va = page_address(si.frags[0].page) +
-> -				si.frags[0].page_offset;
-> +			si.va = page_address(si.frags[0].page.p) +
-> +				si.frags[0].page_offset; /* XXX */
->  
->  			prefetch(si.va);
->  
-> diff --git a/drivers/net/cxgb4vf/sge.c b/drivers/net/cxgb4vf/sge.c
-> index 6d6060e..3688423 100644
-> --- a/drivers/net/cxgb4vf/sge.c
-> +++ b/drivers/net/cxgb4vf/sge.c
-> @@ -1397,7 +1397,7 @@ struct sk_buff *t4vf_pktgl_to_skb(const struct pkt_gl *gl,
->  		skb_copy_to_linear_data(skb, gl->va, pull_len);
->  
->  		ssi = skb_shinfo(skb);
-> -		skb_frag_set_page(skb, 0, gl->frags[0].page);
-> +		skb_frag_set_page(skb, 0, gl->frags[0].page.p); /* XXX */
->  		ssi->frags[0].page_offset = gl->frags[0].page_offset + pull_len;
->  		ssi->frags[0].size = gl->frags[0].size - pull_len;
->  		if (gl->nfrags > 1)
-> @@ -1410,7 +1410,7 @@ struct sk_buff *t4vf_pktgl_to_skb(const struct pkt_gl *gl,
->  		skb->truesize += skb->data_len;
->  
->  		/* Get a reference for the last page, we don't own it */
-> -		get_page(gl->frags[gl->nfrags - 1].page);
-> +		get_page(gl->frags[gl->nfrags - 1].page.p); /* XXX */
->  	}
->  
->  out:
-> @@ -1430,7 +1430,7 @@ void t4vf_pktgl_free(const struct pkt_gl *gl)
->  
->  	frag = gl->nfrags - 1;
->  	while (frag--)
-> -		put_page(gl->frags[frag].page);
-> +		put_page(gl->frags[frag].page.p); /* XXX */
->  }
->  
->  /**
-> @@ -1450,7 +1450,7 @@ static inline void copy_frags(struct sk_buff *skb,
->  	unsigned int n;
->  
->  	/* usually there's just one frag */
-> -	skb_frag_set_page(skb, 0, gl->frags[0].page);
-> +	skb_frag_set_page(skb, 0, gl->frags[0].page.p);	/* XXX */
->  	si->frags[0].page_offset = gl->frags[0].page_offset + offset;
->  	si->frags[0].size = gl->frags[0].size - offset;
->  	si->nr_frags = gl->nfrags;
-> @@ -1460,7 +1460,7 @@ static inline void copy_frags(struct sk_buff *skb,
->  		memcpy(&si->frags[1], &gl->frags[1], n * sizeof(skb_frag_t));
->  
->  	/* get a reference to the last page, we don't own it */
-> -	get_page(gl->frags[n].page);
-> +	get_page(gl->frags[n].page.p); /* XXX */
->  }
->  
->  /**
-> @@ -1613,7 +1613,7 @@ static void restore_rx_bufs(const struct pkt_gl *gl, struct sge_fl *fl,
->  		else
->  			fl->cidx--;
->  		sdesc = &fl->sdesc[fl->cidx];
-> -		sdesc->page = gl->frags[frags].page;
-> +		sdesc->page = gl->frags[frags].page.p; /* XXX */
->  		sdesc->dma_addr |= RX_UNMAPPED_BUF;
->  		fl->avail++;
->  	}
-> @@ -1701,7 +1701,7 @@ int process_responses(struct sge_rspq *rspq, int budget)
->  				BUG_ON(rxq->fl.avail == 0);
->  				sdesc = &rxq->fl.sdesc[rxq->fl.cidx];
->  				bufsz = get_buf_size(sdesc);
-> -				fp->page = sdesc->page;
-> +				fp->page.p = sdesc->page; /* XXX */
->  				fp->page_offset = rspq->offset;
->  				fp->size = min(bufsz, len);
->  				len -= fp->size;
-> @@ -1719,8 +1719,8 @@ int process_responses(struct sge_rspq *rspq, int budget)
->  			dma_sync_single_for_cpu(rspq->adapter->pdev_dev,
->  						get_buf_addr(sdesc),
->  						fp->size, DMA_FROM_DEVICE);
-> -			gl.va = (page_address(gl.frags[0].page) +
-> -				 gl.frags[0].page_offset);
-> +			gl.va = (page_address(gl.frags[0].page.p) +
-> +				 gl.frags[0].page_offset); /* XXX */
->  			prefetch(gl.va);
->  
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (5):
+      SUNRPC: introduce helpers for reference counted rpcbind clients
+      SUNRPC: use reference count helpers
+      SUNRPC: make RPC service dependable on rpcbind clients creation
+      SUNRPC: remove rpcbind clients creation during service registring
+      SUNRPC: remove rpcbind clients destruction on module cleanup
+
+
+ include/linux/sunrpc/clnt.h |    2 +
+ net/sunrpc/rpcb_clnt.c      |   86 ++++++++++++++++++++++++++++---------------
+ net/sunrpc/sunrpc_syms.c    |    3 --
+ net/sunrpc/svc.c            |    5 +++
+ 4 files changed, 63 insertions(+), 33 deletions(-)
+
+-- 
+Signature
