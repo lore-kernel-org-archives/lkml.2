@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab1HXVs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:48:58 -0400
-Received: from claw.goop.org ([74.207.240.146]:53642 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973Ab1HXVs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:48:56 -0400
-Message-ID: <4E5571C6.10704@goop.org>
-Date: Wed, 24 Aug 2011 14:48:54 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
+	id S1751506Ab1HXVu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:50:57 -0400
+Received: from mail-yi0-f70.google.com ([209.85.218.70]:40999 "EHLO
+	mail-yi0-f70.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab1HXVu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:50:56 -0400
+X-Greylist: delayed 1646 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Aug 2011 17:50:56 EDT
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 06/18] x86/ticketlock: make __ticket_spin_trylock common
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com> <c67b46c486c2c2de76c41ba5a012c07fb7659d8e.1314207974.git.jeremy.fitzhardinge@citrix.com> <m2pqjud1fz.fsf@firstfloor.org> <CA+55aFwjJqH0nVDUJ55Eiybm3NTWgHH5pK+SLh=YBW7u0KGP=A@mail.gmail.com> <20110824214334.GS25996@one.firstfloor.org>
-In-Reply-To: <20110824214334.GS25996@one.firstfloor.org>
-X-Enigmail-Version: 1.3.1
+In-Reply-To: <CAOtrxKMgdSWXRacAy8AVp8q1Zst2NKhvwbUDrhp1pMN5fme9ew@mail.gmail.com>
+References: <20110819175316.GA999@ime.usp.br> <CAOtrxKNVckzkxM=ahV13kV=7-Jtj=WWkx_So4pCdVX3e8mdjPw@mail.gmail.com>
+ <CA+55aFyyJNnL54o=xRH7CubFLDaQwcF31sqd7tfBcfR8XfnX5g@mail.gmail.com>
+ <CAOtrxKN3sugEcNPb0MkihAJ6P+idAUfGnJBoBq_kwxsDiHdR+A@mail.gmail.com> <CAOtrxKMgdSWXRacAy8AVp8q1Zst2NKhvwbUDrhp1pMN5fme9ew@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 24 Aug 2011 15:23:06 -0600
+Message-ID: <CAErSpo79Wu7fvm=bCpSN=ydfb9u64r=_WVoV3qBmjqb76CKjXg@mail.gmail.com>
+Subject: Re: [Bug 41622] [REGRESSION][BISECTED] Notebook crashes upon
+ detecting the PCI subsystem with kernels >= 2.6.24-rc7
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Thomas Meyer <thomas@m3y3r.de>, Gary Hade <garyhade@us.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux-kernel@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        bugme-daemon@bugzilla.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 02:43 PM, Andi Kleen wrote:
-> On Wed, Aug 24, 2011 at 02:38:12PM -0700, Linus Torvalds wrote:
->> On Wed, Aug 24, 2011 at 1:00 PM, Andi Kleen <andi@firstfloor.org> wrote:
->>> Can't we just get rid of the small ticket size code path?
->>>
->>> I couldn't benchmark any difference between the two last time
->>> I tried.
->> The small locks aren't any faster. They are just smaller.
-> Are you sure? 
->
-> AFAIK it's always
->
-> typedef struct arch_spinlock {
->         unsigned int slock;
-> } arch_spinlock_t;
+> If there is anything else that you would like me to change or to
+> provide any extra information, then please let me know and I will do
+> my best.
 
-Hm, I changed that in this series; arch_spinlock can be 16 bits in the
-<256 case.  I wonder if it matters...
+I'd still like to see a dmesg log with no arguments (remove the
+"acpi=off pnpbios=off noapic nolapic" arguments).  Your machine is new
+enough that we'll use PCI _CRS by default, and I'd like to make sure
+we're doing the right thing.
 
-    J
+I assume that with no arguments, you still need the "skip transparent
+bridge sizing" change to boot.
+
+I don't really like that change because in __pci_bus_size_bridges(),
+it's not obvious why sizing transparent bridges should be a problem.
+If growing transparent bridge windows makes us run out of space, let's
+put the smarts ("this bridge is transparent, we can take advantage of
+subtractive decode so we may not need to grow the positive decode
+windows") at the point where we grow, not at the point where we size.
+If we do have enough space, growing the positive decode windows is
+better because they're faster than subtractive decode.
+
+Bjorn
