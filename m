@@ -1,44 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1HXVji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:39:38 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:49888 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751935Ab1HXVjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:39:36 -0400
-X-Authenticated: #41721828
-X-Provags-ID: V01U2FsdGVkX1+cz0tm7TScQy5lTtuRat+cjlENC1ewcdq03VnT8e
-	umJZXXZ9DZAIEc
-Date: Wed, 24 Aug 2011 23:39:31 +0200
-From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH] UserModeLinux-HOWTO.txt: remove ^H characters
-Message-ID: <20110824213931.GB1935@debian.debian>
-References: <1313108903-7351-1-git-send-email-j.neuschaefer@gmx.net>
- <20110812101928.f34da400.rdunlap@xenotime.net>
- <20110812190626.GK29043@debian.debian>
- <1314221743.3109.1.camel@offbook>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1314221743.3109.1.camel@offbook>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+	id S1754417Ab1HXViP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:38:15 -0400
+Received: from claw.goop.org ([74.207.240.146]:53515 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754181Ab1HXVhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:37:24 -0400
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/12] x86/ticketlock: convert spin loop to C
+Date: Wed, 24 Aug 2011 14:37:07 -0700
+Message-Id: <27ab79dc0053c95141197472a9a6f8ee0460a00d.1314221624.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <e1c8d3bcee83cc5ad00bdf8900a99add7abb1cb9.1314221624.git.jeremy.fitzhardinge@citrix.com>
+References: <e1c8d3bcee83cc5ad00bdf8900a99add7abb1cb9.1314221624.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 06:35:43PM -0300, Davidlohr Bueso wrote:
-> Glad I noticed this patch in time, just today I was doing the same. FYI
-> I'm in the process of updating/splitting the document.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Nice!
+The inner loop of __ticket_spin_lock isn't doing anything very special,
+so reimplement it in C.
 
-Regards,
-Jonathan Neuschäfer
+For the 8 bit ticket lock variant, we use a register union to get direct
+access to the lower and upper bytes in the tickets, but unfortunately gcc
+won't generate a direct comparison between the two halves of the register,
+so the generated asm isn't quite as pretty as the hand-coded version.
+However benchmarking shows that this is actually a small improvement in
+runtime performance on some benchmarks, and never a slowdown.
+
+We also need to make sure there's a barrier at the end of the lock loop
+to make sure that the compiler doesn't move any instructions from within
+the locked region into the region where we don't yet own the lock.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
+ 1 files changed, 29 insertions(+), 29 deletions(-)
+
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index d6d5784..1c8a23c 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -58,21 +58,21 @@
+ #if (NR_CPUS < 256)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+-	unsigned short inc = 1 << TICKET_SHIFT;
+-
+-	asm volatile (
+-		LOCK_PREFIX "xaddw %w0, %1\n"
+-		"1:\t"
+-		"cmpb %h0, %b0\n\t"
+-		"je 2f\n\t"
+-		"rep ; nop\n\t"
+-		"movb %1, %b0\n\t"
+-		/* don't need lfence here, because loads are in-order */
+-		"jmp 1b\n"
+-		"2:"
+-		: "+Q" (inc), "+m" (lock->slock)
+-		:
+-		: "memory", "cc");
++	register union {
++		struct __raw_tickets tickets;
++		unsigned short slock;
++	} inc = { .slock = 1 << TICKET_SHIFT };
++
++	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
++		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
++
++	for (;;) {
++		if (inc.tickets.head == inc.tickets.tail)
++			break;
++		cpu_relax();
++		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+@@ -105,22 +105,22 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ {
+ 	unsigned inc = 1 << TICKET_SHIFT;
+-	unsigned tmp;
++	__ticket_t tmp;
+ 
+-	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
+-		     "movzwl %w0, %2\n\t"
+-		     "shrl $16, %0\n\t"
+-		     "1:\t"
+-		     "cmpl %0, %2\n\t"
+-		     "je 2f\n\t"
+-		     "rep ; nop\n\t"
+-		     "movzwl %1, %2\n\t"
+-		     /* don't need lfence here, because loads are in-order */
+-		     "jmp 1b\n"
+-		     "2:"
+-		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
+-		     :
+-		     : "memory", "cc");
++	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
++		     : "+r" (inc), "+m" (lock->slock)
++		     : : "memory", "cc");
++
++	tmp = inc;
++	inc >>= TICKET_SHIFT;
++
++	for (;;) {
++		if ((__ticket_t)inc == tmp)
++			break;
++		cpu_relax();
++		tmp = ACCESS_ONCE(lock->tickets.head);
++	}
++	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+ 
+ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+-- 
+1.7.6
+
