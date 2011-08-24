@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab1HXT5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 15:57:32 -0400
-Received: from gmmr3.centrum.cz ([90.183.38.155]:49982 "EHLO gmmr3.centrum.cz"
+	id S1752473Ab1HXUAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:00:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42744 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617Ab1HXT5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 15:57:30 -0400
-Subject: VERY INTERESTED IN YOUR RELATIONSHIP!
-Date: Wed, 24 Aug 2011 21:57:28 +0200
-From: "Favour" <y-u@centrum.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
+	id S1751617Ab1HXUAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 16:00:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="41851311"
+From: Andi Kleen <andi@firstfloor.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 06/18] x86/ticketlock: make __ticket_spin_trylock common
+References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
+	<c67b46c486c2c2de76c41ba5a012c07fb7659d8e.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Date: Wed, 24 Aug 2011 13:00:48 -0700
+In-Reply-To: <c67b46c486c2c2de76c41ba5a012c07fb7659d8e.1314207974.git.jeremy.fitzhardinge@citrix.com>
+	(Jeremy Fitzhardinge's message of "Wed, 24 Aug 2011 10:53:00 -0700")
+Message-ID: <m2pqjud1fz.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Message-Id: <20110824215728.2A1E86D6@centrum.cz>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeremy Fitzhardinge <jeremy@goop.org> writes:
 
-Hello, Dear,
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> Make trylock code common regardless of ticket size.
 
-How are you? Hope you are fine? Well, i' m fine and my names are Favour Debor, 23years old , 5'''7'' tall, I am single and never been married. Am interested in finding the right man that I will spend the rest of my life with and who is equally interested in finding the right Woman of His heart.
-I found your contact information today at ''www.iantd.com''! and i  became so much   interested to communicate with you.
+Can't we just get rid of the small ticket size code path?
 
-it is my pleasure to inform you that  ,Love is patient and kind. Love is not jealous or boastful or proud or rude. Love does not demand its own way. Love is not irritable, and it keeps no record of when it has been wronged. It is never glad about injustice but rejoices whenever the truth wins out. Love never gives up, never loses faith, is always hopeful, and endures through every circumstance.
+I couldn't benchmark any difference between the two last time 
+I tried.
 
-( favour_debor62@yahoo.com) , that is my mail contact. I really care for your relationship
-Please Waiting to read
+-Andi
 
-Yours Faithfully
-Favour
+-- 
+ak@linux.intel.com -- Speaking for myself only
