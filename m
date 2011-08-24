@@ -1,72 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab1HXArf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:47:35 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52214 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab1HXAra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:47:30 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-54-4e544a20a920
-Date: Wed, 24 Aug 2011 09:47:00 +0900
-From: Kim Kyuwon <q1.kim@samsung.com>
-Subject: RE: [PATCH RESEND] leds: led-bd2802: bd2802_unregister_led_classdev
- should unregister all registered leds
-In-reply-to: <1314142337.2198.1.camel@phoenix>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Message-id: <000701cc61f7$555fcd60$001f6820$%kim@samsung.com>
-Organization: Samsung Electronics
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acxh7OzNsDjNJ6XWRH2Bkl2PvCzHAAACloPA
-References: <1314142337.2198.1.camel@phoenix>
-X-OriginalArrivalTime: 24 Aug 2011 00:48:07.0990 (UTC)
- FILETIME=[7DA84D60:01CC61F7]
-X-Brightmail-Tracker: AAAAAA==
+	id S1756164Ab1HXAtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:49:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64483 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751716Ab1HXAtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Aug 2011 20:49:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="41195055"
+Message-Id: <20110824000517.710353624@sbsiddha-desk.sc.intel.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 23 Aug 2011 17:05:17 -0700
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, dwmw2@infradead.org
+Cc: yinghai@kernel.org, youquan.song@intel.com, joerg.roedel@amd.com,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org
+Subject: [patch 0/8] intel iommu, irq-remap, x2apic bug fixes and cleanups
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kim Kyuwon <q1.kim@samsung.com>
+x2apic opt out patch and the iommu parse device scope patch were held up
+on the request of some code cleanups in this area.
 
------Original Message-----
-From: Axel Lin [mailto:axel.lin@gmail.com] 
-Sent: Wednesday, August 24, 2011 8:32 AM
-To: linux-kernel@vger.kernel.org
-Cc: Kim Kyuwon; Richard Purdie; Andrew Morton
-Subject: [PATCH RESEND] leds: led-bd2802: bd2802_unregister_led_classdev should unregister all registered leds
+Refer http://marc.info/?l=linux-kernel&m=131261409128226&w=2
+and http://marc.info/?l=linux-pci&m=131157843015411&w=2
 
-bd2802_unregister_led_classdev() should unregister all registered instances of
-led_classdev class that had registered by bd2802_register_led_classdev().
+This series attempts to address the bug fixes aswell as the code cleanups.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/leds/leds-bd2802.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-index 3ebe382..ea21855 100644
---- a/drivers/leds/leds-bd2802.c
-+++ b/drivers/leds/leds-bd2802.c
-@@ -662,6 +662,11 @@ failed_unregister_led1_R:
- static void bd2802_unregister_led_classdev(struct bd2802_led *led)
- {
- 	cancel_work_sync(&led->work);
-+	led_classdev_unregister(&led->cdev_led2b);
-+	led_classdev_unregister(&led->cdev_led2g);
-+	led_classdev_unregister(&led->cdev_led2r);
-+	led_classdev_unregister(&led->cdev_led1b);
-+	led_classdev_unregister(&led->cdev_led1g);
- 	led_classdev_unregister(&led->cdev_led1r);
- }
- 
--- 
-1.7.4.1
-
-
+thanks,
+suresh
 
