@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab1HXVDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:03:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56419 "EHLO mail.zytor.com"
+	id S1753340Ab1HXVGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:06:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab1HXVDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:03:35 -0400
-Message-ID: <4E55670F.90102@zytor.com>
-Date: Wed, 24 Aug 2011 14:03:11 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
-MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-CC: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: base support for the TS-5500 platform
-References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com> <1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-In-Reply-To: <1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751826Ab1HXVGO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:06:14 -0400
+Subject: Re: [PATCH] KVM: Add wrapper script around Qemu to test kernels
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4E54C179.2090608@siemens.com>
+Date: Wed, 24 Aug 2011 16:06:08 -0500
+Cc: Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <87E1B96A-24EB-41A1-985C-9F078D0B78F3@suse.de>
+References: <1314137806-5747-1-git-send-email-agraf@suse.de> <4E54B590.9040408@redhat.com> <4E54C179.2090608@siemens.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2011 01:23 PM, Vivien Didelot wrote:
-> +
-> +/**
-> + * ts5500_pre_detect() - check for TS-5500 specific features
-> + *
-> + * It is not safe to read ID register if we are not sure that it's a TS SBC.
-> + * Since TS SBCs don't have DMI support, it is safer to check for a TS-5500
-> + * specific feature such as the processor.
-> + */
-> +static int ts5500_pre_detect(void)
-> +{
-> +	/* Check for AMD ElanSC520 Microcontroller */
-> +	if (!(cpu_info.x86_vendor == X86_VENDOR_AMD &&
-> +	      cpu_info.x86 == AMD_ELAN_FAMILY &&
-> +	      cpu_info.x86_model == AMD_ELAN_SC520))
-> +		return -ENODEV;
-> +
-> +	return 0;
-> +}
-> +
 
-Doesn't this mean you will read this unsafe register on any Elan SC520
-platform?  Is that okay?
+On 24.08.2011, at 04:16, Jan Kiszka wrote:
 
-	-hpa
+> On 2011-08-24 10:25, Avi Kivity wrote:
+>> On 08/24/2011 01:16 AM, Alexander Graf wrote:
+>>> +"
+>>> +echo "\
+>>> +Your guest is bound to the current foreground shell. To quit the guest,
+>>> +please use Ctrl-A x"
+>>> +echo "  Executing: $QEMU_BIN $QEMU_OPTIONS -append \"$KERNEL_APPEND\"
+>>> -smp $SMP"
+>>> +echo
+>>> +
+>>> +exec $QEMU_BIN $QEMU_OPTIONS -append "$KERNEL_APPEND -smp $SMP"
+>> 
+>> Would be nice to support launching gdb in a separate terminal with
+>> vmlinux already loaded, and already attached to qemu.
+> 
+> + loading a python script into gdb to pull in module symbols. There are
+> a few implementations floating around (including my own one).
+
+I'll leave that part to you then :). I haven't figured out a nice way how to get modules into the VM for now anyways.
+
+> It would also be nice if one could append QEMU (note the capitalization
+> BTW) options to the script, maybe everything after a '--' separator.
+
+Good point :)
+
+
+Alex
 
