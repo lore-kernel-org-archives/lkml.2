@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab1HXUXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 16:23:49 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:45112 "EHLO
+	id S1753355Ab1HXUYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 16:24:00 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:45157 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab1HXUXq (ORCPT
+	with ESMTP id S1753075Ab1HXUXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 16:23:46 -0400
+	Wed, 24 Aug 2011 16:23:52 -0400
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: x86@kernel.org
-Cc: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>,
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Subject: [PATCH 3/4] x86: (TS-5500) add LED support
-Date: Wed, 24 Aug 2011 16:23:26 -0400
-Message-Id: <1314217407-31249-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] x86: base support for the TS-5500 platform
+Date: Wed, 24 Aug 2011 16:23:24 -0400
+Message-Id: <1314217407-31249-2-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1314217407-31249-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -23,262 +22,436 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-
 
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- MAINTAINERS                            |    1 +
- arch/x86/platform/ts5500/Kconfig       |    7 ++
- arch/x86/platform/ts5500/Makefile      |    3 +-
- arch/x86/platform/ts5500/ts5500.c      |   41 ++++++++++
- arch/x86/platform/ts5500/ts5500_leds.c |  133 ++++++++++++++++++++++++++++++++
- 5 files changed, 184 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/platform/ts5500/ts5500_leds.c
+ Documentation/ABI/testing/sysfs-platform-ts5500 |   46 ++++
+ MAINTAINERS                                     |    7 +
+ arch/x86/Kconfig                                |    2 +
+ arch/x86/platform/Makefile                      |    1 +
+ arch/x86/platform/ts5500/Kconfig                |    7 +
+ arch/x86/platform/ts5500/Makefile               |    1 +
+ arch/x86/platform/ts5500/ts5500.c               |  296 +++++++++++++++++++++++
+ 7 files changed, 360 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-ts5500
+ create mode 100644 arch/x86/platform/ts5500/Kconfig
+ create mode 100644 arch/x86/platform/ts5500/Makefile
+ create mode 100644 arch/x86/platform/ts5500/ts5500.c
 
+diff --git a/Documentation/ABI/testing/sysfs-platform-ts5500 b/Documentation/ABI/testing/sysfs-platform-ts5500
+new file mode 100644
+index 0000000..a43bb52
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-platform-ts5500
+@@ -0,0 +1,46 @@
++What:		/sys/devices/platform/ts5500/id
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Product ID of the TS board. TS-5500 ID is 0x60.
++
++What:		/sys/devices/platform/ts5500/sram
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the SRAM feature is present. If it is enabled, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/ereset
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if an external reset is present. If it is present, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/jp{1,2,3,4,5,6}
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Show the state of a plugged jumper. If it is present, it will
++		display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/adc
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the Analogic to Digital Converter is present. If it is
++		enabled, it will display "1", otherwise "0".
++
++What:		/sys/devices/platform/ts5500/rs485
++Date:		August 2011
++KernelVersion:	3.0
++Contact:	"Savoir-faire Linux, Inc." <kernel-ts@savoirfairelinux.com>
++Description:
++		Say if the RS485 feature is present. If it is enabled, it
++		will display "1", otherwise "0".
 diff --git a/MAINTAINERS b/MAINTAINERS
-index c6cf870..034a25f 100644
+index 187282d..be8ce4b 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6142,6 +6142,7 @@ F:  arch/x86/platform/ts5500/Makefile
- F:  arch/x86/platform/ts5500/ts5500.c
- F:  arch/x86/platform/ts5500/ts5500_gpio.c
- F:  arch/x86/platform/ts5500/ts5500_gpio.h
-+F:  arch/x86/platform/ts5500/ts5500_leds.c
+@@ -6134,6 +6134,13 @@ W:	http://tcp-lp-mod.sourceforge.net/
+ S:	Maintained
+ F:	net/ipv4/tcp_lp.c
  
++TECHNOLOGIC SYSTEMS TS5500 MACHINE SUPPORT
++M:	Savoir-faire Linux Inc. <ts-kernel@savoirfairelinux.com>
++S:	Maintained
++F:  arch/x86/platform/ts5500/Kconfig
++F:  arch/x86/platform/ts5500/Makefile
++F:  arch/x86/platform/ts5500/ts5500.c
++
  TEGRA SUPPORT
  M:	Colin Cross <ccross@android.com>
+ M:	Erik Gilling <konkers@android.com>
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 37357a5..27b3406 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2079,6 +2079,8 @@ config OLPC_XO1
+ 	---help---
+ 	  Add support for non-essential features of the OLPC XO-1 laptop.
+ 
++source "arch/x86/platform/ts5500/Kconfig"
++
+ endif # X86_32
+ 
+ config AMD_NB
+diff --git a/arch/x86/platform/Makefile b/arch/x86/platform/Makefile
+index 021eee9..1bdc038 100644
+--- a/arch/x86/platform/Makefile
++++ b/arch/x86/platform/Makefile
+@@ -8,3 +8,4 @@ obj-y	+= scx200/
+ obj-y	+= sfi/
+ obj-y	+= visws/
+ obj-y	+= uv/
++obj-y	+= ts5500/
 diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-index bb4ef81..e7fbf34 100644
---- a/arch/x86/platform/ts5500/Kconfig
-+++ b/arch/x86/platform/ts5500/Kconfig
-@@ -12,3 +12,10 @@ config TS5500_GPIO
- 	default y
- 	help
- 	  This enables support for the DIO headers for GPIO usage.
-+
-+config TS5500_LEDS
-+	bool "TS-5500 LED Support"
-+	depends on TS5500 && LEDS_CLASS
-+	default y
-+	help
-+	  This option enables support for the on-chip LED.
-diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
-index 9eb93fe..4d23812 100644
---- a/arch/x86/platform/ts5500/Makefile
-+++ b/arch/x86/platform/ts5500/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_TS5500)			+= ts5500.o
--obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
-\ No newline at end of file
-+obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
-+obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
-\ No newline at end of file
-diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index 1ed0097..a455178 100644
---- a/arch/x86/platform/ts5500/ts5500.c
-+++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -24,6 +24,7 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <asm/processor.h>
-+#include <linux/leds.h>
- #include <linux/gpio.h>
- #include "ts5500_gpio.h"
- 
-@@ -143,6 +144,43 @@ error:
- 
- #define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
- 
-+#ifdef CONFIG_TS5500_LEDS
-+static struct led_info ts5500_led_info = {
-+	.name = "ts5500_leds",
-+	.default_trigger = "ts5500_leds",
-+	.flags = TS5500_LED_FLAG
-+};
-+
-+static struct led_platform_data ts5500_led_platform_data = {
-+	.num_leds = 1,
-+	.leds = &ts5500_led_info
-+};
-+
-+static struct resource ts5500_led_resources[] = {
-+	{
-+		.name = "ts5500_leds",
-+		.start = TS5500_LED_JMPRS_REG,
-+		.end = TS5500_LED_JMPRS_REG,
-+		.flags = IORESOURCE_IO
-+	}
-+};
-+
-+static void ts5500_led_release(struct device *dev)
-+{
-+	/* noop */
-+}
-+
-+static struct platform_device ts5500_led_device = {
-+	.name = "ts5500_leds",
-+	.resource = ts5500_led_resources,
-+	.num_resources = ARRAY_SIZE(ts5500_led_resources),
-+	.id = -1,
-+	.dev = {
-+		.platform_data = &ts5500_led_platform_data,
-+		.release = ts5500_led_release
-+	}
-+};
-+#endif
- 
- #ifdef CONFIG_TS5500_GPIO
- /* Callback for releasing resources */
-@@ -160,6 +198,9 @@ static struct platform_device ts5500_gpio_device = {
- };
- #endif
- static struct platform_device *ts5500_devices[] __initdata = {
-+#ifdef CONFIG_TS5500_LEDS
-+	&ts5500_led_device,
-+#endif
- #ifdef CONFIG_TS5500_GPIO
- 	&ts5500_gpio_device,
- #endif
-diff --git a/arch/x86/platform/ts5500/ts5500_leds.c b/arch/x86/platform/ts5500/ts5500_leds.c
 new file mode 100644
-index 0000000..b6be116
+index 0000000..6428ca5
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_leds.c
-@@ -0,0 +1,133 @@
++++ b/arch/x86/platform/ts5500/Kconfig
+@@ -0,0 +1,7 @@
++config TS5500
++	bool "Technologic Systems TS-5500 Single Board Computer support"
++	depends on MELAN
++	help
++	  Add support for the Technologic Systems TS-5500 platform features.
++
++	  If you have a TS-5500, say Y here.
+diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
+new file mode 100644
+index 0000000..0a689a7
+--- /dev/null
++++ b/arch/x86/platform/ts5500/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_TS5500)			+= ts5500.o
+diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
+new file mode 100644
+index 0000000..0135dbd
+--- /dev/null
++++ b/arch/x86/platform/ts5500/ts5500.c
+@@ -0,0 +1,296 @@
 +/*
-+ * Technologic Systems TS-5500 boards - LED driver
++ * Technologic Systems TS-5500 board - SBC info layer
 + *
-+ * Copyright (c) 2010 Savoir-faire Linux Inc.
++ * Copyright (c) 2010-2011 Savoir-faire Linux Inc.
++ *	Alexandre Savard <alexandre.savard@savoirfairelinux.com>
 + *	Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
++ *	Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 + *
-+ * Portions Copyright (c) 2008 Compulab, Ltd.
-+ *	Mike Rapoport <mike@compulab.co.il>
++ * Portions originate from ts_sbcinfo.c (c) Technologic Systems
++ *	Liberty Young <liberty@embeddedx86.com>
 + *
-+ * Portions Copyright (c) 2006-2008 Marvell International Ltd.
-+ *	Eric Miao <eric.miao@marvell.com>
++ * These functions add sysfs platform entries to display information about
++ * the Technologic Systems TS-5500 Single Board Computer (SBC).
 + *
-+ * Based on drivers/leds/leds-da903x.c from linux-2.6.32.8.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * For further information about sysfs entries, see
++ * Documentation/ABI/testing/sysfs-platform-ts5500
 + */
 +
 +#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
++#include <linux/ioport.h>
 +#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/workqueue.h>
++#include <linux/kernel.h>
++#include <linux/mutex.h>
 +#include <linux/io.h>
-+#include <linux/leds.h>
++#include <linux/slab.h>
++#include <asm/processor.h>
++
++/* Hardware info for pre-detection */
++#define AMD_ELAN_FAMILY			4
++#define AMD_ELAN_SC520			9
++
++/* Product code register */
++#define TS5500_PRODUCT_CODE_REG		0x74
++#define TS5500_PRODUCT_CODE		0x60	/* TS-5500 product code */
++
++/* SRAM/RS-485/ADC options, and RS-485 RTS/Automatic RS-485 flags register */
++#define TS5500_SRAM_RS485_ADC_REG	0x75
++#define TS5500_SRAM_OPT			0x01	/* SRAM option */
++#define TS5500_RS485_OPT		0x02	/* RS-485 option */
++#define TS5500_ADC_OPT			0x04	/* A/D converter option */
++#define TS5500_RS485_RTS_FLAG		0x40	/* RTS for RS-485 */
++#define TS5500_RS485_AUTO_FLAG		0x80	/* Automatic RS-485 */
++
++/* External Reset/Industrial Temperature Range options register */
++#define TS5500_ERESET_ITR_REG		0x76
++#define TS5500_ERESET_OPT		0x01	/*  External Reset option */
++#define TS5500_ITR_OPT			0x02	/* Indust. Temp. Range option */
++
++/* LED/Jumpers register */
++#define TS5500_LED_JMPRS_REG		0x77
++#define TS5500_LED_FLAG			0x01	/* LED flag */
++#define TS5500_JP1			0x02	/* Automatic CMOS */
++#define TS5500_JP2			0x04	/* Enable Serial Console */
++#define TS5500_JP3			0x08	/* Write Enable Drive A */
++#define TS5500_JP4			0x10	/* Fast Console (115K baud) */
++#define TS5500_JP5			0x20	/* User Jumper */
++#define TS5500_JP6			0x40	/* Console on COM1 (req. JP2) */
++#define TS5500_JP7			0x80	/* Undocumented (Unused) */
 +
 +/**
-+ * struct ts5500_led - LED structure
-+ * @cdev:		LED class device structure.
-+ * @work:		Work structure.
-+ * @new_brightness:	LED brightness.
-+ * @ioaddr:		LED I/O address.
++ * struct ts5500_sbc - TS-5500 SBC main structure
++ * @lock:		Read/Write mutex.
++ * @board_id:		Board name.
++ * @sram:		Check SRAM option.
++ * @rs485:		Check RS-485 option.
++ * @adc:		Check Analogic/Digital converter option.
++ * @ereset:		Check External Reset option.
++ * @itr:		Check Industrial Temperature Range option.
++ * @jumpers:		States of jumpers 1-7.
 + */
-+struct ts5500_led {
-+	struct led_classdev	cdev;
-+	struct work_struct	work;
-+	enum led_brightness	new_brightness;
-+	int			ioaddr;
-+	int			bit;
++struct ts5500_sbc {
++	struct mutex		lock;
++	int			board_id;
++	bool			sram;
++	bool			rs485;
++	bool			adc;
++	bool			ereset;
++	bool			itr;
++	u8			jumpers;
 +};
 +
-+static void ts5500_led_work(struct work_struct *work)
++/* Current platform */
++struct ts5500_sbc *ts5500;
++
++/**
++ * ts5500_pre_detect() - check for TS-5500 specific features
++ *
++ * It is not safe to read ID register if we are not sure that it's a TS SBC.
++ * Since TS SBCs don't have DMI support, it is safer to check for a TS-5500
++ * specific feature such as the processor.
++ */
++static int ts5500_pre_detect(void)
 +{
-+	struct ts5500_led *led = container_of(work, struct ts5500_led, work);
-+	u8 val = led->new_brightness ? led->bit : 0;
-+
-+	outb(val, led->ioaddr);
-+}
-+
-+static void ts5500_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
-+{
-+	struct ts5500_led *led = container_of(led_cdev, struct ts5500_led,
-+					      cdev);
-+
-+	led->new_brightness = value;
-+	schedule_work(&led->work);
-+}
-+
-+static int __devinit ts5500_led_probe(struct platform_device *pdev)
-+{
-+	struct led_platform_data *pdata = pdev->dev.platform_data;
-+	struct ts5500_led *led;
-+	struct resource *res;
-+	int ret;
-+
-+	if (pdata == NULL || !pdata->num_leds) {
-+		dev_err(&pdev->dev, "No platform data available\n");
++	/* Check for AMD ElanSC520 Microcontroller */
++	if (!(cpu_info.x86_vendor == X86_VENDOR_AMD &&
++	      cpu_info.x86 == AMD_ELAN_FAMILY &&
++	      cpu_info.x86_model == AMD_ELAN_SC520))
 +		return -ENODEV;
-+	}
 +
-+	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get I/O resource\n");
-+		return -EBUSY;
-+	}
-+
-+	led = kzalloc(sizeof(struct ts5500_led), GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory for LED device\n");
-+		return -ENOMEM;
-+	}
-+
-+	led->cdev.name = pdata->leds[0].name;
-+	led->cdev.default_trigger = pdata->leds[0].default_trigger;
-+	led->cdev.brightness_set = ts5500_led_set;
-+	led->cdev.brightness = LED_OFF;
-+
-+	led->ioaddr = res->start;
-+	led->bit = pdata->leds[0].flags;
-+	led->new_brightness = LED_OFF;
-+
-+	INIT_WORK(&led->work, ts5500_led_work);
-+
-+	ret = led_classdev_register(pdev->dev.parent, &led->cdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register LED\n");
-+		goto err;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
 +	return 0;
++}
 +
-+err:
-+	kfree(led);
++/**
++ * ts5500_detect_config() - detect the TS board
++ * @sbc:		Structure where to store the detected board's details.
++ */
++static int ts5500_detect_config(struct ts5500_sbc *sbc)
++{
++	u8 tmp;
++	int ret = 0;
++
++	if (!request_region(TS5500_PRODUCT_CODE_REG, 4, "ts5500"))
++		return -EBUSY;
++
++	mutex_lock(&ts5500->lock);
++	tmp = inb(TS5500_PRODUCT_CODE_REG);
++	if (tmp != TS5500_PRODUCT_CODE) {
++		pr_err("This platform is not a TS-5500 (found ID 0x%x)\n", tmp);
++		ret = -ENODEV;
++		goto error;
++	}
++	sbc->board_id = tmp;
++
++	tmp = inb(TS5500_SRAM_RS485_ADC_REG);
++	ts5500->sram = !!(tmp & TS5500_SRAM_OPT);
++	ts5500->rs485 = !!(tmp & TS5500_RS485_OPT);
++	ts5500->adc = !!(tmp & TS5500_ADC_OPT);
++
++	tmp = inb(TS5500_ERESET_ITR_REG);
++	ts5500->ereset = !!(tmp & TS5500_ERESET_OPT);
++	ts5500->itr = !!(tmp & TS5500_ITR_OPT);
++
++	tmp = inb(TS5500_LED_JMPRS_REG);
++	sbc->jumpers = tmp & 0xFE;	/* All bits except the first (LED) */
++
++error:
++	mutex_unlock(&ts5500->lock);
++	release_region(TS5500_PRODUCT_CODE_REG, 4);
 +	return ret;
 +}
 +
-+static struct platform_driver ts5500_led_driver = {
-+	.driver = {
-+		.name = "ts5500_leds",
-+		.owner = THIS_MODULE
-+	},
-+	.probe = ts5500_led_probe
++#define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
++
++static struct platform_device *ts5500_devices[] __initdata = {
 +};
 +
-+static const struct platform_device_id ts5500_devices[] = {
-+	{ "ts5500_leds", 0 },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(platform, ts5500_devices);
-+
-+static int __init ts5500_led_init(void)
++static ssize_t ts5500_show_id(struct device *dev,
++			      struct device_attribute *attr, char *buf)
 +{
-+	return platform_driver_register(&ts5500_led_driver);
-+}
-+module_init(ts5500_led_init);
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
 +
-+MODULE_LICENSE("GPL");
++	return sprintf(buf, "0x%x\n", sbc->board_id);
++}
++
++static ssize_t ts5500_show_sram(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->sram);
++}
++
++static ssize_t ts5500_show_rs485(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->rs485);
++}
++
++static ssize_t ts5500_show_adc(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->adc);
++}
++
++static ssize_t ts5500_show_ereset(struct device *dev,
++					  struct device_attribute *attr,
++					  char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->ereset);
++}
++
++static ssize_t ts5500_show_itr(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
++{
++	struct ts5500_sbc *sbc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", sbc->itr);
++}
++
++#define TS5500_SHOW_JP(jp)						\
++	static ssize_t ts5500_show_jp##jp(struct device *dev,		\
++					  struct device_attribute *attr,\
++					  char *buf)			\
++	{								\
++		struct ts5500_sbc *sbc = dev_get_drvdata(dev);		\
++		return sprintf(buf, "%d\n", TS5500_IS_JP_SET(sbc, jp)); \
++	}
++
++TS5500_SHOW_JP(1)
++TS5500_SHOW_JP(2)
++TS5500_SHOW_JP(3)
++TS5500_SHOW_JP(4)
++TS5500_SHOW_JP(5)
++TS5500_SHOW_JP(6)
++
++static DEVICE_ATTR(id, S_IRUGO, ts5500_show_id, NULL);
++static DEVICE_ATTR(sram, S_IRUGO, ts5500_show_sram, NULL);
++static DEVICE_ATTR(rs485, S_IRUGO, ts5500_show_rs485, NULL);
++static DEVICE_ATTR(adc, S_IRUGO, ts5500_show_adc, NULL);
++static DEVICE_ATTR(ereset, S_IRUGO, ts5500_show_ereset, NULL);
++static DEVICE_ATTR(itr, S_IRUGO, ts5500_show_itr, NULL);
++static DEVICE_ATTR(jp1, S_IRUGO, ts5500_show_jp1, NULL);
++static DEVICE_ATTR(jp2, S_IRUGO, ts5500_show_jp2, NULL);
++static DEVICE_ATTR(jp3, S_IRUGO, ts5500_show_jp3, NULL);
++static DEVICE_ATTR(jp4, S_IRUGO, ts5500_show_jp4, NULL);
++static DEVICE_ATTR(jp5, S_IRUGO, ts5500_show_jp5, NULL);
++static DEVICE_ATTR(jp6, S_IRUGO, ts5500_show_jp6, NULL);
++
++static struct attribute *ts5500_attributes[] = {
++	&dev_attr_id.attr,
++	&dev_attr_sram.attr,
++	&dev_attr_rs485.attr,
++	&dev_attr_adc.attr,
++	&dev_attr_ereset.attr,
++	&dev_attr_itr.attr,
++	&dev_attr_jp1.attr,
++	&dev_attr_jp2.attr,
++	&dev_attr_jp3.attr,
++	&dev_attr_jp4.attr,
++	&dev_attr_jp5.attr,
++	&dev_attr_jp6.attr,
++	NULL
++};
++
++static const struct attribute_group ts5500_attr_group = {
++	.attrs = ts5500_attributes
++};
++
++static int __init ts5500_init(void)
++{
++	int ret;
++	struct platform_device *pdev;
++
++	/* Firstly, check specific TS-5500 hardware, such as CPU. */
++	ret = ts5500_pre_detect();
++	if (ret)
++		return ret;
++
++	ts5500 = kzalloc(sizeof(struct ts5500_sbc), GFP_KERNEL);
++	if (!ts5500)
++		return -ENOMEM;
++	mutex_init(&ts5500->lock);
++
++	ret = ts5500_detect_config(ts5500);
++	if (ret)
++		goto release_mem;
++
++	pdev = platform_device_register_simple("ts5500", -1, NULL, 0);
++	if (IS_ERR(pdev)) {
++		ret = PTR_ERR(pdev);
++		goto release_mem;
++	}
++	platform_set_drvdata(pdev, ts5500);
++
++	ret = platform_add_devices(ts5500_devices, ARRAY_SIZE(ts5500_devices));
++	if (ret)
++		goto release_pdev;
++
++	ret = sysfs_create_group(&pdev->dev.kobj,
++				 &ts5500_attr_group);
++	if (ret)
++		goto release_pdev;
++
++	return 0;
++
++release_pdev:
++	platform_device_unregister(pdev);
++release_mem:
++	kfree(ts5500);
++
++	return ret;
++}
++postcore_initcall(ts5500_init);
++
 +MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
-+MODULE_DESCRIPTION("LED driver for Technologic Systems TS-5500");
++MODULE_AUTHOR("Alexandre Savard <alexandre.savard@savoirfairelinux.com>");
++MODULE_AUTHOR("Vivien Didelot <vivien.didelot@savoirfairelinux.com>");
++MODULE_DESCRIPTION("Technologic Systems TS-5500 Board's platform driver");
++MODULE_LICENSE("GPL");
 -- 
 1.7.6
 
