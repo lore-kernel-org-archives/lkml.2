@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1HXR00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:26:26 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:42088 "EHLO imr4.ericy.com"
+	id S1752877Ab1HXRhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:37:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63146 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab1HXR0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:26:25 -0400
-Subject: Re: [lm-sensors] [PATCH 5/6] hwmon/mc13783-adc: convert to mc13xxx
- API
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-In-Reply-To: <1314192505-23499-5-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <20110824132740.GA28197@pengutronix.de>
-	 <1314192505-23499-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <1314192505-23499-5-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Wed, 24 Aug 2011 10:25:27 -0700
-Message-ID: <1314206727.3841.3.camel@groeck-laptop>
+	id S1752809Ab1HXRhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:37:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.68,276,1312182000"; 
+   d="scan'208";a="44660019"
+From: Andi Kleen <andi@firstfloor.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Zan Lynx <zlynx@acm.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        "containers\@lists.osdl.org" <containers@lists.osdl.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>
+Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
+References: <20110824085329.GL29452@sun> <4E551331.1010709@acm.org>
+	<4E551693.5030400@parallels.com>
+Date: Wed, 24 Aug 2011 10:36:58 -0700
+In-Reply-To: <4E551693.5030400@parallels.com> (Pavel Emelyanov's message of
+	"Wed, 24 Aug 2011 19:19:47 +0400")
+Message-ID: <m2wre2d83p.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-24 at 09:28 -0400, Uwe Kleine-König wrote:
-> The mc13783_... functions are going to be removed, so switch to the
-> more generic API.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Pavel Emelyanov <xemul@parallels.com> writes:
+>
+> No and this is the trick - when you readlink it - it give you trash, but
+> when you open one - you get exactly the same file as the map points to.
 
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Isn't that a minor security hole?
 
+For example if I pass a file descriptor into a chroot process for
+reading, and with this interface you can open it for writing too.
+I could see this causing problems.
 
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
