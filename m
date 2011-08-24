@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1HXRZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:25:56 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58304 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752670Ab1HXRZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:25:53 -0400
-Date: Wed, 24 Aug 2011 10:25:51 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jason Baron <jbaron@redhat.com>,
-        Bart Van Assche <bvanassche@acm.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 24 (dynamic_debug)
-Message-Id: <20110824102551.8fc076b5.rdunlap@xenotime.net>
-In-Reply-To: <20110824160404.ebad6370aee2cad82a990142@canb.auug.org.au>
-References: <20110824160404.ebad6370aee2cad82a990142@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1752843Ab1HXR00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:26:26 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:42088 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752697Ab1HXR0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:26:25 -0400
+Subject: Re: [lm-sensors] [PATCH 5/6] hwmon/mc13783-adc: convert to mc13xxx
+ API
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+In-Reply-To: <1314192505-23499-5-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <20110824132740.GA28197@pengutronix.de>
+	 <1314192505-23499-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <1314192505-23499-5-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Wed, 24 Aug 2011 10:25:27 -0700
+Message-ID: <1314206727.3841.3.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 16:04:04 +1000 Stephen Rothwell wrote:
+On Wed, 2011-08-24 at 09:28 -0400, Uwe Kleine-König wrote:
+> The mc13783_... functions are going to be removed, so switch to the
+> more generic API.
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-> Hi all,
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-When CONFIG_NET is not enabled (I see this on i386 builds):
 
-lib/built-in.o: In function `__dynamic_netdev_dbg':
-(.text+0x9fda): undefined reference to `__netdev_printk'
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
