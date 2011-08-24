@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab1HXPWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:22:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64208 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab1HXPWb (ORCPT
+	id S1751870Ab1HXPYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:24:12 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:57801 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab1HXPYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:22:31 -0400
-Date: Wed, 24 Aug 2011 19:22:22 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Zan Lynx <zlynx@acm.org>
-Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory v2
-Message-ID: <20110824152222.GZ29452@sun>
-References: <20110824085329.GL29452@sun>
- <4E551331.1010709@acm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E551331.1010709@acm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Aug 2011 11:24:10 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: linux-arch@vger.kernel.org, arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH] include: Fix compile warning in include/linux/bitops.h
+Date: Thu, 25 Aug 2011 00:23:35 +0900
+Message-Id: <1314199415-7924-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 09:05:21AM -0600, Zan Lynx wrote:
-> On 8/24/2011 2:53 AM, Cyrill Gorcunov wrote:
-> > From: Pavel Emelyanov <xemul@parallels.com>
-> > 
-> > This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
-> > one for each mapping with file, the name of a symlink is vma->vm_start, the
-> > target is the file. Opening a symlink results in a file that point exactly
-> > to the same inode as them vma's one.
-> > 
-> > This thing is aimed to help checkpointing processes.
-> > 
-> > For example the ls -l of some arbitrary /proc/<pid>/map_files/
-> > 
-> >  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
-> [snip]
-> 
-> Just curious: How do these symlinks work when the process reading a
-> /proc file is in a chroot or a different namespace?
-> 
-> For example, a chroot environment might have independent copies of
-> /lib64/ld-2.5.so and a bind mount of /proc. Does the symlink then point
-> to the wrong file?
+The compile warning is caused by __const_hweight8 when using hweight_long with -Wsign-compare option.
+The reason is that the default return value of this macro is signed. So need type casting to remove warning.
 
-To be fair, I personally didn't tried such scenario but it should be
-the same behaviour as for /proc/$pid/fd since data is taken from
-a task pointed by pid. I'll check though, good question.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ include/asm-generic/bitops/const_hweight.h |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-	Cyrill
+diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
+index fa2a50b..31b7fce 100644
+--- a/include/asm-generic/bitops/const_hweight.h
++++ b/include/asm-generic/bitops/const_hweight.h
+@@ -4,15 +4,15 @@
+ /*
+  * Compile time versions of __arch_hweightN()
+  */
+-#define __const_hweight8(w)		\
+-      (	(!!((w) & (1ULL << 0))) +	\
+-	(!!((w) & (1ULL << 1))) +	\
+-	(!!((w) & (1ULL << 2))) +	\
+-	(!!((w) & (1ULL << 3))) +	\
+-	(!!((w) & (1ULL << 4))) +	\
+-	(!!((w) & (1ULL << 5))) +	\
+-	(!!((w) & (1ULL << 6))) +	\
+-	(!!((w) & (1ULL << 7)))	)
++#define __const_hweight8(w)	(unsigned long)	\
++      	(	(!!((w) & (1ULL << 0))) +	\
++		(!!((w) & (1ULL << 1))) +	\
++		(!!((w) & (1ULL << 2))) +	\
++		(!!((w) & (1ULL << 3))) +	\
++		(!!((w) & (1ULL << 4))) +	\
++		(!!((w) & (1ULL << 5))) +	\
++		(!!((w) & (1ULL << 6))) +	\
++		(!!((w) & (1ULL << 7)))	)
+ 
+ #define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
+ #define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
+-- 
+1.7.4.4
+
