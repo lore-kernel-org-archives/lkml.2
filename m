@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864Ab1HXJQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 05:16:01 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33275 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1HXJP5 (ORCPT
+	id S1755549Ab1HXJTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 05:19:20 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43574 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1HXJTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 05:15:57 -0400
+	Wed, 24 Aug 2011 05:19:18 -0400
+Message-ID: <4E54C210.1030204@kernel.org>
+Date: Wed, 24 Aug 2011 12:19:12 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <1313636407.19990.102.camel@finisterre.wolfsonmicro.main>
-References: <1313019091-15354-1-git-send-email-kheitke@codeaurora.org>
-	<1772239.ndMLD9ec3r@wuerfel>
-	<20110817080327.GD13460@opensource.wolfsonmicro.com>
-	<201108171242.24918.arnd@arndb.de>
-	<1313586241.19990.94.camel@finisterre.wolfsonmicro.main>
-	<CACRpkdbSVF1FxpuocoXkDFH3vDQc4OoTwjU+9iqj0=vVs3R3dQ@mail.gmail.com>
-	<1313636407.19990.102.camel@finisterre.wolfsonmicro.main>
-Date: Wed, 24 Aug 2011 11:15:56 +0200
-Message-ID: <CACRpkdbSQWej3iZF7qww1q5KW6kQTW6bqrVs4+rkLvhP5qu5fA@mail.gmail.com>
-Subject: Re: [RFC PATCH] slimbus: Linux driver framework for SLIMbus.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kenneth Heitke <kheitke@codeaurora.org>,
-        sdharia@codeaurora.org, David Brown <davidb@codeaurora.org>,
-        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        rdunlap@xenotime.net, rmk+kernel@arm.linux.org.uk,
-        john.stultz@linaro.org, akpm@linux-foundation.org, ohad@wizery.com,
-        gregkh@suse.de, stefanr@s5r6.in-berlin.de, lethal@linux-sh.org,
-        linville@tuxdriver.com, zajec5@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-next@vger.kernel.org
+Subject: Re: linux next: Native Linux KVM tool inclusion request
+References: <1314044960.3668.9.camel@lappy> <20110823003925.GA30253@infradead.org> <CAOJsxLEgm_-N6297kHqSjFLCtX-Vd204S=+4Q=+GW9HYiWj1eg@mail.gmail.com> <4E54B6E2.2030203@redhat.com>
+In-Reply-To: <4E54B6E2.2030203@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 18, 2011 at 5:00 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Wed, 2011-08-17 at 15:17 +0200, Linus Walleij wrote:
->> On Wed, Aug 17, 2011 at 3:04 PM, Mark Brown
->> <broonie@opensource.wolfsonmicro.com> wrote:
+On 8/24/11 11:31 AM, Avi Kivity wrote:
+> On 08/23/2011 08:08 AM, Pekka Enberg wrote:
+>> As for changes, we've implemented rootfs over 9p with "kvm run"
+>> booting to host filesystem "/bin/sh" by default.
 >
->> > The device driver will know what power supplies and other signals the
->> > device has, and it will know how and when to use them. (...)
+> Isn't this dangerous?  Users expect virtualization to land them in 
+> sandbox, but here an rm -rf / in the guest will happily junk the host 
+> filesystem.
+
+Not really because I never run the tool as root. However, you're right that
+we should not default to /bin/sh if you're root.
+
+>> It still needs some
+>> work and we hope to enable networking too. We also have patches to use
+>> overlayfs so that the guest is able to use host filesystem in
+>> copy-on-write manner.
 >
->> And I guess there is nothing in the spec claiming that all devices
->> be powered-on when you boot?
->
-> I don't believe so, and if there were I'd not expect anyone to pay a
-> blind bit of notice to it.
+> Still dangerous (but just to the guest), since it's not a true 
+> snapshot.  If the host filesystem changes underneath the guest, it 
+> will see partial and incoherent updates.  Copy-on-write only works if 
+> the host filesystem doesn't change.
 
-That means that the regulators handling the slimbus devices
-will need to be enabled before the drivers issue regulator_get()
-and regulator_enable() on them.
+That's a generic problem with overlayfs based solutions, isn't it? We're 
+planning
+to use copy-on-write only on files that aren't supposed to change that 
+often -
+like /usr and /lib. I suppose we should force shared files to be 
+read-only in
+the guest.
 
-Does the regulator constraint .always_on have this semantic
-effect, so the regulator framework can power up the devices
-without their drivers claiming the regulators first?
-
-Or would we need a new .boot_enable flag to handle that?
-
-> If my memory serves (I don't have access to the relevant documents right
-> now) the device announces itself when it detects that the bus is alive.
-> Slimbus is a relatively heavyweight interface so the extra cost of doing
-> this won't be too bad.
-
-OK so if we can just power the device the bus can probably
-autodetect all devices on it, it seems.
-
-Thanks,
-Linus Walleij
+                                     Pekka
