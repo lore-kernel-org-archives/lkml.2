@@ -1,196 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab1HXHsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 03:48:33 -0400
-Received: from bishop.asidev.net ([95.141.38.214]:37008 "EHLO
-	bishop.asidev.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1HXHsc (ORCPT
+	id S1755486Ab1HXHuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 03:50:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60047 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1HXHuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 03:48:32 -0400
-Message-ID: <4E54ACC7.6070201@evidence.eu.com>
-Date: Wed, 24 Aug 2011 09:48:23 +0200
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Wed, 24 Aug 2011 03:50:04 -0400
+Date: Wed, 24 Aug 2011 09:49:59 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCHSET] cgroup: introduce cgroup_taskset and consolidate
+ subsys methods
+Message-ID: <20110824074959.GA14170@htj.dyndns.org>
+References: <1314138000-2049-1-git-send-email-tj@kernel.org>
+ <20110824011428.GC23979@somewhere>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Bernhard Roth <br@pwrnet.de>, nicolas.ferre@atmel.com,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] atmel_serial: RS485: receiving enabled when sending data
-References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4E536536.3030004@evidence.eu.com> <20110823153932.GA26081@kroah.com>
-In-Reply-To: <20110823153932.GA26081@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110824011428.GC23979@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 23/08/2011 17:39, Greg KH ha scritto:
-> On Tue, Aug 23, 2011 at 10:30:46AM +0200, Claudio Scordino wrote:
->> Il 22/08/2011 23:18, Greg KH ha scritto:
->>> On Mon, Aug 15, 2011 at 04:28:15PM +0200, Bernhard Roth wrote:
->>>> Hello!
->>>>
->>>> By default the atmel_serial driver in RS485 mode disables receiving
->>>> data until all data in the send buffer has been sent. This flag
->>>> allows to receive data even whilst sending data. This is very useful
->>>> to
->>>>
->>>> - check if the data has been sent correctly over the RS485 bus
->>>> - assure that no collision happened
->>>> - check for short circuits/termination issues on the RS485 bus
->>>>
->>>> Usually this functionality is realized by hardware, wether
->>>> controlling the RX-Enable pin of the RS485 transceiver with RTS
->>>> (driver control signal) or pulling it LOW permanently. The present
->>>> atmel_serial driver makes this impossible, thus requiring following
->>>> patch.
->>>>
->>>> Usage example:
->>>>
->>>>       struct serial_rs485     rs485;
->>>>
->>>>       memset(&rs485, 0, sizeof(rs485));
->>>>       rs485.flags = SER_RS485_ENABLED | SER_RS485_RX_DURING_TX;
->>>>       ioctl(fd, TIOCSRS485,&rs485);
->>>>
->>>>
->>>>
->>>>
->>>> atmel_serial: RS485: receiving enabled when sending data
->>>>
->>>> By default the atmel_serial driver in RS485 mode disables receiving
->>>> data until
->>>> all data in the send buffer has been sent. This flag allows to receive data
->>>> even whilst sending data.
->>>>
->>>> Signed-off-by: Bernhard Roth<br@pwrnet.de>
->>>> Signed-off-by: Claudio Scordino<claudio@evidence.eu.com>
->>>> ---
->>>>    drivers/tty/serial/atmel_serial.c |   17 ++++++++++-------
->>>>    include/linux/serial.h            |    1 +
->>>>    2 files changed, 11 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/drivers/tty/serial/atmel_serial.c
->>>> b/drivers/tty/serial/atmel_serial.c
->>>> index af9b781..5f6c745 100644
->>>> --- a/drivers/tty/serial/atmel_serial.c
->>>> +++ b/drivers/tty/serial/atmel_serial.c
->>>> @@ -339,8 +339,9 @@ static void atmel_stop_tx(struct uart_port *port)
->>>>        /* Disable interrupts */
->>>>        UART_PUT_IDR(port, atmel_port->tx_done_mask);
->>>>
->>>> -    if (atmel_port->rs485.flags&   SER_RS485_ENABLED)
->>>> -        atmel_start_rx(port);
->>>> +    if ((atmel_port->rs485.flags&   SER_RS485_ENABLED)&&
->>>> +        !(atmel_port->rs485.flags&   SER_RS485_RX_DURING_TX))
->>>> +            atmel_start_rx(port);
->>>
->>> Can you fix your email client to not strip patches of tabs and resend
->>> this so that I can apply it?
->>>
->>> thanks,
->>>
->>> greg k-h
->>
->> Hi Greg,
->>
->>      please find below the patch with the right tabs.
->>
->> Remind however that the main author of the patch is Bernhard, not me.
+Hello, Frederic.
+
+On Wed, Aug 24, 2011 at 03:14:30AM +0200, Frederic Weisbecker wrote:
+> >  0001-cgroup-subsys-attach_task-should-be-called-after-mig.patch
+> >  0002-cgroup-improve-old-cgroup-handling-in-cgroup_attach_.patch
+> >  0003-cgroup-introduce-cgroup_taskset-and-use-it-in-subsys.patch
+> >  0004-cgroup-don-t-use-subsys-can_attach_task-or-attach_ta.patch
+> >  0005-cgroup-cpuset-don-t-use-ss-pre_attach.patch
+> >  0006-cgroup-kill-subsys-can_attach_task-pre_attach-and-at.patch
 > 
-> Then properly send the patch so that this is shown.  Please just add a:
+> I don't understand the point on patches 3,4,5,6
 > 
-> From: foo<foo@foo.org>
-> 
-> as the first line of the patch changelog portion and git will fix things
-> up correctly.  Documentation/SubmittingPatches describes this in detail.
-> 
-> Care to resend your updated version, with this corrected author
-> information, so I get it right?
+> Why pushing the task iterations down to the subsystems?
 
-Here it is. I also added a few lines in the Documentation.
+I'll try again.
 
-Many thanks,
+It seems like methods were added to serve the immediate need of the
+particular user at the time and that in turn led to addition of
+callbacks which were both superflous and incomplete (the bullet points
+in the original message list them).  This seems to have happened
+because extra interface was added without trying to make the existing
+interface complete.
 
-	Claudio
+The interface is complicated and cumbersome to use - are
+[can_]attach() called first or [can_]attach_task()?  What about
+cancelation?  What if a subsys wants to perform operations across
+multiple tasks atomically?
 
-Subject: atmel_serial: RS485: receiving enabled when sending data
-From: Bernhard Roth <br@pwrnet.de> 
+In general, iteration-by-callback is painful to use.  Establishing
+common context (be it synchronization domain or shared variables)
+becomes very cumbersome and implementation becomes fragmented and
+difficult to follow.  For example, imagine how it would be like to use
+list if we had call_for_each_list_entry(func, list_head) instead of
+the control-loop style iterators we have know.
 
-By default the atmel_serial driver in RS485 mode disables receiving data until
-all data in the send buffer has been sent. This flag allows to receive data
-even whilst sending data.
+So, using iterators enables making all relevant information to each
+stage of attach so that only one callback is required for each step -
+the way it should be.  In addition, it makes it far easier for
+subsystems to implement more involved logic in their methods.
 
-Signed-off-by: Bernhard Roth <br@pwrnet.de> 
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
- Documentation/serial/serial-rs485.txt |    3 +++
- drivers/tty/serial/atmel_serial.c     |    9 ++++++---
- include/linux/serial.h                |    1 +
- 3 files changed, 10 insertions(+), 3 deletions(-)
+I tried to make cgroup_freezer behave better which requires better
+synchronization against the freezer and, with the current interface,
+it's extremely ugly and painful.  The new interface is complete, easy
+to understand and use with far less subtleties.
 
-diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
-index a493238..c8878f8 100644
---- a/Documentation/serial/serial-rs485.txt
-+++ b/Documentation/serial/serial-rs485.txt
-@@ -104,6 +104,9 @@
- 	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
- 	rs485conf.delay_rts_after_send = ...;
- 
-+	/* Set this flag if you want to receive data even whilst sending data */
-+	rs485conf.flags |= SER_RS485_RX_DURING_TX;
-+
- 	if (ioctl (fd, TIOCSRS485, &rs485conf) < 0) {
- 		/* Error handling. See errno. */
- 	}
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index af9b781..c7232a9 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -339,7 +339,8 @@ static void atmel_stop_tx(struct uart_port *port)
- 	/* Disable interrupts */
- 	UART_PUT_IDR(port, atmel_port->tx_done_mask);
- 
--	if (atmel_port->rs485.flags & SER_RS485_ENABLED)
-+	if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+	    !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
- 		atmel_start_rx(port);
- }
- 
-@@ -356,7 +357,8 @@ static void atmel_start_tx(struct uart_port *port)
- 			   really need this.*/
- 			return;
- 
--		if (atmel_port->rs485.flags & SER_RS485_ENABLED)
-+		if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+		    !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX))
- 			atmel_stop_rx(port);
- 
- 		/* re-enable PDC transmit */
-@@ -680,7 +682,8 @@ static void atmel_tx_dma(struct uart_port *port)
- 		/* Enable interrupts */
- 		UART_PUT_IER(port, atmel_port->tx_done_mask);
- 	} else {
--		if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
-+		if ((atmel_port->rs485.flags & SER_RS485_ENABLED) &&
-+		    !(atmel_port->rs485.flags & SER_RS485_RX_DURING_TX)) {
- 			/* DMA done, stop TX, start RX for RS485 */
- 			atmel_start_rx(port);
- 		}
-diff --git a/include/linux/serial.h b/include/linux/serial.h
-index ef91406..97ff8e2 100644
---- a/include/linux/serial.h
-+++ b/include/linux/serial.h
-@@ -211,6 +211,7 @@ struct serial_rs485 {
- #define SER_RS485_RTS_ON_SEND		(1 << 1)
- #define SER_RS485_RTS_AFTER_SEND	(1 << 2)
- #define SER_RS485_RTS_BEFORE_SEND	(1 << 3)
-+#define SER_RS485_RX_DURING_TX		(1 << 4)
- 	__u32	delay_rts_before_send;	/* Milliseconds */
- 	__u32	delay_rts_after_send;	/* Milliseconds */
- 	__u32	padding[5];		/* Memory is cheap, new structs
+Thanks.
+
 -- 
-1.7.1
-
+tejun
