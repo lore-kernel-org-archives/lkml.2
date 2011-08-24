@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab1HXNDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 09:03:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58145 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab1HXNDu (ORCPT
+	id S1754863Ab1HXNFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 09:05:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43737 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab1HXNFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 09:03:50 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Felipe Balbi" <balbi@ti.com>
-Cc: "Alan Stern" <stern@rowland.harvard.edu>,
-        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
-        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
-        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 1/4] usb: Provide usb_speed_string() function
-References: <Pine.LNX.4.44L0.1108221705040.2192-100000@iolanthe.rowland.org>
- <op.v0mv05vu3l0zgt@mnazarewicz-glaptop>
- <20110824085738.GE12549@legolas.emea.dhcp.ti.com>
-Date: Wed, 24 Aug 2011 14:59:33 +0200
+	Wed, 24 Aug 2011 09:05:32 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: torvalds@linux-foundation.org
+Subject: [git pull] fuse fixes for 3.1
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Date: Wed, 24 Aug 2011 15:05:27 +0200
+Message-ID: <87ippnhsdk.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v0pydjk33l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <20110824085738.GE12549@legolas.emea.dhcp.ti.com>
-User-Agent: Opera Mail/11.50 (Linux)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 10:57:39 +0200, Felipe Balbi <balbi@ti.com> wrote:
+Linus,
 
-> Hi,
->
-> On Mon, Aug 22, 2011 at 11:16:07PM +0200, Michal Nazarewicz wrote:
->> >>>>+obj-$(CONFIG_USB)		+= common.o
->> >>>>+obj-$(CONFIG_USB_GADGET)	+= common.o
->>
->> >>>Will this cause problems?  For example, what if CONFIG_USB is Y and
->> >>>CONFIG_USB_GADGET is M?
->>
->> >>>Also, it seems a little silly to have an entire kernel module devoted
->> >>>to a single, little function.
->>
->> On Mon, 22 Aug 2011 23:06:43 +0200, Alan Stern
->> <stern@rowland.harvard.edu> wrote:
->> >You could do:
->> >
->> >	obj-$(CONFIG_USB_SUPPORT)  += common.o
->> >
->> >which would build that subroutine into the main kernel whenever either
->> >side of the USB stack is enabled.
->>
->> OK.  I'll wait for any more possible comments and post changed version
->> by the end of the week.
->
-> if it's only for one single function, wouldn't a static inline in a
-> common header do ?
+Please pull from
 
-That would defeat the purpose a little.  The code would not get duplicated
-in many source files but the actual compiled code would end up in several
-places.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+to receive the following fuse fixes.
+
+Thanks,
+Miklos
+----
+
+
+Johannes Weiner (2):
+      fuse: delete dead .write_begin and .write_end aops
+      fuse: mark pages accessed when written to
+
+Miklos Szeredi (2):
+      fuse: fix flock
+      fuse: check size of FUSE_NOTIFY_INVAL_ENTRY message
+
+Randy Dunlap (1):
+      fuse: fix non-ANSI void function notation
+
+---
+ fs/fuse/dev.c        |    4 ++
+ fs/fuse/file.c       |   84 ++++++++------------------------------------------
+ fs/fuse/fuse_i.h     |    8 ++++-
+ fs/fuse/inode.c      |   10 +++++-
+ include/linux/fuse.h |    9 +++++-
+ 5 files changed, 40 insertions(+), 75 deletions(-)
