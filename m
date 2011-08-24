@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1HXRzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 13:55:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:52894 "EHLO claw.goop.org"
+	id S1752980Ab1HXRzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 13:55:40 -0400
+Received: from claw.goop.org ([74.207.240.146]:52874 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab1HXRxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 13:53:21 -0400
+	id S1753221Ab1HXRxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 13:53:22 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 11/18] x86/cmpxchg: move 64-bit set64_bit() to match 32-bit
-Date: Wed, 24 Aug 2011 10:53:05 -0700
-Message-Id: <a4e57d501236503d40f90793ad71ca921810d37f.1314207974.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 14/18] x86/ticketlocks: use cmpxchg_flag for trylock
+Date: Wed, 24 Aug 2011 10:53:08 -0700
+Message-Id: <7c78985287f9006156f394bfce69437023773461.1314207974.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com>
@@ -30,37 +30,22 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/cmpxchg_64.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/spinlock.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index 423ae58..aeaa610 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -3,11 +3,6 @@
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 05fd59e..e208c8f 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -102,7 +102,7 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ 	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
  
- #include <asm/alternative.h> /* Provides LOCK_PREFIX */
+ 	/* cmpxchg is a full barrier, so nothing can move before it */
+-	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
++	return cmpxchg_flag(&lock->head_tail, old.head_tail, new.head_tail);
+ }
  
--static inline void set_64bit(volatile u64 *ptr, u64 val)
--{
--	*ptr = val;
--}
--
- extern void __xchg_wrong_size(void);
- extern void __cmpxchg_wrong_size(void);
- 
-@@ -66,6 +61,11 @@ extern void __cmpxchg_wrong_size(void);
- #define xchg(ptr, v)							\
- 	__xchg((v), (ptr), sizeof(*ptr))
- 
-+static inline void set_64bit(volatile u64 *ptr, u64 val)
-+{
-+	*ptr = val;
-+}
-+
- #define __HAVE_ARCH_CMPXCHG 1
- 
- /*
+ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
 -- 
 1.7.6
 
