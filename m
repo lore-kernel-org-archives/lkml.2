@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab1HXSCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:02:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33456 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753649Ab1HXSCc (ORCPT
+	id S1753632Ab1HXSCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:02:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:62079 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab1HXSBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:02:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <39551c1e0ae3e4963ad9ac119edf78dbd25a32d9.1314207974.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1314207974.git.jeremy.fitzhardinge@citrix.com> <39551c1e0ae3e4963ad9ac119edf78dbd25a32d9.1314207974.git.jeremy.fitzhardinge@citrix.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 24 Aug 2011 11:01:52 -0700
-Message-ID: <CA+55aFzN8753+nnfk11uf_vv1JddQSh3ZRe9-cpe+e5UmhmWtg@mail.gmail.com>
-Subject: Re: [PATCH 03/18] x86/ticketlock: Use C for __ticket_spin_unlock
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Aug 2011 14:01:20 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        bskeggs@redhat.com, j.glisse@redhat.com, thomas@shipmail.org,
+        airlied@redhat.com, airlied@linux.ie, alexdeucher@gmail.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/6] ttm/radeon/nouveau: Check the DMA address from TTM against known value.
+Date: Wed, 24 Aug 2011 13:16:59 -0400
+Message-Id: <1314206224-15304-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+References: <1314206224-15304-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090204.4E553C48.00B3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 10:52 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->
-> If we don't need to use a locked inc for unlock, then implement it in C.
+. instead of checking against the DMA_ERROR_CODE value which is
+per-platform specific. The zero value is a known invalid value
+that the TTM layer sets on the dma_address array if it is not
+used (ttm_tt_alloc_page_directory calls drm_calloc_large which
+creates a page with GFP_ZERO).
 
-Ok, so I really hate this patch.
+We can't use pci_dma_mapping_error as that is IOMMU
+specific (some check for a specific physical address, some
+for ranges, some just do a check against zero).
 
-What the f&*^ is the point of doing it this way? It just ends up being
-incredibly ugly, with a mixture of C, asm, and barriers. The "C"
-version is actually *uglier* than the non-C version, so why do it in C
-at all?
+Also update the comments in the header about the true state
+of that parameter.
 
-Just get rid of this one.  It adds lines of code, makes the code
-harder to read, and is just a disaster.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c |    3 +--
+ drivers/gpu/drm/radeon/radeon_gart.c    |    4 +---
+ include/drm/ttm/ttm_page_alloc.h        |    4 ++--
+ 3 files changed, 4 insertions(+), 7 deletions(-)
 
-                        Linus
+diff --git a/drivers/gpu/drm/nouveau/nouveau_sgdma.c b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+index 82fad91..624e2db 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_sgdma.c
++++ b/drivers/gpu/drm/nouveau/nouveau_sgdma.c
+@@ -42,8 +42,7 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
+ 
+ 	nvbe->nr_pages = 0;
+ 	while (num_pages--) {
+-		/* this code path isn't called and is incorrect anyways */
+-		if (0) { /*dma_addrs[nvbe->nr_pages] != DMA_ERROR_CODE)*/
++		if (dev->pdev, dma_addrs[nvbe->nr_pages] != 0) {
+ 			nvbe->pages[nvbe->nr_pages] =
+ 					dma_addrs[nvbe->nr_pages];
+ 		 	nvbe->ttm_alloced[nvbe->nr_pages] = true;
+diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+index a533f52..41f7e51 100644
+--- a/drivers/gpu/drm/radeon/radeon_gart.c
++++ b/drivers/gpu/drm/radeon/radeon_gart.c
+@@ -181,9 +181,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+ 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+ 
+ 	for (i = 0; i < pages; i++, p++) {
+-		/* we reverted the patch using dma_addr in TTM for now but this
+-		 * code stops building on alpha so just comment it out for now */
+-		if (0) { /*dma_addr[i] != DMA_ERROR_CODE) */
++		if (rdev->pdev, dma_addr[i] != 0) {
+ 			rdev->gart.ttm_alloced[p] = true;
+ 			rdev->gart.pages_addr[p] = dma_addr[i];
+ 		} else {
+diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
+index 8062890..0017b17 100644
+--- a/include/drm/ttm/ttm_page_alloc.h
++++ b/include/drm/ttm/ttm_page_alloc.h
+@@ -36,7 +36,7 @@
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state for the page.
+  * @count: number of pages to allocate.
+- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
++ * @dma_address: The DMA (bus) address of pages - (by default zero).
+  */
+ int ttm_get_pages(struct list_head *pages,
+ 		  int flags,
+@@ -51,7 +51,7 @@ int ttm_get_pages(struct list_head *pages,
+  * count.
+  * @flags: ttm flags for page allocation.
+  * @cstate: ttm caching state.
+- * @dma_address: The DMA (bus) address of pages (if TTM_PAGE_FLAG_DMA32 set).
++ * @dma_address: The DMA (bus) address of pages (by default zero).
+  */
+ void ttm_put_pages(struct list_head *pages,
+ 		   unsigned page_count,
+-- 
+1.7.4.1
+
