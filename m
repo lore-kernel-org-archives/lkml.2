@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab1HXPUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 11:20:39 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20255 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab1HXPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 11:20:37 -0400
-Message-ID: <4E551693.5030400@parallels.com>
-Date: Wed, 24 Aug 2011 19:19:47 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1752073Ab1HXPVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 11:21:08 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48759 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab1HXPVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 11:21:05 -0400
 MIME-Version: 1.0
-To: Zan Lynx <zlynx@acm.org>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Nathan Lynch <ntl@pobox.com>,
-        Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        "containers@lists.osdl.org" <containers@lists.osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC] fs, proc: Introduce the /proc/<pid>/map_files/ directory
- v2
-References: <20110824085329.GL29452@sun> <4E551331.1010709@acm.org>
-In-Reply-To: <4E551331.1010709@acm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAH9JG2WYcLpOtP-uy_nNHqe6yzOaxzW1cPMo==5UfUt0FqFrDA@mail.gmail.com>
+References: <CAKYAXd9MwO-JEMNt9-0C8pzgYn5Tvtv8ovJ35TNiqqe8PWGogQ@mail.gmail.com>
+	<CAH9JG2WYcLpOtP-uy_nNHqe6yzOaxzW1cPMo==5UfUt0FqFrDA@mail.gmail.com>
+Date: Thu, 25 Aug 2011 00:21:03 +0900
+Message-ID: <CAKYAXd91fbPHLbw7uiWosKPAJraHe6VEz=yY6MARMAbMXAWH2Q@mail.gmail.com>
+Subject: Re: RFC : mmc: mmc_blk_issue_secdiscard_rq() and mmc_blk_issue_discard_rq()
+ effectively merged into one.
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linus.walleij@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p7OFLKJ0000954
 
-On 08/24/2011 07:05 PM, Zan Lynx wrote:
-> On 8/24/2011 2:53 AM, Cyrill Gorcunov wrote:
->> From: Pavel Emelyanov <xemul@parallels.com>
->>
->> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
->> one for each mapping with file, the name of a symlink is vma->vm_start, the
->> target is the file. Opening a symlink results in a file that point exactly
->> to the same inode as them vma's one.
->>
->> This thing is aimed to help checkpointing processes.
->>
->> For example the ls -l of some arbitrary /proc/<pid>/map_files/
->>
->>  | lr-x------ 1 cyrill cyrill 64 Aug  9 15:25 0x3d73a00000 -> /lib64/ld-2.5.so
-> [snip]
-> 
-> Just curious: How do these symlinks work when the process reading a
-> /proc file is in a chroot or a different namespace?
-> 
-> For example, a chroot environment might have independent copies of
-> /lib64/ld-2.5.so and a bind mount of /proc. Does the symlink then point
-> to the wrong file?
+Hi. Park.
 
-No and this is the trick - when you readlink it - it give you trash, but
-when you open one - you get exactly the same file as the map points to.
+I understand. Thanks for your reply.
+
+2011/8/24 Kyungmin Park <kmpark@infradead.org>:
+> Hi,
+>
+> On Wed, Aug 24, 2011 at 2:09 PM, NamJae Jeon <linkinjeon@gmail.com> wrote:
+>> Hi.
+>>
+>> I am wordering why mmc_blk_issue_secdiscard_rq() and
+>> mmc_blk_issue_discard_rq() is seperated.
+>> So I try to make mmc_blk_issue_secdiscard_rq() and
+>> mmc_blk_issue_discard_rq() effectively merged into one.
+>>
+>> I want to know your opinion.
+>
+> I think not special reason. It can merge one function. but note that
+> secdiscard function is rarely called. there's only one path from
+> BLKSECDISCARD ioctl.
+>
+> however discard is different. it's called relatively frequently if you
+> turn on discard mount option. or often when batched discard.
+> So it's helpful to reduce the code size if one function is used. it's
+> more helpful to optimize the code flow when discard is used.
+>
+> Thank you,
+> Kyungmin Park
+>>
+>> Thanks.
+>>
+>> ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+>> static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
+>> {
+>>        struct mmc_blk_data *md = mq->data;
+>>        struct mmc_card *card = md->queue.card;
+>>        unsigned int from, nr, arg;
+>>        int err = 0;
+>>        from = blk_rq_pos(req);
+>>        nr = blk_rq_sectors(req);
+>>        if (req->cmd_flags & REQ_SECURE) {
+>>                if (!mmc_can_secure_erase_trim(card)) {
+>>                        err = -EOPNOTSUPP;
+>>                        goto out;
+>>                }
+>>                if(mmc_can_trim(card) &&
+>> !mmc_erase_group_aligned(card, from, nr))
+>>                        arg = MMC_SECURE_TRIM1_ARG;
+>>                else
+>>                        arg = MMC_SECURE_ERASE_ARG;
+>>        }
+>>        else {
+>>                if (!mmc_can_erase(card)) {
+>>                        err = -EOPNOTSUPP;
+>>                        goto out;
+>>                }
+>>                if (mmc_can_trim(card))
+>>                        arg = MMC_TRIM_ARG;
+>>                else
+>>                        arg = MMC_ERASE_ARG;
+>>        }
+>>
+>>        if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+>>                if(req->cmd_flags & REQ_SECURE)
+>>                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>                                        NAND_CMD38_ARG_EXT_CSD,
+>>                                        arg == MMC_SECURE_TRIM1_ARG ?
+>>                                        INAND_CMD38_ARG_SECTRIM1 :
+>>                                        INAND_CMD38_ARG_SECERASE,
+>>                                        0);
+>>                else
+>>                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>                                        INAND_CMD38_ARG_EXT_CSD,
+>>                                        arg == MMC_TRIM_ARG ?
+>>                                        INAND_CMD38_ARG_TRIM :
+>>                                        INAND_CMD38_ARG_ERASE,
+>>                                        0);
+>>                if (err)
+>>                        goto out;
+>>        }
+>>        err = mmc_erase(card, from, nr, arg);
+>>        if (!err && arg == MMC_SECURE_TRIM1_ARG) {
+>>                if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+>>                        err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>                                         INAND_CMD38_ARG_EXT_CSD,
+>>                                         INAND_CMD38_ARG_SECTRIM2,
+>>                                         0);
+>>                        if (err)
+>>                                goto out;
+>>                }
+>>                err = mmc_erase(card, from, nr, MMC_SECURE_TRIM2_ARG);
+>>        }
+>> out:
+>>        spin_lock_irq(&md->lock);
+>>        __blk_end_request(req, err, blk_rq_bytes(req));
+>>        spin_unlock_irq(&md->lock);
+>>        return err ? 0 : 1;
+>> }
+>>
+>>
+>> static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>> {
+>>        int ret;
+>>        struct mmc_blk_data *md = mq->data;
+>>        struct mmc_card *card = md->queue.card;
+>>        mmc_claim_host(card->host);
+>>        ret = mmc_blk_part_switch(card, md);
+>>        if (ret) {
+>>                ret = 0;
+>>                goto out;
+>>        }
+>>        if (req->cmd_flags & REQ_DISCARD) {
+>>                ret = mmc_blk_issue_discard_rq(mq, req);
+>>        } else if (req->cmd_flags & REQ_FLUSH) {
+>>                ret = mmc_blk_issue_flush(mq, req);
+>>        } else {
+>>                ret = mmc_blk_issue_rw_rq(mq, req);
+>>        }
+>> out:
+>>        mmc_release_host(card->host);
+>>        return ret;
+>> }
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
