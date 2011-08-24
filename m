@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1HXSry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 14:47:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52353 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753699Ab1HXSrx (ORCPT
+	id S1753854Ab1HXS6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 14:58:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57684 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab1HXS6o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 14:47:53 -0400
-Date: Wed, 24 Aug 2011 11:47:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Clifton Barnes <cabarnes@indesign-llc.com>
-Cc: <ryan@bluewatersys.com>, <haojian.zhuang@marvell.com>,
-        <johnpol@2ka.mipt.ru>, <simon.inizan@goobie.fr>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] w1: ds2780, fix deadlock upon insertion and
- removal
-Message-Id: <20110824114703.e82021ec.akpm@linux-foundation.org>
-In-Reply-To: <4E550C35.4080700@indesign-llc.com>
-References: <4E550C35.4080700@indesign-llc.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Aug 2011 14:58:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAN+gG=ETNmP4Xy7NhxLpkaqAog4T1PQ5eCdXF11SvR2Ce+DtHA@mail.gmail.com>
+References: <1313451542-79316-1-git-send-email-jeffbrown@android.com> <CAN+gG=ETNmP4Xy7NhxLpkaqAog4T1PQ5eCdXF11SvR2Ce+DtHA@mail.gmail.com>
+From: Jeffrey Brown <jeffbrown@android.com>
+Date: Wed, 24 Aug 2011 11:58:03 -0700
+Message-ID: <CAMu+ixjg71wR9_WLqEihGtud0=SuRdnc=4nB43F+pxjNpdEKug@mail.gmail.com>
+Subject: Re: [PATCH] hid-debug: Show application usage for each collection.
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>, jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rydberg@euromail.se
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011 10:35:33 -0400
-Clifton Barnes <cabarnes@indesign-llc.com> wrote:
+On Tue, Aug 16, 2011 at 12:32 AM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> On Tue, Aug 16, 2011 at 01:39,  <jeffbrown@android.com> wrote:
+>> From: Jeff Brown <jeffbrown@android.com>
+>
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@logitech.com>
 
-> Fixes the deadlock when inserting and removing the ds2780.
+Just a friendly ping.
 
-When fixing a bug, please always provide a full description of that bug
-so that others can review the proposed fix.  "the deadlock" is not a
-complete description ;)
+Do I need to do anything more on this, or on the other patch to hid-multitouch?
 
+>> Signed-off-by: jeffbrown@android.com
+>> ---
+>>  drivers/hid/hid-debug.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
+>> index bae4874..9a243ca 100644
+>> --- a/drivers/hid/hid-debug.c
+>> +++ b/drivers/hid/hid-debug.c
+>> @@ -450,6 +450,11 @@ void hid_dump_field(struct hid_field *field, int n, struct seq_file *f) {
+>>                seq_printf(f, "Logical(");
+>>                hid_resolv_usage(field->logical, f); seq_printf(f, ")\n");
+>>        }
+>> +       if (field->application) {
+>> +               tab(n, f);
+>> +               seq_printf(f, "Application(");
+>> +               hid_resolv_usage(field->application, f); seq_printf(f, ")\n");
+>> +       }
+>>        tab(n, f); seq_printf(f, "Usage(%d)\n", field->maxusage);
+>>        for (j = 0; j < field->maxusage; j++) {
+>>                tab(n+2, f); hid_resolv_usage(field->usage[j].hid, f); seq_printf(f, "\n");
+>> --
+>> 1.7.0.4
+>>
+>> --
