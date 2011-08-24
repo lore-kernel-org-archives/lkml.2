@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab1HXAct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Aug 2011 20:32:49 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49560 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab1HXAcl (ORCPT
+	id S1755899Ab1HXAiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Aug 2011 20:38:15 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:13036 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab1HXAiL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Aug 2011 20:32:41 -0400
-Date: Wed, 24 Aug 2011 02:32:36 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: rjw@sisk.pl, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/6] cgroup: subsys->attach_task() should be called after
- migration
-Message-ID: <20110824003234.GB23979@somewhere>
-References: <1314138000-2049-1-git-send-email-tj@kernel.org>
- <1314138000-2049-2-git-send-email-tj@kernel.org>
+	Tue, 23 Aug 2011 20:38:11 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Topic: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+Thread-Index: AQHMQxmwelNZej0M8Ey5TPtGzUjq3JUrvP0A//+izUA=
+Date: Wed, 24 Aug 2011 00:38:09 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E048081B2356@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1310752024-27854-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-1-git-send-email-kys@microsoft.com>
+ <1310752065-27895-19-git-send-email-kys@microsoft.com>
+ <20110823224932.GF9641@kroah.com>
+In-Reply-To: <20110823224932.GF9641@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1314138000-2049-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 12:19:55AM +0200, Tejun Heo wrote:
-> cgroup_attach_task() calls subsys->attach_task() after
-> cgroup_task_migrate(); however, cgroup_attach_proc() calls it before
-> migration.  This actually affects some of the users.  Update
-> cgroup_attach_proc() such that ->attach_task() is called after
-> migration.
 
-There have been a patch posted recently:
 
-        "[PATCH][BUGFIX] cgroups: fix ordering of calls in cgroup_attach_proc"
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, August 23, 2011 6:50 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 019/117] Staging: hv: vmbus: Cleanup vmbus_uevent() code
+> 
+> On Fri, Jul 15, 2011 at 10:46:07AM -0700, K. Y. Srinivasan wrote:
+> > Now generate appropriate uevent based on the modalias string. As part of this,
+> > cleanup the existing uevent code.
+> 
+> Note, you just change the user api here, did you have tools that relied
+> on the old format?  If so, they just broke :(
 
-that not only fixes that ordering but also only attach the task if the
-migration happened correctly (task not exited).
+Prior to this, I don't think autoloading worked the way it should for these
+modules. 
 
-Can somebody queue it for 3.2 ?
+> 
+> > +	for (i = 0; i < (sizeof(struct hv_vmbus_device_id) * 2); i += 2)
+> > +		sprintf(&alias_name[i], "%02x", dev->dev_type.b[i/2]);
+> 
+> Don't we have a type for printing out a uuid already?
+
+I did not see one; could you point me to the right place.
+> 
+> And what's with the jumping by 2 yet dividing?  What am I missing here?
+
+Each byte of the uuid is represented by 2 bytes in the string; thus the magic with 2.
+
+Regards,
+
+K. Y
+
