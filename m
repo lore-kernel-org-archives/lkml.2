@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749Ab1HXW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 18:27:25 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:38186 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750827Ab1HXW1Y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 18:27:24 -0400
-From: Philip Rakity <prakity@marvell.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Haojian Zhuang <hzhuang1@marvell.com>
-Date: Wed, 24 Aug 2011 15:27:33 -0700
-Subject: [PATCH] power: max8925_power.  Do not detect ac insert if handled
- by other code 
-Thread-Topic: [PATCH] power: max8925_power.  Do not detect ac insert if
- handled by other code 
-Thread-Index: AcxirP59AOC1LnWlTPiZlRDb9t19Rw==
-Message-ID: <7F69A365-0154-4B4A-9ED9-D60AE4BEB23C@marvell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752159Ab1HXWbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 18:31:55 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33398 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1HXWbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 18:31:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: JBeulich@novell.com, jeremy@goop.org, ian.campbell@citrix.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/5] xen-swiotlb: Retry up three times to allocate Xen-SWIOTLB
+Date: Wed, 24 Aug 2011 18:31:33 -0400
+Message-Id: <1314225096-4861-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1314225096-4861-1-git-send-email-konrad.wilk@oracle.com>
+References: <1314225096-4861-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4E557BD4.0019,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On brownstone rev 4 ac-insert detect is handled by vbus.
+We can fail seting up Xen-SWIOTLB if:
+ - The host does not have enough contiguous DMA32 memory available
+   (can happen on a machine that has fragmented memory from starting,
+   stopping many guests).
+ - Not enough low memory (almost never happens).
 
-allow the platform code to configure the disabling of insert
-by setting no_insert_detect.
+We retry allocating and exchanging the swath of contiguous memory
+up to three times. Each time we decrease the amount we need  - the
+minimum being of 2MB.
 
-Signed-off-by: Philip Rakity <prakity@marvell.com>
+If we completly fail, we will print the reason for failure on the Xen
+console on top of doing it to earlyprintk=xen console.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/power/max8925_power.c |    8 ++++++--
- include/linux/mfd/max8925.h   |    1 +
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |   35 +++++++++++++++++++++++++----------
+ 1 files changed, 25 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index dba07f3..fd32c08 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -79,6 +79,7 @@ struct max8925_power_info {
- 	unsigned		topoff_threshold:2;
- 	unsigned		fast_charge:3;
- 	unsigned		no_temp_support:1;
-+	unsigned		no_insert_detect:1;
- 
- 	int (*set_charger) (int);
- };
-@@ -366,8 +367,10 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
- 	int ret;
- 
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_OVP, "ac-ovp");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
--	REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
-+	if (!info->no_insert_detect) {
-+		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_F, "ac-remove");
-+		REQUEST_IRQ(MAX8925_IRQ_VCHG_DC_R, "ac-insert");
-+	}
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
- 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
-@@ -482,6 +485,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
- 	info->fast_charge = pdata->fast_charge;
- 	info->set_charger = pdata->set_charger;
- 	info->no_temp_support = pdata->no_temp_support;
-+	info->no_insert_detect = pdata->no_insert_detect;
- 
- 	max8925_init_charger(chip, info);
- 	return 0;
-diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-index 69ec8f0..e742e04 100644
---- a/include/linux/mfd/max8925.h
-+++ b/include/linux/mfd/max8925.h
-@@ -224,6 +224,7 @@ struct max8925_power_pdata {
- 	unsigned	topoff_threshold:2;
- 	unsigned	fast_charge:3;	/* charge current */
- 	unsigned	no_temp_support:1; /* set if no temperature detect */
-+	unsigned	no_insert_detect:1; /* set if no ac insert detect */
- };
- 
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 6e8c15a..d45cbac 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -38,6 +38,7 @@
+ #include <xen/swiotlb-xen.h>
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
++#include <xen/hvc-console.h>
  /*
+  * Used to do a quick range check in swiotlb_tbl_unmap_single and
+  * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+@@ -146,8 +147,10 @@ xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
+ void __init xen_swiotlb_init(int verbose)
+ {
+ 	unsigned long bytes;
+-	int rc;
++	int rc = -ENOMEM;
+ 	unsigned long nr_tbl;
++	char *m = NULL;
++	unsigned int repeat = 3;
+ 
+ 	nr_tbl = swioltb_nr_tbl();
+ 	if (nr_tbl)
+@@ -156,16 +159,17 @@ void __init xen_swiotlb_init(int verbose)
+ 		xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
+ 		xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
+ 	}
+-
++retry:
+ 	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
+ 
+ 	/*
+ 	 * Get IO TLB memory from any location.
+ 	 */
+ 	xen_io_tlb_start = alloc_bootmem(bytes);
+-	if (!xen_io_tlb_start)
+-		panic("Cannot allocate SWIOTLB buffer");
+-
++	if (!xen_io_tlb_start) {
++		m = "Cannot allocate Xen-SWIOTLB buffer!\n";
++		goto error;
++	}
+ 	xen_io_tlb_end = xen_io_tlb_start + bytes;
+ 	/*
+ 	 * And replace that memory with pages under 4GB.
+@@ -173,17 +177,28 @@ void __init xen_swiotlb_init(int verbose)
+ 	rc = xen_swiotlb_fixup(xen_io_tlb_start,
+ 			       bytes,
+ 			       xen_io_tlb_nslabs);
+-	if (rc)
++	if (rc) {
++		free_bootmem(__pa(xen_io_tlb_start), bytes);
++		m = "Failed to get contiguous memory for DMA from Xen!\n"\
++		    "You either: don't have the permissions, do not have"\
++		    " enough free memory under 4GB, or the hypervisor memory"\
++		    "is too fragmented!";
+ 		goto error;
+-
++	}
+ 	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
+ 	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
+ 
+ 	return;
+ error:
+-	panic("DMA(%d): Failed to exchange pages allocated for DMA with Xen! "\
+-	      "We either don't have the permission or you do not have enough"\
+-	      "free memory under 4GB!\n", rc);
++	if (repeat--) {
++		xen_io_tlb_nslabs = max(1024UL, /* Min is 2MB */
++					(xen_io_tlb_nslabs >> 1));
++		printk(KERN_INFO "Xen-SWIOTLB: Lowering to %luMB\n",
++		      (xen_io_tlb_nslabs << IO_TLB_SHIFT) >> 20);
++		goto retry;
++	}
++	xen_raw_printk("%s (rc:%d)", rc, m);
++	panic("%s (rc:%d)", rc, m);
+ }
+ 
+ void *
 -- 
-1.7.6
+1.7.4.1
 
