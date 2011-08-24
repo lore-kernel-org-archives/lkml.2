@@ -1,109 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab1HXVmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 17:42:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42227 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab1HXVmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 17:42:15 -0400
-Date: Wed, 24 Aug 2011 14:42:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, alan@linux.intel.com,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: patch "TTY: remove tty_locked" added to tty tree
-Message-ID: <20110824214201.GB30829@suse.de>
-References: <13141210141189@kroah.org>
- <201108241320.47635.arnd@arndb.de>
- <4E54E4D9.6070802@suse.cz>
- <201108241635.13502.arnd@arndb.de>
- <4E556CB7.2010102@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E556CB7.2010102@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751674Ab1HXVnD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 17:43:03 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:56219 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750951Ab1HXVnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 17:43:01 -0400
+Subject: Re: [PATCH 06/14] [media] cx18: Use current logging styles
+From: Joe Perches <joe@perches.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1314182047.2253.3.camel@palomino.walls.org>
+References: <cover.1313966088.git.joe@perches.com>
+	 <29abc343c4fce5d019ce56f5a3882aedaeb092bc.1313966089.git.joe@perches.com>
+	 <1314182047.2253.3.camel@palomino.walls.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Aug 2011 14:42:55 -0700
+Message-ID: <1314222175.15882.8.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 11:27:19PM +0200, Jiri Slaby wrote:
-> On 08/24/2011 04:35 PM, Arnd Bergmann wrote:
-> > On Wednesday 24 August 2011, Jiri Slaby wrote:
-> >> On 08/24/2011 01:20 PM, Arnd Bergmann wrote:
-> >>> It's not clear to me what state->mutex protects in the serial_core, but
-> >>> it has been around forever (used to be called state->sem)
-> >>
-> >> It was actually moved in uart_close back in 2003. Formerly (when there
-> >> was only a coarse grained port_sem) it was right before uart_shutdown.
-> >> But there were some flags to handle some races. I'm not sure whether the
-> >> flags protected any race here though.
-> > 
-> > ok
-> > 
-> >>> and is held in
-> >>> all uart functions, which is at least consistent. IIRC what Alan's plan
-> >>> for this was, uart_close should eventually get changed to use
-> >>> tty_port_close_start or even tty_port_close. Maybe the time for that has
-> >>> come now, lacking better alternatives?
-> >>
-> >> Yes, I have such a patch in my queue. But it's not easy to get there.
-> >> You may take a look at:
-> >> http://decibel.fi.muni.cz/gitweb/?p=linux.git;a=shortlog;h=refs/heads/devel
-> >>
-> >> But it's still far from ready. And yet, in the queue, I still have
-> >> port->mutex locked before tty_port_close_start like it is now.
-> > 
-> > Ah, right. I still don't see why the port->mutex is or is not needed there,
-> > and I think that's the main issue.
-> > 
-> > By comparison, getting *_wait_until_sent to be called without BTM seems
-> > easy -- we know that all callers from ->close() hold it, while the ones
-> > from ->ioctl() don't. We could have a helper like
-> > 
-> > void tty_wait_until_sent_from_close(struct tty_struct *tty, long timeout)
-> > {
-> > 	tty_unlock(); /* tty->ops->close holds the BTM, drop it while waiting */
-> > 	tty_wait_until_sent(tty, timeout);
-> > 	tty_lock();
-> > }
-> > 
-> > to deal with that, if only we can sort the lock ordering with .
-> 
-> Ah, it looks like I just got the reason why port->mutex is locked in the
-> top of uart_close. In uart, TTY_CLOSING flag is not used. So there is
-> nothing to protect against races between ->close (the code between the
-> two spinlock critical sections corresponding to port_close_start and
-> _end) and ->open (block_til_ready).
-> 
-> Other than that I see no point for the lock to be in the beginning. So
-> if we introduce CLOSING flag (I do that in my patches implicitly),
-> everything should be OK:
-> * port->count etc is and always was protected by the spinlock,
-> * ->stop_rx stands as I wrote earlier.
-> * uart_wait_until_sent -- that one is already called without port->mutex
-> from set_termios and tty_set_ldisc.
-> 
-> So it looks like we should:
-> - introduce CLOSING flag
-> - move the lock below, before shutdown
-> - introduce your magic _from_close helper
-> - use it
-> 
-> Doing this after we have all the helpers in place would be easier. There
-> would be no need to play with CLOSING bit. But there will be no option
-> to backport this to stable trees then. And I know I will have to do that
-> at least for 3.0.
-> 
-> Note that we may use the _from_close helper from tty_port_close_start
-> almost instantly. All users should not hold port->mutex over
-> tty_port_close_start. But I need to check. Tomorrow.
-> 
-> In the meantime, comments welcome.
+On Wed, 2011-08-24 at 06:34 -0400, Andy Walls wrote:
+> On Sun, 2011-08-21 at 15:56 -0700, Joe Perches wrote:
+> > Add pr_fmt.
+> > Convert printks to pr_<level>.
+> > Convert printks without KERN_<level> to appropriate pr_<level>.
+> > Removed embedded prefixes when pr_fmt was added.
+> > Use ##__VA_ARGS__ for variadic macros.
+> > Coalesce format strings.
+> 1. It is important to preserve the per-card prefixes emitted by the
+> driver: cx18-0, cx18-1, cx18-2, etc.  With a quick skim, I think your
+> change preserves the format of all output messages (except removing
+> periods).  Can you confirm this?
 
-So, is your original patch you sent in this thread still needed?
+Here's the output diff of
+strings built-in.o | grep "^<.>" | sort
+new and old
+$ diff -u0 cx18.old cx18.new
+--- cx18.old	2011-08-24 13:18:41.000000000 -0700
++++ cx18.new	2011-08-24 14:04:10.000000000 -0700
+@@ -1,2 +1,9 @@
+-<3>cx18-alsa cx is NULL
+-<3>cx18-alsa: %s: struct v4l2_device * is NULL
++<3>cx18_alsa: cx is NULL
++<3>cx18_alsa: %s-alsa: %s: failed to create struct snd_cx18_card
++<3>cx18_alsa: %s-alsa: %s: snd_card_create() failed with err %d
++<3>cx18_alsa: %s-alsa: %s: snd_card_register() failed with err %d
++<3>cx18_alsa: %s-alsa: %s: snd_cx18_card_create() failed with err %d
++<3>cx18_alsa: %s-alsa: %s: snd_cx18_pcm_create() failed with err %d
++<3>cx18_alsa: %s-alsa: %s: snd_cx18_pcm_create() failed with err %d
++<3>cx18_alsa: %s-alsa: %s: struct snd_cx18_card * already exists
++<3>cx18_alsa: %s: struct v4l2_device * is NULL
+@@ -17,7 +23,0 @@
+-<3>%s-alsa: %s: failed to create struct snd_cx18_card
+-<3>%s-alsa: %s: snd_card_create() failed with err %d
+-<3>%s-alsa: %s: snd_card_register() failed with err %d
+-<3>%s-alsa: %s: snd_cx18_card_create() failed with err %d
+-<3>%s-alsa: %s: snd_cx18_pcm_create() failed with err %d
+-<3>%s-alsa: %s: snd_cx18_pcm_create() failed with err %d
+-<3>%s-alsa: %s: struct snd_cx18_card * already exists
+@@ -62 +62 @@
+-<3>%s: Prefix your subject line with [UNKNOWN CX18 CARD].
++<3>%s: Prefix your subject line with [UNKNOWN CX18 CARD]
+@@ -80 +80 @@
+-<4>%s-alsa: %s: struct snd_cx18_card * is NULL
++<4>cx18_alsa: %s-alsa: %s: struct snd_cx18_card * is NULL
+@@ -82 +82 @@
+-<4>%s: Could not register GPIO reset controllersubdevice; proceeding anyway.
++<4>%s: Could not register GPIO reset controller subdevice; proceeding anyway.
+@@ -85 +85 @@
+-<4>%s: MPEG Index stream cannot be claimed directly, but something tried.
++<4>%s: MPEG Index stream cannot be claimed directly, but something tried
+@@ -99,12 +99,14 @@
+-<6>cx18-alsa: module loading...
+-<6>cx18-alsa: module unload complete
+-<6>cx18-alsa: module unloading...
+-<6>cx18-alsa-pcm %s: Allocating vbuffer
+-<6>cx18-alsa-pcm %s: cx18 alsa announce ptr=%p data=%p num_bytes=%zd
+-<6>cx18-alsa-pcm %s: dma area was NULL - ignoring
+-<6>cx18-alsa-pcm %s: freeing pcm capture region
+-<6>cx18-alsa-pcm %s: runtime was NULL
+-<6>cx18-alsa-pcm %s: %s called
+-<6>cx18-alsa-pcm %s: %s: length was zero
+-<6>cx18-alsa-pcm %s: stride is zero
+-<6>cx18-alsa-pcm %s: substream was NULL
++<6>cx18_alsa: module loading...
++<6>cx18_alsa: module unload complete
++<6>cx18_alsa: module unloading...
++<6>cx18_alsa: %s: Allocating vbuffer
++<6>cx18_alsa: %s: created cx18 ALSA interface instance 
++<6>cx18_alsa: %s: cx18 alsa announce ptr=%p data=%p num_bytes=%zd
++<6>cx18_alsa: %s: dma area was NULL - ignoring
++<6>cx18_alsa: %s: freeing pcm capture region
++<6>cx18_alsa: %s: PCM stream for card is disabled - skipping
++<6>cx18_alsa: %s: runtime was NULL
++<6>cx18_alsa: %s: %s called
++<6>cx18_alsa: %s: %s: length was zero
++<6>cx18_alsa: %s: stride is zero
++<6>cx18_alsa: %s: substream was NULL
+@@ -172 +174 @@
+-<6>%s:  info: dualwatch: change stereo flag from 0x%x to 0x%x.
++<6>%s:  info: dualwatch: change stereo flag from 0x%x to 0x%x
+@@ -188 +190 @@
+-<6>%s:  info: Preparing for firmware halt.
++<6>%s:  info: Preparing for firmware halt
+@@ -206 +208 @@
+-<6>%s:  info: Switching standard to %llx.
++<6>%s:  info: Switching standard to %llx
+@@ -236 +237,0 @@
+-<6>%s: %s: created cx18 ALSA interface instance 
+@@ -239 +239,0 @@
+-<6>%s: %s: PCM stream for card is disabled - skipping
 
-confused,
+> 2. PLease don't add a pr_fmt() #define to exevry file.  Just put one
+> where all the other CX18_*() macros are defined.  Every file picks those
+> up.
 
-greg k-h
+It's not the first #include of every file.
+printk.h has a default #define pr_fmt(fmt) fmt
+
