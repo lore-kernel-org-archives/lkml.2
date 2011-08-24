@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1HXI24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 04:28:56 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:52277 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab1HXI2y (ORCPT
+	id S1756363Ab1HXIa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 04:30:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57561 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab1HXIaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 04:28:54 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zzbb2dK9371K1432N98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LQFBK2-01-2G1-02
-X-M-MSG: 
-Date: Wed, 24 Aug 2011 10:28:48 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "youquan.song@intel.com" <youquan.song@intel.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 8/8] iommu: rename the DMAR and INTR_REMAP config options
-Message-ID: <20110824082848.GZ2079@amd.com>
-References: <20110824000517.710353624@sbsiddha-desk.sc.intel.com>
- <20110824001456.558630224@sbsiddha-desk.sc.intel.com>
- <4E549E9B.7080004@kernel.org>
+	Wed, 24 Aug 2011 04:30:55 -0400
+Date: Wed, 24 Aug 2011 12:30:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        James Bottomley <jbottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH resend] vfs: Add ->statfs callback for pipefs
+Message-ID: <20110824083050.GI29452@sun>
+References: <20110824080924.GG29452@sun>
+ <20110824012328.f7bfc68a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E549E9B.7080004@kernel.org>
+In-Reply-To: <20110824012328.f7bfc68a.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 24, 2011 at 02:47:55AM -0400, Yinghai Lu wrote:
-> On 08/23/2011 05:05 PM, Suresh Siddha wrote:
-> > Change the CONFIG_DMAR to CONFIG_INTEL_IOMMU to be consistent with the other
-> > IOMMU options.
-> > 
-> > Rename the CONFIG_INTR_REMAP to CONFIG_IRQ_REMAP to match the irq
-> > subsystem name.
-> > 
-> > And define the CONFIG_DMAR_TABLE for the common ACPI DMAR routines
-> > shared by both CONFIG_INTEL_IOMMU and CONFIG_IRQ_REMAP.
+On Wed, Aug 24, 2011 at 01:23:28AM -0700, Andrew Morton wrote:
+> On Wed, 24 Aug 2011 12:09:24 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 > 
-> is there something like IRQ_REMAP from AMD?
+> > From: Pavel Emelyanov <xemul@parallels.com>
+> > 
+> > This is done to make it possible to distinguish pipes
+> > from fifos when opening one via /proc/<pid>/fd/ link.
+> > 
+> > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> > Reviewed-by: Tejun Heo <tj@kernel.org>
+> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > ---
+> >  fs/pipe.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > Any objections to this one? It was a part of a patchset
+> > but can be treated independently so I'm re-sending it alone.
+> > 
+> > Index: linux-2.6.git/fs/pipe.c
+> > ===================================================================
+> > --- linux-2.6.git.orig/fs/pipe.c
+> > +++ linux-2.6.git/fs/pipe.c
+> > @@ -1254,6 +1254,7 @@ out:
+> >  
+> >  static const struct super_operations pipefs_ops = {
+> >  	.destroy_inode = free_inode_nonrcu,
+> > +	.statfs = simple_statfs,
+> >  };
+> >  
+> >  /*
+> 
+> OK, I give up - how does it work?
+> 
+> <goes off and reads the kernel>
+> 
+> So it appears that the statfs call would previously return -ENOSYS, but
+> with this change the statfs will succeed and userspace can then inspect
+> f_type.  Yes?  I will fix your changelog by adding a description along these
+> lines.
 
-Yes there is. And I digged already through the existing VT-d code to see
-how it can be implemented side by side. Doesn't seem easy but should be
-doable. And it is on my list for the not too-distant future.
+Yes, it allows to distinguish pipes from anything else. Initially this patch was
+a part of early rfc on checkpoint/restore facility (mostly implemented in
+userspace). So we need to distinguish somehow pipes when we dump data from
+/proc/pid/fd. That's the main reason. BUT since this patch can be used without
+any other c/r bits and can be treated separately I've sent it alone without
+any mention of c/r at all.
 
-	Joerg
+> 
+> And I'll ask you to fix it further by telling us why we want to do
+> this?  The kernel has had this issue for a long time - why does it now
+> matter?
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Cyrill
