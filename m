@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab1HXH03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 03:26:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43471 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab1HXH00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 03:26:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.68,274,1312182000"; 
-   d="scan'208";a="10476398"
-Subject: Re: [slub p4 6/7] slub: per cpu cache for partial pages
-From: Lin Ming <ming.m.lin@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        tj@kernel.org, Metathronius Galabant <m.galabant@googlemail.com>,
-        Matt Mackall <mpm@selenic.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Adrian Drzewiecki <z@drze.net>, "Li, Shaohua" <shaohua.li@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAF1ivSaH9fh6_QvuBkLc5t=zC4mPEAD5ZzsxOuPruDwG9MiZzw@mail.gmail.com>
-References: <20110809211221.831975979@linux.com>
-	 <20110809211302.222722588@linux.com>
-	 <CAF1ivSaH9fh6_QvuBkLc5t=zC4mPEAD5ZzsxOuPruDwG9MiZzw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Aug 2011 15:26:23 +0800
-Message-ID: <1314170783.5245.24.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753681Ab1HXHkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 03:40:42 -0400
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:52224 "EHLO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1HXHki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 03:40:38 -0400
+Message-ID: <4E54AAF2.4050102@ge.com>
+Date: Wed, 24 Aug 2011 08:40:34 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de, cota@braap.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] [RESEND v2] VME Framework Fixes
+References: <1313145051-13397-1-git-send-email-manohar.vanga@cern.ch> <20110823221443.GC15721@kroah.com>
+In-Reply-To: <20110823221443.GC15721@kroah.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Aug 2011 07:40:36.0981 (UTC) FILETIME=[1D34A250:01CC6231]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 10, 2011 at 5:12 AM, Christoph Lameter <cl@linux.com> wrote:
-> Allow filling out the rest of the kmem_cache_cpu cacheline with pointers to
-> partial pages. The partial page list is used in slab_free() to avoid
-> per node lock taking.
+On 23/08/11 23:14, Greg KH wrote:
+> On Fri, Aug 12, 2011 at 12:30:46PM +0200, Manohar Vanga wrote:
+>> Hi Martyn,
+>>
+>> This is the updated list of patches. I have removed the bus numbering
+>> patch as we can work on it further before adding it in. Some notes on
+>> the various patches below:
+>>
+>>   staging: vme: make [alloc|free]_consistent bridge specific
 > 
-> In __slab_alloc() we can then take multiple partial pages off the per
-> node partial list in one go reducing node lock pressure.
+> I've applied the first 2 only.
 > 
-> We can also use the per cpu partial list in slab_alloc() to avoid scanning
-> partial lists for pages with free objects.
+> Martyn, my vme patch queue is now empty, if I have missed anything I
+> should have applied, please resend it and let me know.
 > 
-> The main effect of a per cpu partial list is that the per node list_lock
-> is taken for batches of partial pages instead of individual ones.
+> thanks,
 > 
-> Potential future enhancements:
-> 
-> 1. The pickup from the partial list could be perhaps be done without disabling
->   interrupts with some work. The free path already puts the page into the
->   per cpu partial list without disabling interrupts.
+> greg k-h
 
-Nice patches!
+Thanks Greg, I think that's all the patches that have been agreed so far. I
+believe that Manohar is working on a few issues that were found in some of the
+other patches.
 
-Could you share possible ways for this potential enhancement?
+Martyn
 
-Thanks,
-Lin Ming
-
-> 
-> 2. __slab_free() may have some code paths that could use optimization.
-
-
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)1327322748                         | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
