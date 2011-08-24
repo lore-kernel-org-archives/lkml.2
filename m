@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab1HXObb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 10:31:31 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50528 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751695Ab1HXOb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 10:31:27 -0400
-Date: Wed, 24 Aug 2011 10:31:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <mnazarewicz@google.com>
-cc: Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Yang Rui Rui <ruirui.r.yang@tieto.com>,
-        Dave Young <hidave.darkstar@gmail.com>, <linux-usb@vger.kernel.org>,
+	id S1752386Ab1HXOey (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 10:34:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57218 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1HXOew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Aug 2011 10:34:52 -0400
+From: Keshava Munegowda <keshava_mgowda@ti.com>
+To: <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with "max_speed"
-In-Reply-To: <op.v0pywi0nvgw7ix@mnazarewicz-glaptop>
-Message-ID: <Pine.LNX.4.44L0.1108241028370.2010-100000@iolanthe.rowland.org>
+CC: Keshava Munegowda <keshava_mgowda@ti.com>, <balbi@ti.com>,
+        <gadiyar@ti.com>, <sameo@linux.intel.com>, <parthab@india.ti.com>,
+        <tony@atomide.com>, <khilman@ti.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>,
+        <rogerq@ti.com>, Keshava Munegowda <Keshava_mgowda@ti.com>
+Subject: [PATCH 0/5 v7] mfd: omap: usb: Runtime PM support for EHCI and OHCI drivers
+Date: Wed, 24 Aug 2011 20:00:55 +0530
+Message-ID: <1314196260-9578-1-git-send-email-keshava_mgowda@ti.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Aug 2011, Michal Nazarewicz wrote:
+From: Keshava Munegowda <Keshava_mgowda@ti.com>
 
-> On Tue, 23 Aug 2011 22:49:37 +0200, Alan Stern <stern@rowland.harvard.edu>  
-> wrote:
-> > Still, maybe I was wrong.  Maybe it would be better to use the fastest
-> > speed supported by at least one of the function drivers.  The user can
-> > always force a SuperSpeed-capable device to run at high speed by using
-> > a USB-2 cable to plug it in.  I'm not sure whether the user could force
-> > such a device to run at full speed, however.
-> 
-> I'm actually wondering whether we really need to worry about it.
-> composite_driver has the “max_speed” field and I would just leave it as
-> composite driver's author responsibility to put correct value there.
-> 
-> One thing that could be worth doing is iterate over all the configurations
-> and figure out if at least one supports the speed declared by “max_speed”
-> and if not, lower it.
+The Hwmod structures and Runtime PM features are implemented
+For EHCI and OHCI drivers of OMAP3 and OMAP4.
+The global suspend/resume of EHCI and OHCI
+is validated on OMAP3430 sdp board with these patches.
 
-That's the same as what I said: Use the highest speed supported by any 
-function driver.  There really isn't any point in allowing connections 
-faster than that.  And as Felipe pointed out, the user always has the 
-capability to force the connection to be slower, by using the right 
-sorts of cables and hubs.
+these patches are rebased to kevin's pm branch and
+usbhs latest mainline kernel patches
 
-> Like I've said before, as additional functionality, composite.c could
-> check if it's USB_SPEED_UNKWONW in which case it would look for the lowest
-> speed that all the functions support.
-> 
-> Such configuration would allow composite driver authors set the speed to
-> USB_SPEED_SUPER when they mean “choose maximum speed at least one function
-> supports” and to “USB_SPEED_UNKWONW” when they mean “choose maximum speed
-> all the functions support”.
-> 
-> Does that make sense?
+TODO:
+    - Adding pad configurations to Hwmods	
+    - Aggressive clock cutting in usb bus suspends
+    - Remote Wakeup implementation using irq-chaining
 
-It's reasonable.  Just be sure to document it properly; otherwise 
-nobody will understand or remember it!
 
-Alan Stern
+Benoit Cousson (1):
+  arm: omap: usb: ehci and ohci hwmod structures for omap4
+
+Keshava Munegowda (4):
+  arm: omap: usb: ehci and ohci hwmod structures for omap3
+  arm: omap: usb: register hwmods of usbhs
+  arm: omap: usb: device name change for the clk names of usbhs
+  mfd: omap: usb: Runtime PM support
+
+ arch/arm/mach-omap2/clock3xxx_data.c       |   26 +-
+ arch/arm/mach-omap2/clock44xx_data.c       |   10 +-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  282 +++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  247 ++++++++++
+ arch/arm/mach-omap2/usb-host.c             |  114 ++---
+ arch/arm/plat-omap/include/plat/usb.h      |    3 -
+ drivers/mfd/omap-usb-host.c                |  733 +++++++++++-----------------
+ drivers/usb/host/ehci-omap.c               |   17 +-
+ drivers/usb/host/ohci-omap3.c              |   18 +-
+ 9 files changed, 892 insertions(+), 558 deletions(-)
 
