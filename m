@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab1HXNFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Aug 2011 09:05:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43737 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab1HXNFc (ORCPT
+	id S1751137Ab1HXNLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Aug 2011 09:11:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34900 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819Ab1HXNLE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Aug 2011 09:05:32 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: torvalds@linux-foundation.org
-Subject: [git pull] fuse fixes for 3.1
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Wed, 24 Aug 2011 15:05:27 +0200
-Message-ID: <87ippnhsdk.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 24 Aug 2011 09:11:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:content-type:to:cc:subject:references:date:
+	mime-version:content-transfer-encoding:from:organization:message-id:
+	in-reply-to:user-agent:x-system-of-record;
+	b=Dg5h/cHRctb461WB0ogPU32lrIro+GcLPeVqivO5dqRnGSmxsxbNqskOGlvUyz4eK
+	SRrcqdkK5TYi3xNASjgww==
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Alan Stern" <stern@rowland.harvard.edu>
+Cc: "Felipe Balbi" <balbi@ti.com>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>,
+        "Yang Rui Rui" <ruirui.r.yang@tieto.com>,
+        "Dave Young" <hidave.darkstar@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 2/4] usb: gadget: replace "is_dualspeed" with
+ "max_speed"
+References: <Pine.LNX.4.44L0.1108231636000.2069-100000@iolanthe.rowland.org>
+Date: Wed, 24 Aug 2011 15:10:56 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mnazarewicz@google.com>
+Organization: Google
+Message-ID: <op.v0pywi0nvgw7ix@mnazarewicz-glaptop>
+In-Reply-To: <Pine.LNX.4.44L0.1108231636000.2069-100000@iolanthe.rowland.org>
+User-Agent: Opera Mail/11.50 (Linux)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 23 Aug 2011 22:49:37 +0200, Alan Stern <stern@rowland.harvard.edu>  
+wrote:
+> Still, maybe I was wrong.  Maybe it would be better to use the fastest
+> speed supported by at least one of the function drivers.  The user can
+> always force a SuperSpeed-capable device to run at high speed by using
+> a USB-2 cable to plug it in.  I'm not sure whether the user could force
+> such a device to run at full speed, however.
 
-Please pull from
+I'm actually wondering whether we really need to worry about it.
+composite_driver has the “max_speed” field and I would just leave it as
+composite driver's author responsibility to put correct value there.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+One thing that could be worth doing is iterate over all the configurations
+and figure out if at least one supports the speed declared by “max_speed”
+and if not, lower it.
 
-to receive the following fuse fixes.
+Like I've said before, as additional functionality, composite.c could
+check if it's USB_SPEED_UNKWONW in which case it would look for the lowest
+speed that all the functions support.
 
-Thanks,
-Miklos
-----
+Such configuration would allow composite driver authors set the speed to
+USB_SPEED_SUPER when they mean “choose maximum speed at least one function
+supports” and to “USB_SPEED_UNKWONW” when they mean “choose maximum speed
+all the functions support”.
 
+Does that make sense?
 
-Johannes Weiner (2):
-      fuse: delete dead .write_begin and .write_end aops
-      fuse: mark pages accessed when written to
-
-Miklos Szeredi (2):
-      fuse: fix flock
-      fuse: check size of FUSE_NOTIFY_INVAL_ENTRY message
-
-Randy Dunlap (1):
-      fuse: fix non-ANSI void function notation
-
----
- fs/fuse/dev.c        |    4 ++
- fs/fuse/file.c       |   84 ++++++++------------------------------------------
- fs/fuse/fuse_i.h     |    8 ++++-
- fs/fuse/inode.c      |   10 +++++-
- include/linux/fuse.h |    9 +++++-
- 5 files changed, 40 insertions(+), 75 deletions(-)
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
